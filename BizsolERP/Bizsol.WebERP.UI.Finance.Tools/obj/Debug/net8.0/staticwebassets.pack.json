@@ -1,0 +1,33 @@
+{
+  "Files": [
+    {
+      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Finance.Tools\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Bizsol.WebERP.UI.Finance.Tools.bundle.scp.css",
+      "PackagePath": "staticwebassets\\Bizsol.WebERP.UI.Finance.Tools.bundle.scp.css"
+    },
+    {
+      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Finance.Tools\\wwwroot\\background.png",
+      "PackagePath": "staticwebassets\\background.png"
+    },
+    {
+      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Finance.Tools\\wwwroot\\exampleJsInterop.js",
+      "PackagePath": "staticwebassets\\exampleJsInterop.js"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.Bizsol.WebERP.UI.Finance.Tools.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.Bizsol.WebERP.UI.Finance.Tools.props",
+      "PackagePath": "build\\Bizsol.WebERP.UI.Finance.Tools.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.Finance.Tools.props",
+      "PackagePath": "buildMultiTargeting\\Bizsol.WebERP.UI.Finance.Tools.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.Bizsol.WebERP.UI.Finance.Tools.props",
+      "PackagePath": "buildTransitive\\Bizsol.WebERP.UI.Finance.Tools.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

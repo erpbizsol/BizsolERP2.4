@@ -1,0 +1,33 @@
+{
+  "Files": [
+    {
+      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Production.Reports\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Bizsol.WebERP.UI.Production.Reports.bundle.scp.css",
+      "PackagePath": "staticwebassets\\Bizsol.WebERP.UI.Production.Reports.bundle.scp.css"
+    },
+    {
+      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Production.Reports\\wwwroot\\background.png",
+      "PackagePath": "staticwebassets\\background.png"
+    },
+    {
+      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Production.Reports\\wwwroot\\exampleJsInterop.js",
+      "PackagePath": "staticwebassets\\exampleJsInterop.js"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.Bizsol.WebERP.UI.Production.Reports.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.Bizsol.WebERP.UI.Production.Reports.props",
+      "PackagePath": "build\\Bizsol.WebERP.UI.Production.Reports.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.Production.Reports.props",
+      "PackagePath": "buildMultiTargeting\\Bizsol.WebERP.UI.Production.Reports.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.Bizsol.WebERP.UI.Production.Reports.props",
+      "PackagePath": "buildTransitive\\Bizsol.WebERP.UI.Production.Reports.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

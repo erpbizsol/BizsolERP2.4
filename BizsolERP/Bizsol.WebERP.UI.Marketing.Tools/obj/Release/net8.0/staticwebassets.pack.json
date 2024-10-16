@@ -1,0 +1,33 @@
+{
+  "Files": [
+    {
+      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Marketing.Tools\\obj\\Release\\net8.0\\scopedcss\\projectbundle\\Bizsol.WebERP.UI.Marketing.Tools.bundle.scp.css",
+      "PackagePath": "staticwebassets\\Bizsol.WebERP.UI.Marketing.Tools.bundle.scp.css"
+    },
+    {
+      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Marketing.Tools\\wwwroot\\background.png",
+      "PackagePath": "staticwebassets\\background.png"
+    },
+    {
+      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Marketing.Tools\\wwwroot\\exampleJsInterop.js",
+      "PackagePath": "staticwebassets\\exampleJsInterop.js"
+    },
+    {
+      "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.Bizsol.WebERP.UI.Marketing.Tools.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.build.Bizsol.WebERP.UI.Marketing.Tools.props",
+      "PackagePath": "build\\Bizsol.WebERP.UI.Marketing.Tools.props"
+    },
+    {
+      "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.Marketing.Tools.props",
+      "PackagePath": "buildMultiTargeting\\Bizsol.WebERP.UI.Marketing.Tools.props"
+    },
+    {
+      "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.buildTransitive.Bizsol.WebERP.UI.Marketing.Tools.props",
+      "PackagePath": "buildTransitive\\Bizsol.WebERP.UI.Marketing.Tools.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

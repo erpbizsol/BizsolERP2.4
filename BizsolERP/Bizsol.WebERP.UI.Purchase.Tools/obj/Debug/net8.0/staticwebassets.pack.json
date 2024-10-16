@@ -1,0 +1,33 @@
+{
+  "Files": [
+    {
+      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Purchase.Tools\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Bizsol.WebERP.UI.Purchase.Tools.bundle.scp.css",
+      "PackagePath": "staticwebassets\\Bizsol.WebERP.UI.Purchase.Tools.bundle.scp.css"
+    },
+    {
+      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Purchase.Tools\\wwwroot\\background.png",
+      "PackagePath": "staticwebassets\\background.png"
+    },
+    {
+      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Purchase.Tools\\wwwroot\\exampleJsInterop.js",
+      "PackagePath": "staticwebassets\\exampleJsInterop.js"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.Bizsol.WebERP.UI.Purchase.Tools.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.Bizsol.WebERP.UI.Purchase.Tools.props",
+      "PackagePath": "build\\Bizsol.WebERP.UI.Purchase.Tools.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.Purchase.Tools.props",
+      "PackagePath": "buildMultiTargeting\\Bizsol.WebERP.UI.Purchase.Tools.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.Bizsol.WebERP.UI.Purchase.Tools.props",
+      "PackagePath": "buildTransitive\\Bizsol.WebERP.UI.Purchase.Tools.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

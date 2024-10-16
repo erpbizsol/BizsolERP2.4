@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\Bizsol.WebERP.UI.Marketing.Reports.props" />
+</Project>

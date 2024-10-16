@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "CqKhXDO8iQv6iTDykSavz1SKf8VCrAIi1pngJZFyLec=",
+  "Source": "Bizsol.WebERP.UI.Common.Transactions",
+  "BasePath": "_content/Bizsol.WebERP.UI.Common.Transactions",
+  "Mode": "Default",
+  "ManifestType": "Publish",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
