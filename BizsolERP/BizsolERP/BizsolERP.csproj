@@ -112,32 +112,35 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Bizsol.WebERP.UI.Common.Masters\Bizsol.WebERP.UI.Common.Masters.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Common.Reports\Bizsol.WebERP.UI.Common.Reports.csproj" />
-    <ProjectReference Include="..\Bizsol.WebERP.UI.Common.Tools\Bizsol.WebERP.UI.Common.Test.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.Common.Test\Bizsol.WebERP.UI.Common.Test.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Common.Transactions\Bizsol.WebERP.UI.Common.Transactions.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Finance.Masters\Bizsol.WebERP.UI.Finance.Masters.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Finance.Reports\Bizsol.WebERP.UI.Finance.Reports.csproj" />
-    <ProjectReference Include="..\Bizsol.WebERP.UI.Finance.Tools\Bizsol.WebERP.UI.Finance.Test.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.Finance.Test\Bizsol.WebERP.UI.Finance.Test.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Finance.Transactions\Bizsol.WebERP.UI.Finance.Transactions.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.HelperClsLib\Bizsol.WebERP.UI.HelperClsLib.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.HR.Masters\Bizsol.WebERP.UI.HR.Masters.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.HR.Reports\Bizsol.WebERP.UI.HR.Reports.csproj" />
-    <ProjectReference Include="..\Bizsol.WebERP.UI.HR.Tools\Bizsol.WebERP.UI.HR.Test.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.HR.Test\Bizsol.WebERP.UI.HR.Test.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.HR.Transactions\Bizsol.WebERP.UI.HR.Transactions.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Marketing.Masters\Bizsol.WebERP.UI.Marketing.Masters.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Marketing.Reports\Bizsol.WebERP.UI.Marketing.Reports.csproj" />
-    <ProjectReference Include="..\Bizsol.WebERP.UI.Marketing.Tools\Bizsol.WebERP.UI.Marketing.Test.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.Marketing.Test\Bizsol.WebERP.UI.Marketing.Test.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Marketing.Transactions\Bizsol.WebERP.UI.Marketing.Transactions.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.MIS.Reports\Bizsol.WebERP.UI.MIS.Reports.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Production.Masters\Bizsol.WebERP.UI.Production.Masters.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Production.Reports\Bizsol.WebERP.UI.Production.Reports.csproj" />
-    <ProjectReference Include="..\Bizsol.WebERP.UI.Production.Tools\Bizsol.WebERP.UI.Production.Test.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.Production.Test\Bizsol.WebERP.UI.Production.Test.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Production.Transactions\Bizsol.WebERP.UI.Production.Transactions.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Purchase.Masters\Bizsol.WebERP.UI.Purchase.Masters.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Purchase.Reports\Bizsol.WebERP.UI.Purchase.Reports.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.Purchase.Test\Bizsol.WebERP.UI.Purchase.Test.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Purchase.Transactions\Bizsol.WebERP.UI.Purchase.Transactions.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Sales.Masters\Bizsol.WebERP.UI.Sales.Masters.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Sales.Reports\Bizsol.WebERP.UI.Sales.Reports.csproj" />
-    <ProjectReference Include="..\Bizsol.WebERP.UI.Sales.Tools\Bizsol.WebERP.UI.Sales.Test.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.Sales.Test\Bizsol.WebERP.UI.Sales.Test.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Sales.Transactions\Bizsol.WebERP.UI.Sales.Transactions.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Store.Masters\Bizsol.WebERP.UI.Store.Masters.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Store.Reports\Bizsol.WebERP.UI.Store.Reports.csproj" />
@@ -148,7 +151,6 @@
     <ProjectReference Include="..\Bizsol.WebERP.UI.Taxation.Test\Bizsol.WebERP.UI.Taxation.Test.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Taxation.Transactions\Bizsol.WebERP.UI.Taxation.Transactions.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Tools\Bizsol.WebERP.UI.Tools.csproj" />
-    <ProjectReference Include="..\RazorClassLibrary1\Bizsol.WebERP.UI.Common.Masters.csproj" />
   </ItemGroup>
 
 </Project>

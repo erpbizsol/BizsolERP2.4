@@ -2,6 +2,8 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\b
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\bin\Debug\net8.0\Bizsol.WebERP.UI.Common.Transactions.deps.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\bin\Debug\net8.0\Bizsol.WebERP.UI.Common.Transactions.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\bin\Debug\net8.0\Bizsol.WebERP.UI.Common.Transactions.pdb
+D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\bin\Debug\net8.0\Bizsol.WebERP.UI.HelperClsLib.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\bin\Debug\net8.0\Bizsol.WebERP.UI.HelperClsLib.pdb
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\obj\Debug\net8.0\Bizsol.WebERP.UI.Common.Transactions.csproj.AssemblyReference.cache
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\obj\Debug\net8.0\Bizsol.WebERP.UI.Common.Transactions.GeneratedMSBuildEditorConfig.editorconfig
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\obj\Debug\net8.0\Bizsol.WebERP.UI.Common.Transactions.AssemblyInfoInputs.cache
@@ -17,6 +19,7 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\o
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\obj\Debug\net8.0\scopedcss\Component1.razor.rz.scp.css
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\obj\Debug\net8.0\scopedcss\bundle\Bizsol.WebERP.UI.Common.Transactions.styles.css
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\obj\Debug\net8.0\scopedcss\projectbundle\Bizsol.WebERP.UI.Common.Transactions.bundle.scp.css
+D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\obj\Debug\net8.0\Bizsol.W.0AA9E143.Up2Date
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\obj\Debug\net8.0\Bizsol.WebERP.UI.Common.Transactions.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\obj\Debug\net8.0\refint\Bizsol.WebERP.UI.Common.Transactions.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Transactions\obj\Debug\net8.0\Bizsol.WebERP.UI.Common.Transactions.pdb
