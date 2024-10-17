@@ -216,6 +216,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -229,6 +230,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -242,6 +244,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -255,6 +258,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -268,6 +272,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -281,6 +286,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -294,6 +300,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -307,6 +314,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -316,10 +324,21 @@
           "bin/placeholder/Bizsol.WebERP.UI.Finance.Transactions.dll": {}
         }
       },
+      "Bizsol.WebERP.UI.HelperClsLib/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "compile": {
+          "bin/placeholder/Bizsol.WebERP.UI.HelperClsLib.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Bizsol.WebERP.UI.HelperClsLib.dll": {}
+        }
+      },
       "Bizsol.WebERP.UI.HR.Masters/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -333,6 +352,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -346,6 +366,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -359,6 +380,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -372,6 +394,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -385,6 +408,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -398,6 +422,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -411,6 +436,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -424,6 +450,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -437,6 +464,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -450,6 +478,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -463,6 +492,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -476,6 +506,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -489,6 +520,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -502,6 +534,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -511,10 +544,25 @@
           "bin/placeholder/Bizsol.WebERP.UI.Purchase.Reports.dll": {}
         }
       },
+      "Bizsol.WebERP.UI.Purchase.Test/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
+          "Microsoft.AspNetCore.Components.Web": "8.0.3"
+        },
+        "compile": {
+          "bin/placeholder/Bizsol.WebERP.UI.Purchase.Test.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Bizsol.WebERP.UI.Purchase.Test.dll": {}
+        }
+      },
       "Bizsol.WebERP.UI.Purchase.Transactions/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -528,6 +576,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -541,6 +590,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -554,6 +604,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -567,6 +618,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -580,6 +632,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -593,6 +646,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -606,6 +660,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -619,6 +674,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -632,6 +688,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -645,6 +702,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -658,6 +716,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -671,6 +730,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -684,6 +744,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "compile": {
@@ -1055,8 +1116,8 @@
     },
     "Bizsol.WebERP.UI.Common.Masters/1.0.0": {
       "type": "project",
-      "path": "../RazorClassLibrary1/Bizsol.WebERP.UI.Common.Masters.csproj",
-      "msbuildProject": "../RazorClassLibrary1/Bizsol.WebERP.UI.Common.Masters.csproj"
+      "path": "../Bizsol.WebERP.UI.Common.Masters/Bizsol.WebERP.UI.Common.Masters.csproj",
+      "msbuildProject": "../Bizsol.WebERP.UI.Common.Masters/Bizsol.WebERP.UI.Common.Masters.csproj"
     },
     "Bizsol.WebERP.UI.Common.Reports/1.0.0": {
       "type": "project",
@@ -1065,8 +1126,8 @@
     },
     "Bizsol.WebERP.UI.Common.Test/1.0.0": {
       "type": "project",
-      "path": "../Bizsol.WebERP.UI.Common.Tools/Bizsol.WebERP.UI.Common.Test.csproj",
-      "msbuildProject": "../Bizsol.WebERP.UI.Common.Tools/Bizsol.WebERP.UI.Common.Test.csproj"
+      "path": "../Bizsol.WebERP.UI.Common.Test/Bizsol.WebERP.UI.Common.Test.csproj",
+      "msbuildProject": "../Bizsol.WebERP.UI.Common.Test/Bizsol.WebERP.UI.Common.Test.csproj"
     },
     "Bizsol.WebERP.UI.Common.Transactions/1.0.0": {
       "type": "project",
@@ -1085,13 +1146,18 @@
     },
     "Bizsol.WebERP.UI.Finance.Test/1.0.0": {
       "type": "project",
-      "path": "../Bizsol.WebERP.UI.Finance.Tools/Bizsol.WebERP.UI.Finance.Test.csproj",
-      "msbuildProject": "../Bizsol.WebERP.UI.Finance.Tools/Bizsol.WebERP.UI.Finance.Test.csproj"
+      "path": "../Bizsol.WebERP.UI.Finance.Test/Bizsol.WebERP.UI.Finance.Test.csproj",
+      "msbuildProject": "../Bizsol.WebERP.UI.Finance.Test/Bizsol.WebERP.UI.Finance.Test.csproj"
     },
     "Bizsol.WebERP.UI.Finance.Transactions/1.0.0": {
       "type": "project",
       "path": "../Bizsol.WebERP.UI.Finance.Transactions/Bizsol.WebERP.UI.Finance.Transactions.csproj",
       "msbuildProject": "../Bizsol.WebERP.UI.Finance.Transactions/Bizsol.WebERP.UI.Finance.Transactions.csproj"
+    },
+    "Bizsol.WebERP.UI.HelperClsLib/1.0.0": {
+      "type": "project",
+      "path": "../Bizsol.WebERP.UI.HelperClsLib/Bizsol.WebERP.UI.HelperClsLib.csproj",
+      "msbuildProject": "../Bizsol.WebERP.UI.HelperClsLib/Bizsol.WebERP.UI.HelperClsLib.csproj"
     },
     "Bizsol.WebERP.UI.HR.Masters/1.0.0": {
       "type": "project",
@@ -1105,8 +1171,8 @@
     },
     "Bizsol.WebERP.UI.HR.Test/1.0.0": {
       "type": "project",
-      "path": "../Bizsol.WebERP.UI.HR.Tools/Bizsol.WebERP.UI.HR.Test.csproj",
-      "msbuildProject": "../Bizsol.WebERP.UI.HR.Tools/Bizsol.WebERP.UI.HR.Test.csproj"
+      "path": "../Bizsol.WebERP.UI.HR.Test/Bizsol.WebERP.UI.HR.Test.csproj",
+      "msbuildProject": "../Bizsol.WebERP.UI.HR.Test/Bizsol.WebERP.UI.HR.Test.csproj"
     },
     "Bizsol.WebERP.UI.HR.Transactions/1.0.0": {
       "type": "project",
@@ -1125,8 +1191,8 @@
     },
     "Bizsol.WebERP.UI.Marketing.Test/1.0.0": {
       "type": "project",
-      "path": "../Bizsol.WebERP.UI.Marketing.Tools/Bizsol.WebERP.UI.Marketing.Test.csproj",
-      "msbuildProject": "../Bizsol.WebERP.UI.Marketing.Tools/Bizsol.WebERP.UI.Marketing.Test.csproj"
+      "path": "../Bizsol.WebERP.UI.Marketing.Test/Bizsol.WebERP.UI.Marketing.Test.csproj",
+      "msbuildProject": "../Bizsol.WebERP.UI.Marketing.Test/Bizsol.WebERP.UI.Marketing.Test.csproj"
     },
     "Bizsol.WebERP.UI.Marketing.Transactions/1.0.0": {
       "type": "project",
@@ -1150,8 +1216,8 @@
     },
     "Bizsol.WebERP.UI.Production.Test/1.0.0": {
       "type": "project",
-      "path": "../Bizsol.WebERP.UI.Production.Tools/Bizsol.WebERP.UI.Production.Test.csproj",
-      "msbuildProject": "../Bizsol.WebERP.UI.Production.Tools/Bizsol.WebERP.UI.Production.Test.csproj"
+      "path": "../Bizsol.WebERP.UI.Production.Test/Bizsol.WebERP.UI.Production.Test.csproj",
+      "msbuildProject": "../Bizsol.WebERP.UI.Production.Test/Bizsol.WebERP.UI.Production.Test.csproj"
     },
     "Bizsol.WebERP.UI.Production.Transactions/1.0.0": {
       "type": "project",
@@ -1167,6 +1233,11 @@
       "type": "project",
       "path": "../Bizsol.WebERP.UI.Purchase.Reports/Bizsol.WebERP.UI.Purchase.Reports.csproj",
       "msbuildProject": "../Bizsol.WebERP.UI.Purchase.Reports/Bizsol.WebERP.UI.Purchase.Reports.csproj"
+    },
+    "Bizsol.WebERP.UI.Purchase.Test/1.0.0": {
+      "type": "project",
+      "path": "../Bizsol.WebERP.UI.Purchase.Test/Bizsol.WebERP.UI.Purchase.Test.csproj",
+      "msbuildProject": "../Bizsol.WebERP.UI.Purchase.Test/Bizsol.WebERP.UI.Purchase.Test.csproj"
     },
     "Bizsol.WebERP.UI.Purchase.Transactions/1.0.0": {
       "type": "project",
@@ -1185,8 +1256,8 @@
     },
     "Bizsol.WebERP.UI.Sales.Test/1.0.0": {
       "type": "project",
-      "path": "../Bizsol.WebERP.UI.Sales.Tools/Bizsol.WebERP.UI.Sales.Test.csproj",
-      "msbuildProject": "../Bizsol.WebERP.UI.Sales.Tools/Bizsol.WebERP.UI.Sales.Test.csproj"
+      "path": "../Bizsol.WebERP.UI.Sales.Test/Bizsol.WebERP.UI.Sales.Test.csproj",
+      "msbuildProject": "../Bizsol.WebERP.UI.Sales.Test/Bizsol.WebERP.UI.Sales.Test.csproj"
     },
     "Bizsol.WebERP.UI.Sales.Transactions/1.0.0": {
       "type": "project",
@@ -1253,6 +1324,7 @@
       "Bizsol.WebERP.UI.HR.Reports >= 1.0.0",
       "Bizsol.WebERP.UI.HR.Test >= 1.0.0",
       "Bizsol.WebERP.UI.HR.Transactions >= 1.0.0",
+      "Bizsol.WebERP.UI.HelperClsLib >= 1.0.0",
       "Bizsol.WebERP.UI.MIS.Reports >= 1.0.0",
       "Bizsol.WebERP.UI.Marketing.Masters >= 1.0.0",
       "Bizsol.WebERP.UI.Marketing.Reports >= 1.0.0",
@@ -1264,6 +1336,7 @@
       "Bizsol.WebERP.UI.Production.Transactions >= 1.0.0",
       "Bizsol.WebERP.UI.Purchase.Masters >= 1.0.0",
       "Bizsol.WebERP.UI.Purchase.Reports >= 1.0.0",
+      "Bizsol.WebERP.UI.Purchase.Test >= 1.0.0",
       "Bizsol.WebERP.UI.Purchase.Transactions >= 1.0.0",
       "Bizsol.WebERP.UI.Sales.Masters >= 1.0.0",
       "Bizsol.WebERP.UI.Sales.Reports >= 1.0.0",
@@ -1307,11 +1380,14 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
+            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Common.Masters\\Bizsol.WebERP.UI.Common.Masters.csproj": {
+              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Common.Masters\\Bizsol.WebERP.UI.Common.Masters.csproj"
+            },
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Common.Reports\\Bizsol.WebERP.UI.Common.Reports.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Common.Reports\\Bizsol.WebERP.UI.Common.Reports.csproj"
             },
-            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Common.Tools\\Bizsol.WebERP.UI.Common.Test.csproj": {
-              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Common.Tools\\Bizsol.WebERP.UI.Common.Test.csproj"
+            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj": {
+              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj"
             },
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Common.Transactions\\Bizsol.WebERP.UI.Common.Transactions.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Common.Transactions\\Bizsol.WebERP.UI.Common.Transactions.csproj"
@@ -1322,11 +1398,14 @@
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj"
             },
-            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Finance.Tools\\Bizsol.WebERP.UI.Finance.Test.csproj": {
-              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Finance.Tools\\Bizsol.WebERP.UI.Finance.Test.csproj"
+            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Finance.Test\\Bizsol.WebERP.UI.Finance.Test.csproj": {
+              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Finance.Test\\Bizsol.WebERP.UI.Finance.Test.csproj"
             },
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj"
+            },
+            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HelperClsLib\\Bizsol.WebERP.UI.HelperClsLib.csproj": {
+              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HelperClsLib\\Bizsol.WebERP.UI.HelperClsLib.csproj"
             },
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HR.Masters\\Bizsol.WebERP.UI.HR.Masters.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HR.Masters\\Bizsol.WebERP.UI.HR.Masters.csproj"
@@ -1334,8 +1413,8 @@
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj"
             },
-            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HR.Tools\\Bizsol.WebERP.UI.HR.Test.csproj": {
-              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HR.Tools\\Bizsol.WebERP.UI.HR.Test.csproj"
+            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HR.Test\\Bizsol.WebERP.UI.HR.Test.csproj": {
+              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HR.Test\\Bizsol.WebERP.UI.HR.Test.csproj"
             },
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HR.Transactions\\Bizsol.WebERP.UI.HR.Transactions.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HR.Transactions\\Bizsol.WebERP.UI.HR.Transactions.csproj"
@@ -1346,8 +1425,8 @@
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Marketing.Reports\\Bizsol.WebERP.UI.Marketing.Reports.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Marketing.Reports\\Bizsol.WebERP.UI.Marketing.Reports.csproj"
             },
-            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Marketing.Tools\\Bizsol.WebERP.UI.Marketing.Test.csproj": {
-              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Marketing.Tools\\Bizsol.WebERP.UI.Marketing.Test.csproj"
+            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj": {
+              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj"
             },
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Marketing.Transactions\\Bizsol.WebERP.UI.Marketing.Transactions.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Marketing.Transactions\\Bizsol.WebERP.UI.Marketing.Transactions.csproj"
@@ -1361,8 +1440,8 @@
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj"
             },
-            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Production.Tools\\Bizsol.WebERP.UI.Production.Test.csproj": {
-              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Production.Tools\\Bizsol.WebERP.UI.Production.Test.csproj"
+            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Production.Test\\Bizsol.WebERP.UI.Production.Test.csproj": {
+              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Production.Test\\Bizsol.WebERP.UI.Production.Test.csproj"
             },
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Production.Transactions\\Bizsol.WebERP.UI.Production.Transactions.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Production.Transactions\\Bizsol.WebERP.UI.Production.Transactions.csproj"
@@ -1373,6 +1452,9 @@
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj"
             },
+            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj": {
+              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj"
+            },
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj"
             },
@@ -1382,8 +1464,8 @@
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Sales.Reports\\Bizsol.WebERP.UI.Sales.Reports.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Sales.Reports\\Bizsol.WebERP.UI.Sales.Reports.csproj"
             },
-            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Sales.Tools\\Bizsol.WebERP.UI.Sales.Test.csproj": {
-              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Sales.Tools\\Bizsol.WebERP.UI.Sales.Test.csproj"
+            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Sales.Test\\Bizsol.WebERP.UI.Sales.Test.csproj": {
+              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Sales.Test\\Bizsol.WebERP.UI.Sales.Test.csproj"
             },
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Sales.Transactions\\Bizsol.WebERP.UI.Sales.Transactions.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Sales.Transactions\\Bizsol.WebERP.UI.Sales.Transactions.csproj"
@@ -1414,9 +1496,6 @@
             },
             "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Tools\\Bizsol.WebERP.UI.Tools.csproj": {
               "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.Tools\\Bizsol.WebERP.UI.Tools.csproj"
-            },
-            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\RazorClassLibrary1\\Bizsol.WebERP.UI.Common.Masters.csproj": {
-              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\RazorClassLibrary1\\Bizsol.WebERP.UI.Common.Masters.csproj"
             }
           }
         }

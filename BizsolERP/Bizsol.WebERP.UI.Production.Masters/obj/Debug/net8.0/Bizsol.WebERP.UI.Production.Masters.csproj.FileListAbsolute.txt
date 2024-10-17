@@ -2,6 +2,8 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\bi
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\bin\Debug\net8.0\Bizsol.WebERP.UI.Production.Masters.deps.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\bin\Debug\net8.0\Bizsol.WebERP.UI.Production.Masters.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\bin\Debug\net8.0\Bizsol.WebERP.UI.Production.Masters.pdb
+D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\bin\Debug\net8.0\Bizsol.WebERP.UI.HelperClsLib.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\bin\Debug\net8.0\Bizsol.WebERP.UI.HelperClsLib.pdb
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\obj\Debug\net8.0\Bizsol.WebERP.UI.Production.Masters.csproj.AssemblyReference.cache
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\obj\Debug\net8.0\Bizsol.WebERP.UI.Production.Masters.GeneratedMSBuildEditorConfig.editorconfig
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\obj\Debug\net8.0\Bizsol.WebERP.UI.Production.Masters.AssemblyInfoInputs.cache
@@ -17,6 +19,7 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\ob
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\obj\Debug\net8.0\scopedcss\Component1.razor.rz.scp.css
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\obj\Debug\net8.0\scopedcss\bundle\Bizsol.WebERP.UI.Production.Masters.styles.css
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\obj\Debug\net8.0\scopedcss\projectbundle\Bizsol.WebERP.UI.Production.Masters.bundle.scp.css
+D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\obj\Debug\net8.0\Bizsol.W.44157D88.Up2Date
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\obj\Debug\net8.0\Bizsol.WebERP.UI.Production.Masters.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\obj\Debug\net8.0\refint\Bizsol.WebERP.UI.Production.Masters.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Production.Masters\obj\Debug\net8.0\Bizsol.WebERP.UI.Production.Masters.pdb

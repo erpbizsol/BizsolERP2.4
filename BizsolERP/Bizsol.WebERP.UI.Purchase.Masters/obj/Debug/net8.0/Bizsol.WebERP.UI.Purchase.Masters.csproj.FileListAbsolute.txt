@@ -2,6 +2,8 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\bin\
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\bin\Debug\net8.0\Bizsol.WebERP.UI.Purchase.Masters.deps.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\bin\Debug\net8.0\Bizsol.WebERP.UI.Purchase.Masters.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\bin\Debug\net8.0\Bizsol.WebERP.UI.Purchase.Masters.pdb
+D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\bin\Debug\net8.0\Bizsol.WebERP.UI.HelperClsLib.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\bin\Debug\net8.0\Bizsol.WebERP.UI.HelperClsLib.pdb
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\obj\Debug\net8.0\Bizsol.WebERP.UI.Purchase.Masters.csproj.AssemblyReference.cache
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\obj\Debug\net8.0\Bizsol.WebERP.UI.Purchase.Masters.GeneratedMSBuildEditorConfig.editorconfig
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\obj\Debug\net8.0\Bizsol.WebERP.UI.Purchase.Masters.AssemblyInfoInputs.cache
@@ -17,6 +19,7 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\obj\
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\obj\Debug\net8.0\scopedcss\Component1.razor.rz.scp.css
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\obj\Debug\net8.0\scopedcss\bundle\Bizsol.WebERP.UI.Purchase.Masters.styles.css
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\obj\Debug\net8.0\scopedcss\projectbundle\Bizsol.WebERP.UI.Purchase.Masters.bundle.scp.css
+D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\obj\Debug\net8.0\Bizsol.W.CB85BBDC.Up2Date
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\obj\Debug\net8.0\Bizsol.WebERP.UI.Purchase.Masters.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\obj\Debug\net8.0\refint\Bizsol.WebERP.UI.Purchase.Masters.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Purchase.Masters\obj\Debug\net8.0\Bizsol.WebERP.UI.Purchase.Masters.pdb

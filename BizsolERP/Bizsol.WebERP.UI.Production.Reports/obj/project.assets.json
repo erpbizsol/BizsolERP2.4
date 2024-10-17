@@ -211,6 +211,16 @@
         "build": {
           "buildTransitive/net6.0/_._": {}
         }
+      },
+      "Bizsol.WebERP.UI.HelperClsLib/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "compile": {
+          "bin/placeholder/Bizsol.WebERP.UI.HelperClsLib.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Bizsol.WebERP.UI.HelperClsLib.dll": {}
+        }
       }
     }
   },
@@ -571,10 +581,16 @@
         "system.io.pipelines.nuspec",
         "useSharedDesignerContext.txt"
       ]
+    },
+    "Bizsol.WebERP.UI.HelperClsLib/1.0.0": {
+      "type": "project",
+      "path": "../Bizsol.WebERP.UI.HelperClsLib/Bizsol.WebERP.UI.HelperClsLib.csproj",
+      "msbuildProject": "../Bizsol.WebERP.UI.HelperClsLib/Bizsol.WebERP.UI.HelperClsLib.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net8.0": [
+      "Bizsol.WebERP.UI.HelperClsLib >= 1.0.0",
       "Microsoft.AspNetCore.Components.Web >= 8.0.3"
     ]
   },
@@ -604,7 +620,11 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HelperClsLib\\Bizsol.WebERP.UI.HelperClsLib.csproj": {
+              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP\\Bizsol.WebERP.UI.HelperClsLib\\Bizsol.WebERP.UI.HelperClsLib.csproj"
+            }
+          }
         }
       },
       "warningProperties": {

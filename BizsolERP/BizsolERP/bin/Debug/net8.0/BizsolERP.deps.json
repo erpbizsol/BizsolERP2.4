@@ -10,32 +10,43 @@
         "dependencies": {
           "Bizsol.WebERP.UI.Common.Masters": "1.0.0",
           "Bizsol.WebERP.UI.Common.Reports": "1.0.0",
-          "Bizsol.WebERP.UI.Common.Tools": "1.0.0",
+          "Bizsol.WebERP.UI.Common.Test": "1.0.0",
           "Bizsol.WebERP.UI.Common.Transactions": "1.0.0",
           "Bizsol.WebERP.UI.Finance.Masters": "1.0.0",
           "Bizsol.WebERP.UI.Finance.Reports": "1.0.0",
-          "Bizsol.WebERP.UI.Finance.Tools": "1.0.0",
+          "Bizsol.WebERP.UI.Finance.Test": "1.0.0",
           "Bizsol.WebERP.UI.Finance.Transactions": "1.0.0",
           "Bizsol.WebERP.UI.HR.Masters": "1.0.0",
           "Bizsol.WebERP.UI.HR.Reports": "1.0.0",
-          "Bizsol.WebERP.UI.HR.Tools": "1.0.0",
+          "Bizsol.WebERP.UI.HR.Test": "1.0.0",
           "Bizsol.WebERP.UI.HR.Transactions": "1.0.0",
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
+          "Bizsol.WebERP.UI.MIS.Reports": "1.0.0",
           "Bizsol.WebERP.UI.Marketing.Masters": "1.0.0",
           "Bizsol.WebERP.UI.Marketing.Reports": "1.0.0",
-          "Bizsol.WebERP.UI.Marketing.Tools": "1.0.0",
+          "Bizsol.WebERP.UI.Marketing.Test": "1.0.0",
           "Bizsol.WebERP.UI.Marketing.Transactions": "1.0.0",
           "Bizsol.WebERP.UI.Production.Masters": "1.0.0",
           "Bizsol.WebERP.UI.Production.Reports": "1.0.0",
-          "Bizsol.WebERP.UI.Production.Tools": "1.0.0",
+          "Bizsol.WebERP.UI.Production.Test": "1.0.0",
           "Bizsol.WebERP.UI.Production.Transactions": "1.0.0",
           "Bizsol.WebERP.UI.Purchase.Masters": "1.0.0",
           "Bizsol.WebERP.UI.Purchase.Reports": "1.0.0",
-          "Bizsol.WebERP.UI.Purchase.Tools": "1.0.0",
+          "Bizsol.WebERP.UI.Purchase.Test": "1.0.0",
           "Bizsol.WebERP.UI.Purchase.Transactions": "1.0.0",
           "Bizsol.WebERP.UI.Sales.Masters": "1.0.0",
           "Bizsol.WebERP.UI.Sales.Reports": "1.0.0",
-          "Bizsol.WebERP.UI.Sales.Tools": "1.0.0",
-          "Bizsol.WebERP.UI.Sales.Transactions": "1.0.0"
+          "Bizsol.WebERP.UI.Sales.Test": "1.0.0",
+          "Bizsol.WebERP.UI.Sales.Transactions": "1.0.0",
+          "Bizsol.WebERP.UI.Store.Masters": "1.0.0",
+          "Bizsol.WebERP.UI.Store.Reports": "1.0.0",
+          "Bizsol.WebERP.UI.Store.Test": "1.0.0",
+          "Bizsol.WebERP.UI.Store.Transactions": "1.0.0",
+          "Bizsol.WebERP.UI.Taxation.Masters": "1.0.0",
+          "Bizsol.WebERP.UI.Taxation.Reports": "1.0.0",
+          "Bizsol.WebERP.UI.Taxation.Test": "1.0.0",
+          "Bizsol.WebERP.UI.Taxation.Transactions": "1.0.0",
+          "Bizsol.WebERP.UI.Tools": "1.0.0"
         },
         "runtime": {
           "BizsolERP.dll": {}
@@ -150,6 +161,7 @@
       "System.IO.Pipelines/8.0.0": {},
       "Bizsol.WebERP.UI.Common.Masters/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
@@ -158,22 +170,25 @@
       },
       "Bizsol.WebERP.UI.Common.Reports/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
           "Bizsol.WebERP.UI.Common.Reports.dll": {}
         }
       },
-      "Bizsol.WebERP.UI.Common.Tools/1.0.0": {
+      "Bizsol.WebERP.UI.Common.Test/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
-          "Bizsol.WebERP.UI.Common.Tools.dll": {}
+          "Bizsol.WebERP.UI.Common.Test.dll": {}
         }
       },
       "Bizsol.WebERP.UI.Common.Transactions/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
@@ -182,6 +197,7 @@
       },
       "Bizsol.WebERP.UI.Finance.Masters/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
@@ -190,30 +206,39 @@
       },
       "Bizsol.WebERP.UI.Finance.Reports/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
           "Bizsol.WebERP.UI.Finance.Reports.dll": {}
         }
       },
-      "Bizsol.WebERP.UI.Finance.Tools/1.0.0": {
+      "Bizsol.WebERP.UI.Finance.Test/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
-          "Bizsol.WebERP.UI.Finance.Tools.dll": {}
+          "Bizsol.WebERP.UI.Finance.Test.dll": {}
         }
       },
       "Bizsol.WebERP.UI.Finance.Transactions/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
           "Bizsol.WebERP.UI.Finance.Transactions.dll": {}
         }
       },
+      "Bizsol.WebERP.UI.HelperClsLib/1.0.0": {
+        "runtime": {
+          "Bizsol.WebERP.UI.HelperClsLib.dll": {}
+        }
+      },
       "Bizsol.WebERP.UI.HR.Masters/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
@@ -222,22 +247,25 @@
       },
       "Bizsol.WebERP.UI.HR.Reports/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
           "Bizsol.WebERP.UI.HR.Reports.dll": {}
         }
       },
-      "Bizsol.WebERP.UI.HR.Tools/1.0.0": {
+      "Bizsol.WebERP.UI.HR.Test/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
-          "Bizsol.WebERP.UI.HR.Tools.dll": {}
+          "Bizsol.WebERP.UI.HR.Test.dll": {}
         }
       },
       "Bizsol.WebERP.UI.HR.Transactions/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
@@ -246,6 +274,7 @@
       },
       "Bizsol.WebERP.UI.Marketing.Masters/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
@@ -254,30 +283,43 @@
       },
       "Bizsol.WebERP.UI.Marketing.Reports/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
           "Bizsol.WebERP.UI.Marketing.Reports.dll": {}
         }
       },
-      "Bizsol.WebERP.UI.Marketing.Tools/1.0.0": {
+      "Bizsol.WebERP.UI.Marketing.Test/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
-          "Bizsol.WebERP.UI.Marketing.Tools.dll": {}
+          "Bizsol.WebERP.UI.Marketing.Test.dll": {}
         }
       },
       "Bizsol.WebERP.UI.Marketing.Transactions/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
           "Bizsol.WebERP.UI.Marketing.Transactions.dll": {}
         }
       },
+      "Bizsol.WebERP.UI.MIS.Reports/1.0.0": {
+        "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
+          "Microsoft.AspNetCore.Components.Web": "8.0.3"
+        },
+        "runtime": {
+          "Bizsol.WebERP.UI.MIS.Reports.dll": {}
+        }
+      },
       "Bizsol.WebERP.UI.Production.Masters/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
@@ -286,22 +328,25 @@
       },
       "Bizsol.WebERP.UI.Production.Reports/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
           "Bizsol.WebERP.UI.Production.Reports.dll": {}
         }
       },
-      "Bizsol.WebERP.UI.Production.Tools/1.0.0": {
+      "Bizsol.WebERP.UI.Production.Test/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
-          "Bizsol.WebERP.UI.Production.Tools.dll": {}
+          "Bizsol.WebERP.UI.Production.Test.dll": {}
         }
       },
       "Bizsol.WebERP.UI.Production.Transactions/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
@@ -310,6 +355,7 @@
       },
       "Bizsol.WebERP.UI.Purchase.Masters/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
@@ -318,22 +364,25 @@
       },
       "Bizsol.WebERP.UI.Purchase.Reports/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
           "Bizsol.WebERP.UI.Purchase.Reports.dll": {}
         }
       },
-      "Bizsol.WebERP.UI.Purchase.Tools/1.0.0": {
+      "Bizsol.WebERP.UI.Purchase.Test/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
-          "Bizsol.WebERP.UI.Purchase.Tools.dll": {}
+          "Bizsol.WebERP.UI.Purchase.Test.dll": {}
         }
       },
       "Bizsol.WebERP.UI.Purchase.Transactions/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
@@ -342,6 +391,7 @@
       },
       "Bizsol.WebERP.UI.Sales.Masters/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
@@ -350,26 +400,110 @@
       },
       "Bizsol.WebERP.UI.Sales.Reports/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
           "Bizsol.WebERP.UI.Sales.Reports.dll": {}
         }
       },
-      "Bizsol.WebERP.UI.Sales.Tools/1.0.0": {
+      "Bizsol.WebERP.UI.Sales.Test/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
-          "Bizsol.WebERP.UI.Sales.Tools.dll": {}
+          "Bizsol.WebERP.UI.Sales.Test.dll": {}
         }
       },
       "Bizsol.WebERP.UI.Sales.Transactions/1.0.0": {
         "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
           "Microsoft.AspNetCore.Components.Web": "8.0.3"
         },
         "runtime": {
           "Bizsol.WebERP.UI.Sales.Transactions.dll": {}
+        }
+      },
+      "Bizsol.WebERP.UI.Store.Masters/1.0.0": {
+        "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
+          "Microsoft.AspNetCore.Components.Web": "8.0.3"
+        },
+        "runtime": {
+          "Bizsol.WebERP.UI.Store.Masters.dll": {}
+        }
+      },
+      "Bizsol.WebERP.UI.Store.Reports/1.0.0": {
+        "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
+          "Microsoft.AspNetCore.Components.Web": "8.0.3"
+        },
+        "runtime": {
+          "Bizsol.WebERP.UI.Store.Reports.dll": {}
+        }
+      },
+      "Bizsol.WebERP.UI.Store.Test/1.0.0": {
+        "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
+          "Microsoft.AspNetCore.Components.Web": "8.0.3"
+        },
+        "runtime": {
+          "Bizsol.WebERP.UI.Store.Test.dll": {}
+        }
+      },
+      "Bizsol.WebERP.UI.Store.Transactions/1.0.0": {
+        "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
+          "Microsoft.AspNetCore.Components.Web": "8.0.3"
+        },
+        "runtime": {
+          "Bizsol.WebERP.UI.Store.Transactions.dll": {}
+        }
+      },
+      "Bizsol.WebERP.UI.Taxation.Masters/1.0.0": {
+        "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
+          "Microsoft.AspNetCore.Components.Web": "8.0.3"
+        },
+        "runtime": {
+          "Bizsol.WebERP.UI.Taxation.Masters.dll": {}
+        }
+      },
+      "Bizsol.WebERP.UI.Taxation.Reports/1.0.0": {
+        "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
+          "Microsoft.AspNetCore.Components.Web": "8.0.3"
+        },
+        "runtime": {
+          "Bizsol.WebERP.UI.Taxation.Reports.dll": {}
+        }
+      },
+      "Bizsol.WebERP.UI.Taxation.Test/1.0.0": {
+        "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
+          "Microsoft.AspNetCore.Components.Web": "8.0.3"
+        },
+        "runtime": {
+          "Bizsol.WebERP.UI.Taxation.Test.dll": {}
+        }
+      },
+      "Bizsol.WebERP.UI.Taxation.Transactions/1.0.0": {
+        "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
+          "Microsoft.AspNetCore.Components.Web": "8.0.3"
+        },
+        "runtime": {
+          "Bizsol.WebERP.UI.Taxation.Transactions.dll": {}
+        }
+      },
+      "Bizsol.WebERP.UI.Tools/1.0.0": {
+        "dependencies": {
+          "Bizsol.WebERP.UI.HelperClsLib": "1.0.0",
+          "Microsoft.AspNetCore.Components.Web": "8.0.3"
+        },
+        "runtime": {
+          "Bizsol.WebERP.UI.Tools.dll": {}
         }
       }
     }
@@ -481,7 +615,7 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Bizsol.WebERP.UI.Common.Tools/1.0.0": {
+    "Bizsol.WebERP.UI.Common.Test/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -501,12 +635,17 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Bizsol.WebERP.UI.Finance.Tools/1.0.0": {
+    "Bizsol.WebERP.UI.Finance.Test/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
     "Bizsol.WebERP.UI.Finance.Transactions/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Bizsol.WebERP.UI.HelperClsLib/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -521,7 +660,7 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Bizsol.WebERP.UI.HR.Tools/1.0.0": {
+    "Bizsol.WebERP.UI.HR.Test/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -541,12 +680,17 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Bizsol.WebERP.UI.Marketing.Tools/1.0.0": {
+    "Bizsol.WebERP.UI.Marketing.Test/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
     "Bizsol.WebERP.UI.Marketing.Transactions/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Bizsol.WebERP.UI.MIS.Reports/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -561,7 +705,7 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Bizsol.WebERP.UI.Production.Tools/1.0.0": {
+    "Bizsol.WebERP.UI.Production.Test/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -581,7 +725,7 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Bizsol.WebERP.UI.Purchase.Tools/1.0.0": {
+    "Bizsol.WebERP.UI.Purchase.Test/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -601,12 +745,57 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Bizsol.WebERP.UI.Sales.Tools/1.0.0": {
+    "Bizsol.WebERP.UI.Sales.Test/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
     "Bizsol.WebERP.UI.Sales.Transactions/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Bizsol.WebERP.UI.Store.Masters/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Bizsol.WebERP.UI.Store.Reports/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Bizsol.WebERP.UI.Store.Test/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Bizsol.WebERP.UI.Store.Transactions/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Bizsol.WebERP.UI.Taxation.Masters/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Bizsol.WebERP.UI.Taxation.Reports/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Bizsol.WebERP.UI.Taxation.Test/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Bizsol.WebERP.UI.Taxation.Transactions/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Bizsol.WebERP.UI.Tools/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

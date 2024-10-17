@@ -2,6 +2,8 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\bin\De
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\bin\Debug\net8.0\Bizsol.WebERP.UI.Common.Reports.deps.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\bin\Debug\net8.0\Bizsol.WebERP.UI.Common.Reports.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\bin\Debug\net8.0\Bizsol.WebERP.UI.Common.Reports.pdb
+D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\bin\Debug\net8.0\Bizsol.WebERP.UI.HelperClsLib.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\bin\Debug\net8.0\Bizsol.WebERP.UI.HelperClsLib.pdb
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\obj\Debug\net8.0\Bizsol.WebERP.UI.Common.Reports.csproj.AssemblyReference.cache
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\obj\Debug\net8.0\Bizsol.WebERP.UI.Common.Reports.GeneratedMSBuildEditorConfig.editorconfig
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\obj\Debug\net8.0\Bizsol.WebERP.UI.Common.Reports.AssemblyInfoInputs.cache
@@ -17,6 +19,7 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\obj\De
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\obj\Debug\net8.0\scopedcss\Component1.razor.rz.scp.css
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\obj\Debug\net8.0\scopedcss\bundle\Bizsol.WebERP.UI.Common.Reports.styles.css
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\obj\Debug\net8.0\scopedcss\projectbundle\Bizsol.WebERP.UI.Common.Reports.bundle.scp.css
+D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\obj\Debug\net8.0\Bizsol.W.141AD76B.Up2Date
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\obj\Debug\net8.0\Bizsol.WebERP.UI.Common.Reports.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\obj\Debug\net8.0\refint\Bizsol.WebERP.UI.Common.Reports.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERP\Bizsol.WebERP.UI.Common.Reports\obj\Debug\net8.0\Bizsol.WebERP.UI.Common.Reports.pdb
