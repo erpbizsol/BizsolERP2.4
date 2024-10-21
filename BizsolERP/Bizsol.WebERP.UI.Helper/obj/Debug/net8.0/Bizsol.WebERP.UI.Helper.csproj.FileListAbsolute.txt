@@ -1,0 +1,11 @@
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.WebERP.UI.Helper\bin\Debug\net8.0\Bizsol.WebERP.UI.Helper.deps.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.WebERP.UI.Helper\bin\Debug\net8.0\Bizsol.WebERP.UI.Helper.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.WebERP.UI.Helper\bin\Debug\net8.0\Bizsol.WebERP.UI.Helper.pdb
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.WebERP.UI.Helper\obj\Debug\net8.0\Bizsol.WebERP.UI.Helper.GeneratedMSBuildEditorConfig.editorconfig
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.WebERP.UI.Helper\obj\Debug\net8.0\Bizsol.WebERP.UI.Helper.AssemblyInfoInputs.cache
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.WebERP.UI.Helper\obj\Debug\net8.0\Bizsol.WebERP.UI.Helper.AssemblyInfo.cs
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.WebERP.UI.Helper\obj\Debug\net8.0\Bizsol.WebERP.UI.Helper.csproj.CoreCompileInputs.cache
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.WebERP.UI.Helper\obj\Debug\net8.0\Bizsol.WebERP.UI.Helper.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.WebERP.UI.Helper\obj\Debug\net8.0\refint\Bizsol.WebERP.UI.Helper.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.WebERP.UI.Helper\obj\Debug\net8.0\Bizsol.WebERP.UI.Helper.pdb
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.WebERP.UI.Helper\obj\Debug\net8.0\ref\Bizsol.WebERP.UI.Helper.dll

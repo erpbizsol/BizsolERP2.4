@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\buildMultiTargeting\Bizsol.ERP.UI.Common.Masters.props" />
+</Project>

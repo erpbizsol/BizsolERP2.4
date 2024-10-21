@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\Bizsol.WebERP.UI.Taxation.Transactions.props" />
+</Project>
