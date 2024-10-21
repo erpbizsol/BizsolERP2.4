@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\buildMultiTargeting\Bizsol.WebERP.UI.Store.Reports.props" />
-</Project>

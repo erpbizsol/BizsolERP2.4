@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BaseOutputPath>D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin</BaseOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Areas\Bizsol.WebERP.UI.Taxation.Test\Controllers\" />
+    <Folder Include="Areas\Bizsol.WebERP.UI.Taxation.Test\Data\" />
+    <Folder Include="Areas\Bizsol.WebERP.UI.Taxation.Test\Models\" />
+    <Folder Include="Areas\Bizsol.WebERP.UI.Taxation.Test\Views\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bizsol.WebERP.UI.Helper\Bizsol.WebERP.UI.Helper.csproj" />
+  </ItemGroup>
+
+</Project>
