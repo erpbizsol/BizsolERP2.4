@@ -1,6 +1,9 @@
-﻿################################################################################
+################################################################################
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
 *.vsidx
-/.vs/BizSolERP24_APPCore/v17/DocumentLayout.json
+*.bin
+*/FileContentIndex
+*/.vs
+/.vs
