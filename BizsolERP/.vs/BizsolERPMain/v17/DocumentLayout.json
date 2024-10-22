@@ -1,7 +1,36 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\",
-  "Documents": [],
+  "WorkspaceRootPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{F487E365-769C-4E33-99AD-37AF0F21FB93}|Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj|d:\\ruchi data\\bizsolwebprojects\\bizsolerp2.4\\bizsolerp\\bizsol.erp.ui.purchase.transactions\\bizsol.weberp.ui.purchase.transactions.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{F487E365-769C-4E33-99AD-37AF0F21FB93}|Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj|solutionrelative:bizsol.erp.ui.purchase.transactions\\bizsol.weberp.ui.purchase.transactions.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9F156D2B-B890-44AA-92AC-743E628C159A}|Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj|d:\\ruchi data\\bizsolwebprojects\\bizsolerp2.4\\bizsolerp\\bizsol.erp.ui.purchase.test\\bizsol.weberp.ui.purchase.test.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{9F156D2B-B890-44AA-92AC-743E628C159A}|Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj|solutionrelative:bizsol.erp.ui.purchase.test\\bizsol.weberp.ui.purchase.test.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{824F162E-296F-4AE7-AFED-FB9549DECEA5}|Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj|d:\\ruchi data\\bizsolwebprojects\\bizsolerp2.4\\bizsolerp\\bizsol.erp.ui.purchase.reports\\bizsol.weberp.ui.purchase.reports.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{824F162E-296F-4AE7-AFED-FB9549DECEA5}|Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj|solutionrelative:bizsol.erp.ui.purchase.reports\\bizsol.weberp.ui.purchase.reports.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{68CAE3CF-3B84-4807-95E9-5B72FE86A4FD}|Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj|d:\\ruchi data\\bizsolwebprojects\\bizsolerp2.4\\bizsolerp\\bizsol.erp.ui.production.reports\\bizsol.weberp.ui.production.reports.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{68CAE3CF-3B84-4807-95E9-5B72FE86A4FD}|Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj|solutionrelative:bizsol.erp.ui.production.reports\\bizsol.weberp.ui.production.reports.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4E8F014F-2716-4BED-AAC2-ECBC7F3EF5D4}|Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj|d:\\ruchi data\\bizsolwebprojects\\bizsolerp2.4\\bizsolerp\\bizsol.erp.ui.production.masters\\bizsol.weberp.ui.production.masters.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{4E8F014F-2716-4BED-AAC2-ECBC7F3EF5D4}|Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj|solutionrelative:bizsol.erp.ui.production.masters\\bizsol.weberp.ui.production.masters.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5DE86A79-76AA-4268-892C-9D310EEE35D5}|Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj|d:\\ruchi data\\bizsolwebprojects\\bizsolerp2.4\\bizsolerp\\bizsol.erp.ui.marketing.test\\bizsol.weberp.ui.marketing.test.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{5DE86A79-76AA-4268-892C-9D310EEE35D5}|Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj|solutionrelative:bizsol.erp.ui.marketing.test\\bizsol.weberp.ui.marketing.test.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C651AC41-5E12-42B3-907D-6634972CDCDE}|BizsolERPMain\\BizsolERPMain.csproj|d:\\ruchi data\\bizsolwebprojects\\bizsolerp2.4\\bizsolerp\\bizsolerpmain\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C651AC41-5E12-42B3-907D-6634972CDCDE}|BizsolERPMain\\BizsolERPMain.csproj|solutionrelative:bizsolerpmain\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,8 +38,86 @@
       "DocumentGroups": [
         {
           "DockedWidth": 223,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 0,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Bizsol.WebERP.UI.Purchase.Transactions",
+              "DocumentMoniker": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
+              "RelativeDocumentMoniker": "Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
+              "ToolTip": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
+              "RelativeToolTip": "Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2024-10-22T04:49:03.63Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Bizsol.WebERP.UI.Purchase.Test",
+              "DocumentMoniker": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj",
+              "RelativeDocumentMoniker": "Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj",
+              "ToolTip": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj",
+              "RelativeToolTip": "Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2024-10-22T04:48:41.425Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Bizsol.WebERP.UI.Purchase.Reports",
+              "DocumentMoniker": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj",
+              "RelativeDocumentMoniker": "Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj",
+              "ToolTip": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj",
+              "RelativeToolTip": "Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2024-10-22T04:48:19.61Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Bizsol.WebERP.UI.Production.Reports",
+              "DocumentMoniker": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj",
+              "RelativeDocumentMoniker": "Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj",
+              "ToolTip": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj",
+              "RelativeToolTip": "Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2024-10-22T04:46:41.459Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Bizsol.WebERP.UI.Production.Masters",
+              "DocumentMoniker": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj",
+              "RelativeDocumentMoniker": "Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj",
+              "ToolTip": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj",
+              "RelativeToolTip": "Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2024-10-22T04:46:28.072Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Bizsol.WebERP.UI.Marketing.Test",
+              "DocumentMoniker": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj",
+              "RelativeDocumentMoniker": "Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj",
+              "ToolTip": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj",
+              "RelativeToolTip": "Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2024-10-22T04:45:37.325Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Bookmark",
               "Name": "ST:128:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
@@ -50,6 +157,23 @@
             {
               "$type": "Bookmark",
               "Name": "ST:129:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "_Layout.cshtml",
+              "DocumentMoniker": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\BizsolERPMain\\Views\\Shared\\_Layout.cshtml",
+              "RelativeDocumentMoniker": "BizsolERPMain\\Views\\Shared\\_Layout.cshtml",
+              "ToolTip": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\BizsolERPMain\\Views\\Shared\\_Layout.cshtml",
+              "RelativeToolTip": "BizsolERPMain\\Views\\Shared\\_Layout.cshtml",
+              "ViewState": "AQIAAB4AAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2024-10-21T11:36:32.173Z",
+              "EditorCaption": ""
             }
           ]
         }

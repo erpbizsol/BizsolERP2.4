@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Bizsol.WebERP.UI.Helper\Bizsol.WebERP.UI.Helper.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.Shared\Bizsol.WebERP.UI.Shared.csproj" />
   </ItemGroup>
 
 </Project>
