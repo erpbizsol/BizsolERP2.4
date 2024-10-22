@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.10" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.6" />
   </ItemGroup>
 
@@ -19,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Bizsol.WebERP.UI.Helper\Bizsol.WebERP.UI.Helper.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.Shared\Bizsol.WebERP.UI.Shared.csproj" />
   </ItemGroup>
 
 </Project>

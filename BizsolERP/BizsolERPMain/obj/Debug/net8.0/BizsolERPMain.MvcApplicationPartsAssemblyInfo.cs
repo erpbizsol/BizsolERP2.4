@@ -40,6 +40,7 @@ using System.Reflection;
 [assembly: Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPartAttribute("Bizsol.WebERP.UI.Sales.Reports")]
 [assembly: Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPartAttribute("Bizsol.WebERP.UI.Sales.Test")]
 [assembly: Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPartAttribute("Bizsol.WebERP.UI.Sales.Transactions")]
+[assembly: Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPartAttribute("Bizsol.WebERP.UI.Shared")]
 [assembly: Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPartAttribute("Bizsol.WebERP.UI.Taxation.Masters")]
 [assembly: Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPartAttribute("Bizsol.WebERP.UI.Taxation.Reports")]
 [assembly: Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPartAttribute("Bizsol.WebERP.UI.Taxation.Test")]

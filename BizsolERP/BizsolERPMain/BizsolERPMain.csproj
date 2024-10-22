@@ -41,6 +41,7 @@
     <ProjectReference Include="..\Bizsol.ERP.UI.Taxation.Test\Bizsol.WebERP.UI.Taxation.Test.csproj" />
     <ProjectReference Include="..\Bizsol.ERP.UI.Taxation.Transactions\Bizsol.WebERP.UI.Taxation.Transactions.csproj" />
     <ProjectReference Include="..\Bizsol.ERP.UI.Tools\Bizsol.WebERP.UI.Tools.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.Shared\Bizsol.WebERP.UI.Shared.csproj" />
   </ItemGroup>
 
 </Project>
