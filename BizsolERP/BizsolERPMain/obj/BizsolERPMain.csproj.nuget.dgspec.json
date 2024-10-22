@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\BizsolERPMain.csproj": {}
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\BizsolERPMain\\BizsolERPMain.csproj": {}
   },
   "projects": {
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Masters\\Bizsol.WebERP.UI.Common.Masters.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\Bizsol.WebERP.UI.Common.Masters.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Masters\\Bizsol.WebERP.UI.Common.Masters.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\Bizsol.WebERP.UI.Common.Masters.csproj",
         "projectName": "Bizsol.WebERP.UI.Common.Masters",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Masters\\Bizsol.WebERP.UI.Common.Masters.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\Bizsol.WebERP.UI.Common.Masters.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Masters\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -28,8 +28,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -81,14 +81,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Reports\\Bizsol.WebERP.UI.Common.Reports.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Reports\\Bizsol.WebERP.UI.Common.Reports.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Reports\\Bizsol.WebERP.UI.Common.Reports.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Reports\\Bizsol.WebERP.UI.Common.Reports.csproj",
         "projectName": "Bizsol.WebERP.UI.Common.Reports",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Reports\\Bizsol.WebERP.UI.Common.Reports.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Reports\\Bizsol.WebERP.UI.Common.Reports.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Reports\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Reports\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -105,8 +105,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -158,14 +158,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj",
         "projectName": "Bizsol.WebERP.UI.Common.Test",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Test\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Test\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -182,8 +182,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -235,14 +235,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Transactions\\Bizsol.WebERP.UI.Common.Transactions.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Transactions\\Bizsol.WebERP.UI.Common.Transactions.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Transactions\\Bizsol.WebERP.UI.Common.Transactions.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Transactions\\Bizsol.WebERP.UI.Common.Transactions.csproj",
         "projectName": "Bizsol.WebERP.UI.Common.Transactions",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Transactions\\Bizsol.WebERP.UI.Common.Transactions.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Transactions\\Bizsol.WebERP.UI.Common.Transactions.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Transactions\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Transactions\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -259,8 +259,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -312,14 +312,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Masters\\Bizsol.WebERP.UI.Finance.Masters.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Masters\\Bizsol.WebERP.UI.Finance.Masters.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Masters\\Bizsol.WebERP.UI.Finance.Masters.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Masters\\Bizsol.WebERP.UI.Finance.Masters.csproj",
         "projectName": "Bizsol.WebERP.UI.Finance.Masters",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Masters\\Bizsol.WebERP.UI.Finance.Masters.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Masters\\Bizsol.WebERP.UI.Finance.Masters.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Masters\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Masters\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -336,8 +336,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -389,14 +389,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj",
         "projectName": "Bizsol.WebERP.UI.Finance.Reports",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Reports\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Reports\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -413,8 +413,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -466,14 +466,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Test\\Bizsol.WebERP.UI.Finance.Test.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Test\\Bizsol.WebERP.UI.Finance.Test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Test\\Bizsol.WebERP.UI.Finance.Test.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Test\\Bizsol.WebERP.UI.Finance.Test.csproj",
         "projectName": "Bizsol.WebERP.UI.Finance.Test",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Test\\Bizsol.WebERP.UI.Finance.Test.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Test\\Bizsol.WebERP.UI.Finance.Test.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Test\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Test\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -490,8 +490,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -543,14 +543,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj",
         "projectName": "Bizsol.WebERP.UI.Finance.Transactions",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Transactions\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Transactions\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -567,8 +567,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -620,14 +620,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Masters\\Bizsol.WebERP.UI.HR.Masters.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Masters\\Bizsol.WebERP.UI.HR.Masters.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Masters\\Bizsol.WebERP.UI.HR.Masters.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Masters\\Bizsol.WebERP.UI.HR.Masters.csproj",
         "projectName": "Bizsol.WebERP.UI.HR.Masters",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Masters\\Bizsol.WebERP.UI.HR.Masters.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Masters\\Bizsol.WebERP.UI.HR.Masters.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Masters\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Masters\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -644,8 +644,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -697,14 +697,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj",
         "projectName": "Bizsol.WebERP.UI.HR.Reports",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Reports\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Reports\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -721,8 +721,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -774,14 +774,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Test\\Bizsol.WebERP.UI.HR.Test.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Test\\Bizsol.WebERP.UI.HR.Test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Test\\Bizsol.WebERP.UI.HR.Test.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Test\\Bizsol.WebERP.UI.HR.Test.csproj",
         "projectName": "Bizsol.WebERP.UI.HR.Test",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Test\\Bizsol.WebERP.UI.HR.Test.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Test\\Bizsol.WebERP.UI.HR.Test.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Test\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Test\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -798,8 +798,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -851,14 +851,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Transactions\\Bizsol.WebERP.UI.HR.Transactions.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Transactions\\Bizsol.WebERP.UI.HR.Transactions.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Transactions\\Bizsol.WebERP.UI.HR.Transactions.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Transactions\\Bizsol.WebERP.UI.HR.Transactions.csproj",
         "projectName": "Bizsol.WebERP.UI.HR.Transactions",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Transactions\\Bizsol.WebERP.UI.HR.Transactions.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Transactions\\Bizsol.WebERP.UI.HR.Transactions.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Transactions\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Transactions\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -875,8 +875,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -896,6 +896,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -924,14 +928,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Masters\\Bizsol.WebERP.UI.Marketing.Masters.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Masters\\Bizsol.WebERP.UI.Marketing.Masters.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Masters\\Bizsol.WebERP.UI.Marketing.Masters.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Masters\\Bizsol.WebERP.UI.Marketing.Masters.csproj",
         "projectName": "Bizsol.WebERP.UI.Marketing.Masters",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Masters\\Bizsol.WebERP.UI.Marketing.Masters.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Masters\\Bizsol.WebERP.UI.Marketing.Masters.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Masters\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Masters\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -948,8 +952,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -969,6 +973,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -997,14 +1005,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Reports\\Bizsol.WebERP.UI.Marketing.Reports.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Reports\\Bizsol.WebERP.UI.Marketing.Reports.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Reports\\Bizsol.WebERP.UI.Marketing.Reports.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Reports\\Bizsol.WebERP.UI.Marketing.Reports.csproj",
         "projectName": "Bizsol.WebERP.UI.Marketing.Reports",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Reports\\Bizsol.WebERP.UI.Marketing.Reports.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Reports\\Bizsol.WebERP.UI.Marketing.Reports.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Reports\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Reports\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1021,8 +1029,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1042,6 +1050,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1070,14 +1082,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj",
         "projectName": "Bizsol.WebERP.UI.Marketing.Test",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Test\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Test\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1094,8 +1106,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1115,6 +1127,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1143,14 +1159,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Transactions\\Bizsol.WebERP.UI.Marketing.Transactions.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Transactions\\Bizsol.WebERP.UI.Marketing.Transactions.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Transactions\\Bizsol.WebERP.UI.Marketing.Transactions.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Transactions\\Bizsol.WebERP.UI.Marketing.Transactions.csproj",
         "projectName": "Bizsol.WebERP.UI.Marketing.Transactions",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Transactions\\Bizsol.WebERP.UI.Marketing.Transactions.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Transactions\\Bizsol.WebERP.UI.Marketing.Transactions.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Transactions\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Transactions\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1167,8 +1183,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1188,6 +1204,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1216,14 +1236,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.MIS.Reports\\Bizsol.WebERP.UI.MIS.Reports.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.MIS.Reports\\Bizsol.WebERP.UI.MIS.Reports.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.MIS.Reports\\Bizsol.WebERP.UI.MIS.Reports.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.MIS.Reports\\Bizsol.WebERP.UI.MIS.Reports.csproj",
         "projectName": "Bizsol.WebERP.UI.MIS.Reports",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.MIS.Reports\\Bizsol.WebERP.UI.MIS.Reports.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.MIS.Reports\\Bizsol.WebERP.UI.MIS.Reports.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.MIS.Reports\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.MIS.Reports\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1240,8 +1260,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1261,6 +1281,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1289,14 +1313,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj",
         "projectName": "Bizsol.WebERP.UI.Production.Masters",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Masters\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Masters\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1313,8 +1337,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1334,6 +1358,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1362,14 +1390,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj",
         "projectName": "Bizsol.WebERP.UI.Production.Reports",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Reports\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Reports\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1386,8 +1414,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1407,6 +1435,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1435,14 +1467,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Test\\Bizsol.WebERP.UI.Production.Test.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Test\\Bizsol.WebERP.UI.Production.Test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Test\\Bizsol.WebERP.UI.Production.Test.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Test\\Bizsol.WebERP.UI.Production.Test.csproj",
         "projectName": "Bizsol.WebERP.UI.Production.Test",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Test\\Bizsol.WebERP.UI.Production.Test.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Test\\Bizsol.WebERP.UI.Production.Test.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Test\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Test\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1459,8 +1491,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1480,6 +1512,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1508,14 +1544,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Transactions\\Bizsol.WebERP.UI.Production.Transactions.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Transactions\\Bizsol.WebERP.UI.Production.Transactions.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Transactions\\Bizsol.WebERP.UI.Production.Transactions.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Transactions\\Bizsol.WebERP.UI.Production.Transactions.csproj",
         "projectName": "Bizsol.WebERP.UI.Production.Transactions",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Transactions\\Bizsol.WebERP.UI.Production.Transactions.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Transactions\\Bizsol.WebERP.UI.Production.Transactions.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Transactions\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Transactions\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1532,8 +1568,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1553,6 +1589,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1581,14 +1621,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Masters\\Bizsol.WebERP.UI.Purchase.Masters.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Masters\\Bizsol.WebERP.UI.Purchase.Masters.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Masters\\Bizsol.WebERP.UI.Purchase.Masters.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Masters\\Bizsol.WebERP.UI.Purchase.Masters.csproj",
         "projectName": "Bizsol.WebERP.UI.Purchase.Masters",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Masters\\Bizsol.WebERP.UI.Purchase.Masters.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Masters\\Bizsol.WebERP.UI.Purchase.Masters.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Masters\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Masters\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1605,8 +1645,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1626,6 +1666,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1654,14 +1698,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj",
         "projectName": "Bizsol.WebERP.UI.Purchase.Reports",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Reports\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Reports\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1678,8 +1722,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1699,6 +1743,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1727,14 +1775,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj",
         "projectName": "Bizsol.WebERP.UI.Purchase.Test",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Test\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Test\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1751,8 +1799,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1772,6 +1820,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1800,14 +1852,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
         "projectName": "Bizsol.WebERP.UI.Purchase.Transactions",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Transactions\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1824,8 +1876,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1845,6 +1897,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1873,14 +1929,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Masters\\Bizsol.WebERP.UI.Sales.Masters.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Masters\\Bizsol.WebERP.UI.Sales.Masters.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Masters\\Bizsol.WebERP.UI.Sales.Masters.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Masters\\Bizsol.WebERP.UI.Sales.Masters.csproj",
         "projectName": "Bizsol.WebERP.UI.Sales.Masters",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Masters\\Bizsol.WebERP.UI.Sales.Masters.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Masters\\Bizsol.WebERP.UI.Sales.Masters.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Masters\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Masters\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1897,8 +1953,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1918,6 +1974,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -1946,14 +2006,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Reports\\Bizsol.WebERP.UI.Sales.Reports.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Reports\\Bizsol.WebERP.UI.Sales.Reports.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Reports\\Bizsol.WebERP.UI.Sales.Reports.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Reports\\Bizsol.WebERP.UI.Sales.Reports.csproj",
         "projectName": "Bizsol.WebERP.UI.Sales.Reports",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Reports\\Bizsol.WebERP.UI.Sales.Reports.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Reports\\Bizsol.WebERP.UI.Sales.Reports.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Reports\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Reports\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1970,8 +2030,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -1991,6 +2051,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -2019,14 +2083,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Test\\Bizsol.WebERP.UI.Sales.Test.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Test\\Bizsol.WebERP.UI.Sales.Test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Test\\Bizsol.WebERP.UI.Sales.Test.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Test\\Bizsol.WebERP.UI.Sales.Test.csproj",
         "projectName": "Bizsol.WebERP.UI.Sales.Test",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Test\\Bizsol.WebERP.UI.Sales.Test.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Test\\Bizsol.WebERP.UI.Sales.Test.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Test\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Test\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -2043,8 +2107,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -2064,6 +2128,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -2092,14 +2160,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Transactions\\Bizsol.WebERP.UI.Sales.Transactions.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Transactions\\Bizsol.WebERP.UI.Sales.Transactions.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Transactions\\Bizsol.WebERP.UI.Sales.Transactions.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Transactions\\Bizsol.WebERP.UI.Sales.Transactions.csproj",
         "projectName": "Bizsol.WebERP.UI.Sales.Transactions",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Transactions\\Bizsol.WebERP.UI.Sales.Transactions.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Transactions\\Bizsol.WebERP.UI.Sales.Transactions.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Transactions\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Transactions\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -2116,8 +2184,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -2137,6 +2205,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -2165,14 +2237,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Masters\\Bizsol.WebERP.UI.Taxation.Masters.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Masters\\Bizsol.WebERP.UI.Taxation.Masters.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Masters\\Bizsol.WebERP.UI.Taxation.Masters.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Masters\\Bizsol.WebERP.UI.Taxation.Masters.csproj",
         "projectName": "Bizsol.WebERP.UI.Taxation.Masters",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Masters\\Bizsol.WebERP.UI.Taxation.Masters.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Masters\\Bizsol.WebERP.UI.Taxation.Masters.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Masters\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Masters\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -2189,8 +2261,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -2210,6 +2282,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -2238,14 +2314,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Reports\\Bizsol.WebERP.UI.Taxation.Reports.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Reports\\Bizsol.WebERP.UI.Taxation.Reports.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Reports\\Bizsol.WebERP.UI.Taxation.Reports.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Reports\\Bizsol.WebERP.UI.Taxation.Reports.csproj",
         "projectName": "Bizsol.WebERP.UI.Taxation.Reports",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Reports\\Bizsol.WebERP.UI.Taxation.Reports.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Reports\\Bizsol.WebERP.UI.Taxation.Reports.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Reports\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Reports\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -2262,8 +2338,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -2283,6 +2359,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -2311,14 +2391,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Test\\Bizsol.WebERP.UI.Taxation.Test.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Test\\Bizsol.WebERP.UI.Taxation.Test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Test\\Bizsol.WebERP.UI.Taxation.Test.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Test\\Bizsol.WebERP.UI.Taxation.Test.csproj",
         "projectName": "Bizsol.WebERP.UI.Taxation.Test",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Test\\Bizsol.WebERP.UI.Taxation.Test.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Test\\Bizsol.WebERP.UI.Taxation.Test.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Test\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Test\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -2335,8 +2415,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -2356,6 +2436,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -2384,14 +2468,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Transactions\\Bizsol.WebERP.UI.Taxation.Transactions.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Transactions\\Bizsol.WebERP.UI.Taxation.Transactions.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Transactions\\Bizsol.WebERP.UI.Taxation.Transactions.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Transactions\\Bizsol.WebERP.UI.Taxation.Transactions.csproj",
         "projectName": "Bizsol.WebERP.UI.Taxation.Transactions",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Transactions\\Bizsol.WebERP.UI.Taxation.Transactions.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Transactions\\Bizsol.WebERP.UI.Taxation.Transactions.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Transactions\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Transactions\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -2408,8 +2492,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -2429,6 +2513,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -2457,14 +2545,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Tools\\Bizsol.WebERP.UI.Tools.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Tools\\Bizsol.WebERP.UI.Tools.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Tools\\Bizsol.WebERP.UI.Tools.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Tools\\Bizsol.WebERP.UI.Tools.csproj",
         "projectName": "Bizsol.WebERP.UI.Tools",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Tools\\Bizsol.WebERP.UI.Tools.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Tools\\Bizsol.WebERP.UI.Tools.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Tools\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Tools\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -2481,8 +2569,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -2502,6 +2590,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.6, )"
@@ -2530,14 +2622,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj",
-        "projectName": "Bizsol.WebERP.UI.Helper",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj",
+        "projectName": "Bizsol.WebERP.UI.Shared",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -2570,6 +2662,12 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
@@ -2582,6 +2680,9 @@
           "assetTargetFallback": true,
           "warn": true,
           "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
@@ -2590,14 +2691,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\BizsolERPMain.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\BizsolERPMain\\BizsolERPMain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\BizsolERPMain.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\BizsolERPMain\\BizsolERPMain.csproj",
         "projectName": "BizsolERPMain",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\BizsolERPMain.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\BizsolERPMain\\BizsolERPMain.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\BizsolERPMain\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -2614,107 +2715,110 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Masters\\Bizsol.WebERP.UI.Common.Masters.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Masters\\Bizsol.WebERP.UI.Common.Masters.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\Bizsol.WebERP.UI.Common.Masters.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\Bizsol.WebERP.UI.Common.Masters.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Reports\\Bizsol.WebERP.UI.Common.Reports.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Reports\\Bizsol.WebERP.UI.Common.Reports.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Reports\\Bizsol.WebERP.UI.Common.Reports.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Reports\\Bizsol.WebERP.UI.Common.Reports.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Transactions\\Bizsol.WebERP.UI.Common.Transactions.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Transactions\\Bizsol.WebERP.UI.Common.Transactions.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Transactions\\Bizsol.WebERP.UI.Common.Transactions.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Transactions\\Bizsol.WebERP.UI.Common.Transactions.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Masters\\Bizsol.WebERP.UI.Finance.Masters.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Masters\\Bizsol.WebERP.UI.Finance.Masters.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Masters\\Bizsol.WebERP.UI.Finance.Masters.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Masters\\Bizsol.WebERP.UI.Finance.Masters.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Test\\Bizsol.WebERP.UI.Finance.Test.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Test\\Bizsol.WebERP.UI.Finance.Test.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Test\\Bizsol.WebERP.UI.Finance.Test.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Test\\Bizsol.WebERP.UI.Finance.Test.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Masters\\Bizsol.WebERP.UI.HR.Masters.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Masters\\Bizsol.WebERP.UI.HR.Masters.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Masters\\Bizsol.WebERP.UI.HR.Masters.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Masters\\Bizsol.WebERP.UI.HR.Masters.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Test\\Bizsol.WebERP.UI.HR.Test.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Test\\Bizsol.WebERP.UI.HR.Test.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Test\\Bizsol.WebERP.UI.HR.Test.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Test\\Bizsol.WebERP.UI.HR.Test.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Transactions\\Bizsol.WebERP.UI.HR.Transactions.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Transactions\\Bizsol.WebERP.UI.HR.Transactions.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Transactions\\Bizsol.WebERP.UI.HR.Transactions.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Transactions\\Bizsol.WebERP.UI.HR.Transactions.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Masters\\Bizsol.WebERP.UI.Marketing.Masters.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Masters\\Bizsol.WebERP.UI.Marketing.Masters.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Masters\\Bizsol.WebERP.UI.Marketing.Masters.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Masters\\Bizsol.WebERP.UI.Marketing.Masters.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Reports\\Bizsol.WebERP.UI.Marketing.Reports.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Reports\\Bizsol.WebERP.UI.Marketing.Reports.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Reports\\Bizsol.WebERP.UI.Marketing.Reports.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Reports\\Bizsol.WebERP.UI.Marketing.Reports.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Test\\Bizsol.WebERP.UI.Marketing.Test.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Transactions\\Bizsol.WebERP.UI.Marketing.Transactions.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Marketing.Transactions\\Bizsol.WebERP.UI.Marketing.Transactions.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Transactions\\Bizsol.WebERP.UI.Marketing.Transactions.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Marketing.Transactions\\Bizsol.WebERP.UI.Marketing.Transactions.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.MIS.Reports\\Bizsol.WebERP.UI.MIS.Reports.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.MIS.Reports\\Bizsol.WebERP.UI.MIS.Reports.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.MIS.Reports\\Bizsol.WebERP.UI.MIS.Reports.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.MIS.Reports\\Bizsol.WebERP.UI.MIS.Reports.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Masters\\Bizsol.WebERP.UI.Production.Masters.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Reports\\Bizsol.WebERP.UI.Production.Reports.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Test\\Bizsol.WebERP.UI.Production.Test.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Test\\Bizsol.WebERP.UI.Production.Test.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Test\\Bizsol.WebERP.UI.Production.Test.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Test\\Bizsol.WebERP.UI.Production.Test.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Transactions\\Bizsol.WebERP.UI.Production.Transactions.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Production.Transactions\\Bizsol.WebERP.UI.Production.Transactions.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Transactions\\Bizsol.WebERP.UI.Production.Transactions.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Production.Transactions\\Bizsol.WebERP.UI.Production.Transactions.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Masters\\Bizsol.WebERP.UI.Purchase.Masters.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Masters\\Bizsol.WebERP.UI.Purchase.Masters.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Masters\\Bizsol.WebERP.UI.Purchase.Masters.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Masters\\Bizsol.WebERP.UI.Purchase.Masters.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Reports\\Bizsol.WebERP.UI.Purchase.Reports.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Test\\Bizsol.WebERP.UI.Purchase.Test.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Masters\\Bizsol.WebERP.UI.Sales.Masters.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Masters\\Bizsol.WebERP.UI.Sales.Masters.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Masters\\Bizsol.WebERP.UI.Sales.Masters.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Masters\\Bizsol.WebERP.UI.Sales.Masters.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Reports\\Bizsol.WebERP.UI.Sales.Reports.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Reports\\Bizsol.WebERP.UI.Sales.Reports.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Reports\\Bizsol.WebERP.UI.Sales.Reports.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Reports\\Bizsol.WebERP.UI.Sales.Reports.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Test\\Bizsol.WebERP.UI.Sales.Test.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Test\\Bizsol.WebERP.UI.Sales.Test.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Test\\Bizsol.WebERP.UI.Sales.Test.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Test\\Bizsol.WebERP.UI.Sales.Test.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Transactions\\Bizsol.WebERP.UI.Sales.Transactions.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Sales.Transactions\\Bizsol.WebERP.UI.Sales.Transactions.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Transactions\\Bizsol.WebERP.UI.Sales.Transactions.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Sales.Transactions\\Bizsol.WebERP.UI.Sales.Transactions.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Masters\\Bizsol.WebERP.UI.Taxation.Masters.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Masters\\Bizsol.WebERP.UI.Taxation.Masters.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Masters\\Bizsol.WebERP.UI.Taxation.Masters.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Masters\\Bizsol.WebERP.UI.Taxation.Masters.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Reports\\Bizsol.WebERP.UI.Taxation.Reports.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Reports\\Bizsol.WebERP.UI.Taxation.Reports.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Reports\\Bizsol.WebERP.UI.Taxation.Reports.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Reports\\Bizsol.WebERP.UI.Taxation.Reports.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Test\\Bizsol.WebERP.UI.Taxation.Test.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Test\\Bizsol.WebERP.UI.Taxation.Test.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Test\\Bizsol.WebERP.UI.Taxation.Test.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Test\\Bizsol.WebERP.UI.Taxation.Test.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Transactions\\Bizsol.WebERP.UI.Taxation.Transactions.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Taxation.Transactions\\Bizsol.WebERP.UI.Taxation.Transactions.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Transactions\\Bizsol.WebERP.UI.Taxation.Transactions.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Taxation.Transactions\\Bizsol.WebERP.UI.Taxation.Transactions.csproj"
               },
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Tools\\Bizsol.WebERP.UI.Tools.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Tools\\Bizsol.WebERP.UI.Tools.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Tools\\Bizsol.WebERP.UI.Tools.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Tools\\Bizsol.WebERP.UI.Tools.csproj"
+              },
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }

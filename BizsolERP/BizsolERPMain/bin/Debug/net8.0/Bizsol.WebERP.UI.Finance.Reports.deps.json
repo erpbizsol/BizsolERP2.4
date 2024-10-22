@@ -36,7 +36,7 @@
     ".NETCoreApp,Version=v8.0": {
       "Bizsol.WebERP.UI.Finance.Reports/1.0.0": {
         "dependencies": {
-          "Bizsol.WebERP.UI.Helper": "1.0.0",
+          "Bizsol.WebERP.UI.Shared": "1.0.0",
           "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": "8.0.10",
           "Microsoft.VisualStudio.Web.CodeGeneration.Design": "8.0.6",
           "Microsoft.AspNetCore.Antiforgery": "8.0.0.0",
@@ -2014,12 +2014,15 @@
           "lib/net7.0/System.Windows.Extensions.dll": {}
         }
       },
-      "Bizsol.WebERP.UI.Helper/1.0.0": {
+      "Bizsol.WebERP.UI.Shared/1.0.0": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": "8.0.10"
+        },
         "runtime": {
-          "Bizsol.WebERP.UI.Helper.dll": {}
+          "Bizsol.WebERP.UI.Shared.dll": {}
         },
         "compile": {
-          "Bizsol.WebERP.UI.Helper.dll": {}
+          "Bizsol.WebERP.UI.Shared.dll": {}
         }
       },
       "Microsoft.AspNetCore.Antiforgery/8.0.0.0": {
@@ -4644,7 +4647,7 @@
       "path": "system.windows.extensions/7.0.0",
       "hashPath": "system.windows.extensions.7.0.0.nupkg.sha512"
     },
-    "Bizsol.WebERP.UI.Helper/1.0.0": {
+    "Bizsol.WebERP.UI.Shared/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

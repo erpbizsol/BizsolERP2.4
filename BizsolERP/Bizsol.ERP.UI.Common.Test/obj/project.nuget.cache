@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "9Z6FzLRUsfmYepS70RWYyIwYLhWtWNxkfHP36aR+k57gd0/61O6b5hrSi1igR0gNp9G1ZvKD2NprTErOM0ZqOA==",
+  "dgSpecHash": "ehMxY3lrkMNBOYzLzp2DfXghqrHTOG2q4w050C33axHE0XPF4AHER1o7i4ZeVf+AwiHEHR8PTzzC6XpjAMsAjw==",
   "success": true,
-  "projectFilePath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj",
+  "projectFilePath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Common.Test\\Bizsol.WebERP.UI.Common.Test.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\vipul\\.nuget\\packages\\humanizer\\2.14.1\\humanizer.2.14.1.nupkg.sha512",
     "C:\\Users\\vipul\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",

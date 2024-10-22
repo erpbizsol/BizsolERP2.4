@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj": {}
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj": {}
   },
   "projects": {
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj",
         "projectName": "Bizsol.WebERP.UI.HR.Reports",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Reports\\Bizsol.WebERP.UI.HR.Reports.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.HR.Reports\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.HR.Reports\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -28,8 +28,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+              "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -81,14 +81,14 @@
         }
       }
     },
-    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
+    "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj",
-        "projectName": "Bizsol.WebERP.UI.Helper",
-        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj",
+        "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj",
+        "projectName": "Bizsol.WebERP.UI.Shared",
+        "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj",
         "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\obj\\",
+        "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -121,6 +121,12 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
@@ -133,6 +139,9 @@
           "assetTargetFallback": true,
           "warn": true,
           "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
