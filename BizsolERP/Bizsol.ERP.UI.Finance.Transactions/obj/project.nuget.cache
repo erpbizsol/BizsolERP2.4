@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "cFJa2bYIHBoJVK9lzqf7tiDhV4kSPmw3VOsv/bxMxe+pQyuH+iEEyydI4YZz50vSc0TkDx7OMcLjQzCJI6zwCQ==",
+  "dgSpecHash": "B20phhYWdJLz6i0R0QVdLfM9hGNB0YXgzx4/5zA6V6lh7K3h1OTosOtB7/ZahyTbVvy84mI0hTZ4p5vRDhFeAw==",
   "success": true,
-  "projectFilePath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj",
+  "projectFilePath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\vipul\\.nuget\\packages\\humanizer\\2.14.1\\humanizer.2.14.1.nupkg.sha512",
     "C:\\Users\\vipul\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",

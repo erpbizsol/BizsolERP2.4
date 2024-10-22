@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "D+YRO2oRn9tM0KCi8fX0FA8yZOZCMtFQT/2+FSzHGEUYay5d8GYLkIYGRYYDghJHJhNjjnO7vsUJZJwWeZYMLw==",
+  "dgSpecHash": "QUZdpifSpjBULorW7E9IMgLZWQbo8o90Fgy8jlMwS5vagrz+hgp59E3Zy9aSHSFZYqtOBHaaetYWWnvHeDlULQ==",
   "success": true,
-  "projectFilePath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.MIS.Reports\\Bizsol.WebERP.UI.MIS.Reports.csproj",
+  "projectFilePath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.MIS.Reports\\Bizsol.WebERP.UI.MIS.Reports.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\vipul\\.nuget\\packages\\humanizer\\2.14.1\\humanizer.2.14.1.nupkg.sha512",
     "C:\\Users\\vipul\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
@@ -54,6 +54,8 @@
     "C:\\Users\\vipul\\.nuget\\packages\\humanizer.core.zh-cn\\2.14.1\\humanizer.core.zh-cn.2.14.1.nupkg.sha512",
     "C:\\Users\\vipul\\.nuget\\packages\\humanizer.core.zh-hans\\2.14.1\\humanizer.core.zh-hans.2.14.1.nupkg.sha512",
     "C:\\Users\\vipul\\.nuget\\packages\\humanizer.core.zh-hant\\2.14.1\\humanizer.core.zh-hant.2.14.1.nupkg.sha512",
+    "C:\\Users\\vipul\\.nuget\\packages\\microsoft.aspnetcore.mvc.razor.extensions\\6.0.0\\microsoft.aspnetcore.mvc.razor.extensions.6.0.0.nupkg.sha512",
+    "C:\\Users\\vipul\\.nuget\\packages\\microsoft.aspnetcore.mvc.razor.runtimecompilation\\8.0.10\\microsoft.aspnetcore.mvc.razor.runtimecompilation.8.0.10.nupkg.sha512",
     "C:\\Users\\vipul\\.nuget\\packages\\microsoft.aspnetcore.razor.language\\6.0.24\\microsoft.aspnetcore.razor.language.6.0.24.nupkg.sha512",
     "C:\\Users\\vipul\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\7.0.0\\microsoft.bcl.asyncinterfaces.7.0.0.nupkg.sha512",
     "C:\\Users\\vipul\\.nuget\\packages\\microsoft.build\\17.8.3\\microsoft.build.17.8.3.nupkg.sha512",

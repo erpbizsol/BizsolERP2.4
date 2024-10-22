@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "nKOutcbXehIvV+rrrarUvRMCnroiWHAo0LFDJRp+mNG35G6kbYBkZJqjNegXd839p7h96LqYRN7bnfz1v0EBSg==",
+  "dgSpecHash": "vJhuXN1CTziCgZx89cFEtz4q5HykRH4I+Fn07C0fmbpqfh3MagyWHjEnLFUeIcYZI2aqCb2HKLnoJMWf64Vttg==",
   "success": true,
-  "projectFilePath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj",
+  "projectFilePath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Reports\\Bizsol.WebERP.UI.Finance.Reports.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\vipul\\.nuget\\packages\\humanizer\\2.14.1\\humanizer.2.14.1.nupkg.sha512",
     "C:\\Users\\vipul\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",

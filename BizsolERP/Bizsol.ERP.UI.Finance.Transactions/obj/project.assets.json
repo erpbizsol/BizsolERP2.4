@@ -2029,15 +2029,21 @@
           }
         }
       },
-      "Bizsol.WebERP.UI.Helper/1.0.0": {
+      "Bizsol.WebERP.UI.Shared/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
+        "dependencies": {
+          "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": "8.0.10"
+        },
         "compile": {
-          "bin/placeholder/Bizsol.WebERP.UI.Helper.dll": {}
+          "bin/placeholder/Bizsol.WebERP.UI.Shared.dll": {}
         },
         "runtime": {
-          "bin/placeholder/Bizsol.WebERP.UI.Helper.dll": {}
-        }
+          "bin/placeholder/Bizsol.WebERP.UI.Shared.dll": {}
+        },
+        "frameworkReferences": [
+          "Microsoft.AspNetCore.App"
+        ]
       }
     }
   },
@@ -5637,15 +5643,15 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "Bizsol.WebERP.UI.Helper/1.0.0": {
+    "Bizsol.WebERP.UI.Shared/1.0.0": {
       "type": "project",
-      "path": "../Bizsol.WebERP.UI.Helper/Bizsol.WebERP.UI.Helper.csproj",
-      "msbuildProject": "../Bizsol.WebERP.UI.Helper/Bizsol.WebERP.UI.Helper.csproj"
+      "path": "../Bizsol.WebERP.UI.Shared/Bizsol.WebERP.UI.Shared.csproj",
+      "msbuildProject": "../Bizsol.WebERP.UI.Shared/Bizsol.WebERP.UI.Shared.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net8.0": [
-      "Bizsol.WebERP.UI.Helper >= 1.0.0",
+      "Bizsol.WebERP.UI.Shared >= 1.0.0",
       "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation >= 8.0.10",
       "Microsoft.VisualStudio.Web.CodeGeneration.Design >= 8.0.6"
     ]
@@ -5656,11 +5662,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj",
+      "projectUniqueName": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj",
       "projectName": "Bizsol.WebERP.UI.Finance.Transactions",
-      "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj",
+      "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Transactions\\Bizsol.WebERP.UI.Finance.Transactions.csproj",
       "packagesPath": "C:\\Users\\vipul\\.nuget\\packages\\",
-      "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.ERP.UI.Finance.Transactions\\obj\\",
+      "outputPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.ERP.UI.Finance.Transactions\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\vipul\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -5677,8 +5683,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj": {
-              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\Bizsol.WebERP.UI.Helper\\Bizsol.WebERP.UI.Helper.csproj"
+            "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+              "projectPath": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
             }
           }
         }
