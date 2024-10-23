@@ -15,7 +15,7 @@ namespace BizsolERPMain.Controllers
 
         public IActionResult Index()
         {
-            return View();
+            return View();/// mamisjsjklaisks sajssisj 
         }
 
         public IActionResult Privacy()
