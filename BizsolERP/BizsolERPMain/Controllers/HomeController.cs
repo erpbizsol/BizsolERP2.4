@@ -10,7 +10,7 @@ namespace BizsolERPMain.Controllers
 
         public HomeController(ILogger<HomeController> logger)
         {
-            _logger = logger;
+            _logger = logger;/////asas
         }
 
         public IActionResult Index()
