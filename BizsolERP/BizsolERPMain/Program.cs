@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc;
+
 namespace BizsolERPMain
 {
     public class Program
@@ -8,6 +10,17 @@ namespace BizsolERPMain
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+            builder.Services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout
+            });
+
+            builder.Services.AddControllersWithViews().AddMvcOptions(options =>
+                options.Filters.Add(
+                    new ResponseCacheAttribute
+                    {
+                        NoStore = true
+                    }));
 
             var app = builder.Build();
 
@@ -21,7 +34,7 @@ namespace BizsolERPMain
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-
+            app.UseSession();
             app.UseRouting();
 
             app.UseAuthorization();
