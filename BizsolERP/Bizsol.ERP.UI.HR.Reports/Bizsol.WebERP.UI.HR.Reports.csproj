@@ -13,10 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Areas\Bizsol.WebERP.UI.HR.Reports\Controllers\" />
-    <Folder Include="Areas\Bizsol.WebERP.UI.HR.Reports\Data\" />
-    <Folder Include="Areas\Bizsol.WebERP.UI.HR.Reports\Models\" />
-    <Folder Include="Areas\Bizsol.WebERP.UI.HR.Reports\Views\" />
+    <Folder Include="Areas\HRReports\Controllers\" />
+    <Folder Include="Areas\HRReports\Data\" />
+    <Folder Include="Areas\HRReports\Models\" />
+    <Folder Include="Areas\HRReports\Views\" />
   </ItemGroup>
 
   <ItemGroup>
