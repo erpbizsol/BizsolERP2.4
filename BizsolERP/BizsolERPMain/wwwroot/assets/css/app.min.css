@@ -27,7 +27,8 @@
     align-items: center;
     margin: 0 auto;
     height: 51px;
-    padding: 0 1.5rem 0 0
+    padding: 0 1.5rem 0 0;
+    background-color: #3f51b5;
 }
 
 .navbar-header .dropdown .show.header-item {
@@ -38,10 +39,10 @@
     padding: 0 1.5rem;
     width: 250px;
     background: var(--bs-sidebar-bg);
-    border-right: 1px solid var(--bs-sidebar-border-color);
-    -webkit-box-shadow: 0 2px 2px var(--bs-sidebar-bg);
-    box-shadow: 0 2px 2px var(--bs-sidebar-bg);
-    height:59px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+    background-color: #3f51b5;
+    height: 61px;
+    color: #fff;
 }
 
 .logo {
@@ -51,6 +52,18 @@
 
 .logo .logo-sm {
     display: none
+}
+
+.svg {
+    color: #fff;
+}
+
+.btn {
+    color: #fff !important;
+}
+
+.bg-light-subtle {
+    background-color: rgb(63 81 181) !important;
 }
 
 .logo-txt {
@@ -76,16 +89,17 @@ body:not([data-sidebar-size=sm]) #vertical-menu-btn {
 }
 
 .app-search {
-    padding: calc(30px / 2) 0;
+    padding: calc(10px / 2) 0;
     position: relative
 }
 
 .app-search .form-control {
     border: var(--bs-search-width) solid var(--bs-search-border-color);
-    height: 40px;
-    padding-left: 17px;
-    padding-right: 50px;
-    background-color: var(--bs-topbar-search-bg);
+    height: 32px;
+   /* padding-left: 17px;
+    padding-right: 50px;*/
+/*    background-color: var(--bs-topbar-search-bg);
+*/    background-color: #fafdf4;
     -webkit-box-shadow: none;
     box-shadow: none
 }
@@ -93,9 +107,9 @@ body:not([data-sidebar-size=sm]) #vertical-menu-btn {
 .app-search .btn {
     position: absolute;
     right: 3px;
-    top: 3px;
-    height: 34px;
-    padding: 0 10px
+    top: 2px;
+    height: 27px;
+    padding: 0px 6px;
 }
 
 .layout-mode-light {
@@ -146,7 +160,7 @@ body[data-bs-theme=dark] .layout-mode-light {
 }
 
 .header-item {
-    height: 53px;
+    height: 51px;
     -webkit-box-shadow: none !important;
     box-shadow: none !important;
     color: var(--bs-header-item-color);
@@ -502,7 +516,7 @@ body[data-layout=horizontal] .footer {
 .vertical-menu {
     width: 250px;
     z-index: 1001;
-    background: var(--bs-sidebar-bg);
+    background-color: #e5e6ee;
     bottom: 0;
     margin-top: 0;
     position: fixed;
@@ -521,10 +535,10 @@ body[data-layout=horizontal] .footer {
     margin-top: 70px
 }
 
-#sidebar-menu {
-    padding: 10px 0 30px 0
+/*#sidebar-menu {
+    padding: 10px 9px;
 }
-
+*/
 #sidebar-menu .mm-active>.has-arrow:after {
     -webkit-transform: rotate(90deg);
     transform: rotate(90deg)
@@ -569,12 +583,12 @@ body[data-layout=horizontal] .footer {
 }
 
 #sidebar-menu ul li a svg {
-    height: 16px;
-    width: 16px;
+    height: 14px;
+    width: 14px;
     color: var(--bs-sidebar-menu-item-icon-color);
     fill: var(--bs-sidebar-menu-item-icon-effact-color);
-    margin-right: 10px;
-    margin-top: -3px
+/*    margin-right: 10px;
+*/    margin-top: -3px
 }
 
 #sidebar-menu ul li a:hover {
@@ -599,7 +613,7 @@ body[data-layout=horizontal] .footer {
 }
 
 #sidebar-menu ul li ul.sub-menu li a {
-    padding: .4rem 1.5rem .4rem 3.3rem;
+    padding: .4rem 1.5rem .4rem 3rem;
     font-size: .85rem;
     color: var(--bs-sidebar-menu-sub-item-color)
 }
@@ -613,9 +627,26 @@ body[data-layout=horizontal] .footer {
 }
 
 #sidebar-menu ul li ul.sub-menu li ul.sub-menu li a {
-    padding: .4rem 1.5rem .4rem 4.5rem;
+    padding: .4rem 1.5rem .4rem 3.5rem;
     font-size: 13px
 }
+
+#sidebar-menu .iconBg {
+    background: #607d8b;
+    padding: 4px 5px;
+    border-radius: 5px;
+    height: 31px;
+    width: 31px;
+    margin-right: 10px;
+}
+
+#sidebar-menu .side-menu-icon {
+    color: #fff;
+}
+/*#sidebar-menu .metismenu {
+    position: relative;
+    right: 0.6rem;
+}*/
 
 .menu-title {
     padding: 12px 20px !important;
@@ -757,7 +788,12 @@ body[data-sidebar-size=sm] .vertical-menu #sidebar-menu>ul>li>a svg {
 
 body[data-sidebar-size=sm] .vertical-menu #sidebar-menu>ul>li>a span {
     display: none;
-    padding-left: 25px
+    padding-left: 25px;
+}
+
+body[data-sidebar-size=sm] .vertical-menu #sidebar-menu>ul>li>a .iconBg {
+    display: block;
+    padding-left: 0;
 }
 
 body[data-sidebar-size=sm] .vertical-menu #sidebar-menu>ul>li>a.has-arrow:after {
