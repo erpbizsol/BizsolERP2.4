@@ -13,10 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Areas\Bizsol.WebERP.UI.Common.Masters\Controllers\" />
-    <Folder Include="Areas\Bizsol.WebERP.UI.Common.Masters\Data\" />
-    <Folder Include="Areas\Bizsol.WebERP.UI.Common.Masters\Models\" />
-    <Folder Include="Areas\Bizsol.WebERP.UI.Common.Masters\Views\" />
+    <Folder Include="Areas\CommonMasters\Controllers\" />
+    <Folder Include="Areas\CommonMasters\Data\" />
+    <Folder Include="Areas\CommonMasters\Models\" />
+    <Folder Include="Areas\CommonMasters\Views\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -13,10 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Areas\Bizsol.WebERP.UI.Purchase.Transactions\Controllers\" />
-    <Folder Include="Areas\Bizsol.WebERP.UI.Purchase.Transactions\Data\" />
-    <Folder Include="Areas\Bizsol.WebERP.UI.Purchase.Transactions\Models\" />
-    <Folder Include="Areas\Bizsol.WebERP.UI.Purchase.Transactions\Views\" />
+    <Folder Include="Areas\PurchaseTransactions\Controllers\" />
+    <Folder Include="Areas\PurchaseTransactions\Data\" />
+    <Folder Include="Areas\PurchaseTransactions\Models\" />
+    <Folder Include="Areas\PurchaseTransactions\Views\" />
   </ItemGroup>
 
   <ItemGroup>
