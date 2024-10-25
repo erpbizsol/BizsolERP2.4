@@ -29,13 +29,13 @@ function bindMenu(response) {
             var hasArrow = childMenuHtml ? 'has-arrow' : ''; // Check if item has submenus
             menuHtml += '<li>';
             menuHtml += '<a href="javascript:void(0);" class="menu-toggle ' + hasArrow + '">';
-            menuHtml += '<i data-feather="grid"></i>';
+            menuHtml += '<span class="iconBg"><i class="side-menu-icon" data-feather="grid"></i></span>';
             menuHtml += '<span>' + item.ModuleDesp + '</span>';
             // Add arrow if submenu exists (always point right initially)
-            menuHtml += childMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';
+            //menuHtml += childMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';
             menuHtml += '</a>';
             if (childMenuHtml) {
-                menuHtml += '<ul class="submenu" style="display: none;">' + childMenuHtml + '</ul>'; // Submenus hidden by default
+                menuHtml += '<ul class="sub-menu" style="display: none;">' + childMenuHtml + '</ul>'; // Submenus hidden by default
             }
             menuHtml += '</li>';
         }
@@ -57,8 +57,8 @@ function bindMenu(response) {
         }
 
         e.preventDefault(); // Prevent default action for parent items with submenus
-        parentLi.toggleClass('active'); // Toggle active state for open/close
-        parentLi.children('ul.submenu').slideToggle(); // Toggle the submenu visibility
+        parentLi.toggleClass('mm-active'); // Toggle active state for open/close
+        parentLi.children('ul.sub-menu').slideToggle(); // Toggle the submenu visibility
 
         // Change the arrow icon dynamically
         var arrowIcon = $(this).find('.arrow-icon');
@@ -83,11 +83,11 @@ function getChildMenu(response, masterCode) {
             childMenuHtml += '<li>';
             childMenuHtml += '<a href="https://www.bing.com/ck/a?!&&p=01b45133efb6c4ce2c40ec4e1fe981d4ccb211f976546c2fca74fb0de9aedd79JmltdHM9MTcyOTU1NTIwMA&ptn=3&ver=2&hsh=4&fclid=191b3ea8-f84c-672d-3129-2a1cf94a6631&psq=facebook&u=a1aHR0cHM6Ly93d3cuZmFjZWJvb2suY29tLw&ntb=1" class="menu-toggle ' + hasArrow + '" target="_blank">'; // Ensure you have a 'Link' property in the response
             childMenuHtml += '<span>' + item.ModuleDesp + '</span>';
-            // Add arrow if submenu exists (always point right initially)
-            childMenuHtml += subChildMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';
+            // Add arrow if submenu exists (always point right initially) 
+            //childMenuHtml += subChildMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';
             childMenuHtml += '</a>';
             if (subChildMenuHtml) {
-                childMenuHtml += '<ul class="submenu" style="display: none;">' + subChildMenuHtml + '</ul>'; // Wrap child items and hide them
+                childMenuHtml += '<ul class="sub-menu" style="display: none;">' + subChildMenuHtml + '</ul>'; // Wrap child items and hide them
             }
             childMenuHtml += '</li>';
         }

@@ -21,9 +21,9 @@
     <!-- App Css-->
     <link href="~/assets/css/app.min.css" rel="stylesheet" />
     <style>
-        .arrow-icon {
+       /*  .arrow-icon {
         float: right;
-        }
+        } */
     </style>
 </head>
 <body>
@@ -59,7 +59,7 @@
                     </button>
 
                     <!-- App Search-->
-                    <form class="app-search d-none d-lg-block">
+                    <form class="app-search d-none d-lg-block" style="padding-top: 19px;">
                         <div class="position-relative">
                             <input type="text" class="form-control" placeholder="Search...">
                             <button class="btn btn-primary" type="button">
@@ -95,11 +95,11 @@
                     </div>
 
                     <div class="dropdown d-none d-sm-inline-block">
-                        <button type="button" class="btn header-item" data-bs-toggle="dropdown" aria-haspopup="true"
+                       @*  <button type="button" class="btn header-item" data-bs-toggle="dropdown" aria-haspopup="true"
                                 aria-expanded="false">
                             <img id="header-lang-img" src="~/assets/images/flags/us.jpg" alt="Header Language"
                                  height="16">
-                        </button>
+                        </button> *@
                         <div class="dropdown-menu dropdown-menu-end">
 
                             <!-- item-->
@@ -310,7 +310,7 @@
                     </div>
 
                     <div class="dropdown d-inline-block">
-                        <button type="button" class="btn header-item bg-light-subtle border-start border-end"
+                        <button type="button" class="btn header-item bg-light-subtle"
                                 id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true"
                                 aria-expanded="false">
                             <img class="rounded-circle header-profile-user" src="~/assets/images/users/avatar-1.jpg"
@@ -618,9 +618,38 @@
                 <!-- Sidebar -->
             </div>
         </div> *@
+
+      @*   <div class="vertical-menu">
+            <ul class="metismenu list-unstyled" id="side-menu"></ul>
+         </div
+        <!-- left sidebar end --> *@
+
+         <!-- ========== Left Sidebar Start ========== -->
         <div class="vertical-menu">
-         <ul id="side-menu"></ul>
-         </div>
+            <div data-simplebar class="h-100">
+                <!--- Sidemenu -->
+                <div id="sidebar-menu">
+                    <!-- App Search-->
+                    <form class="app-search d-none d-lg-block">
+                        <div class="position-relative">
+
+                            <input type="text" class="form-control" placeholder="Search...">
+                            <button class="btn btn-primary iconBtn" type="button">
+                                <i class="bx bx-search-alt align-middle"></i>
+                            </button>
+                        </div>
+                    </form>
+                    <!-- Left Menu Start -->
+                     <ul class="metismenu list-unstyled" id="side-menu">
+                         <li>
+                        
+                        </li>
+                     </ul>
+                   
+                </div>
+                <!-- Sidebar -->
+            </div>
+        </div>
         <!-- Left Sidebar End -->
         <!-- ============================================================== -->
         <footer class="footer">
