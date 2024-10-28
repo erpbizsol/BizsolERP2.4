@@ -32,7 +32,7 @@
 }
 
 .navbar-header .dropdown .show.header-item {
-    background-color: var(--bs-gray-100)
+    background-color: #3f51b5;
 }
 
 .navbar-brand-box {
@@ -243,8 +243,8 @@ body[data-bs-theme=dark] .header-item {
 
 [data-topbar=light] .header-item.bg-light-subtle,
 body[data-bs-theme=dark] .header-item.bg-light-subtle {
-    background-color: #f6f6f9 !important;
-    border-color: #e9e9ef !important
+   /* background-color: #f6f6f9 !important;
+    border-color: #e9e9ef !important*/
 }
 
 [data-topbar=light] #page-topbar,
@@ -535,10 +535,10 @@ body[data-layout=horizontal] .footer {
     margin-top: 70px
 }
 
-/*#sidebar-menu {
+#sidebar-menu {
     padding: 10px 9px;
 }
-*/
+
 #sidebar-menu .mm-active>.has-arrow:after {
     -webkit-transform: rotate(90deg);
     transform: rotate(90deg)
@@ -560,8 +560,8 @@ body[data-layout=horizontal] .footer {
 
 #sidebar-menu ul li a {
     display: block;
-    /*padding: .62rem 1.5rem;*/
-    padding: .60rem 1.1rem;
+     padding: .6rem;
+    /*padding: .60rem 1.1rem;*/
     color: var(--bs-sidebar-menu-item-color);
     position: relative;
     font-size: .9rem;
@@ -635,8 +635,8 @@ body[data-layout=horizontal] .footer {
     background: #607d8b;
     padding: 4px 5px;
     border-radius: 5px;
-    height: 31px;
-    width: 31px;
+    height: 28px;
+    width: 28px;
     margin-right: 10px;
 }
 
@@ -764,7 +764,7 @@ body[data-sidebar-size=sm] .vertical-menu #sidebar-menu>ul>li {
 }
 
 body[data-sidebar-size=sm] .vertical-menu #sidebar-menu>ul>li>a {
-    padding: 15px 20px;
+    /*padding: 15px 20px;*/
     -webkit-transition: none;
     transition: none
 }
@@ -781,9 +781,9 @@ body[data-sidebar-size=sm] .vertical-menu #sidebar-menu>ul>li>a i {
 }
 
 body[data-sidebar-size=sm] .vertical-menu #sidebar-menu>ul>li>a svg {
-    height: 18px;
-    width: 18px;
-    margin-left: 6px
+    height: 15px;
+    width: 15px;
+    margin-left: 7px
 }
 
 body[data-sidebar-size=sm] .vertical-menu #sidebar-menu>ul>li>a span {
@@ -794,6 +794,10 @@ body[data-sidebar-size=sm] .vertical-menu #sidebar-menu>ul>li>a span {
 body[data-sidebar-size=sm] .vertical-menu #sidebar-menu>ul>li>a .iconBg {
     display: block;
     padding-left: 0;
+}
+
+body[data-sidebar-size=sm] .vertical-menu #sidebar-menu .side-menu-search{
+    display: none !important;
 }
 
 body[data-sidebar-size=sm] .vertical-menu #sidebar-menu>ul>li>a.has-arrow:after {
