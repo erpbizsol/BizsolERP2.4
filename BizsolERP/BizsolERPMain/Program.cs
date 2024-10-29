@@ -40,6 +40,11 @@ namespace BizsolERPMain
 
             app.UseAuthorization();
 
+           
+             app.MapControllerRoute(
+                name: "HRMasters",
+                pattern: "{area:exists}/{controller=HRMasters}/{action=EmployeeMaster}/{id?}");
+
             app.MapControllerRoute(
                 name: "CommonMasters",
                 pattern: "{area:exists}/{controller=CommonMasters}/{action=StateMaster}/{id?}");
