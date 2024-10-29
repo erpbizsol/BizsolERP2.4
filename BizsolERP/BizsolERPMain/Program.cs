@@ -41,6 +41,10 @@ namespace BizsolERPMain
             app.UseAuthorization();
 
             app.MapControllerRoute(
+                name: "CommonMasters",
+                pattern: "{area:exists}/{controller=CommonMasters}/{action=StateMaster}/{id?}");
+
+            app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
