@@ -46,6 +46,10 @@ namespace BizsolERPMain
                 pattern: "{area:exists}/{controller=HRMasters}/{action=EmployeeMaster}/{id?}");
 
             app.MapControllerRoute(
+                name: "CommonMasters",
+                pattern: "{area:exists}/{controller=CommonMasters}/{action=StateMaster}/{id?}");
+
+            app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
