@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.FileProviders;
 
 namespace BizsolERPMain
 {
@@ -10,7 +11,7 @@ namespace BizsolERPMain
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
-            builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
+           // builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
             builder.Services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout
@@ -34,7 +35,16 @@ namespace BizsolERPMain
             }
 
             app.UseHttpsRedirection();
+            string Bizsol_WebERP_UI_SharedContentRootPath = Path.Combine(app.Environment.ContentRootPath.Replace("BizsolERPMain", ""), "Bizsol.WebERP.UI.Shared");
+
             app.UseStaticFiles();
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(
+                Path.Combine(Bizsol_WebERP_UI_SharedContentRootPath, "NS")),
+                RequestPath = "/NR"
+            });
+
             app.UseSession();
             app.UseRouting();
 
@@ -51,7 +61,12 @@ namespace BizsolERPMain
 
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
+                pattern: "{controller=Home}/{action=Index}/{id?}"
+                );
+            app.MapControllerRoute(
+                name: "ProductionTestArea",
+                pattern: "{area:exists}/{controller=DemoCustom}/{action=DemoCustomControl}/{id?}"
+                );
 
             app.Run();
         }
