@@ -139,7 +139,7 @@
                         </button>
                     </div>
 
-                    <div class="dropdown d-none d-lg-inline-block ms-1">
+                 @*    <div class="dropdown d-none d-lg-inline-block ms-1">
                         <button type="button" class="btn header-item" data-bs-toggle="dropdown" aria-haspopup="true"
                                 aria-expanded="false">
                             <i data-feather="grid" class="icon-lg"></i>
@@ -189,7 +189,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> *@
 
                     <div class="dropdown d-inline-block">
                         <button type="button" class="btn header-item noti-icon position-relative"
@@ -303,11 +303,11 @@
                         </div>
                     </div>
 
-                    <div class="dropdown d-inline-block">
+                   @*  <div class="dropdown d-inline-block">
                         <button type="button" class="btn header-item right-bar-toggle me-2">
                             <i data-feather="settings" class="icon-lg"></i>
                         </button>
-                    </div>
+                    </div> *@
 
                     <div class="dropdown d-inline-block">
                         <button type="button" class="btn header-item bg-light-subtle"
@@ -630,7 +630,7 @@
                 <!--- Sidemenu -->
                 <div id="sidebar-menu">
                     <!-- App Search-->
-                    <form class="app-search d-none d-lg-block">
+                    <form class="app-search d-none d-lg-block side-menu-search">
                         <div class="position-relative">
 
                             <input type="text" class="form-control" placeholder="Search...">
@@ -817,7 +817,7 @@
     <!-- Then load other libraries and plugins that depend on jQuery -->
     <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
     <!-- Then load menu.js after dependencies -->
-    <script src="/assets/script/menu.js"></script>
+    <script src="~/assets/script/menu.js"></script>
     <script src="~/assets/libs/metismenu/metismenu.min.js"></script>
     <script src="~/assets/libs/simplebar/simplebar.min.js"></script>
     <script src="~/assets/libs/node-waves/waves.min.js"></script>
@@ -852,5 +852,15 @@
     <!-- Plugins js-->
     <script src="assets/libs/admin-resources/jquery.vectormap/jquery-jvectormap-1.2.2.min.js"></script>
     <script src="assets/libs/admin-resources/jquery.vectormap/maps/jquery-jvectormap-world-mill-en.js"></script>
+    <script src="assets/js/pages/modal.init.js"></script>
+
+    <script>
+        var myModal = document.getElementById('myModal')
+        var myInput = document.getElementById('myInput')
+
+        myModal.addEventListener('shown.bs.modal', function () {
+            myInput.focus()
+        })
+    </script>
 </body>
 </html>
