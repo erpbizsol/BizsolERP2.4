@@ -1,0 +1,38 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div>
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label><b>Country Name</b></label>
+            <select id="Country" class="form-control" onchange="getStateList()">
+                <option value="">Select</option>
+                @*   @foreach (var country in Model.CountryList)
+                {
+                <option value="@country.CountryName">@country.CountryName</option>
+                } *@
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label><b>State Name</b></label>
+            <input type="text" Id="State" class="form-control" placeholder="State" autocomplete="off" />
+            <span asp-validation-for="State" class="text-danger"></span>
+            <span class="text-danger" id="duplicate-error" style="display:none;">This record already exists.</span>
+        </div>
+        <div class="col-md-6">
+            <label><b>State Initial</b></label>
+            <input type="text" Id="StateInitial" class="form-control" minlength="2" maxlength="2" placeholder="State Initial" />
+            <span asp-validation-for="StateInitial" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label><b>State Code</b></label>
+            <input type="text" Id="StateCode" class="form-control" maxlength="2" placeholder="State Code" onkeypress="allowNumberOnly(event)" />
+            <span asp-validation-for="StateCode" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="content-end mt-4">
+        <button type="button" class="btn btn-success"></button>
+    </div>
+</div>
+
