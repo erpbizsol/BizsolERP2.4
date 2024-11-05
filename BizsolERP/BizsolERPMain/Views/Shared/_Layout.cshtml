@@ -574,6 +574,15 @@
     <!-- Plugins js-->
     <script src="assets/libs/admin-resources/jquery.vectormap/jquery-jvectormap-1.2.2.min.js"></script>
     <script src="assets/libs/admin-resources/jquery.vectormap/maps/jquery-jvectormap-world-mill-en.js"></script>
+    <script>
+        $(document).ready(function () { 
+            var authKey = '@Html.Raw(ViewBag.AuthKey)';
+            if (authKey !== '') {
+                sessionStorage.setItem('authKey', authKey);
+            } 
+            
+        });
+    </script>
     <script src="assets/js/pages/modal.init.js"></script>
 
     <script>
