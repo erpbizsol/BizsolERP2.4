@@ -14,7 +14,7 @@
                     egestas eget quam. Morbi leo risus, porta ac
                     consectetur ac, vestibulum at eros.
                 </p>
-                <p>
+                                <p>
                     Praesent commodo cursus magna, vel scelerisque
                     nisl consectetur et. Vivamus sagittis lacus vel
                     augue laoreet rutrum faucibus dolor auctor.
@@ -26,29 +26,48 @@
                     ullamcorper nulla non metus auctor
                     fringilla.
                 </p>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target=".bs-example-modal-center">skjkjsks</button>
+                <button type="button" class="btn btn-primary alert-success" onclick="showAlert()" data-bs-toggle="modal" data-bs-target=".bs-example-modal-center">Alert</button>
+                <div class="card-body">
+                    <div id="alertMessage" class="alert alert-primary" role="alert" style="display: none;">
+                        A simple primary alert—check it out!
+                    </div>
+                </div>
+
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-@* <script>
-    function saveChanges() {
-        var name = $("#name").val();
-        var age = $("#age").val();
 
-        $.ajax({
-            url: '@Url.Action("SaveData", "YourController")',
-            type: 'POST',
-            data: { name: name, age: age },
-            success: function (response) {
-                alert("Data saved successfully!");
-                $('#demoModal').modal('hide');
-            },
-            error: function () {
-                alert("Error saving data.");
-            }
-        });
+<button type="button" class="btn btn-primary" id="toastbtn">Show Toast</button>
+  
+  <div class="toast">
+    <div class="toast-header">
+      <strong class="me-auto">Toast Header</strong>
+      <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+    </div>
+    <div class="toast-body">
+      <p>Some text inside the toast body</p>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById("toastbtn").onclick = function() {
+  var toastElList = [].slice.call(document.querySelectorAll('.toast'))
+  var toastList = toastElList.map(function(toastEl) {
+    return new bootstrap.Toast(toastEl)
+  })
+  toastList.forEach(toast => toast.show()) 
+}
+</script>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function showAlert() {
+        // Toggle the display of the alert message div
+        const alertDiv = document.getElementById("alertMessage");
+        alertDiv.style.display = alertDiv.style.display === "none" ? "block" : "none";
     }
-</script> *@
+</script>
