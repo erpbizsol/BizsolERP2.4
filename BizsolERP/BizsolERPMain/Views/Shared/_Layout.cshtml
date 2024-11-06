@@ -173,58 +173,6 @@
                         </button>
                     </div>
 
-                    @*    <div class="dropdown d-none d-lg-inline-block ms-1">
-                    <button type="button" class="btn header-item" data-bs-toggle="dropdown" aria-haspopup="true"
-                    aria-expanded="false">
-                    <i data-feather="grid" class="icon-lg"></i>
-                    </button>
-                    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end">
-                    <div class="p-2">
-                    <div class="row g-0">
-                    <div class="col">
-                    <a class="dropdown-icon-item" href="#">
-                    <img src="~/assets/images/brands/github.png" alt="Github">
-                    <span>GitHub</span>
-                    </a>
-                    </div>
-                    <div class="col">
-                    <a class="dropdown-icon-item" href="#">
-                    <img src="~/assets/images/brands/bitbucket.png" alt="bitbucket">
-                    <span>Bitbucket</span>
-                    </a>
-                    </div>
-                    <div class="col">
-                    <a class="dropdown-icon-item" href="#">
-                    <img src="~/assets/images/brands/dribbble.png" alt="dribbble">
-                    <span>Dribbble</span>
-                    </a>
-                    </div>
-                    </div>
-
-                    <div class="row g-0">
-                    <div class="col">
-                    <a class="dropdown-icon-item" href="#">
-                    <img src="~/assets/images/brands/dropbox.png" alt="dropbox">
-                    <span>Dropbox</span>
-                    </a>
-                    </div>
-                    <div class="col">
-                    <a class="dropdown-icon-item" href="#">
-                    <img src="~/assets/images/brands/mail_chimp.png" alt="mail_chimp">
-                    <span>Mail Chimp</span>
-                    </a>
-                    </div>
-                    <div class="col">
-                    <a class="dropdown-icon-item" href="#">
-                    <img src="~/assets/images/brands/slack.png" alt="slack">
-                    <span>Slack</span>
-                    </a>
-                    </div>
-                    </div>
-                    </div>
-                    </div>
-                    </div> *@
-
                     <button type="button" class="btn header-item noti-icon position-relative"
                             id="bell-icon" data-bs-toggle="dropdown" aria-haspopup="true"
                             aria-expanded="false">
@@ -233,9 +181,8 @@
                         <div class="notification-dropdown" id="notificationDropdown"></div>
                     </button>
                     <div id="time" style="color:white;margin-top:5px;">
-                        1:00 remaining
+                        1:00
                     </div><br />
-                    </button>
                     <button id="resetBtn" type="button" style="height: 30px;
                     margin-top: 5px;
                     border-radius: 30px;
@@ -243,13 +190,6 @@
                     color: white;">
                         <i class="fas fa-undo"></i>
                     </button>
-
-
-                    @*  <div class="dropdown d-inline-block">
-                    <button type="button" class="btn header-item right-bar-toggle me-2">
-                    <i data-feather="settings" class="icon-lg"></i>
-                    </button>
-                    </div> *@
 
                     <div class="dropdown d-inline-block">
                         <button type="button" class="btn header-item bg-light-subtle"
@@ -279,7 +219,7 @@
             </div>
         </header>
 
-         <!-- ========== Left Sidebar Start ========== -->
+        <!-- ========== Left Sidebar Start ========== -->
         <div class="vertical-menu">
             <div data-simplebar class="h-100">
                 <!--- Sidemenu -->
@@ -306,7 +246,6 @@
             </div>
         </div>
         <!-- Left Sidebar End -->
-
         <!-- ============================================================== -->
         <!-- Start right Content here -->
         <!-- ============================================================== -->
@@ -316,7 +255,7 @@
                     <main role="main" class="pb-3">
                         @RenderBody()
                     </main>
-                </div> 
+                </div>
             </div>
         </div>
         <!-- End Page-content -->
@@ -474,21 +413,18 @@
         </div> <!-- end slimscroll-menu-->
     </div>
     <!-- /Right-bar -->
-
     <!-- Right bar overlay-->
     <div class="rightbar-overlay"></div>
-
-
     <script src="~/assets/js/jquery-3.6.0.min.js"></script>
     @* @await RenderSectionAsync("Scripts", required: false) *@
     <!-- JAVASCRIPT -->
     <!-- jQuery should be loaded first -->
-    @* <script src="~/assets/js/jquery-3.6.0.min.js"></script> *@
+    @*    <script src="~/assets/js/jquery-3.6.0.min.js"></script> *@
     <!-- Then load other libraries and plugins that depend on jQuery -->
     <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
     <!-- Then load menu.js after dependencies -->
-    <script src="~/assets/script/menu.js"></script>
-    <script src="~/assets/script/webnotification.js"></script>
+    <script type="module" src="~/assets/script/menu.js"></script>
+    <script type="module" src="~/assets/script/webnotification.js"></script>
     <script src="~/assets/libs/metismenu/metismenu.min.js"></script>
     <script src="~/assets/libs/simplebar/simplebar.min.js"></script>
     <script src="~/assets/libs/node-waves/waves.min.js"></script>
@@ -524,23 +460,23 @@
     <script src="assets/libs/admin-resources/jquery.vectormap/jquery-jvectormap-1.2.2.min.js"></script>
     <script src="assets/libs/admin-resources/jquery.vectormap/maps/jquery-jvectormap-world-mill-en.js"></script>
     <script>
-        $(document).ready(function () { 
+        $(document).ready(function () {
             var authKey = '@Html.Raw(ViewBag.AuthKey)';
             if (authKey !== '') {
                 sessionStorage.setItem('authKey', authKey);
-            } 
-            
+            }
+
         });
     </script>
-    <script src="assets/js/pages/modal.init.js"></script>
+    @* <script src="assets/js/pages/modal.init.js"></script>
 
     <script>
-        var myModal = document.getElementById('myModal')
-        var myInput = document.getElementById('myInput')
+    var myModal = document.getElementById('myModal')
+    var myInput = document.getElementById('myInput')
 
-        myModal.addEventListener('shown.bs.modal', function () {
-            myInput.focus()
-        })
-    </script>
+    myModal.addEventListener('shown.bs.modal', function () {
+    myInput.focus()
+    })
+    </script> *@
 </body>
 </html>
