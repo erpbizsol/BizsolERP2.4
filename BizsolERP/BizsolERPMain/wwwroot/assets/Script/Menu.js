@@ -48,9 +48,9 @@ function bindMenu(response) {
             return;
         }
 
-        e.preventDefault(); // Prevent default action for parent items with submenus
-        parentLi.toggleClass('mm-active'); // Toggle active state for open/close
-        parentLi.children('ul.sub-menu').slideToggle(); // Toggle the submenu visibility
+        e.preventDefault(); 
+        parentLi.toggleClass('mm-active'); 
+        parentLi.children('ul.sub-menu').slideToggle(); 
 
         var arrowIcon = $(this).find('.arrow-icon');
         if (parentLi.hasClass('active')) {
@@ -75,7 +75,7 @@ function getChildMenu(response, masterCode) {
             //childMenuHtml += subChildMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';
             childMenuHtml += '</a>';
             if (subChildMenuHtml) {
-                childMenuHtml += '<ul class="sub-menu" style="display: none;">' + subChildMenuHtml + '</ul>'; // Wrap child items and hide them
+                childMenuHtml += '<ul class="sub-menu" style="display: none;">' + subChildMenuHtml + '</ul>'; 
             }
             childMenuHtml += '</li>';
         }
