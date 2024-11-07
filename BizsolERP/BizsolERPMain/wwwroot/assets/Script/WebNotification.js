@@ -2,12 +2,13 @@
 
 
 $(document).ready(function () {
+    let baseUrl = `${window.location.protocol}//${window.location.host}`;
     startTimer();
-    GetWebNotificationList();
+    GetWebNotificationList(baseUrl);
     setInterval(GetWebNotificationList, 60000); // Refresh notifications every 60 seconds
 });
 
-function GetWebNotificationList() {
+function GetWebNotificationList(baseUrl) {
     let totalNotificationCount = 0;
     let notificationList = '';
 
@@ -16,7 +17,7 @@ function GetWebNotificationList() {
         value.forEach(notification => {
             totalNotificationCount += notification.NotificationCount;
             notificationList += `
-                <div onclick="window.location.href='${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 8px 16px;">
+                <div onclick="window.location.href='${baseUrl}/${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 8px 16px;">
                     <span>${notification.NotificationDescription}</span>
                     <span style="padding: 2px 8px;">
                         ${notification.NotificationCount > 0 ? `<span style="padding: 2px 8px;">${notification.NotificationCount}</span>` : ''}

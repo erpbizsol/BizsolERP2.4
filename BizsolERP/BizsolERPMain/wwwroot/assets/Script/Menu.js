@@ -5,11 +5,12 @@ $(document).ready(function () {
 });
 
 function bindMenu() {
+    var baseUrl = `${window.location.protocol}//${window.location.host}`;
     MenuService.GetMenuList("BIZANKIT").then(function (value) {
         var menuHtml = '';
         $.each(value, function (index, item) {
             if (item.MasterCode === 0) {
-                var childMenuHtml = getChildMenu(value, item.Code);
+                var childMenuHtml = getChildMenu(value, item.Code, baseUrl);
                 var hasArrow = childMenuHtml ? 'has-arrow' : '';
                 menuHtml += '<li>';
                 menuHtml += '<a href="javascript:void(0);" class="menu-toggle ' + hasArrow + '">';
@@ -52,14 +53,15 @@ function bindMenu() {
     });
 }
 
-function getChildMenu(value, masterCode) {
+function getChildMenu(value, masterCode, baseUrl) {
+    var baseUrl = `${window.location.protocol}//${window.location.host}`;
     var childMenuHtml = '';
     $.each(value, function (index, item) {
         if (item.MasterCode === masterCode) {
             var subChildMenuHtml = getChildMenu(value, item.Code);
             var hasArrow = subChildMenuHtml ? 'has-arrow' : '';
-            childMenuHtml += '<li>';
-            childMenuHtml += '<a href="PurchaseTransactions/ApproveVerify/POApproval" class="menu-toggle ' + hasArrow + '">';
+            childMenuHtml += '<li>'; 
+            childMenuHtml += '<a href="' + baseUrl+'/'+ item.FormToOpen +'" class="menu-toggle ' + hasArrow + '">';
             childMenuHtml += '<span>' + item.ModuleDesp + '</span>';
             // Add arrow if submenu exists (always point right initially)
             //childMenuHtml += subChildMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';
