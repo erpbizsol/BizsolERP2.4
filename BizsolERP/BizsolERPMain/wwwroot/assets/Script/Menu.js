@@ -59,7 +59,7 @@ function getChildMenu(value, masterCode) {
             var subChildMenuHtml = getChildMenu(value, item.Code);
             var hasArrow = subChildMenuHtml ? 'has-arrow' : '';
             childMenuHtml += '<li>';
-            childMenuHtml += '<a href="HRMasters/EmployeeMaster" class="menu-toggle ' + hasArrow + '">';
+            childMenuHtml += '<a href="PurchaseTransactions/ApproveVerify/POApproval" class="menu-toggle ' + hasArrow + '">';
             childMenuHtml += '<span>' + item.ModuleDesp + '</span>';
             // Add arrow if submenu exists (always point right initially)
             //childMenuHtml += subChildMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';
