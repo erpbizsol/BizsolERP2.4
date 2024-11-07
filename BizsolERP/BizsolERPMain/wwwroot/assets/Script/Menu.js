@@ -60,8 +60,8 @@ function getChildMenu(value, masterCode, baseUrl) {
         if (item.MasterCode === masterCode) {
             var subChildMenuHtml = getChildMenu(value, item.Code);
             var hasArrow = subChildMenuHtml ? 'has-arrow' : '';
-            childMenuHtml += '<li>'; 
-            childMenuHtml += '<a href="' + baseUrl+'/'+ item.FormToOpen +'" class="menu-toggle ' + hasArrow + '">';
+            childMenuHtml += '<li>';
+            childMenuHtml += '<a href="' + baseUrl + '/' + item.FormToOpen + '" class="menu-toggle ' + hasArrow + '">';
             childMenuHtml += '<span>' + item.ModuleDesp + '</span>';
             // Add arrow if submenu exists (always point right initially)
             //childMenuHtml += subChildMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';

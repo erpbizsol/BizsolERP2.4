@@ -41,11 +41,9 @@ function GetWebNotificationList(baseUrl) {
         });
     });
 }
-
 var minutes = 1;
 var seconds = 0;
 var timer;
-
 function startTimer() {
     timer = setInterval(function () {
         if (seconds > 0) {
