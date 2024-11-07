@@ -1,0 +1,87 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/assets/css/filter.css" rel="stylesheet" />
+<div style="text-align:right">
+    <input type="button" onclick="CreateNew()" class="btn btn-primary" value="Create New"/>
+</div>
+<div class="table-wrapper mt-2">
+    <table id="table" class="fixed-width-table">
+        <thead id="table-header">
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator">
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="~/assets/script/filter.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#ddlCountry').on('keydown', function (e) {
+            if (e.key === "Enter") {
+                $("#txtState").focus();
+            }
+        });
+        $('#txtState').on('keydown', function (e) {
+            if (e.key === "Enter") {
+                $("#txtStateInitial").focus();
+            }
+        });
+        $('#txtStateInitial').on('keydown', function (e) {
+            if (e.key === "Enter") {
+                $("#txtStateCode").focus();
+            }
+        });
+        $('#txtStateCode').on('keydown', function (e) {
+            if (e.key === "Enter") {
+                $("#ddlCountry").focus();
+            }
+        });
+            const authToken = '{"ERPDBConStr":"Data Source=220.158.165.98,65446;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBBizDev; User ID=sa;pwd=biz1981;Packet Size=32000","ERPMainDBConStr":"data source = 220.158.165.98,65446; initial catalog = BizSolERPMainDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000","ERPDMSDBConStr":"data source = 220.158.165.98,65446; initial catalog = BizSolERPDMSDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000","ERPDB_Name":"BizSolERPDBBizDev","ERPMainDB_Name":"BizSolERPMainDB_BizDev","ERPDMSDB_Name":"BizSolERPDMSDB_BizDev","AuthToken":"xyz","UserMaster_Code":"145","CompanyCode":"104"}';
+            $.ajax({
+                url: 'https://web.bizsol.in/erpapidev/api/State/GetStateList?CountryName=All',
+                type: 'GET',
+                contentType: 'json',
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('Auth-Key', authToken);
+                },
+                success: function (response) {
+                    data = response;
+
+                const StringFilterColumn = ["CountryName", "StateName"];
+                    const NumericFilterColumn = ["Code"];
+                    const DateFilterColumn = ["UpdateDate", "CreateDate"];
+                    const Button = true;
+                    const StringdoubleFilterColumn = ["UserName"];
+                    CreateDataTable(data, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn)
+
+                },
+                error: function (error) {
+                    console.error('Error fetching data:', error);
+                }
+            });
+    });
+    function CreateNew() {
+        window.location.href = "https://localhost:7188/CommonMasters/StateMaster?Create";
+    }
+    function EditData(Code)
+    {
+        let rowIndex = null;
+        let codeValues = [];
+        $('table tr:visible').each(function () {
+            let rowCode = $(this).find('td').eq(0).text().trim();
+            if (rowCode) {
+                codeValues.push(rowCode);
+            }
+            if (rowCode === Code) {
+                rowIndex = $(this).data('index');
+            }
+        });
+        let serializedArray = encodeURIComponent(JSON.stringify(codeValues));
+        //window.location.href = `https://localhost:7188/CommonMasters/StateMaster?Edit=${Code}&codeValues=${serializedArray}`;
+        window.location.href = `https://localhost:7188/CommonMasters/StateMaster?Edit=${Code}&Index=${rowIndex}&codeValues=${serializedArray}`;
+    }
+</script>
