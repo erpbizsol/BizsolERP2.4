@@ -2,3 +2,51 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/SaleOrderApproval.js"></script>
+<!-----------------------Opane Model-------------------------->
+<button onclick="openModal()">
+    Open Modal
+</button>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modal Title</h5>
+                <button type="button" onclick="closeModal()" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper mt-2">
+                  @*   <table id="table" class="fixed-width-table">
+                        <thead id="tableheader">
+                        </thead>
+                        <tbody id="tablebody">
+                        </tbody>
+                    </table> *@
+                </div>
+                @* <div class="paginator" id="paginator"> *@
+                </div>
+            </div>
+          
+        </div>
+    </div>
+</div>
+<!-----------------------End Model-------------------------->
+
+<!-----------------------Table-------------------------->
+<div class="table-wrapper mt-2">
+    <table id="table" class="fixed-width-table">
+        <thead id="table-header">
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator">
+</div>
+<!-----------------------Table-------------------------->
+

@@ -14,6 +14,7 @@ function GetWebNotificationList(baseUrl) {
 
     // Fetch notifications
     WebNotificationService.GetWebNotificationMasterList("BIZANKIT", 102).then(function (value) {
+
         value.forEach(notification => {
             totalNotificationCount += notification.NotificationCount;
             notificationList += `
@@ -24,7 +25,6 @@ function GetWebNotificationList(baseUrl) {
                     </span>
                 </div>`;
         });
-
         if (totalNotificationCount > 0) {
             $("#notificationCount").text(totalNotificationCount).show();
         } else {
