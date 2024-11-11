@@ -1,56 +1,56 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"> 
 <link href="~/assets/css/filter.css" rel="stylesheet" />
 <style>
     /* Container styling for the toolbar */
-    .toolbar {
+    /* .toolbar {
         display: flex;
-        background-color: #f4a261; /* Warm orange-brown color */
+        background-color: #f4a261; 
         padding: 5px;
         border-radius: 2px;
+    } */
+
+    /* Style for each button */
+    /* .toolbar .nav-btn {
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        color: #333;
+        background-color: #f4a261;
+        border: 1px solid #333;
+        padding: 10px 15px;
+        margin-right: 5px;
+        cursor: pointer;
+        text-transform: uppercase;
+        border-radius: 5px;
+        transition: background-color 0.3s;
     }
+ */
+    /* Hover effect for buttons */
+   /*  .toolbar .nav-btn:hover {
+        background-color: #e9c46a; 
+    } */
 
-        /* Style for each button */
-        .toolbar .nav-btn {
-            font-family: Arial, sans-serif;
-            font-weight: bold;
-            color: #333;
-            background-color: #f4a261; /* Match the toolbar color */
-            border: 1px solid #333;
-            padding: 10px 15px;
-            margin-right: 5px;
-            cursor: pointer;
-            text-transform: uppercase;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
+    /* Disabled button styling */
+   /*  .toolbar .nav-btn:disabled {
+        background-color: #d3d3d3; 
+        color: #a9a9a9; 
+        cursor: not-allowed;
+        border: 1px solid #a9a9a9; 
+    } */
 
-            /* Hover effect for buttons */
-            .toolbar .nav-btn:hover {
-                background-color: #e9c46a; /* Lighter color on hover */
-            }
+    /* Style for the save button */
+    /* .toolbar .save-btn {
+        background-color: #e76f51; 
+        color: white;
+    } */
 
-            /* Disabled button styling */
-            .toolbar .nav-btn:disabled {
-                background-color: #d3d3d3; /* Grey background when disabled */
-                color: #a9a9a9; /* Lighter text color when disabled */
-                cursor: not-allowed;
-                border: 1px solid #a9a9a9; /* Disabled border */
-            }
-
-        /* Style for the save button */
-        .toolbar .save-btn {
-            background-color: #e76f51; /* Darker orange for emphasis */
-            color: white;
-        }
-
-        /* Style for the cancel button */
-        .toolbar .cancel-btn {
-            background-color: #e76f51; /* Darker orange for emphasis */
-            color: white;
-        }
+    /* Style for the cancel button */
+    /* .toolbar .cancel-btn {
+        background-color: #e76f51; 
+        color: white;
+    } */
 </style>
 <div>
     <div class="row">
@@ -71,20 +71,24 @@
             <label><b>State Code</b></label>
             <input type="text" Id="txtStateCode" class="form-control" maxlength="2" placeholder="State Code" autocomplete="off" onkeypress="allowNumberOnly(event)" tabindex="2" />
         </div>
-        <div class="mt-4">
+       
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-8" style="margin: 0 auto">
             <div class="row">
-                <div class="col-md-4 toolbar m-1">
-                    <button id="First" onclick="First()" class="nav-btn">First</button>
-                    <button id="Previous" onclick="Previous()" class="nav-btn">Previous</button>
-                    <button id="Next" onclick="Next()" class="nav-btn">Next</button>
-                    <button id="Last" onclick="Last()" class="nav-btn">Last</button>
+                <div class="col-md-5 toolbar">
+                    <button id="First" onclick="First()" class="btn btn-success nav-btn">First</button>
+                    <button id="Previous" onclick="Previous()" class="btn btn-success nav-btn">Previous</button>
+                    <button id="Next" onclick="Next()" class="btn btn-success nav-btn">Next</button>
+                    <button id="Last" onclick="Last()" class="btn btn-success nav-btn">Last</button>
                 </div>
-                <div class="col-md-5 toolbar  m-1">
-                    <button id="btnSave" onclick="Save()" class="nav-btn">Save</button>
-                    <button id="btnDelete" onclick="Delete()" class="nav-btn">Delete</button>
-                    <button id="btnBack" onclick="Back()" class="nav-btn">Back</button>
-                    <button id="btnPrint" onclick="Print()" class="nav-btn">Print</button>
-                    <button id="btnAttachment" onclick="ViewAttachment()" class="nav-btn">View Attachment</button>
+                <div class="col-md-7 toolbar ">
+                    <button id="btnSave" onclick="Save()" class="btn btn-success nav-btn">Save</button>
+                    <button id="btnDelete" onclick="Delete()" class="btn btn-danger nav-btn">Delete</button>
+                    <button id="btnBack" onclick="Back()" class="btn btn-success nav-btn">Back</button>
+                    <button id="btnPrint" onclick="Print()" class="btn btn-success nav-btn">Print</button>
+                    <button id="btnAttachment" onclick="ViewAttachment()" class="btn btn-success nav-btn">View Attachment</button>
                 </div>
             </div>
         </div>
