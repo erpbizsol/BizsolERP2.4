@@ -3,6 +3,8 @@ let data = [];
 let filteredData = [];
 let currentPage = 1;
 let itemsPerPage = 10;
+let button = false;
+let showButtons = [];
 $(document).ready(function () {
     $('#paginator').empty();
 
@@ -37,7 +39,7 @@ $(document).ready(function () {
             uniqueValues.add(cellValue);
         });
 
-        var checkboxContainer = $('#checkbox-container-' + columnName);
+        var checkboxContainer = $('#checkbox-container-' + columnName.replace(' ',''));
         checkboxContainer.empty();
         checkboxContainer.append('<label><input type="checkbox" class="filter-checkbox" value="All"> All</label>');
 
@@ -60,7 +62,7 @@ $(document).ready(function () {
     window.toggleFilter = function (columnName) {
         closeAllFilters();
         populateFilterOptions(columnName);
-        $('#filter-' + columnName).toggle();
+        $('#filter-' + columnName.replace(' ','')).toggle();
     };
     function closeAllFilters() {
         $('.filter-dropdown').hide();
@@ -95,7 +97,7 @@ $(document).ready(function () {
     checkAllCheckboxesOnLoad();
     window.toggleFilterDouble = function (columnName) {
         closeAllFiltersDouble();
-        $('#filter-double-' + columnName).toggle();
+        $('#filter-double-' + columnName.replace(' ','')).toggle();
         $('.filter-dropdown').hide();
         
     };
@@ -111,7 +113,7 @@ $(document).ready(function () {
 var columnFilters = {};
 window.populateDateFilter = function (columnName) {
     closeAllFilters();
-    $('#filter-' + columnName).toggle();
+    $('#filter-' + columnName.replace(' ', '')).toggle();
     
     var uniqueDates = new Set();
 
@@ -138,35 +140,35 @@ window.populateDateFilter = function (columnName) {
         dateStructure[year][month].push(day);
     });
 
-    var checkboxContainer1 = $('#checkbox-container-' + columnName);
+    var checkboxContainer1 = $('#checkbox-container-' + columnName.replace(' ', ''));
     checkboxContainer1.empty();
 
     checkboxContainer1.append('<label><input type="checkbox" class="filter-checkbox" value="All"> (Select All)</label>');
 
     for (var year in dateStructure) {
         checkboxContainer1.append(
-            `<label><i class="fa-solid fa-plus toggle-icon" data-target="year-${columnName}-${year}"></i><input type="checkbox" class="year-checkbox" value="${year}"> ${year}</label>` +
-            `<div class="nested-checkbox" id="year-${columnName}-${year}"></div>`
+            `<label><i class="fa-solid fa-plus toggle-icon" data-target="year-${columnName.replace(' ', '') }-${year}"></i><input type="checkbox" class="year-checkbox" value="${year}"> ${year}</label>` +
+            `<div class="nested-checkbox" id="year-${columnName.replace(' ', '') }-${year}"></div>`
         );
     }
 
     for (var year in dateStructure) {
         for (var month in dateStructure[year]) {
-            var monthCheckbox = `<label><i class="fa-solid fa-plus toggle-icon" data-target="month-${columnName}-${year}-${month}"></i><input type="checkbox" class="month-checkbox" value="${month}"> ${month}</label>`;
-            var dayCheckboxes = `<div class="nested-checkbox" id="month-${columnName}-${year}-${month}">`;
+            var monthCheckbox = `<label><i class="fa-solid fa-plus toggle-icon" data-target="month-${columnName.replace(' ', '') }-${year}-${month}"></i><input type="checkbox" class="month-checkbox" value="${month}"> ${month}</label>`;
+            var dayCheckboxes = `<div class="nested-checkbox" id="month-${columnName.replace(' ', '')}-${year}-${month}">`;
             dateStructure[year][month].forEach(function (day) {
                 dayCheckboxes += `<label><input type="checkbox" class="day-checkbox" value="${day}"> ${day}</label>`;
             });
             dayCheckboxes += '</div>';
 
-            $('#year-' + columnName + '-' + year).append(monthCheckbox + dayCheckboxes);
+            $('#year-' + columnName.replace(' ', '') + '-' + year).append(monthCheckbox + dayCheckboxes);
         }
     }
 
     checkboxContainer1.find('.year-checkbox').change(function () {
         var isChecked = $(this).is(':checked');
         var year = $(this).val();
-        $('#year-' + columnName + '-' + year + ' input[type="checkbox"]').prop('checked', isChecked);
+        $('#year-' + columnName.replace(' ', '') + '-' + year + ' input[type="checkbox"]').prop('checked', isChecked);
     });
 
     checkboxContainer1.find('.month-checkbox').change(function () {
@@ -250,23 +252,23 @@ window.toggleFilterNumeric = function (filterId, ColumnName) {
     
 };
 window.toggleNumericInputs = function (columnName) {
-    const selectedOption = $('#numeric-filter-select-' + columnName).val();
-    $('#filter-value-' + columnName).hide();
-    $('#min-value-' + columnName).hide();
-    $('#max-value-' + columnName).hide();
+    const selectedOption = $('#numeric-filter-select-' + columnName.replace(' ','')).val();
+    $('#filter-value-' + columnName.replace(' ', '')).hide();
+    $('#min-value-' + columnName.replace(' ', '')).hide();
+    $('#max-value-' + columnName.replace(' ', '')).hide();
 
     if (selectedOption === 'equals' || selectedOption === 'greater' || selectedOption === 'less') {
-        $('#filter-value-' + columnName).show();
+        $('#filter-value-' + columnName.replace(' ', '')).show();
     } else if (selectedOption === 'between') {
-        $('#min-value-' + columnName).show();
-        $('#max-value-' + columnName).show();
+        $('#min-value-' + columnName.replace(' ', '')).show();
+        $('#max-value-' + columnName.replace(' ', '')).show();
     }
 };
 window.applyNumericFilter = function (columnName) {
-    const selectedOption = $('#numeric-filter-select-' + columnName).val();
-    const filterValue = parseFloat($('#filter-value-' + columnName).val());
-    const minValue = parseFloat($('#min-value-' + columnName).val());
-    const maxValue = parseFloat($('#max-value-' + columnName).val());
+    const selectedOption = $('#numeric-filter-select-' + columnName.replace(' ', '')).val();
+    const filterValue = parseFloat($('#filter-value-' + columnName.replace(' ', '')).val());
+    const minValue = parseFloat($('#min-value-' + columnName.replace(' ', '')).val());
+    const maxValue = parseFloat($('#max-value-' + columnName.replace(' ', '')).val());
 
     if (!isNaN(filterValue) || (!isNaN(minValue) && !isNaN(maxValue))) {
         $('#table-body tr').each(function () {
@@ -317,7 +319,7 @@ function applyStringFilters(columnName) {
     var column = columnName;
     var selectedValues = [];
 
-    $('#checkbox-container-' + column + ' input:checked').each(function () {
+    $('#checkbox-container-' + column.replace(' ','') + ' input:checked').each(function () {
         if ($(this).val() != "All") {
             selectedValues.push($(this).val());
         }
@@ -341,8 +343,7 @@ function applyStringFilters(columnName) {
 function ShowEntry(columnName) {
     var column = columnName;
     populateFilterOptionsDouble(column);
-    $('#checkbox-container-double-' + column).toggle();
-
+    $('#checkbox-container-double-' + column.replace(' ', '')).toggle();
 }
 function populateFilterOptionsDouble(columnName) {
 
@@ -352,7 +353,7 @@ function populateFilterOptionsDouble(columnName) {
         uniqueValues.add(cellValue);
     });
 
-    var checkboxContainer = $('#checkbox-container-double-' + columnName);
+    var checkboxContainer = $('#checkbox-container-double-' + columnName.replace(' ', ''));
     checkboxContainer.empty();
     checkboxContainer.append('<label><input type="checkbox" class="filter-checkbox" value="All"> All</label>');
 
@@ -373,12 +374,12 @@ function populateFilterOptionsDouble(columnName) {
 }
 function applyfilterdouble(columnName) {
     var column = columnName;
-    var filterType = $('#filter-type-' + column).val();
-    var searchValue = $('.filter-input-double[data-column="' + column + '"]').val().trim().toLowerCase();
+    var filterType = $('#filter-type-' + column.replace(' ', '')).val();
+    var searchValue = $('.filter-input-double[data-column="' + column.replace(' ', '') + '"]').val().trim().toLowerCase();
     var selectedValues = [];
 
 
-    $('#checkbox-container-double-' + column + ' input:checked').each(function () {
+    $('#checkbox-container-double-' + column.replace(' ', '') + ' input:checked').each(function () {
         if ($(this).val() !== "All") {
             selectedValues.push($(this).val().toLowerCase());
         }
@@ -423,7 +424,7 @@ function applyfilterdate(columnName) {
     var column = columnName;
     var selectedValues = [];
 
-    $('#checkbox-container-' + column + ' input:checked').each(function () {
+    $('#checkbox-container-' + column.replace(' ', '') + ' input:checked').each(function () {
         if ($(this).val() != "All") {
             selectedValues.push($(this).val());
         }
@@ -433,15 +434,16 @@ function applyfilterdate(columnName) {
     applyFilters();
     closeAllFilters();
 }
-function CreateDataTable(data, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn) {
+function CreateDataTable(data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn) {
     const columns = Object.keys(data[0]);
-    renderTableHeader(columns, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
-    renderTable(data, columns, Button);
+    renderTableHeader(columns, Button,StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
+    renderTable(data);
+    button = Button;
+    showButtons = ShowButtons;
     filteredData = data;
     renderTableWithPagination();
-
 }
-function renderTableHeader(columns,Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn) {
+function renderTableHeader(columns, button ,StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn) {
     const $header = $('#table-header');
     $header.empty();
     let headerRow = '<tr>';
@@ -452,16 +454,16 @@ function renderTableHeader(columns,Button, StringFilterColumn, NumericFilterColu
                                          <div style="display: flex; justify-content: space-between; align-items: center;">
                                            ${col}
                                             <span style="display: flex;">
-                                            <span onclick="sortable(this)" data-column="${col}" data-order="asc" style="display: flex;">
+                                            <span onclick="sortable(this)" data-column="${col.replace(' ','')}" data-order="asc" style="display: flex;">
                                             <i class="fa-solid fa-arrow-down sort-indicator" style="display:none;"></i>
                                             <i class="fa-solid fa-arrow-up sort-indicator" style="display:block;"></i>
                                             </span><i class="fa-solid fa-filter" onclick="toggleFilter('${col}')"></i>
                                             </span>
-                                            <div class="filter-dropdown" id="filter-${col}">
-                                            <input type="text" placeholder="Search..." class="filter-input" data-column="${col}" />
-                                            <div class="checkbox-container" id="checkbox-container-${col}"></div>
-                                            <button onclick="applyStringFilters('${col}')" data-column="${col}">apply</button>
-                                            <button onclick="ClearFilter('${col}')">Clear</button>
+                                            <div class="filter-dropdown" id="filter-${col.replace(' ', '')}">
+                                            <input type="text" placeholder="Search..." class="filter-input" data-column="${col.replace(' ', '')}" />
+                                            <div class="checkbox-container" id="checkbox-container-${col.replace(' ', '')}"></div>
+                                            <button onclick="applyStringFilters('${col}')" data-column="${col.replace(' ', '')}">apply</button>
+                                            <button onclick="ClearFilter('${col.replace(' ', '')}')">Clear</button>
                                             </div>
                                            </div>
                                      </th>`;
@@ -470,23 +472,23 @@ function renderTableHeader(columns,Button, StringFilterColumn, NumericFilterColu
                                          <div style="display: flex; justify-content: space-between; align-items: center;">
                                               ${col}
                                               <span style="display: flex;">
-                                              <span onclick="sortable(this)" data-column="${col}" data-order="asc" style="display: flex;">
+                                              <span onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc" style="display: flex;">
                                               <i class="fa-solid fa-arrow-down sort-indicator" style="display:none;"></i>
                                               <i class="fa-solid fa-arrow-up sort-indicator" style="display:block;"></i>
-                                              </span><i class="fa-solid fa-filter" onclick="toggleFilterNumeric('filter-dropdown-numeric-${col}','${col}');"></i>
+                                              </span><i class="fa-solid fa-filter" onclick="toggleFilterNumeric('filter-dropdown-numeric-${col.replace(' ','')}','${col}');"></i>
                                               </span>
                                           </div>
-                                         <div class="filter-dropdown" id="filter-dropdown-numeric-${col}">
-                                          <select id="numeric-filter-select-${col}" onchange="toggleNumericInputs('${col}')">
+                                         <div class="filter-dropdown" id="filter-dropdown-numeric-${col.replace(' ', '')}">
+                                          <select id="numeric-filter-select-${col.replace(' ', '')}" onchange="toggleNumericInputs('${col}')">
                                                 <option value="equals">=</option>
                                                 <option value="greater">></option>
                                                 <option value="less">&lt;</option>
                                                 <option value="between">Between</option>
                                             </select>
                                             <div class="filter-inputs">
-                                                <input type="number" id="filter-value-${col}" class="filter-input" placeholder="Enter value" />
-                                                <input type="number" id="min-value-${col}" class="filter-input" placeholder="Min value" style="display:none" />
-                                                <input type="number" id="max-value-${col}" class="filter-input" placeholder="Max value" style="display:none" />
+                                                <input type="number" id="filter-value-${col.replace(' ', '')}" class="filter-input" placeholder="Enter value" />
+                                                <input type="number" id="min-value-${col.replace(' ', '')}" class="filter-input" placeholder="Min value" style="display:none" />
+                                                <input type="number" id="max-value-${col.replace(' ', '')}" class="filter-input" placeholder="Max value" style="display:none" />
                                             </div>
                                             <button onclick="applyNumericFilter('${col}')">Apply</button>
                                             <button onclick="ClearFilter()">Clear</button>
@@ -497,16 +499,16 @@ function renderTableHeader(columns,Button, StringFilterColumn, NumericFilterColu
                                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                                 ${col}
                                                 <span style="display: flex;">
-                                                <span onclick="sortable(this)" data-column="${col}" data-order="asc" style="display: flex;">
+                                                <span onclick="sortable(this)" data-column="${col.replace(' ', '') }" data-order="asc" style="display: flex;">
                                                 <i class="fa-solid fa-arrow-down sort-indicator" style="display:none;"></i>
                                                 <i class="fa-solid fa-arrow-up sort-indicator" style="display:block;"></i>
                                                 </span>
                                                 <i class="fa-solid fa-filter" onclick="populateDateFilter('${col}')"></i>
                                                 </span>
                                             </div>
-                                            <div class="filter-dropdown" id="filter-${col}">
-                                            <div class="checkbox-container" id="checkbox-container-${col}"></div>
-                                            <button onclick="applyfilterdate('${col}')" data-column="${col}">Apply</button>
+                                            <div class="filter-dropdown" id="filter-${col.replace(' ', '') }">
+                                            <div class="checkbox-container" id="checkbox-container-${col.replace(' ', '') }"></div>
+                                            <button onclick="applyfilterdate('${col}')" data-column="${col.replace(' ', '') }">Apply</button>
                                             <button onclick="ClearFilter()">Clear</button>
                                             </div>
                                        </th>`;
@@ -515,22 +517,22 @@ function renderTableHeader(columns,Button, StringFilterColumn, NumericFilterColu
                                         <div style="display: flex; justify-content: space-between; align-items: center;">
                                             ${col}
                                             <span style="display: flex;">
-                                            <span onclick="sortable(this)" data-column="${col}" data-order="asc" style="display: flex;">
+                                            <span onclick="sortable(this)" data-column="${col.replace(' ', '') }" data-order="asc" style="display: flex;">
                                             <i class="fa-solid fa-arrow-down sort-indicator" style="display:none;"></i>
                                             <i class="fa-solid fa-arrow-up sort-indicator" style="display:block;"></i>
                                             </span><i class="fa-solid fa-filter" onclick="toggleFilterDouble('${col}')"></i>
                                             </span>
                                            </div>
-                                        <div class="filter-dropdown-double" onclick="stopPropagationdouble(event)" id="filter-double-${col}">
-                                         <select class="filter-type" id="filter-type-${col}">
+                                        <div class="filter-dropdown-double" onclick="stopPropagationdouble(event)" id="filter-double-${col.replace(' ', '') }">
+                                         <select class="filter-type" id="filter-type-${col.replace(' ', '') }">
                                             <option value="like">Between</option>
                                             <option value="startsWith">Starts With</option>
                                             <option value="endsWith">Ends With</option>
                                         </select>
-                                        <input type="text" placeholder="Search..." class="filter-input-double" data-column="${col}" />
-                                        <div class="checkbox-container-double" id="checkbox-container-double-${col}"></div>
-                                        <button onclick="applyfilterdouble('${col}')" data-column="${col}">Apply</button>
-                                        <button onclick="ShowEntry('${col}')" data-column="${col}">Show Entries</button>
+                                        <input type="text" placeholder="Search..." class="filter-input-double" data-column="${col.replace(' ', '') }" />
+                                        <div class="checkbox-container-double" id="checkbox-container-double-${col.replace(' ', '') }"></div>
+                                        <button onclick="applyfilterdouble('${col}')" data-column="${col.replace(' ', '') }">Apply</button>
+                                        <button onclick="ShowEntry('${col}')" data-column="${col.replace(' ', '') }">Show Entries</button>
                                         <button onclick="ClearFilter()">Clear</button>
                                         </div>
                                     </th>`;
@@ -540,8 +542,7 @@ function renderTableHeader(columns,Button, StringFilterColumn, NumericFilterColu
         }
         headerRow += `${filterHtml}`;
     });
-
-    if (Button) {
+    if (button) {
         headerRow += '<th>Action</th></tr>';
     } else {
         headerRow += '</tr>';
@@ -603,36 +604,64 @@ function stopPropagationdouble(event) {
     event.stopPropagation();
 };
 //function renderTable(items) {
-//    var button = true;
-//    const rows = items.map(item => {
+//    const rows = items.map((item, index) => {
 //        const row = Object.values(item).map(val => `<td>${val}</td>`).join('');
 //        if (button) {
-//            return `<tr>${row}<td><input class="btn btn-primary" type="button" onclick="EditData('${item.Code}')" value="Edit"/><input type="button" class="btn btn-danger" onclick="DeleteData('${item.Code}')" value="Delete"><input type="button" class="btn btn-info" onclick="ViewData('${item.Code}')" value="View"/></td></tr>`;
+//            return `<tr data-index="${index}">${row}<td>
+//                <input class="btn btn-primary" type="button" onclick="EditData('${item.Code}')" value="Edit"/>
+//                <input type="button" class="btn btn-danger" onclick="DeleteData('${item.Code}')" value="Delete">
+//                <input type="button" class="btn btn-info" onclick="ViewData('${item.Code}')" value="View"/>
+//            </td></tr>`;
 //        } else {
-//             return `<tr>${row}</tr>`;
+//            return `<tr data-index="${index}">${row}</tr>`;
 //        }
 //    }).join('');
+
+//    $('#table-body').html(rows);
+//}
+//function renderTable(items, showButtons) {
+//    const rows = items.map((item, index) => {
+//        const row = Object.values(item).map(val => `<td>${val}</td>`).join('');
+//        const buttons = showButtons.length > 0 ? `<td>${showButtons.join('')}</td>` : '';
+//        return `<tr data-index="${index}">${row}${buttons}</tr>`;
+//    }).join('');
+
 //    $('#table-body').html(rows);
 //}
 function renderTable(items) {
-    var button = true;
+
     const rows = items.map((item, index) => {
         const row = Object.values(item).map(val => `<td>${val}</td>`).join('');
-        if (button) {
-            return `<tr data-index="${index}">${row}<td>
-                <input class="btn btn-primary" type="button" onclick="EditData('${item.Code}')" value="Edit"/>
-                <input type="button" class="btn btn-danger" onclick="DeleteData('${item.Code}')" value="Delete">
-                <input type="button" class="btn btn-info" onclick="ViewData('${item.Code}')" value="View"/>
-            </td></tr>`;
-        } else {
-            return `<tr data-index="${index}">${row}</tr>`;
+
+        let buttons = '';
+
+        if (Array.isArray(showButtons) && showButtons.length > 0) {
+            buttons = '<td>';
+
+            if (showButtons.includes('E')) {
+                buttons += `<input class="btn btn-primary" type="button" onclick="EditData('${item.Code}')" value="Edit"/> `;
+            }
+            if (showButtons.includes('D')) {
+                buttons += `<input class="btn btn-danger" type="button" onclick="DeleteData('${item.Code}')" value="Delete"/> `;
+            }
+            if (showButtons.includes('V')) {
+                buttons += `<input class="btn btn-info" type="button" onclick="ViewData('${item.Code}')" value="View"/> `;
+            }
+            if (showButtons.includes('VE')) {
+                buttons += `<input class="btn btn-success" type="button" onclick="ViewData('${item.Code}')" value="View"/> `;
+            }
+            if (showButtons.includes('M')) {
+                buttons += `<input class="btn btn-info" type="button" onclick="MoreData('${item.Code}')" value="More.."/> `;
+            }
+
+            buttons += '</td>';
         }
+
+        return `<tr data-index="${index}">${row}${buttons}</tr>`;
     }).join('');
 
     $('#table-body').html(rows);
 }
-
-
 function updatePageInfo() {
     const start = (currentPage - 1) * itemsPerPage + 1;
     const end = Math.min(start + itemsPerPage - 1, filteredData.length);
@@ -653,19 +682,16 @@ function renderTableWithPagination() {
     updatePageInfo();
     updateButtons();
 }
-
 function firstBtn() {
     currentPage = 1;
     renderTableWithPagination();
 };
-
 function prevBtn() {
     if (currentPage > 1) {
         currentPage--;
         renderTableWithPagination();
     }
 };
-
 function nextBtn() {
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     if (currentPage < totalPages) {
@@ -673,12 +699,10 @@ function nextBtn() {
         renderTableWithPagination();
    }
 };
-
 function lastBtn() {
     currentPage = Math.ceil(filteredData.length / itemsPerPage);
     renderTableWithPagination();
 };
-
 function pageSize() {
     itemsPerPage = parseInt($("#pageSize").val());
     currentPage = 1;
