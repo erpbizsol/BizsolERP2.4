@@ -11,7 +11,7 @@ namespace BizsolERPMain
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
-           // builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
+            // builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
             builder.Services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout
@@ -50,10 +50,13 @@ namespace BizsolERPMain
 
             app.UseAuthorization();
 
-           
-             app.MapControllerRoute(
-                name: "HRMasters",
-                pattern: "{area:exists}/{controller=HRMasters}/{action=EmployeeMaster}/{id?}");
+            //app.MapControllerRoute(
+            //   name: "Home",
+            //   pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+            app.MapControllerRoute(
+               name: "HRMasters",
+               pattern: "{area:exists}/{controller=HRMasters}/{action=EmployeeMaster}/{id?}");
 
             app.MapControllerRoute(
                 name: "CommonMasters",
@@ -67,6 +70,9 @@ namespace BizsolERPMain
                 name: "ProductionTestArea",
                 pattern: "{area:exists}/{controller=DemoCustom}/{action=DemoCustomControl}/{id?}"
                 );
+            app.MapControllerRoute(
+              name: "PurchaseTransactions",
+              pattern: "{area:exists}/{controller=ApproveVerify}/{action=POApproval}/{id?}");
 
             app.Run();
         }
