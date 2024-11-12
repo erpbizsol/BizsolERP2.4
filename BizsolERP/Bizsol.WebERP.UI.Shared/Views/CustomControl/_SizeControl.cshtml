@@ -1,324 +1,77 @@
 ﻿
-<div id="SizeControlmodal" class="modal modal-sm" >
-    <div class="modal-content" style="overflow-y: auto;max-height: 300px">
-        <h4>Size Details:</h4>
-        
-        <datalist id="listMasterIdNo">
-            @*@foreach (var item in ViewBag.MasterIdentificationNos)
-            {
-                <option text="@item.ParantID">@item.ParantID</option>
+<div class="modal fade bs-example-modal-center" id="SizeControlmodal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Size Details:</h5>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-lg-12 col-md-6">
 
-            }*@
-        </datalist>
+                        <label for="choices-single-default" class="form-label font-size-13 text-muted p-3">Size Desp</label>
+                        <select class="js-example-basic-single" id="ddlItemSizeMaster" onchange="onSizeControl_ddlItemSizeMasterChange()">
+                           
+                        </select>
 
-        <div style="overflow-x:auto">
-            <table id="tbSizeParameter" class="display " style="width:100%">
-                <thead>
-                    <tr>
-                        <th>
-                            Parameter
-                        </th>
-                        <th>Value</th>
-
-                    </tr>
-                </thead>
-                <tbody>
-                    @*<tr>
-                        <td>THICKNESS</td>
-                        <td><input type="text" id="" value="4.20 MM" /></td>
-                    </tr>*@
-
-                    @foreach (var item in ViewBag.SizeTable)
-                    {
+                    </div>
+                </div>
+               
+                <table  class="table mt-1" style="width:100%">
+                    <thead>
                         <tr>
-                            <td>@item.ParameterName</td>
-                            <td>
-                                <input type="text" id="" value="@item.ParameterValue" list="list_@item.ParameterName.ToString().Replace(" ","")" onfocusout="checkDataListValidSize(this.value, 'list_@item.ParameterName.ToString().Replace(" ","")', 'hf_@item.ParameterName.ToString().Replace(" ","")')" onclick="$(this).val('');" autocomplete="off" style="background-color: #ccc !important; pointer-events: none;" />
-                                <datalist id="list_@item.ParameterName.ToString().Replace(" ","")">
-                                </datalist>
-                                <input type="hidden" value="@item.ValueCode" id="hf_@item.ParameterName.ToString().Replace(" ","")" />
-                                <input type="hidden" value="@item.ParameterCode" id="hf_ItemParameterMaster_Code_@item.ParameterName.ToString().Replace(" ","")" />
-                            </td>
+                            <th>
+                                Parameter
+                            </th>
+                            <th>Value</th>
+
+                        </tr>
+                    </thead>
+                    <tbody id="tbSizeParameter">
+
+                        @*  @foreach (var item in ViewBag.SizeTable)
+                        {
+                        <tr>
+                        <td>@item.ParameterName</td>
+                        <td>
+                        <input type="text" id="" value="@item.ParameterValue" list="list_@item.ParameterName.ToString().Replace(" ","")" onfocusout="checkDataListValidSize(this.value, 'list_@item.ParameterName.ToString().Replace(" ","")', 'hf_@item.ParameterName.ToString().Replace(" ","")')" onclick="$(this).val('');" autocomplete="off" style="background-color: #ccc !important; pointer-events: none;" />
+                        <datalist id="list_@item.ParameterName.ToString().Replace(" ","")">
+                        </datalist>
+                        <input type="hidden" value="@item.ValueCode" id="hf_@item.ParameterName.ToString().Replace(" ","")" />
+                        <input type="hidden" value="@item.ParameterCode" id="hf_ItemParameterMaster_Code_@item.ParameterName.ToString().Replace(" ","")" />
+                        </td>
                         </tr>
 
-                    }
-                </tbody>
+                        } *@
+                    </tbody>
 
-                <tfoot>
-
-                </tfoot>
-            </table>
-        </div>
-        <br />
-        <div class="text-right">
-            <a class="btn waves-effect waves-light" onclick="CreateSize();">
-                Done
-            </a>
-
-            <a href="#!" class="waves-effect waves-green btn-flat red" onclick="CloseSizeControl();">Close</a>
-            <input type="hidden" value="@ViewBag.ItemMaster_Code" id="hfItemMaster_Code" />
-        </div>
-    </div>
-
+                    <tfoot>
+                    </tfoot>
+                </table>
+                
+                <div class="text-end mt-1">
+                    <a class="btn btn-primary" onclick="onSizeControl_CreateSize();">
+                        Done
+                    </a>
+                    &nbsp;
+                    <a class="btn btn-danger" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                    <input type="hidden" value="@ViewBag.ItemMaster_Code" id="hfItemMaster_Code" />
+                    <input type="hidden" value="@ViewBag.ItemSizeMaster_Code" id="hfItemSizeMaster_Code" />
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
 </div>
-
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_SizeControlpage.js"></script>
 <script>
-    var tbSizeParameter = document.getElementById("tbSizeParameter");
-    var SizeMasterCode = 0, SizeDesp = '';
-
-    var editParameterList = '@ViewBag.EditParameterList';
-    //var editParameterList = ['Width'];
-
-    for (var i = 1; i < tbSizeParameter.rows.length; i++) {
-            if (i == 0) {
-
-            }
-            else {
-                var UpdateRow = tbSizeParameter.rows[i];
-                var ParaMeterName = UpdateRow.cells[0].innerHTML;
-                // var ItemParameterMaster_Code = UpdateRow.cells[1].getElementById('hf_ItemParameterMaster_Code_' + ParaMeterName).value;
-                var ItemParameterMaster_Code = UpdateRow.cells[1].getElementsByTagName('input')[2].value;
-
-                var DataList = UpdateRow.cells[1].getElementsByTagName('datalist')[0];
-
-                console.log(i);
-                GetSizeDll(DataList, ItemParameterMaster_Code);
-                console.log('hi');
-
-                // Enable Prameter Control..
-                if (typeof editParameterList === 'undefined' || editParameterList === '') {
-                    // Enable all Prameter..
-                    UpdateRow.cells[1].getElementsByTagName('input')[0].removeAttribute('style');
-                }
-                else
-                {
-                    // Enable Prameter those in editParameterList
-                    if (editParameterList.includes(ParaMeterName) == true) {
-                         UpdateRow.cells[1].getElementsByTagName('input')[0].removeAttribute('style');
-                    }
-                }
-
-                // end
-
-
-            }
-        }
-
-    function GetSizeDll(DataList, ItemParameterMaster_Code) {
-         $.ajax({
-            type: "POST",
-            url: "@Url.Action("GetSizeDDl", "CustomControl")",
-            async: true,
-            data: "{ItemParameterMaster_Code:'" + ItemParameterMaster_Code + "'}",
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-            success: function (data) {
-                if (data.length > 0) {
-
-                     var option = '';
-                    for (i = 0; i < data.length; i++) {
-                        var Desp, Code;
-                        for (let row of data[i]) {
-                            var Key = row.Key, Value = row.Value;
-                            switch (Key) {
-                                case "Desp":
-                                    Desp = Value;
-                                    break;
-                                case "Code":
-                                    Code = Value;
-                                    break;
-
-                            }
-                        }
-
-                        option += '<option text="' + Code + '">' + Desp + '</option>'
-                    }
-                    DataList.innerHTML = option;
-                   // checkWebveiw();
-
-                } else if (typeof data.Msg ==='undefined') {
-                    //alert('Plan Not Found');
-
-                } else {
-                    alert('Error: ' + data.Msg);
-                }
-
-            },
-            error: function (data) {
-
-            }
-        });
-    }
-
-    function CreateSize() {
-
-        var validFrom = true;
-        var ItemSizeParameterCodes = '';
-        for (var i = 1; i < tbSizeParameter.rows.length; i++) {
-            if (i == 0) {
-
-            }
-            else {
-                var UpdateRow = tbSizeParameter.rows[i];
-                var ItemParameterMaster_Code = UpdateRow.cells[1].getElementsByTagName('input')[2].value;
-                var ItemParameterValue_Code = UpdateRow.cells[1].getElementsByTagName('input')[1].value;
-                var ParaMeterName = UpdateRow.cells[0].innerHTML;
-                if (typeof ItemParameterMaster_Code === 'undefined' || ItemParameterMaster_Code === '' || ItemParameterMaster_Code === null || ItemParameterMaster_Code==='0') {
-                    //alert('Buyer Name could not blank')
-                    M.toast({ html: "Invalid " + ParaMeterName +" Parameter ", classes: 'rounded' });
-                    validFrom = false;
-                    break;
-                }
-                if (typeof ItemParameterValue_Code === 'undefined' || ItemParameterValue_Code === '' || ItemParameterValue_Code === null || ItemParameterValue_Code === '0') {
-                    //alert('Buyer Name could not blank')
-                    M.toast({ html: "Invalid " + ParaMeterName + " Parameter Value ", classes: 'rounded' });
-                    validFrom = false;
-                    break;
-                }
-                ItemSizeParameterCodes += ItemParameterMaster_Code + ',' + ItemParameterValue_Code+'#'
-
-            }
-
-
-        }
-
-        if (validFrom) {
-             $.ajax({
-            type: "POST",
-            url: "@Url.Action("CreateSize", "CustomControl")",
-            async: false,
-                 data: "{ItemMaster_Code:'" + $("#hfItemMaster_Code").val() + "',ItemSizeParameterCodes:'" + ItemSizeParameterCodes + "',CopySizeForNewItemMasterCode:'0'}",
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-            success: function (data) {
-                if (data.length > 0) {
-
-                    var option = '';
-                    var newSizeMaster_Code, newSizeDesp
-                    for (i = 0; i < data.length; i++) {
-
-                        for (let row of data[i]) {
-                            var Key = row.Key, Value = row.Value;
-                            switch (Key) {
-                                case "Code":
-                                    newSizeMaster_Code = Value;
-                                    break;
-                                case "SizeDesp":
-                                    newSizeDesp = Value;
-                                    break;
-                            }
-                        }
-
-
-                    }
-
-                    SizeMasterCode = newSizeMaster_Code;
-                    SizeDesp = newSizeDesp;
-                      //  alert('SizeMasterCode:' + SizeMasterCode + 'SizeDesp:' + SizeDesp)
-                    $("#SizeControlmodal").modal('close');
-
-                    window['@ViewBag.CallBackFunctionName']();
-
-                   // checkWebveiw();
-
-                } else if (typeof data.Msg ==='undefined') {
-                    //alert('Plan Not Found');
-
-                } else {
-                    alert('Error: ' + data.Msg);
-                }
-
-            },
-            error: function (data) {
-
-            }
-        });
-            //$("#SizeControlmodal").modal('close');
-        }
-
-
-    }
-    function checkDataListValidSize(Text, ListValue, Id) {
-        var list = $('#' + ListValue + ' option');//[0].attributes["text"].value;
-        var indexNO = IsValidCode(Text, list);
-        if (indexNO == -1) {
-            //alert("You not select option in " + ListValue + " ! please select....");
-            $('#' + Id).val('0');
-            return false;
-        }
-        else {
-            var Code = list[indexNO].attributes["text"].value;
-            $('#' + Id).val(Code);
-
-        }
-
-
-    }
-
-    function IsValidCode(codeText, list) {
-        var index1 = -1;
-        $.each(list, function (index, value) {
-
-            // alert(index + ": " + value);
-            var c = value.attributes["text"].value;
-            var text = value.value;
-            if (codeText === text) {
-                index1 = index;
-            }
-
-        });
-        return index1;
-    }
-
-    //function AllowEditParameter() {
-    //    var tbAllowEditSizeParameter = document.getElementById("tbSizeParameter");
-
-    //        for (var i = 1; i < tbAllowEditSizeParameter.rows.length; i++) {
-    //            if (i == 0) {
-
-    //            }
-    //            else {
-    //                var UpdateRow = tbSizeParameter.rows[i];
-    //                var ParaMeterName = UpdateRow.cells[0].innerHTML;
-    //                // var ItemParameterMaster_Code = UpdateRow.cells[1].getElementById('hf_ItemParameterMaster_Code_' + ParaMeterName).value;
-    //                if (document.getElementById("chAllowEditParameter").checked) {
-    //                    UpdateRow.cells[1].getElementsByTagName('input')[0].removeAttribute('style');///enable edit
-    //                }
-    //                else {
-    //                    // disable edit
-    //                    console.log('disable Edit...'+i);
-    //                    UpdateRow.cells[1].getElementsByTagName('input')[0].style["background-color"] = "#ccc!important";
-    //                    //UpdateRow.cells[1].getElementsByTagName('input')[0].style["pointer-events"] = "none";
-    //                }
-
-
-
-    //            }
-    //        }
-
-
-
-
-    //}
-
-    function CloseSizeControl() {
-        $("#SizeControlmodal").modal('close');
-        window['@ViewBag.CallBackFunctionName_btnClose']();
-    }
-
     $(document).ready(function () {
+       // ME();
+        getAllSize();
 
-
-        $('.modal').modal();
-        //$("#PrintIdmodal").modal({
-        //    dismissible: false
-
-        //});
         $("#SizeControlmodal").modal({
-            dismissible: false
-
+            backdrop: 'static',
+           // keyboard: false
         });
-        $("#SizeControlmodal").modal('open');
-
+        $("#SizeControlmodal").modal('show');
     });
 </script>

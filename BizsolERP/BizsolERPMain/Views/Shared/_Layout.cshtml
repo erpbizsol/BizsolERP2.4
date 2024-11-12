@@ -18,8 +18,12 @@
     <link href="~/assets/css/bootstrap.min.css" rel="stylesheet" />
     <!-- Icons Css -->
     <link href="~/assets/css/icons.min.css" rel="stylesheet" />
+    @* <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" /> *@
+    <link href="~/assets/libs/select2-4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+   
     <!-- App Css-->
     <link href="~/assets/css/app.min.css" rel="stylesheet" />
+    
     <style>
         .bell-icon {
             position: relative;
@@ -450,6 +454,7 @@
     <script src="~/assets/js/pages/datatables.init.js"></script>
     @* <script src="~/assets/js/pages/table-responsive.init.js"></script> *@
     <!-- Table Editable plugin -->
+   
     <script src="~/assets/libs/table-edits/build/table-edits.min.js"></script>
     <script src="~/assets/js/pages/table-editable.int.js"></script>
     <!-- App script should come last -->
@@ -457,8 +462,12 @@
     <!-- apexcharts -->
     <script src="assets/libs/apexcharts/apexcharts.min.js"></script>
     <!-- Plugins js-->
-    <script src="assets/libs/admin-resources/jquery.vectormap/jquery-jvectormap-1.2.2.min.js"></script>
-    <script src="assets/libs/admin-resources/jquery.vectormap/maps/jquery-jvectormap-world-mill-en.js"></script>
+     
+
+    <script src="~/assets/libs/admin-resources/jquery.vectormap/jquery-jvectormap-1.2.2.min.js"></script>
+    <script src="~/assets/libs/admin-resources/jquery.vectormap/maps/jquery-jvectormap-world-mill-en.js"></script>
+   @*  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script> *@
+    <script src="~/assets/libs/select2-4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function () {
             var authKey = '@Html.Raw(ViewBag.AuthKey)';
@@ -468,16 +477,8 @@
             
 
         });
+        
     </script>
-    @* <script src="assets/js/pages/modal.init.js"></script>
-
-    <script>
-    var myModal = document.getElementById('myModal')
-    var myInput = document.getElementById('myInput')
-
-    myModal.addEventListener('shown.bs.modal', function () {
-    myInput.focus()
-    })
-    </script> *@
+   
 </body>
 </html>
