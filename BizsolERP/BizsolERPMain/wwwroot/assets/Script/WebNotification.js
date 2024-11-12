@@ -1,17 +1,15 @@
 ﻿import { WebNotificationService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/WebNotificationService.js';
 
-
 $(document).ready(function () {
     let baseUrl = `${window.location.protocol}//${window.location.host}`;
     startTimer();
     GetWebNotificationList(baseUrl);
-    setInterval(GetWebNotificationList, 10000); // Refresh notifications every 60 seconds
+    setInterval(GetWebNotificationList, 60000); 
 });
 
 function GetWebNotificationList(baseUrl) {
     let totalNotificationCount = 0;
     let notificationList = '';
-
     // Fetch notifications
     WebNotificationService.GetWebNotificationMasterList("BIZANKIT", 102).then(function (value) {
 
@@ -65,12 +63,12 @@ function startTimer() {
 }
 
 $('#resetBtn').click(function () {
-
- 
     clearInterval(timer);
     minutes = 1;
     seconds = 0;
     $('#time').html(minutes + ":" + (seconds < 1 ? '0' + seconds : seconds));
     startTimer();
     GetWebNotificationList();
+    
 });
+

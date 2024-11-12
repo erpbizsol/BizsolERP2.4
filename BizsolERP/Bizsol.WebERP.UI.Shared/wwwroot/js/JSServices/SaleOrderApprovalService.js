@@ -14,7 +14,7 @@ const SaleOrderApprovalService = {
     GetSaleOrderDetail: function GetSaleOrderDetail(BuyerPOMaster_Code) {
         var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/GetSaleOrderDetail?BuyerPOMaster_Code=" + BuyerPOMaster_Code;
        /* return this._http.post(url, {}, { headers: this.headers() });*/
-        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
             function (value) {
                 return value;
             }
