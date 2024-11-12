@@ -1,55 +1,89 @@
 ﻿import { SizeControlService } from '../../JSServices/_SizeControlService.js'
 
-class Observable {
-    constructor(subscribe) {
-        this._subscribe = subscribe;
-    }
-    // Subscribe to the observable
-    subscribe(observer) {
-        return this._subscribe(observer);
-    }
-    // Create an observable from an array
-    static fromArray(array) {
-        return new Observable(observer => {
-            array.forEach(item => observer.next(item));
-            observer.complete();
+let arraySizeControlDllID = [];
+function getAllSize() {
+    SizeControlService.GetItemSizeListByItemCode($('#hfItemMaster_Code').val()).then(function (respone) {
+        BindSelectList($('#ddlItemSizeMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.SizeDesp })));
+
+        $('#ddlItemSizeMaster').val($('#hfItemSizeMaster_Code').val());
+        $('#ddlItemSizeMaster').select2({
+            dropdownParent: $('#SizeControlmodal')
         });
+
+        getItemParameterList();
+    })
+    
+}
+
+function getItemParameterList() {
+    SizeControlService.GetItemParameterMasterList($('#hfItemMaster_Code').val(), $('#hfItemSizeMaster_Code').val()).then(function (respone) {
+        console.log(respone);
+        arraySizeControlDllID = respone.map((item) => ({ ParameterCode: item.ParameterCode, ParameterName: item.ParameterName, ParameterValue: item.ParameterValue, ValueCode: item.ValueCode, SizeControlDllID: item.ParameterName.split(' ').join('') }))
+        let tbRow = '';
+        $.each(respone, function (key, val) {
+            let PValue = '<select id="' + val.ParameterName.split(' ').join('') +'" ></select>'
+            tbRow += '<tr><td>' + val.ParameterName + '</td><td>' + PValue + '</td></tr>';
+            GetSizeDll(val.ParameterName.split(' ').join(''), val.ParameterCode, val.ValueCode);
+            
+        });
+
+        $('#tbSizeParameter')[0].innerHTML = tbRow;
+        
+
+    })
+}
+
+function GetSizeDll(ddlelementID, ItemParameterMaster_Code, ValueCode) {
+    SizeControlService.GetItemSizeDropdownList(ItemParameterMaster_Code, $('#hfItemMaster_Code').val()).then(function (respone) {
+       // console.log(respone);
+        BindSelectList($('#' + ddlelementID)[0], respone.map((item) => ({ Code: item.Code, Desp: item.Desp })));
+        $('#' + ddlelementID).val(ValueCode);
+        $('#' + ddlelementID).select2({
+            dropdownParent: $('#SizeControlmodal')
+        });
+    })
+}
+function BindSelectList(element,list) {
+    let option = '<option value="0"></option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
+function onSizeControl_ddlItemSizeMasterChange(){
+    $('#hfItemSizeMaster_Code').val($('#ddlItemSizeMaster').val());
+    getItemParameterList();
+}
+function CreateSize() {
+
+    var validFrom = true;
+    var ItemSizeParameterCodes = '';
+
+    arraySizeControlDllID.forEach((value) => {
+        let ItemParameterValue_Code = $('#' + value.SizeControlDllID).val();
+        if (ItemParameterValue_Code == 0) {
+            alert('inval' + value.SizeControlDllID);
+            validFrom = false;
+            return;
+        }
+        ItemSizeParameterCodes += value.ParameterCode + ',' + ItemParameterValue_Code + '#'
+    })
+    
+
+    if (validFrom==true) {
+        alert(ItemSizeParameterCodes);
+        SizeControlService.CreateItemSize($('#hfItemMaster_Code').val(), ItemSizeParameterCodes, 0).then(function (respone) {
+            console.log(respone);
+            alert(respone[0].Code + 'SizeDesp:' + respone[0].SizeDesp);
+        })
     }
-}
-// Example usage
-const observable = new Observable(observer => {
-    // Emit some values
-    observer.next(SizeControlService.GetItemSizeMasterList("GP COIL"));
-   // observer.next(2);
-    //observer.next(3);
-    // Emit an error
-    // observer.error('Something went wrong');
-    // Complete the observable
-    observer.complete();
-    // Cleanup function (optional)
-    return () => {
-        console.log('Observer unsubscribed');
-    };
-});
+    
 
-
-function ME() {
-   // console.log(SizeControlService.GetItemSizeMasterList("GLASSINE"))
-    //console.log(SizeControlService.GetItemSizeMasterList("GP COIL"))
-    //console.log()
-    SizeControlService.GetItemSizeMasterList("GP COIL").then(function (value) { console.log(value) })
-
-    // Subscribe to the observable
-    //const subscription = observable.subscribe({
-    //    next: value => console.log('Received:', value),
-    //    error: err => console.error('Error occurred:', err),
-    //    complete: () => console.log('Observable completed')
-    //});
-    // Unsubscribe (cleanup)
-    //subscription.unsubscribe();
 }
 
-window.ME = ME;
+window.getAllSize = getAllSize;
+window.onSizeControl_CreateSize = CreateSize;
+window.onSizeControl_ddlItemSizeMasterChange = onSizeControl_ddlItemSizeMasterChange;
 
 
 
