@@ -6,9 +6,11 @@
 <script src="~/assets/script/filter.js"></script>
 <link href="~/assets/css/filter.css" rel="stylesheet" />
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/js/POApproval.js"></script>
+
 <div style="text-align:right">
     <input type="button" onclick="CreateNew()" class="btn btn-primary" value="Create New" />
 </div>
+
 <div class="table-wrapper mt-2">
     <table id="table" class="fixed-width-table">
         <thead id="table-header">
@@ -17,9 +19,29 @@
         </tbody>
     </table>
 </div>
+
 <div class="paginator" id="paginator">
 </div>
-<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target=".bs-example-modal-center">Open Modal</button>
 
+<button type="button" class="btn btn-primary" onclick="OpenModal()">Open Modal</button>
 
-
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">View History</h5>
+                <button type="button" class="btn-close" onclick="CloseModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper mt-2">
+                    <table id="modal-table" class="fixed-width-table">
+                        <thead id="modal-table-header">
+                        </thead>
+                        <tbody id="modal-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
