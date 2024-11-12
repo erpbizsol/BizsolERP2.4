@@ -10,14 +10,40 @@
     <input type="button" onclick="CreateNew()" class="btn btn-primary" value="Create New"/>
 </div>
 <div class="table-wrapper mt-2">
-    <table id="table" class="fixed-width-table">
+    <table id="State" class="fixed-width-table">
         <thead id="table-header">
         </thead>
         <tbody id="table-body">
         </tbody>
     </table>
 </div>
-<div class="paginator" id="paginator">
+<div class="paginator" id="paginator-State">
 </div>
+<button onclick="openModal()">
+    Open Modal
+</button>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modal Title</h5>
+                <button type="button" onclick="closeModal()" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper mt-2">
+                    <table id="table" class="fixed-width-table">
+                        <thead id="table-header1">
+                        </thead>
+                        <tbody id="table-body1">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-table">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/StateMasterList.js"></script>
 <script src="~/assets/script/filter.js"></script>
