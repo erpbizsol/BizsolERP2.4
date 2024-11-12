@@ -5,7 +5,7 @@ $(document).ready(function () {
     let baseUrl = `${window.location.protocol}//${window.location.host}`;
     startTimer();
     GetWebNotificationList(baseUrl);
-    setInterval(GetWebNotificationList, 60000); // Refresh notifications every 60 seconds
+    setInterval(GetWebNotificationList, 10000); // Refresh notifications every 60 seconds
 });
 
 function GetWebNotificationList(baseUrl) {
@@ -60,15 +60,17 @@ function startTimer() {
             GetWebNotificationList();
             return;
         }
-        $('#time').html(minutes + ":" + (seconds < 10 ? '0' + seconds : seconds));
+        $('#time').html(minutes + ":" + (seconds < 1 ? '0' + seconds : seconds));
     }, 1000);
 }
 
 $('#resetBtn').click(function () {
-    GetWebNotificationList();
+
+ 
     clearInterval(timer);
     minutes = 1;
     seconds = 0;
-    $('#time').html(minutes + ":" + (seconds < 10 ? '0' + seconds : seconds));
+    $('#time').html(minutes + ":" + (seconds < 1 ? '0' + seconds : seconds));
     startTimer();
+    GetWebNotificationList();
 });
