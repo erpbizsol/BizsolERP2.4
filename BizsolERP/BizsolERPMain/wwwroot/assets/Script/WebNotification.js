@@ -1,4 +1,4 @@
-﻿import { WebNotificationService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/WebNotificationService.js';
+﻿import { WebNotificationService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/WebNotificationService.js';
 
 
 $(document).ready(function () {

@@ -1,0 +1,353 @@
+﻿
+<div class="modal fade bs-example-modal-center" id="AttachmentControlmodal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bizsol ERP Document Control</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="#" class="dropzone" id="fileUploadForm">
+                    <div class="upload-container">
+                       <div class="row">
+                        <div class="col-md-12">
+
+                            <i class="display-2 text-muted bx bx-cloud-upload"></i>Choose File
+                            <label for="fileInput">Browse</label>
+                            <input type="file" id="fileInput" multiple>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="file-list" id="fileList">
+                                <!-- Dynamically added files will appear here -->
+                            </div>
+                        </div>
+                            
+                       
+                        </div>
+                    </div>
+                </form>
+
+
+                <table id="documentTable" class="mt-1">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Document Particulars</th>
+                            <th>Download</th>
+                            <th>File</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="documentTableBody">
+                        <!-- Dynamic rows will be added here -->
+                    </tbody>
+                </table>
+
+                
+                <div class="text-end mt-1">
+                    <a class="btn btn-primary" onclick="">
+                       Download all
+                    </a>
+                    &nbsp;
+                    
+                    <input type="hidden" value="@ViewBag.ItemMaster_Code" id="hfItemMaster_Code" />
+                    <input type="hidden" value="@ViewBag.ItemSizeMaster_Code" id="hfItemSizeMaster_Code" />
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
+<style>
+   
+    .upload-container label {
+        background-color: #5156be;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .save-btn {
+        background-color: #28a745;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .delete-btn, .download-btn {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 6px 10px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+
+    .file-input {
+        display: none;
+    }
+
+    .upload-container input[type="file"] {
+        display: none;
+    }
+
+    button, input, optgroup, select, textarea {
+        margin: 0;
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
+        margin: 5px;
+    }
+
+   
+</style>
+
+@* <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_SizeControlpage.js"></script> *@
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const authToken = '{"ERPDBConStr":"Data Source=220.158.165.98,65446;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBBizDev; User ID=sa;pwd=biz1981;Packet Size=32000","ERPMainDBConStr":"data source = 220.158.165.98,65446; initial catalog = BizSolERPMainDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000","ERPDMSDBConStr":"data source = 220.158.165.98,65446; initial catalog = BizSolERPDMSDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000","ERPDB_Name":"BizSolERPDBBizDev","ERPMainDB_Name":"BizSolERPMainDB_BizDev","ERPDMSDB_Name":"BizSolERPDMSDB_BizDev","AuthToken":"xyz","UserMaster_Code":"145","CompanyCode":"104"}';
+
+    $(document).ready(function () {
+        fetchDocuments();
+        fetchDownload();
+    });
+    function openModal() {
+        document.getElementById('documentModal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('documentModal').style.display = 'none';
+    }
+
+    fileInput.addEventListener('change', function () {
+        // Clear the file list each time new files are selected
+        fileList.innerHTML = "";
+        const files = Array.from(fileInput.files);
+        files.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.classList.add('file-list-item');
+
+            const fileParticularsInput = document.createElement('input');
+            fileParticularsInput.type = "text";
+            fileParticularsInput.placeholder = "Document Particulars";
+            fileParticularsInput.classList.add('file-particulars-input');
+
+            const fileNameInput = document.createElement('input');
+            fileNameInput.type = "text";
+            fileNameInput.classList.add('file-name-input');
+            fileNameInput.value = file.name;
+
+            // Check if the file is an image
+            if (file.type.startsWith("image/")) {
+                const imgURL = URL.createObjectURL(file);
+                fileNameInput.addEventListener('click', () => {
+                    window.open(imgURL, '_blank');
+                });
+            }
+
+            fileItem.appendChild(fileParticularsInput);
+            fileItem.appendChild(fileNameInput);
+
+            // Add delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.classList.add('btn');
+            deleteBtn.classList.add('btn-danger');
+            deleteBtn.textContent = "Delete";
+            deleteBtn.addEventListener('click', () => deleteFile(index));
+
+            fileItem.appendChild(deleteBtn);
+            fileList.appendChild(fileItem);
+        });
+    });
+
+    function deleteFile(index) {
+        const items = document.querySelectorAll('.file-list-item');
+        if (items[index]) {
+            items[index].remove();
+        }
+    }
+
+    function submitForm() {
+        const fileInput = document.getElementById('fileInput');
+        const files = fileInput.files;
+        let documentData = [];
+
+        // Check if any files are selected
+        if (files.length === 0) {
+            alert("Please select files to upload.");
+            return;
+        }
+
+        let filesProcessed = 0; // Track processed files
+
+        // Function to handle file read completion
+        function handleFileRead(file, index) {
+            const documentParticulars = prompt('Enter Document Particulars for ' + file.name);
+            // const remarks = prompt('Enter Remarks for ' + file.name);
+
+            // Convert the array to Float32Array (or any other format as needed)
+            const arrayToConvert = [10.9, 30.5];
+            const floatArray = new Float32Array(arrayToConvert);
+
+            // Convert to binary data
+            const binaryContent = floatArray.buffer;
+
+            // Convert ArrayBuffer to Base64 string
+            const base64Content = arrayBufferToBase64(binaryContent);
+
+            documentData.push({
+                code: index,
+                documentParticulars: documentParticulars,
+                documentName: file.name,
+                // remarks: remarks || '',
+                masterTableName: '',
+                detailTableName: '',
+                masterTableCode: 123,
+                detailTableCode: 456,
+                linkedWith: '',
+                documentContent: base64Content, // Use Base64 string here
+                entryNo: index + 1,
+                entryDate: new Date().toISOString(),
+                f_DefaultAttachmentOption_Code: 0
+            });
+
+            filesProcessed++;
+
+            // If all files are processed, send the request
+            if (filesProcessed === files.length) {
+                sendRequest(documentData); // Send the JSON payload after all files are processed
+            }
+        }
+
+        // Read each file as Base64
+        Array.from(files).forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                handleFileRead(file, index);
+            };
+            reader.readAsDataURL(file); // Read file as Data URL (Base64)
+        });
+    }
+
+    // Function to convert ArrayBuffer to Base64
+    function arrayBufferToBase64(buffer) {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary); // Convert to Base64
+    }
+
+    function sendRequest(documentData) {
+        $.ajax({
+            url: 'https://web.bizsol.in/erpapidev/api/DocumentAttachment/SaveDocumentMaster?UserMaster_Code=145',
+            type: 'POST',
+            data: JSON.stringify(documentData),  // Convert to JSON string
+            contentType: 'application/json',  // Expect JSON response
+            processData: false,
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader('Auth-Key', authToken);
+            },
+            success: function (response) {
+                alert("Files uploaded successfully.");
+                // Assuming response.files contains the uploaded file details
+                response.files.forEach((file, index) => {
+                    addRowToTable(index + 1, documentData[index].documentParticulars, file.documentName, file.id);
+                });
+            },
+            error: function (error) {
+                console.error("Error uploading files:", error);
+                alert("Failed to upload files. Check console for details.");
+            }
+        });
+    }
+
+    function addRowToTable(id, particulars, fileName, fileId) {
+        const newRow = `
+                                            <tr>
+                                                <td>${id}</td>
+                                                <td>${particulars}</td>
+                                                <td>${fileName}</td>
+                                            </tr>
+                                        `;
+        $('#fileTableBody').append(newRow); // Append the new row to the table body
+    }
+
+
+    function fetchDocuments() {
+        $.ajax({
+            url: 'https://web.bizsol.in/erpapidev/api/DocumentAttachment/GetAllDocumentAttachment?MasterTableName=BankMaster&MasterTableCode=14',
+            type: 'GET',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader('Auth-Key', authToken);
+            },
+            success: function (response) {
+                $('#documentTableBody').empty();
+
+                if (response && response.length > 0) {
+                    response.forEach(function (document) {
+                        const newRow = `
+                                                <tr>
+                                                    <td>${document.Code}</td>
+                                                    <td>${document.DocumentParticulars}</td>
+                                                    <td>${response.Download}</td>
+                                                    <td>${document.DocumentName}</td>
+                                                    <td>
+
+                                                        <button class="btn download-btn" data-id="${document.Code}">Action</button>
+                                                    </td>
+                                                </tr>
+                                                 `;
+                        $('#documentTableBody').append(newRow);
+                    });
+                } else {
+                    $('#documentTableBody').append(`
+                                                                            <tr>
+                                                                                <td colspan="4" class="text-center">No documents found.</td>
+                                                                            </tr>
+                                                                        `);
+                }
+            },
+            error: function (error) {
+                console.error("Error fetching documents: ", error);
+                alert("Failed to fetch documents. Check console for details.");
+            }
+        });
+    }
+
+    function fetchDownload() {
+        $.ajax({
+            url: 'https://web.bizsol.in/erpapidev/api/DocumentAttachment/ShowDocumentAttachment?DocumentMaster_Code=27294&IsDownload=Y',
+            type: 'GET',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader('Auth-Key', authToken);
+            },
+            success: function (response) {
+
+                // alert(response);
+
+            },
+            error: function (error) {
+                console.error("Error fetching documents: ", error);
+                alert("Failed to fetch documents. Check console for details.");
+            }
+        });
+    }
+</script>
+
+
+<script>
+    $(document).ready(function () {
+       $("#AttachmentControlmodal").modal({
+            backdrop: 'static',
+           // keyboard: false
+        });
+        $("#AttachmentControlmodal").modal('show');
+    });
+</script>
