@@ -4,7 +4,7 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const QuotationApprovalService = {
     GetUnApprovedQuotation: function GetUnApprovedQuotation() {
-        var URL = API_ENDPOINT_QuotationApproval + "/GetUnApprovedQuotation";
+        var url = UrlService.API_ENDPOINT_QuotationApproval + "/GetUnApprovedQuotation";
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
                 return value;

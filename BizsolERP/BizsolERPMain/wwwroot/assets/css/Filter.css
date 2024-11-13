@@ -231,7 +231,7 @@ i:hover {
     cursor: not-allowed;
     border: 1px solid #a9a9a9;
 }
-#pageSize {
+.pageSize {
     padding: 3px;
     margin-top: 5px;
 }
