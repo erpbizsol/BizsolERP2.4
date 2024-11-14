@@ -1,7 +1,6 @@
 ﻿import { UrlService } from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
-
 const SaleOrderApprovalService = {
     GetUnApprovedSaleOrders: function GetUnApprovedSaleOrders() {
         var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/GetUnApprovedSaleOrders";
@@ -22,9 +21,13 @@ const SaleOrderApprovalService = {
     },
 
     SaleOrderApproved: function SaleOrderApproved(BuyerPOMaster_Code) {
-        var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/SaleOrderApproved?BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&UserMaster_Code=" + UserMaster_Code;
-
-        return this._http.post(url, {}, { headers: this.headers() });
+        var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/SaleOrderApproved?BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&UserMaster_Code=145";
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+        //return this._http.post(url, {}, { headers: this.headers() });
     },
 }
 export { SaleOrderApprovalService }
