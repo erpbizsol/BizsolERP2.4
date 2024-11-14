@@ -13,14 +13,27 @@
     .modal-dialog{
         width:100%;
     }
+    .modal-header{
+        background-color: #3f51b5;
+      
+    }
+
+    .modal-title {
+        text-align:center;
+        color: #eef6f2;
+    }
 </style>
 <!-----------------------Opane Model-------------------------->
+<div class="row">
+    <div class="col-sm-3">
+        <input id="btnSearch" type="text" class="form-control" autocomplete="off" />
+    </div>
+</div>
  <div class="modal fade" id="myModal" tabindex="-1" role="dialog">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Modal Title</h5>
-                <button type="button" onclick="closeModal()" data-dismiss="modal">&times;</button>
+                <h5 class="modal-title">Sale Order Detail</h5>
             </div>
              <div class="modal-body">
                 <div class="table-wrapper mt-2">
@@ -34,7 +47,9 @@
                 <div class="paginator" id="paginator-table1">
                 </div>
             </div>
-          
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="closeModal()" data-bs-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
     </div>
