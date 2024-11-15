@@ -11,21 +11,21 @@
                 data: Data,
                 dataType: 'json',
                 success: function (response) {
+                    resolve(response);
+                    //if (response.status === "Success") {
+                    //resolve(response);
 
-                    if (response.status === "Success") {
-                        resolve(response);
-
-                    } else if (response.message == 'No Record Found') {
-                        alert("Error: No Record Found");
-                    }
-                    else if (response.length > 0) {
-                        //console.log(response);
-                        //return response;
-                        resolve(response);
-                    }
-                    else {
-                        alert("Error: " + response.message);
-                    }
+                    //} else if (response.message == 'No Record Found') {
+                    //    alert("Error: No Record Found");
+                    //}
+                    //else if (response.length > 0) {
+                    //    //console.log(response);
+                    //    //return response;
+                    //    resolve(response);
+                    //}
+                    //else {
+                    //    alert("Error: " + response.message);
+                    //}
                 },
                 error: function (xhr, status, error) {
                     var errorMessage = status + ': ' + error;
