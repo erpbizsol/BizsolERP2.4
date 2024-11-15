@@ -13,12 +13,21 @@ const ServicePOApprovalService = {
     },
 GetServicePODetail: function GetServicePODetail(POServiceMaster_Code) {
     var URL = UrlService.API_ENDPOINT_ServicePOApproval + "/GetServicePODetail?POServiceMaster_Code=" + POServiceMaster_Code;
-    return this._http.post(URL, {}, { headers: this.headers() });
+    return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
 },
-ServicePOApproved: function ServicePOApproved(POServiceMaster_Code) {
+    ServicePOApproved: function ServicePOApproved(POServiceMaster_Code) {
+    let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
     var URL = UrlService.API_ENDPOINT_ServicePOApproval + "/ServicePOApproved?POServiceMaster_Code=" + POServiceMaster_Code + "&UserMaster_Code=" + UserMaster_Code;
 
-    return this._http.post(URL, {}, { headers: this.headers() });
+    return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
 },
 }
 export { ServicePOApprovalService }
