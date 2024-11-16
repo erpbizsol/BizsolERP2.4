@@ -1,29 +1,27 @@
 ﻿import { WebNotificationService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/WebNotificationService.js';
 
-
-$(document).ready(function () {
-    startTimer();
-    GetWebNotificationList();
-    setInterval(GetWebNotificationList, 60000); // Refresh notifications every 60 seconds
-});
-
-function GetWebNotificationList() {
+//$(document).ready(function () {
+let baseUrl = `${window.location.protocol}//${window.location.host}`;
+startTimer();
+GetWebNotificationList(baseUrl);
+setInterval(GetWebNotificationList, 60000);
+//});
+function GetWebNotificationList(baseUrl) {
     let totalNotificationCount = 0;
     let notificationList = '';
-
     // Fetch notifications
-    WebNotificationService.GetWebNotificationMasterList("BIZANKIT", 102).then(function (value) {
+    WebNotificationService.GetWebNotificationMasterList("BIZANKIT").then(function (value) {
+
         value.forEach(notification => {
             totalNotificationCount += notification.NotificationCount;
             notificationList += `
-                <div class="notificationDroptown" onclick="window.location.href='${notification.ScreenURL}'">
+                <div onclick="window.location.href='${baseUrl}/${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
                     <span>${notification.NotificationDescription}</span>
                     <span>
                         ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}
                     </span>
                 </div>`;
         });
-
         if (totalNotificationCount > 0) {
             $("#notificationCount").text(totalNotificationCount).show();
         } else {
@@ -40,11 +38,9 @@ function GetWebNotificationList() {
         });
     });
 }
-
 var minutes = 1;
 var seconds = 0;
 var timer;
-
 function startTimer() {
     timer = setInterval(function () {
         if (seconds > 0) {
@@ -61,15 +57,18 @@ function startTimer() {
             GetWebNotificationList();
             return;
         }
-        $('#time').html(minutes + ":" + (seconds < 10 ? '0' + seconds : seconds));
+        $('#time').html(minutes + ":" + (seconds < 1 ? '0' + seconds : seconds));
     }, 1000);
 }
 
 $('#resetBtn').click(function () {
-    GetWebNotificationList();
     clearInterval(timer);
     minutes = 1;
     seconds = 0;
-    $('#time').html(minutes + ":" + (seconds < 10 ? '0' + seconds : seconds));
+    $('#time').html(minutes + ":" + (seconds < 1 ? '0' + seconds : seconds));
     startTimer();
+    GetWebNotificationList();
+
 });
+
+window.GetWebNotificationList = GetWebNotificationList;

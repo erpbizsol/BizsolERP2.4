@@ -1,0 +1,68 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+@* <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script> *@
+<link href="~/assets/css/filter.css" rel="stylesheet" />
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/SaleOrderApproval.js"></script>
+<style>
+    .modal-dialog {
+        width: 100%;
+    }
+
+    .modal-header {
+        background-color: #3f51b5;
+    }
+
+    .modal-title {
+        text-align: center;
+        color: #eef6f2;
+    }
+</style>
+<!-----------------------Opane Model-------------------------->
+<div class="row">
+    <div class="col-sm-3">
+        <input id="btnSearch" type="text" class="form-control" autocomplete="off" />
+    </div>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sale Order Detail</h5>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper mt-2">
+                    <table id="table1" class="fixed-width-table">
+                        <thead id="table-header1">
+                        </thead>
+                        <tbody id="table-body1">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-table1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="closeModal()" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-----------------------End Model-------------------------->
+<!-----------------------Table-------------------------->
+<div class="table-wrapper mt-2">
+    <table id="table" class="fixed-width-table">
+        <thead id="table-header">
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-table">
+</div>
+<!-----------------------Table-------------------------->
+<script src="~/assets/script/filter.js"></script>
