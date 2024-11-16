@@ -1,5 +1,4 @@
 ﻿import { POApprovalService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/POApprovalService.js';
-
 $(document).ready(function () {
     POApprovalService.GetUnApprovedPO().then(function (response) {
         const stringFilterColumn = ["Party Name", "Product", "Payment Terms"];
@@ -61,10 +60,10 @@ window.openPOHistory = function (ItemMaster_Code, itemsizemaster_Code) {
         const stringFilterColumn = [];
         const numericFilterColumn = [];
         const dateFilterColumn = [];
-        const button = true;
+        const button = false;
         const stringDoubleFilterColumn = [];
         const showButtons = [];
-        const hiddenColumns = ["Action"];
+        const hiddenColumns = [];
         //alert(data) 
         // Update or re-create the data table with the specific PO details
         CreateDataTable("modal-history-table-header", "modal-history-table-body", result, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
@@ -86,9 +85,10 @@ function CloseModal() {
 
 function Approval(Code) {
     POApprovalService.POApproved(Code).then(function (approve) {
-        alert(approve);
         if (approve.status === 'Y') {
             alert(approve.Msg);
+            GetUnApprovedPO();
+        
         }
         else {
             alert(approve.Msg);
