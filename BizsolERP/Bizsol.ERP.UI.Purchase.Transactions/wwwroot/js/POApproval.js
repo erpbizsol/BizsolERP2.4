@@ -1,47 +1,92 @@
 ﻿import { POApprovalService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/POApprovalService.js';
 $(document).ready(function () {
-    POApprovalService.GetUnApprovedPO().then(function (response) {
-        const stringFilterColumn = ["Party Name", "Product", "Payment Terms"];
-        const numericFilterColumn = ["Code", "PO No", "PO Amount"];
-        const dateFilterColumn = ["PO Date"];
-        const button = false;
-        const stringDoubleFilterColumn = ["Product"];
-        const showButtons = [];
-        const hiddenColumns = [];
-        const updatedResponse = response.map(item => ({
-            ...item, Action: `<button class="btn btn-success" title="Approve" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
-        <button class="btn btn-info" title="View Details" onclick="ViewData('${item.Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>
-        <button class="btn btn-info" title="Attchment" onclick="Approval('${item.Approve}')"><i class="fa-solid fa-paperclip"></i></button>
-        <button class="btn btn-info" title="Preview" onclick="ViewData('${item.Code}')"><i class="fa fa-eye" aria-hidden="true"></i></button>`
-        }));
-        // Initialize the data table with the response
-        CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
-
-        // Set up the event listener for each row or button in the table, if needed
-        response.forEach(item => {
-            // Example: Add click listener for each item
-            $(`#l-${item.Code}`).on("click", function () {
-                // Call function to handle button click, e.g., open modal with PO details
-                openPODetails(item.Code);
-            });
-        });
-    });
+    unApprovedPO();
 });
+function unApprovedPO() {
+    POApprovalService.GetUnApprovedPO().then(function (response) {
+        if (response && Array.isArray(response) && response.length > 0) {
+            const stringFilterColumn = ["Party Name", "Product", "Payment Terms"];
+            const numericFilterColumn = ["Code", "PO No", "PO Amount"];
+            const dateFilterColumn = ["PO Date"];
+            const button = false;
+            const stringDoubleFilterColumn = ["Product"];
+            const showButtons = [];
+            const hiddenColumns = [];
 
-window.openPODetails=function(code) {
+            const updatedResponse = response.map(item => ({
+                ...item,
+                Action: `<button class="btn btn-success" title="Approve" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
+                <button class="btn btn-info" title="View Details" onclick="ViewData('${item.Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>
+                <button class="btn btn-info" title="Attchment" onclick="Approval('${item.Approve}')"><i class="fa-solid fa-paperclip"></i></button>
+                <button class="btn btn-info" title="Preview" onclick="ViewData('${item.Code}')"><i class="fa fa-eye" aria-hidden="true"></i></button>`
+            }));
+
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
+
+            // Add listeners for each item
+            response.forEach(item => {
+                $(`#l-${item.Code}`).on("click", function () {
+                    openPODetails(item.Code);
+                });
+            });
+        } else {
+            console.error("No valid data found:", response);
+            alert("No data available.");
+        }
+    }).catch(error => {
+        console.error("Error in fetching data:", error);
+        alert("Failed to load data.");
+    });
+}
+
+
+//function unApprovedPO() {
+//    POApprovalService.GetUnApprovedPO().then(function (response) {
+//        if (response != "0") {
+//            const stringFilterColumn = ["Party Name", "Product", "Payment Terms"];
+//            const numericFilterColumn = ["Code", "PO No", "PO Amount"];
+//            const dateFilterColumn = ["PO Date"];
+//            const button = false;
+//            const stringDoubleFilterColumn = ["Product"];
+//            const showButtons = [];
+//            const hiddenColumns = [];
+//            const updatedResponse = response.map(item => ({
+//                ...item, Action: `<button class="btn btn-success" title="Approve" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
+//        <button class="btn btn-info" title="View Details" onclick="ViewData('${item.Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>
+//        <button class="btn btn-info" title="Attchment" onclick="Approval('${item.Approve}')"><i class="fa-solid fa-paperclip"></i></button>
+//        <button class="btn btn-info" title="Preview" onclick="ViewData('${item.Code}')"><i class="fa fa-eye" aria-hidden="true"></i></button>`
+//            }));
+
+//            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
+
+
+//            // Initialize the data table with the response
+
+//            // Set up the event listener for each row or button in the table, if needed
+//            response.forEach(item => {
+//                // Example: Add click listener for each item
+//                $(`#l-${item.Code}`).on("click", function () {
+//                    // Call function to handle button click, e.g., open modal with PO details
+//                    openPODetails(item.Code);
+//                });
+//            });
+//        }
+//        });
+//}
+window.openPODetails = function (code) {
     //alert(code);
     POApprovalService.GetPODetail(code).then(function (data) {
-        const stringFilterColumn = ["Item Code", "Item Description", "Requested By","Last Purchased From"];
-        const numericFilterColumn = ["PO Qty", "IndentMaster_Code", "Rate", "Rate After Discount", "Amount", "Indent No", "ItemMaster_Code", "itemsizemaster_Code", "Last PO Rate", "Last Purchased Qty", "Dis. (%)","Tolerance %"];
-        const dateFilterColumn = ["PO Date","Last Po Date"];
+        const stringFilterColumn = ["Item Code", "Item Description", "Requested By", "Last Purchased From"];
+        const numericFilterColumn = ["PO Qty", "IndentMaster_Code", "Rate", "Rate After Discount", "Amount", "Indent No", "ItemMaster_Code", "itemsizemaster_Code", "Last PO Rate", "Last Purchased Qty", "Dis. (%)", "Tolerance %"];
+        const dateFilterColumn = ["PO Date", "Last Po Date"];
         const button = false;
         const stringDoubleFilterColumn = ["Product"];
         const showButtons = [];
         const hiddenColumns = ["AllowPOWithOutIndent_RawMaterial_Code", "Size Description", "Specification"];
-        const updatedResponse = data.map(item => ({ ...item, Action: `<button class="btn btn-info" title="View History" onclick="ViewHistory('${item.ItemMaster_Code}', '${item.itemsizemaster_Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>`}));
+        const updatedResponse = data.map(item => ({ ...item, Action: `<button class="btn btn-info" title="View History" onclick="ViewHistory('${item.ItemMaster_Code}', '${item.itemsizemaster_Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>` }));
         //alert(data)
         // Update or re-create the data table with the specific PO details
-        CreateDataTable("modal-table-header", "modal-table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
+        BizsolCustomFilterGrid.CreateDataTable("modal-table-header", "modal-table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
         data.forEach(item => {
             // Example: Add click listener for each item
             $(`#l-${item.ItemMaster_Code, item.itemsizemaster_Code}`).on("click", function () {
@@ -66,7 +111,7 @@ window.openPOHistory = function (ItemMaster_Code, itemsizemaster_Code) {
         const hiddenColumns = [];
         //alert(data) 
         // Update or re-create the data table with the specific PO details
-        CreateDataTable("modal-history-table-header", "modal-history-table-body", result, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
+        BizsolCustomFilterGrid.CreateDataTable("modal-history-table-header", "modal-history-table-body", result, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
 
     });
 }
@@ -84,11 +129,11 @@ function CloseModal() {
 }
 
 function Approval(Code) {
-    POApprovalService.POApproved(Code).then(function (approve) {
-        if (approve.status === 'Y') {
+    POApprovalService.POApproved(Code).then(function (approvedata) {
+        if (approvedata.status === 'Y') {
+            unApprovedPO();
+            GetWebNotificationList();
             alert(approve.Msg);
-            GetUnApprovedPO();
-        
         }
         else {
             alert(approve.Msg);
