@@ -21,7 +21,9 @@ const SaleOrderApprovalService = {
     },
 
     SaleOrderApproved: function SaleOrderApproved(BuyerPOMaster_Code) {
-        var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/SaleOrderApproved?BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&UserMaster_Code=145";
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/SaleOrderApproved?BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&UserMaster_Code" + userMasterCode;
         return promiseAjaxCallApi.CallAPI('POST', url, "").then(
             function (value) {
                 return value;

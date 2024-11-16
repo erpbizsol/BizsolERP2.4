@@ -1,5 +1,4 @@
-﻿
-@{
+﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -10,16 +9,16 @@
 <link href="~/assets/css/filter.css" rel="stylesheet" />
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/SaleOrderApproval.js"></script>
 <style>
-    .modal-dialog{
-        width:100%;
+    .modal-dialog {
+        width: 100%;
     }
-    .modal-header{
+
+    .modal-header {
         background-color: #3f51b5;
-      
     }
 
     .modal-title {
-        text-align:center;
+        text-align: center;
         color: #eef6f2;
     }
 </style>
@@ -29,13 +28,13 @@
         <input id="btnSearch" type="text" class="form-control" autocomplete="off" />
     </div>
 </div>
- <div class="modal fade" id="myModal" tabindex="-1" role="dialog">
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Sale Order Detail</h5>
             </div>
-             <div class="modal-body">
+            <div class="modal-body">
                 <div class="table-wrapper mt-2">
                     <table id="table1" class="fixed-width-table">
                         <thead id="table-header1">
@@ -52,9 +51,8 @@
             </div>
         </div>
     </div>
-    </div>
+</div>
 <!-----------------------End Model-------------------------->
-
 <!-----------------------Table-------------------------->
 <div class="table-wrapper mt-2">
     <table id="table" class="fixed-width-table">
