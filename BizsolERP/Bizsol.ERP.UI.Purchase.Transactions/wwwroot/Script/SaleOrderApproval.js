@@ -2,21 +2,6 @@
 $(document).ready(function () {
     GetSaleOrderApproval();
 });
-//function GetSaleOrderApproval() {
-//    SaleOrderApprovalService.GetUnApprovedSaleOrders().then(function (response) {
-//        const StringFilterColumn = ["Order No", "PartyName", "Sales Person"];
-//        const NumericFilterColumn = ["Qty MT", "Qty PC", "Qty MTRS", "Amount", "TotalOrderAmount"];
-//        const DateFilterColumn = ["Order Date"];
-//        const Button = false;
-//        const StringdoubleFilterColumn = ["UserName"];
-//        //const showButtons = ["V","A"];
-//        const showButtons = [];
-//        const hiddenColumns = ["Code","BuyerPOMaster_Code"];
-//        const updatedResponse = response.map(item => ({ ...item, Action: item.Action ? `<button onclick="ViewData('${item.BuyerPOMaster_Code}')">View</button>` : "" }));
-//         //response = response.map((item) => ({ Action: '<button onclick="alert(' + item.BuyerPOMaster_Code +')">Edit</button>'  }))
-//        CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns)
-//    });
-//}
 function GetSaleOrderApproval() {
     SaleOrderApprovalService.GetUnApprovedSaleOrders().then(function (response) {
         const StringFilterColumn = ["Order No", "PartyName", "Sales Person"];
@@ -73,9 +58,9 @@ function SaleOrderApprovedlist(BCode) {
         if (resdata.Status === "Y") {
             SaleOrderApprovedlist(BCode);
             GetWebNotificationList();
-             alert("Success: " + resdata.Msg);
-           
-        }else {
+            alert("Success: " + resdata.Msg);
+
+        } else {
             alert("No Approval Sale Order !..");
             //alert("Error: " + resdata.Msg);
         }

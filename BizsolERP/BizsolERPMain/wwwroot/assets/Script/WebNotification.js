@@ -1,12 +1,11 @@
 ﻿import { WebNotificationService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/WebNotificationService.js';
 
-$(document).ready(function () {
-    let baseUrl = `${window.location.protocol}//${window.location.host}`;
-    startTimer();
-    GetWebNotificationList(baseUrl);
-    setInterval(GetWebNotificationList, 60000); 
-});
-
+//$(document).ready(function () {
+let baseUrl = `${window.location.protocol}//${window.location.host}`;
+startTimer();
+GetWebNotificationList(baseUrl);
+setInterval(GetWebNotificationList, 60000);
+//});
 function GetWebNotificationList(baseUrl) {
     let totalNotificationCount = 0;
     let notificationList = '';
@@ -69,7 +68,7 @@ $('#resetBtn').click(function () {
     $('#time').html(minutes + ":" + (seconds < 1 ? '0' + seconds : seconds));
     startTimer();
     GetWebNotificationList();
-    
+
 });
 
 window.GetWebNotificationList = GetWebNotificationList;
