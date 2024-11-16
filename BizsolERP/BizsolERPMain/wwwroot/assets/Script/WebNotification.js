@@ -11,7 +11,7 @@ function GetWebNotificationList(baseUrl) {
     let totalNotificationCount = 0;
     let notificationList = '';
     // Fetch notifications
-    WebNotificationService.GetWebNotificationMasterList("BIZANKIT", 102).then(function (value) {
+    WebNotificationService.GetWebNotificationMasterList("BIZANKIT").then(function (value) {
 
         value.forEach(notification => {
             totalNotificationCount += notification.NotificationCount;
@@ -72,3 +72,4 @@ $('#resetBtn').click(function () {
     
 });
 
+window.GetWebNotificationList = GetWebNotificationList;

@@ -39,7 +39,7 @@ function GetSaleOrderApproval() {
                    <button style="background-color:#3f51b5;border-radius: 5px" onclick="SaleOrderApprovedlist('${item.BuyerPOMaster_Code}')"><i class="fa fa-check-circle" style="color:white;"></i></button>
                 ` : ""
             }));
-            CreateDataTable("table-header", "table-body", updatedFilteredResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedFilteredResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
         }
         renderTable();
         searchInput.addEventListener('input', renderTable);
@@ -54,7 +54,7 @@ window.GetSaleOrderDetails = function (Code) {
         const showButtons = [];
         const StringdoubleFilterColumn = [];
         const hiddenColumns = ["Code"];
-        CreateDataTable("table-header1", "table-body1", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
+        BizsolCustomFilterGrid.CreateDataTable("table-header1", "table-body1", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
 
     });
 }
@@ -69,15 +69,15 @@ function closeModal() {
     $('#myModal').modal('hide');
 }
 function SaleOrderApprovedlist(BCode) {
-    debugger;
     SaleOrderApprovalService.SaleOrderApproved(BCode).then(function (resdata) {
         if (resdata.Status === "Y") {
             SaleOrderApprovedlist(BCode);
-            // alert("Success: " + resdata.Msg);
+            GetWebNotificationList();
+             alert("Success: " + resdata.Msg);
            
         }else {
             alert("No Approval Sale Order !..");
-           // alert("Error: " + resdata.Msg);
+            //alert("Error: " + resdata.Msg);
         }
     }).catch(function (error) {
         console.error("Error in Sale Order Approval: ", error);
