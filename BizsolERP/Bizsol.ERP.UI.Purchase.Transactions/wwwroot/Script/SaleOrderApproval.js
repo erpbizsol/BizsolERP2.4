@@ -1,5 +1,6 @@
 ﻿import { SaleOrderApprovalService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/SaleOrderApprovalService.js';
 $(document).ready(function () {
+    $('[data-toggle="tooltip"]').tooltip();
     GetSaleOrderApproval();
 });
 function GetSaleOrderApproval() {
@@ -20,8 +21,8 @@ function GetSaleOrderApproval() {
                 )
             );
             const updatedFilteredResponse = filteredResponse.map(item => ({
-                ...item, Action: item.Action ? `<button style="background-color:#198754;border-radius: 5px; " onclick="ViewData('${item.BuyerPOMaster_Code}')"><i class="fa-solid fa-folder-open" style="color:white;"></i></button>
-                   <button style="background-color:#3f51b5;border-radius: 5px" onclick="SaleOrderApprovedlist('${item.BuyerPOMaster_Code}')"><i class="fa fa-check-circle" style="color:white;"></i></button>
+                ...item, Action: item.Action ? `<button style="background-color:#198754;border-radius: 5px; " onclick="ViewData('${item.BuyerPOMaster_Code}')"><i class="fa-solid fa-folder-open" data-toggle="tooltip" data-placement="top" title="View Details" style="color:white;"></i></button>
+                   <button style="background-color:#3f51b5;border-radius: 5px" onclick="SaleOrderApprovedlist('${item.BuyerPOMaster_Code}')"><i class="fa fa-check-circle" data-toggle="tooltip" data-placement="top" title="Approve" style="color:white;"></i></button>
                 ` : ""
             }));
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedFilteredResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
