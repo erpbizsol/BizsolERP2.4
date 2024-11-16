@@ -18,8 +18,8 @@ function GetWebNotificationList(baseUrl) {
             notificationList += `
                 <div onclick="window.location.href='${baseUrl}/${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 8px 16px;">
                     <span>${notification.NotificationDescription}</span>
-                    <span style="padding: 2px 8px;">
-                        ${notification.NotificationCount > 0 ? `<span style="padding: 2px 8px;">${notification.NotificationCount}</span>` : ''}
+                    <span>
+                        ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}
                     </span>
                 </div>`;
         });
