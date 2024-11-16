@@ -13,12 +13,13 @@
                 success: function (response) {
                     resolve(response);
                     //if (response.status === "Success") {
-                    //resolve(response);
+                    //    resolve(response);
 
                     //} else if (response.message == 'No Record Found') {
                     //    alert("Error: No Record Found");
                     //}
-                    //else if (response.length > 0) {
+                    //else
+                    //    if (response.length > 0) {
                     //    //console.log(response);
                     //    //return response;
                     //    resolve(response);

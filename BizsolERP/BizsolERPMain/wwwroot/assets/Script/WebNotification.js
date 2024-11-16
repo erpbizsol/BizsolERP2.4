@@ -1,19 +1,18 @@
 ﻿import { WebNotificationService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/WebNotificationService.js';
 
-
 $(document).ready(function () {
     let baseUrl = `${window.location.protocol}//${window.location.host}`;
     startTimer();
     GetWebNotificationList(baseUrl);
-    setInterval(GetWebNotificationList, 60000); // Refresh notifications every 60 seconds
+    setInterval(GetWebNotificationList, 60000); 
 });
 
 function GetWebNotificationList(baseUrl) {
     let totalNotificationCount = 0;
     let notificationList = '';
-
     // Fetch notifications
-    WebNotificationService.GetWebNotificationMasterList("BIZANKIT", 102).then(function (value) {
+    WebNotificationService.GetWebNotificationMasterList("BIZANKIT").then(function (value) {
+
         value.forEach(notification => {
             totalNotificationCount += notification.NotificationCount;
             notificationList += `
@@ -24,7 +23,6 @@ function GetWebNotificationList(baseUrl) {
                     </span>
                 </div>`;
         });
-
         if (totalNotificationCount > 0) {
             $("#notificationCount").text(totalNotificationCount).show();
         } else {
@@ -60,15 +58,18 @@ function startTimer() {
             GetWebNotificationList();
             return;
         }
-        $('#time').html(minutes + ":" + (seconds < 10 ? '0' + seconds : seconds));
+        $('#time').html(minutes + ":" + (seconds < 1 ? '0' + seconds : seconds));
     }, 1000);
 }
 
 $('#resetBtn').click(function () {
-    GetWebNotificationList();
     clearInterval(timer);
     minutes = 1;
     seconds = 0;
-    $('#time').html(minutes + ":" + (seconds < 10 ? '0' + seconds : seconds));
+    $('#time').html(minutes + ":" + (seconds < 1 ? '0' + seconds : seconds));
     startTimer();
+    GetWebNotificationList();
+    
 });
+
+window.GetWebNotificationList = GetWebNotificationList;

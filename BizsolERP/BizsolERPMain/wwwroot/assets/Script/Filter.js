@@ -6,7 +6,24 @@ let itemsPerPage = 10;
 let button = false;
 let showButtons = [];
 let hiddenColumns = [];
-$(document).ready(function () {
+const BizsolCustomFilterGrid = {
+    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns) {
+        const columns = Object.keys(data[0]);
+        const tableId = $('#' + bodyId).closest('table').attr('id');
+        renderTableHeader(HiddenColumns, headerId, bodyId, columns, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
+        hiddenColumns = HiddenColumns;
+        renderTable(data, bodyId);
+        button = Button;
+        showButtons = ShowButtons;
+        filteredData = data;
+        bodyId = bodyId;
+        createPaginator(tableId, bodyId);
+        renderTableWithPagination(tableId, bodyId);
+    }
+
+}
+window.BizsolCustomFilterGrid = BizsolCustomFilterGrid;
+//$(document).ready(function () {
     function populateFilterOptions(columnName,bodyId) {
 
         var uniqueValues = new Set();
@@ -84,7 +101,7 @@ $(document).ready(function () {
         }
     });
     
-});
+//});
 
 var columnFilters = {};
 window.populateDateFilter = function (columnName, bodyId) {
@@ -409,19 +426,6 @@ function applyfilterdate(columnName, bodyId) {
     applyFilters(bodyId);
     closeAllFilters();
 }
-function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns) {
-    const columns = Object.keys(data[0]);
-    const tableId = $('#' + bodyId).closest('table').attr('id');
-    renderTableHeader(HiddenColumns,headerId,bodyId,columns, Button,StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
-    hiddenColumns = HiddenColumns;
-    renderTable(data, bodyId);
-    button = Button;
-    showButtons = ShowButtons;
-    filteredData = data;
-    bodyId = bodyId;
-    createPaginator(tableId, bodyId);
-    renderTableWithPagination(tableId,bodyId);
-}
 function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn) {
     const $header = $(`#${headerId}`);
     $header.empty();
@@ -642,7 +646,6 @@ function updatePageInfo(tableId) {
     const end = Math.min(start + itemsPerPage - 1, filteredData.length);
     $(`#pageInfo-${tableId}`).text(`${start} – ${end} of ${filteredData.length}`);
 }
-
 function updateButtons(tableId) {
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     $(`#firstBtn-${tableId}, #prevBtn-${tableId}`).prop('disabled', currentPage === 1);
