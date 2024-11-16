@@ -14,9 +14,11 @@ function GetApprovedQuotationList() {
         const ShowButton = ["V"];
         const hiddenColumns = ["Code"];
         const showButtons = [];
-        const updatedResponse = resData.map(item => ({...item, Action: item.Action ? `<button style="background-color:#198754;border-radius: 5px; " onclick="ViewData('${item.Code}')"><i class="fa-solid fa-folder-open" style="color:white;"></i></button>
+        const updatedResponse = resData.map(item => ({
+            ...item, Action: item.Action ? `<button style="background-color:#198754;border-radius: 5px; " onclick="ViewData('${item.Code}')"><i class="fa-solid fa-folder-open" style="color:white;"></i></button>
                    <button style="background-color:#3f51b5;border-radius: 5px" onclick="QuotationApprovedlist('${item.Code}')"><i class="fa fa-check-circle" style="color:white;"></i></button>
-                ` : ""}));
+                ` : ""
+        }));
         BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
     });
 }
@@ -43,14 +45,13 @@ function ViewData(Code) {
 function closeModal() {
     $('#myModal').modal('hide');
 }
-
 function QuotationApprovedlist(code) {
     QuotationApprovalService.QuotationApproved(code).then(function (resdata) {
-        if (resdata.Status === "Y")   {
+        if (resdata.Status === "Y") {
             alert("Success: " + resdata.Msg);
-             GetWebNotificationList();
-             GetApprovedQuotationList(code);
-            
+            GetWebNotificationList();
+            GetApprovedQuotationList(code);
+
         } else {
             alert("Error: " + resdata.Msg);
         }

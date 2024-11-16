@@ -3,7 +3,7 @@ import { UrlService } from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const WebNotificationService = {
-    GetWebNotificationMasterList: function GetWebNotificationMasterList(UserID) {
+    GetWebNotificationMasterList: function GetWebNotificationMasterList(UserID, companycode) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var companycode = authKeyData.CompanyCode;
         let url = UrlService.API_ENDPOINT_WebNotification + "/GetWebNotificationMasterList?UserID=" + UserID + "&CompanyCode=" + companycode;
