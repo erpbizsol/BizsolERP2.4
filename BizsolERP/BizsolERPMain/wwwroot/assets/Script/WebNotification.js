@@ -1,21 +1,20 @@
-﻿import { WebNotificationService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/WebNotificationService.js';
+﻿import { WebNotificationService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/WebNotificationService.js';
 
-//$(document).ready(function () {
-let baseUrl = `${window.location.protocol}//${window.location.host}`;
 startTimer();
-GetWebNotificationList(baseUrl);
+GetWebNotificationList();
 setInterval(GetWebNotificationList, 60000);
-//});
-function GetWebNotificationList(baseUrl) {
+let notificationList = '';
+
+function GetWebNotificationList() {
     let totalNotificationCount = 0;
-    let notificationList = '';
+  
     // Fetch notifications
     WebNotificationService.GetWebNotificationMasterList("BIZANKIT").then(function (value) {
-
+        notificationList = ''
         value.forEach(notification => {
             totalNotificationCount += notification.NotificationCount;
             notificationList += `
-                <div onclick="window.location.href='${baseUrl}/${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
+                <div onclick="window.location.href='../../${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
                     <span>${notification.NotificationDescription}</span>
                     <span>
                         ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}
@@ -27,10 +26,7 @@ function GetWebNotificationList(baseUrl) {
         } else {
             $("#notificationCount").hide();
         }
-        $("#bell-icon").click(function () {
-            $("#notificationDropdown").html(notificationList).toggle();
-        });
-
+       
         $(document).click(function (event) {
             if (!$(event.target).closest("#bell-icon, #notificationDropdown").length) {
                 $("#notificationDropdown").hide();
@@ -69,6 +65,9 @@ $('#resetBtn').click(function () {
     startTimer();
     GetWebNotificationList();
 
+});
+$("#bell-icon").click(function () {
+    $("#notificationDropdown").html(notificationList).toggle();
 });
 
 window.GetWebNotificationList = GetWebNotificationList;
