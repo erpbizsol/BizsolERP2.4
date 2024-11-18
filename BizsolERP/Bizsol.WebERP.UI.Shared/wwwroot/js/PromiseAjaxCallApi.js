@@ -36,7 +36,7 @@
 
 
     },
-    CallAPIasBlobObj:function CallAPIasBlobObj(callMethod, URl, Data) {
+    CallAPIasBlobObj: function CallAPIasBlobObj(callMethod, URl, Data) {
 
         return new Promise(function (resolve, reject) {
             $.ajax({
@@ -60,5 +60,5 @@
         });
 
 
-}
+    }
 }

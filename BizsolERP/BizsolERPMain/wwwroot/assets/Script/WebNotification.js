@@ -1,25 +1,24 @@
 ﻿import { WebNotificationService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/WebNotificationService.js';
 
-$(document).ready(function () {
-    let baseUrl = `${window.location.protocol}//${window.location.host}`;
-    startTimer();
-    GetWebNotificationList(baseUrl);
-    setInterval(GetWebNotificationList, 60000); 
-});
-
+//$(document).ready(function () {
+let baseUrl = `${window.location.protocol}//${window.location.host}`;
+startTimer();
+GetWebNotificationList(baseUrl);
+setInterval(GetWebNotificationList, 60000);
+//});
 function GetWebNotificationList(baseUrl) {
     let totalNotificationCount = 0;
     let notificationList = '';
     // Fetch notifications
-    WebNotificationService.GetWebNotificationMasterList("BIZANKIT", 102).then(function (value) {
+    WebNotificationService.GetWebNotificationMasterList("BIZANKIT").then(function (value) {
 
         value.forEach(notification => {
             totalNotificationCount += notification.NotificationCount;
             notificationList += `
-                <div onclick="window.location.href='${baseUrl}/${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 8px 16px;">
+                <div onclick="window.location.href='${baseUrl}/${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
                     <span>${notification.NotificationDescription}</span>
-                    <span style="padding: 2px 8px;">
-                        ${notification.NotificationCount > 0 ? `<span style="padding: 2px 8px;">${notification.NotificationCount}</span>` : ''}
+                    <span>
+                        ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}
                     </span>
                 </div>`;
         });
@@ -69,6 +68,7 @@ $('#resetBtn').click(function () {
     $('#time').html(minutes + ":" + (seconds < 1 ? '0' + seconds : seconds));
     startTimer();
     GetWebNotificationList();
-    
+
 });
 
+window.GetWebNotificationList = GetWebNotificationList;

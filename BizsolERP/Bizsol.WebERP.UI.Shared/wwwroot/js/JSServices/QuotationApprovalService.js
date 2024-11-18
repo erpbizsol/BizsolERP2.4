@@ -11,14 +11,23 @@ const QuotationApprovalService = {
             }
         );
     },
-GetQuotationDetail: function GetQuotationDetail(QuotationMaster_Code) {
-    var URL = API_ENDPOINT_QuotationApproval + "/GetQuotationDetail?QuotationMaster_Code=" + QuotationMaster_Code;
-return this._http.post(url, {}, { headers: this.headers() });
-},
-QuotationApproved: function QuotationApproved(QuotationMaster_Code) {
-    var URL = API_ENDPOINT_QuotationApproval + "/QuotationApproved?QuotationMaster_Code=" + QuotationMaster_Code + "&UserMaster_Code=" + UserMaster_Code;
-
-    return this._http.post(url, {}, { headers: this.headers() });
-},
+    GetQuotationDetail: function GetQuotationDetail(QuotationMaster_Code) {
+        var url = UrlService.API_ENDPOINT_QuotationApproval + "/GetQuotationDetail?QuotationMaster_Code=" + QuotationMaster_Code;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    QuotationApproved: function QuotationApproved(QuotationMaster_Code) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var url = UrlService.API_ENDPOINT_QuotationApproval + "/QuotationApproved?QuotationMaster_Code=" + QuotationMaster_Code + "&UserMaster_Code" + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 export { QuotationApprovalService }
