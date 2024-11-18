@@ -1,15 +1,13 @@
 ﻿import { WebNotificationService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/WebNotificationService.js';
 
-//$(document).ready(function () {
-let baseUrl = `${window.location.protocol}//${window.location.host}`;
-let notificationList = '';
 startTimer();
-GetWebNotificationList(baseUrl);
+GetWebNotificationList();
 setInterval(GetWebNotificationList, 60000);
-//});
-function GetWebNotificationList(baseUrl) {
+let notificationList = '';
+
+function GetWebNotificationList() {
     let totalNotificationCount = 0;
-   // let notificationList = '';
+  
     // Fetch notifications
     WebNotificationService.GetWebNotificationMasterList("BIZANKIT").then(function (value) {
         notificationList = ''
@@ -35,10 +33,7 @@ function GetWebNotificationList(baseUrl) {
         } else {
             $("#notificationCount").hide();
         }
-        ////$("#bell-icon").click(function () {
-        ////    $("#notificationDropdown").html(notificationList).toggle();
-        ////});
-
+       
         $(document).click(function (event) {
             if (!$(event.target).closest("#bell-icon, #notificationDropdown").length) {
                 $("#notificationDropdown").hide();
@@ -79,6 +74,7 @@ $('#resetBtn').click(function () {
 
 });
 $("#bell-icon").click(function () {
-        $("#notificationDropdown").html(notificationList).toggle();
+    $("#notificationDropdown").html(notificationList).toggle();
 });
+
 window.GetWebNotificationList = GetWebNotificationList;
