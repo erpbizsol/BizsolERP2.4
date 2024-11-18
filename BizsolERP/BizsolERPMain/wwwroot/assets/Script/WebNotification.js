@@ -20,6 +20,13 @@ function GetWebNotificationList() {
                         ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}
                     </span>
                 </div>`;
+            //notificationList += `
+            //    <div onclick="window.location.href='${baseUrl}/${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
+            //        <span>${notification.NotificationDescription}</span>
+            //        <span>
+            //            ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}
+            //        </span>
+            //    </div>`;
         });
         if (totalNotificationCount > 0) {
             $("#notificationCount").text(totalNotificationCount).show();

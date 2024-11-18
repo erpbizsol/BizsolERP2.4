@@ -9,26 +9,38 @@
         }
         element.reportValidity();
     },
-    OnChangeFloatTextBox: function OnChangeFloatTextBox(element) {
+    OnChangeFloatTextBox: function OnChangeFloatTextBox(element, allowedNoDecimal=0) {
         element.value = element.value.replace(/[^0-9.]/g, "");
-        if (parseFloat(element.value) === parseFloat(element.value) && Number.isInteger(parseFloat(element.value)) == false) {
-            element.setCustomValidity("");
-
-        } else {
+        element.setCustomValidity("");
+        if (element.value.split('.').length > 2) {
             element.setCustomValidity("Only allowed Float Numbers");
+
+
+        } else if (Number.isInteger(parseFloat(element.value)) == true && parseFloat(element.value)>0) {
+            element.setCustomValidity("Only allowed Float Numbers");
+
+        } else if (parseInt(allowedNoDecimal) > 0) {
+            var txt = element.value.split('.')
+            if (txt[1].length > parseInt(allowedNoDecimal))
+                element.setCustomValidity("Only allowed "+ allowedNoDecimal + " decimal float numbers");
         }
+       
         element.reportValidity();
     },
     OnChangeStringTextBox: function OnChangeStringTextBox(element, characterNotAllowed,splitChar) {
         let NotAllowedCharArry = characterNotAllowed.toLowerCase().split(splitChar);
-        
+        let Valid = true;
         for (let item of NotAllowedCharArry) {
-            element.value = element.value.toLowerCase().replace(new RegExp(item, 'g'), '');
+            if (element.value.toLowerCase().includes(item)==true) {
+                element.value = element.value.toLowerCase().replace(new RegExp(item, 'g'), '');
+                Valid = false;
+            }
         }
-        if (parseFloat(element.value) === parseFloat(element.value) && Number.isInteger(parseFloat(element.value)) == false) {
+        if (Valid == true) {
             element.setCustomValidity("");
 
         } else {
+            
             element.setCustomValidity("'"+characterNotAllowed+ "' Character not allowed! ");
         }
         element.reportValidity();
@@ -93,7 +105,7 @@
 function BizSolhandleEnterKey(event) {
     if (event.key === "Enter") {
         //const inputs = document.getElementsByTagName('input')
-        const inputs = $('.form-control')
+        const inputs = $('.BizSolFormControl')
         const index = [...inputs].indexOf(event.target);
         if ((index + 1) == inputs.length) {
             inputs[0].focus();
