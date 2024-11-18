@@ -1,6 +1,10 @@
 ﻿import { ServicePOApprovalService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/ServicePOApprovalService.js';
 
 $(document).ready(function () {
+    unApprovedServicePO();
+
+});
+function unApprovedServicePO() {
     ServicePOApprovalService.GetUnApprovedServicePO().then(function (response) {
         console.log(response)
         const stringFilterColumn = ["Party", "Description", "Payment Terms"];
@@ -15,11 +19,10 @@ $(document).ready(function () {
         <button class="btn btn-info" title="View Details" onclick="ViewData('${item.Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>`
         }));
         // Initialize the data table with the response
-        CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
+        BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
 
     });
-
-});
+}
 window.openServicePODetails = function (code) {
     //alert(code);
     ServicePOApprovalService.GetServicePODetail(code).then(function (data) {
@@ -32,18 +35,20 @@ window.openServicePODetails = function (code) {
         const hiddenColumns = [];
         const updatedResponse = data.map(item => ({ ...item }));
         // Update or re-create the data table with the specific PO details
-        CreateDataTable("modal-table-header", "modal-table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
+        BizsolCustomFilterGrid.CreateDataTable("modal-table-header", "modal-table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
     });
 }
 
 function Approval(Code) {
     ServicePOApprovalService.ServicePOApproved(Code).then(function (approve) {
-        alert(approve);
-        if (approve.status === "Y") {
+        if (approve.Status === "Y") {
+            unApprovedServicePO();
+            GetWebNotificationList();
             alert(approve.Msg);
         }
         else {
             alert(approve.Msg);
+            
         }
     });
 }
