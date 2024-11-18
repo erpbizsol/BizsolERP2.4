@@ -17,14 +17,12 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             return PartialView("_SizeControl");
             
         }
-        public ActionResult AttachmentControl(int ItemMaster_Code, int ItemSizeMaster_Code, string CallBackFunctionName_btnDone, string EditParameterList, string CallBackFunctionName_btnClose)
+        public ActionResult AttachmentControl(string MasterTableName, int MasterTableCode, string CallBackFunctionName_btnDone)
         {
 
-            ViewBag.ItemMaster_Code = ItemMaster_Code;
-            ViewBag.ItemSizeMaster_Code = ItemSizeMaster_Code;
+            ViewBag.MasterTableName = MasterTableName;
+            ViewBag.MasterTableCode = MasterTableCode;
             ViewBag.CallBackFunctionName_btnDone = CallBackFunctionName_btnDone;
-            ViewBag.CallBackFunctionName_btnClose = CallBackFunctionName_btnClose;
-            ViewBag.EditParameterList = EditParameterList;
             return PartialView("_AttachmentControl");
 
         }

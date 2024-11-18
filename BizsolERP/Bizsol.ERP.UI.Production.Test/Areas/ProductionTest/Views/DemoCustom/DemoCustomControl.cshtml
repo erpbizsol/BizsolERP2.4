@@ -8,8 +8,8 @@
     <i class='bx bxs-file-plus align-middle'></i>
 </button>
 
-<button class="btn btn-primary iconBtn" type="button" onclick="Attachment()">
-    <i class='bx align-middle'></i>
+<button class="btn btn-danger iconBtn" type="button" onclick="Attachment()">
+    <i class='bx bxs-file-plus align-middle'></i>
 </button>
 
 <div class="row">
@@ -86,18 +86,14 @@
 
     }
     function Attachment() {
-        InitAttachmentControl(2, 23295, "myName");
+        InitAttachmentControl('BankMaster', 14, "myName");
     }
-    function InitAttachmentControl(itemMaster_Code, itemSizeMaster_Code, callBackFunctionName) {
-
-        console.log("ItemMaster_Code:" + itemMaster_Code);
-
-        console.log("ItemSizeMaster_Code:" + itemSizeMaster_Code);
-
+    function InitAttachmentControl(masterTableName, masterTableCode, callBackFunctionName) {
+        
         // var url = '@Url.Action("AttachmentControl", "CustomControl")';
         var url = '/CustomControl/AttachmentControl';
 
-        $('#DivAttachmentControlmodal').load(url, { ItemMaster_Code: itemMaster_Code, ItemSizeMaster_Code: itemSizeMaster_Code, CallBackFunctionName: callBackFunctionName });
+        $('#DivAttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, CallBackFunctionName: callBackFunctionName });
 
     }
 </script>

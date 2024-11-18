@@ -1,6 +1,7 @@
 ﻿
+
 <div class="modal fade bs-example-modal-center" id="AttachmentControlmodal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:800px">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Bizsol ERP Document Control</h5>
@@ -10,13 +11,18 @@
                 <form action="#" class="dropzone" id="fileUploadForm">
                     <div class="upload-container">
                        <div class="row">
-                        <div class="col-md-12">
+                        <div class="col-md-2">
+                                <i class="display-2 text-muted bx bx-cloud-upload"></i>
+                            </div>
+                           <div class="col-md-8 mt-3">
+                                <input type="text" id="file-names" placeholder="Drag & Drop image here or choose a file" readonly />
+                            </div>
+                            <div class="col-md-2 mt-4">
+                                <label id="file-button" onclick="document.getElementById('file-input').click()">Browse</label>
+                            <input type="file" id="file-input" multiple>
+                            </div>
 
-                            <i class="display-2 text-muted bx bx-cloud-upload"></i>Choose File
-                            <label for="fileInput">Browse</label>
-                            <input type="file" id="fileInput" multiple>
-                        </div>
-                        <div class="col-md-12">
+                            <div class="col-md-12">
                             <div class="file-list" id="fileList">
                                 <!-- Dynamically added files will appear here -->
                             </div>
@@ -28,38 +34,33 @@
                 </form>
 
 
-                <table id="documentTable" class="mt-1">
-                    <thead>
-                        <tr>
-                            <th>Code</th>
-                            <th>Document Particulars</th>
-                            <th>Download</th>
-                            <th>File</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="documentTableBody">
-                        <!-- Dynamic rows will be added here -->
-                    </tbody>
-                </table>
+                <div class="table-wrapper mt-1">
+                    <table id="tbAttachmentControl" class="fixed-width-table">
+                        <thead id="table-header-tbAttachmentControl">
+                        </thead>
+                        <tbody id="table-body-tbAttachmentControl">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-tbAttachmentControl">
+                </div>
 
                 
                 <div class="text-end mt-1">
-                    <a class="btn btn-primary" onclick="">
+                    <a class="btn btn-primary" onclick="DownloadAll_AttachmentControl()">
                        Download all
                     </a>
                     &nbsp;
                     
-                    <input type="hidden" value="@ViewBag.ItemMaster_Code" id="hfItemMaster_Code" />
-                    <input type="hidden" value="@ViewBag.ItemSizeMaster_Code" id="hfItemSizeMaster_Code" />
+                    <input type="hidden" value="@ViewBag.MasterTableName" id="hfMasterTableName" />
+                    <input type="hidden" value="@ViewBag.MasterTableCode" id="hfMasterTableCode" />
                 </div>
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div>
 <style>
-   
-    .upload-container label {
+    #file-button {
         background-color: #5156be;
         color: white;
         padding: 8px 20px;
@@ -67,7 +68,20 @@
         cursor: pointer;
     }
 
-    .save-btn {
+    #file-names {
+        width: 100%;
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        font-size: 16px;
+    }
+
+        #file-names.hover {
+            border-color: #007BFF;
+            background-color: #f0f8ff;
+        }
+
+ .save-btn {
         background-color: #28a745;
         color: white;
         padding: 8px 16px;
@@ -93,27 +107,33 @@
         display: none;
     }
 
-    button, input, optgroup, select, textarea {
-        margin: 0;
-        font-family: inherit;
-        font-size: inherit;
-        line-height: inherit;
-        margin: 5px;
-    }
-
+   
    
 </style>
 
-@* <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_SizeControlpage.js"></script> *@
-
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_AttachmentControlPage.js"></script>
 <script>
+    $(document).ready(function () {
+
+        $("#AttachmentControlmodal").modal({
+            backdrop: 'static',
+            // keyboard: false
+        });
+        $("#AttachmentControlmodal").modal('show');
+       
+        
+    });
+</script>
+@* <script>
     const fileInput = document.getElementById('fileInput');
     const fileList = document.getElementById('fileList');
     const authToken = '{"ERPDBConStr":"Data Source=220.158.165.98,65446;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBBizDev; User ID=sa;pwd=biz1981;Packet Size=32000","ERPMainDBConStr":"data source = 220.158.165.98,65446; initial catalog = BizSolERPMainDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000","ERPDMSDBConStr":"data source = 220.158.165.98,65446; initial catalog = BizSolERPDMSDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000","ERPDB_Name":"BizSolERPDBBizDev","ERPMainDB_Name":"BizSolERPMainDB_BizDev","ERPDMSDB_Name":"BizSolERPDMSDB_BizDev","AuthToken":"xyz","UserMaster_Code":"145","CompanyCode":"104"}';
 
     $(document).ready(function () {
-        fetchDocuments();
-        fetchDownload();
+        //fetchDocuments();
+        // // fetchDownload();
     });
     function openModal() {
         document.getElementById('documentModal').style.display = 'block';
@@ -339,15 +359,79 @@
             }
         });
     }
-</script>
-
+</script> *@
 
 <script>
-    $(document).ready(function () {
-       $("#AttachmentControlmodal").modal({
-            backdrop: 'static',
-           // keyboard: false
-        });
-        $("#AttachmentControlmodal").modal('show');
+    const fileInput = document.getElementById('file-input');
+    const fileNamesInput = document.getElementById('file-names');
+
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        fileNamesInput.addEventListener(eventName, preventDefaults, false);
     });
+
+    // Highlight text input when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        fileNamesInput.classList.add('hover');
+    });
+
+    // Remove highlight when item is dragged out
+    ['dragleave', 'drop'].forEach(eventName => {
+        fileNamesInput.classList.remove('hover');
+    });
+
+    // Handle drop event on text input
+    fileNamesInput.addEventListener('drop', handleDrop, false);
+
+    // Handle file input selection
+    fileInput.addEventListener('change', () => handleFiles(fileInput.files), false);
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            for (let index in files) {
+                const file = files[index];
+                fileNamesInput.value += ',' + file.name;
+
+                const fileItem = document.createElement('div');
+                //const fileItem = document.getElementById('fileList');
+                fileItem.classList.add('file-list-item');
+
+                const fileParticularsInput = document.createElement('input');
+                fileParticularsInput.type = "text";
+                fileParticularsInput.placeholder = "Document Particulars";
+                fileParticularsInput.classList.add('file-particulars-input');
+
+                const fileNameInput = document.createElement('input');
+                fileNameInput.type = "text";
+                fileNameInput.classList.add('file-name-input');
+                fileNameInput.value = file.name;
+
+                fileItem.appendChild(fileParticularsInput);
+                fileItem.appendChild(fileNameInput);
+
+                // Add delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('btn');
+                deleteBtn.classList.add('btn-danger');
+                deleteBtn.textContent = "Delete";
+                deleteBtn.addEventListener('click', () => deleteFile(index));
+
+                fileItem.appendChild(deleteBtn);
+                fileList.appendChild(fileItem);
+            }
+        }
+    }
+
 </script>
+
