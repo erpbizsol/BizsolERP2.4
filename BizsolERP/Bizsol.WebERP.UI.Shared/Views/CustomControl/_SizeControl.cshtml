@@ -7,13 +7,12 @@
             </div>
             <div class="modal-body">
                 <div class="row">
-                    <div class="col-lg-12 col-md-6">
-
-                        <label for="choices-single-default" class="form-label font-size-13 text-muted p-3">Size Desp</label>
-                        <select class="js-example-basic-single" id="ddlItemSizeMaster" onchange="onSizeControl_ddlItemSizeMasterChange()">
-                           
+                    <div class="col-md-3 p-4">
+                        Size Desp
+                    </div>
+                    <div class="col-md-5 p-4">
+                        <select id="ddlItemSizeMaster" onchange="onSizeControl_ddlItemSizeMasterChange()">
                         </select>
-
                     </div>
                 </div>
                
@@ -23,7 +22,7 @@
                             <th>
                                 Parameter
                             </th>
-                            <th>Value</th>
+                            <th style="width:40%">Value</th>
 
                         </tr>
                     </thead>
@@ -57,6 +56,7 @@
                     <a class="btn btn-danger" data-bs-dismiss="modal" aria-label="Close">Close</a>
                     <input type="hidden" value="@ViewBag.ItemMaster_Code" id="hfItemMaster_Code" />
                     <input type="hidden" value="@ViewBag.ItemSizeMaster_Code" id="hfItemSizeMaster_Code" />
+                    <input type="hidden" value="@ViewBag.CallBackFunctionName_btnDone" id="hfCallBackFunctionName_btnDone" />
                 </div>
             </div>
         </div><!-- /.modal-content -->
