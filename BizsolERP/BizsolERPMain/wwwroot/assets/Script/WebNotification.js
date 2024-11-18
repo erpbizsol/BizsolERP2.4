@@ -2,34 +2,42 @@
 
 //$(document).ready(function () {
 let baseUrl = `${window.location.protocol}//${window.location.host}`;
+let notificationList = '';
 startTimer();
 GetWebNotificationList(baseUrl);
 setInterval(GetWebNotificationList, 60000);
 //});
 function GetWebNotificationList(baseUrl) {
     let totalNotificationCount = 0;
-    let notificationList = '';
+   // let notificationList = '';
     // Fetch notifications
     WebNotificationService.GetWebNotificationMasterList("BIZANKIT").then(function (value) {
-
+        notificationList = ''
         value.forEach(notification => {
             totalNotificationCount += notification.NotificationCount;
             notificationList += `
-                <div onclick="window.location.href='${baseUrl}/${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
+                <div onclick="window.location.href='../../${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
                     <span>${notification.NotificationDescription}</span>
                     <span>
                         ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}
                     </span>
                 </div>`;
+            //notificationList += `
+            //    <div onclick="window.location.href='${baseUrl}/${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
+            //        <span>${notification.NotificationDescription}</span>
+            //        <span>
+            //            ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}
+            //        </span>
+            //    </div>`;
         });
         if (totalNotificationCount > 0) {
             $("#notificationCount").text(totalNotificationCount).show();
         } else {
             $("#notificationCount").hide();
         }
-        $("#bell-icon").click(function () {
-            $("#notificationDropdown").html(notificationList).toggle();
-        });
+        ////$("#bell-icon").click(function () {
+        ////    $("#notificationDropdown").html(notificationList).toggle();
+        ////});
 
         $(document).click(function (event) {
             if (!$(event.target).closest("#bell-icon, #notificationDropdown").length) {
@@ -70,5 +78,7 @@ $('#resetBtn').click(function () {
     GetWebNotificationList();
 
 });
-
+$("#bell-icon").click(function () {
+        $("#notificationDropdown").html(notificationList).toggle();
+});
 window.GetWebNotificationList = GetWebNotificationList;
