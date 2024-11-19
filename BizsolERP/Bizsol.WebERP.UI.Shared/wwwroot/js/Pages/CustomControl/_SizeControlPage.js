@@ -1,6 +1,10 @@
 ﻿import { SizeControlService } from '../../JSServices/_SizeControlService.js'
 
 let arraySizeControlDllID = [];
+
+let SizeControl_NewSizeMaster_Code = 0;
+let SizeControl_NewSizeDesp = '';
+
 function getAllSize() {
     SizeControlService.GetItemSizeListByItemCode($('#hfItemMaster_Code').val()).then(function (respone) {
         BindSelectList($('#ddlItemSizeMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.SizeDesp })));
@@ -39,7 +43,8 @@ function GetSizeDll(ddlelementID, ItemParameterMaster_Code, ValueCode) {
         BindSelectList($('#' + ddlelementID)[0], respone.map((item) => ({ Code: item.Code, Desp: item.Desp })));
         $('#' + ddlelementID).val(ValueCode);
         $('#' + ddlelementID).select2({
-            dropdownParent: $('#SizeControlmodal')
+            dropdownParent: $('#SizeControlmodal'),
+            width: '-webkit-fill-available'
         });
     })
 }
@@ -71,10 +76,16 @@ function CreateSize() {
     
 
     if (validFrom==true) {
-        alert(ItemSizeParameterCodes);
+       // alert(ItemSizeParameterCodes);
         SizeControlService.CreateItemSize($('#hfItemMaster_Code').val(), ItemSizeParameterCodes, 0).then(function (respone) {
-            console.log(respone);
-            alert(respone[0].Code + 'SizeDesp:' + respone[0].SizeDesp);
+            //console.log(respone);
+            //alert(respone[0].Code + 'SizeDesp:' + respone[0].SizeDesp);
+            SizeControl_NewSizeMaster_Code = respone[0].Code;
+            SizeControl_NewSizeDesp = respone[0].SizeDesp;
+            window.SizeControl_NewSizeMaster_Code = SizeControl_NewSizeMaster_Code;
+            window.SizeControl_NewSizeDesp = SizeControl_NewSizeDesp;
+            window[$('#hfCallBackFunctionName_btnDone').val()]();
+            $("#SizeControlmodal").modal('hide');
         })
     }
     
