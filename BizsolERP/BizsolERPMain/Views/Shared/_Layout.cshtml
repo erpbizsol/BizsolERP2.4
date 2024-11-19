@@ -7,6 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
     <meta content="Themesbrand" name="author" />
+   <!--toastr-->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" rel="stylesheet" />
+    <link href="~/assets/css/toastr.min.css" rel="stylesheet" />
     <!-- App favicon -->
     <img src="~/assets/images/favicon.ico" />
     <!-- DataTables -->
@@ -21,20 +24,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     @* <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" /> *@
     <link href="~/assets/libs/select2-4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
     <!-- App Css-->
     <link href="~/assets/css/app.min.css" rel="stylesheet" />
-
-    <style>
-        /* .bell-icon {
-            position: relative;
-            font-size: 24px;
-            cursor: pointer;
-            margin-top: 15px;
-            margin-right: 20px;
-        } */
-
-    </style>
 </head>
 <body>
     <div id="layout-wrapper">
@@ -67,19 +58,19 @@
                         <i class="fa fa-fw fa-bars"></i>
                     </button>
 
-                     <div class="me-3" style="padding-top: 20px;">
+                    <div class="me-3" style="padding-top: 20px;">
                         <span class="userTextBig">PINKI BIZSOL</span><br>
                         <div class="userTextSmall">(ERP2.4 DEV)</div>
                     </div>
-                    
+
                     <!-- App Search-->
-                   @*  <form class="app-search d-none d-lg-block" style="padding-top: 19px;">
-                        <div class="position-relative">
-                            <input type="text" class="form-control" placeholder="Search...">
-                            <button class="btn btn-primary" type="button">
-                                <i class="bx bx-search-alt align-middle"></i>
-                            </button>
-                        </div>
+                    @*  <form class="app-search d-none d-lg-block" style="padding-top: 19px;">
+                    <div class="position-relative">
+                    <input type="text" class="form-control" placeholder="Search...">
+                    <button class="btn btn-primary" type="button">
+                    <i class="bx bx-search-alt align-middle"></i>
+                    </button>
+                    </div>
                     </form> *@
                 </div>
 
@@ -139,12 +130,12 @@
                             </a>
                         </div>
                     </div>
-@* 
+                    @*
                     <div class="dropdown d-none d-sm-inline-block">
-                        <button type="button" class="btn header-item" id="mode-setting-btn">
-                            <i data-feather="moon" class="icon-lg layout-mode-dark"></i>
-                            <i data-feather="sun" class="icon-lg layout-mode-light"></i>
-                        </button>
+                    <button type="button" class="btn header-item" id="mode-setting-btn">
+                    <i data-feather="moon" class="icon-lg layout-mode-dark"></i>
+                    <i data-feather="sun" class="icon-lg layout-mode-light"></i>
+                    </button>
                     </div> *@
 
                     <button type="button" class="btn header-item noti-icon position-relative p-0 "
@@ -165,7 +156,7 @@
                     <div class="dropdown d-inline-block">
                         <button type="button" class="btn header-item bg-light-subtle"
                                 id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true"
-                                aria-expanded="false">     
+                                aria-expanded="false">
                             <img class="rounded-circle header-profile-user" src="~/assets/images/users/user.jpg"
                                  alt="Header User">
                             @* <span class="d-none d-xl-inline-block ms-1 fw-medium">User</span>
@@ -236,12 +227,12 @@
                         <div><p>Copyright © 2024 <a href="">BizSol Technologies Pvt. Ltd.</a> All rights reserved.</p></div>
                     </div>
                     @* <div class="col-sm-6">
-                        <script>document.write(new Date().getFullYear())</script> © Minia.
+                    <script>document.write(new Date().getFullYear())</script> © Minia.
                     </div>
                     <div class="col-sm-6">
-                        <div class="text-sm-end d-none d-sm-block">
-                            Design & Develop by <a href="#!" class="text-decoration-underline">Themesbrand</a>
-                        </div>
+                    <div class="text-sm-end d-none d-sm-block">
+                    Design & Develop by <a href="#!" class="text-decoration-underline">Themesbrand</a>
+                    </div>
                     </div> *@
                 </div>
             </div>
@@ -386,6 +377,21 @@
     <!-- Right bar overlay-->
     <div class="rightbar-overlay"></div>
     <script src="~/assets/js/jquery-3.6.0.min.js"></script>
+    <!--toastr-->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+    @* "toast-top-right": Top - right corner(default )
+    "toast-top-left": Top - left corner
+    "toast-bottom-right": Bottom - right corner
+    "toast-bottom-left": Bottom - left corner
+    "toast-top-center": Centered at the top
+    "toast-bottom-center": Centered at the bottom
+    "toast-top-full-width": Full - width at the top
+    "toast-bottom-full-width": Full - width at the bottom
+    toastr.success(resdata.Msg);
+    toastr.error(resdata.Msg);
+    toastr.warning(resdata.Msg);
+    *@
+    <!--toastr-->
     @* @await RenderSectionAsync("Scripts", required: false) *@
     <!-- JAVASCRIPT -->
     <!-- jQuery should be loaded first -->
@@ -423,10 +429,10 @@
     <script src="~/assets/js/pages/table-editable.int.js"></script>
     <!-- App script should come last -->
     <script src="~/assets/js/app.js"></script>
+
     <!-- apexcharts -->
     <script src="assets/libs/apexcharts/apexcharts.min.js"></script>
     <!-- Plugins js-->
-
 
     <script src="~/assets/libs/admin-resources/jquery.vectormap/jquery-jvectormap-1.2.2.min.js"></script>
     <script src="~/assets/libs/admin-resources/jquery.vectormap/maps/jquery-jvectormap-world-mill-en.js"></script>
