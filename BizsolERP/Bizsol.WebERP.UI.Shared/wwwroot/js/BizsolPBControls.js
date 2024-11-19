@@ -114,7 +114,6 @@ function Last() {
 }
 
 function toggleNavigationButtons() {
-    alert(currentIndex)
     $('#First').prop('disabled', currentIndex === 0);
     $('#Previous').prop('disabled', currentIndex === 0);
     $('#Next').prop('disabled', currentIndex === codeValues.length - 1);
