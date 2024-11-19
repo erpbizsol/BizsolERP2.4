@@ -21,7 +21,7 @@ GetServicePODetail: function GetServicePODetail(POServiceMaster_Code) {
 },
     ServicePOApproved: function ServicePOApproved(POServiceMaster_Code) {
     let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-    var URL = UrlService.API_ENDPOINT_ServicePOApproval + "/ServicePOApproved?POServiceMaster_Code=" + POServiceMaster_Code + "&UserMaster_Code=" + UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_ServicePOApproval + "/ServicePOApproved?POServiceMaster_Code=" + POServiceMaster_Code + "&UserMaster_Code=" + userCode;
 
     return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
         function (value) {

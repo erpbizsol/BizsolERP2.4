@@ -38,12 +38,12 @@ namespace BizsolERPMain
             string Bizsol_WebERP_UI_SharedContentRootPath = Path.Combine(app.Environment.ContentRootPath.Replace("BizsolERPMain", ""), "Bizsol.WebERP.UI.Shared");
 
             app.UseStaticFiles();
-            app.UseStaticFiles(new StaticFileOptions
-            {
-                FileProvider = new PhysicalFileProvider(
-                Path.Combine(Bizsol_WebERP_UI_SharedContentRootPath, "NS")),
-                RequestPath = "/NR"
-            });
+            //app.UseStaticFiles(new StaticFileOptions
+            //{
+            //    FileProvider = new PhysicalFileProvider(
+            //    Path.Combine(Bizsol_WebERP_UI_SharedContentRootPath, "NS")),
+            //    RequestPath = "/NR"
+            //});
 
             app.UseSession();
             app.UseRouting();

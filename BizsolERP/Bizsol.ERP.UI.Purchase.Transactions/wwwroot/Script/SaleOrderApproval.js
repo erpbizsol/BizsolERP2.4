@@ -12,23 +12,23 @@ function GetSaleOrderApproval() {
         const StringdoubleFilterColumn = ["PartyName"];
         const showButtons = [];
         const hiddenColumns = ["Code", "BuyerPOMaster_Code"];
-        const searchInput = document.getElementById('btnSearch');
-        function renderTable() {
-            const searchText = searchInput.value.toLowerCase();
-            const filteredResponse = response.filter(item =>
-                Object.values(item).some(value =>
-                    value && value.toString().toLowerCase().includes(searchText)
-                )
-            );
-            const updatedFilteredResponse = filteredResponse.map(item => ({
+       // const searchInput = document.getElementById('btnSearch');
+        //function renderTable() {
+        //    const searchText = searchInput.value.toLowerCase();
+        //    const filteredResponse = response.filter(item =>
+        //        Object.values(item).some(value =>
+        //            value && value.toString().toLowerCase().includes(searchText)
+        //        )
+        //    );
+        const updatedResponse = response.map(item => ({
                 ...item, Action: item.Action ? `<button style="background-color:#198754;border-radius: 5px; " onclick="ViewData('${item.BuyerPOMaster_Code}')"><i class="fa-solid fa-folder-open" data-toggle="tooltip" data-placement="top" title="View Details" style="color:white;"></i></button>
                    <button style="background-color:#3f51b5;border-radius: 5px" onclick="SaleOrderApprovedlist('${item.BuyerPOMaster_Code}')"><i class="fa fa-check-circle" data-toggle="tooltip" data-placement="top" title="Approve" style="color:white;"></i></button>
                 ` : ""
-            }));
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedFilteredResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
-        }
-        renderTable();
-        searchInput.addEventListener('input', renderTable);
+        }));
+        BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
+       // }
+       // renderTable();
+       // searchInput.addEventListener('input', renderTable);
     });
 }
 window.GetSaleOrderDetails = function (Code) {
@@ -55,19 +55,19 @@ function closeModal() {
     $('#myModal').modal('hide');
 }
 function SaleOrderApprovedlist(BCode) {
+    toastr.options.positionClass = "toast-top-right";
     SaleOrderApprovalService.SaleOrderApproved(BCode).then(function (resdata) {
         if (resdata.Status === "Y") {
+            toastr.success(resdata.Msg);
             SaleOrderApprovedlist(BCode);
             GetWebNotificationList();
-            alert("Success: " + resdata.Msg);
+          
 
         } else {
-            alert("No Approval Sale Order !..");
-            //alert("Error: " + resdata.Msg);
+            toastr.error(resdata.Msg)
         }
     }).catch(function (error) {
-        console.error("Error in Sale Order Approval: ", error);
-        alert("Error while processing sale order approval");
+        toastr.error("Error in Sale Order Approval: ", error);
     });
 };
 

@@ -4,10 +4,9 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-@* <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
-<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script> *@
-<link href="~/assets/css/filter.css" rel="stylesheet" />
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/SaleOrderApproval.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/SaleOrderApproval.js"></script> 
 <style>
     .modal-dialog {
         width: 100%;
@@ -24,15 +23,26 @@
 </style>
 <!-----------------------Opane Model-------------------------->
 <div class="row">
-    <div class="card-header">
-        <h4 class="text-center">Sale Order Approval</h4>
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <h4 class="mb-sm-0 font-size-18">Sale Order Approval</h4>
+
+            @* <div class="page-title-right">
+            <ol class="breadcrumb m-0">
+            <li class="breadcrumb-item"><a href="javascript: void(0);">Dashboard</a></li>
+            <li class="breadcrumb-item active">Dashboard</li>
+            </ol>
+            </div>
+            *@
+        </div>
     </div>
 </div>
-<div class="row">
+
+@* <div class="row">
     <div class="col-sm-3">
         <input id="btnSearch" type="text" class="form-control" autocomplete="off" />
     </div>
-</div>
+</div> *@
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -71,4 +81,3 @@
 <div class="paginator" id="paginator-table">
 </div>
 <!-----------------------Table-------------------------->
-<script src="~/assets/script/filter.js"></script>

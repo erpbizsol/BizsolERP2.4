@@ -2,6 +2,7 @@
 import { QuotationApprovalService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/QuotationApprovalService.js';
 
 $(document).ready(function () {
+    $('[data-toggle="tooltip"]').tooltip();
     GetApprovedQuotationList();
 });
 function GetApprovedQuotationList() {
@@ -15,8 +16,8 @@ function GetApprovedQuotationList() {
         const hiddenColumns = ["Code"];
         const showButtons = [];
         const updatedResponse = resData.map(item => ({
-            ...item, Action: item.Action ? `<button style="background-color:#198754;border-radius: 5px; " onclick="ViewData('${item.Code}')"><i class="fa-solid fa-folder-open" style="color:white;"></i></button>
-                   <button style="background-color:#3f51b5;border-radius: 5px" onclick="QuotationApprovedlist('${item.Code}')"><i class="fa fa-check-circle" style="color:white;"></i></button>
+            ...item, Action: item.Action ? `<button style="background-color:#198754;border-radius: 5px; " onclick="ViewData('${item.Code}')"><i class="fa-solid fa-folder-open" data-toggle="tooltip" data-placement="top" title="View Details" style="color:white;"></i></button>
+                   <button style="background-color:#3f51b5;border-radius: 5px" onclick="QuotationApprovedlist('${item.Code}')"><i class="fa fa-check-circle" data-toggle="tooltip" data-placement="top" title="Approve" style="color:white;"></i></button>
                 ` : ""
         }));
         BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
@@ -46,20 +47,26 @@ function closeModal() {
     $('#myModal').modal('hide');
 }
 function QuotationApprovedlist(code) {
+    toastr.options.positionClass = "toast-top-right";
+ 
     QuotationApprovalService.QuotationApproved(code).then(function (resdata) {
-        if (resdata.Status === "Y") {
-            alert("Success: " + resdata.Msg);
+        if (resdata.Status === "Y")
+        {
+            toastr.success(resdata.Msg);
+            
             GetWebNotificationList();
             GetApprovedQuotationList(code);
 
         } else {
-            alert("Error: " + resdata.Msg);
+            toastr.error(resdata.Msg);
+          
+            
         }
     }).catch(function (error) {
-        console.error("Error in Sale Order Approval: ", error);
-        alert("Error while processing sale order approval");
+        toastr.error("Error in Sale Order Approval: ", error);
     });
 };
+
 window.ViewData = ViewData;
 window.closeModal = closeModal;
 window.QuotationApprovedlist = QuotationApprovedlist;

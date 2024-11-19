@@ -30,7 +30,7 @@ const POApprovalService = {
     },
 POApproved: function POApproved(PurchaseOrderMaster_Code) {
     let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-    var URL = UrlService.API_ENDPOINT_POApproval + "/POApproved?PurchaseOrderMaster_Code=" + PurchaseOrderMaster_Code + "&UserMaster_Code" + userCode;
+    var URL = UrlService.API_ENDPOINT_POApproval + "/POApproved?PurchaseOrderMaster_Code=" + PurchaseOrderMaster_Code + "&UserMaster_Code=" + userCode;
     return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
         function (value) {
             return value;

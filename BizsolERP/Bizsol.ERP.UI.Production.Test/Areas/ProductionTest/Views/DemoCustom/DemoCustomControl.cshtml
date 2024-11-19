@@ -8,23 +8,30 @@
     <i class='bx bxs-file-plus align-middle'></i>
 </button>
 
+<button class="btn btn-danger iconBtn" type="button" onclick="Attachment()">
+    <i class='bx bxs-file-plus align-middle'></i>
+</button>
+
 <div class="row">
 <div class="col-md-2">
         <h5>Number</h5>
-        <input class="form-control" type="text" placeholder="Numbric text" onchange="BizSolInputControl.OnChangeNumericTextBox(this)" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);">
+        <input class="BizSolFormControl form-control" type="text" placeholder="Numbric text" onchange="BizSolInputControl.OnChangeNumericTextBox(this)" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);">
         <h5>Float</h5>
-        <input class="form-control" type="text" placeholder="Float text" onchange="BizSolInputControl.OnChangeFloatTextBox(this)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);">
+        <input class="BizSolFormControl form-control" type="text" placeholder="Float text" onchange="BizSolInputControl.OnChangeFloatTextBox(this)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);">
+        <h5>Float 2 Decimal</h5>
+        <input class="BizSolFormControl form-control" type="text" placeholder="Float text" onchange="BizSolInputControl.OnChangeFloatTextBox(this,2)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);">
         <h5>Email</h5>
-        <input class="form-control" type="text" placeholder="Email text" onchange="BizSolInputControl.OnChangeEmailTextBox(this)" onkeypress="BizSolhandleEnterKey(event)">
+        <input class="BizSolFormControl form-control" type="text" placeholder="Email text" onchange="BizSolInputControl.OnChangeEmailTextBox(this)" onkeypress="BizSolhandleEnterKey(event)">
         <h5>String Not Allowed Char</h5>
-        <input class="form-control" type="text" placeholder="String Not Allowed Char text" onchange="BizSolInputControl.OnChangeStringTextBox(this,'M,a,n,p',',')" onkeypress="BizSolhandleEnterKey(event)">
+        <input class="BizSolFormControl form-control" type="text" placeholder="String Not Allowed Char text" onchange="BizSolInputControl.OnChangeStringTextBox(this,'M,a,n,p',',')" onkeypress="BizSolInputControl.OnChangeStringTextBox(this,'M,a,n,p',',');BizSolhandleEnterKey(event)">
         <h5>URL</h5>
-        <input class="form-control" type="text" placeholder="URL text" onchange="BizSolInputControl.OnChangeURLTextBox(this)" onkeypress="BizSolhandleEnterKey(event)">
+        <input class="BizSolFormControl form-control" type="text" placeholder="URL text" onchange="BizSolInputControl.OnChangeURLTextBox(this)" onkeypress="BizSolhandleEnterKey(event)">
         
     </div>
 </div>
 
 <div id="DivSizeControlmodal"></div>
+<div id="DivAttachmentControlmodal"></div>
 
 @* <script src="~/js/_SizeControl.js"></script> *@
 
@@ -36,7 +43,7 @@
 
 </script> *@
 @* <script src="~/Bizsol.WebERP.UI.Shared/NS/Check.js"></script> *@
-<script src="~/NR/Check.js"></script>
+@* <script src="~/NR/Check.js"></script> *@
 <script src="~/_content/Bizsol.WebERP.UI.Production.Test/js/site.js"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 @* D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Production.Test\wwwroot\js\site.js *@
@@ -56,15 +63,17 @@
         // site();
         // SizeControlService.GetItemSizeMasterList("ItemName is Manoj.");
       //  ME();
-        InitSizeControl(2, 23295, "myName");
+        InitSizeControl(2, 23295, "SizeCallBack");
         //InitSizeControl(2, 0, "myName");
     }
     // $(docment).ready(function (){
 
     // });
+    function SizeCallBack(){
+        alert(SizeControl_NewSizeMaster_Code + 'SizeDesp:' + SizeControl_NewSizeDesp);
+    }
 
-
-    function InitSizeControl(itemMaster_Code, itemSizeMaster_Code, callBackFunctionName) {
+    function InitSizeControl(itemMaster_Code, itemSizeMaster_Code, callBackFunctionName_btnDone) {
 
         console.log("ItemMaster_Code:" + itemMaster_Code);
 
@@ -73,7 +82,18 @@
         // var url = '@Url.Action("SizeControl", "CustomControl")';
         var url = '/CustomControl/SizeControl';
 
-        $('#DivSizeControlmodal').load(url, { ItemMaster_Code: itemMaster_Code, ItemSizeMaster_Code: itemSizeMaster_Code, CallBackFunctionName: callBackFunctionName });
+        $('#DivSizeControlmodal').load(url, { ItemMaster_Code: itemMaster_Code, ItemSizeMaster_Code: itemSizeMaster_Code, CallBackFunctionName_btnDone: callBackFunctionName_btnDone });
+
+    }
+    function Attachment() {
+        InitAttachmentControl('BankMaster', 14, "myName");
+    }
+    function InitAttachmentControl(masterTableName, masterTableCode, callBackFunctionName) {
+        
+        // var url = '@Url.Action("AttachmentControl", "CustomControl")';
+        var url = '/CustomControl/AttachmentControl';
+
+        $('#DivAttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, CallBackFunctionName: callBackFunctionName });
 
     }
 </script>
