@@ -34,7 +34,7 @@ $(document).ready(function () {
     });
     getStatelist();
 
-    $("#table").on("click", "tr", function () {
+    $("#State").on("click", "tr", function () {
         // Get row data or index
         var rowIndex = $(this).index();
         if ($(this).index() === 0) return;
@@ -76,7 +76,7 @@ $(document).ready(function () {
                                 */
             var arrControls = [
                 ["CountryName", "Country Name(First Letter Search)", "Input", "FirstLetterSearchList", CountryName, JSON.stringify({ list })],
-                ["CountryName1", "Country Name(Substring Search)", "Input", "SearchList", CountryName, JSON.stringify({ list })],
+                //["CountryName1", "Country Name(Substring Search)", "Input", "SearchList", CountryName, JSON.stringify({ list })],
                 //["CountryName", "Country Name(MultiSelect)", "Input", "MultiselectList", CountryName, JSON.stringify({ list })],
                 //["CountryName", "Country Name", "Input", "List", CountryName, JSON.stringify({ list })],
                 //["CountrySuggestion", "Country Name(Sugges)", "Input", "Suggestion", CountryName, JSON.stringify({ list })],
