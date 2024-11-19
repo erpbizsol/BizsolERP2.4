@@ -1,0 +1,56 @@
+﻿
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="d:\erp2.4\bizsolerp\bizsol.weberp.ui.shared\wwwroot\js\jsservices\stocktransferreceiveservice.js"></script>
+<section>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-9" style="margin: 0 auto;">
+                <form [formGroup]="newStockTransferReceiveForm">
+                    <div class="row mt-2">
+                        <div class="col-md-12">
+                            <div class="card form-card">
+                                <div class="row">
+                                    <div class="col-md-3 form-group">
+                                        <label for="stock"><b>Warehouse Receive</b></label>
+                                    </div>
+                                    <div class="row">
+                                        <input type="hidden" formControlName="Code" class="form-control" value="0" />
+                                        <div class="col-md-4 form-group">
+                                            <label class="required">Warehouse</label>
+                                            <input type="text" placeholder="Warehouse" />
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label class="required">Attachment</label>
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text input-group-Camera" onclick="triggerFileInputClick()">
+                                                            <i class="fa fa-camera" aria-hidden="true"></i>
+                                                        </span>
+                                                    </div>
+                                                    <input formControlName="attachment" type="file" class="form-control">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label class="required">Roll Id No</label>
+                                                <input type="text" formControlName="rollIdNo" class="form-control" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
