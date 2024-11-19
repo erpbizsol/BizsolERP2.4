@@ -40,6 +40,7 @@ function EditData(Code) {
     });
     let serializedArray = encodeURIComponent(JSON.stringify(codeValues));
     window.location.href = `https://localhost:7188/CommonMasters/StateMaster?Edit=${Code}&Index=${rowIndex}&codeValues=${serializedArray}`;
+   
 }
 
 function getStatelist() {
