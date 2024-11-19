@@ -115,12 +115,37 @@ function EditData(Code) {
 function getStatelist() {
     StateMasterService.GetStateMasterList("All").then(function (response) {
         const StringFilterColumn = ["UserName", "StateName"];
-        const NumericFilterColumn = ["Code", "StateCode"];
+        const NumericFilterColumn = ["StateCode"];
         const DateFilterColumn = ["UpdateDate", "CreateDate"];
         const Button = true;
         const showButtons=["E","D","VE"]
-        const StringdoubleFilterColumn = ["CountryName","StateShortName"];
-        CreateDataTable(response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn)
+        const StringdoubleFilterColumn = ["CountryName", "StateShortName"];
+        const hiddenColumns = ["Code"];
+        BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns)
+        //CreateDataTable(headerId, bodyId, data, Button, ShowButtons=[], StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns) 
+
+    });
+}
+window.openModal = function (){
+    $('#myModal').modal('show');
+    $('#myModal').modal({
+        backdrop: 'static',
+    });
+    getCountrylist();
+}
+function closeModal() {
+    $('#myModal').modal('hide');
+}
+ window.getCountrylist = function() {
+    StateMasterService.GetCountryMasterList().then(function (response) {
+        const StringFilterColumn = ["Party Name"];
+        const NumericFilterColumn = ["PO No"];
+        const DateFilterColumn = ["PO Date"];
+        const Button = true;
+        const showButtons = ["E", "D", "VE"]
+        const StringdoubleFilterColumn = ["Product"];
+        const hiddenColumns = ["Code"];
+        CreateDataTable("table-header1", "table-body1", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns)
     });
 }
 function InitGridRowEditControl(rowCode, arrControls, callBackFunctionName) {

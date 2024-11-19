@@ -2,39 +2,32 @@
 let data = [];
 let filteredData = [];
 let currentPage = 1;
-let itemsPerPage = 10;
+let itemsPerPage = 5;
 let button = false;
 let showButtons = [];
-$(document).ready(function () {
-    $('#paginator').empty();
+let hiddenColumns = [];
+const BizsolCustomFilterGrid = {
+    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns) {
+        const columns = Object.keys(data[0]);
+        const tableId = $('#' + bodyId).closest('table').attr('id');
+        renderTableHeader(HiddenColumns, headerId, bodyId, columns, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
+        hiddenColumns = HiddenColumns;
+        renderTable(data, bodyId);
+        button = Button;
+        showButtons = ShowButtons;
+        filteredData = data;
+        bodyId = bodyId;
+        createPaginator(tableId, bodyId);
+        renderTableWithPagination(tableId, bodyId);
+    }
 
-    var filterHtml = `
-                <div class="page-size-select">
-                    <label for="pageSize">Lines Per Page:</label>
-                    <select onchange="pageSize()" id="pageSize">
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                        <option value="30">30</option>
-                    </select>
-                </div>
-                <button id="firstBtn" onclick="firstBtn()" class="paginator-btn" ><svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24">
-                <path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z"></path></svg></button>
-                <button id="prevBtn" onclick="prevBtn()" class="paginator-btn"> <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24">
-                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path>
-                </svg></button>
-                <span class="page-info" id="pageInfo">1 – 10 of 0</span>
-                <button id="nextBtn" onclick="nextBtn()" class="paginator-btn">  <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24">
-                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"></path></svg></button>
-                <button id="lastBtn" onclick="lastBtn()" class="paginator-btn"><svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24">
-                <path d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z"></path>
-                </svg></button>
-                `;
-
-    $('#paginator').append(filterHtml);
-    function populateFilterOptions(columnName) {
+}
+window.BizsolCustomFilterGrid = BizsolCustomFilterGrid;
+//$(document).ready(function () {
+    function populateFilterOptions(columnName,bodyId) {
 
         var uniqueValues = new Set();
-        $('#table-body tr:visible').each(function () {
+        $(`#${bodyId} tr:visible`).each(function () {
             var cellValue = $(this).find('td').eq($('th:contains(' + columnName + ')').index()).text().trim();
             uniqueValues.add(cellValue);
         });
@@ -59,9 +52,9 @@ $(document).ready(function () {
             checkboxContainer.find('input[value="All"]').prop('checked', allChecked);
         });
     }
-    window.toggleFilter = function (columnName) {
+    window.toggleFilter = function (columnName, bodyId) {
         closeAllFilters();
-        populateFilterOptions(columnName);
+        populateFilterOptions(columnName, bodyId);
         $('#filter-' + columnName.replace(' ','')).toggle();
     };
     function closeAllFilters() {
@@ -108,16 +101,16 @@ $(document).ready(function () {
         }
     });
     
-});
+//});
 
 var columnFilters = {};
-window.populateDateFilter = function (columnName) {
+window.populateDateFilter = function (columnName, bodyId) {
     closeAllFilters();
     $('#filter-' + columnName.replace(' ', '')).toggle();
     
     var uniqueDates = new Set();
 
-    $('#table-body tr:visible').each(function () {
+    $(`#${bodyId} tr:visible`).each(function () {
         var dateValue = $(this).find('td').eq($('th:contains(' + columnName + ')').index()).text().trim();
         if (dateValue) {
             uniqueDates.add(dateValue);
@@ -213,8 +206,8 @@ window.populateDateFilter = function (columnName) {
         $(this).toggleClass('fa-plus fa-minus');
     });
 }
-function applyFilters() {
-    $('#table-body tr').each(function () {
+function applyFilters(bodyId) {
+    $(`#${bodyId} tr`).each(function () {
         var row = $(this);
         var isVisible = true;
 
@@ -240,7 +233,7 @@ function applyFilters() {
         } else {
             row.hide();
         }
-        $('#table-body tr:visible').each(function (index) {
+        $(`#${bodyId} tr:visible`).each(function (index) {
             $(this).attr('data-index', index);
         });
     });
@@ -264,14 +257,14 @@ window.toggleNumericInputs = function (columnName) {
         $('#max-value-' + columnName.replace(' ', '')).show();
     }
 };
-window.applyNumericFilter = function (columnName) {
+window.applyNumericFilter = function (columnName, bodyId) {
     const selectedOption = $('#numeric-filter-select-' + columnName.replace(' ', '')).val();
     const filterValue = parseFloat($('#filter-value-' + columnName.replace(' ', '')).val());
     const minValue = parseFloat($('#min-value-' + columnName.replace(' ', '')).val());
     const maxValue = parseFloat($('#max-value-' + columnName.replace(' ', '')).val());
 
     if (!isNaN(filterValue) || (!isNaN(minValue) && !isNaN(maxValue))) {
-        $('#table-body tr').each(function () {
+        $(`#${bodyId} tr`).each(function () {
             const cellValue = parseFloat($(this).find('td').eq($('th:contains(' + columnName + ')').index()).text().trim());
             let shouldShow = false;
 
@@ -291,7 +284,7 @@ window.applyNumericFilter = function (columnName) {
             }
 
             $(this).toggle(shouldShow);
-            $('#table-body tr:visible').each(function (index) {
+            $(`#${bodyId} tr:visible`).each(function (index) {
                 $(this).attr('data-index', index);
             });
         });
@@ -302,8 +295,8 @@ window.applyNumericFilter = function (columnName) {
 function closeAllFilters() {
     $('.filter-dropdown').hide();
 }
-function ClearFilter() {
-    $('#table-body tr').each(function () {
+function ClearFilter(bodyId) {
+    $(`#${bodyId} tr`).each(function () {
         $(this).show();
     });
 
@@ -311,11 +304,11 @@ function ClearFilter() {
     $('.filter-input').val('');
     $('.filter-input-double').val('');
     $('.filter-dropdown-double').hide();
-    $('#table-body tr:visible').each(function (index) {
+    $(`#${bodyId} tr:visible`).each(function (index) {
         $(this).attr('data-index', index);
     });
 }
-function applyStringFilters(columnName) {
+function applyStringFilters(columnName, bodyId) {
     var column = columnName;
     var selectedValues = [];
 
@@ -326,29 +319,28 @@ function applyStringFilters(columnName) {
     });
 
     if (selectedValues.length > 0) {
-        $('#table-body tr:visible').each(function () {
+        $(`#${bodyId} tr:visible`).each(function () {
             var cellValue = $(this).find('td').eq($('th:contains(' + column + ')').index()).text().trim();
             if (selectedValues.includes(cellValue) || selectedValues.includes('All')) {
                 $(this).show();
             } else {
                 $(this).hide();
             }
-            $('#table-body tr:visible').each(function (index) {
+            $(`#${bodyId} tr:visible`).each(function (index) {
                 $(this).attr('data-index', index);
             });
         });
     }
     closeAllFilters();
 }
-function ShowEntry(columnName) {
+function ShowEntry(columnName, bodyId) {
     var column = columnName;
-    populateFilterOptionsDouble(column);
+    populateFilterOptionsDouble(column, bodyId);
     $('#checkbox-container-double-' + column.replace(' ', '')).toggle();
 }
-function populateFilterOptionsDouble(columnName) {
-
+function populateFilterOptionsDouble(columnName, bodyId) {
     var uniqueValues = new Set();
-    $('#table-body tr:visible').each(function () {
+    $(`#${bodyId} tr:visible`).each(function () {
         var cellValue = $(this).find('td').eq($('th:contains(' + columnName + ')').index()).text().trim();
         uniqueValues.add(cellValue);
     });
@@ -372,7 +364,7 @@ function populateFilterOptionsDouble(columnName) {
         checkboxContainer.find('input[value="All"]').prop('checked', allChecked);
     });
 }
-function applyfilterdouble(columnName) {
+function applyfilterdouble(columnName, bodyId) {
     var column = columnName;
     var filterType = $('#filter-type-' + column.replace(' ', '')).val();
     var searchValue = $('.filter-input-double[data-column="' + column.replace(' ', '') + '"]').val().trim().toLowerCase();
@@ -390,7 +382,7 @@ function applyfilterdouble(columnName) {
 
     
     if (useCheckboxFilter || useTextFilter) {
-        $('#table-body tr:visible').each(function () {
+        $(`#${bodyId} tr:visible`).each(function () {
             var cellValue = $(this).find('td').eq($('th:contains(' + column + ')').index()).text().trim().toLowerCase();
             var showRow = false;
 
@@ -409,7 +401,7 @@ function applyfilterdouble(columnName) {
             }
 
             $(this).toggle(showRow);
-            $('#table-body tr:visible').each(function (index) {
+            $(`#${bodyId} tr:visible`).each(function (index) {
                 $(this).attr('data-index', index); 
             });
         });
@@ -420,7 +412,7 @@ function closeAllFiltersDouble() {
     $('.filter-dropdown-double').hide();
     $('.checkbox-container-double').hide();
 }
-function applyfilterdate(columnName) {
+function applyfilterdate(columnName, bodyId) {
     var column = columnName;
     var selectedValues = [];
 
@@ -431,20 +423,11 @@ function applyfilterdate(columnName) {
     });
 
     columnFilters[column] = selectedValues;
-    applyFilters();
+    applyFilters(bodyId);
     closeAllFilters();
 }
-function CreateDataTable(data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn) {
-    const columns = Object.keys(data[0]);
-    renderTableHeader(columns, Button,StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
-    renderTable(data);
-    button = Button;
-    showButtons = ShowButtons;
-    filteredData = data;
-    renderTableWithPagination();
-}
-function renderTableHeader(columns, button ,StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn) {
-    const $header = $('#table-header');
+function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn) {
+    const $header = $(`#${headerId}`);
     $header.empty();
     let headerRow = '<tr>';
     columns.forEach(col => {
@@ -457,13 +440,13 @@ function renderTableHeader(columns, button ,StringFilterColumn, NumericFilterCol
                                             <span onclick="sortable(this)" data-column="${col.replace(' ','')}" data-order="asc" style="display: flex;">
                                             <i class="fa-solid fa-arrow-down sort-indicator" style="display:none;"></i>
                                             <i class="fa-solid fa-arrow-up sort-indicator" style="display:block;"></i>
-                                            </span><i class="fa-solid fa-filter" onclick="toggleFilter('${col}')"></i>
+                                            </span><i class="fa-solid fa-filter" onclick="toggleFilter('${col}','${bodyId}')"></i>
                                             </span>
                                             <div class="filter-dropdown" id="filter-${col.replace(' ', '')}">
                                             <input type="text" placeholder="Search..." class="filter-input" data-column="${col.replace(' ', '')}" />
                                             <div class="checkbox-container" id="checkbox-container-${col.replace(' ', '')}"></div>
-                                            <button onclick="applyStringFilters('${col}')" data-column="${col.replace(' ', '')}">apply</button>
-                                            <button onclick="ClearFilter('${col.replace(' ', '')}')">Clear</button>
+                                            <button onclick="applyStringFilters('${col}','${bodyId}')" data-column="${col.replace(' ', '')}">apply</button>
+                                            <button onclick="ClearFilter('${bodyId}')">Clear</button>
                                             </div>
                                            </div>
                                      </th>`;
@@ -490,8 +473,8 @@ function renderTableHeader(columns, button ,StringFilterColumn, NumericFilterCol
                                                 <input type="number" id="min-value-${col.replace(' ', '')}" class="filter-input" placeholder="Min value" style="display:none" />
                                                 <input type="number" id="max-value-${col.replace(' ', '')}" class="filter-input" placeholder="Max value" style="display:none" />
                                             </div>
-                                            <button onclick="applyNumericFilter('${col}')">Apply</button>
-                                            <button onclick="ClearFilter()">Clear</button>
+                                            <button onclick="applyNumericFilter('${col}','${bodyId}')">Apply</button>
+                                            <button onclick="ClearFilter('${bodyId}')">Clear</button>
                                          </div>
                                          </th>`;
         } else if (DateFilterColumn.includes(col)) {
@@ -503,13 +486,13 @@ function renderTableHeader(columns, button ,StringFilterColumn, NumericFilterCol
                                                 <i class="fa-solid fa-arrow-down sort-indicator" style="display:none;"></i>
                                                 <i class="fa-solid fa-arrow-up sort-indicator" style="display:block;"></i>
                                                 </span>
-                                                <i class="fa-solid fa-filter" onclick="populateDateFilter('${col}')"></i>
+                                                <i class="fa-solid fa-filter" onclick="populateDateFilter('${col}','${bodyId}')"></i>
                                                 </span>
                                             </div>
                                             <div class="filter-dropdown" id="filter-${col.replace(' ', '') }">
                                             <div class="checkbox-container" id="checkbox-container-${col.replace(' ', '') }"></div>
-                                            <button onclick="applyfilterdate('${col}')" data-column="${col.replace(' ', '') }">Apply</button>
-                                            <button onclick="ClearFilter()">Clear</button>
+                                            <button onclick="applyfilterdate('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Apply</button>
+                                            <button onclick="ClearFilter('${bodyId}')">Clear</button>
                                             </div>
                                        </th>`;
         } else if (StringdoubleFilterColumn.includes(col)) {
@@ -520,7 +503,7 @@ function renderTableHeader(columns, button ,StringFilterColumn, NumericFilterCol
                                             <span onclick="sortable(this)" data-column="${col.replace(' ', '') }" data-order="asc" style="display: flex;">
                                             <i class="fa-solid fa-arrow-down sort-indicator" style="display:none;"></i>
                                             <i class="fa-solid fa-arrow-up sort-indicator" style="display:block;"></i>
-                                            </span><i class="fa-solid fa-filter" onclick="toggleFilterDouble('${col}')"></i>
+                                            </span><i class="fa-solid fa-filter" onclick="toggleFilterDouble('${col}','${bodyId}')"></i>
                                             </span>
                                            </div>
                                         <div class="filter-dropdown-double" onclick="stopPropagationdouble(event)" id="filter-double-${col.replace(' ', '') }">
@@ -531,11 +514,13 @@ function renderTableHeader(columns, button ,StringFilterColumn, NumericFilterCol
                                         </select>
                                         <input type="text" placeholder="Search..." class="filter-input-double" data-column="${col.replace(' ', '') }" />
                                         <div class="checkbox-container-double" id="checkbox-container-double-${col.replace(' ', '') }"></div>
-                                        <button onclick="applyfilterdouble('${col}')" data-column="${col.replace(' ', '') }">Apply</button>
-                                        <button onclick="ShowEntry('${col}')" data-column="${col.replace(' ', '') }">Show Entries</button>
-                                        <button onclick="ClearFilter()">Clear</button>
+                                        <button onclick="applyfilterdouble('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Apply</button>
+                                        <button onclick="ShowEntry('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Show Entries</button>
+                                        <button onclick="ClearFilter('${bodyId}')">Clear</button>
                                         </div>
                                     </th>`;
+        } else if (hiddenColumns.includes(col)) {
+            filterHtml = `<th style="display:none">${col}</th>`
         }
         else {
             filterHtml = `<th>${col}</th>`;
@@ -549,22 +534,23 @@ function renderTableHeader(columns, button ,StringFilterColumn, NumericFilterCol
     }
     $header.append(headerRow);
 }
-function renderTable(dataToRender, columns) {
-    const $tbody = $('#table tbody');
-    $tbody.empty();
-    dataToRender.forEach(item => {
-        let row = '<tr>';
-        columns.forEach(col => {
-            row += `<td>${item[col] || ''}</td>`;
-        });
-        row += '</tr>';
-        $tbody.append(row);
-    });
-}
+//function renderTable(dataToRender, columns) {
+//    const $tbody = $('#table tbody');
+//    $tbody.empty();
+//    dataToRender.forEach(item => {
+//        let row = '<tr>';
+//        columns.forEach(col => {
+//            row += `<td>${item[col] || ''}</td>`;
+//        });
+//        row += '</tr>';
+//        $tbody.append(row);
+//    });
+//}
 function sortable(element) {
     var column = $(element).data('column');
     var index = $(element).closest('th').index();
     var order = $(element).data('order');
+    var tbodyId = $(element).closest('table').find('tbody').attr('id');
     order = order === 'asc' ? 'desc' : 'asc';
     $(element).data('order', order);
 
@@ -583,10 +569,10 @@ function sortable(element) {
         $(element).find('.fa-arrow-down').show();
     }
 
-    sortTable(index, order);
+    sortTable(index, order, tbodyId);
 };
-function sortTable(columnIndex, order) {
-    var rows = $('#table-body tr').get();
+function sortTable(columnIndex, order, tbodyId) {
+    var rows = $(`#${tbodyId} tr`).get();
     rows.sort(function (a, b) {
         var keyA = $(a).children('td').eq(columnIndex).text().trim();
         var keyB = $(b).children('td').eq(columnIndex).text().trim();
@@ -597,42 +583,22 @@ function sortTable(columnIndex, order) {
         }
     });
     $.each(rows, function (index, row) {
-        $('#table-body').append(row);
+        $(`#${tbodyId}`).append(row);
     });
 }
 function stopPropagationdouble(event) {
     event.stopPropagation();
 };
-//function renderTable(items) {
-//    const rows = items.map((item, index) => {
-//        const row = Object.values(item).map(val => `<td>${val}</td>`).join('');
-//        if (button) {
-//            return `<tr data-index="${index}">${row}<td>
-//                <input class="btn btn-primary" type="button" onclick="EditData('${item.Code}')" value="Edit"/>
-//                <input type="button" class="btn btn-danger" onclick="DeleteData('${item.Code}')" value="Delete">
-//                <input type="button" class="btn btn-info" onclick="ViewData('${item.Code}')" value="View"/>
-//            </td></tr>`;
-//        } else {
-//            return `<tr data-index="${index}">${row}</tr>`;
-//        }
-//    }).join('');
-
-//    $('#table-body').html(rows);
-//}
-//function renderTable(items, showButtons) {
-//    const rows = items.map((item, index) => {
-//        const row = Object.values(item).map(val => `<td>${val}</td>`).join('');
-//        const buttons = showButtons.length > 0 ? `<td>${showButtons.join('')}</td>` : '';
-//        return `<tr data-index="${index}">${row}${buttons}</tr>`;
-//    }).join('');
-
-//    $('#table-body').html(rows);
-//}
-function renderTable(items) {
-
+function renderTable(items,bodyId) {
+    //const rows = items.map((item, index) => {
+    //    const row = Object.values(item).map(val => `<td>${val}</td>`).join('');
     const rows = items.map((item, index) => {
-        const row = Object.values(item).map(val => `<td>${val}</td>`).join('');
-
+        const row = Object.keys(item).map((key) => {
+            if (hiddenColumns.includes(key)) {
+                return `<td style="display:none">${item[key]}</td>`;
+            }
+            return `<td>${item[key]}</td>`;
+        }).join('');
         let buttons = '';
 
         if (Array.isArray(showButtons) && showButtons.length > 0) {
@@ -648,7 +614,10 @@ function renderTable(items) {
                 buttons += `<input class="btn btn-info" type="button" onclick="ViewData('${item.Code}')" value="View"/> `;
             }
             if (showButtons.includes('VE')) {
-                buttons += `<input class="btn btn-success" type="button" onclick="ViewData('${item.Code}')" value="View"/> `;
+                buttons += `<input class="btn btn-success" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/> `;
+            }
+            if (showButtons.includes('A')) {
+                buttons += `<input class="btn btn-warning" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/> `;
             }
             if (showButtons.includes('M')) {
                 buttons += `<input class="btn btn-info" type="button" onclick="MoreData('${item.Code}')" value="More.."/> `;
@@ -660,51 +629,100 @@ function renderTable(items) {
         return `<tr data-index="${index}">${row}${buttons}</tr>`;
     }).join('');
 
-    $('#table-body').html(rows);
+    $(`#${bodyId}`).html(rows);
 }
-function updatePageInfo() {
+//function updatePageInfo(tableId) {
+//    const start = (currentPage - 1) * itemsPerPage + 1;
+//    const end = Math.min(start + itemsPerPage - 1, filteredData.length);
+//    $('#pageInfo').text(`${start} – ${end} of ${filteredData.length}`);
+//}
+//function updateButtons() {
+//    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+//    $('#firstBtn, #prevBtn').prop('disabled', currentPage === 1);
+//    $('#nextBtn, #lastBtn').prop('disabled', currentPage === totalPages);
+//}
+function updatePageInfo(tableId) {
     const start = (currentPage - 1) * itemsPerPage + 1;
     const end = Math.min(start + itemsPerPage - 1, filteredData.length);
-    $('#pageInfo').text(`${start} – ${end} of ${filteredData.length}`);
+    $(`#pageInfo-${tableId}`).text(`${start} – ${end} of ${filteredData.length}`);
 }
-function updateButtons() {
+function updateButtons(tableId) {
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-    $('#firstBtn, #prevBtn').prop('disabled', currentPage === 1);
-    $('#nextBtn, #lastBtn').prop('disabled', currentPage === totalPages);
+    $(`#firstBtn-${tableId}, #prevBtn-${tableId}`).prop('disabled', currentPage === 1);
+    $(`#nextBtn-${tableId}, #lastBtn-${tableId}`).prop('disabled', currentPage === totalPages);
 }
-function renderTableWithPagination() {
+function renderTableWithPagination(tableId, bodyId) {
     
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const itemsToDisplay = filteredData.slice(start, end);
 
-    renderTable(itemsToDisplay);
-    updatePageInfo();
-    updateButtons();
+    renderTable(itemsToDisplay,bodyId);
+    updatePageInfo(tableId);
+    updateButtons(tableId);
 }
-function firstBtn() {
+function firstBtn(tableId,bodyId) {
     currentPage = 1;
-    renderTableWithPagination();
+    renderTableWithPagination(tableId, bodyId);
 };
-function prevBtn() {
+function prevBtn(tableId, bodyId) {
     if (currentPage > 1) {
         currentPage--;
-        renderTableWithPagination();
+        renderTableWithPagination(tableId, bodyId);
     }
 };
-function nextBtn() {
+function nextBtn(tableId, bodyId) {
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     if (currentPage < totalPages) {
         currentPage++;
-        renderTableWithPagination();
+        renderTableWithPagination(tableId, bodyId);
    }
 };
-function lastBtn() {
+function lastBtn(tableId, bodyId) {
     currentPage = Math.ceil(filteredData.length / itemsPerPage);
-    renderTableWithPagination();
+    renderTableWithPagination(tableId, bodyId);
 };
-function pageSize() {
-    itemsPerPage = parseInt($("#pageSize").val());
+function pageSize(tableId, bodyId) {
+    //itemsPerPage = parseInt($("#pageSize-tableId").val());
+    itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
     currentPage = 1;
-    renderTableWithPagination();
+    renderTableWithPagination(tableId, bodyId);
 };
+
+function createPaginator(tableId, bodyId) {
+    $('#paginator-' + tableId).empty();
+    var filterHtml = `
+        <div class="page-size-select">
+            <label for="pageSize-${tableId}">Lines Per Page:</label>
+            <select onchange="pageSize('${tableId}','${bodyId}')" class="pageSize" id="pageSize-${tableId}">
+            <option value="5">5</option>   
+            <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+            </select>
+        </div>
+        <button id="firstBtn-${tableId}" onclick="firstBtn('${tableId}','${bodyId}')" class="paginator-btn">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24">
+                <path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z"></path>
+            </svg>
+        </button>
+        <button id="prevBtn-${tableId}" onclick="prevBtn('${tableId}','${bodyId}')" class="paginator-btn">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24">
+                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path>
+            </svg>
+        </button>
+        <span class="page-info" id="pageInfo-${tableId}">1 – 10 of 0</span>
+        <button id="nextBtn-${tableId}" onclick="nextBtn('${tableId}','${bodyId}')" class="paginator-btn">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24">
+                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"></path>
+            </svg>
+        </button>
+        <button id="lastBtn-${tableId}" onclick="lastBtn('${tableId}','${bodyId}')" class="paginator-btn">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24">
+                <path d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z"></path>
+            </svg>
+        </button>
+    `;
+
+    $('#paginator-' + tableId).append(filterHtml);
+}

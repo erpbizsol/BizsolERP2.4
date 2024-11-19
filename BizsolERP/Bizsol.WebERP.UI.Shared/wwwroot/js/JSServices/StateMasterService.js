@@ -12,6 +12,15 @@ const StateMasterService = {
             }
         );
     },
+    GetCountryMasterList: function GetCountryMasterList() {
+        var URL = UrlService.API_ENDPOINT_POApproval + "/GetUnApprovedPO";
+        //var URL = UrlService.API_ENDPOINT_COUNTRY + `/GetCountryMasterList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetStateMasterByCode: function GetStateMasterByCode(Code) {
         var URL = UrlService.API_ENDPOINT_STATE + "/"+Code;
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(

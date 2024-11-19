@@ -1,29 +1,59 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-<link href="~/assets/css/filter.css" rel="stylesheet" />
+
+@* <link href="~/assets/css/filter.css" rel="stylesheet" /> *@
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 
 <div style="text-align:right">
     <input type="button" onclick="CreateNew()" class="btn btn-primary" value="Create New" />
 </div>
+
+@* table filter gird begin *@
 <div class="table-wrapper mt-2">
-    <table id="table" class="fixed-width-table">
+    <table id="State" class="fixed-width-table">
         <thead id="table-header">
         </thead>
         <tbody id="table-body">
         </tbody>
     </table>
 </div>
-<div class="paginator" id="paginator">
+<div class="paginator" id="paginator-State">
+</div>
+@* table filter gird End *@
+
+<button onclick="openModal()">
+    Open Modal
+</button>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modal Title</h5>
+                <button type="button" onclick="closeModal()" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper mt-2">
+                    <table id="table" class="fixed-width-table">
+                        <thead id="table-header1">
+                        </thead>
+                        <tbody id="table-body1">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-table">
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 <div id="DivGridRowEditModal">
 </div>
 
 <select id="ddlCountry" hidden="true" class="form-control"></select>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/StateMasterList.js"></script>
-<script src="~/assets/script/filter.js"></script>
-
-
+@* <script src="~/assets/script/filter.js"></script>
+ *@
+ <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
