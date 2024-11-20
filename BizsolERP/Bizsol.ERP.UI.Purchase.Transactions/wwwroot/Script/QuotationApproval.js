@@ -47,20 +47,26 @@ function closeModal() {
     $('#myModal').modal('hide');
 }
 function QuotationApprovedlist(code) {
+    toastr.options.positionClass = "toast-top-right";
+ 
     QuotationApprovalService.QuotationApproved(code).then(function (resdata) {
-        if (resdata.Status === "Y") {
-            alert("Success: " + resdata.Msg);
+        if (resdata.Status === "Y")
+        {
+            toastr.success(resdata.Msg);
+            
             GetWebNotificationList();
             GetApprovedQuotationList(code);
 
         } else {
-            alert("Error: " + resdata.Msg);
+            toastr.error(resdata.Msg);
+          
+            
         }
     }).catch(function (error) {
-        console.error("Error in Sale Order Approval: ", error);
-        alert("Error while processing sale order approval");
+        toastr.error("Error in Sale Order Approval: ", error);
     });
 };
+
 window.ViewData = ViewData;
 window.closeModal = closeModal;
 window.QuotationApprovedlist = QuotationApprovedlist;
