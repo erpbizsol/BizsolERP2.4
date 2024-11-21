@@ -45,5 +45,15 @@ const StateMasterService = {
             }
         );
     },
+    GetCountryMasterList: function GetCountryMasterList() {
+        var Mode = 'LOCATE';
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var URL = UrlService.API_ENDPOINT_COUNTRY + `/GetCountryMasterList?Mode==` + Mode ;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 export { StateMasterService }

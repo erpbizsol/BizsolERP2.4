@@ -55,19 +55,19 @@ function closeModal() {
     $('#myModal').modal('hide');
 }
 function SaleOrderApprovedlist(BCode) {
+    toastr.options.positionClass = "toast-top-right";
     SaleOrderApprovalService.SaleOrderApproved(BCode).then(function (resdata) {
         if (resdata.Status === "Y") {
+            toastr.success(resdata.Msg);
             SaleOrderApprovedlist(BCode);
             GetWebNotificationList();
-            alert("Success: " + resdata.Msg);
+          
 
         } else {
-            alert("No Approval Sale Order !..");
-            //alert("Error: " + resdata.Msg);
+            toastr.error(resdata.Msg)
         }
     }).catch(function (error) {
-        console.error("Error in Sale Order Approval: ", error);
-        alert("Error while processing sale order approval");
+        toastr.error("Error in Sale Order Approval: ", error);
     });
 };
 
