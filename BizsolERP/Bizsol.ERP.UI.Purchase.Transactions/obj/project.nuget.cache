@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "//1hcUufnGQ=",
+  "dgSpecHash": "/lRgOW8fZTk=",
   "success": true,
-  "projectFilePath": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
+  "projectFilePath": "D:\\ERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\BizSol\\.nuget\\packages\\humanizer\\2.14.1\\humanizer.2.14.1.nupkg.sha512",
     "C:\\Users\\BizSol\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
