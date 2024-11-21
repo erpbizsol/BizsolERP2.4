@@ -1,55 +1,218 @@
-﻿
-@{
+﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script src="d:\erp2.4\bizsolerp\bizsol.weberp.ui.shared\wwwroot\js\jsservices\stocktransferreceiveservice.js"></script>
+
+<style>
+    /* Card container */
+    .form-card {
+        margin-top: 10px;
+        padding: 15px;
+        background-color: #e3e9ee;
+        background-image: linear-gradient(#e3e9ee, #c0cfd6);
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Tabs styling */
+    .nav-tabs {
+        background-color: #173f65; /* Dark blue for the tab container */
+        border: none;
+        border-radius: 8px 8px 0 0;
+        overflow: hidden;
+    }
+
+        .nav-tabs .nav-link {
+            background-color: white;
+            padding: 12px 20px;
+            background: #173f65; /* Dark blue inactive tabs */
+            border: none;
+            /* font-weight: bold; */
+            border-radius: 0; /* No rounded corners */
+            transition: background 0.3s ease-in-out;
+        }
+
+            .nav-tabs .nav-link.active {
+                background-color: #00c0f3; /* Bright blue active tab */
+                color: white;
+                /* font-weight: bold; */
+            }
+
+            .nav-tabs .nav-link:hover {
+                background-color: #007ab3; /* Slightly lighter blue hover effect */
+            }
+
+    /* Tab content area */
+    .tab-content {
+        padding: 20px;
+        background-color: #d6e2eb;
+        border-radius: 0 0 8px 8px;
+        border: 1px solid #dee2e6;
+        border-top: none;
+    }
+
+    /* Input fields */
+    .form-control {
+        height: 2.5rem;
+        font-size: 1rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background-color: #fff;
+    }
+
+    .form-group label {
+        /* font-weight: bold; */
+        color: #173f65; /* Dark blue label text */
+        margin-bottom: 5px;
+    }
+
+    .required::after {
+        content: " *";
+        color: red;
+        margin-left: 2px;
+    }
+
+    /* Input group (Camera icon) */
+    .input-group {
+        display: flex;
+        align-items: center;
+    }
+
+    .input-group-text {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px 0 0 4px;
+    }
+
+        .input-group-text i {
+            font-size: 1.2rem;
+        }
+
+    /* Select field (Dropdown) */
+    .ng-select-container {
+        height: 2.5rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background-color: #fff;
+    }
+
+    .ng-placeholder {
+        color: #6c757d;
+    }
+
+    /* Buttons (if needed in the tabs or actions) */
+    button {
+        border: none;
+        padding: 8px 15px;
+        font-weight: bold;
+        border-radius: 4px;
+        transition: background 0.3s ease-in-out;
+    }
+
+        button:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+    /* Layout adjustments */
+    .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .col-md-4 {
+        padding: 0 10px;
+    }
+
+</style>
+
 <section>
     <div class="container">
         <div class="row">
-            <div class="col-md-9" style="margin: 0 auto;">
-                <form [formGroup]="newStockTransferReceiveForm">
-                    <div class="row mt-2">
-                        <div class="col-md-12">
-                            <div class="card form-card">
-                                <div class="row">
-                                    <div class="col-md-3 form-group">
-                                        <label for="stock"><b>Warehouse Receive</b></label>
-                                    </div>
+            <div class="col-md-12">
+                <!-- Card with tabs -->
+                <div class="card form-card">
+                    <div class="card-body">
+                        <!-- Navigation tabs -->
+                        <ul id="myTab" role="tablist" class="nav nav-tabs">
+                            <li class="nav-item" role="presentation">
+                                <button id="warehouse-tab" type="button" role="tab" class="nav-link active" data-bs-toggle="tab" data-bs-target="#warehouse-tab-pane" aria-controls="warehouse-tab-pane" aria-selected="true">
+                                    Warehouse Receive
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button id="dispatch-tab" type="button" role="tab" class="nav-link" data-bs-toggle="tab" data-bs-target="#dispatch-tab-pane" aria-controls="dispatch-tab-pane" aria-selected="false">
+                                    Actual Dispatch
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab panes -->
+                        <div class="tab-content mt-3">
+                            <!-- Warehouse Receive Tab -->
+                            <div id="warehouse-tab-pane" role="tabpanel" class="tab-pane fade show active">
+                                <form asp-action="YourAction" asp-controller="YourController" method="post" enctype="multipart/form-data">
+                                    <input type="hidden" asp-for="Code" value="0" />
+
                                     <div class="row">
-                                        <input type="hidden" formControlName="Code" class="form-control" value="0" />
+                                        <!-- Warehouse Field -->
                                         <div class="col-md-4 form-group">
                                             <label class="required">Warehouse</label>
-                                            <input type="text" placeholder="Warehouse" />
+                                            <select asp-for="Warehouse" class="form-control">
+                                                <option value="" disabled selected>Select Warehouse</option>
+                                                <!-- Replace with dynamic options -->
+                                                <option value="Warehouse1">Warehouse 1</option>
+                                                <option value="Warehouse2">Warehouse 2</option>
+                                            </select>
                                         </div>
 
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label class="required">Attachment</label>
-                                                <div class="input-group">
-                                                    <div class="input-group-prepend">
-                                                        <span class="input-group-text input-group-Camera" onclick="triggerFileInputClick()">
-                                                            <i class="fa fa-camera" aria-hidden="true"></i>
-                                                        </span>
-                                                    </div>
-                                                    <input formControlName="attachment" type="file" class="form-control">
-                                                </div>
+                                        <!-- Attachment Field -->
+                                        <div class="col-md-4 form-group">
+                                            <label class="required">Attachment</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="fa fa-camera"></i>
+                                                </span>
+                                                <input asp-for="Attachment" type="file" accept=".jpg, .png, .jpeg" class="form-control" />
                                             </div>
                                         </div>
 
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label class="required">Roll Id No</label>
-                                                <input type="text" formControlName="rollIdNo" class="form-control" />
-                                            </div>
+                                        <!-- Roll Id No Field -->
+                                        <div class="col-md-4 form-group">
+                                            <label class="required">Roll Id No</label>
+                                            <input asp-for="RollIdNo" type="text" placeholder="Enter Roll Id No" class="form-control" />
                                         </div>
                                     </div>
+                                </form>
+                            </div>
+
+                            <!-- Actual Dispatch Tab -->
+                            <div id="dispatch-tab-pane" role="tabpanel" class="tab-pane fade">
+                                <div class="row">
+                                    <div class="col-md-4 form-group">
+                                        <label class="required">Party Name</label>
+                                        <select asp-for="Warehouse" class="form-control">
+                                            <option value="" disabled selected>Select Warehouse</option>
+                                            <!-- Replace with dynamic options -->
+                                            <option value="Warehouse1">Warehouse 1</option>
+                                            <option value="Warehouse2">Warehouse 2</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 form-group">
+                                        <label class="required">Pallet No.</label>
+                                        <input asp-for="RollIdNo" type="text" placeholder="Enter Roll Id No" class="form-control" />
+                                    </div>
                                 </div>
+                               
                             </div>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
