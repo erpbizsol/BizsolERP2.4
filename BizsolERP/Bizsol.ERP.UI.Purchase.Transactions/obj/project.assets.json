@@ -2033,7 +2033,8 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
-          "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": "8.0.10"
+          "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": "8.0.10",
+          "Newtonsoft.Json": "13.0.3"
         },
         "compile": {
           "bin/placeholder/Bizsol.WebERP.UI.Shared.dll": {}
@@ -5657,24 +5658,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\BizSol\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "C:\\Users\\BizSol\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
+      "projectUniqueName": "D:\\ERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
       "projectName": "Bizsol.WebERP.UI.Purchase.Transactions",
-      "projectPath": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
+      "projectPath": "D:\\ERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\Bizsol.WebERP.UI.Purchase.Transactions.csproj",
       "packagesPath": "C:\\Users\\BizSol\\.nuget\\packages\\",
-      "outputPath": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\obj\\",
+      "outputPath": "D:\\ERP2.4\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\obj\\",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-      ],
       "configFilePaths": [
         "C:\\Users\\BizSol\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -5689,8 +5685,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
-              "projectPath": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
+            "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+              "projectPath": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
             }
           }
         }
