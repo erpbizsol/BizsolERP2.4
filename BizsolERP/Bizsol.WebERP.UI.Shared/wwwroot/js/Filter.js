@@ -54,8 +54,10 @@ window.BizsolCustomFilterGrid = BizsolCustomFilterGrid;
     }
     window.toggleFilter = function (columnName, bodyId) {
         closeAllFilters();
+        closeAllFiltersDouble();
         populateFilterOptions(columnName, bodyId);
         $('#filter-' + columnName.replace(' ','')).toggle();
+        $('#filterDropdown-' + columnName.replace(' ', '')).toggle();
     };
     function closeAllFilters() {
         $('.filter-dropdown').hide();
@@ -75,7 +77,7 @@ window.BizsolCustomFilterGrid = BizsolCustomFilterGrid;
     });
 
     $(document).click(function (event) {
-        if (!$(event.target).closest('.filter-dropdown, .fa-filter').length) {
+        if (!$(event.target).closest('.filter-dropdown, .fafilter').length) {
             closeAllFilters();
         }
     });
@@ -92,11 +94,11 @@ window.BizsolCustomFilterGrid = BizsolCustomFilterGrid;
         closeAllFiltersDouble();
         $('#filter-double-' + columnName.replace(' ','')).toggle();
         $('.filter-dropdown').hide();
-        
+        $('#filterDropdown-' + columnName.replace(' ', '')).toggle();
     };
 
     $(document).click(function (event) {
-        if (!$(event.target).closest('.filter-dropdown-double, .fa-filter').length) {
+        if (!$(event.target).closest('.filter-dropdown-double, .fafilter,.filter-division').length) {
             closeAllFiltersDouble();
         }
     });
@@ -106,7 +108,10 @@ window.BizsolCustomFilterGrid = BizsolCustomFilterGrid;
 var columnFilters = {};
 window.populateDateFilter = function (columnName, bodyId) {
     closeAllFilters();
+    closeAllFiltersDouble();
     $('#filter-' + columnName.replace(' ', '')).toggle();
+    $('#filterDropdown-' + columnName.replace(' ', '')).toggle();
+
     
     var uniqueDates = new Set();
 
@@ -240,8 +245,11 @@ function applyFilters(bodyId) {
 }
 window.toggleFilterNumeric = function (filterId, ColumnName) {
     closeAllFilters();
+    closeAllFiltersDouble();
+    $('#filterDropdown-' + ColumnName.replace(' ', '')).toggle();
     $('#' + filterId).toggle();
     toggleNumericInputs(ColumnName);
+
     
 };
 window.toggleNumericInputs = function (columnName) {
@@ -411,6 +419,7 @@ function applyfilterdouble(columnName, bodyId) {
 function closeAllFiltersDouble() {
     $('.filter-dropdown-double').hide();
     $('.checkbox-container-double').hide();
+
 }
 function applyfilterdate(columnName, bodyId) {
     var column = columnName;
@@ -436,12 +445,23 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
             filterHtml = `<th>
                                          <div style="display: flex; justify-content: space-between; align-items: center;">
                                            ${col}
-                                            <span style="display: flex;">
-                                            <span onclick="sortable(this)" data-column="${col.replace(' ','')}" data-order="asc" style="display: flex;">
-                                            <i class="fa-solid fa-arrow-down sort-indicator" style="display:none;"></i>
-                                            <i class="fa-solid fa-arrow-up sort-indicator" style="display:block;"></i>
-                                            </span><i class="fa-solid fa-filter" onclick="toggleFilter('${col}','${bodyId}')"></i>
+                                            <span style="display: flex; align-items: center;">
+                                              <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
                                             </span>
+                                              <div class="filter-division" id="filterDropdown-${col.replace(' ', '')}" style="display:none;">
+                                                <div class="dropdown-content">
+                                                  <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc">
+                                                    <i class="fa-solid fa-arrow-up-a-z sort-indicator"></i> Ascending
+                                                  </div>
+                                                  <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="desc">
+                                                    <i class="fa-solid fa-arrow-down-z-a sort-indicator"></i> Descending
+                                                  </div>
+                                                  <div class="dropdown-item fafilter" onclick="toggleFilter('${col}','${bodyId}')">
+                                                    <i class="fa-solid fa-filter"></i> Filter...
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
                                             <div class="filter-dropdown" id="filter-${col.replace(' ', '')}">
                                             <input type="text" placeholder="Search..." class="filter-input" data-column="${col.replace(' ', '')}" />
                                             <div class="checkbox-container" id="checkbox-container-${col.replace(' ', '')}"></div>
@@ -454,13 +474,23 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
             filterHtml = `<th>
                                          <div style="display: flex; justify-content: space-between; align-items: center;">
                                               ${col}
-                                              <span style="display: flex;">
-                                              <span onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc" style="display: flex;">
-                                              <i class="fa-solid fa-arrow-down sort-indicator" style="display:none;"></i>
-                                              <i class="fa-solid fa-arrow-up sort-indicator" style="display:block;"></i>
-                                              </span><i class="fa-solid fa-filter" onclick="toggleFilterNumeric('filter-dropdown-numeric-${col.replace(' ','')}','${col}');"></i>
-                                              </span>
-                                          </div>
+                                              <span style="display: flex; align-items: center;">
+                                                  <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
+                                                </span>
+                                                  <div class="filter-division" id="filterDropdown-${col.replace(' ', '')}" style="display:none;">
+                                                    <div class="dropdown-content">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc">
+                                                        <i class="fa-solid fa-arrow-up-a-z sort-indicator"></i> Ascending
+                                                      </div>
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="desc">
+                                                        <i class="fa-solid fa-arrow-down-z-a sort-indicator"></i> Descending
+                                                      </div>
+                                                      <div class="dropdown-item fafilter" onclick="toggleFilterNumeric('filter-dropdown-numeric-${col.replace(' ', '')}','${col}');">
+                                                        <i class="fa-solid fa-filter"></i> Filter...
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                               </div>
                                          <div class="filter-dropdown" id="filter-dropdown-numeric-${col.replace(' ', '')}">
                                           <select id="numeric-filter-select-${col.replace(' ', '')}" onchange="toggleNumericInputs('${col}')">
                                                 <option value="equals">=</option>
@@ -480,15 +510,24 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
         } else if (DateFilterColumn.includes(col)) {
             filterHtml = ` <th>
                                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                                ${col}
-                                                <span style="display: flex;">
-                                                <span onclick="sortable(this)" data-column="${col.replace(' ', '') }" data-order="asc" style="display: flex;">
-                                                <i class="fa-solid fa-arrow-down sort-indicator" style="display:none;"></i>
-                                                <i class="fa-solid fa-arrow-up sort-indicator" style="display:block;"></i>
+                                              ${col}
+                                              <span style="display: flex; align-items: center;">
+                                                  <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
                                                 </span>
-                                                <i class="fa-solid fa-filter" onclick="populateDateFilter('${col}','${bodyId}')"></i>
-                                                </span>
-                                            </div>
+                                                  <div class="filter-division" id="filterDropdown-${col.replace(' ', '')}" style="display:none;">
+                                                    <div class="dropdown-content">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc">
+                                                        <i class="fa-solid fa-arrow-up-a-z sort-indicator"></i> Ascending
+                                                      </div>
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="desc">
+                                                        <i class="fa-solid fa-arrow-down-z-a sort-indicator"></i> Descending
+                                                      </div>
+                                                      <div class="dropdown-item fafilter" onclick="populateDateFilter('${col}','${bodyId}')">
+                                                        <i class="fa-solid fa-filter"></i> Filter...
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                               </div>
                                             <div class="filter-dropdown" id="filter-${col.replace(' ', '') }">
                                             <div class="checkbox-container" id="checkbox-container-${col.replace(' ', '') }"></div>
                                             <button onclick="applyfilterdate('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Apply</button>
@@ -497,20 +536,30 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                        </th>`;
         } else if (StringdoubleFilterColumn.includes(col)) {
             filterHtml = `<th>
-                                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                                            ${col}
-                                            <span style="display: flex;">
-                                            <span onclick="sortable(this)" data-column="${col.replace(' ', '') }" data-order="asc" style="display: flex;">
-                                            <i class="fa-solid fa-arrow-down sort-indicator" style="display:none;"></i>
-                                            <i class="fa-solid fa-arrow-up sort-indicator" style="display:block;"></i>
-                                            </span><i class="fa-solid fa-filter" onclick="toggleFilterDouble('${col}','${bodyId}')"></i>
-                                            </span>
-                                           </div>
+                                           <div style="display: flex; justify-content: space-between; align-items: center;">
+                                         ${col}
+                                         <span style="display: flex;justify-content: space-between; align-items: center;">
+                                             <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
+                                           </span>
+                                             <div class="filter-division" onclick="stopPropagationdouble(event)" id="filterDropdown-${col.replace(' ', '')}" style="display:none;">
+                                               <div class="dropdown-content">
+                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc">
+                                                   <i class="fa-solid fa-arrow-up-a-z sort-indicator"></i> Ascending
+                                                 </div>
+                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="desc">
+                                                   <i class="fa-solid fa-arrow-down-z-a sort-indicator"></i> Descending
+                                                 </div>
+                                                 <div class="dropdown-item fafilter" onclick="toggleFilterDouble('${col}','${bodyId}')">
+                                                   <i class="fa-solid fa-filter"></i> Filter...
+                                                 </div>
+                                               </div>
+                                             </div>
+                                          </div>
                                         <div class="filter-dropdown-double" onclick="stopPropagationdouble(event)" id="filter-double-${col.replace(' ', '') }">
                                          <select class="filter-type" id="filter-type-${col.replace(' ', '') }">
-                                            <option value="like">Between</option>
                                             <option value="startsWith">Starts With</option>
                                             <option value="endsWith">Ends With</option>
+                                            <option value="like">Between</option>
                                         </select>
                                         <input type="text" placeholder="Search..." class="filter-input-double" data-column="${col.replace(' ', '') }" />
                                         <div class="checkbox-container-double" id="checkbox-container-double-${col.replace(' ', '') }"></div>
@@ -547,27 +596,28 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
 //    });
 //}
 function sortable(element) {
+
     var column = $(element).data('column');
     var index = $(element).closest('th').index();
     var order = $(element).data('order');
     var tbodyId = $(element).closest('table').find('tbody').attr('id');
-    order = order === 'asc' ? 'desc' : 'asc';
+    //order = order === 'asc' ? 'desc' : 'asc';
     $(element).data('order', order);
 
-    $(element).find('.sort-indicator').hide();
+    //$(element).find('.sort-indicator').hide();
 
-    if ($(element).find('.sort-indicator').length === 0) {
-        $(element).append('<i class="fa-solid fa-arrow-down sort-indicator"></i>');
-        $(element).append('<i class="fa-solid fa-arrow-up sort-indicator"></i>');
-    }
+    //if ($(element).find('.sort-indicator').length === 0) {
+    //    $(element).append('<i class="fa-solid fa-arrow-down sort-indicator"></i>');
+    //    $(element).append('<i class="fa-solid fa-arrow-up sort-indicator"></i>');
+    //}
 
-    if (order === 'asc') {
-        $(element).find('.fa-arrow-up').show();
-        $(element).find('.fa-arrow-down').hide();
-    } else {
-        $(element).find('.fa-arrow-up').hide();
-        $(element).find('.fa-arrow-down').show();
-    }
+    //if (order === 'asc') {
+    //    $(element).find('.fa-arrow-up').show();
+    //    $(element).find('.fa-arrow-down').hide();
+    //} else {
+    //    $(element).find('.fa-arrow-up').hide();
+    //    $(element).find('.fa-arrow-down').show();
+    //}
 
     sortTable(index, order, tbodyId);
 };
@@ -585,6 +635,7 @@ function sortTable(columnIndex, order, tbodyId) {
     $.each(rows, function (index, row) {
         $(`#${tbodyId}`).append(row);
     });
+    CloseFilter();
 }
 function stopPropagationdouble(event) {
     event.stopPropagation();
@@ -725,4 +776,12 @@ function createPaginator(tableId, bodyId) {
     `;
 
     $('#paginator-' + tableId).append(filterHtml);
+}
+
+function OpenFilter(columnName) {
+    $(".filter-division").hide();
+    $("#filterDropdown-" + columnName).show();
+}
+function CloseFilter() {
+    $(".filter-division").hide();
 }
