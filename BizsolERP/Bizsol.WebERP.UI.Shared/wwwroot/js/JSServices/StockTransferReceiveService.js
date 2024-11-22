@@ -13,33 +13,61 @@ const StockTransferReceiveService = {
     },
 StockTransferWherehouseReceive: function StockTransferWherehouseReceive() {
     var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/StockTransferWherehouseReceive";
-    return this._http.post(url, {}, { headers: this.headers() });
+    return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+        function (value) {
+            return value;
+        }
+        );
 },
 GetWarehouse: function GetWarehouse() {
     
     var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetWarehouse?UserMaster_Code=" + UserMaster_Code;
-    return this._http.get(url, { headers: this.headers() });
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
 },
 ItemWaiseVerifyRollIdInPackingList: function ItemWaiseVerifyRollIdInPackingList(Data) {
     var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/ItemWaiseVerifyRollIdInPackingList";
 
-    return this._http.post(url, {}, { headers: this.headers() });
+    return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
 },
 PackingActualPalletIDDispatch: function PackingActualPalletIDDispatch(PalletNo, PartyName, Data) {
     var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/PackingActualPalletIDDispatch?PalletNo='" + PalletNo +"'" + "&PartyName='" + PartyName+"'";
-    return this._http.post(url, {}, { headers: this.headers() });
+    return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
 },
 RemoveIDDispatch: function RemoveIDDispatch(PalletNo,PartyName) {
     var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/RemoveIDDispatch?PalletNo='" + PalletNo +"'" + "&PartyName='" + PartyName + "'";
-    return this._http.post(url, {}, { headers: this.headers() });
+    return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
 },
 GetPartyNamePendingPackingListActualDespatch: function GetPartyNamePendingPackingListActualDespatch() {
     var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPartyNamePendingPackingListActualDespatch";
-    return this._http.get(url, { headers: this.headers() });
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
 },
 GetPendingPackingListPalletsActualDespatch: function GetPendingPackingListPalletsActualDespatch(PartyName) {
     var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPendingPackingListPalletsActualDespatch?PartyName='" + PartyName + "'";
-    return this._http.get(url, { headers: this.headers() });
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
 },
 }
 export { StockTransferWherehouseReceive }
