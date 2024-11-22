@@ -1,0 +1,112 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/RoutePlanMaster.js"></script>
+
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+
+<style>
+    
+/* Table Styles */
+
+.table-wrapper {
+    margin: 5px 5px 5px;
+    box-shadow: 0px 35px 50px rgba( 0, 0, 0, 0.2 );
+}
+
+.fl-table {
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: normal;
+    border: none;
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 100%;
+    white-space: nowrap;
+    background-color: white;
+}
+
+    .fl-table td, .fl-table th {
+        text-align: center;
+        padding: 8px;
+    }
+
+    .fl-table td {
+        border-right: 1px solid #f8f8f8;
+        font-size: 10px;
+    }
+
+    .fl-table thead th {
+        color: #ffffff;
+        background: #6699cc;
+    }
+
+
+        .fl-table thead th:nth-child(odd) {
+            color: #ffffff;
+            background: #5682ae;
+        }
+
+    .fl-table tr:nth-child(even) {
+        background: #F8F8F8;
+    }
+</style>
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h5 class="m-0">Route Plan</h5>
+            </div><!-- /.col -->
+            
+        </div><!-- /.row -->
+    </div><!-- /.container-fluid -->
+
+</div>
+
+<div id="RoutePlanMaster">
+     <div class="row">
+          <div class="col-md-1 form-group">
+              <label for="txtdate" class="col-form-label-sm fw-bold">Date</label>
+           </div>
+        <div class="col-md-2 form-group">
+           <input id="txtdate" type="date" name="txtdate"  autocomplete="off" class="BizSolFormControl box_border form-control form-control-sm" placeholder="" onkeypress="BizSolhandleEnterKey(event)" required value="" />
+        </div>
+          <div class="col-md-2 form-group">
+              <input type="button" name="btnSearch" id="btnSearch" class="btn btn-primary btn-sm waves-effect waves-light" value="Search"  />
+          </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col-md-12 form-group">
+            <div class="table-wrapper" style="overflow: auto;">
+                <table id="tblRoutePlan" class="fl-table" style="width: 100%">
+                                <thead>
+                                    <tr>
+                                        <th style="display:none"></th>
+                                        <th>Visit Type</th>
+                                        <th>Dealer Name </th>
+                                        <th>City</th>
+                                        <th>State  </th>
+                                        <th>Description </th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                    <!--end table row-->
+                                </thead>
+                        <tbody>
+                        </tbody>
+                  </table>
+             </div>
+        </div>
+    </div>
+
+</div>
+<datalist id="listdealer"></datalist>
+<datalist id="listVisitType"></datalist>
+<datalist id="listCity"></datalist>
+<datalist id="listState"></datalist>
+<div class="alert alert-danger  alert-label-icon label-arrow fade show invisible" role="alert" id="ErrorMsg" >
+  <i class="mdi mdi-block-helper label-icon"></i> No Dealer is assigned to you, So Route Plan can't be created!                                   
+</div>
