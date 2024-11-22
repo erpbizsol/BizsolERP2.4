@@ -74,6 +74,10 @@ namespace BizsolERPMain
               name: "PurchaseTransactions",
               pattern: "{area:exists}/{controller=ApproveVerify}/{action=POApproval}/{id?}");
 
+            app.MapControllerRoute(
+                name: "CRMTransactions",
+                pattern: "{area:exists}/{controller=Visit}/{action=VisitOrderEntry}/{id?}");
+
             app.Run();
         }
     }

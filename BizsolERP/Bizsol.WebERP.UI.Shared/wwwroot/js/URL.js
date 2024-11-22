@@ -45,10 +45,7 @@ let UrlService = {
     API_ENDPOINT_HRCONFIG: `${environment.BASE_URL}/ConfigHR`,
 
     API_ENDPOINT_TankDailyStock: `${environment.BASE_URL}/DailyTankStock`,
-
-    API_ENDPOINT_ROUTE_PLAN: `${environment.BASE_URL}/RoutePlan`,
-    API_ENDPOINT_VISIT_MASTER: `${environment.BASE_URL}/Visit`,
-
+    
     API_ENDPOINT_ACCOUNT_MASTER: `${environment.BASE_URL}/AccountMaster`,
     API_ENDPOINT_ServicePOApproval: `${environment.BASE_URL}/ServicePOApproval`,
     API_ENDPOINT_QuotationApproval: `${environment.BASE_URL}/QuotationApproval`,
@@ -61,16 +58,20 @@ let UrlService = {
     API_ENDPOINT_GatependingOrderforDO: `${environment.BASE_URL}/PendingOrderDO`,
     API_ENDPOINT_GetListOfRateUnit: `${environment.BASE_URL}/RateUnit`,
     API_ENDPOINT_StockTransferReceive: `${environment.BASE_URL}/StockTransferReceive`,
-    API_ENDPOINT_CRMReports: `${environment.BASE_URL}/CRMReports`,
     API_ENDPOINT_TankMaster: `${environment.BASE_URL}/TankMaster`,
     API_ENDPOINT_DayWiseCheckInOut: `${environment.BASE_URL}/DayWiseCheckInOut`,
     API_ENDPOINT_EmployeeMaster: `${environment.BASE_URL}/EmployeeMaster`,
     API_ENDPOINT_QUALITY_CHECK: `${environment.BASE_URL}/QualityCheck`,
-    API_ENDPOINT_CRM_DASHBOARD: `${environment.BASE_URL}/CRMDashboard`,
     API_ENDPOINT_CRYSTAL: `${environment.BASE_URL}/CrystalReport`,
     API_ENDPOINT_PalletPacking: `${environment.BASE_URL}/PalletPacking`,
     API_ENDPOINT_PhysicalStockTaking: `${environment.BASE_URL}/PhysicalStockTaking`,
     API_ENDPOINT_FIXED_PARAMETER: `${environment.BASE_URL}/FixedParameter`,
+
+    //CRM API Service EndPoints
+    API_ENDPOINT_ROUTE_PLAN: `${environment.BASE_URL}/RoutePlan`,
+    API_ENDPOINT_VISIT_MASTER: `${environment.BASE_URL}/Visit`,
+    API_ENDPOINT_CRM_DASHBOARD: `${environment.BASE_URL}/CRMDashboard`,
+    API_ENDPOINT_CRMReports: `${environment.BASE_URL}/CRMReports`,
 
 }
 
