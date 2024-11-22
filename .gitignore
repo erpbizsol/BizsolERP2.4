@@ -939,7 +939,7 @@
 /BizsolERP/Bizsol.ERP.UI.Common.Masters/obj/Debug/net8.0/staticwebassets/msbuild.Bizsol.WebERP.UI.Common.Masters.Microsoft.AspNetCore.StaticWebAssets.props
 *.Up2Date
 /BizsolERP/Bizsol.WebERP.UI.Shared/bin/Debug/net8.0/Bizsol.WebERP.UI.Shared.deps.json
-/BizsolERP/Bizsol.WebERP.UI.Shared/Bizsol.WebERP.UI.Shared.csproj
+
 /BizsolERP/BizsolERPMain/bin/Debug/net8.0/Bizsol.WebERP.UI.Common.Masters.deps.json
 /BizsolERP/BizsolERPMain/bin/Debug/net8.0/Bizsol.WebERP.UI.Common.Reports.deps.json
 /BizsolERP/BizsolERPMain/bin/Debug/net8.0/Bizsol.WebERP.UI.Common.Test.deps.json
