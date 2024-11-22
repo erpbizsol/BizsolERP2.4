@@ -20,8 +20,8 @@ StockTransferWherehouseReceive: function StockTransferWherehouseReceive() {
         );
 },
 GetWarehouse: function GetWarehouse() {
-    
-    var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetWarehouse?UserMaster_Code=" + UserMaster_Code;
+    let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+    var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetWarehouse?UserMaster_Code=" + userCode;
     return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
         function (value) {
             return value;
@@ -70,4 +70,4 @@ GetPendingPackingListPalletsActualDespatch: function GetPendingPackingListPallet
     );
 },
 }
-export { StockTransferWherehouseReceive }
+export { StockTransferReceiveService }
