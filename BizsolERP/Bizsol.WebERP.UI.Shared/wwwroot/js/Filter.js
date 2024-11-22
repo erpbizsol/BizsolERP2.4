@@ -445,19 +445,19 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
             filterHtml = `<th>
                                          <div style="display: flex; justify-content: space-between; align-items: center;">
                                            ${col}
-                                            <span style="display: flex; align-items: center;">
+                                            <span class="table-filter-arrow">
                                               <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
                                             </span>
                                               <div class="filter-division" id="filterDropdown-${col.replace(' ', '')}" style="display:none;">
                                                 <div class="dropdown-content">
                                                   <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc">
-                                                    <i class="fa-solid fa-arrow-up-a-z sort-indicator"></i> Ascending
+                                                    <i class="fa-solid fa-arrow-up-a-z sort-indicator sort-indicator-color"></i> Ascending
                                                   </div>
                                                   <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="desc">
-                                                    <i class="fa-solid fa-arrow-down-z-a sort-indicator"></i> Descending
+                                                    <i class="fa-solid fa-arrow-down-z-a sort-indicator sort-indicator-color"></i> Descending
                                                   </div>
                                                   <div class="dropdown-item fafilter" onclick="toggleFilter('${col}','${bodyId}')">
-                                                    <i class="fa-solid fa-filter"></i> Filter...
+                                                    <i class="fa-solid fa-filter  sort-indicator-color"></i> Filter...
                                                   </div>
                                                 </div>
                                               </div>
@@ -474,19 +474,19 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
             filterHtml = `<th>
                                          <div style="display: flex; justify-content: space-between; align-items: center;">
                                               ${col}
-                                              <span style="display: flex; align-items: center;">
+                                              <span class="table-filter-arrow">
                                                   <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
                                                 </span>
                                                   <div class="filter-division" id="filterDropdown-${col.replace(' ', '')}" style="display:none;">
                                                     <div class="dropdown-content">
                                                       <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc">
-                                                        <i class="fa-solid fa-arrow-up-a-z sort-indicator"></i> Ascending
+                                                        <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                       </div>
                                                       <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="desc">
-                                                        <i class="fa-solid fa-arrow-down-z-a sort-indicator"></i> Descending
+                                                        <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                       </div>
                                                       <div class="dropdown-item fafilter" onclick="toggleFilterNumeric('filter-dropdown-numeric-${col.replace(' ', '')}','${col}');">
-                                                        <i class="fa-solid fa-filter"></i> Filter...
+                                                        <i class="fa-solid fa-filter  sort-indicator-color"></i> Filter...
                                                       </div>
                                                     </div>
                                                   </div>
@@ -511,19 +511,19 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
             filterHtml = ` <th>
                                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                               ${col}
-                                              <span style="display: flex; align-items: center;">
+                                              <span class="table-filter-arrow">
                                                   <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
                                                 </span>
                                                   <div class="filter-division" id="filterDropdown-${col.replace(' ', '')}" style="display:none;">
                                                     <div class="dropdown-content">
                                                       <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc">
-                                                        <i class="fa-solid fa-arrow-up-a-z sort-indicator"></i> Ascending
+                                                        <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                       </div>
                                                       <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="desc">
-                                                        <i class="fa-solid fa-arrow-down-z-a sort-indicator"></i> Descending
+                                                        <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                       </div>
                                                       <div class="dropdown-item fafilter" onclick="populateDateFilter('${col}','${bodyId}')">
-                                                        <i class="fa-solid fa-filter"></i> Filter...
+                                                        <i class="fa-solid fa-filter  sort-indicator-color"></i> Filter...
                                                       </div>
                                                     </div>
                                                   </div>
@@ -538,19 +538,19 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
             filterHtml = `<th>
                                            <div style="display: flex; justify-content: space-between; align-items: center;">
                                          ${col}
-                                         <span style="display: flex;justify-content: space-between; align-items: center;">
+                                         <span class="table-filter-arrow">
                                              <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
                                            </span>
                                              <div class="filter-division" onclick="stopPropagationdouble(event)" id="filterDropdown-${col.replace(' ', '')}" style="display:none;">
                                                <div class="dropdown-content">
                                                  <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc">
-                                                   <i class="fa-solid fa-arrow-up-a-z sort-indicator"></i> Ascending
+                                                   <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                  </div>
                                                  <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="desc">
-                                                   <i class="fa-solid fa-arrow-down-z-a sort-indicator"></i> Descending
+                                                   <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                  </div>
                                                  <div class="dropdown-item fafilter" onclick="toggleFilterDouble('${col}','${bodyId}')">
-                                                   <i class="fa-solid fa-filter"></i> Filter...
+                                                   <i class="fa-solid fa-filter  sort-indicator-color"></i> Filter...
                                                  </div>
                                                </div>
                                              </div>
@@ -656,22 +656,22 @@ function renderTable(items,bodyId) {
             buttons = '<td>';
 
             if (showButtons.includes('E')) {
-                buttons += `<input class="btn btn-primary" type="button" onclick="EditData('${item.Code}')" value="Edit"/> `;
+                buttons += `<input class="btn btn-primary btn-height mb-1" type="button" onclick="EditData('${item.Code}')" value="Edit"/> `;
             }
             if (showButtons.includes('D')) {
-                buttons += `<input class="btn btn-danger" type="button" onclick="DeleteData('${item.Code}')" value="Delete"/> `;
+                buttons += `<input class="btn btn-danger btn-height mb-1" type="button" onclick="DeleteData('${item.Code}')" value="Delete"/> `;
             }
             if (showButtons.includes('V')) {
-                buttons += `<input class="btn btn-info" type="button" onclick="ViewData('${item.Code}')" value="View"/> `;
+                buttons += `<input class="btn btn-info btn-height" type="button" onclick="ViewData('${item.Code}')" value="View"/> `;
             }
             if (showButtons.includes('VE')) {
-                buttons += `<input class="btn btn-success" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/> `;
+                buttons += `<input class="btn btn-success btn-height mb-1" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/> `;
             }
             if (showButtons.includes('A')) {
-                buttons += `<input class="btn btn-warning" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/> `;
+                buttons += `<input class="btn btn-warning btn-height" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/> `;
             }
             if (showButtons.includes('M')) {
-                buttons += `<input class="btn btn-info" type="button" onclick="MoreData('${item.Code}')" value="More.."/> `;
+                buttons += `<input class="btn btn-info btn-height" type="button" onclick="MoreData('${item.Code}')" value="More.."/> `;
             }
 
             buttons += '</td>';
@@ -752,24 +752,24 @@ function createPaginator(tableId, bodyId) {
                 <option value="30">30</option>
             </select>
         </div>
-        <button id="firstBtn-${tableId}" onclick="firstBtn('${tableId}','${bodyId}')" class="paginator-btn">
-            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24">
+        <button id="firstBtn-${tableId}" onclick="firstBtn('${tableId}','${bodyId}')" class="btn btn-primary paginator-btn icon-height">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24" class="svg-icon">
                 <path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z"></path>
             </svg>
         </button>
-        <button id="prevBtn-${tableId}" onclick="prevBtn('${tableId}','${bodyId}')" class="paginator-btn">
-            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24">
+        <button id="prevBtn-${tableId}" onclick="prevBtn('${tableId}','${bodyId}')" class="btn btn-primary paginator-btn icon-height">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24" class="svg-icon">
                 <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path>
             </svg>
         </button>
         <span class="page-info" id="pageInfo-${tableId}">1 – 10 of 0</span>
-        <button id="nextBtn-${tableId}" onclick="nextBtn('${tableId}','${bodyId}')" class="paginator-btn">
-            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24">
+        <button id="nextBtn-${tableId}" onclick="nextBtn('${tableId}','${bodyId}')" class="btn btn-primary paginator-btn icon-height">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24" class="svg-icon">
                 <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"></path>
             </svg>
         </button>
-        <button id="lastBtn-${tableId}" onclick="lastBtn('${tableId}','${bodyId}')" class="paginator-btn">
-            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24">
+        <button id="lastBtn-${tableId}" onclick="lastBtn('${tableId}','${bodyId}')" class="btn btn-primary paginator-btn icon-height">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24" class="svg-icon">
                 <path d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z"></path>
             </svg>
         </button>
