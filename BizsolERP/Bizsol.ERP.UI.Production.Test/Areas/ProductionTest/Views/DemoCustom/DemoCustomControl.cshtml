@@ -86,14 +86,15 @@
 
     }
     function Attachment() {
-        InitAttachmentControl('BankMaster', 14, "myName");
+        //InitAttachmentControl('BankMaster', 14,'',0,0,'2024-11-21', "myName");
+        InitAttachmentControl('BankMaster', 14,'',0,0,'', "myName");
     }
-    function InitAttachmentControl(masterTableName, masterTableCode, callBackFunctionName) {
+    function InitAttachmentControl(masterTableName, masterTableCode,detailTableName,detailTableCode,entryNo,entryDate, callBackFunctionName) {
         
         // var url = '@Url.Action("AttachmentControl", "CustomControl")';
         var url = '/CustomControl/AttachmentControl';
 
-        $('#DivAttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, CallBackFunctionName: callBackFunctionName });
+        $('#DivAttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode,DetailTableName:detailTableName,DetailTableCode:detailTableCode,EntryNo:entryNo,EntryDate:entryDate,CallBackFunctionName: callBackFunctionName });
 
     }
 </script>
