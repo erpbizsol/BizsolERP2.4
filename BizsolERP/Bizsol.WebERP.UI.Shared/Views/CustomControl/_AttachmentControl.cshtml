@@ -1,6 +1,6 @@
 ﻿
 
-<div class="modal fade bs-example-modal-center" id="AttachmentControlmodal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade bs-example-modal-center" id="AttachmentControlmodal" tabindex="-1" role="dialog" aria-hidden="false">
     <div class="modal-dialog modal-dialog-scrollable" style="max-width:800px">
         <div class="modal-content">
             <div class="modal-header">
@@ -30,6 +30,13 @@
                             
                        
                         </div>
+                        <div class="row">
+                            <div class="col-12 text-end">
+                                <a class="btn btn-primary" onclick="Save_AttachmentControl()">
+                                    Save
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </form>
 
@@ -54,12 +61,18 @@
                     
                     <input type="hidden" value="@ViewBag.MasterTableName" id="hfMasterTableName" />
                     <input type="hidden" value="@ViewBag.MasterTableCode" id="hfMasterTableCode" />
+                    <input type="hidden" value="@ViewBag.DetailTableName" id="hfDetailTableName" />
+                    <input type="hidden" value="@ViewBag.DetailTableCode" id="hfDetailTableCode" />
+                    <input type="hidden" value="@ViewBag.EntryNo" id="hfEntryNo" />
+                    <input type="hidden" value="@ViewBag.EntryDate" id="hfEntryDate" />
+                    
                 </div>
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div>
 <style>
+    
     #file-button {
         background-color: #5156be;
         color: white;
@@ -76,28 +89,13 @@
         font-size: 16px;
     }
 
-        #file-names.hover {
+    #file-names.hover {
             border-color: #007BFF;
             background-color: #f0f8ff;
-        }
-
- .save-btn {
-        background-color: #28a745;
-        color: white;
-        padding: 8px 16px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
+            border-width: medium;
     }
 
-    .delete-btn, .download-btn {
-        background-color: #dc3545;
-        color: white;
-        border: none;
-        padding: 6px 10px;
-        cursor: pointer;
-        border-radius: 5px;
-    }
+ 
 
     .file-input {
         display: none;
@@ -361,77 +359,5 @@
     }
 </script> *@
 
-<script>
-    const fileInput = document.getElementById('file-input');
-    const fileNamesInput = document.getElementById('file-names');
 
-    // Prevent default drag behaviors
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        fileNamesInput.addEventListener(eventName, preventDefaults, false);
-    });
-
-    // Highlight text input when item is dragged over it
-    ['dragenter', 'dragover'].forEach(eventName => {
-        fileNamesInput.classList.add('hover');
-    });
-
-    // Remove highlight when item is dragged out
-    ['dragleave', 'drop'].forEach(eventName => {
-        fileNamesInput.classList.remove('hover');
-    });
-
-    // Handle drop event on text input
-    fileNamesInput.addEventListener('drop', handleDrop, false);
-
-    // Handle file input selection
-    fileInput.addEventListener('change', () => handleFiles(fileInput.files), false);
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        handleFiles(files);
-    }
-
-    function handleFiles(files) {
-        if (files.length > 0) {
-            for (let index in files) {
-                const file = files[index];
-                fileNamesInput.value += ',' + file.name;
-
-                const fileItem = document.createElement('div');
-                //const fileItem = document.getElementById('fileList');
-                fileItem.classList.add('file-list-item');
-
-                const fileParticularsInput = document.createElement('input');
-                fileParticularsInput.type = "text";
-                fileParticularsInput.placeholder = "Document Particulars";
-                fileParticularsInput.classList.add('file-particulars-input');
-
-                const fileNameInput = document.createElement('input');
-                fileNameInput.type = "text";
-                fileNameInput.classList.add('file-name-input');
-                fileNameInput.value = file.name;
-
-                fileItem.appendChild(fileParticularsInput);
-                fileItem.appendChild(fileNameInput);
-
-                // Add delete button
-                const deleteBtn = document.createElement('button');
-                deleteBtn.classList.add('btn');
-                deleteBtn.classList.add('btn-danger');
-                deleteBtn.textContent = "Delete";
-                deleteBtn.addEventListener('click', () => deleteFile(index));
-
-                fileItem.appendChild(deleteBtn);
-                fileList.appendChild(fileItem);
-            }
-        }
-    }
-
-</script>
 
