@@ -1,6 +1,5 @@
 ﻿export const promiseAjaxCallApi = {
     CallAPI: function CallAPI(callMethod, URl, Data) {
-
         return new Promise(function (resolve, reject) {
             $.ajax({
                 url: URl,
