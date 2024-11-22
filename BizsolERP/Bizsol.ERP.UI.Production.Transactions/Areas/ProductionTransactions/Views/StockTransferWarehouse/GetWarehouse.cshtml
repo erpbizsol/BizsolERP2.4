@@ -24,29 +24,24 @@
                     <!-- Warehouse Field -->
                     <div class="col-md-4 form-group">
                         <label class="required">Warehouse</label>
-                        <select asp-for="Warehouse" class="form-control">
+                        <select asp-for="Warehouse" class="form-control" id="Warehouse">
                             <option value="" disabled selected>Select Warehouse</option>
-                            <!-- Replace with dynamic options -->
-                            <option value="Warehouse1">Warehouse 1</option>
-                            <option value="Warehouse2">Warehouse 2</option>
                         </select>
                     </div>
-
                     <!-- Attachment Field -->
                     <div class="col-md-4 form-group">
                         <label class="required">Attachment</label>
                         <div class="input-group">
-                            <span class="input-group-text">
+                            <span class="input-group-text" onclick="document.getElementById('fileInput').click()" style="cursor: pointer;">
                                 <i class="fa fa-camera"></i>
                             </span>
-                            <input asp-for="Attachment" type="file" accept=".jpg, .png, .jpeg" class="form-control" />
+                            <input asp-for="Attachment" type="file" accept=".jpg, .png, .jpeg" class="form-control" id="fileInput" />
                         </div>
                     </div>
-
                     <!-- Roll Id No Field -->
                     <div class="col-md-4 form-group">
                         <label class="required">Roll Id No</label>
-                        <input asp-for="RollIdNo" type="text" placeholder="Enter Roll Id No" class="form-control" />
+                    <input asp-for="RollIdNo" type="text" placeholder="Enter Roll Id No" class="form-control" id="rollIdNo"/>
                     </div>
                 </div>
             </form>
