@@ -82,8 +82,39 @@ const CRMReportsServices = {
                 return value;
             }
         );
-    }
+    },
 
+     GetReportTypelist: function GetReportTypelist(ModuleDesc) {
+         var URL = UrlService.API_ENDPOINT_CRMReports + `/GetReportType?ModuleDesc=Web Stock Report`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+
+    GetItemMasterDropDownlist: function GetItemMasterDropDownlist() {
+        var URL = UrlService.API_ENDPOINT_PRODUCT + `/GetItemMasterDropDown`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetStockReportList: function GetStockReportList(ItemMaster_Code, ReportType) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = `${UrlService.API_ENDPOINT_CRMReports}/GetStockReport` +
+            `?ItemMaster_Code=${encodeURIComponent(ItemMaster_Code)}` +
+            `&txtReportType=${encodeURIComponent(ReportType)}` +
+            `&UserMaster_Code=${encodeURIComponent(userMasterCode)}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    }
+  
 
 }
 

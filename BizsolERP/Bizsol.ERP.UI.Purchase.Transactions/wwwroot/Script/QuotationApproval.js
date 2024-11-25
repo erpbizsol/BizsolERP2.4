@@ -7,12 +7,12 @@ $(document).ready(function () {
 });
 function GetApprovedQuotationList() {
     QuotationApprovalService.GetUnApprovedQuotation().then(function (resData) {
+        if (resData.length > 0) {
         const StringFilterColumn = ["Quotation No"];
         const NumericFilterColumn = ["Total Amount"];
         const DateFilterColumn = ["Quotation Date"];
         const Button = false;
         const StringdoubleFilterColumn = ["Party"];
-        const ShowButton = ["V"];
         const hiddenColumns = ["Code"];
         const showButtons = [];
         const updatedResponse = resData.map(item => ({
@@ -20,7 +20,14 @@ function GetApprovedQuotationList() {
                    <button style="background-color:#3f51b5;border-radius: 5px" onclick="QuotationApprovedlist('${item.Code}')"><i class="fa fa-check-circle" data-toggle="tooltip" data-placement="top" title="Approve" style="color:white;"></i></button>
                 ` : ""
         }));
-        BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
+       
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
+        }
+        else {
+            toastr.error("Record not found...!");
+           // alert("No data available.");
+        }
+
     });
 }
 window.GetQuotationDetails = function (Code) {
