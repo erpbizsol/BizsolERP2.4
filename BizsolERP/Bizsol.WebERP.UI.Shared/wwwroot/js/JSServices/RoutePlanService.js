@@ -56,6 +56,51 @@ const RoutePlanMasterService = {
             }
         );
     },
+    GetUserWiseRoutePlanDetails: function GetUserWiseRoutePlanDetails() {
+        let userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/GetUserWiseRoutePlanDetails?UserMaster_Code=" + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    VerifyRoutePlan: function VerifyRoutePlan(Code) {
+        var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/VerifyRoutePlan?Code="+ Code +"&UserMaster_Code=" + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    RejectRoutePlan: function RejectRoutePlan(Code,ReasonForDelete) {
+        var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/RejectRoutePlan?Code=" + Code + "&ReasonForDelete='" + ReasonForDelete +"'" + "&UserMaster_Code=" + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    VerifyAllRoutePlan: function VerifyAllRoutePlan(MultiRoutePlanCodes) {
+        var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/VerifyAllRoutePlan?MultiRoutePlanCodes='" + MultiRoutePlanCodes + "'" + "&UserMaster_Code=" + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    RejectAllRoutePlan: function RejectAllRoutePlan(MultiRoutePlanCodes,ReasonForDelete) {
+        var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/RejectAllRoutePlan?MultiRoutePlanCodes='" + MultiRoutePlanCodes + "'" + "&UserMaster_Code=" + userMasterCode + "&ReasonForDelete='" + ReasonForDelete +"'";
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     }
 
     export { RoutePlanMasterService }

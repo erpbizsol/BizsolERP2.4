@@ -1,5 +1,84 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/RoutePlanVerify.js"></script>
+<style>
+    .modal-dialog {
+        width: 100%;
+    }
+
+    .modal-header {
+        background-color: #3f51b5;
+    }
+
+    .modal-title {
+        text-align: center;
+        color: #eef6f2;
+    }
+</style>
+@* <div style="text-align:right">
+    <input type="button" onclick="CreateNew()" class="btn btn-primary" value="Create New" />
+</div> *@
+<div class="row mb-2">
+    @* <div class="col-md-3">
+        <input type="text" id="searchBox" class="box_border form-control form-control-sm" placeholder="Search" />
+    </div> *@
+    <div class="col-md-12 d-flex justify-content-end">
+        <input type="button" onclick="VerifyAll()" class="btn btn-primary btn-sm me-1" title="Verify All" value="Verify All" />
+        <input type="button" onclick="RejectAll()" class="btn btn-danger btn-sm" title="Reject All" value="Reject All" />
+    </div>
+   
+</div>
+<div class="row">
+
+<div class="table-wrapper fixed-height-table">
+    <table id="table" class="fixed-width-table table">
+        <thead id="table-header">
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-table">
+</div>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" >
+            <div class="modal-header">
+                <h5 class="modal-title">Delete For Reason</h5>
+                <button type="button" class="btn-close" onclick="CloseModal()" >&times;</button>
+            </div>
+            <div class="modal-body">
+
+                <input type="text" id="rejectReason" class="form-control" placeholder="Enter reason" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-sm" onclick="SaveModal()" data-bs-dismiss="modal">Save</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="CloseModal()" >Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="myAllDeleteModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" >
+            <div class="modal-header">
+                <h5 class="modal-title">All Delete For Reason</h5>
+                <button type="button" class="btn-close" onclick="CloseAllModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="rejectAllReason" class="form-control" placeholder="Enter reason" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-sm" onclick="SaveAllModal()" data-bs-dismiss="modal">Save</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="CloseAllModal()" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
