@@ -465,8 +465,8 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                             <div class="filter-dropdown" id="filter-${col.replace(' ', '')}">
                                             <input type="text" placeholder="Search..." class="filter-input" data-column="${col.replace(' ', '')}" />
                                             <div class="checkbox-container" id="checkbox-container-${col.replace(' ', '')}"></div>
-                                            <button onclick="applyStringFilters('${col}','${bodyId}')" data-column="${col.replace(' ', '')}">apply</button>
-                                            <button onclick="ClearFilter('${bodyId}')">Clear</button>
+                                            <button class="btn btn-success btn-height" onclick="applyStringFilters('${col}','${bodyId}')" data-column="${col.replace(' ', '')}">apply</button>
+                                            <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
                                             </div>
                                            </div>
                                      </th>`;
@@ -503,8 +503,8 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                                 <input type="number" id="min-value-${col.replace(' ', '')}" class="filter-input" placeholder="Min value" style="display:none" />
                                                 <input type="number" id="max-value-${col.replace(' ', '')}" class="filter-input" placeholder="Max value" style="display:none" />
                                             </div>
-                                            <button onclick="applyNumericFilter('${col}','${bodyId}')">Apply</button>
-                                            <button onclick="ClearFilter('${bodyId}')">Clear</button>
+                                            <button class="btn btn-success btn-height" onclick="applyNumericFilter('${col}','${bodyId}')">Apply</button>
+                                            <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
                                          </div>
                                          </th>`;
         } else if (DateFilterColumn.includes(col)) {
@@ -530,8 +530,8 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                                </div>
                                             <div class="filter-dropdown" id="filter-${col.replace(' ', '') }">
                                             <div class="checkbox-container" id="checkbox-container-${col.replace(' ', '') }"></div>
-                                            <button onclick="applyfilterdate('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Apply</button>
-                                            <button onclick="ClearFilter('${bodyId}')">Clear</button>
+                                            <button class="btn btn-success btn-height" onclick="applyfilterdate('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Apply</button>
+                                            <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
                                             </div>
                                        </th>`;
         } else if (StringdoubleFilterColumn.includes(col)) {
@@ -561,11 +561,11 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                             <option value="endsWith">Ends With</option>
                                             <option value="like">Between</option>
                                         </select>
-                                        <input type="text" placeholder="Search..." class="filter-input-double" data-column="${col.replace(' ', '') }" />
+                                        <input type="text" placeholder="Search..." class="filter-input-double form-control form-control-sm" data-column="${col.replace(' ', '') }" />
                                         <div class="checkbox-container-double" id="checkbox-container-double-${col.replace(' ', '') }"></div>
-                                        <button onclick="applyfilterdouble('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Apply</button>
-                                        <button onclick="ShowEntry('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Show Entries</button>
-                                        <button onclick="ClearFilter('${bodyId}')">Clear</button>
+                                        <button class="btn btn-success btn-height" onclick="applyfilterdouble('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Apply</button>
+                                        <button class="btn btn-primary btn-height" onclick="ShowEntry('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Show Entries</button>
+                                        <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
                                         </div>
                                     </th>`;
         } else if (hiddenColumns.includes(col)) {

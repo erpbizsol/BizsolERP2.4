@@ -17,7 +17,8 @@ body {
     left: 0;
     z-index: 1054;
     background-color: var(--bs-header-bg);
-    border-bottom: 1px solid var(--bs-border-color)
+    border-bottom: 1px solid var(--bs-border-color);
+    /*border-bottom: 1px solid #4e6b89;*/
 }
 .banner {
     width: 100%;
@@ -492,6 +493,7 @@ body[data-layout=horizontal][data-sidebar=dark] .navbar-brand-box {
     }
 
 .footer {
+    position: fixed !important;
     bottom: 0;
     padding: 20px calc(1.5rem / 2);
     position: absolute;
@@ -499,8 +501,9 @@ body[data-layout=horizontal][data-sidebar=dark] .navbar-brand-box {
     color: var(--bs-footer-color);
     left: 250px;
     height: 60px;
-    background-color: var(--bs-footer-bg);
-    border-top: 1px solid var(--bs-border-color)
+    background-color: #e9eaee;
+    border-top: 1px solid var(--bs-border-color);
+    z-index: 1000;
 }
 
 .footer .userTextBig {
@@ -516,7 +519,7 @@ body[data-layout=horizontal][data-sidebar=dark] .navbar-brand-box {
 }
 
 .footer {
-    padding: 0 !important;
+    padding: 2px !important;
     height:auto;
 }
 
@@ -656,8 +659,21 @@ body[data-layout=horizontal] .footer {
 .main-content {
     margin-left: 250px;
     overflow: hidden;
-    min-height: 175.667px;
+    /*min-height: 175.667px;*/
+    /*min-height: 511.667px;*/
 }
+
+/* In your dashboard BG CSS */
+.main-content {
+    background-image: url('/assets/images/users/erp-banner-copy.png');
+    /*background-image: url('/assets/images/users/download.jpg');*/
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 90vh;
+}
+
+
 
     .main-content .content {
         padding: 0 15px 10px 15px;
@@ -877,7 +893,7 @@ body[data-layout=horizontal] .footer {
 
 body[data-sidebar-size=sm] {
     /*min-height: 1000px;*/
-    min-height: 580px
+    /*min-height: 580px*/
 }
 
     body[data-sidebar-size=sm] .main-content {
@@ -5806,7 +5822,7 @@ table > thead, th {
 }
 
 table, th, td, tr {
-    padding: 4px 5px !important;
+    padding: 5px 5px !important;
     border: 1px solid #ddd;
     height: 16px !important;
 }
@@ -5893,6 +5909,10 @@ table, th, td, tr {
     --bs-table-bg-type: var(--bs-table-striped-bg);
 }
 
+/*.form-control {
+    padding: 4px 5px !important;
+    font-size: 8pt;
+}*/
 /*======== Tab-Section Start ========*/
 .tab-section .tab-content {
     color: #000;

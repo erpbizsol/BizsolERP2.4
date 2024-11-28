@@ -2,6 +2,21 @@
     .toolbar1 {
         text-align:left;
     }
+
+    .footer .text-left,
+    .footer .text-end {
+        text-align: center !important;
+    }
+
+    .main-content {
+        background-size: contain; /* Ensures the image fits inside the viewport */
+        background-position: top; /* Adjust the focus point */
+        height: auto;
+        background-repeat: no-repeat;
+        min-height: 50vh;
+    }
 }
 
-
+@media (max-width: 768px) {
+    
+}
