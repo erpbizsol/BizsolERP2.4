@@ -659,92 +659,80 @@ body[data-layout=horizontal] .footer {
 .main-content {
     margin-left: 250px;
     overflow: hidden;
-    /*min-height: 175.667px;*/
+    min-height: 175.667px;
     /*min-height: 511.667px;*/
 }
 
-/* In your dashboard BG CSS */
-.main-content {
-    background-image: url('/assets/images/users/erp-banner-copy.png');
-    /*background-image: url('/assets/images/users/download.jpg');*/
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    min-height: 90vh;
+.main-content .content {
+    padding: 0 15px 10px 15px;
+    margin-top: 70px
 }
-
-
-
-    .main-content .content {
-        padding: 0 15px 10px 15px;
-        margin-top: 70px
-    }
 
 #sidebar-menu {
     padding: 10px 9px;
 }
 
-    #sidebar-menu .mm-active > .has-arrow:after {
-        -webkit-transform: rotate(90deg);
-        transform: rotate(90deg)
-    }
+#sidebar-menu .mm-active > .has-arrow:after {
+    -webkit-transform: rotate(90deg);
+    transform: rotate(90deg)
+}
 
-    #sidebar-menu .has-arrow:after {
-        content: "\f0142";
-        font-family: "Material Design Icons";
-        display: block;
-        float: right;
-        -webkit-transition: -webkit-transform .2s;
-        transition: -webkit-transform .2s;
-        transition: transform .2s;
-        transition: transform .2s, -webkit-transform .2s;
-        font-size: 1.1rem;
-        margin-right: -5px;
-        margin-top: -2px;
-    }
+#sidebar-menu .has-arrow:after {
+    content: "\f0142";
+    font-family: "Material Design Icons";
+    display: block;
+    float: right;
+    -webkit-transition: -webkit-transform .2s;
+    transition: -webkit-transform .2s;
+    transition: transform .2s;
+    transition: transform .2s, -webkit-transform .2s;
+    font-size: 1.1rem;
+    margin-right: -5px;
+    margin-top: -2px;
+}
 
-    #sidebar-menu ul li a {
-        display: block;
-        padding: .6rem;
-        /*padding: .60rem 1.1rem;*/
-        color: var(--bs-sidebar-menu-item-color);
-        position: relative;
-        font-size: 10pt;
+#sidebar-menu ul li a {
+    display: block;
+    padding: .6rem;
+    /*padding: .60rem 1.1rem;*/
+    color: var(--bs-sidebar-menu-item-color);
+    position: relative;
+    font-size: 10pt;
+    -webkit-transition: all .4s;
+    transition: all .4s;
+    font-weight: 500
+}
+
+    #sidebar-menu ul li a i {
+        display: inline-block;
+        min-width: 1.75rem;
+        padding-bottom: .125em;
+        font-size: 1.25rem;
+        line-height: 1.40625rem;
+        vertical-align: middle;
+        color: var(--bs-sidebar-menu-item-icon-color);
         -webkit-transition: all .4s;
-        transition: all .4s;
-        font-weight: 500
+        transition: all .4s
     }
 
-        #sidebar-menu ul li a i {
-            display: inline-block;
-            min-width: 1.75rem;
-            padding-bottom: .125em;
-            font-size: 1.25rem;
-            line-height: 1.40625rem;
-            vertical-align: middle;
-            color: var(--bs-sidebar-menu-item-icon-color);
-            -webkit-transition: all .4s;
-            transition: all .4s
-        }
-
-        #sidebar-menu ul li a svg {
-            height: 14px;
-            width: 14px;
-            color: var(--bs-sidebar-menu-item-icon-color);
-            fill: var(--bs-sidebar-menu-item-icon-effact-color);
-            /*    margin-right: 10px;
+    #sidebar-menu ul li a svg {
+        height: 14px;
+        width: 14px;
+        color: var(--bs-sidebar-menu-item-icon-color);
+        fill: var(--bs-sidebar-menu-item-icon-effact-color);
+        /*    margin-right: 10px;
 */          margin-top: -3px
-        }
+    }
 
-        #sidebar-menu ul li a:hover {
-            color: var(--bs-sidebar-menu-item-hover-color);
-        }
+    #sidebar-menu ul li a:hover {
+        color: var(--bs-sidebar-menu-item-hover-color);
+    }
 
-        #sidebar-menu ul li a:hover i {
-            color: var(--bs-sidebar-menu-item-hover-color)
-        }
+    #sidebar-menu ul li a:hover i {
+        color: var(--bs-sidebar-menu-item-hover-color)
+    }
 
-        #sidebar-menu ul li a:hover svg {
+    #sidebar-menu ul li a:hover svg {
             color: var(--bs-sidebar-menu-item-hover-color);
             fill: var(--bs-sidebar-menu-item-hover-effact-color)
         }
@@ -5844,7 +5832,7 @@ table, th, td, tr {
 
 .table-filter-arrow {
     display: block;
-    width: 100%;
+   /* width: 100%;*/
     text-align: right;
 }
 .sort-indicator-color {

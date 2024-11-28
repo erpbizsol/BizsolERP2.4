@@ -9,14 +9,11 @@
     }
 
     .main-content {
-        background-size: contain; /* Ensures the image fits inside the viewport */
-        background-position: top; /* Adjust the focus point */
+        background-size: contain !important; 
+        background-position: top !important; /* Adjust the focus point */
         height: auto;
-        background-repeat: no-repeat;
-        min-height: 50vh;
+        min-height: 50vh !important;
     }
 }
 
-@media (max-width: 768px) {
-    
-}
+
