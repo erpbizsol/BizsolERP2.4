@@ -23,7 +23,7 @@ th {
     margin-bottom: 10px;
 }
 
-table {
+/*table {
     width: 100%;
     border-collapse: collapse;
 }
@@ -39,7 +39,7 @@ th, td {
 
 th {
     background-color: #f2f2f2;
-}
+}*/
 
 .fa-filter {
     cursor: pointer;
@@ -166,7 +166,7 @@ i:hover {
     margin-right: 5px;
 }
 
-.table-wrapper {
+/*.table-wrapper {
     width: 100%;
     min-height: 400px;
     overflow-y: auto;
@@ -176,14 +176,14 @@ i:hover {
 .fixed-width-table {
     width: 100%;
     border-collapse: collapse;
-}
+}*/
 
-.fixed-width-table th, .fixed-width-table td {
-    padding: 8px;
-    text-align: left;
+/*.table th, .table td {
+    padding: 4px 5px;
     border: 1px solid #ddd;
+    font-size: 9pt;
 }
-
+*/
 /*.fixed-width-table thead {
     position: sticky;
     top: 0;
@@ -195,6 +195,7 @@ i:hover {
     display: flex;
     align-items: center;
     margin-top: 10px;
+    font-size: 8pt;
 }
 
 .paginator button {
@@ -218,10 +219,9 @@ i:hover {
 }*/
 
 .paginator-btn:disabled {
-    background-color: #d3d3d3;
+    background-color: #355677;
     color: #a9a9a9;
     cursor: not-allowed;
-    border: 1px solid #a9a9a9;
 }
 .pageSize {
     padding: 3px;
@@ -234,15 +234,16 @@ i:hover {
 
 .dropdown-content {
     position: absolute;
-    top: 20px;
-    right: -1px;
-    background-color: white;
-    min-width: 180px;
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    top: 12px;
+    right: -47px;
+    background-color: #eff1f5;
+    min-width: 150px;
+    box-shadow: 0px 8px 16px rgb(34 34 34 / 20%);
     border-radius: 4px;
     z-index: 1;
     display: flex;
     flex-direction: column;
+    color: #000;
 }
 
 .dropdown-item {
@@ -257,7 +258,4 @@ i:hover {
     background-color: #f1f1f1;
 }
 
-.fa-solid {
-    font-size: 14px;
-    color: #333;
-}
+

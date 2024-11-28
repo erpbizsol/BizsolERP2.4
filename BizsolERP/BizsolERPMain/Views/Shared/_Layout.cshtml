@@ -4,8 +4,6 @@
 <head>
     <meta charset="utf-8" />
     <title>BizSol ERP2.5</title>
-    <script src="~/assets/js/jquery-3.6.0.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
     <meta content="Themesbrand" name="author" />
@@ -30,6 +28,8 @@
     <!-- App Css-->
     <link href="~/assets/css/app.min.css" rel="stylesheet" />
     <link href="~/assets/css/responsive.css" rel="stylesheet"/>
+    <script src="~/assets/js/jquery-3.6.0.min.js"></script>
+
 
     <style>
         /* .bell-icon {
@@ -203,7 +203,7 @@
                 <!--- Sidemenu -->
                 <div id="sidebar-menu">
                     <!-- App Search-->
-                    <form class="app-search d-none d-lg-block side-menu-search">
+                    @* <form class="app-search d-none d-lg-block side-menu-search">
                         <div class="position-relative">
 
                             <input type="text" class="form-control" placeholder="Search...">
@@ -211,7 +211,7 @@
                                 <i class="bx bx-search-alt align-middle"></i>
                             </button>
                         </div>
-                    </form>
+                    </form> *@
                     <!-- Left Menu Start -->
                     <ul class="metismenu list-unstyled" id="side-menu">
                         <li>
@@ -402,7 +402,6 @@
     <!-- /Right-bar -->
     <!-- Right bar overlay-->
     <div class="rightbar-overlay"></div>
-    @* <script src="~/assets/js/jquery-3.6.0.min.js"></script> *@
     <!--toastr-->
     <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
     @* "toast-top-right": Top - right corner(default )

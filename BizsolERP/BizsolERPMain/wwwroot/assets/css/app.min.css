@@ -36,8 +36,8 @@ body {
     align-items: center;
     margin: 0 auto;
     height: 51px;
-/*    padding: 0 1.5rem 0 0;
-*/    background-color: #3f51b5;
+    /*    padding: 0 1.5rem 0 0;
+*/ background-color: #275481;
 }
 
     .navbar-header .notificationCount {
@@ -63,7 +63,7 @@ body {
     width: 250px;
     background: var(--bs-sidebar-bg);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
-    background-color: #3f51b5;
+    background-color: #275481;
     height: 61px;
     color: #fff;
 }
@@ -90,7 +90,7 @@ body {
 }
 
 .bg-light-subtle {
-    background-color: rgb(63 81 181) !important;
+    background-color: rgb(39 84 129) !important;
 }
 
 .logo-txt {
@@ -5784,6 +5784,19 @@ body[data-layout=horizontal] .chat-conversation {
 }
 
 /*# sourceMappingURL=app.min.css.map */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.fixed-height-table {
+    height: 350px;
+    overflow-x: auto;
+    overflow-y: auto;
+    display: block;
+    border-collapse: collapse;
+    /*height: calc(100vh - 260px);*/
+}
 
 table > thead, th {
     position: sticky;
@@ -5792,13 +5805,49 @@ table > thead, th {
     z-index: 1;
 }
 
+table, th, td, tr {
+    padding: 4px 5px !important;
+    border: 1px solid #ddd;
+    height: 16px !important;
+}
+
+.table td {
+    font-size: 8pt;
+}
+
+.table th {
+    font-size: 8pt;
+    background-color: #5c95ce;
+    color: #fff;
+}
+
+.fa-solid {
+    font-size: 8pt;
+    color: #fff;
+}
+
+.table-filter-arrow {
+    display: block;
+    width: 100%;
+    text-align: right;
+}
+.sort-indicator-color {
+    font-size: 8pt;
+    color: #000;
+}
 .btn-height {
+    color: #fff !important;
+    height: 21px;
+    border-radius: 6px;
+    font-size: 8pt;
+    line-height: 0;
+}
+.icon-height {
     height: 27px;
     padding: 0px 5px 4px 5px !important;
     width: 27px;
     border-radius: 6px;
 }
-
 .svg-icon {
     width: 16px;
     height: 16px;
@@ -5807,6 +5856,41 @@ table > thead, th {
 
 .toolbar1 {
     text-align: right;
+}
+
+.btn-primary {
+    background-color: #275481;
+   
+}
+
+.btn-primary:hover {
+    background-image: linear-gradient(#26557d, #3878af, #175489);
+    border-radius: 7px !important;
+}
+
+.btn-danger {
+    box-shadow: 0 2px 6px 0 rgb(99 97 97 / 50%);
+    background-color: #be1929;
+    border: none;
+}
+
+.btn-danger:hover {
+    background-image: linear-gradient(#af1f2c, #e55d6ad9, #af1f2c);
+}
+
+.btn-success {
+    box-shadow: 0 2px 6px 0 rgb(94 96 95);
+    background-color: #216c4a;
+    border: none;
+}
+
+.btn-success:hover {
+    background-image: linear-gradient(#216c4a, #469974, #216c4a);
+}
+
+.table > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-color-type: var(--bs-table-striped-color);
+    --bs-table-bg-type: var(--bs-table-striped-bg);
 }
 
 /*======== Tab-Section Start ========*/

@@ -1,0 +1,30 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div>
+    <div class="row">
+        <h5>CRM Dashboard</h5>
+        <div class="col-md-3 form-group">
+            <label for="txtUserName" class="col-form-label-sm fw-bold">user </label>
+            <input type="text" id="txtUserName" class="box_border form-control form-control-sm" autocomplete="off" value="">
+        </div>
+        <div class="col-md-3">
+            <label for="txtdate" class="col-form-label-sm fw-bold">Date</label>
+            <input ID="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
+        </div>
+        <div class="col-md-3">
+            <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Check In Time</label>
+            <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" readonly="readonly" />
+        </div>
+        <div class="col-md-3">
+            <label for="txtLocation" class="col-form-label-sm fw-bold">Location</label>
+            <input type="text" id="txtAddLocation" name="txtAddLocation" class="box_border form-control form-control-sm" readonly="readonly" hidden required />
+            <input type="text" id="txtLocation" name="txtLocation" class="box_border form-control form-control-sm" value=""  required />
+        </div>
+    </div>
+    
+
+</div>
+
+
