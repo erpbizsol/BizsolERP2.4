@@ -72,6 +72,8 @@ let UrlService = {
     API_ENDPOINT_VISIT_MASTER: `${environment.BASE_URL}/Visit`,
     API_ENDPOINT_CRM_DASHBOARD: `${environment.BASE_URL}/CRMDashboard`,
     API_ENDPOINT_CRMReports: `${environment.BASE_URL}/CRMReports`,
+    API_ENDPOINT_CRM_CONFIG: `${environment.BASE_URL}/ConfigCRM`,
+    API_ENDPOINT_ITEM: `${environment.BASE_URL}/Item`,
 
 }
 

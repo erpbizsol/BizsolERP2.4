@@ -3,7 +3,9 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>BizSol ERP2.4</title>
+    <title>BizSol ERP2.5</title>
+    <script src="~/assets/js/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
     <meta content="Themesbrand" name="author" />
@@ -39,6 +41,12 @@
                 } */
 
     </style>
+    <style>
+        .Highlighted {
+            background-color: #FFD700 !important; /* Gold color */
+            color: black !important;
+        }
+    </style>
 </head>
 <body>
     <div id="layout-wrapper">
@@ -72,7 +80,7 @@
                     </button>
 
                     <div class="pt-4" style="padding-top: 20px;">
-                        <h4 class="mb-sm-0 font-size-16">Dashboard</h4>
+                        <h4 class="mb-sm-0 font-size-16" id="ERPHeading">Dashboard</h4>
                     </div>
 
                     <!-- App Search-->
@@ -237,8 +245,8 @@
                 <div class="row">
                     <div class="col-md-4">
                         <div>
-                            <span class="userTextBig">PINKI BIZSOL</span>
-                            <span class="userTextSmall">(ERP2.4 DEV)</span>
+                            <span class="userTextBig" id="ERPUserName">PINKI BIZSOL</span>
+                            <span class="userTextSmall" id="ERPCompanyCode">(ERP2.4 DEV)</span>
                         </div>
                     </div>
                     <div class="col-md-8 text-center">
@@ -394,7 +402,7 @@
     <!-- /Right-bar -->
     <!-- Right bar overlay-->
     <div class="rightbar-overlay"></div>
-    <script src="~/assets/js/jquery-3.6.0.min.js"></script>
+    @* <script src="~/assets/js/jquery-3.6.0.min.js"></script> *@
     <!--toastr-->
     <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
     @* "toast-top-right": Top - right corner(default )

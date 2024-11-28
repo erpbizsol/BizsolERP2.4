@@ -45,11 +45,63 @@ const RoutePlanMasterService = {
             }
         );
     },
-    
+    GetCityDetailsByName: function GetCityDetailsByName(CityName, Mode) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_CITY + `/GetCityMasterByName?CityName=` + CityName + `&Mode=` + Mode;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetRoutePlanListByPlanDate: function GetRoutePlanListByPlanDate(dtPlanDate){
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + `/GetRoutePlanListByPlanDate?Date=10-07-2024&UserMaster_Code=`+userMasterCode;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + `/GetRoutePlanListByPlanDate?Date=`+dtPlanDate+`&UserMaster_Code=`+userMasterCode;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+
+    GetRoutePlanList: function GetRoutePlanList(){
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + `/GetRoutePlanList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SaveRoutePlan: function SaveRoutePlan(Data) {
+        var json_data=JSON.stringify(Data)
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + `/SaveRoutePlan?UserMaster_Code=` + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('POST', URL, json_data).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    DeleteRoutePlan: function DeleteRoutePlan(Code, UserMaster_Code, ReasonForDelete) {
+        
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + `/DeleteRoutePlan?UserMaster_Code=` + userMasterCode + `&Code=` + Code + `&ReasonForDelete=` + ReasonForDelete;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetAccountMasterDetails: function GetAccountMasterDetails(AccountDesp) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_ACCOUNT_MASTER + `/GetAccountMasterByAccountDesp?AccountDesp=` + AccountDesp;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
