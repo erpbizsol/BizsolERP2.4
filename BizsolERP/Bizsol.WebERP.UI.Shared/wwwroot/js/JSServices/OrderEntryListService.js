@@ -3,7 +3,7 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const OrderEntryListService = {
     GetRouteDataFromOrderEntry: function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
-        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + "/GetRouteDataFromOrderEntry?FromDate='" + FromDate + "'" + "&ToDate='" + ToDate + "'" + "&UserName='" + UserName + "'" + "&OrderStatus='" +"'";
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + "/GetRouteDataFromOrderEntry?FromDate='" + FromDate + "'" + "&ToDate='" + ToDate + "'" + "&UserName='" + UserName + "'" + "&OrderStatus='" + OrderStatus +"'";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -28,7 +28,7 @@ const OrderEntryListService = {
     },
     GetUserNameList: function GetUserNameList() {
         var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + "/GetUserNameList?UserMaster_Code=" + UserMaster_Code ;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + "/GetUserNameList?UserMaster_Code=" + userMasterCode ;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
