@@ -48,6 +48,7 @@ th {
 .checkbox-container {
     display: flex;
     flex-direction: column;
+    color: #0f0909;
 }
 
 .checkbox-container label {
