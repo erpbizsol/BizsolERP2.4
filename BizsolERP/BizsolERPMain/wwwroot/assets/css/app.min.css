@@ -5800,7 +5800,7 @@ table {
 
 table > thead, th {
     position: sticky;
-    top: 0;
+    top: -1px;
     border-collapse: collapse;
     z-index: 1;
 }
