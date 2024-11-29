@@ -17,7 +17,8 @@ body {
     left: 0;
     z-index: 1054;
     background-color: var(--bs-header-bg);
-    border-bottom: 1px solid var(--bs-border-color)
+    border-bottom: 1px solid var(--bs-border-color);
+    /*border-bottom: 1px solid #4e6b89;*/
 }
 .banner {
     width: 100%;
@@ -492,6 +493,7 @@ body[data-layout=horizontal][data-sidebar=dark] .navbar-brand-box {
     }
 
 .footer {
+    position: fixed !important;
     bottom: 0;
     padding: 20px calc(1.5rem / 2);
     position: absolute;
@@ -499,8 +501,9 @@ body[data-layout=horizontal][data-sidebar=dark] .navbar-brand-box {
     color: var(--bs-footer-color);
     left: 250px;
     height: 60px;
-    background-color: var(--bs-footer-bg);
-    border-top: 1px solid var(--bs-border-color)
+    background-color: #e9eaee;
+    border-top: 1px solid var(--bs-border-color);
+    z-index: 1000;
 }
 
 .footer .userTextBig {
@@ -516,7 +519,7 @@ body[data-layout=horizontal][data-sidebar=dark] .navbar-brand-box {
 }
 
 .footer {
-    padding: 0 !important;
+    padding: 2px !important;
     height:auto;
 }
 
@@ -657,78 +660,79 @@ body[data-layout=horizontal] .footer {
     margin-left: 250px;
     overflow: hidden;
     min-height: 175.667px;
+    /*min-height: 511.667px;*/
 }
 
-    .main-content .content {
-        padding: 0 15px 10px 15px;
-        margin-top: 70px
-    }
+.main-content .content {
+    padding: 0 15px 10px 15px;
+    margin-top: 70px
+}
 
 #sidebar-menu {
     padding: 10px 9px;
 }
 
-    #sidebar-menu .mm-active > .has-arrow:after {
-        -webkit-transform: rotate(90deg);
-        transform: rotate(90deg)
-    }
+#sidebar-menu .mm-active > .has-arrow:after {
+    -webkit-transform: rotate(90deg);
+    transform: rotate(90deg)
+}
 
-    #sidebar-menu .has-arrow:after {
-        content: "\f0142";
-        font-family: "Material Design Icons";
-        display: block;
-        float: right;
-        -webkit-transition: -webkit-transform .2s;
-        transition: -webkit-transform .2s;
-        transition: transform .2s;
-        transition: transform .2s, -webkit-transform .2s;
-        font-size: 1.1rem;
-        margin-right: -5px;
-        margin-top: -2px;
-    }
+#sidebar-menu .has-arrow:after {
+    content: "\f0142";
+    font-family: "Material Design Icons";
+    display: block;
+    float: right;
+    -webkit-transition: -webkit-transform .2s;
+    transition: -webkit-transform .2s;
+    transition: transform .2s;
+    transition: transform .2s, -webkit-transform .2s;
+    font-size: 1.1rem;
+    margin-right: -5px;
+    margin-top: -2px;
+}
 
-    #sidebar-menu ul li a {
-        display: block;
-        padding: .6rem;
-        /*padding: .60rem 1.1rem;*/
-        color: var(--bs-sidebar-menu-item-color);
-        position: relative;
-        font-size: 10pt;
+#sidebar-menu ul li a {
+    display: block;
+    padding: .6rem;
+    /*padding: .60rem 1.1rem;*/
+    color: var(--bs-sidebar-menu-item-color);
+    position: relative;
+    font-size: 10pt;
+    -webkit-transition: all .4s;
+    transition: all .4s;
+    font-weight: 500
+}
+
+    #sidebar-menu ul li a i {
+        display: inline-block;
+        min-width: 1.75rem;
+        padding-bottom: .125em;
+        font-size: 1.25rem;
+        line-height: 1.40625rem;
+        vertical-align: middle;
+        color: var(--bs-sidebar-menu-item-icon-color);
         -webkit-transition: all .4s;
-        transition: all .4s;
-        font-weight: 500
+        transition: all .4s
     }
 
-        #sidebar-menu ul li a i {
-            display: inline-block;
-            min-width: 1.75rem;
-            padding-bottom: .125em;
-            font-size: 1.25rem;
-            line-height: 1.40625rem;
-            vertical-align: middle;
-            color: var(--bs-sidebar-menu-item-icon-color);
-            -webkit-transition: all .4s;
-            transition: all .4s
-        }
-
-        #sidebar-menu ul li a svg {
-            height: 14px;
-            width: 14px;
-            color: var(--bs-sidebar-menu-item-icon-color);
-            fill: var(--bs-sidebar-menu-item-icon-effact-color);
-            /*    margin-right: 10px;
+    #sidebar-menu ul li a svg {
+        height: 14px;
+        width: 14px;
+        color: var(--bs-sidebar-menu-item-icon-color);
+        fill: var(--bs-sidebar-menu-item-icon-effact-color);
+        /*    margin-right: 10px;
 */          margin-top: -3px
-        }
+    }
 
-        #sidebar-menu ul li a:hover {
-            color: var(--bs-sidebar-menu-item-hover-color);
-        }
+    #sidebar-menu ul li a:hover {
+        color: var(--bs-sidebar-menu-item-hover-color);
+    }
 
-        #sidebar-menu ul li a:hover i {
-            color: var(--bs-sidebar-menu-item-hover-color)
-        }
+    #sidebar-menu ul li a:hover i {
+        color: var(--bs-sidebar-menu-item-hover-color)
+    }
 
-        #sidebar-menu ul li a:hover svg {
+    #sidebar-menu ul li a:hover svg {
             color: var(--bs-sidebar-menu-item-hover-color);
             fill: var(--bs-sidebar-menu-item-hover-effact-color)
         }
@@ -877,7 +881,7 @@ body[data-layout=horizontal] .footer {
 
 body[data-sidebar-size=sm] {
     /*min-height: 1000px;*/
-    min-height: 580px
+    /*min-height: 580px*/
 }
 
     body[data-sidebar-size=sm] .main-content {
@@ -5800,13 +5804,13 @@ table {
 
 table > thead, th {
     position: sticky;
-    top: 0;
+    top: -1px;
     border-collapse: collapse;
     z-index: 1;
 }
 
 table, th, td, tr {
-    padding: 4px 5px !important;
+    padding: 5px 5px !important;
     border: 1px solid #ddd;
     height: 16px !important;
 }
@@ -5828,7 +5832,7 @@ table, th, td, tr {
 
 .table-filter-arrow {
     display: block;
-    width: 100%;
+   /* width: 100%;*/
     text-align: right;
 }
 .sort-indicator-color {
@@ -5893,6 +5897,10 @@ table, th, td, tr {
     --bs-table-bg-type: var(--bs-table-striped-bg);
 }
 
+/*.form-control {
+    padding: 4px 5px !important;
+    font-size: 8pt;
+}*/
 /*======== Tab-Section Start ========*/
 .tab-section .tab-content {
     color: #000;
