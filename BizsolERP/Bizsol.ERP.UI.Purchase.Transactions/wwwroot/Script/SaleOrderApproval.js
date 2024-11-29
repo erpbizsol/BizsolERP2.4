@@ -33,7 +33,7 @@ function GetSaleOrderApproval() {
         }
         else {
             toastr.error("Record not found...!");
-           // alert("No data available.");
+           // alert("No data available.");-
         }
         });
 

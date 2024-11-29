@@ -6,12 +6,14 @@ let itemsPerPage = 5;
 let button = false;
 let showButtons = [];
 let hiddenColumns = [];
+let columnAlignment = [];
 const BizsolCustomFilterGrid = {
-    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns) {
+    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment) {
         const columns = Object.keys(data[0]);
         const tableId = $('#' + bodyId).closest('table').attr('id');
         renderTableHeader(HiddenColumns, headerId, bodyId, columns, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
         hiddenColumns = HiddenColumns;
+        columnAlignment = ColumnAlignment;
         renderTable(data, bodyId);
         button = Button;
         showButtons = ShowButtons;
@@ -577,7 +579,7 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
         headerRow += `${filterHtml}`;
     });
     if (button) {
-        headerRow += '<th>Action</th></tr>';
+        headerRow += '<th style="min-width:120px !important">Action</th></tr>';
     } else {
         headerRow += '</tr>';
     }
@@ -641,15 +643,16 @@ function stopPropagationdouble(event) {
     event.stopPropagation();
 };
 function renderTable(items,bodyId) {
-    //const rows = items.map((item, index) => {
-    //    const row = Object.values(item).map(val => `<td>${val}</td>`).join('');
     const rows = items.map((item, index) => {
         const row = Object.keys(item).map((key) => {
-            if (hiddenColumns.includes(key)) {
-                return `<td style="display:none">${item[key]}</td>`;
-            }
-            return `<td>${item[key]}</td>`;
+            const alignment = columnAlignment[key] || 'left';
+            const style = hiddenColumns.includes(key)
+                ? 'display:none'
+                : `text-align:${alignment}`;
+
+            return `<td style="${style}">${item[key]}</td>`;
         }).join('');
+
         let buttons = '';
 
         if (Array.isArray(showButtons) && showButtons.length > 0) {
