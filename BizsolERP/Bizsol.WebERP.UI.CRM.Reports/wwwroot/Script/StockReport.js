@@ -4,7 +4,6 @@ $(document).ready(function () {
     $("#ERPHeading").text("Stock Report");
     GetReportType();
     GetItemMasterDropDownLists();
-   
 });
 function GetReportType() {
     var ModuleDesc = $("#txtReportType").val();
