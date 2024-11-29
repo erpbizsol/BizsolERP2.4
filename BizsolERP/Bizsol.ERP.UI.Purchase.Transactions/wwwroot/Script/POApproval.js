@@ -12,7 +12,13 @@ function unApprovedPO() {
             const stringDoubleFilterColumn = ["Product"];
             const showButtons = [];
             const hiddenColumns = [];
-
+            const ColumnAlignment = {
+                "Total Amount": 'right',
+                "Total Order Qty": 'right',
+                "Date": 'center',
+                "Verified": 'center',
+                "Closed": 'center',
+            };
             const updatedResponse = response.map(item => ({
                 ...item,
                 Action: `<button class="btn btn-success" title="Approve" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
@@ -21,7 +27,7 @@ function unApprovedPO() {
                 <button class="btn btn-info" title="Preview" onclick="ViewData('${item.Code}')"><i class="fa fa-eye" aria-hidden="true"></i></button>`
             }));
 
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
 
             // Add listeners for each item
             response.forEach(item => {
