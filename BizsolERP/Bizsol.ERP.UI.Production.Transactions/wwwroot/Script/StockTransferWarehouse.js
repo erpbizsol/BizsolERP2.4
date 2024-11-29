@@ -24,11 +24,11 @@ $(document).on("change", "#Warehouse", function () {
     const selectedValue = $(this).val();
     const selectedText = $(this).find("option:selected").text(); 
 });
-function getPendingRoll() {
-    StockTransferReceiveService.GetPendingRoll().then(function (response) {
-        $("#rollIdNo").
-    });
-}
+//function getPendingRoll() {
+//    StockTransferReceiveService.GetPendingRoll().then(function (response) {
+//        $("#rollIdNo").
+//    });
+//}
 
 window.getWarehouse = getWarehouse;
 window.getPendingRoll = getPendingRoll;
