@@ -8,7 +8,7 @@ $(document).ready(function () {
     //const dd = today.getDate().toString().padStart(2, '0');
     //const currentDate = `${yyyy}-${mm}-${dd}`;
     //$('#txtdateFrom, #txtdateTo').val(currentDate);
-
+    $("#ERPHeading").text("Expense Entry Report");
     GetSalespersonLists();
    
 });

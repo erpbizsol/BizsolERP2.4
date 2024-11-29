@@ -12,16 +12,12 @@
     .row > * {
         -ms-flex-negative: 0 !important;
         flex-shrink: 0 !important;
-        /* width: 100% !important; */
         max-width: 100% !important;
-        padding-right: calc(var(--bs-gutter-x)* .9);
-        padding-left: calc(var(--bs-gutter-x)* .8) !important;
-        margin-top: var(--bs-gutter-y) !important;
+        padding-left: calc(var(--bs-gutter-x)* .9) !important;
     }
-
     .dashboard-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
 
     .card {
@@ -50,9 +46,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            border-radius: 50%;
+            border-radius: 90%;
             font-size: 18px;
             font-weight: bold;
+           
         }
 
         .card .number {
@@ -66,19 +63,15 @@
             text-align: center;
         }
 
-    :after,
-    ::before {
-        /* -webkit-box-sizing: border-box; */
-        /* box-sizing: border-box; */
-    }
-
     #btnShow {
         width: 15% !important;
         /* height: 29px; */
         text-align: center !important;
         padding: 0px;
         color: white;
-        border-radius: 10px;
+        border-radius: 8px;
+        margin-top:33px;
+        margin-left: -55px;
     }
 
     .col-form-label-sm {
@@ -86,41 +79,45 @@
         /* padding-bottom: calc(.25rem + var(--bs-border-width)); */
         /* font-size: .765625rem; */
     }
+    .modal-dialog{
+        width: 100%;
+    }
+    .modal-header {
+        background-color: #3f51b5;
+    }
+    .modal-title {
+        text-align: center;
+        color: #eef6f2;
+    }
+    .modal {
+        overflow: visible !important;
+        position: absolute;
+        top: 9%;
+    }
 </style>
-<div class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h5 class="m-0">Dashboard</h5>
-            </div><!-- /.col -->
-
-        </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-
-</div>
 <div class="">
     <div class="card1 shadow-sm">
         <div class="card-body  shadow-sm">
             <div class="row">
                 <div class="col-md-3" style="padding-bottom:10px">
                     <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Sales Person</label>
-                    <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" class="form-control form-control-sm box_border" placeholder="Sales Person" value="All">
+                    <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Sales Person" value="All" maxlength="500" required onfocusout="DataListValidation('txtSalesPersonlist', this.value, 'Invalid Sales Person !', 'txtSalesPerson');">
                     <datalist id="txtSalesPersonlist"></datalist>
                 </div>
-
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label for="txtSalesPerson" class="col-form-label-sm fw-bold"></label>
                     <input type="checkbox" id="chkShowSubordinateData" name="chkShowSubordinateData" class="box_border" checked />
                     <label for="chkShowSubordinateData" style="margin-top:35px">Show Subordinate Data</label> &nbsp;&nbsp;&nbsp;
                 </div>
-                <div class="col-md-3">
-                    <div id="txtshowhide">
+                <div class="col-md-2">
+                    <div class="form-group" id="txtshowhide">
                         <input type="checkbox" id="chkShowTodaysData" name="chkShowTodaysData" class="box_border" />
                         <label for="chkShowTodaysData" style="margin-top:35px">Show Today's Data</label>
                     </div>
+                </div>
+                <div class="col-md-3">
+                    <input type="button" name="btnShow" id="btnShow" class="submit-btn btn-primary" value="Show" onclick="ShowDashboard();" />
 
-                    &nbsp; &nbsp; &nbsp;
-                    <input type="button" name="btnShow" id="btnShow" class="submit-btn btn-primary" value="Show" onclick="ShowDashboard();" style="margin-top:35px;" />
                 </div>
             </div>
             <div class="row">

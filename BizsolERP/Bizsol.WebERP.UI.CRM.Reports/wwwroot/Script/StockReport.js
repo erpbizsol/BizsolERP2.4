@@ -1,6 +1,7 @@
 ﻿import { CRMReportsServices } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/CRMReportsService.js';
 
 $(document).ready(function () {
+    $("#ERPHeading").text("Stock Report");
     GetReportType();
     GetItemMasterDropDownLists();
    
