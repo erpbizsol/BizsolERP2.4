@@ -3,7 +3,8 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const OrderEntryListService = {
     GetRouteDataFromOrderEntry: function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
-        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetRouteDataFromOrderEntry?FromDate='${FromDate}'&ToDate='${ToDate}'&UserName='${UserName}'&OrderStatus='${OrderStatus}'`;
+        //var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetRouteDataFromOrderEntry?FromDate=${FromDate}&ToDate=${ToDate}&UserName=${UserName}&OrderStatus=${OrderStatus}`;
+        var URL = `${UrlService.API_ENDPOINT_VISIT_MASTER}/GetRouteDataFromOrderEntry?FromDate=${encodeURIComponent(FromDate)}&ToDate=${encodeURIComponent(ToDate)}&UserName=${encodeURIComponent(UserName)}&OrderStatus=${encodeURIComponent(OrderStatus)}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

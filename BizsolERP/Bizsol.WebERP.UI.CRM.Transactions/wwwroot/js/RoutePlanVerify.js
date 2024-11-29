@@ -16,14 +16,20 @@ function GetUserWiseRoutePlanDetails() {
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = ["Code", "VisitTypeMaster_Code", "DealerMaster_Code", "CityMaster_Code", "StateMaster_Code","UserMaster_Code"];
-            
+            const ColumnAlignment = {
+                //"Total Amount": 'right',
+                //"Total Order Qty": 'right',
+                "Date": 'center',
+                "Status": 'center',
+                //"Closed": 'center',
+            };
             const updatedResponse = response.map(item => ({
                 ...item,
                 Action: `<button class="btn btn-success btn-sm" title="Verify" onclick="Verify('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
                 <button class="btn btn-danger btn-sm" title="Reject" onclick="Reject('${item.Code}')"><i class="fa-regular fa-circle-xmark"></i></button>`
                
             }));
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
              MultiRoutePlanCodes = response.map(item => item.Code);
         } else {
             console.error("No valid data found:", response);

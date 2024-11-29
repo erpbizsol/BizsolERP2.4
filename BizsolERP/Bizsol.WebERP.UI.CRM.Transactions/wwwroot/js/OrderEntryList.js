@@ -88,26 +88,37 @@ function GetRouteDataFromOrderEntry() {
     let ToDate = convertDateFormat($('#txtToDate').val());
     let UserName = $('#ddlUserName').val();
     let OrderStatus = $('#ddlOrderStatus').val();
+
+    if (!FromDate || !ToDate || !UserName || !OrderStatus) {
+        alert('Please fill all the fields correctly.');
+        return;
+    }
     OrderEntryListService.GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus).then(function (response) {
 
         if (response && Array.isArray(response) && response.length > 0) {
-            const stringFilterColumn = ["UserName", "VisitType", "CityName", "StateName", "Description", "AccountDesp", "IsVerify"];
+            const stringFilterColumn = ["Verified By", "Visit Type", "City Name", "State Name", "Remarks", "Dealer Name", "IsVerify"];
             const numericFilterColumn = [];
-            const dateFilterColumn = ["Date"];
+            const dateFilterColumn = ["Date", "Verified On"];
             const button = false;
-            const stringDoubleFilterColumn = [];
+            const stringDoubleFilterColumn = ["Total Order Qty MR", "Basic Rate", "Final Amount","Final Rate"];
             const showButtons = [];
-            const hiddenColumns = [];
-
+            const hiddenColumns = ["Code", "VisitMaster_Code", "CheckIn", "UserName", "Verified", "Closed", "OtherCharges", "ButtonStatus", "EditAllow", "DeleteAllow", "RejectedBy", "RejectedOn", "Reason", "VerifiedOn", "Order Type", "Total Amount", "Total Order Qty","Total Order Qty PC"];
+            const ColumnAlignment = {
+                "Total Amount": 'right',
+                "Total Order Qty": 'right',
+                "Date": 'center',
+                "Verified": 'center',
+                "Closed": 'center',
+            };
             const updatedResponse = response.map(item => ({
                 ...item,
-                Action: `<button class="btn btn-success btn-sm" title="Edit" onclick="Edit('${item.Code}')">Edit</button>
-                <button class="btn btn-info btn-sm" title="View" onclick="View('${item.Code}')">View</button>
-                <button class="btn btn-success btn-sm" title="Delete" onclick="Delete('${item.Code}')">Delete</button>
-                <button class="btn btn-info btn-sm" title="Verified" onclick="Verify('${item.Code}')">Verified</button>`
+                Action: `<button class="btn btn-info btn-sm" title="Edit" onclick="Edit('${item.Code}')"><i class="fa-solid fa-pencil"></i></button>
+                <button class="btn btn-info btn-sm" title="View" onclick="View('${item.Code}')"><i class="fa-regular fa-eye"></i></button>
+                <button class="btn btn-danger btn-sm" title="Delete" onclick="Delete('${item.Code}')"><i class="fa-regular fa-circle-xmark"></i></button>
+                <button class="btn btn-success btn-sm" title="Verified" onclick="Verify('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>`
 
             }));
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
         } else {
             console.error("No valid data found:", response);
             alert("No data available.");
