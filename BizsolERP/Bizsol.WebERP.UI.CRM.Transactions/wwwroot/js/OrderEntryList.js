@@ -5,7 +5,7 @@ $(document).ready(function () {
     GetOrderStatusList();
     GetUserNameList();
 
-    setupDateInputFormatting();
+    highlightSelectedDates();
 });
 function setupDateInputFormatting() {
     $('#txtFromDate').on('input', function () {
@@ -51,6 +51,7 @@ function validateDate(value) {
 }
 function highlightSelectedDates() {
     var highlightedDates = {};
+    var selectedDates = ['01/10/2024', '05/10/2024', '11/11/2024'];
     selectedDates.forEach(date => {
         var parts = date.split('/');
         var formattedDate = new Date(parts[2], parts[1] - 1, parts[0]).toDateString();
@@ -75,9 +76,16 @@ function highlightSelectedDates() {
         }
     });
 }
+function convertDateFormat(dateString) {
+    const [day, month, year] = dateString.split('/');
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthAbbreviation = monthNames[parseInt(month, 10) - 1];
+    return `${day} - ${monthAbbreviation} - ${year}`;
+}
+
 function GetRouteDataFromOrderEntry() {
-    let FromDate = $('#txtFromDate').val();
-    let ToDate = $('#txtToDate').val();
+    let FromDate = convertDateFormat($('#txtFromDate').val());
+    let ToDate = convertDateFormat($('#txtToDate').val());
     let UserName = $('#ddlUserName').val();
     let OrderStatus = $('#ddlOrderStatus').val();
     OrderEntryListService.GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus).then(function (response) {
