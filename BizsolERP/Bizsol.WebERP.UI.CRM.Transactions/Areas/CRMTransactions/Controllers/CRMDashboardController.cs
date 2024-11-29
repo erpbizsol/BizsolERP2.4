@@ -10,6 +10,7 @@ namespace Bizsol.WebERP.UI.CRM.Transactions.Areas.CRMTransactions.Controllers
         {
             return View();
         }
+       
     }
 
 }

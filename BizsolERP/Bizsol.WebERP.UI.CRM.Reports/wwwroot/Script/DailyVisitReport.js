@@ -14,6 +14,41 @@ $(document).ready(function () {
     GetOrderTypeLists();
     GetOrderStatusLists();
     GetDisplayNameForReportTypes();
+    $('#txtdateFrom').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtdateTo").focus();
+        }
+    });
+    $('#txtdateTo').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtSalesPerson").focus();
+        }
+    });
+    $('#txtSalesPerson').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtDealerName").focus();
+        }
+    });
+    $('#txtDealerName').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtOrderType").focus();
+        }
+    });
+    $('#txtOrderType').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtOrderStatus").focus();
+        }
+    });
+    $('#txtOrderStatus').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtReportType").focus();
+        }
+    });
+    $('#txtReportType').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#fetchReportButton").focus();
+        }
+    });
 });
 function GetSalespersonLists() {
     CRMReportsServices.GetSalespersonList().then(function (response) {
@@ -187,6 +222,7 @@ function GetDailyVistList() {
             const showButtons = [];
             const StringdoubleFilterColumn = [];
             const hiddenColumns = ["Code"];
+           
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
             if (reportType === "Visit Report With Size and Thk") {
                 updateFooter(response);
