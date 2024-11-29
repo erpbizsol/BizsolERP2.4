@@ -2,15 +2,11 @@
 
 namespace Bizsol.WebERP.UI.CRM.Transactions.Areas.CRMTransactions.Controllers
 {
-    [Area("CRMTransactions")]
-    public class CRMDashboardController : Controller
+    public class OrderEntryListController : Controller
     {
-       
-        public IActionResult CRMDashboard()
+        public IActionResult Index()
         {
             return View();
         }
-       
     }
-
 }

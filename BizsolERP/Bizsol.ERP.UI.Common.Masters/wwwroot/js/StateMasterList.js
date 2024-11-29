@@ -122,7 +122,11 @@ function getStatelist() {
         const showButtons=["E","D","VE"]
         const StringdoubleFilterColumn = ["CountryName", "StateShortName"];
         const hiddenColumns = ["Code"];
-        BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns)
+        const ColumnAlignment = {
+            "CreateDate": 'center',
+            "UpdateDate": 'center',
+        };
+        BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
         //CreateDataTable(headerId, bodyId, data, Button, ShowButtons=[], StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns) 
 
     });
