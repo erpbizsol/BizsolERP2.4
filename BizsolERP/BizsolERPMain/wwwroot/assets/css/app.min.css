@@ -5830,10 +5830,20 @@ table, th, td, tr {
     color: #fff;
 }
 
+.filter-table-heading-div {
+    display: flex;
+    /*justify-content: space-between;*/
+    align-items: center;
+}
+
+.filter-table-heading{
+    width: 100%;
+}
 .table-filter-arrow {
     display: block;
-   /* width: 100%;*/
+    /* width: 100%;*/
     text-align: right;
+    margin: 0 0 0 6px;
 }
 .sort-indicator-color {
     font-size: 8pt;
@@ -5847,10 +5857,10 @@ table, th, td, tr {
     line-height: 0;
 }
 .icon-height {
-    height: 27px;
-    padding: 0px 5px 4px 5px !important;
-    width: 27px;
     border-radius: 6px;
+    height: 21px;
+    font-size: 7pt;
+    line-height: 0.4;
 }
 .svg-icon {
     width: 16px;
@@ -5901,6 +5911,15 @@ table, th, td, tr {
     padding: 4px 5px !important;
     font-size: 8pt;
 }*/
+
+.form-control-sm {
+
+}
+
+.form-control:disabled {
+    background-color: #e7e3e3 !important;
+    opacity: 0.5 !important;
+}
 /*======== Tab-Section Start ========*/
 .tab-section .tab-content {
     color: #000;
