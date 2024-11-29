@@ -100,7 +100,7 @@ th {
     box-sizing: border-box;
 }
 
-button {
+/*button {
     padding: 4px 8px;
     margin-right: 2px;
     background-color: #007BFF;
@@ -113,7 +113,7 @@ button {
 
 button:hover {
     background-color: #0056b3;
-}
+}*/
 
 /*i {
     margin-left: 0px;
@@ -136,7 +136,7 @@ i:hover {
     border: 1px solid #ccc;
     z-index: 1;
     padding: 8px;
-    width: 250px;
+    width: 215px;
 }
 
 .filter-dropdown-double label {
@@ -145,8 +145,8 @@ i:hover {
 }
 
 .filter-dropdown-double input[type="text"] {
-    width: calc(100% - 20px);
-    padding: 5px;
+    /*width: calc(100% - 20px);
+    padding: 5px;*/
     margin-bottom: 10px;
 }
 
@@ -154,6 +154,7 @@ i:hover {
     display: none;
     flex-direction: column;
     margin-top: 10px;
+    color: #000;
 }
 
 .checkbox-container-double label {
