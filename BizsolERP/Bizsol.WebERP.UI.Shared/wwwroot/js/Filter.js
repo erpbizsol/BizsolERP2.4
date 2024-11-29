@@ -443,8 +443,8 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
         let filterHtml = '';
         if (StringFilterColumn.includes(col)) {
             filterHtml = `<th>
-                                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                                           ${col}
+                                         <div class="filter-table-heading-div">
+                                          <span class="filter-table-heading">${col}</span>
                                             <span class="table-filter-arrow">
                                               <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
                                             </span>
@@ -463,7 +463,7 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                               </div>
                                             </div>
                                             <div class="filter-dropdown" id="filter-${col.replace(' ', '')}">
-                                            <input type="text" placeholder="Search..." class="filter-input" data-column="${col.replace(' ', '')}" />
+                                            <input type="text" placeholder="Search..." class="filter-input form-control form-control-sm" data-column="${col.replace(' ', '')}" />
                                             <div class="checkbox-container" id="checkbox-container-${col.replace(' ', '')}"></div>
                                             <button class="btn btn-success btn-height" onclick="applyStringFilters('${col}','${bodyId}')" data-column="${col.replace(' ', '')}">apply</button>
                                             <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
@@ -472,8 +472,8 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                      </th>`;
         } else if (NumericFilterColumn.includes(col)) {
             filterHtml = `<th>
-                                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                                              ${col}
+                                         <div class="filter-table-heading-div">
+                                              <span class="filter-table-heading">${col}</span>
                                               <span class="table-filter-arrow">
                                                   <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
                                                 </span>
@@ -499,9 +499,9 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                                 <option value="between">Between</option>
                                             </select>
                                             <div class="filter-inputs">
-                                                <input type="number" id="filter-value-${col.replace(' ', '')}" class="filter-input" placeholder="Enter value" />
-                                                <input type="number" id="min-value-${col.replace(' ', '')}" class="filter-input" placeholder="Min value" style="display:none" />
-                                                <input type="number" id="max-value-${col.replace(' ', '')}" class="filter-input" placeholder="Max value" style="display:none" />
+                                                <input type="number" id="filter-value-${col.replace(' ', '')}" class="filter-input form-control form-control-sm" placeholder="Enter value" />
+                                                <input type="number" id="min-value-${col.replace(' ', '')}" class="filter-input form-control form-control-sm" placeholder="Min value" style="display:none" />
+                                                <input type="number" id="max-value-${col.replace(' ', '')}" class="filter-input form-control form-control-sm" placeholder="Max value" style="display:none" />
                                             </div>
                                             <button class="btn btn-success btn-height" onclick="applyNumericFilter('${col}','${bodyId}')">Apply</button>
                                             <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
@@ -509,8 +509,8 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                          </th>`;
         } else if (DateFilterColumn.includes(col)) {
             filterHtml = ` <th>
-                                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                              ${col}
+                                            <div class="filter-table-heading-div">
+                                              <span class="filter-table-heading"> ${col}</span>
                                               <span class="table-filter-arrow">
                                                   <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
                                                 </span>
@@ -536,8 +536,8 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                        </th>`;
         } else if (StringdoubleFilterColumn.includes(col)) {
             filterHtml = `<th>
-                                           <div style="display: flex; justify-content: space-between; align-items: center;">
-                                         ${col}
+                                           <div class="filter-table-heading-div">
+                                         <span class="filter-table-heading">${col}</span>
                                          <span class="table-filter-arrow">
                                              <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
                                            </span>
@@ -655,23 +655,27 @@ function renderTable(items,bodyId) {
         if (Array.isArray(showButtons) && showButtons.length > 0) {
             buttons = '<td>';
 
+            //if (showButtons.includes('E')) {
+            //    buttons += `<input class="btn btn-primary btn-height mb-1" type="button" onclick="EditData('${item.Code}')" value="Edit"/> `;
+            //}
+
             if (showButtons.includes('E')) {
-                buttons += `<input class="btn btn-primary btn-height mb-1" type="button" onclick="EditData('${item.Code}')" value="Edit"/> `;
+                buttons += `<i aria-hidden="true" class="fa fa-pencil btn btn-primary icon-height mb-1" type="button" onclick="EditData('${item.Code}')" /></i> `;
             }
             if (showButtons.includes('D')) {
-                buttons += `<input class="btn btn-danger btn-height mb-1" type="button" onclick="DeleteData('${item.Code}')" value="Delete"/> `;
+                buttons += `<i aria-hidden="true" class="fa fa-trash btn btn-danger icon-height mb-1" type="button" onclick="DeleteData('${item.Code}')" /></i> `;
             }
             if (showButtons.includes('V')) {
-                buttons += `<input class="btn btn-info btn-height" type="button" onclick="ViewData('${item.Code}')" value="View"/> `;
+                buttons += `<i aria-hidden="true" class="fa fa-eye btn btn-info icon-height" type="button" onclick="ViewData('${item.Code}')" value="View"/></i> `;
             }
             if (showButtons.includes('VE')) {
-                buttons += `<input class="btn btn-success btn-height mb-1" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/> `;
+                buttons += `<i class="fa fa-check btn btn-success icon-height mb-1" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/></i> `;
             }
             if (showButtons.includes('A')) {
-                buttons += `<input class="btn btn-warning btn-height" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/> `;
+                buttons += `<i class="fa fa-check-square-o btn btn-warning icon-height" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/></i> `;
             }
             if (showButtons.includes('M')) {
-                buttons += `<input class="btn btn-info btn-height" type="button" onclick="MoreData('${item.Code}')" value="More.."/> `;
+                buttons += `<input class="btn btn-info icon-height" type="button" onclick="MoreData('${item.Code}')" value="..."/> `;
             }
 
             buttons += '</td>';
