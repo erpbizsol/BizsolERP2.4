@@ -75,6 +75,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bizsol.WebERP.UI.Tools", "B
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bizsol.WebERP.UI.Shared", "Bizsol.WebERP.UI.Shared\Bizsol.WebERP.UI.Shared.csproj", "{2B82BE7D-BBC8-4242-A06C-ADC94E47E355}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bizsol.WebERP.UI.CRM.Reports", "Bizsol.WebERP.UI.CRM.Reports\Bizsol.WebERP.UI.CRM.Reports.csproj", "{E8123F93-BB76-402F-A037-3C30A0662620}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bizsol.WebERP.UI.CRM.Transactions", "Bizsol.WebERP.UI.CRM.Transactions\Bizsol.WebERP.UI.CRM.Transactions.csproj", "{E9BCF815-255A-4BB2-A037-BDD266103162}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -225,6 +229,14 @@ Global
 		{2B82BE7D-BBC8-4242-A06C-ADC94E47E355}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2B82BE7D-BBC8-4242-A06C-ADC94E47E355}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B82BE7D-BBC8-4242-A06C-ADC94E47E355}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E8123F93-BB76-402F-A037-3C30A0662620}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8123F93-BB76-402F-A037-3C30A0662620}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8123F93-BB76-402F-A037-3C30A0662620}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8123F93-BB76-402F-A037-3C30A0662620}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9BCF815-255A-4BB2-A037-BDD266103162}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9BCF815-255A-4BB2-A037-BDD266103162}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9BCF815-255A-4BB2-A037-BDD266103162}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9BCF815-255A-4BB2-A037-BDD266103162}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
