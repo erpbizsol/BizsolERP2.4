@@ -197,11 +197,11 @@ i:hover {
     margin-right: 3px;
 }*/
 
-.paginator-btn:disabled {
+/*.paginator-btn:disabled {
     background-color: #355677;
     color: #a9a9a9;
     cursor: not-allowed;
-}
+}*/
 .pageSize {
     padding: 3px;
     margin-top: 5px;
