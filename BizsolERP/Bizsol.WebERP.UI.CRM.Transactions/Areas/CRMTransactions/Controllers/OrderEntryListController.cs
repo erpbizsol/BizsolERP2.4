@@ -2,9 +2,10 @@
 
 namespace Bizsol.WebERP.UI.CRM.Transactions.Areas.CRMTransactions.Controllers
 {
+    [Area("CRMTransactions")]
     public class OrderEntryListController : Controller
     {
-        public IActionResult Index()
+        public IActionResult OrderEntryList()
         {
             return View();
         }

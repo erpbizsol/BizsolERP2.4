@@ -10,7 +10,6 @@ $(document).ready(function () {
     //$('#txtdateFrom, #txtdateTo').val(currentDate);
     $("#ERPHeading").text("Expense Entry Report");
     GetSalespersonLists();
-   
 });
 function GetSalespersonLists() {
     CRMReportsServices.GetSalespersonList().then(function (response) {

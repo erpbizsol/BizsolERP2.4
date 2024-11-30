@@ -9,7 +9,6 @@ $(document).ready(function () {
     const dd = today.getDate().toString().padStart(2, '0');
     const currentDate = `${yyyy}-${mm}-${dd}`;
     $('#txtdateFrom, #txtdateTo').val(currentDate);
-   
     GetSalespersonLists();
     GetDealerLists();
     GetOrderTypeLists();

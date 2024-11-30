@@ -3,6 +3,8 @@
 }
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"> 
 <link href="~/assets/css/filter.css" rel="stylesheet" />
+<script type="module" src="~/_content/bizsol.WEBERP.ui.shared/js/BizsolPBControls.js"></script>
+
 <style>
     /* Container styling for the toolbar */
     /* .toolbar {
@@ -78,7 +80,6 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="~/assets/script/filter.js"></script>
-<script type="module" src="~/_content/bizsol.WEBERP.ui.shared/js/BizsolPBControls.js"></script>
 <script>
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
@@ -88,6 +89,7 @@
     const authToken = '{"ERPDBConStr":"Data Source=220.158.165.98,65446;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBBizDev; User ID=sa;pwd=biz1981;Packet Size=32000","ERPMainDBConStr":"data source = 220.158.165.98,65446; initial catalog = BizSolERPMainDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000","ERPDMSDBConStr":"data source = 220.158.165.98,65446; initial catalog = BizSolERPDMSDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000","ERPDB_Name":"BizSolERPDBBizDev","ERPMainDB_Name":"BizSolERPMainDB_BizDev","ERPDMSDB_Name":"BizSolERPDMSDB_BizDev","AuthToken":"xyz","UserMaster_Code":"145","CompanyCode":"104"}';
 
     $(document).ready(function () {
+        PBControls();
         $('#ddlCountry').on('keydown', function (e) {
             if (e.key === "Enter") {
                 $("#txtState").focus();
@@ -130,11 +132,13 @@
         });
         if (editValue != null && editValue != '') {
             EditData(editValue)
+            GetallData(editValue, currentIndex, codeValues, 'EditData',true);
         } else {
-            NavigationButtonsControll();
-            ClearData();
+                setTimeout(() => {
+                NavigationButtonsControll();
+                }, 100);
+                ClearData();
         }
-        GetallData(editValue, currentIndex, codeValues, 'EditData',true);
     });
 
     function EditData(editValue) {
