@@ -1,0 +1,59 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    #btnShow {
+        width: 58% !important;
+        height: 29px;
+        text-align: center !important;
+        padding: 0px;
+    }
+    .align-items-end{
+        margin-top:24px;
+    }
+
+    .form-label {
+        font-weight: bold;
+    }
+</style>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/VerifyOrder.js"></script>
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="ddlSalesPerson" class="form-label">Sales Person</label>
+                <input list="ddlSalesPersonList" id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border" placeholder="Sales Person" autocomplete="off" value="All">
+                <datalist id="ddlSalesPersonList"></datalist>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlDealerName" class="form-label">Dealer Name</label>
+                <input list="ddlDealerNameList" id="ddlDealerName" name="ddlDealerName" class="form-control form-control-sm box_border" placeholder="Dealer Name" autocomplete="off" value="All">
+                <datalist id="ddlDealerNameList"></datalist>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlOrderType" class="form-label">Order Type</label>
+                <select id="ddlOrderType" name="ddlOrderType" class="form-control form-control-sm box_border" autocomplete="off">
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group">
+                <input type="checkbox" id="chkShowOnlyOrders" name="chkShowOnlyOrders"  autocomplete="off">
+                    <label for="chkShowOnlyOrders" style="margin-top:35px" class="form-label">Show Only Orders</label><br />
+                </div>
+            </div>
+            <div class="col-md-1 align-items-end">
+                <button type="button" id="btnShow" class="btn btn-primary">Show</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-wrapper fixed-height-table">
+    <table id="Visit" class="fixed-width-table table">
+        <thead id="table-header">
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-Visit">
+</div>
