@@ -66,14 +66,10 @@ const VisitOrderEntryService = {
             }
         );
     },
-}
-
-export { VisitOrderEntryService }
-import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
-
-const VisitOrderEntryService = {
     GetNestedMarketingManList: function GetNestedMarketingManList() {
-        var URL = UrlService.API_ENDPOINT_SALESPERSON + `/GetNestedMarketingManList`;
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_SALESPERSON + `/GetNestedMarketingManList?UserMaster_Code=`+ userMasterCode + `&MarketingManMaster_Code=0`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -114,6 +110,24 @@ const VisitOrderEntryService = {
         var userMasterCode = authKeyData.UserMaster_Code;
         var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/CheckInVisit?RoutePlanMaster_Code=${RoutePlanMaster_Code}&CheckIn=${CheckIn}&Location=${location}&ChekedInLocation=${ChekedInLocation}&UserMaster_Code=${userMasterCode}`;
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetOrderTypeList: function GetOrderTypeList() {
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetOrderTypeList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetVerifyOrderList: function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `GetVerifyOrderList?DealerName=${DealerName} &SalesPerson=${SalesPerson}&OrderType=${OrderType}&ChkWithOrder=${ChkWithOrder}&UserMaster_Code=${userMasterCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
             }

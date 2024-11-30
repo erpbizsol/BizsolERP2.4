@@ -1,45 +1,72 @@
 ﻿import { VisitOrderEntryService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
-let selectedDates = [];
 var baseUrl = `${window.location.protocol}//${window.location.host}`;
 $(document).ready(function () {
-    $("#ERPHeading").text("Visit");
+    $("#ERPHeading").text("Verify Order/Visit");
     GetNestedMarketingManList();
-    setupDateInputFormatting();
-    GetVisitMasterListForDate();
-    GetActualLocation();
+    GetNestedDealerList();
+    GetOrderType();
     $('#btnShow').on('click', function () {
-        var FromDate = $('#txtFromDate').val();
-        var ToDate = $('#txtToDate').val();
         var SalesPerson = $('#ddlSalesPerson').val();
-        if (typeof $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null) {
-            $('#txtFromDate').focus();
+        var DealerName = $('#ddlDealerName').val();
+        var OrderType = $('#ddlOrderType').val();
+        var ChkShowOrder = $('#chkShowOnlyOrders').is(":checked");
+
+        alert(SalesPerson + ',' + DealerName + ',' + OrderType + ',' + ChkShowOrder)
+        let SalePerson = '';
+        let Dealer = '';
+        let OrdersType = '';
+        if (SalesPerson === 'All' ) {
+            SalePerson = "";
         }
-        if (typeof $('#txtToDate').val() === 'undefined' || $('#txtToDate').val() === '' || $('#txtToDate').val() === null) {
-            $('#txtToDate').focus();
+        if (DealerName === 'All') {
+            Dealer = "";
         }
-        if ($('#ddlSalesPerson').val() === '') {
+        if (OrderType === 'All') {
+            OrdersType = "";
+        }
+        if (DealerName != '') {
+            toastr.error('Please select Dealer Name !')
+            $('#ddlDealerName').focus();
+        }
+        if (OrderType != '') {
+            toastr.error('Please select Order Type !')
+            $('#ddlOrderType').focus();
+        }
+        if (SalesPerson === '') {
+            toastr.error('Please select sales person !')
             $('#ddlSalesPerson').focus();
-        }
-        else {
-            GetVisitMasterList(FromDate, ToDate, SalesPerson);
-        }
-    });
-    $('#txtFromDate').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#txtToDate").focus();
-        }
-    });
-    $('#txtToDate').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#ddlSalesPerson").focus();
+        } else if (DealerName === '') {
+            toastr.error('Please select Dealer Name !')
+            $('#ddlDealerName').focus();
+        } else if (OrderType === '') {
+            toastr.error('Please select Order Type !')
+            $('#ddlOrderType').focus();
+        }else {
+            GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder);
         }
     });
     $('#ddlSalesPerson').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#ddlDealerName").focus();
+        }
+    });
+    $('#ddlDealerName').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#ddlOrderType").focus();
+        }
+    });
+    $('#ddlOrderType').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#chkShowOnlyOrders").focus();
+        }
+    });
+    $('#chkShowOnlyOrders').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#btnShow").focus();
         }
     });
     
+
 });
 function GetNestedMarketingManList() {
     VisitOrderEntryService.GetNestedMarketingManList().then(function (response) {
@@ -60,13 +87,47 @@ function GetNestedMarketingManList() {
         }
     });
 }
+function GetNestedDealerList() {
+    VisitOrderEntryService.GetNestedDealerList().then(function (response) {
+        if (response.length > 0) {
+            $('#ddlDealerNameList option').remove();
+
+            var option = '<option text="0" value="All" selected >All</option>';
+
+            for (var i = 0; i < response.length; i++) {
+                option += '<option text="' + response[i].Code + '" value="' + response[i].AccountDesp + '" >' + response[i].AccountDesp + '</option>';
+            }
+
+            $('#ddlDealerNameList')[0].innerHTML = option;
+        } else {
+            $('#ErrorMsg').removeClass('invisible');
+            $('#ErrorMsg').addClass('visible');
+            return false;
+        }
+    });
+}
+function GetOrderType() {
+    VisitOrderEntryService.GetOrderTypeList().then(function (response) {
+        if (response.length > 0) {
+            const select = $('#ddlOrderType');
+            response.forEach(item => {
+                select.append(`<option value="${item.Field}">${item.Field}</option>`);
+            });
+        } else {
+            $('#ErrorMsg').removeClass('invisible');
+            $('#ErrorMsg').addClass('visible');
+            return false;
+        }
+    });
+}
+
 const getButtonHTML = (label = "", className = "", onClick = "", icon, tooltip, disabled = false) => `
     <button class="${className} icon-height" onclick="${onClick}" data-toggle="tooltip" data-placement="top" title="${tooltip}" ${disabled ? 'disabled' : ''}>
         <i class="${icon}" style="color:white;"></i> ${label}
     </button>
 `;
 
-const getButtonSet = (status, Code,date, VisitMaster_Code, Verified, Closed, CheckOut) => {
+const getButtonSet = (status, Code, date, VisitMaster_Code, Verified, Closed, CheckOut) => {
     let buttons = "";
     if (VisitMaster_Code > 0) {
         if (Verified === "Y" && Closed !== "Y") {
@@ -94,53 +155,29 @@ const getButtonSet = (status, Code,date, VisitMaster_Code, Verified, Closed, Che
             buttons += getButtonHTML("", "btn btn-danger", "", "fa-solid fa-pencil", "Edit", true, "Edit disabled for unregistered visits");
             buttons += getButtonHTML("", "btn btn-danger", "", "fa-solid fa-eye", "View", true, "View disabled for unregistered visits");
         }
-        
+
 
     }
     return buttons;
 };
-function GetVisitMasterList(FromDate, ToDate, SalesPerson) {
-    var fromDate = convertDateFormat(FromDate);
-    var toDate = convertDateFormat(ToDate);
-    VisitOrderEntryService.GetVisitMasterList(fromDate, toDate, SalesPerson).then(function (response) {
+function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
+    VisitOrderEntryService.GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder).then(function (response) {
         if (response.length > 0) {
-            const StringFilterColumn = ["Created By", "Visit Type", ];
-            const NumericFilterColumn = ["Total Amount","Total Order Qty"];
+            const StringFilterColumn = ["Created By", "Visit Type",];
+            const NumericFilterColumn = ["Total Amount", "Total Order Qty"];
             const DateFilterColumn = ["Date"];
             const Button = false;
             const showButtons = [];
-            const StringdoubleFilterColumn = ["Dealer Name", "City","State"];
+            const StringdoubleFilterColumn = ["Dealer Name", "City", "State"];
             const hiddenColumns = ["Code", "VisitMaster_Code", "ButtonStatus", "Verified", "Closed", "CheckIn", "CheckOut"];
-            const ColumnAlignment = { 
+            const ColumnAlignment = {
                 "Total Amount": 'right',
                 "Total Order Qty": 'right',
-                "Date" : 'center',
-                "Verified" : 'center',
+                "Date": 'center',
+                "Verified": 'center',
                 "Closed": 'center',
             };
-            const updatedResponse = response.map(item => {
-                const buttonsHTML = getButtonSet(item.Status, item.Code, item.Date, item.VisitMaster_Code, item.Verified, item.Closed, item.CheckOut);
-                let statusButtonHTML;
-                if (item.Status === 'Closed') {
-                    statusButtonHTML = `<button class="btn btn-danger waves-effect waves-light btn-sm " style="cursor: not-allowed">${item.Status}</button>`;
-                } else if  (item.Status === 'Checked Out') {
-                    statusButtonHTML = `<button class="btn btn-danger waves-effect waves-light btn-sm disabled" style="cursor: not-allowed">${item.Status}</button>`;
-                }
-                else {
-                        statusButtonHTML = item.Status === "Not Visited"
-                            ? `<button class="btn btn-primary waves-effect waves-light btn-sm" onclick="IsNotVisited('${item.Code}')">Not-Visited</button>`
-                            : `<button class="btn btn-success waves-effect waves-light btn-sm" style="cursor: not-allowed">${item.Status}</button>`;
-                }
-
-                return {
-                    ...item,
-                    Action: buttonsHTML,
-                    Status: statusButtonHTML
-                };
-                }); 
-
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
-           
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
         }
         else {
             toastr.error('No Data Found')
@@ -158,79 +195,79 @@ function GetVisitMasterListForDate() {
             highlightSelectedDates();
         }
         else {
-            toastr.error('No Data Found')
+            alert('No Data Found')
         }
     });
 
 }
 function setupDateInputFormatting() {
-         $('#txtFromDate').on('input', function () {
-             let value = $(this).val().replace(/[^\d]/g, '');
+    $('#txtFromDate').on('input', function () {
+        let value = $(this).val().replace(/[^\d]/g, '');
 
-             if (value.length >= 2 && value.length < 4) {
-                 value = value.slice(0, 2) + '/' + value.slice(2);
-             } else if (value.length >= 4) {
-                 value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
-             }
-             $(this).val(value);
+        if (value.length >= 2 && value.length < 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2);
+        } else if (value.length >= 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
+        }
+        $(this).val(value);
 
-             if (value.length === 10) {
-                 validateDate(value);
-             } else {
-                 $(this).val(value);
-             }
-         });
-     }
+        if (value.length === 10) {
+            validateDate(value);
+        } else {
+            $(this).val(value);
+        }
+    });
+}
 function validateDate(value) {
-         let regex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
-         let isValidFormat = regex.test(value);
+    let regex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    let isValidFormat = regex.test(value);
 
-         if (isValidFormat) {
-             let parts = value.split('/');
-             let day = parseInt(parts[0], 10);
-             let month = parseInt(parts[1], 10);
-             let year = parseInt(parts[2], 10);
+    if (isValidFormat) {
+        let parts = value.split('/');
+        let day = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10);
+        let year = parseInt(parts[2], 10);
 
-             let date = new Date(year, month - 1, day);
+        let date = new Date(year, month - 1, day);
 
-             if (date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day) {
+        if (date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day) {
 
-                 $(this).val(value);
-             } else {
-                 $('#txtFromDate').val('');
+            $(this).val(value);
+        } else {
+            $('#txtFromDate').val('');
 
-             }
-         } else {
-             $('#txtFromDate').val('');
+        }
+    } else {
+        $('#txtFromDate').val('');
 
-         }
-     }
+    }
+}
 function highlightSelectedDates() {
-         var highlightedDates = {};
-         selectedDates.forEach(date => {
-             var parts = date.split('/');
-             var formattedDate = new Date(parts[2], parts[1] - 1, parts[0]).toDateString();
-             highlightedDates[formattedDate] = true;
-         });
+    var highlightedDates = {};
+    selectedDates.forEach(date => {
+        var parts = date.split('/');
+        var formattedDate = new Date(parts[2], parts[1] - 1, parts[0]).toDateString();
+        highlightedDates[formattedDate] = true;
+    });
 
-         var today = new Date();
-         var day = ('0' + today.getDate()).slice(-2);  
-         var month = ('0' + (today.getMonth() + 1)).slice(-2);  
-         var year = today.getFullYear(); 
+    var today = new Date();
+    var day = ('0' + today.getDate()).slice(-2);
+    var month = ('0' + (today.getMonth() + 1)).slice(-2);
+    var year = today.getFullYear();
 
-         $('#txtFromDate, #txtToDate').val(`${day}/${month}/${year}`);
-         $('#txtFromDate,#txtToDate').datepicker({
-             format: 'dd/mm/yyyy',
-             autoclose: true,
-             beforeShowDay: function (date) {
-                 const formattedDate = date.toDateString();
-                 if (highlightedDates[formattedDate]) {
-                     return { classes: 'highlighted-date', tooltip: 'Data Available' };
-                 }
-                 return { classes: '', tooltip: '' };
-             }
-         });
-     }
+    $('#txtFromDate, #txtToDate').val(`${day}/${month}/${year}`);
+    $('#txtFromDate,#txtToDate').datepicker({
+        format: 'dd/mm/yyyy',
+        autoclose: true,
+        beforeShowDay: function (date) {
+            const formattedDate = date.toDateString();
+            if (highlightedDates[formattedDate]) {
+                return { classes: 'highlighted-date', tooltip: 'Data Available' };
+            }
+            return { classes: '', tooltip: '' };
+        }
+    });
+}
 function convertDateFormat(dateString) {
     const [day, month, year] = dateString.split('/');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -260,23 +297,23 @@ function showLocation(position) {
             $("#txtAddress").val(address)
         },
         error: function (xhr) {
-            toastr.error("Error fetching location:", xhr);
+            console.error("Error fetching location:", xhr);
         }
     });
 }
 function EditData(code, VisitMaster_Code) {
     const codes = window.btoa(code);
     const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-    window.location = baseUrl +"/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&Visit&VistMaster_Code=" + VisitMaster_Codes + "&VistMode=Edit";
+    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&Visit&VistMaster_Code=" + VisitMaster_Codes + "&VistMode=Edit";
 }
 function ViewData(code, VisitMaster_Code) {
     if (typeof VisitMaster_Code === 'undefined') {
-        toastr.error('You cannot view this plan! The plan is not CheckIn.');
+        alert('You cannot view this plan! The plan is not CheckIn.');
         return;
     }
     const codes = window.btoa(code);
     const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes +"Visit&VistMaster_Code=" + VisitMaster_Codes + "&VistMode=View";
+    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "Visit&VistMaster_Code=" + VisitMaster_Codes + "&VistMode=View";
 }
 function IsNotVisited(code) {
     const alertCls = confirm("Are you sure you want to close this visit?");
@@ -295,9 +332,8 @@ function SaveNotVisited() {
     var reason = $("#txtReason").val();
     var code = $("#txtCode").val();
     if (reason == "") {
-            alert('Please enter a reason before proceeding.');
-            toastr.error(response.Msg);
-            return;
+        toastr.error('Please enter a reason before proceeding.');
+        return;
     } else {
         VisitOrderEntryService.NotVisitedRoutePlan(code, reason).then(function (response) {
             if (response.Status === 'Y') {
@@ -330,11 +366,14 @@ function IsCheckIn(RoutePlanMaster_Code, date) {
     GetActualLocation();
     const location = $('#txtLocation').val();
     const checkedInAddress = $('#txtAddress').val();
+    alert(checkedInAddress)
     if (!checkedInAddress || checkedInAddress.trim() === "") {
-        toastr.error("Please enable your location !");
+        alert("Please enable your location !");
         return false;
     }
     const checkInTime = GetCurrentTime();
+    alert(`Address: ${checkedInAddress}`);
+    alert(`Location: ${location}`);
     VisitOrderEntryService.CheckInVisit(RoutePlanMaster_Code, checkInTime, location, checkedInAddress).then(function (response) {
         if (response.Status === 'Y') {
             toastr.success(response.Msg);
@@ -346,6 +385,7 @@ function IsCheckIn(RoutePlanMaster_Code, date) {
             toastr.error(response.Msg);
         }
     }).catch(function (error) {
+        console.error('Error during Check-In:', error);
         toastr.error('An error occurred during the Check-In process. Please try again.');
     });
 
