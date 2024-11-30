@@ -10,8 +10,30 @@ const BizSolGeoLocation = {
     GetActualLocation: function GetActualLocation() {
 
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(showLocation, error, options);
+           
+            return new Promise(function (resolve, reject) {
+                navigator.geolocation.getCurrentPosition(function (response) {
+                    var Address = '';
+                    var result = {};
+                    result.latitude = response.coords.latitude;
+                    result.longitude = response.coords.longitude;
+                    var url = `/GetLocation?latlng=${result.latitude},${result.longitude}`;
+                    return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+                        function (value) {
+                            Address = JSON.stringify(value.results[0].formatted_address);
+                            Address = Address.replaceAll('"', '');
+                            result.Address = Address;
+                            resolve(result);
+                        }
+                    );
+                },
+                error,
+                options
+                );
+                
+            });
         } else {
+
             console.log("Geolocation is not supported by this browser.");
         }
     }
@@ -31,22 +53,5 @@ function error(err) {
     //}
     console.warn(`ERROR(${err.code}): ${err.message}`);
 }
-function showLocation(position) {
-    var latitude = position.coords.latitude;
-    var longitude = position.coords.longitude;
-    var latlong = "Latitude: " + latitude + " Longitude: " + longitude;
-    var googleAutoNo = "AIzaSyDFJGPvni-6MUITB8MxeHUMI4JfJjP5VJ4";
-    var Address = '';
-    //document.getElementById("txtCurrentLocation").value = '';
-    var url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + latitude + ',' + longitude + '&key=' + googleAutoNo + '';
-    return promiseAjaxCallApi.CallAPI('GET', url, "").then(
-        function (value) {
-            Address = JSON.stringify(response.results[0].formatted_address);
-            Address = Address.replaceAll('"', '');
-            return value;
-        }
-    );
-    
-};
 
 export { BizSolGeoLocation }

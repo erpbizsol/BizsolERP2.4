@@ -8,7 +8,7 @@
                 <h5 class="text-center font-weight-bold mb-4">
                     Day Wise Check In/Check Out
                 </h5>
-                <form [formGroup]="checkInOutForm">
+                <form >
                     <div class="row mb-3">
                         <div class="col-md-4">
                             <span>Today <b>:</b><text id="lblToday"></text></span>
@@ -20,17 +20,15 @@
                             <span>Duration Hrs <b>:</b> <text id="lblDuration"></text></span>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="row  justify-content-center">
-                            <div class="col-md-3"></div>
-                            <div class="col-sm-6">
+                   
+                        <div class="row ">
+                        <div class="col-sm-12 text-center">
                                 <button type="button" id="btnSaveCheckInCheckOut" onclick="SaveCheckInCheckOut()" class="btn btn-primary" >
                                     Check In
                                 </button>
                             </div>
-                            <div class="col-md-3"></div>
                         </div>
-                    </div>
+                
                     <div class="card-body">
                         <div id="checkInCheckOutGrid">
                             

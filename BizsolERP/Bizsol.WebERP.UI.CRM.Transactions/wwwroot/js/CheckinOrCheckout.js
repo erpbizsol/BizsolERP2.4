@@ -4,6 +4,7 @@ import { BizSolGeoLocation } from '/_content/Bizsol.WebERP.UI.Shared/js/BizSolGe
 import { CheckinOrCheckOutService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/CheckinOrCheckOutService.js';
 
 function GetDayWiseCheckInOutList() {
+    $("#ERPHeading").text("Day Wise Check In/Check Out");
     CheckinOrCheckOutService.GetDayWiseCheckInOut().then(function (response) {
         console.log(response);
         if (response.length > 0) {
@@ -29,7 +30,7 @@ function GetDayWiseCheckInOutList() {
             for (let i = response.length-1; i >=0;i--) {
                 checkInCheckOutGridRow += '<div class="row mb-6"><div class="col-md-6" ><label class="font-weight-bold"><b>Check-In-Time</b></label>';
                 checkInCheckOutGridRow += '<label><b> &nbsp;' + response[i].CheckInTime + '</b></label><input type="text" class="box_border form-control" value="' + response[i].CheckInLocation + '" disabled/></div>';
-                checkInCheckOutGridRow += '<div class="col-md-6 text-right"><label class="font-weight-bold"><b>Check-Out-Time</b></label>';
+                checkInCheckOutGridRow += '<div class="col-md-6 text-end"><label class="font-weight-bold"><b>Check-Out-Time</b></label>';
                 checkInCheckOutGridRow += '<label><b> &nbsp;' + response[i].CheckOutTime + '</b></label><input type="text" class="box_border form-control" value="' + response[i].CheckOutLocation + '" disabled/></div>';
                 checkInCheckOutGridRow += '</div>';
 
@@ -53,17 +54,19 @@ function GetDistance() {
 }
 
 function SaveCheckInCheckOut() {
-    let latitude = '000008', longitude = '90.889898', address = 'ithem';
-
+    
     BizSolGeoLocation.GetActualLocation().then(function (response) {
         console.log(response);
+        CheckinOrCheckOutService.SaveCheckIncheckOut(response.latitude, response.longitude, response.Address).then(function (response) {
+            if (response.Status === 'Y') {
+                //alert(response.Msg)
+                toastr.success(response.Msg);
+                GetDayWiseCheckInOutList();
+            }
+        });
+
     });
-        //CheckinOrCheckOutService.SaveCheckIncheckOut(latitude, longitude, address).then(function (response) {
-        //    if (response.Status === 'Y') {
-        //        alert(response.Msg)
-        //        GetDayWiseCheckInOutList();
-        //    } 
-        //});
+        
 }
 
 
