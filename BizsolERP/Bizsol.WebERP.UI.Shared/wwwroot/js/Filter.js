@@ -445,8 +445,8 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
         let filterHtml = '';
         if (StringFilterColumn.includes(col)) {
             filterHtml = `<th>
-                                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                                           ${col}
+                                         <div class="filter-table-heading-div">
+                                          <span class="filter-table-heading">${col}</span>
                                             <span class="table-filter-arrow">
                                               <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(/\s+/g, '') }')" style="cursor: pointer;"></i>
                                             </span>
@@ -474,8 +474,8 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                      </th>`;
         } else if (NumericFilterColumn.includes(col)) {
             filterHtml = `<th>
-                                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                                              ${col}
+                                         <div class="filter-table-heading-div">
+                                              <span class="filter-table-heading">${col}</span>
                                               <span class="table-filter-arrow">
                                                   <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(/\s+/g, '') }')" style="cursor: pointer;"></i>
                                                 </span>
@@ -511,8 +511,8 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                          </th>`;
         } else if (DateFilterColumn.includes(col)) {
             filterHtml = ` <th>
-                                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                              ${col}
+                                            <div class="filter-table-heading-div">
+                                              <span class="filter-table-heading"> ${col}</span>
                                               <span class="table-filter-arrow">
                                                   <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(/\s+/g, '') }')" style="cursor: pointer;"></i>
                                                 </span>
@@ -538,8 +538,8 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                        </th>`;
         } else if (StringdoubleFilterColumn.includes(col)) {
             filterHtml = `<th>
-                                           <div style="display: flex; justify-content: space-between; align-items: center;">
-                                         ${col}
+                                           <div class="filter-table-heading-div">
+                                         <span class="filter-table-heading">${col}</span>
                                          <span class="table-filter-arrow">
                                              <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(/\s+/g, '') }')" style="cursor: pointer;"></i>
                                            </span>
@@ -658,23 +658,27 @@ function renderTable(items,bodyId) {
         if (Array.isArray(showButtons) && showButtons.length > 0) {
             buttons = '<td>';
 
+            //if (showButtons.includes('E')) {
+            //    buttons += `<input class="btn btn-primary btn-height mb-1" type="button" onclick="EditData('${item.Code}')" value="Edit"/> `;
+            //}
+
             if (showButtons.includes('E')) {
-                buttons += `<input class="btn btn-primary btn-height mb-1" type="button" onclick="EditData('${item.Code}')" value="Edit"/> `;
+                buttons += `<i aria-hidden="true" class="fa fa-pencil btn btn-primary icon-height mb-1" type="button" onclick="EditData('${item.Code}')" /></i> `;
             }
             if (showButtons.includes('D')) {
-                buttons += `<input class="btn btn-danger btn-height mb-1" type="button" onclick="DeleteData('${item.Code}')" value="Delete"/> `;
+                buttons += `<i aria-hidden="true" class="fa fa-trash btn btn-danger icon-height mb-1" type="button" onclick="DeleteData('${item.Code}')" /></i> `;
             }
             if (showButtons.includes('V')) {
-                buttons += `<input class="btn btn-info btn-height" type="button" onclick="ViewData('${item.Code}')" value="View"/> `;
+                buttons += `<i aria-hidden="true" class="fa fa-eye btn btn-info icon-height" type="button" onclick="ViewData('${item.Code}')" value="View"/></i> `;
             }
             if (showButtons.includes('VE')) {
-                buttons += `<input class="btn btn-success btn-height mb-1" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/> `;
+                buttons += `<i class="fa fa-check btn btn-success icon-height mb-1" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/></i> `;
             }
             if (showButtons.includes('A')) {
-                buttons += `<input class="btn btn-warning btn-height" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/> `;
+                buttons += `<i class="fa fa-check-square-o btn btn-warning icon-height" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/></i> `;
             }
             if (showButtons.includes('M')) {
-                buttons += `<input class="btn btn-info btn-height" type="button" onclick="MoreData('${item.Code}')" value="More.."/> `;
+                buttons += `<input class="btn btn-info icon-height" type="button" onclick="MoreData('${item.Code}')" value="..."/> `;
             }
 
             buttons += '</td>';

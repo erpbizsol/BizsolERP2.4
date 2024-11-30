@@ -113,8 +113,31 @@ const CRMReportsServices = {
                 return value;
             }
         );
+    },
+    GetDisplayNameForReportTypes: function GetDisplayNameForReportTypes() {
+       var URL = UrlService.API_ENDPOINT_CRMReports + `/GetDisplayNameForReportType?ReportName=CheckIn CheckOut Report`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+
+    },
+    Getcheckinoutlist: function Getcheckinoutlist(fromDate, toDate, salesperson, reportType) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = `${UrlService.API_ENDPOINT_CRMReports}/GetCheckInOutReport` +
+            `?FromDate=${encodeURIComponent(fromDate)}` +
+            `&ToDate=${encodeURIComponent(toDate)}` +
+            `&SalesPerson=${encodeURIComponent(salesperson)}` +
+            `&ReportType=${encodeURIComponent(reportType)}` +
+            `&UserMaster_Code=${encodeURIComponent(userMasterCode)}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
     }
-  
 
 }
 

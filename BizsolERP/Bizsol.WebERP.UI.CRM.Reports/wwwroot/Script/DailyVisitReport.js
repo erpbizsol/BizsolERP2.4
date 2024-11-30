@@ -2,18 +2,53 @@
 
 var VerficationCheck = "N";
 $(document).ready(function () {
+    $("#ERPHeading").text("Daily Visit Report");
     var today = new Date();
     const yyyy = today.getFullYear();
     const mm = (today.getMonth() + 1).toString().padStart(2, '0');
     const dd = today.getDate().toString().padStart(2, '0');
     const currentDate = `${yyyy}-${mm}-${dd}`;
     $('#txtdateFrom, #txtdateTo').val(currentDate);
-   
     GetSalespersonLists();
     GetDealerLists();
     GetOrderTypeLists();
     GetOrderStatusLists();
     GetDisplayNameForReportTypes();
+    $('#txtdateFrom').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtdateTo").focus();
+        }
+    });
+    $('#txtdateTo').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtSalesPerson").focus();
+        }
+    });
+    $('#txtSalesPerson').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtDealerName").focus();
+        }
+    });
+    $('#txtDealerName').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtOrderType").focus();
+        }
+    });
+    $('#txtOrderType').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtOrderStatus").focus();
+        }
+    });
+    $('#txtOrderStatus').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtReportType").focus();
+        }
+    });
+    $('#txtReportType').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#fetchReportButton").focus();
+        }
+    });
 });
 function GetSalespersonLists() {
     CRMReportsServices.GetSalespersonList().then(function (response) {
@@ -187,7 +222,22 @@ function GetDailyVistList() {
             const showButtons = [];
             const StringdoubleFilterColumn = [];
             const hiddenColumns = ["Code"];
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
+            const ColumnAlignment = {
+                "Payment Amount": 'right',
+                "Other Sale Qty": 'right',
+                "Other Stock Qty": 'right',
+                "Our Stock Qty": 'right',
+                "Final Order Amount": 'right',
+                "Final Rate": 'right',
+                "Discount": 'right',
+                "Total Order Amount": 'right',
+                "Basic Rate": 'right',
+                "Extra Charges": 'right',
+                "Total Order Qty": 'right',
+                "Total Ordered Qty": 'right',
+                "Date": 'center',
+            };
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns,ColumnAlignment);
             if (reportType === "Visit Report With Size and Thk") {
                 updateFooter(response);
             } else {

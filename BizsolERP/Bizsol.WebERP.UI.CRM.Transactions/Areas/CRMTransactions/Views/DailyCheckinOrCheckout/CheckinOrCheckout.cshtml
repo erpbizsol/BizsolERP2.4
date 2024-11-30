@@ -8,53 +8,30 @@
                 <h5 class="text-center font-weight-bold mb-4">
                     Day Wise Check In/Check Out
                 </h5>
-                <form [formGroup]="checkInOutForm">
+                <form >
                     <div class="row mb-3">
                         <div class="col-md-4">
-                            <span>Today <b>:</b> {{DayWiseCheckInOutlist[0]?.Today}}</span>
+                            <span>Today <b>:</b><text id="lblToday"></text></span>
                         </div>
                         <div class="col-md-4">
-                            <span>Total Distance <b>:</b> {{DistanceInKM.Distance}}</span>
+                            <span>Total Distance <b>:</b><text id="lblDistance"></text></span>
                         </div>
                         <div class="col-md-4">
-                            <span>Duration Hrs <b>:</b> {{DayWiseCheckInOutlist[0]?.DurationInHrs}}</span>
+                            <span>Duration Hrs <b>:</b> <text id="lblDuration"></text></span>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="row  justify-content-center">
-                            <div class="col-md-3"></div>
-                            <div class="col-sm-6">
-                                <button type="button" (click)="SaveCheckInCheckOut()"
-                                        class="btn btn-primary"
-                                        [ngClass]="{'btn-check-in': isCheckIn, 'btn-check-out': !isCheckIn}"
-                                        (click)="toggleCheckInOut()">
-                                    {{buttontext}}
+                   
+                        <div class="row ">
+                        <div class="col-sm-12 text-center">
+                                <button type="button" id="btnSaveCheckInCheckOut" onclick="SaveCheckInCheckOut()" class="btn btn-primary" >
+                                    Check In
                                 </button>
                             </div>
-                            <div class="col-md-3"></div>
                         </div>
-                    </div>
+                
                     <div class="card-body">
-                        <div formArrayName="checkInOutArray"
-                             *ngFor="let group of checkInOutArray.controls; let i = index">
-                            <div [formGroupName]="i" class="row mb-6">
-                                <div class="col-md-6">
-                                    <label class="font-weight-bold"><b>Check-In-Time</b></label>
-                                    <label>
-                                        <b>{{DayWiseCheckInOutlist[checkInOutArray.length - 1 - i].CheckInTime}}</b>
-                                    </label>
-                                    <input type="text" class="box_border form-control"
-                                           formControlName="checkInLocation" />
-                                </div>
-                                <div class="col-md-6 text-right">
-                                    <label class="font-weight-bold"><b>Check-Out-Time</b></label>
-                                    <label>
-                                        <b>{{DayWiseCheckInOutlist[checkInOutArray.length - 1 - i].CheckOutTime}}</b>
-                                    </label>
-                                    <input type="text" class="box_border form-control"
-                                           formControlName="checkOutLocation" />
-                                </div>
-                            </div>
+                        <div id="checkInCheckOutGrid">
+                            
                         </div>
                     </div>
                 </form>
@@ -62,3 +39,6 @@
         </div>
     </div>
 </div>
+
+@* <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_SizeControlpage.js"></script> *@
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/CheckinOrCheckout.js"></script>
