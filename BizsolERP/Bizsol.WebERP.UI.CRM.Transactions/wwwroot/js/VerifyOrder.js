@@ -1,4 +1,4 @@
-﻿import { VisitOrderEntryService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
+﻿import { VisitOrderEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
 var baseUrl = `${window.location.protocol}//${window.location.host}`;
 $(document).ready(function () {
     $("#ERPHeading").text("Verify Order/Visit");

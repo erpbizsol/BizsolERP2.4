@@ -6,7 +6,8 @@ $(document).ready(function () {
 
 function bindMenu() {
    // var baseUrl = `${window.location.protocol}//${window.location.host}`;
-    var baseUrl = window.AppBaseURL;
+    var baseUrl = sessionStorage.getItem('AppBaseURL');
+    //var baseUrl = window.AppBaseURL;
     MenuService.GetMenuList("BIZANKIT").then(function (value) {
         var menuHtml = '';
         $.each(value, function (index, item) {
@@ -56,7 +57,8 @@ function bindMenu() {
 
 function getChildMenu(value, masterCode, baseUrl) {
    // var baseUrl = `${window.location.protocol}//${window.location.host}`;
-    var baseUrl = window.AppBaseURL;
+   // var baseUrl = window.AppBaseURL;
+    var baseUrl = sessionStorage.getItem('AppBaseURL');
     var childMenuHtml = '';
     $.each(value, function (index, item) {
         if (item.MasterCode === masterCode) {

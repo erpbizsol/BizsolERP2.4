@@ -1,4 +1,5 @@
-﻿import { VisitOrderEntryService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
+﻿//import { VisitOrderEntryService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
+import { VisitOrderEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
 let selectedDates = [];
 var baseUrl = `${window.location.protocol}//${window.location.host}`;
 $(document).ready(function () {

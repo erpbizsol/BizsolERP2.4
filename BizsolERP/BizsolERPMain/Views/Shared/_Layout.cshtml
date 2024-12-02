@@ -469,7 +469,7 @@
         var authKey = '@Html.Raw(ViewBag.AuthKey)';
        if (authKey !== '') {
               sessionStorage.setItem('authKey', authKey);
-              //sessionStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
+              sessionStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
               window.AppBaseURL='@Html.Raw(ViewBag.AppBaseURL)';
         }
         // });
