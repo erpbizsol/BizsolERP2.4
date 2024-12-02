@@ -1,4 +1,4 @@
-﻿import { OrderEntryListService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/OrderEntryListService.js';
+﻿import { OrderEntryListService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/OrderEntryListService.js';
 
 $(document).ready(function () {
     $("#ERPHeading").text("Order Entry List");

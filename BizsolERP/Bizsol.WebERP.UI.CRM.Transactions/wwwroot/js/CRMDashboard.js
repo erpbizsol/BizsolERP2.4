@@ -1,4 +1,4 @@
-﻿import { CRMDashboardService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/CRMDashboardService.js';
+﻿import { CRMDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CRMDashboardService.js';
 let marketingManMaster_Code = 0;
 let DetailKey = "";
 let AccountDesp = "All";
