@@ -1,5 +1,6 @@
 ﻿
 import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
+import { CRMDashboardService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/CRMDashboardService.js';
 $(document).ready(function () {
     bindMenu();
 });
@@ -8,51 +9,62 @@ function bindMenu() {
    // var baseUrl = `${window.location.protocol}//${window.location.host}`;
     var baseUrl = sessionStorage.getItem('AppBaseURL');
     //var baseUrl = window.AppBaseURL;
-    MenuService.GetMenuList("BIZANKIT").then(function (value) {
-        var menuHtml = '';
-        $.each(value, function (index, item) {
-            if (item.MasterCode === 0) {
-                var childMenuHtml = getChildMenu(value, item.Code, baseUrl);
-                var hasArrow = childMenuHtml ? 'has-arrow' : '';
-                menuHtml += '<li>';
-                menuHtml += '<a href="javascript:void(0);" class="menu-toggle ' + hasArrow + '">';
-                menuHtml += '<span class="iconBg"><i class="side-menu-icon" data-feather="grid"></i></span>';
-                menuHtml += '<span>' + item.ModuleDesp + '</span>';
-                // Add arrow if submenu exists (always point right initially)
-                //menuHtml += childMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';
-                menuHtml += '</a>';
-                if (childMenuHtml) {
-                    menuHtml += '<ul class="sub-menu" style="display: none;">' + childMenuHtml + '</ul>'; // Submenus hidden by default
-                }
-                menuHtml += '</li>';
-            }
-        });
+    CRMDashboardService.GetUserDetails()
+        .then(function (res) {
+            sessionStorage.setItem('UserDetails', JSON.stringify(res));
+            let UserDetailsobj = JSON.parse(sessionStorage.getItem('UserDetails'));
 
-        $('#side-menu').html(menuHtml);
+            $('#ERPUserName')[0].innerHTML = UserDetailsobj[0].UserID;
+            $('#ERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})`;
 
-        feather.replace();
+            MenuService.GetMenuList(UserDetailsobj[0].UserID).then(function (value) {
+                var menuHtml = '';
+                $.each(value, function (index, item) {
+                    if (item.MasterCode === 0) {
+                        var childMenuHtml = getChildMenu(value, item.Code, baseUrl);
+                        var hasArrow = childMenuHtml ? 'has-arrow' : '';
+                        menuHtml += '<li>';
+                        menuHtml += '<a href="javascript:void(0);" class="menu-toggle ' + hasArrow + '">';
+                        menuHtml += '<span class="iconBg"><i class="side-menu-icon" data-feather="grid"></i></span>';
+                        menuHtml += '<span>' + item.ModuleDesp + '</span>';
+                        // Add arrow if submenu exists (always point right initially)
+                        //menuHtml += childMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';
+                        menuHtml += '</a>';
+                        if (childMenuHtml) {
+                            menuHtml += '<ul class="sub-menu" style="display: none;">' + childMenuHtml + '</ul>'; // Submenus hidden by default
+                        }
+                        menuHtml += '</li>';
+                    }
+                });
 
-        $('.menu-toggle').click(function (e) {
-            var parentLi = $(this).parent();
+                $('#side-menu').html(menuHtml);
 
-            if (!$(this).hasClass('has-arrow')) {
+                feather.replace();
 
-                return;
-            }
+                $('.menu-toggle').click(function (e) {
+                    var parentLi = $(this).parent();
 
-            e.preventDefault();
-            parentLi.toggleClass('mm-active');
-            parentLi.children('ul.sub-menu').slideToggle();
+                    if (!$(this).hasClass('has-arrow')) {
 
-            var arrowIcon = $(this).find('.arrow-icon');
-            if (parentLi.hasClass('active')) {
-                arrowIcon.attr('data-feather', 'chevron-down');
-            } else {
-                arrowIcon.attr('data-feather', 'chevron-right');
-            }
-            feather.replace();
-        });
-    });
+                        return;
+                    }
+
+                    e.preventDefault();
+                    parentLi.toggleClass('mm-active');
+                    parentLi.children('ul.sub-menu').slideToggle();
+
+                    var arrowIcon = $(this).find('.arrow-icon');
+                    if (parentLi.hasClass('active')) {
+                        arrowIcon.attr('data-feather', 'chevron-down');
+                    } else {
+                        arrowIcon.attr('data-feather', 'chevron-right');
+                    }
+                    feather.replace();
+                });
+            });
+        })
+        
+   
 }
 
 function getChildMenu(value, masterCode, baseUrl) {
