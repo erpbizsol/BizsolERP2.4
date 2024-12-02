@@ -1,4 +1,4 @@
-﻿import { CRMReportsServices } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/CRMReportsService.js';
+﻿import { CRMReportsServices } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CRMReportsService.js';
 
 $(document).ready(function () {
     $("#ERPHeading").text("Check In/Check Out Report");

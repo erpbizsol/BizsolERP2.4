@@ -1,5 +1,5 @@
-﻿import { OrderEntryListService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/OrderEntryListService.js';
-var baseUrl = `${window.location.protocol}//${window.location.host}`;
+﻿import { OrderEntryListService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/OrderEntryListService.js';
+
 $(document).ready(function () {
     $("#ERPHeading").text("Order Entry List");
     GetOrderStatusList();

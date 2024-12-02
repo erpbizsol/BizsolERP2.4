@@ -1,4 +1,4 @@
-﻿import { RoutePlanMasterService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/RoutePlanService.js';
+﻿import { RoutePlanMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/RoutePlanService.js';
 
 let MultiRoutePlanCodes = [];
 $(document).ready(function () {
