@@ -62,20 +62,27 @@ function Reject(Code) {
 function SaveModal() {
     var reason = $("#rejectReason").val();
     var code = $("#txtcode").val();
+    if (reason == "") {
+        alert('Please enter a reason before proceeding.');
+        toastr.error(response.Msg);
+        return;
+    }
     RoutePlanMasterService.RejectRoutePlan(code, reason).then(function (response) {
        
-        if (reason == "") {
-            alert('Please enter a reason before proceeding.');
-            toastr.error(response.Msg);
-            return;
-        }
-        else {
+        if (response.Msg) {
             toastr.success(response.Msg);
-            $('#myModal').modal('hide');
             $('#rejectReason').val('');
+            $('#txtCode').val('');
             GetUserWiseRoutePlanDetails();
+            $('#myModal').modal('hide');
+        } else {
+            toastr.error('An error occurred. Please try again.');
         }
-    });
+    })
+        .catch(function (error) {
+            toastr.error('An unexpected error occurred.');
+            console.error(error);
+        });
 }
 function CloseModal() {
     $('#myModal').modal('hide');

@@ -38,7 +38,7 @@ const OrderEntryListService = {
     },
     DeleteVisit: function DeleteVisit(Code, ReasonForDelete) {
         var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + "/RejectAllRoutePlan?Code=" + Code + "&UserMaster_Code=" + userMasterCode + "&ReasonForDelete='" + ReasonForDelete + "'" + "&IPAddress=" + 1 + "'" +"&Location=" + 1 +"'";
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + "/DeleteVisit?Code=" + Code + "&UserMaster_Code=" + userMasterCode + "&ReasonForDelete=" + ReasonForDelete + "" + "&IPAddress=" + 1 + "" +"&Location=" + 1 +"";
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
