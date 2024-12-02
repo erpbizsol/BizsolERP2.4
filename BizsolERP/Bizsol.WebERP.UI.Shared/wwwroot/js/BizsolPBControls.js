@@ -3,7 +3,7 @@ let currentIndex = 0;
 let codeValues = [];
 let functionName = "";
 
-$(document).ready(function () {
+function PBControls() {
     $('#PBControls').empty();
     var filterHtml = `
     <div class="row mt-3">
@@ -15,7 +15,7 @@ $(document).ready(function () {
                             <path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z"></path>
                         </svg>
                     </button>
-                    <button data-toggle="tooltip" data-placement="top" title="PREVIOUS" id="Previous" onclick="Previous()" class="icon-height btn btn-success nav-btn">
+                    <button data-toggle="tooltip" data-placement="top" title="PREVIOUS" id="Previous" onclick="Previous()" class="icon-height btn btn-success nav-btn" >
                         <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24" class="svg-icon">
                             <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path>
                         </svg>
@@ -78,7 +78,7 @@ $(document).ready(function () {
     applyButtonProperties();
     $('[data-toggle="tooltip"]').tooltip();
 
-});
+};
 
 function GetallData(EditValue, CurrentIndex, CodeValues, FunctionName) {
     editValue = EditValue;
@@ -86,6 +86,9 @@ function GetallData(EditValue, CurrentIndex, CodeValues, FunctionName) {
     codeValues = CodeValues;
     functionName = FunctionName;
     displayCode();
+    setTimeout(() => {
+        toggleNavigationButtons();
+    }, 500);
 }
 function displayCode() {
     $('#currentCode').text(codeValues[currentIndex]);
@@ -119,7 +122,12 @@ function toggleNavigationButtons() {
     $('#Next').prop('disabled', currentIndex === codeValues.length - 1);
     $('#Last').prop('disabled', currentIndex === codeValues.length - 1);
 }
-
+function NavigationButtonsControll() {
+    $('#First').attr('disabled',true);
+    $('#Previous').prop('disabled', true);
+    $('#Next').prop('disabled', true);
+    $('#Last').prop('disabled',true);
+}
 function applyButtonProperties() {
     const properties = buttonProperty();
 
@@ -140,9 +148,10 @@ function applyButtonProperties() {
     }
 }
 
-
+window.PBControls = PBControls;
 window.Last = Last;
 window.Next = Next;
 window.Previous = Previous;
 window.First = First;
 window.GetallData = GetallData;
+window.NavigationButtonsControll = NavigationButtonsControll;
