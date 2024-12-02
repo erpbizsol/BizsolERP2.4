@@ -34,7 +34,7 @@ window.BizsolCustomFilterGrid = BizsolCustomFilterGrid;
             uniqueValues.add(cellValue);
         });
 
-        var checkboxContainer = $('#checkbox-container-' + columnName.replace(' ',''));
+        var checkboxContainer = $('#checkbox-container-' + columnName.replace(/\s+/g, ''));
         checkboxContainer.empty();
         checkboxContainer.append('<label><input type="checkbox" class="filter-checkbox" value="All"> All</label>');
 
@@ -58,8 +58,8 @@ window.BizsolCustomFilterGrid = BizsolCustomFilterGrid;
         closeAllFilters();
         closeAllFiltersDouble();
         populateFilterOptions(columnName, bodyId);
-        $('#filter-' + columnName.replace(' ','')).toggle();
-        $('#filterDropdown-' + columnName.replace(' ', '')).toggle();
+        $('#filter-' + columnName.replace(/\s+/g, '')).toggle();
+        $('#filterDropdown-' + columnName.replace(/\s+/g, '')).toggle();
     };
     function closeAllFilters() {
         $('.filter-dropdown').hide();
@@ -94,9 +94,9 @@ window.BizsolCustomFilterGrid = BizsolCustomFilterGrid;
     checkAllCheckboxesOnLoad();
     window.toggleFilterDouble = function (columnName) {
         closeAllFiltersDouble();
-        $('#filter-double-' + columnName.replace(' ','')).toggle();
+        $('#filter-double-' + columnName.replace(/\s+/g, '')).toggle();
         $('.filter-dropdown').hide();
-        $('#filterDropdown-' + columnName.replace(' ', '')).toggle();
+        $('#filterDropdown-' + columnName.replace(/\s+/g, '')).toggle();
     };
 
     $(document).click(function (event) {
@@ -111,8 +111,8 @@ var columnFilters = {};
 window.populateDateFilter = function (columnName, bodyId) {
     closeAllFilters();
     closeAllFiltersDouble();
-    $('#filter-' + columnName.replace(' ', '')).toggle();
-    $('#filterDropdown-' + columnName.replace(' ', '')).toggle();
+    $('#filter-' + columnName.replace(/\s+/g, '')).toggle();
+    $('#filterDropdown-' + columnName.replace(/\s+/g, '')).toggle();
 
     
     var uniqueDates = new Set();
@@ -140,35 +140,35 @@ window.populateDateFilter = function (columnName, bodyId) {
         dateStructure[year][month].push(day);
     });
 
-    var checkboxContainer1 = $('#checkbox-container-' + columnName.replace(' ', ''));
+    var checkboxContainer1 = $('#checkbox-container-' + columnName.replace(/\s+/g, ''));
     checkboxContainer1.empty();
 
     checkboxContainer1.append('<label><input type="checkbox" class="filter-checkbox" value="All"> (Select All)</label>');
 
     for (var year in dateStructure) {
         checkboxContainer1.append(
-            `<label><i class="fa-solid fa-plus toggle-icon" data-target="year-${columnName.replace(' ', '') }-${year}"></i><input type="checkbox" class="year-checkbox" value="${year}"> ${year}</label>` +
-            `<div class="nested-checkbox" id="year-${columnName.replace(' ', '') }-${year}"></div>`
+            `<label><i class="fa-solid fa-plus toggle-icon" data-target="year-${columnName.replace(/\s+/g, '') }-${year}"></i><input type="checkbox" class="year-checkbox" value="${year}"> ${year}</label>` +
+            `<div class="nested-checkbox" id="year-${columnName.replace(/\s+/g, '') }-${year}"></div>`
         );
     }
 
     for (var year in dateStructure) {
         for (var month in dateStructure[year]) {
-            var monthCheckbox = `<label><i class="fa-solid fa-plus toggle-icon" data-target="month-${columnName.replace(' ', '') }-${year}-${month}"></i><input type="checkbox" class="month-checkbox" value="${month}"> ${month}</label>`;
-            var dayCheckboxes = `<div class="nested-checkbox" id="month-${columnName.replace(' ', '')}-${year}-${month}">`;
+            var monthCheckbox = `<label><i class="fa-solid fa-plus toggle-icon" data-target="month-${columnName.replace(/\s+/g, '') }-${year}-${month}"></i><input type="checkbox" class="month-checkbox" value="${month}"> ${month}</label>`;
+            var dayCheckboxes = `<div class="nested-checkbox" id="month-${columnName.replace(/\s+/g, '') }-${year}-${month}">`;
             dateStructure[year][month].forEach(function (day) {
                 dayCheckboxes += `<label><input type="checkbox" class="day-checkbox" value="${day}"> ${day}</label>`;
             });
             dayCheckboxes += '</div>';
 
-            $('#year-' + columnName.replace(' ', '') + '-' + year).append(monthCheckbox + dayCheckboxes);
+            $('#year-' + columnName.replace(/\s+/g, '') + '-' + year).append(monthCheckbox + dayCheckboxes);
         }
     }
 
     checkboxContainer1.find('.year-checkbox').change(function () {
         var isChecked = $(this).is(':checked');
         var year = $(this).val();
-        $('#year-' + columnName.replace(' ', '') + '-' + year + ' input[type="checkbox"]').prop('checked', isChecked);
+        $('#year-' + columnName.replace(/\s+/g, '') + '-' + year + ' input[type="checkbox"]').prop('checked', isChecked);
     });
 
     checkboxContainer1.find('.month-checkbox').change(function () {
@@ -248,30 +248,30 @@ function applyFilters(bodyId) {
 window.toggleFilterNumeric = function (filterId, ColumnName) {
     closeAllFilters();
     closeAllFiltersDouble();
-    $('#filterDropdown-' + ColumnName.replace(' ', '')).toggle();
+    $('#filterDropdown-' + ColumnName.replace(/\s+/g, '')).toggle();
     $('#' + filterId).toggle();
     toggleNumericInputs(ColumnName);
 
     
 };
 window.toggleNumericInputs = function (columnName) {
-    const selectedOption = $('#numeric-filter-select-' + columnName.replace(' ','')).val();
-    $('#filter-value-' + columnName.replace(' ', '')).hide();
-    $('#min-value-' + columnName.replace(' ', '')).hide();
-    $('#max-value-' + columnName.replace(' ', '')).hide();
+    const selectedOption = $('#numeric-filter-select-' + columnName.replace(/\s+/g, '')).val();
+    $('#filter-value-' + columnName.replace(/\s+/g, '')).hide();
+    $('#min-value-' + columnName.replace(/\s+/g, '')).hide();
+    $('#max-value-' + columnName.replace(/\s+/g, '')).hide();
 
     if (selectedOption === 'equals' || selectedOption === 'greater' || selectedOption === 'less') {
-        $('#filter-value-' + columnName.replace(' ', '')).show();
+        $('#filter-value-' + columnName.replace(/\s+/g, '')).show();
     } else if (selectedOption === 'between') {
-        $('#min-value-' + columnName.replace(' ', '')).show();
-        $('#max-value-' + columnName.replace(' ', '')).show();
+        $('#min-value-' + columnName.replace(/\s+/g, '')).show();
+        $('#max-value-' + columnName.replace(/\s+/g, '')).show();
     }
 };
 window.applyNumericFilter = function (columnName, bodyId) {
-    const selectedOption = $('#numeric-filter-select-' + columnName.replace(' ', '')).val();
-    const filterValue = parseFloat($('#filter-value-' + columnName.replace(' ', '')).val());
-    const minValue = parseFloat($('#min-value-' + columnName.replace(' ', '')).val());
-    const maxValue = parseFloat($('#max-value-' + columnName.replace(' ', '')).val());
+    const selectedOption = $('#numeric-filter-select-' + columnName.replace(/\s+/g, '')).val();
+    const filterValue = parseFloat($('#filter-value-' + columnName.replace(/\s+/g, '')).val());
+    const minValue = parseFloat($('#min-value-' + columnName.replace(/\s+/g, '')).val());
+    const maxValue = parseFloat($('#max-value-' + columnName.replace(/\s+/g, '')).val());
 
     if (!isNaN(filterValue) || (!isNaN(minValue) && !isNaN(maxValue))) {
         $(`#${bodyId} tr`).each(function () {
@@ -322,7 +322,7 @@ function applyStringFilters(columnName, bodyId) {
     var column = columnName;
     var selectedValues = [];
 
-    $('#checkbox-container-' + column.replace(' ','') + ' input:checked').each(function () {
+    $('#checkbox-container-' + column.replace(/\s+/g, '') + ' input:checked').each(function () {
         if ($(this).val() != "All") {
             selectedValues.push($(this).val());
         }
@@ -346,7 +346,7 @@ function applyStringFilters(columnName, bodyId) {
 function ShowEntry(columnName, bodyId) {
     var column = columnName;
     populateFilterOptionsDouble(column, bodyId);
-    $('#checkbox-container-double-' + column.replace(' ', '')).toggle();
+    $('#checkbox-container-double-' + column.replace(/\s+/g, '')).toggle();
 }
 function populateFilterOptionsDouble(columnName, bodyId) {
     var uniqueValues = new Set();
@@ -355,7 +355,7 @@ function populateFilterOptionsDouble(columnName, bodyId) {
         uniqueValues.add(cellValue);
     });
 
-    var checkboxContainer = $('#checkbox-container-double-' + columnName.replace(' ', ''));
+    var checkboxContainer = $('#checkbox-container-double-' + columnName.replace(/\s+/g, ''));
     checkboxContainer.empty();
     checkboxContainer.append('<label><input type="checkbox" class="filter-checkbox" value="All"> All</label>');
 
@@ -376,12 +376,12 @@ function populateFilterOptionsDouble(columnName, bodyId) {
 }
 function applyfilterdouble(columnName, bodyId) {
     var column = columnName;
-    var filterType = $('#filter-type-' + column.replace(' ', '')).val();
-    var searchValue = $('.filter-input-double[data-column="' + column.replace(' ', '') + '"]').val().trim().toLowerCase();
+    var filterType = $('#filter-type-' + column.replace(/\s+/g, '')).val();
+    var searchValue = $('.filter-input-double[data-column="' + column.replace(/\s+/g, '') + '"]').val().trim().toLowerCase();
     var selectedValues = [];
 
 
-    $('#checkbox-container-double-' + column.replace(' ', '') + ' input:checked').each(function () {
+    $('#checkbox-container-double-' + column.replace(/\s+/g, '') + ' input:checked').each(function () {
         if ($(this).val() !== "All") {
             selectedValues.push($(this).val().toLowerCase());
         }
@@ -427,7 +427,7 @@ function applyfilterdate(columnName, bodyId) {
     var column = columnName;
     var selectedValues = [];
 
-    $('#checkbox-container-' + column.replace(' ', '') + ' input:checked').each(function () {
+    $('#checkbox-container-' + column.replace(/\s+/g, '') + ' input:checked').each(function () {
         if ($(this).val() != "All") {
             selectedValues.push($(this).val());
         }
@@ -445,17 +445,17 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
         let filterHtml = '';
         if (StringFilterColumn.includes(col)) {
             filterHtml = `<th>
-                                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                                           ${col}
+                                         <div class="filter-table-heading-div">
+                                          <span class="filter-table-heading">${col}</span>
                                             <span class="table-filter-arrow">
-                                              <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
+                                              <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(/\s+/g, '') }')" style="cursor: pointer;"></i>
                                             </span>
-                                              <div class="filter-division" id="filterDropdown-${col.replace(' ', '')}" style="display:none;">
+                                              <div class="filter-division" id="filterDropdown-${col.replace(/\s+/g, '') }" style="display:none;">
                                                 <div class="dropdown-content">
-                                                  <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc">
+                                                  <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(/\s+/g, '') }" data-order="asc">
                                                     <i class="fa-solid fa-arrow-up-a-z sort-indicator sort-indicator-color"></i> Ascending
                                                   </div>
-                                                  <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="desc">
+                                                  <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(/\s+/g, '') }" data-order="desc">
                                                     <i class="fa-solid fa-arrow-down-z-a sort-indicator sort-indicator-color"></i> Descending
                                                   </div>
                                                   <div class="dropdown-item fafilter" onclick="toggleFilter('${col}','${bodyId}')">
@@ -464,46 +464,46 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                                 </div>
                                               </div>
                                             </div>
-                                            <div class="filter-dropdown" id="filter-${col.replace(' ', '')}">
-                                            <input type="text" placeholder="Search..." class="filter-input" data-column="${col.replace(' ', '')}" />
-                                            <div class="checkbox-container" id="checkbox-container-${col.replace(' ', '')}"></div>
-                                            <button class="btn btn-success btn-height" onclick="applyStringFilters('${col}','${bodyId}')" data-column="${col.replace(' ', '')}">apply</button>
+                                            <div class="filter-dropdown" id="filter-${col.replace(/\s+/g, '') }">
+                                            <input type="text" placeholder="Search..." class="filter-input" data-column="${col.replace(/\s+/g, '') }" />
+                                            <div class="checkbox-container" id="checkbox-container-${col.replace(/\s+/g, '') }"></div>
+                                            <button class="btn btn-success btn-height" onclick="applyStringFilters('${col}','${bodyId}')" data-column="${col.replace(/\s+/g, '') }">apply</button>
                                             <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
                                             </div>
                                            </div>
                                      </th>`;
         } else if (NumericFilterColumn.includes(col)) {
             filterHtml = `<th>
-                                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                                              ${col}
+                                         <div class="filter-table-heading-div">
+                                              <span class="filter-table-heading">${col}</span>
                                               <span class="table-filter-arrow">
-                                                  <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
+                                                  <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(/\s+/g, '') }')" style="cursor: pointer;"></i>
                                                 </span>
-                                                  <div class="filter-division" id="filterDropdown-${col.replace(' ', '')}" style="display:none;">
+                                                  <div class="filter-division" id="filterDropdown-${col.replace(/\s+/g, '') }" style="display:none;">
                                                     <div class="dropdown-content">
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(/\s+/g, '') }" data-order="asc">
                                                         <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                       </div>
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="desc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(/\s+/g, '') }" data-order="desc">
                                                         <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                       </div>
-                                                      <div class="dropdown-item fafilter" onclick="toggleFilterNumeric('filter-dropdown-numeric-${col.replace(' ', '')}','${col}');">
+                                                      <div class="dropdown-item fafilter" onclick="toggleFilterNumeric('filter-dropdown-numeric-${col.replace(/\s+/g, '') }','${col}');">
                                                         <i class="fa-solid fa-filter  sort-indicator-color"></i> Filter...
                                                       </div>
                                                     </div>
                                                   </div>
                                                </div>
-                                         <div class="filter-dropdown" id="filter-dropdown-numeric-${col.replace(' ', '')}">
-                                          <select id="numeric-filter-select-${col.replace(' ', '')}" onchange="toggleNumericInputs('${col}')">
+                                         <div class="filter-dropdown" id="filter-dropdown-numeric-${col.replace(/\s+/g, '') }">
+                                          <select id="numeric-filter-select-${col.replace(/\s+/g, '') }" onchange="toggleNumericInputs('${col}')">
                                                 <option value="equals">=</option>
                                                 <option value="greater">></option>
                                                 <option value="less">&lt;</option>
                                                 <option value="between">Between</option>
                                             </select>
                                             <div class="filter-inputs">
-                                                <input type="number" id="filter-value-${col.replace(' ', '')}" class="filter-input" placeholder="Enter value" />
-                                                <input type="number" id="min-value-${col.replace(' ', '')}" class="filter-input" placeholder="Min value" style="display:none" />
-                                                <input type="number" id="max-value-${col.replace(' ', '')}" class="filter-input" placeholder="Max value" style="display:none" />
+                                                <input type="number" id="filter-value-${col.replace(/\s+/g, '') }" class="filter-input form-control form-control-sm" placeholder="Enter value" />
+                                                <input type="number" id="min-value-${col.replace(/\s+/g, '') }" class="filter-input form-control form-control-sm" placeholder="Min value" style="display:none" />
+                                                <input type="number" id="max-value-${col.replace(/\s+/g, '') }" class="filter-input form-control form-control-sm" placeholder="Max value" style="display:none" />
                                             </div>
                                             <button class="btn btn-success btn-height" onclick="applyNumericFilter('${col}','${bodyId}')">Apply</button>
                                             <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
@@ -511,17 +511,17 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                          </th>`;
         } else if (DateFilterColumn.includes(col)) {
             filterHtml = ` <th>
-                                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                              ${col}
+                                            <div class="filter-table-heading-div">
+                                              <span class="filter-table-heading"> ${col}</span>
                                               <span class="table-filter-arrow">
-                                                  <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
+                                                  <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(/\s+/g, '') }')" style="cursor: pointer;"></i>
                                                 </span>
-                                                  <div class="filter-division" id="filterDropdown-${col.replace(' ', '')}" style="display:none;">
+                                                  <div class="filter-division" id="filterDropdown-${col.replace(/\s+/g, '') }" style="display:none;">
                                                     <div class="dropdown-content">
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(/\s+/g, '') }" data-order="asc">
                                                         <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                       </div>
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="desc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(/\s+/g, '') }" data-order="desc">
                                                         <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                       </div>
                                                       <div class="dropdown-item fafilter" onclick="populateDateFilter('${col}','${bodyId}')">
@@ -530,25 +530,25 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                                     </div>
                                                   </div>
                                                </div>
-                                            <div class="filter-dropdown" id="filter-${col.replace(' ', '') }">
-                                            <div class="checkbox-container" id="checkbox-container-${col.replace(' ', '') }"></div>
-                                            <button class="btn btn-success btn-height" onclick="applyfilterdate('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Apply</button>
+                                            <div class="filter-dropdown" id="filter-${col.replace(/\s+/g, '') }">
+                                            <div class="checkbox-container" id="checkbox-container-${col.replace(/\s+/g, '') }"></div>
+                                            <button class="btn btn-success btn-height" onclick="applyfilterdate('${col}','${bodyId}')" data-column="${col.replace(/\s+/g, '') }">Apply</button>
                                             <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
                                             </div>
                                        </th>`;
         } else if (StringdoubleFilterColumn.includes(col)) {
             filterHtml = `<th>
-                                           <div style="display: flex; justify-content: space-between; align-items: center;">
-                                         ${col}
+                                           <div class="filter-table-heading-div">
+                                         <span class="filter-table-heading">${col}</span>
                                          <span class="table-filter-arrow">
-                                             <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(' ', '')}')" style="cursor: pointer;"></i>
+                                             <i class="fa-solid fa-angle-down" onclick="OpenFilter('${col.replace(/\s+/g, '') }')" style="cursor: pointer;"></i>
                                            </span>
-                                             <div class="filter-division" onclick="stopPropagationdouble(event)" id="filterDropdown-${col.replace(' ', '')}" style="display:none;">
+                                             <div class="filter-division" onclick="stopPropagationdouble(event)" id="filterDropdown-${col.replace(/\s+/g, '') }" style="display:none;">
                                                <div class="dropdown-content">
-                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="asc">
+                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(/\s+/g, '') }" data-order="asc">
                                                    <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                  </div>
-                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(' ', '')}" data-order="desc">
+                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col.replace(/\s+/g, '') }" data-order="desc">
                                                    <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                  </div>
                                                  <div class="dropdown-item fafilter" onclick="toggleFilterDouble('${col}','${bodyId}')">
@@ -557,16 +557,16 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                                </div>
                                              </div>
                                           </div>
-                                        <div class="filter-dropdown-double" onclick="stopPropagationdouble(event)" id="filter-double-${col.replace(' ', '') }">
-                                         <select class="filter-type" id="filter-type-${col.replace(' ', '') }">
+                                        <div class="filter-dropdown-double" onclick="stopPropagationdouble(event)" id="filter-double-${col.replace(/\s+/g, '') }">
+                                         <select class="filter-type" id="filter-type-${col.replace(/\s+/g, '') }">
                                             <option value="startsWith">Starts With</option>
                                             <option value="endsWith">Ends With</option>
                                             <option value="like">Between</option>
                                         </select>
-                                        <input type="text" placeholder="Search..." class="filter-input-double form-control form-control-sm" data-column="${col.replace(' ', '') }" />
-                                        <div class="checkbox-container-double" id="checkbox-container-double-${col.replace(' ', '') }"></div>
-                                        <button class="btn btn-success btn-height" onclick="applyfilterdouble('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Apply</button>
-                                        <button class="btn btn-primary btn-height" onclick="ShowEntry('${col}','${bodyId}')" data-column="${col.replace(' ', '') }">Show Entries</button>
+                                        <input type="text" placeholder="Search..." class="filter-input-double form-control form-control-sm" data-column="${col.replace(/\s+/g, '') }" />
+                                        <div class="checkbox-container-double" id="checkbox-container-double-${col.replace(/\s+/g, '') }"></div>
+                                        <button class="btn btn-success btn-height" onclick="applyfilterdouble('${col}','${bodyId}')" data-column="${col.replace(/\s+/g, '') }">Apply</button>
+                                        <button class="btn btn-primary btn-height" onclick="ShowEntry('${col}','${bodyId}')" data-column="${col.replace(/\s+/g, '') }">Show Entries</button>
                                         <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
                                         </div>
                                     </th>`;
@@ -658,23 +658,27 @@ function renderTable(items,bodyId) {
         if (Array.isArray(showButtons) && showButtons.length > 0) {
             buttons = '<td>';
 
+            //if (showButtons.includes('E')) {
+            //    buttons += `<input class="btn btn-primary btn-height mb-1" type="button" onclick="EditData('${item.Code}')" value="Edit"/> `;
+            //}
+
             if (showButtons.includes('E')) {
-                buttons += `<input class="btn btn-primary btn-height mb-1" type="button" onclick="EditData('${item.Code}')" value="Edit"/> `;
+                buttons += ` <button class="btn btn-primary icon-height mb-1"><i aria-hidden="true" class="fa fa-pencil" type="button" onclick="EditData('${item.Code}')" /></i></button> `;
             }
             if (showButtons.includes('D')) {
-                buttons += `<input class="btn btn-danger btn-height mb-1" type="button" onclick="DeleteData('${item.Code}')" value="Delete"/> `;
+                buttons += ` <button class="btn btn-danger icon-height mb-1"><i aria-hidden="true" class="fa fa-trash" type="button" onclick="DeleteData('${item.Code}')" /></i></button> `;
             }
             if (showButtons.includes('V')) {
-                buttons += `<input class="btn btn-info btn-height" type="button" onclick="ViewData('${item.Code}')" value="View"/> `;
+                buttons += `<button class="btn btn-info icon-height mb-1"> <i aria-hidden="true" class="fa fa-eye" type="button" onclick="ViewData('${item.Code}')" value="View"/></i></button> `;
             }
             if (showButtons.includes('VE')) {
-                buttons += `<input class="btn btn-success btn-height mb-1" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/> `;
+                buttons += `<button class="btn btn-success icon-height mb-1"><i class="fa fa-check" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/></i></button> `;
             }
             if (showButtons.includes('A')) {
-                buttons += `<input class="btn btn-warning btn-height" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/> `;
+                buttons += `<button class="btn btn-warning icon-height mb-1"><i class="fa fa-check-square-o" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/></i></button> `;
             }
             if (showButtons.includes('M')) {
-                buttons += `<input class="btn btn-info btn-height" type="button" onclick="MoreData('${item.Code}')" value="More.."/> `;
+                buttons += `<button class="btn btn-info icon-height mb-1"><i class="" type="button" onclick="MoreData('${item.Code}')" value="..."/></i></button> `;
             }
 
             buttons += '</td>';

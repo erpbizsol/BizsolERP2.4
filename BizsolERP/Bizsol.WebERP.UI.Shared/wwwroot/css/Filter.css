@@ -17,30 +17,6 @@ th {
     margin: 5px 0;
 }
 
-.filter-dropdown input[type="text"] {
-    width: calc(100% - 20px);
-    padding: 5px;
-    margin-bottom: 10px;
-}
-
-/*table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-table, th, td {
-    border: 1px solid black;
-}
-
-th, td {
-    padding: 8px;
-    text-align: left;
-}
-
-th {
-    background-color: #f2f2f2;
-}*/
-
 .fa-filter {
     cursor: pointer;
 }
@@ -49,6 +25,7 @@ th {
     display: flex;
     flex-direction: column;
     color: #0f0909;
+    padding: 5px 0;
 }
 
 .checkbox-container label {
@@ -64,6 +41,7 @@ th {
 .toggle-icon {
     cursor: pointer;
     margin-right: 5px;
+    color:#000;
 }
 
 .nested-checkbox {
@@ -74,12 +52,10 @@ th {
 .filter-dropdown {
     display: none;
     position: absolute;
-    background-color: white;
+    background-color: #eff1f5;
     border: 1px solid #ddd;
     padding: 15px;
-    top: 32px;
-    right: -62px;
-    left: -12px;
+    top: 26px;
     z-index: 1;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     border-radius: 4px;
@@ -138,6 +114,7 @@ i:hover {
     z-index: 1;
     padding: 8px;
     width: 215px;
+    top: 26px;
 }
 
 .filter-dropdown-double label {
@@ -220,11 +197,11 @@ i:hover {
     margin-right: 3px;
 }*/
 
-.paginator-btn:disabled {
+/*.paginator-btn:disabled {
     background-color: #355677;
     color: #a9a9a9;
     cursor: not-allowed;
-}
+}*/
 .pageSize {
     padding: 3px;
     margin-top: 5px;
@@ -236,8 +213,8 @@ i:hover {
 
 .dropdown-content {
     position: absolute;
-    top: 12px;
-    right: -47px;
+    top: 13px;
+    right: -72px;
     background-color: #eff1f5;
     min-width: 150px;
     box-shadow: 0px 8px 16px rgb(34 34 34 / 20%);
