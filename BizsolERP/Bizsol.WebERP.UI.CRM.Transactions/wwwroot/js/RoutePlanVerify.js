@@ -23,6 +23,8 @@ function GetUserWiseRoutePlanDetails() {
                 "Status": 'center',
                 //"Closed": 'center',
             };
+            const pendingRows = response.filter(item => item.Status === 'Pending');
+            MultiRoutePlanCodes = pendingRows.map(item => item.Code);
             const updatedResponse = response.map(item => ({
                 ...item,
                 Action: `<button class="btn btn-success btn-sm" title="Verify" onclick="Verify('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
@@ -30,7 +32,10 @@ function GetUserWiseRoutePlanDetails() {
                
             }));
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
-             MultiRoutePlanCodes = response.map(item => item.Code);
+            if (MultiRoutePlanCodes.length > 0) {
+                VerifyAll();
+            }
+            //MultiRoutePlanCodes = response.map(item => item.Code);
         } else {
             console.error("No valid data found:", response);
             alert("No data available.");

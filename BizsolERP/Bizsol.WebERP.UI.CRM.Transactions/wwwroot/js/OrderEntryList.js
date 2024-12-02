@@ -1,12 +1,66 @@
 ﻿import { OrderEntryListService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/OrderEntryListService.js';
-
+var baseUrl = `${window.location.protocol}//${window.location.host}`;
 $(document).ready(function () {
     $("#ERPHeading").text("Order Entry List");
     GetOrderStatusList();
     GetUserNameList();
-
     highlightSelectedDates();
+    const order = {
+        VisitMaster_Code: '',
+        Code: '',
+        ButtonStatus: 'UnVerified'
+    };
+    manageEditButton(order);
+    $('#editButton').on('click', function () {
+        openEditVisitMaster(order.VisitMaster_Code, order.Code);
+    });
+
+    $('#btnShow').on('click', function () {
+        var FromDate = $('#txtFromDate').val();
+        var ToDate = $('#txtToDate').val();
+        var UserName = $('#ddlUserName').val();
+        var OrderStatus = $('#ddlOrderStatus').val();
+        if (typeof $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null) {
+            $('#txtFromDate').focus();
+        }
+        if (typeof $('#txtToDate').val() === 'undefined' || $('#txtToDate').val() === '' || $('#txtToDate').val() === null) {
+            $('#txtToDate').focus();
+        }
+        if ($('#ddlUserName').val() === '') {
+            $('#ddlUserName').focus();
+        }
+        if ($('#ddlOrderStatus').val() === '') {
+            $('#ddlOrderStatus').focus();
+        }
+        else {
+            GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus);
+        }
+    });
+    $('#txtFromDate').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtToDate").focus();
+        }
+    });
+    $('#txtToDate').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#ddlUserName").focus();
+        }
+    });
+    $('#ddlUserName').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#ddlOrderStatus").focus();
+        }
+    });
+    $('#ddlOrderStatus').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#btnShow").focus();
+        }
+    });
 });
+function manageEditButton(order) {
+    const isEnabled = order.ButtonStatus === 'UnVerified';
+    $('#editButton').prop('disabled', !isEnabled);
+}
 function setupDateInputFormatting() {
     $('#txtFromDate').on('input', function () {
         let value = $(this).val().replace(/[^\d]/g, '');
@@ -83,36 +137,38 @@ function convertDateFormat(dateString) {
     return `${day} - ${monthAbbreviation} - ${year}`;
 }
 
-function GetRouteDataFromOrderEntry() {
-    let FromDate = convertDateFormat($('#txtFromDate').val());
-    let ToDate = convertDateFormat($('#txtToDate').val());
-    let UserName = $('#ddlUserName').val();
-    let OrderStatus = $('#ddlOrderStatus').val();
+function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
+    //let FromDate = convertDateFormat($('#txtFromDate').val());
+    //let ToDate = convertDateFormat($('#txtToDate').val());
+    //let UserName = $('#ddlUserName').val();
+    //let OrderStatus = $('#ddlOrderStatus').val();
 
-    if (!FromDate || !ToDate || !UserName || !OrderStatus) {
-        alert('Please fill all the fields correctly.');
-        return;
-    }
+    //if (!FromDate || !ToDate || !UserName || !OrderStatus) {
+    //    alert('Please fill all the fields correctly.');
+    //    return;
+    //}`````
     OrderEntryListService.GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus).then(function (response) {
 
         if (response && Array.isArray(response) && response.length > 0) {
             const stringFilterColumn = ["Verified By", "Visit Type", "City Name", "State Name", "Remarks", "Dealer Name", "IsVerify"];
-            const numericFilterColumn = [];
+            const numericFilterColumn = ["Total Order Qty MR", "Basic Rate", "Final Amount", "Final Rate"];
             const dateFilterColumn = ["Date", "Verified On"];
             const button = false;
-            const stringDoubleFilterColumn = ["Total Order Qty MR", "Basic Rate", "Final Amount","Final Rate"];
+            const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = ["Code", "VisitMaster_Code", "CheckIn", "UserName", "Verified", "Closed", "OtherCharges", "ButtonStatus", "EditAllow", "DeleteAllow", "RejectedBy", "RejectedOn", "Reason", "VerifiedOn", "Order Type", "Total Amount", "Total Order Qty","Total Order Qty PC"];
             const ColumnAlignment = {
-                "Total Amount": 'right',
-                "Total Order Qty": 'right',
+                "Basic Rate": 'right',
+                "Total Order Qty MR": 'right',
+                "Final Amount": 'right',
+                "Final Rate": 'right',
                 "Date": 'center',
                 "Verified": 'center',
                 "Closed": 'center',
             };
             const updatedResponse = response.map(item => ({
                 ...item,
-                Action: `<button class="btn btn-info btn-sm" title="Edit" onclick="Edit('${item.Code}')"><i class="fa-solid fa-pencil"></i></button>
+                Action: `<button class="btn btn-info btn-sm" title="Edit" onclick="openEditVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa-solid fa-pencil"></i></button>
                 <button class="btn btn-info btn-sm" title="View" onclick="View('${item.Code}')"><i class="fa-regular fa-eye"></i></button>
                 <button class="btn btn-danger btn-sm" title="Delete" onclick="Delete('${item.Code}')"><i class="fa-regular fa-circle-xmark"></i></button>
                 <button class="btn btn-success btn-sm" title="Verified" onclick="Verify('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>`
@@ -162,10 +218,18 @@ function GetUserNameList() {
         console.error('Error fetching order status list:', error);
     });
 }
+function openEditVisitMaster(VisitMaster_Code, Code) {
+    const visitMasterCode = window.btoa(VisitMaster_Code);
+    const routePlanMasterCode = window.btoa(Code);
+    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?VisitMaster_Code=" + visitMasterCode + "&Code=" + routePlanMasterCode + "&VistMode=Edit";
+}
+function encodeHash(value) {
+    return btoa(value); 
+}
 
 window.validateDate = validateDate;
 window.highlightSelectedDates = highlightSelectedDates;
 window.GetRouteDataFromOrderEntry = GetRouteDataFromOrderEntry;
 window.GetOrderStatusList = GetOrderStatusList;
-window.GetUserNameList=GetUserNameList;
-
+window.GetUserNameList = GetUserNameList;
+window.openEditVisitMaster = openEditVisitMaster;
