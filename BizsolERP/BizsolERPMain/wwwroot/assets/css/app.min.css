@@ -3442,14 +3442,14 @@ body[data-layout=horizontal][data-layout-size=boxed] .navbar-header {
     background: #5156be
 }
 
-    .swal2-progress-steps .swal2-progress-step.swal2-active-progress-step {
-        background: #5156be
-    }
+.swal2-progress-steps .swal2-progress-step.swal2-active-progress-step {
+    background: #5156be
+}
 
-        .swal2-progress-steps .swal2-progress-step.swal2-active-progress-step ~ .swal2-progress-step,
-        .swal2-progress-steps .swal2-progress-step.swal2-active-progress-step ~ .swal2-progress-step-line {
-            background: rgba(81, 86, 190, .3)
-        }
+.swal2-progress-steps .swal2-progress-step.swal2-active-progress-step ~ .swal2-progress-step,
+.swal2-progress-steps .swal2-progress-step.swal2-active-progress-step ~ .swal2-progress-step-line {
+    background: rgba(81, 86, 190, .3)
+}
 
 .swal2-progress-steps .swal2-progress-step-line {
     background: #5156be
@@ -5935,6 +5935,7 @@ table, th, td, tr {
     background-color: #e7e3e3 !important;
     opacity: 0.5 !important;
 }
+
 /*======== Tab-Section Start ========*/
 .tab-section .tab-content {
     color: #000;
@@ -6014,3 +6015,51 @@ table, th, td, tr {
     }
 
 /*======== Tab Section End ========*/
+
+/*======== Modal Start ========*/
+
+.modal-content {
+    border-radius: 5px !important;
+    border: none;
+    width: 100%;
+}
+
+.modal-content-width-sm {
+    width: 75%;
+    margin: 0 auto;
+}
+
+.modal-header {
+    background-color: #275481;
+    border-top-left-radius: 4px !important;
+    border-top-right-radius: 4px !important;
+    color: #fff;
+    padding: 10px 20px !important;
+    border: none;
+}
+
+.modal-close {
+    border: none;
+    border-radius: 5px;
+    padding: 0px 0px;
+    font-size: 20pt;
+    height: 25px;
+    width: 25px;
+    line-height: 0.4;
+}
+
+.modal-footer {
+    border-top: none !important;
+}
+
+.modal {
+    --bs-modal-margin: 0 !important;
+    padding: 9px;
+    margin-top: 4rem;
+}
+
+.modal-title {
+    text-align: center;
+    color: #fff;
+    font-family: arial, sans-serif;
+}

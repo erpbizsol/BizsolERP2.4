@@ -465,8 +465,9 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                               </div>
                                             </div>
                                             <div class="filter-dropdown" id="filter-${col.replace(/\s+/g, '') }">
-                                            <input type="text" placeholder="Search..." class="filter-input" data-column="${col.replace(/\s+/g, '') }" />
+                                            <input type="text" placeholder="Search..." class="filter-input form-control form-control-sm" data-column="${col.replace(/\s+/g, '') }" />
                                             <div class="checkbox-container" id="checkbox-container-${col.replace(/\s+/g, '') }"></div>
+                                            <hr>
                                             <button class="btn btn-success btn-height" onclick="applyStringFilters('${col}','${bodyId}')" data-column="${col.replace(/\s+/g, '') }">apply</button>
                                             <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
                                             </div>
