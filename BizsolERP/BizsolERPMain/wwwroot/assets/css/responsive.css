@@ -9,10 +9,14 @@
     }
 
     .main-content {
-        background-size: contain !important; 
-        background-position: top !important; /* Adjust the focus point */
+/*        background-size: contain !important; */
+        background-position: top !important; 
         height: auto;
-        min-height: 50vh !important;
+    }
+
+
+    .modal-content-width-sm {
+        width: 100%;
     }
 }
 

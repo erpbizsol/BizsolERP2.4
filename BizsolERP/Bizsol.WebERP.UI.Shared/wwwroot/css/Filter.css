@@ -25,7 +25,17 @@ th {
     display: flex;
     flex-direction: column;
     color: #0f0909;
-    padding: 5px 0;
+    padding: 6px 0;
+    max-height: 181px;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.checkbox-container, hr {
+    margin: 0.4rem 0;
+    border: 0;
+    /*opacity: .25;*/
+    border-top: none !important;
 }
 
 .checkbox-container label {
