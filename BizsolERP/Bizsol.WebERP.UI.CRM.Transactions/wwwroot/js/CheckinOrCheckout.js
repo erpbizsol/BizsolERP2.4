@@ -1,7 +1,9 @@
 ﻿
+//import { BizSolGeoLocation } from '/_content/Bizsol.WebERP.UI.Shared/js/BizSolGeoLocation.js';
+import { BizSolGeoLocation } from '../../Bizsol.WebERP.UI.Shared/js/BizSolGeoLocation.js';
 
-import { BizSolGeoLocation } from '/_content/Bizsol.WebERP.UI.Shared/js/BizSolGeoLocation.js';
-import { CheckinOrCheckOutService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/CheckinOrCheckOutService.js';
+//import { CheckinOrCheckOutService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/CheckinOrCheckOutService.js';
+import { CheckinOrCheckOutService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CheckinOrCheckOutService.js';
 
 function GetDayWiseCheckInOutList() {
     $("#ERPHeading").text("Day Wise Check In/Check Out");

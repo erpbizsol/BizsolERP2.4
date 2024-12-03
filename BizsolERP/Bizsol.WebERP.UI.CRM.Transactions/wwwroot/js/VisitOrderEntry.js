@@ -1,4 +1,4 @@
-﻿import { VisitOrderEntryService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
+﻿import { VisitOrderEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
 
 var options = {
     enableHighAccuracy: true,

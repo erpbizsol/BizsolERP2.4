@@ -12,7 +12,7 @@ const CRMDashboardService = {
             }
         );
     },
-    GetCRMFixedParameterConfig: function GetCRMFixedParameterConfig(DetailKey, MarketingManMaster_Code, AccountDesp, OnlyToday) {
+    GetCRMFixedParameterConfig: function GetCRMFixedParameterConfig() {
         let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
         const url = `${UrlService.API_ENDPOINT_CRM_CONFIG}/GetCRMFixedParameterConfig`;
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(

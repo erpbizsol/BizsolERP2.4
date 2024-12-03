@@ -17,6 +17,7 @@ namespace Bizsol.WebERP.UI.CRM.Transactions.Areas.CRMTransactions.Controllers
         {
             return View();
         }
+        //[HttpGet]
         [HttpPost]
         [Route("GetLocation")]
         public async Task<IActionResult> GetLocation([FromQuery] string latlng)

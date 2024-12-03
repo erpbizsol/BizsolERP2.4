@@ -17,7 +17,8 @@ const BizSolGeoLocation = {
                     var result = {};
                     result.latitude = response.coords.latitude;
                     result.longitude = response.coords.longitude;
-                    var url = `/GetLocation?latlng=${result.latitude},${result.longitude}`;
+                    //var url = `${window.AppBaseURL}/GetLocation?latlng=${result.latitude},${result.longitude}`;
+                    var url = `${sessionStorage.getItem('AppBaseURL')}/GetLocation?latlng=${result.latitude},${result.longitude}`;
                     return promiseAjaxCallApi.CallAPI('POST', url, "").then(
                         function (value) {
                             Address = JSON.stringify(value.results[0].formatted_address);
