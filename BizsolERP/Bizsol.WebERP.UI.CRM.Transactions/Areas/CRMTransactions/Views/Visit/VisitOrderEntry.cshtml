@@ -367,7 +367,7 @@
                             <div class="accordion-body text-muted">
                             <div class="col-md-12 form-group">
                                 <div class="table-wrapper" style="overflow: auto;">
-                                    <table id="tblRoutePlan" class="fl-table" style="width: 100%">
+                                    <table id="tblPendingOrder" class="fl-table" style="width: 100%">
                                         <thead>
                                             <tr>
                                                 <th class="lead-Date text-sm-center">AccountDesp</th>
@@ -400,8 +400,8 @@
                                     <div class="form-group col-md-3">
                                         <div class="input-group">
                                             <input type="text" class="form-control  form-control-sm" placeholder="Search ..."
-                                                   aria-label="Search Result">
-                                            <button class="btn btn-primary" type="submit">
+                                                   aria-label="Search Result" id="txtSalesSearch">
+                                        <button class="btn btn-primary" type="submit" id="btnSalesSearch">
                                                 <i class="mdi mdi-magnify"></i>
                                             </button>
                                         </div>
@@ -409,7 +409,7 @@
                                 </div>
                             <div class="col-md-12 form-group">
                                 <div class="table-wrapper" style="overflow: auto;">
-                                    <table id="tblRoutePlan" class="fl-table" style="width: 100%">
+                                    <table id="tblSizeWiseSales" class="fl-table" style="width: 100%">
                                         <thead role="rowgroup">
                                             <tr role="row">
                                                 <th class="lead-Date width_cust" role="columnheader">ItemName</th>
@@ -438,7 +438,7 @@
                             <div class="accordion-body text-muted  overflow-auto">
                             <div class="col-md-12 form-group">
                                 <div class="table-wrapper" style="overflow: auto;">
-                                    <table id="tblRoutePlan" class="fl-table" style="width: 100%">
+                                    <table id="tblPaymentHistory" class="fl-table" style="width: 100%">
                                     <thead role="rowgroup">
                                         <tr role="row">
                                             <th class="lead-Date width_cust text-sm-center w-25" role="columnheader">OrderNo</th>
@@ -486,7 +486,7 @@
                             <div class="accordion-body text-muted">
                                 
                                     <div class="row colPhn">
-                                        <div class="col-md-3">
+                                        <div class="col-md-2">
                                             <div class="form-group">
                                             <input type="button" name="btnShow" id="btnShow" class="btn btn-primary btn-sm waves-effect waves-light" value="Show Stock" onclick="return GetAllOrderBookingData();" />
 
@@ -497,8 +497,8 @@
 
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
+                                        <div class="col-md-3">
+                                            <div class="form-group" id="divShowSizeButton">
                                                 
                                                 <div class="form-check form-switch">
                                                     <input class="form-check-input"
@@ -542,12 +542,36 @@
                                         </thead>
                                         <tbody id="Orderdata" role="rowgroup"></tbody>
                                         <tfoot>
-                                            <tr role="row" id="trTotal">
+                                           @*  <tr role="row" id="trTotal" class="text-sm-center">
 
-                                                <td>
-                                                    <input id="btnAddNewRow" type="button" class="submit-btn btn btn-primary btn-sm waves-effect waves-light" value="Add New Row" onclick="addOrderBookingFiveRows();" style="padding: 0.3rem 1.19rem !important;" />
+                                                <td style="text-align: right;"></td>
+                                                <td style="text-align: right;"></td>
+                                                <td style="text-align: right;"></td>
+                                                <td style="text-align: right;"></td>
+                                                <td style="text-align: right;"></td>
+                                                <td style="text-align: right;"></td>
+                                                <td style="text-align: right;"></td>
+                                                <td style="text-align: right;" id="txtStockTotal"></td>
+                                                <td style="text-align: right;" id="txtOrderQtyPCTotal"></td>
+                                                <td style="text-align: right;" id="txtOrderQtyMTTotal"></td>
+                                                <td style="text-align: right;" id="txtOrderQtyMTRTotal"></td>
+                                                <td style="text-align: right;" ></td>
+                                                <td style="text-align: right;" id="txtOrderQtyTotal"></td>
+                                                <td style="text-align: right;"></td>
+                                                <td style="text-align: right;"></td>
+                                                <td style="text-align: right;"></td>
+                                                <td style="text-align: right;" id="txtAmountTotal"></td>
+                                                <td style="text-align: right;"></td>
+                                                <td style="text-align: right;"></td>
+                                                <td style="text-align: right;"></td>
+                                            </tr> *@
+                                            <tr role="row" id="trAddBtn">
+
+                                                <td style="text-align: left;">
+                                                    <input id="btnAddNewRow" type="button" class="submit-btn btn btn-primary btn-sm waves-effect waves-light"  value="Add New Row"  />
                                                 </td>
                                              </tr>
+
                                         </tfoot>
                                     </table>
                                </div>
@@ -557,23 +581,23 @@
                                     <div class="col-md-3 colPhn">
                                         <label for="txtDeliveryDays" class="col-form-label-sm fw-bold">Delivery Days <span class="universal">*</span></label>
                                         <div class="form-group">
-                                            <input type="number" class="box_border form-control form-control-sm" id="txtDeliveryDays" value="" name="txtDeliveryDays" placeholder="Delivery Days" autocomplete="off" maxlength="3" required>
+                                            <input type="number" class="box_border form-control form-control-sm" id="txtDeliveryDays" value="" name="txtDeliveryDays" placeholder="" autocomplete="off" maxlength="3" required>
                                         </div>
                                     </div>
                                     <div class="col-md-2 colPhn">
                                         <label for="txtFreightType" class="col-form-label-sm fw-bold">Freight Type <span class="universal">*</span></label>
                                         <div class="form-group">
-                                            <input type="text" list="listFreightType" class="box_border form-control form-control-sm" onclick="this.value=''" id="txtFreightType" name="txtFreightType" value="" placeholder="Freight Type" autocomplete="off" number maxlength="250" required />
+                                            <input type="text" list="listFreightType" class="box_border form-control form-control-sm" onclick="this.value=''" id="txtFreightType" name="txtFreightType" value="" placeholder="" autocomplete="off" number maxlength="250" required />
 
                                         </div>
 
                                     </div>
                                     @* @if (ViewBag.ShowPaymentTermsInDirectOrder == "Y")
                                     { *@
-                                        <div class="col-md-2 colPhn">
+                                        <div class="col-md-2 colPhn" id="divShowFreight">
                                         <label for="txtlistFreight" class="col-form-label-sm fw-bold">Freight </label>
                                             <div class="form-group">
-                                                <input type="text" list="listFType" class="box_border form-control form-control-sm" id="txtlistFreight" onclick="this.value=''" name="txtlistFreight" value="@ViewBag.Freight" placeholder="Freight" autocomplete="off" maxlength="250" required>
+                                        <input type="text" list="listFreight" class="box_border form-control form-control-sm" id="txtlistFreight" onclick="this.value=''" name="txtlistFreight" value="" placeholder="" autocomplete="off" maxlength="250" required>
                                             </div>
 
                                         </div>
@@ -581,46 +605,55 @@
 
                                    @*  @if (ViewBag.ShowDeliveryLocationInOrder == "Y" || ViewBag.ShowDeliveryLocationInOrder == "M")
                                     { *@
-                                        <div class="col-md-3 colPhn">
+                                        <div class="col-md-3 colPhn" id="divDeliveryLocation">
                                         <label for="txtDeliveryLocation" class="col-form-label-sm fw-bold">Delivery Location<span class="universal"></span></label>
                                             <div class="form-group">
-                                                <input type="text" list="listDeliveryAddress" class="box_border form-control form-control-sm" id="txtDeliveryLocation" name="txtDeliveryLocation" placeholder="Delivery Location" value="@ViewBag.DeliveryLocation" onblur="ValidationDatalistForDelivaryLocation(this.value,'listDeliveryAddress');" autocomplete="off" maxlength="500" required>
+                                        <input type="text" list="listDeliveryLocation" class="box_border form-control form-control-sm" id="txtDeliveryLocation" name="txtDeliveryLocation" placeholder="" value="" onblur="" autocomplete="off" maxlength="500" required>
                                             </div>
                                         </div>
                                     @* }
                                     @if (ViewBag.ShowCreditDaysForDC == "Y")
                                     { *@
-                                        <div class="col-md-3 colPhn">
+                                        <div class="col-md-3 colPhn" id="divCreditDays">
                                         <label for="txtCreditDaysForDC" class="col-form-label-sm fw-bold">Credit Days<span class="universal"></span></label>
                                             <div class="form-group">
-                                                <input type="number" class="box_border form-control form-control-sm" id="txtCreditDaysForDC" name="txtCreditDaysForDC" placeholder="Credit Days" value="@ViewBag.CreditDays" autocomplete="off" maxlength="3" required>
+                                                <input type="number" class="box_border form-control form-control-sm" id="txtCreditDaysForDC" name="txtCreditDaysForDC" placeholder="" value="" autocomplete="off" maxlength="3" required>
                                             </div>
                                         </div>
                                     @* }
 
                                     @if (ViewBag.ShowMRateUnit == "Y")
                                     { *@
-                                        <div class="col-md-3 colPhn">
+                                        <div class="col-md-3 colPhn" id="divRateUnit">
                                         <label for="txtMRateUnit" class="col-form-label-sm fw-bold">Rate Unit <span class="universal">*</span></label>
                                             <div class="form-group">
-                                                <input type="text" list="listMRateUnit" class="box_border form-control form-control-sm" id="txtMRateUnit" name="txtMRateUnit" value="@ViewBag.MRateUnit" placeholder="Rate Unit" autocomplete="off" number maxlength="50" required>
+                                                <input type="text" list="listMRateUnit" class="box_border form-control form-control-sm" id="txtMRateUnit" name="txtMRateUnit" value="" placeholder="" autocomplete="off" number maxlength="50" required>
 
                                             </div>
                                         </div>
+
+                                <div class="col-md-3 colPhn" id="divZone">
+                                    <label for="txtZone" class="col-form-label-sm fw-bold">Zone <span class="universal">*</span></label>
+                                    <div class="form-group">
+                                        <input type="text" list="listZone" class="box_border form-control form-control-sm" id="txtZone" name="txtZone" value="" placeholder="" autocomplete="off" number maxlength="50" required>
+
+                                    </div>
+                                </div>
+
                                    @*  }
 
 
 
                                     @if (ViewBag.AskOtherCharges == "Y")
                                     { *@
-                                        <div class="col-md-1 colPhn">
+                                        <div class="col-md-1 colPhn" id="divBasicRate">
                                         <label for="txtBasicRateLock" class="col-form-label-sm fw-bold">Basic Rate<span class="universal"></span></label>
                                             <div class="form-group">
                                                 <input type="text" class="box_border form-control form-control-sm" id="txtBasicRateLock" value="0" readonly>
                                             </div>
                                         </div>
 
-                                        <div class="col-md-1 colPhn">
+                                <div class="col-md-1 colPhn" id="divselectSign">
                                         <label class="col-form-label-sm fw-bold">Discount<span class="universal"></span></label>
                                             <div class="form-group">
                                         <select id="selectSign" onchange="ValidateDiscountLimit();calFinalAmt();" name="selectSign" class="box_border form-control form-control-sm sizewidth">
@@ -630,13 +663,13 @@
                                             </div>
                                         </div>
 
-                                        <div class="col-md-1 colPhn">
-                                        <label for="txtDeliveryLocation" class="col-form-label-sm fw-bold">Amount<span class="universal"></span></label>
+                                <div class="col-md-1 colPhn" id="divAmt">
+                                    <label for="txtAmt" class="col-form-label-sm fw-bold">Amount<span class="universal"></span></label>
                                             <div class="form-group">
-                                            <input type="number" onkeypress="return numberdecimalOnly(event); calFinalAmt();" onfocusout="ValidateDiscountLimit();calFinalAmt();" ID="txtAmt" name="txtAmt" class="box_border form-control form-control-sm number" autocomplete="off" value="0" placeholder="Amount " />
+                                            <input type="number" onkeypress="return numberdecimalOnly(event); calFinalAmt();" onfocusout="" ID="txtAmt" name="txtAmt" class="box_border form-control form-control-sm number" autocomplete="off" value="0" placeholder=" " />
                                             </div>
                                         </div>
-                                        <div class="col-md-2 colPhn">
+                                        <div class="col-md-2 colPhn" id="divFinalRate">
                                         <label for="txtDeliveryLocation" class="col-form-label-sm fw-bold">Final Rate<span class="universal"></span></label>
                                             <div class="form-group">
                                             <input type="text" onkeypress="return numberdecimalOnly(event);" ID="txtAmtFinal" name="txtAmtFinal" class="box_border form-control form-control-sm number" autocomplete="off" value="0" readonly />
@@ -664,7 +697,7 @@
                 <div class="col-md-12 colPhn">
                     <label for="txtRemarks" class="col-form-label-sm fw-bold">Remarks </label>
                     <div class="form-group">
-                        <input type="text" class="box_border form-control form-control-sm" id="txtRemarks" value="@ViewBag.Remarks" name="txtRemarks" placeholder="Remarks" autocomplete="off" maxlength="250">
+                        <input type="text" class="box_border form-control form-control-sm" id="txtRemarks" value="" name="txtRemarks" placeholder="Remarks" autocomplete="off" maxlength="250">
 
                     </div>
                 </div>
@@ -690,10 +723,16 @@
 </div>
 <div class="row">
     <div class="col-md-12 colPhn">
-        <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-sm waves-effect waves-light" />
+        <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-sm waves-effect waves-light" onclick="SaveData();" />
         <input type="button" name="btnCheckOut" id="btnCheckOut" value="Check Out" class="btn btn-primary btn-sm waves-effect waves-light" />
         <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-sm waves-effect waves-light" />
     </div>
 </div>
 <datalist id="listdealer"></datalist>
 <datalist id="listItem"></datalist>
+<datalist id="listItemSize"></datalist>
+<datalist id="listItemThickness"></datalist>
+<datalist id="listDeliveryLocation"></datalist>
+<datalist id="listFreight"></datalist>
+<datalist id="listFreightType"></datalist>
+<datalist id="listZone"></datalist>
