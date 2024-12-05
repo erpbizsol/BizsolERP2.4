@@ -54,8 +54,7 @@ function GetNestedMarketingManList() {
 
             $('#ddlSalesPersonList')[0].innerHTML = option;
         } else {
-            $('#ErrorMsg').removeClass('invisible');
-            $('#ErrorMsg').addClass('visible');
+            toastr.error('No Data Found')
             return false;
         }
     });
@@ -104,6 +103,7 @@ function GetVisitMasterList(FromDate, ToDate, SalesPerson) {
     var toDate = convertDateFormat(ToDate);
     VisitOrderEntryService.GetVisitMasterList(fromDate, toDate, SalesPerson).then(function (response) {
         if (response.length > 0) {
+            $("#txtTable").show();
             const StringFilterColumn = ["Created By", "Visit Type", ];
             const NumericFilterColumn = ["Total Amount","Total Order Qty"];
             const DateFilterColumn = ["Date"];
@@ -144,6 +144,7 @@ function GetVisitMasterList(FromDate, ToDate, SalesPerson) {
         }
         else {
             toastr.error('No Data Found')
+            $("#txtTable").hide();
         }
     });
 }
@@ -295,9 +296,8 @@ function SaveNotVisited() {
     var reason = $("#txtReason").val();
     var code = $("#txtCode").val();
     if (reason == "") {
-            alert('Please enter a reason before proceeding.');
-            toastr.error(response.Msg);
-            return;
+        toastr.error('Please enter a reason before procceding.');
+        $("#txtReason").focus();
     } else {
         VisitOrderEntryService.NotVisitedRoutePlan(code, reason).then(function (response) {
             if (response.Status === 'Y') {
