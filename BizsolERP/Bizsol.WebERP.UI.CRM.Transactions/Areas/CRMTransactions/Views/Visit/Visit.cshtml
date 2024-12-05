@@ -5,14 +5,7 @@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/Visit.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
 <style>
-    #btnShow
-    {
-        width: 58% !important;
-        height: 29px;
-        text-align: center !important;
-        padding: 0px;
-    }
-
+    
     .highlighted-date {
         background-color: #3926B6; 
         color: white; 
@@ -63,7 +56,7 @@
                     <datalist id="ddlSalesPersonList"></datalist>
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
-                    <button type="button" id="btnShow" class="btn btn-primary">Show</button>
+                    <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
                 </div>
             </div>
     </div>
@@ -73,7 +66,7 @@
     <table id="Visit" class="fixed-width-table table">
         <thead id="table-header">
         </thead>
-        <tbody id="table-body">
+        <tbody id="table-body" class="filter-class">
         </tbody>
     </table>
 </div>

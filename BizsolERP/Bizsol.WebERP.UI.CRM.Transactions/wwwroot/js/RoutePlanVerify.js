@@ -1,4 +1,4 @@
-﻿import { RoutePlanMasterService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/RoutePlanService.js';
+﻿import { RoutePlanMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/RoutePlanService.js';
 
 let MultiRoutePlanCodes = [];
 $(document).ready(function () {
@@ -25,8 +25,8 @@ function GetUserWiseRoutePlanDetails() {
             };
             const updatedResponse = response.map(item => ({
                 ...item,
-                Action: `<button class="btn btn-success btn-sm" title="Verify" onclick="Verify('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
-                <button class="btn btn-danger btn-sm" title="Reject" onclick="Reject('${item.Code}')"><i class="fa-regular fa-circle-xmark"></i></button>`
+                Action: `<button class="btn btn-success btn-sm icon-height" title="Verify" onclick="Verify('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
+                <button class="btn btn-danger btn-sm icon-height" title="Reject" onclick="Reject('${item.Code}')"><i class="fa-regular fa-circle-xmark"></i></button>`
                
             }));
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);

@@ -55,7 +55,7 @@
                 <div class="d-flex">
                     <!-- LOGO -->
                     <div class="navbar-brand-box">
-                        <a href="index.html" class="logo logo-dark">
+                        <a href="https://bizsol.in" class="logo logo-dark">
                             <span class="logo-sm">
                                 <img src="~/assets/images/logo-full.jpeg" alt="" height="30">
                             </span>
@@ -64,7 +64,7 @@
                             </span>
                         </a>
 
-                        <a href="index.html" class="logo logo-light">
+                        <a href="https://bizsol.in" class="logo logo-light">
                             <span class="logo-sm">
                                 <img src="~/assets/images/logo-sm.svg" alt="" height="24">
                             </span>
@@ -74,14 +74,16 @@
                         </a>
                     </div>
 
-                    <button type="button" class="btn btn-sm px-3 font-size-16 header-item toggleBtn"
+
+                    <button type="button" class="btn btn-sm px-3 erpHedTextSize header-item toggleBtn"
                             id="vertical-menu-btn">
                         <i class="fa fa-fw fa-bars"></i>
                     </button>
 
-                    <div class="pt-4" style="padding-top: 20px;">
-                        <h4 class="mb-sm-0 font-size-16" id="ERPHeading">Dashboard</h4>
+                    <div class="pt-4" style="padding-top: 25px;">
+                        <h4 class="mb-sm-0 erpHedTextSize" id="ERPHeading">Dashboard</h4>
                     </div>
+
 
                     <!-- App Search-->
                     @*  <form class="app-search d-none d-lg-block" style="padding-top: 19px;">
@@ -96,10 +98,10 @@
 
                 <div class="d-flex">
                     <div class="dropdown d-inline-block d-lg-none ms-2">
-                        <button type="button" class="btn header-item" id="page-header-search-dropdown"
-                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i data-feather="search" class="icon-lg"></i>
-                        </button>
+                        @* <button type="button" class="btn header-item" id="page-header-search-dropdown" *@
+                        @*         data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> *@
+                        @*     <i data-feather="search" class="icon-lg"></i> *@
+                        @* </button> *@
                         <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
                              aria-labelledby="page-header-search-dropdown">
 
@@ -170,7 +172,7 @@
                             1:00
                         </div>
                         <button id="resetBtn" type="button" class="ms-1 resetBTN">
-                            <i class="fas fa-undo"></i>
+                            <i class="fas fa-undo resetIcon"></i>
                         </button>
                     </div>
                     <div class="dropdown d-inline-block">
@@ -184,11 +186,11 @@
                         </button>
                         <div class="dropdown-menu dropdown-menu-end">
                             <!-- item-->
-                            <a class="dropdown-item" href="apps-contacts-profile.html">
+                            <a class="dropdown-item" href="#">
                                 <i class='bx bxs-user align-middle userIcon me-1'></i> <span>Profile</span>
                             </a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="auth-logout.html">
+                            <a class="dropdown-item" href="#" onclick="logoutUser()">
                                 <i class="mdi mdi-logout align-middle me-1 userIcon"></i> <span>Logout</span>
                             </a>
                         </div>
@@ -250,7 +252,7 @@
                         </div>
                     </div>
                     <div class="col-md-8 text-end">
-                        <div><p class="m-0 copyright">Copyright © 2024 <a href="">BizSol Technologies Pvt. Ltd.</a> All rights reserved.</p></div>
+                        <div><p class="m-0 copyright">Copyright © 2024 <a href="https://bizsol.in">BizSol Technologies Pvt. Ltd.</a> All rights reserved.</p></div>
                     </div>
                     @* <div class="col-sm-6">
                         <script>document.write(new Date().getFullYear())</script> © Minia.
@@ -467,8 +469,10 @@
     <script>
         // $(document).ready(function () {
         var authKey = '@Html.Raw(ViewBag.AuthKey)';
-        if (authKey !== '') {
-            sessionStorage.setItem('authKey', authKey);
+       if (authKey !== '') {
+              sessionStorage.setItem('authKey', authKey);
+              sessionStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
+              window.AppBaseURL='@Html.Raw(ViewBag.AppBaseURL)';
         }
         // });
 
@@ -485,6 +489,7 @@
     </script> *@
     <script type="module" src="~/assets/script/menu.js"></script>
     <script type="module" src="~/assets/script/webnotification.js"></script>
+    <script src="~/assets/script/Logout.js"></script>
 
 </body>
 </html>

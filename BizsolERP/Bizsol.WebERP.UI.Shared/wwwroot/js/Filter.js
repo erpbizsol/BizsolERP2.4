@@ -472,8 +472,9 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                               </div>
                                             </div>
                                             <div class="filter-dropdown" id="filter-${col.replace(/\s+/g, '') }">
-                                            <input type="text" placeholder="Search..." class="filter-input" data-column="${col.replace(/\s+/g, '') }" />
+                                            <input type="text" placeholder="Search..." class="filter-input form-control form-control-sm" data-column="${col.replace(/\s+/g, '') }" />
                                             <div class="checkbox-container" id="checkbox-container-${col.replace(/\s+/g, '') }"></div>
+                                            <hr>
                                             <button class="btn btn-success btn-height" onclick="applyStringFilters('${col}','${bodyId}')" data-column="${col.replace(/\s+/g, '') }">apply</button>
                                             <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
                                             </div>
@@ -508,9 +509,9 @@ function renderTableHeader(hiddenColumns,headerId,bodyId,columns, button ,String
                                                 <option value="between">Between</option>
                                             </select>
                                             <div class="filter-inputs">
-                                                <input type="number" id="filter-value-${col.replace(/\s+/g, '') }" class="filter-input" placeholder="Enter value" />
-                                                <input type="number" id="min-value-${col.replace(/\s+/g, '') }" class="filter-input" placeholder="Min value" style="display:none" />
-                                                <input type="number" id="max-value-${col.replace(/\s+/g, '') }" class="filter-input" placeholder="Max value" style="display:none" />
+                                                <input type="number" id="filter-value-${col.replace(/\s+/g, '') }" class="filter-input form-control form-control-sm" placeholder="Enter value" />
+                                                <input type="number" id="min-value-${col.replace(/\s+/g, '') }" class="filter-input form-control form-control-sm" placeholder="Min value" style="display:none" />
+                                                <input type="number" id="max-value-${col.replace(/\s+/g, '') }" class="filter-input form-control form-control-sm" placeholder="Max value" style="display:none" />
                                             </div>
                                             <button class="btn btn-success btn-height" onclick="applyNumericFilter('${col}','${bodyId}')">Apply</button>
                                             <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
@@ -671,22 +672,22 @@ function renderTable(items, bodyId) {
             //}
 
             if (showButtons.includes('E')) {
-                buttons += `<i aria-hidden="true" class="fa fa-pencil btn btn-primary icon-height mb-1" type="button" onclick="EditData('${item.Code}')" /></i> `;
+                buttons += ` <button class="btn btn-primary icon-height mb-1"><i aria-hidden="true" class="fa fa-pencil" type="button" onclick="EditData('${item.Code}')" /></i></button> `;
             }
             if (showButtons.includes('D')) {
-                buttons += `<i aria-hidden="true" class="fa fa-trash btn btn-danger icon-height mb-1" type="button" onclick="DeleteData('${item.Code}')" /></i> `;
+                buttons += ` <button class="btn btn-danger icon-height mb-1"><i aria-hidden="true" class="fa fa-trash" type="button" onclick="DeleteData('${item.Code}')" /></i></button> `;
             }
             if (showButtons.includes('V')) {
-                buttons += `<i aria-hidden="true" class="fa fa-eye btn btn-info icon-height" type="button" onclick="ViewData('${item.Code}')" value="View"/></i> `;
+                buttons += `<button class="btn btn-info icon-height mb-1"> <i aria-hidden="true" class="fa fa-eye" type="button" onclick="ViewData('${item.Code}')" value="View"/></i></button> `;
             }
             if (showButtons.includes('VE')) {
-                buttons += `<i class="fa fa-check btn btn-success icon-height mb-1" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/></i> `;
+                buttons += `<button class="btn btn-success icon-height mb-1"><i class="fa fa-check" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/></i></button> `;
             }
             if (showButtons.includes('A')) {
-                buttons += `<i class="fa fa-check-square-o btn btn-warning icon-height" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/></i> `;
+                buttons += `<button class="btn btn-warning icon-height mb-1"><i class="fa fa-check-square-o" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/></i></button> `;
             }
             if (showButtons.includes('M')) {
-                buttons += `<input class="btn btn-info icon-height" type="button" onclick="MoreData('${item.Code}')" value="..."/> `;
+                buttons += `<button class="btn btn-info icon-height mb-1"><i class="" type="button" onclick="MoreData('${item.Code}')" value="..."/></i></button> `;
             }
 
             buttons += '</td>';
