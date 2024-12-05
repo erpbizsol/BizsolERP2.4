@@ -222,8 +222,8 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
 
             const updatedResponse = response.map(item => {
                 let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${item.ButtonStatus !== 'UnVerified' ? 'disabled' : ''} onclick="openEditVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa-solid fa-pencil"></i></button>
-    <button class="btn btn-info icon-height mb-1" title="View" onclick="openViewVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa-regular fa-eye"></i></button>
-    <button class="btn btn-danger icon-height mb-1" title="Delete" ${item.ButtonStatus !== 'UnVerified' ? 'disabled' : ''} onclick="Delete('${item.Code}')"><i class="fa-regular fa-circle-xmark"></i></button>`;
+                <button class="btn btn-info icon-height mb-1" title="View" onclick="openViewVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa-regular fa-eye"></i></button>
+                <button class="btn btn-danger icon-height mb-1" title="Delete" ${item.ButtonStatus !== 'UnVerified' ? 'disabled' : ''} onclick="Delete('${item.Code}')"><i class="fa-regular fa-circle-xmark"></i></button>`;
 
                 var td_StatusBtn = '';
                 if (item.ButtonStatus == 'Un-Verified') {
@@ -303,17 +303,12 @@ function GetUserNameList() {
 }
 
 function openEditVisitMaster(VisitMaster_Code, Code) {
-    //const visitMasterCode = window.btoa(VisitMaster_Code);
-    //const routePlanMasterCode = window.btoa(Code);
-    //window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?VisitMaster_Code=" + visitMasterCode + "&Code=" + routePlanMasterCode + "&EditMode=Edit";
-
         const VisitMaster_Codes = window.btoa(VisitMaster_Code);
         window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=0&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
 }
 function openViewVisitMaster(VisitMaster_Code, Code) {
-    const visitMasterCode = window.btoa(VisitMaster_Code);
-    const routePlanMasterCode = window.btoa(Code);
-    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?VisitMaster_Code=" + visitMasterCode + "&Code=" + routePlanMasterCode + "&readOnly=View";
+    const VisitMaster_Codes = window.btoa(VisitMaster_Code);
+    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=0&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
 }
 function encodeHash(value) {
     return btoa(value); 

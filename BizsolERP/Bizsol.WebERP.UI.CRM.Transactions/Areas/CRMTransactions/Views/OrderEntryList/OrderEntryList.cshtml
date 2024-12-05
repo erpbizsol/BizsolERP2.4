@@ -41,19 +41,6 @@
     .btn:not(:disabled):not(.disabled) {
         cursor: pointer !important;
     }
-
-    .modal-dialog {
-        width: 100%;
-    }
-
-    .modal-header {
-        background-color: #3f51b5;
-    }
-
-    .modal-title {
-        text-align: center;
-        color: #eef6f2;
-    }
 </style>
 <div class="card">
     <div class="card-body">
@@ -98,7 +85,7 @@
         <div class="modal-content modal-content-width-sm">
             <div class="modal-header">
                 <h5 class="modal-title">Reason</h5>
-                <button type="button" class="btn-close" onclick="CloseModal()" aria-label="Close"></button>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
             </div>
             <div class="modal-body">
 
