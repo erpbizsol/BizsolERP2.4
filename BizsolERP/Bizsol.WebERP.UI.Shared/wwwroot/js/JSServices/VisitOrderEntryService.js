@@ -126,8 +126,54 @@ const VisitOrderEntryService = {
     GetVerifyOrderList: function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `GetVerifyOrderList?DealerName=${DealerName} &SalesPerson=${SalesPerson}&OrderType=${OrderType}&ChkWithOrder=${ChkWithOrder}&UserMaster_Code=${userMasterCode}`;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetVerifyOrderList?DealerName=${DealerName} &SalesPerson=${SalesPerson}&OrderType=${OrderType}&ChkWithOrder=${ChkWithOrder}&UserMaster_Code=${userMasterCode}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetFixedParameterConfiguration: function GetFixedParameterConfiguration() {
+        var URL = UrlService.API_ENDPOINT_FixedParameter + `/GetFixedParameterConfiguration`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetUnVerifiedVisitDetailsReport: function GetUnVerifiedVisitDetailsReport(VisitMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetUnVerifiedVisitDetailsReport?VisitMaster_Code=${VisitMaster_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    VerifyVisitOrder: function VerifyVisitOrder(VisitMaster_Code, Mode) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/VerifyVisitOrderReport?VisitMaster_Code=${VisitMaster_Code}&UserMaster_Code=${userMasterCode}&Mode=${Mode}`;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    RejectVisitOrder: function RejectVisitOrder(VisitMaster_Code, Reason) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/RejectVisitOrderReport?VisitMaster_Code=${VisitMaster_Code}&UserMaster_Code=${userMasterCode}&Reason=${Reason}`;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    UpdateVisitOrderOtherCharges: function UpdateVisitOrderOtherCharges(VisitMaster_Code, OtherChargesOld, OtherChargesNew,Level) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/UpdateVisitOrderDetails_OtherCharges?VisitMaster_Code=${VisitMaster_Code}&OtherChargesOld=${OtherChargesOld}&OtherChargesNew=${OtherChargesNew}&lv=${Level}`;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
             }
