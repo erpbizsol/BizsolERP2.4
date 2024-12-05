@@ -61,6 +61,7 @@
             </div>
     </div>
 </div>
+<div id="txtTable" style="display:none">
 <div class="table-wrapper fixed-height-table">
     <table id="Visit" class="fixed-width-table table">
         <thead id="table-header">
@@ -71,6 +72,8 @@
 </div>
 <div class="paginator" id="paginator-Visit">
 </div>
+</div>
+
 <div class="modal fade" id="ReasonModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -83,7 +86,7 @@
                 <input type="hidden" id="txtCode" class="form-control" value="0"/>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-success btn-sm" onclick="SaveNotVisited()" data-bs-dismiss="modal">OK</button>
+                <button type="button" class="btn btn-success btn-sm" onclick="SaveNotVisited()" >OK</button>
                 <button type="button" class="btn btn-danger btn-sm" onclick="Close()" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>

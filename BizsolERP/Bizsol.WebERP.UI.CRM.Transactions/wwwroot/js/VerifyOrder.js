@@ -1,49 +1,20 @@
 ﻿import { VisitOrderEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
 var baseUrl = `${window.location.protocol}//${window.location.host}`;
+let QtyMTHeader = '';
+let QtyPCHeader = '';
+let QtyMTRHeader = '';
+let ThreeLevelVerification = '';
+let DiscountLimit = '';
+let indx_DiscountCol =15;
+let AskOtherCharges = '';
 $(document).ready(function () {
     $("#ERPHeading").text("Verify Order/Visit");
     GetNestedMarketingManList();
     GetNestedDealerList();
     GetOrderType();
+    GetFixedParameterConfiguration();
     $('#btnShow').on('click', function () {
-        var SalesPerson = $('#ddlSalesPerson').val();
-        var DealerName = $('#ddlDealerName').val();
-        var OrderType = $('#ddlOrderType').val();
-        var ChkShowOrder = $('#chkShowOnlyOrders').is(":checked");
-
-        alert(SalesPerson + ',' + DealerName + ',' + OrderType + ',' + ChkShowOrder)
-        let SalePerson = '';
-        let Dealer = '';
-        let OrdersType = '';
-        if (SalesPerson === 'All' ) {
-            SalePerson = "";
-        }
-        if (DealerName === 'All') {
-            Dealer = "";
-        }
-        if (OrderType === 'All') {
-            OrdersType = "";
-        }
-        if (DealerName != '') {
-            toastr.error('Please select Dealer Name !')
-            $('#ddlDealerName').focus();
-        }
-        if (OrderType != '') {
-            toastr.error('Please select Order Type !')
-            $('#ddlOrderType').focus();
-        }
-        if (SalesPerson === '') {
-            toastr.error('Please select sales person !')
-            $('#ddlSalesPerson').focus();
-        } else if (DealerName === '') {
-            toastr.error('Please select Dealer Name !')
-            $('#ddlDealerName').focus();
-        } else if (OrderType === '') {
-            toastr.error('Please select Order Type !')
-            $('#ddlOrderType').focus();
-        }else {
-            GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder);
-        }
+        GetOrderVerifyData();
     });
     $('#ddlSalesPerson').on('keydown', function (e) {
         if (e.key === "Enter") {
@@ -65,9 +36,50 @@ $(document).ready(function () {
             $("#btnShow").focus();
         }
     });
-    
-
 });
+
+function GetOrderVerifyData() {
+    var SalesPerson = $('#ddlSalesPerson').val();
+    var DealerName = $('#ddlDealerName').val();
+    var OrderType = $('#ddlOrderType').val();
+    var ChkShowOrder = $('#chkShowOnlyOrders').is(":checked");
+    let SalePerson = '';
+    let Dealer = '';
+    let OrdersType = '';
+    let ChkWithOrder = false;
+    if (SalesPerson === 'All') {
+        SalePerson = "";
+    } else {
+        SalePerson = SalesPerson;
+    }
+    if (DealerName === 'All') {
+        Dealer = "";
+    } else {
+        Dealer = DealerName;
+    }
+    if (OrderType === 'Visit') {
+        OrdersType = 'V';
+    } else {
+        OrdersType = 'O';
+    }
+    if (ChkShowOrder === false) {
+        ChkWithOrder = 0;
+    } else {
+        ChkWithOrder = 1;
+    }
+    if (SalesPerson === '') {
+        toastr.error('Please select sales person !')
+        $('#ddlSalesPerson').focus();
+    } else if (DealerName === '') {
+        toastr.error('Please select Dealer Name !')
+        $('#ddlDealerName').focus();
+    } else if (OrderType === '') {
+        toastr.error('Please select Order Type !')
+        $('#ddlOrderType').focus();
+    } else {
+        GetVerifyOrderList(SalePerson.trim(), Dealer.trim(), OrdersType, ChkWithOrder);
+    }
+}
 function GetNestedMarketingManList() {
     VisitOrderEntryService.GetNestedMarketingManList().then(function (response) {
         if (response.length > 0) {
@@ -100,8 +112,7 @@ function GetNestedDealerList() {
 
             $('#ddlDealerNameList')[0].innerHTML = option;
         } else {
-            $('#ErrorMsg').removeClass('invisible');
-            $('#ErrorMsg').addClass('visible');
+           toastr.error('No Data Found')
             return false;
         }
     });
@@ -120,232 +131,427 @@ function GetOrderType() {
         }
     });
 }
-
-const getButtonHTML = (label = "", className = "", onClick = "", icon, tooltip, disabled = false) => `
-    <button class="${className} icon-height" onclick="${onClick}" data-toggle="tooltip" data-placement="top" title="${tooltip}" ${disabled ? 'disabled' : ''}>
-        <i class="${icon}" style="color:white;"></i> ${label}
-    </button>
-`;
-
-const getButtonSet = (status, Code, date, VisitMaster_Code, Verified, Closed, CheckOut) => {
-    let buttons = "";
-    if (VisitMaster_Code > 0) {
-        if (Verified === "Y" && Closed !== "Y") {
-            if (CheckOut === "--:--") {
-                buttons += getButtonHTML("", "btn btn-success", "", "fa-solid fa-sign-out", "Checked-in", true, "Already checked in");
-                buttons += getButtonHTML("", "btn btn-primary", `EditData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-pencil", "Edit");
-                buttons += getButtonHTML("", "btn btn-primary", `ViewData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-eye", "View");
-            } else {
-                buttons += getButtonHTML("", "btn btn-danger", "", "fa-solid fa-sign-out", "Checked Out", true, "Already checked out");
-                buttons += getButtonHTML("", "btn btn-primary", `EditData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-pencil", "Edit", true, "Edit");
-                buttons += getButtonHTML("", "btn btn-primary", `ViewData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-eye", "View");
-            }
-        } else if (Closed === "Y") {
-            buttons += getButtonHTML("Closed", "btn btn-primary", "", "", "Closed", true, "Cannot modify closed records");
-        } else {
-            buttons += getButtonHTML("Verify", "btn btn-primary", `Verify(${Code}, ${VisitMaster_Code})`, "", "Verify");
-        }
-    } else {
-        if (Closed === 'Y') {
-            buttons += getButtonHTML("", "btn btn-primary", `IsCheckIn(${Code}, this)`, "fa-solid fa-sign-in", true, "Check-In");
-            buttons += getButtonHTML("", "btn btn-danger", "", "fa-solid fa-pencil", "Edit", true, "Edit disabled for unregistered visits");
-            buttons += getButtonHTML("", "btn btn-danger", "", "fa-solid fa-eye", "View", true, "View disabled for unregistered visits");
-        } else {
-            buttons += getButtonHTML("", "btn btn-primary", `IsCheckIn(${Code}, '${date}')`, "fa-solid fa-sign-in", "Check-In");
-            buttons += getButtonHTML("", "btn btn-danger", "", "fa-solid fa-pencil", "Edit", true, "Edit disabled for unregistered visits");
-            buttons += getButtonHTML("", "btn btn-danger", "", "fa-solid fa-eye", "View", true, "View disabled for unregistered visits");
-        }
-
-
-    }
-    return buttons;
-};
 function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
     VisitOrderEntryService.GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder).then(function (response) {
         if (response.length > 0) {
-            const StringFilterColumn = ["Created By", "Visit Type",];
-            const NumericFilterColumn = ["Total Amount", "Total Order Qty"];
-            const DateFilterColumn = ["Date"];
+            $("#txtTable").show();
+            const StringFilterColumn = ["Order Id", "Sale Person", "Visit Type"];
+            const NumericFilterColumn = ["Avg Rate", "Total Order Amount", "Over Due Amount", "Total Final Amount", "Other Charges", "Basic Rate", "Final Rate"];
+            const DateFilterColumn = ["Visit Date"];
             const Button = false;
             const showButtons = [];
-            const StringdoubleFilterColumn = ["Dealer Name", "City", "State"];
-            const hiddenColumns = ["Code", "VisitMaster_Code", "ButtonStatus", "Verified", "Closed", "CheckIn", "CheckOut"];
+            const StringdoubleFilterColumn = ["Zone", "Dealer Name", "City", "State"];
+            const hiddenColumns = ["Code", "Outstanding", "OrderVisitType"];
+            if (ThreeLevelVerification === 'N') {
+                hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
+                response.forEach(item => {
+                    if (item.hasOwnProperty('VerifiedLv1')) {
+                        item['Verify'] = item['VerifiedLv1'];
+                        delete item['VerifiedLv1'];
+                    }
+                });
+            }
+            let statusButtonHTML = ""; // Initialize the statusButtonHTML
+
+            if (QtyMTHeader !== '') {
+                response = response.map(item => {
+                    if (item.hasOwnProperty('Total Order Qty')) {
+                        const reorderedItem = {};
+                        for (const key in item) {
+                            if (key === 'Total Order Qty') {
+                                reorderedItem[QtyMTHeader] = item[key];
+                            } else {
+                                reorderedItem[key] = item[key];
+                            }
+                        }
+                        return reorderedItem;
+                    }
+                    return item;
+                });
+                NumericFilterColumn.push(QtyMTHeader)
+            } else {
+                hiddenColumns.push("Total Order Qty");
+            }
+
+            if (QtyPCHeader !== '') {
+                response = response.map(item => {
+                    if (item.hasOwnProperty('Total Order Qty PC')) {
+                        const reorderedItem = {};
+                        for (const key in item) {
+                            if (key === 'Total Order Qty PC') {
+                                reorderedItem[QtyPCHeader] = item[key];
+                            } else {
+                                reorderedItem[key] = item[key];
+                            }
+                        }
+                        return reorderedItem;
+                    }
+                    return item;
+                });
+            } else {
+                hiddenColumns.push("Total Order Qty PC");
+            }
+            if (QtyMTRHeader !== '') {
+                response = response.map(item => {
+                    if (item.hasOwnProperty('Total Order Qty MR')) {
+                        const reorderedItem = {};
+                        for (const key in item) {
+                            if (key === 'Total Order Qty MR') {
+                                reorderedItem[QtyMTRHeader] = item[key];
+                            } else {
+                                reorderedItem[key] = item[key];
+                            }
+                        }
+                        return reorderedItem;
+                    }
+                    return item;
+                });
+            } else {
+                hiddenColumns.push("Total Order Qty MR");
+            }
+
             const ColumnAlignment = {
-                "Total Amount": 'right',
-                "Total Order Qty": 'right',
-                "Date": 'center',
-                "Verified": 'center',
-                "Closed": 'center',
+                "Total Order Qty": "right",
+                "Total Order Qty PC": "right",
+                "Total Order Qty MR": "right",
+                "Avg Rate": "right",
+                "Total Order Amount": "right",
+                "Over Due Amount": "right",
+                "Total Final Amount": "right",
+                "Other Charges": "right",
+                "Basic Rate": "right",
+                "Final Rate": "right"
             };
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+            if (QtyMTHeader != '') {
+                ColumnAlignment[QtyMTHeader] = "right";
+            }
+            if (QtyPCHeader != '') {
+                ColumnAlignment[QtyPCHeader] = "right";
+            }
+            if (QtyMTRHeader != '') {
+                ColumnAlignment[QtyMTRHeader] = "right";
+            }
+            let VerifiedLv1Button = '';
+            let VerifiedLv2Button = '';
+            let VerifiedLv3Button = '';
+            let EditOtherCharges = '';
+            const updatedResponse = response.map(item => {
+                var EditOtherCharges = '';
+                
+
+                    var basicAmount = item['Basic Rate'];
+                    var Amount = item['Other Charges'];
+                    var FinalAmount = 0;
+                    var Sign = "+";
+                    var PlusSelected = "";
+                    var MinusSelected = "";
+
+                    if (Amount < 0) {
+                        Sign = "-";
+                    }
+                    Amount = Math.abs(Amount);
+
+                    if (Sign === "+") {
+                        FinalAmount = Number(basicAmount) + Number(Amount);
+                        PlusSelected = "selected";
+                    } else {
+                        FinalAmount = Number(basicAmount) - Number(Amount);
+                        MinusSelected = "selected";
+                    }
+
+
+                    var sptext = basicAmount + Sign + Amount + "=" + FinalAmount;
+
+                    //EditOtherCharges = AskOtherCharges == 'N' ? '' : "<span name=\"btnOtherChargesVerify1\" id=\"btnOtherChargesVerify1\" class=\"btn btn-success btn-sm\" onclick=\"OtherChargesVerifyLv1(" + item['Code'] + "," + item['Other Charges'] + ");\" ><i class=\"fa fa-check\" aria-hidden=\"true\"></i></span>&nbsp;<span name=\"btnOtherChargesReject1\" id=\"btnOtherChargesReject1\" class=\"btn btn-danger btn-sm\" onclick=\"OtherChargesRejectLvl1(" + item['Code'] + "," + item['Other Charges'] + ");\"><i class=\"fa fa-times-circle\" aria-hidden=\"true\"></i></span>&nbsp;<span name=\"btnEdit1\" class=\"btn btn-primary btn-sm\" id=\"btnEdit1\"  onclick=\"EditLvl1(" + item['Code'] + ");\"><i class=\"fa fa-paint-brush\" aria-hidden=\"true\"></i></span><br/><span id=\"SpanEdit_" + item['Code'] + "\">" + sptext + "</span><div id=\"DivEdit_" + item['Code'] + "\" style=\"display:none\"><select id=\"selectSign_" + item['Code'] + "\" onchange=\"calFinalAmt(" + item['Code'] + ")\" name=\"selectSign\"> <option value=\"-\" " + MinusSelected + ">-</option> <option value=\"+\" " + PlusSelected + ">+</option> </select><input type=\"text\" class=\"box_border form-control\" id=\"txtOtherCharges_" + item['Code'] + "\" value=\"" + Amount + "\" onfocusout=\"calFinalAmt(" + item['Code'] + ")\" ><input type=\"hidden\" class=\"box_border form-control\" id=\"hfBasic_" + item['Code'] + "\" value=\"" + item['Basic Rate'] + "\" ><input type=\"hidden\" class=\"box_border form-control\" id=\"hfIsOtherChargesVerify_" + item['Code'] + "\" value=\"N\" ></div>";
+                   // EditOtherCharges = AskOtherCharges == 'N' ? '' : "<span name=\"btnEdit1\" class=\"btn btn-primary btn-sm\" id=\"btnEdit1\"  onclick=\"EditLvl1(" + item['Code'] ,this +");\"><i class=\"fa fa-paint-brush\" aria-hidden=\"true\"></i></span>&nbsp;<span name=\"btnOtherChargesReject1\" id=\"btnOtherChargesReject1\" class=\"btn btn-danger btn-sm\" onclick=\"OtherChargesRejectLvl1(" + item['Code'] + "," + item['Other Charges'] + ");\"><i class=\"fa fa-times-circle\" aria-hidden=\"true\"></i></span>&nbsp;<br/><span id=\"SpanEdit_" + item['Code'] + "\" onMouseOver=\"this.style.fontSize = '12px'\" onMouseOut=\"this.style.fontSize = '10px'\">" + sptext + "</span><div id=\"DivEdit_" + item['Code'] + "\" style=\"display:none\"><select id=\"selectSign_" + item['Code'] + "\" onchange=\"calFinalAmt(" + item['Code'] + ")\" name=\"selectSign\" class=\"sizewidth\"> <option value=\"-\" " + MinusSelected + ">-</option> <option value=\"+\" " + PlusSelected + ">+</option> </select><input type=\"text\" class=\"box_border form-control\" id=\"txtOtherCharges_" + item['Code'] + "\" value=\"" + Amount + "\" onfocusout=\"calFinalAmt(" + item['Code'] + ")\" ><input type=\"hidden\" class=\"box_border form-control\" id=\"hfBasic_" + item['Code'] + "\" value=\"" + item['Basic Rate'] + "\" ><input type=\"hidden\" class=\"box_border form-control\" id=\"hfIsOtherChargesVerify_" + item['Code'] + "\" value=\"N\" ></div><span name=\"btnOtherChargesVerify1\" id=\"btnOtherChargesVerify1\" class=\"btn btn-success btn-sm\" onclick=\"OtherChargesVerifyLv1(" + item['Code'] + "," + item['Other Charges'] + ");\" ><i class=\"fa fa-check\" aria-hidden=\"true\"></i></span>";
+                EditOtherCharges = AskOtherCharges == 'N' ? '' : `<span name="btnEdit1" class="btn btn-primary icon-height" id="btnEdit1" onclick="EditLvl1(${item['Code']}, this);"><i class="fa fa-paint-brush" aria-hidden="true"></i></span>&nbsp;<span name="btnOtherChargesReject1" id="btnOtherChargesReject1" class="btn btn-danger icon-height" onclick="OtherChargesRejectLvl1(${item['Code']}, ${item['Other Charges']});"><i class="fa fa-times-circle" aria-hidden="true"></i></span>&nbsp;<br/><span id="SpanEdit_${item['Code']}">${sptext}</span><div id="DivEdit_${item['Code']}" style="display:none"><select id="selectSign_${item['Code']}" onchange="calFinalAmt(${item['Code']})" name="selectSign" class="sizewidth"><option value="-" ${MinusSelected}>-</option><option value="+" ${PlusSelected}>+</option></select><input type="text" class="box_border form-control" id="txtOtherCharges_${item['Code']}" value="${Amount}" onfocusout="calFinalAmt(${item['Code']})"><input type="hidden" class="box_border form-control" id="hfBasic_${item['Code']}" value="${item['Basic Rate']}"><input type="hidden" class="box_border form-control" id="hfIsOtherChargesVerify_${item['Code']}" value="N"></div><span name="btnOtherChargesVerify1" id="btnOtherChargesVerify1" class="btn btn-success icon-height" onclick="OtherChargesVerifyLv1(${item['Code']}, ${item['Other Charges']});"><i class="fa fa-check" aria-hidden="true"></i></span>`;
+
+
+                if (item.OrderVisitType == "O") {
+                    if (item[QtyMTHeader] > 0) {
+                        if (ThreeLevelVerification == "Y") {
+                            if (item.VerifiedLv1 == "Verify") {
+                                if (item['Over Due Amount'] > 0) {
+                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>";
+                                    VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                    VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                }
+                                else {
+                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>";
+                                    VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                    VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                }
+                            }
+                            if (item.VerifiedLv1 != "Verify" && item.VerifiedLv2 == "Verify") {
+                                if (item['Over Due Amount'] > 0) {
+                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                    VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"GPVerifyLv1(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject1\" id=\"btnReject1\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV1\" >";
+                                    VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                }
+                                else {
+                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                    VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"GPVerifyLv1(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject1\" id=\"btnReject1\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV1\" >";
+                                    VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                }
+                            }
+                            if (item.VerifiedLv1 != "Verify" && item.VerifiedLv2 != "Verify" && item.VerifiedLv3 == "Verify") {
+                                if (item['Over Due Amount'] > 0) {
+                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                    VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                    VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"AdminVerifyLv2(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject2\" id=\"btnReject2\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV2\" >";
+                                }
+                                else {
+                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                    VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                    VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"AdminVerifyLv2(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject2\" id=\"btnReject2\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV2\" >";
+                                }
+                            }
+                        }
+                        else {
+                            if (item.Verify == "Verify") {
+                                if (item['Over Due Amount'] > 0) {
+                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>"
+                                }
+                                else {
+                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>"
+                                }
+                            }
+                        }
+
+                    }
+                }
+                else {
+                    if (ThreeLevelVerification == "Y") {
+                        if (item.VerifiedLv1 == "Verify") {
+                            if (item['Over Due Amount'] > 0) {
+                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>";
+                                VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
+                            }
+                            else {
+                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>";
+                                VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
+                            }
+                        }
+                        if (item.VerifiedLv1 != "Verify" && item.VerifiedLv2 == "Verify") {
+                            if (item['Over Due Amount'] > 0) {
+                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"GPVerifyLv1(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject1\" id=\"btnReject1\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV1\" ></td>";
+                                VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
+
+                            }
+                            else {
+                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"GPVerifyLv1(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject1\" id=\"btnReject1\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV1\" >";
+                                VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
+                            }
+                        }
+                        if (item.VerifiedLv1 != "Verify" && item.VerifiedLv2 != "Verify" && item.VerifiedLv3 == "Verify") {
+                            if (item['Over Due Amount'] > 0) {
+                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Verify\" class=\"btn btn-primary btn-sm\" onclick=\"AdminVerifyLv2(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject2\" id=\"btnReject2\" value=\"Reject\" class=\"btn btn-danger btn-sm\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV2\" >";
+                            }
+                            else {
+                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
+                                VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Verify\" class=\"btn btn-primary btn-sm\" onclick=\"AdminVerifyLv2(" + item.Code + ",this);\" />&nbsp;<input type =\"button\" name=\"btnReject2\" id=\"btnReject2\" value=\"Reject\" class=\"btn btn-danger btn-sm\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV2\" >";
+                            }
+                        }
+                    }
+                    else {
+                        if (item.Verify == "Verify") {
+                            if (item['Over Due Amount'] > 0) {
+                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>"
+                            }
+                            else {
+                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>"
+                            }
+                        }
+                    }
+                }
+                const buttonsHTML = `<span><a href="#" onclick="ViewOrder('${item['Code']}')">${item['Order Id']}</a></span>`;
+                if (ThreeLevelVerification === 'Y') {
+                    return {
+                        ...item,
+                        "Order Id": buttonsHTML,
+                        VerifiedLv1: VerifiedLv1Button,
+                        VerifiedLv2: VerifiedLv2Button,
+                        VerifiedLv3: VerifiedLv3Button
+                    };
+                } else {
+                    return {
+                        ...item,
+                        "Order Id": buttonsHTML,
+                        Verify: VerifiedLv1Button,
+                    };
+                }
+            });
+
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            updateFooter(response);
+        } else {
+            toastr.error('No Data Found');
+            $("#txtTable").hide();
+        }
+    }).catch(function (error) {
+        toastr.error('Error fetching data');
+        $("#txtTable").hide();
+    });
+}
+function GetFixedParameterConfiguration() {
+    VisitOrderEntryService.GetFixedParameterConfiguration().then(function (response) {
+        if (response.length > 0) {
+            QtyMTHeader = response[0].QtyMTHeader;
+            QtyPCHeader = response[0].QtyPCHeader;
+            QtyMTRHeader = response[0].QtyMTRHeader;
+            ThreeLevelVerification = response[0].ThreeLevelVerificationApplicable;
+            DiscountLimit = response[0].LimitForVerifyDiscount;
+            AskOtherCharges = response[0].AskOtherCharges;
+           }
+        else {
+            toastr.error('No Data Found')
+        }
+    });
+}
+function ViewOrder(Code) {
+    VisitOrderEntryService.GetUnVerifiedVisitDetailsReport(Code).then(function (response) {
+        if (response.length > 0) {
+            $('#ShowOrderDetailModal').modal('show');
+            $('#ShowOrderDetailModal').modal({ backdrop: 'static', keyboard: false })
+            const StringFilterColumn = ["ItemName", "Size","Thickness"];
+            const NumericFilterColumn = ["BasicRate", "ExtraCharges", "Discount", "FinalRate", "OtherCharges", "OrderQty","FinalAmount"];
+            const DateFilterColumn = [];
+            const Button = false;
+            const showButtons = [];
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = ["Code"];
+            const ColumnAlignment = {
+                BasicRate:"right",
+                Discount:"right",
+                ExtraCharges:"right",
+                OtherCharges:"right",
+                FinalRate: "right",
+                OrderQty: "right",
+                FinalAmount: "right",
+            };
+            BizsolCustomFilterGrid.CreateDataTable("OrderTable-header", "OrderTable-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
         }
         else {
             toastr.error('No Data Found')
         }
     });
 }
-function GetVisitMasterListForDate() {
-    VisitOrderEntryService.GetRoutePlanList().then(function (response) {
-        if (response && response.length > 0) {
-            response.forEach(item => {
-                if (item.Date) {
-                    selectedDates.push(item.Date);
-                }
-            });
-            highlightSelectedDates();
+function updateFooter(data) {
+    let TotalOrderQty = 0;
+    let TotalOrderQtyPC = 0;
+    let TotalOrderQtyMR = 0;
+    let TotalFinalAmount = 0;
+    data.forEach(row => {
+        if (QtyMTHeader != '') {
+            TotalOrderQty += parseFloat(row[QtyMTHeader]) || 0;
         }
-        else {
-            alert('No Data Found')
+        if (QtyPCHeader != '') {
+            TotalOrderQty += parseFloat(row[QtyPCHeader]) || 0;
         }
+        if (QtyMTRHeader != '') {
+            TotalOrderQty += parseFloat(row[QtyMTRHeader]) || 0;
+        }
+        TotalFinalAmount += parseFloat(row["Total Final Amount"]) || 0;
     });
+    const tfootContent = `
+    <tr>
+        <td><b>Total</b></td>
+        <td colspan="8"></td>
+        ${QtyMTHeader !=''? `<td style="text-align:right"><b>${TotalOrderQty.toFixed(2)}</b></td>` : ''}
+        ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyPC.toFixed(2)}</b></td>` : ''}
+        ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyMR.toFixed(2)}</b></td>` : ''}
+        <td colspan="3"></td>
+        <td style="text-align:right"><b>${TotalFinalAmount.toFixed(2)}</b></td>
+    </tr>
+`;
 
-}
-function setupDateInputFormatting() {
-    $('#txtFromDate').on('input', function () {
-        let value = $(this).val().replace(/[^\d]/g, '');
-
-        if (value.length >= 2 && value.length < 4) {
-            value = value.slice(0, 2) + '/' + value.slice(2);
-        } else if (value.length >= 4) {
-            value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
-        }
-        $(this).val(value);
-
-        if (value.length === 10) {
-            validateDate(value);
-        } else {
-            $(this).val(value);
-        }
-    });
-}
-function validateDate(value) {
-    let regex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
-    let isValidFormat = regex.test(value);
-
-    if (isValidFormat) {
-        let parts = value.split('/');
-        let day = parseInt(parts[0], 10);
-        let month = parseInt(parts[1], 10);
-        let year = parseInt(parts[2], 10);
-
-        let date = new Date(year, month - 1, day);
-
-        if (date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day) {
-
-            $(this).val(value);
-        } else {
-            $('#txtFromDate').val('');
-
-        }
+    const tfoot = document.querySelector("#Visit tfoot");
+    if (tfoot) {
+        tfoot.innerHTML = tfootContent;
     } else {
-        $('#txtFromDate').val('');
-
+        const table = document.querySelector("#Visit");
+        if (table) {
+            const newTfoot = document.createElement("tfoot");
+            newTfoot.innerHTML = tfootContent;
+            table.appendChild(newTfoot);
+        } else {
+            console.error("Table element with id 'table' not found.");
+        }
     }
 }
-function highlightSelectedDates() {
-    var highlightedDates = {};
-    selectedDates.forEach(date => {
-        var parts = date.split('/');
-        var formattedDate = new Date(parts[2], parts[1] - 1, parts[0]).toDateString();
-        highlightedDates[formattedDate] = true;
-    });
+function EditLvl1(Code,element) {
+    var ObjCurrRow = $(element).closest('tr');
+    var Discount = ObjCurrRow[0].cells[indx_DiscountCol].innerHTML;
+    var lv = $('#hflv_' + Code).val();
+    var Sign = $('#selectSign_' + Code).val();
+    if (Sign === "-") {
+        var DiscountValToCompare = 0;
+        if (parseFloat(Discount) < 0) {
+            DiscountValToCompare = parseFloat(Discount) * (-1);
+        } else {
+            DiscountValToCompare = parseFloat(Discount);
+        }
+        if (parseFloat(DiscountLimit) != 0 && parseFloat(DiscountValToCompare) != 0) {
+            if (parseFloat(DiscountValToCompare) > parseFloat(DiscountLimit)) {
+                alert("The Discount Limit is : " + DiscountLimit + " Rs. This record has exceeded discount Limit!");
 
-    var today = new Date();
-    var day = ('0' + today.getDate()).slice(-2);
-    var month = ('0' + (today.getMonth() + 1)).slice(-2);
-    var year = today.getFullYear();
-
-    $('#txtFromDate, #txtToDate').val(`${day}/${month}/${year}`);
-    $('#txtFromDate,#txtToDate').datepicker({
-        format: 'dd/mm/yyyy',
-        autoclose: true,
-        beforeShowDay: function (date) {
-            const formattedDate = date.toDateString();
-            if (highlightedDates[formattedDate]) {
-                return { classes: 'highlighted-date', tooltip: 'Data Available' };
             }
-            return { classes: '', tooltip: '' };
         }
-    });
-}
-function convertDateFormat(dateString) {
-    const [day, month, year] = dateString.split('/');
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const monthAbbreviation = monthNames[parseInt(month) - 1];
-    return `${day}-${monthAbbreviation}-${year}`;
-}
-function GetActualLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(showLocation, error);
-    } else {
-        toastr.error("Geolocation is not supported by this browser.");
     }
-}
-function error(err) {
-    toastr.error(`ERROR(${err.code}): ${err.message}`);
-}
-function showLocation(position) {
-    var latitude = position.coords.latitude;
-    var longitude = position.coords.longitude;
-    $("#txtLocation").val("Latitude: " + latitude + " Longitude: " + longitude)
-    $.ajax({
-        url: `/GetLocation?latlng=${latitude},${longitude}`,
-        type: 'POST',
-        dataType: 'json',
-        success: function (response) {
-            var address = response.results[0].formatted_address;
-            $("#txtAddress").val(address)
-        },
-        error: function (xhr) {
-            console.error("Error fetching location:", xhr);
-        }
-    });
-}
-function EditData(code, VisitMaster_Code) {
-    const codes = window.btoa(code);
-    const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&Visit&VistMaster_Code=" + VisitMaster_Codes + "&VistMode=Edit";
-}
-function ViewData(code, VisitMaster_Code) {
-    if (typeof VisitMaster_Code === 'undefined') {
-        alert('You cannot view this plan! The plan is not CheckIn.');
-        return;
-    }
-    const codes = window.btoa(code);
-    const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "Visit&VistMaster_Code=" + VisitMaster_Codes + "&VistMode=View";
-}
-function IsNotVisited(code) {
-    const alertCls = confirm("Are you sure you want to close this visit?");
+    var alertCls = confirm("Are you want to Edit Other Charges ?");
     if (alertCls) {
-        CloseVisit(code);
+        $('#DivEdit_' + Code).show();
     }
 }
-function CloseVisit(Code) {
+function calFinalAmt(code) {
+
+    var basicAmount = $('#hfBasic_' + code).val();
+    var Amount = $('#txtOtherCharges_' + code).val();
+    var FinalAmount = 0;
+    var Sign = $('#selectSign_' + code).val();
+
+    if (Sign === "+") {
+        FinalAmount = Number(basicAmount) + Number(Amount);
+    } else {
+        FinalAmount = Number(basicAmount) - Number(Amount);
+    }
+    $('#SpanEdit_' + code)[0].innerHTML = parseFloat(basicAmount).toFixed(2) + Sign + parseFloat(Amount).toFixed(2) + "=" + parseFloat(FinalAmount).toFixed(2);
+
+}
+function Reject(code) {
+    const alertCls = confirm("Are you sure you want to Reject this Visit?");
+    if (alertCls) {
+        RejectVisit(code);
+    }
+}
+function RejectVisit(Code) {
     $('#ReasonModal').modal('show');
     $('#ReasonModal').modal({
         backdrop: 'static',
     });
     $("#txtCode").val(Code);
 }
-function SaveNotVisited() {
+function SaveRejectVisit() {
     var reason = $("#txtReason").val();
     var code = $("#txtCode").val();
     if (reason == "") {
-        toastr.error('Please enter a reason before proceeding.');
-        return;
+        toastr.error('You do not enter any reason for reject.Please enter valid reason.');
+        $("#txtReason").focus();
     } else {
-        VisitOrderEntryService.NotVisitedRoutePlan(code, reason).then(function (response) {
+        VisitOrderEntryService.RejectVisitOrder(code, reason).then(function (response) {
             if (response.Status === 'Y') {
                 toastr.success(response.Msg);
                 $('#ReasonModal').modal('hide');
                 document.getElementById('txtReason').value = '';
                 document.getElementById('txtCode').value = '0';
-                var FromDate = $('#txtFromDate').val();
-                var ToDate = $('#txtToDate').val();
-                var SalesPerson = $('#ddlSalesPerson').val();
-                GetVisitMasterList(FromDate, ToDate, SalesPerson);
-
+                GetOrderVerifyData();
             } else {
                 toastr.error(response.Msg);
             }
@@ -355,52 +561,199 @@ function SaveNotVisited() {
 function Close() {
     $('#ReasonModal').modal('hide');
 }
-function IsCheckIn(RoutePlanMaster_Code, date) {
-    const currentDateOnly = new Date(new Date().setHours(0, 0, 0, 0));
-    const visitDate = new Date(date);
-    const visitDateOnly = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate());
-    if (visitDateOnly < currentDateOnly) {
-        alert('Check-In is not allowed because the visit date is earlier than the current date.');
-        return false;
-    }
-    GetActualLocation();
-    const location = $('#txtLocation').val();
-    const checkedInAddress = $('#txtAddress').val();
-    alert(checkedInAddress)
-    if (!checkedInAddress || checkedInAddress.trim() === "") {
-        alert("Please enable your location !");
-        return false;
-    }
-    const checkInTime = GetCurrentTime();
-    alert(`Address: ${checkedInAddress}`);
-    alert(`Location: ${location}`);
-    VisitOrderEntryService.CheckInVisit(RoutePlanMaster_Code, checkInTime, location, checkedInAddress).then(function (response) {
-        if (response.Status === 'Y') {
-            toastr.success(response.Msg);
-            const encodedRoutePlanCode = window.btoa(RoutePlanMaster_Code);
-            const encodedVisitMasterCode = window.btoa(response.Code);
-            window.location = `${baseUrl}/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&Visit&VistMaster_Code=${encodedVisitMasterCode}&VistMode=New`;
-            alert("Check-In successful! You can view and edit the selected plan details.");
+function Verify(Code,element) {
+    var Mode = 'VisitOrder_VerifyLv1';
+    var ObjCurrRow = $(element).closest('tr');
+    var Discount = ObjCurrRow[0].cells[indx_DiscountCol].innerHTML;
+    var DiscountValToCompare = 0;
+    var Sign = $('#selectSign_' + Code).val();
+
+    if (Sign === "-") {
+        if (parseFloat(Discount) < 0) {
+            DiscountValToCompare = parseFloat(Discount) * (-1);
         } else {
-            toastr.error(response.Msg);
+            DiscountValToCompare = parseFloat(Discount);
         }
-    }).catch(function (error) {
-        console.error('Error during Check-In:', error);
-        toastr.error('An error occurred during the Check-In process. Please try again.');
-    });
+        if (parseFloat(DiscountLimit) != 0 && parseFloat(DiscountValToCompare) != 0) {
+            if (parseFloat(DiscountValToCompare) > parseFloat(DiscountLimit)) {
+                alert("The Discount Limit is : " + DiscountLimit + " Rs. This record has exceeded discount Limit!");
 
-    return true;
-}
-function GetCurrentTime() {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-}
+            }
+        }
 
-window.ViewData = ViewData;
-window.IsNotVisited = IsNotVisited;
-window.EditData = EditData;
-window.SaveNotVisited = SaveNotVisited;
-window.Close = Close;
-window.IsCheckIn = IsCheckIn;
+    }
+    VerifyForAll(Code,Mode)
+}
+function GPVerifyLv1(Code,e) {
+    var Mode = "VisitOrder_VerifyLv2";
+    var Discount = $('#txtOtherCharges_' + Code).val();
+    var DiscountValToCompare = 0;
+    var Sign = $('#selectSign_' + Code).val();
+
+    if (Sign === "-") {
+        if (parseFloat(Discount) < 0) {
+            DiscountValToCompare = parseFloat(Discount) * (-1);
+        } else {
+            DiscountValToCompare = parseFloat(Discount);
+        }
+        if (parseFloat(DiscountLimit) != 0 && parseFloat(DiscountValToCompare) != 0) {
+            if (parseFloat(DiscountValToCompare) > parseFloat(DiscountLimit)) {
+                alert("The Discount Limit is : " + DiscountLimit + " Rs. This record has exceeded discount Limit!");
+
+            }
+        }
+    }
+    if (parseFloat(Discount) == 0) {
+        $('#hfIsOtherChargesVerify_' + Code).val("Y");
+    }
+    if (AskOtherCharges == "Y") {
+        if ($('#hfIsOtherChargesVerify_' + Code).val() === "N") {
+            alert("Please Check! You not verify other Charges..");
+            return;
+        }
+    }
+    VerifyForAll(Code, Mode);
+}
+function AdminVerifyLv2(Code,element) {
+    var Mode = "VisitOrder_VerifyLv3";
+    var Discount = $('#txtOtherCharges_' + Code).val();
+    if (parseFloat(Discount) == 0) {
+        $('#hfIsOtherChargesVerify_' + Code).val("Y");
+    }
+    var Sign = $('#selectSign_' + Code).val();
+    if (Sign === "-") {
+        var DiscountValToCompare = 0;
+        if (parseFloat(Discount) < 0) {
+            DiscountValToCompare = parseFloat(Discount) * (-1);
+        } else {
+            DiscountValToCompare = parseFloat(Discount);
+        }
+        if (parseFloat(DiscountLimit) != 0 && parseFloat(DiscountValToCompare) != 0) {
+            if (parseFloat(DiscountValToCompare) > parseFloat(DiscountLimit)) {
+                alert("The Discount Limit is : " + DiscountLimit + " Rs. \nThis record has exceeded discount Limit; So it can be verified only by the Management!");
+                return;
+            }
+        }
+    }
+    if(AskOtherCharges == "Y") {
+        if ($('#hfIsOtherChargesVerify_' + Code).val() === "N") {
+        alert("Please Check! You not verify other Charges..");
+        return;
+        }
+    }
+    VerifyForAll(Code, Mode)
+}
+function VerifyForAll(Code,Mode) {
+    const alertCls = confirm("Are you sure you want to Verify this Visit?");
+    if (alertCls) {
+        VisitOrderEntryService.VerifyVisitOrder(Code, Mode).then(function (response) {
+            if (response.Status === 'Y') {
+                toastr.success(response.Msg);
+                GetOrderVerifyData();
+            } else {
+                toastr.error(response.Msg);
+            }
+        });
+    }
+}
+function OtherChargesVerifyLv1(Code, Amount) {
+    var Discount = $('#txtOtherCharges_' + Code).val();
+    var OldDiscount = 0;
+    var DiscountValToCompare = 0;
+    var Sign = $('#selectSign_' + Code).val();
+
+    if (Sign === "-") {
+
+        if (parseFloat(Discount) < 0) {
+            DiscountValToCompare = parseFloat(Discount) * (-1);
+        } else {
+            DiscountValToCompare = parseFloat(Discount);
+        }
+        if (parseFloat(Amount) < 0) {
+            OldDiscount = parseFloat(Amount) * (-1);
+        } else {
+            OldDiscount = parseFloat(Amount);
+        }
+        if (parseFloat(Discount) > parseFloat(OldDiscount)) {
+            alert("The Discount cannot be exceeded from Previous Discount : " + OldDiscount + " Rs. !");
+            return false;
+        }
+        if (parseFloat(DiscountLimit) != 0 && parseFloat(DiscountValToCompare) != 0) {
+            if (parseFloat(DiscountValToCompare) > parseFloat(DiscountLimit)) {
+                alert("The Discount Limit is : " + DiscountLimit + " Rs. This record has exceeded discount Limit!");
+
+            }
+        }
+    }
+    UpdateVisitOrderOtherCharges(Code, Amount)
+}
+function UpdateVisitOrderOtherCharges(Code,OldAmount) {
+    var AmountNew = $('#txtOtherCharges_' + Code).val();
+    var level = $('#hflv_' + Code).val();
+    if (AmountNew === "") {
+        alert("Other Charges Not Found");
+        return;
+    }
+    var Sign = $('#selectSign_' + Code).val();
+    if (Sign === "-") {
+        AmountNew *= -1;
+    }
+    const alertCls = confirm("Do you want to verify Other Charges ?");
+    alert(alertCls)
+    if (alertCls) {
+        VisitOrderEntryService.UpdateVisitOrderOtherCharges(Code, OldAmount, AmountNew, level).then(function (response) {
+            if (response.Status === 'Y') {
+                toastr.success(response.Msg);
+                $('#hfIsOtherChargesVerify_' + Code).val("Y");
+            } else {
+                toastr.error(response.Msg);
+            }
+        });
+    }
+}
+function OtherChargesRejectLvl1(Code, Amount) {
+    var level = $('#hflv_' + Code).val();
+    var Discount = $('#txtOtherCharges_' + Code).val();
+    var Sign = $('#selectSign_' + Code).val();
+    if (Sign === "-") {
+        if (level == 'LV2') {
+            var DiscountValToCompare = 0;
+            if (parseFloat(Discount) < 0) {
+                DiscountValToCompare = parseFloat(Discount) * (-1);
+            } else {
+                DiscountValToCompare = parseFloat(Discount);
+            }
+            if (parseFloat(DiscountLimit) != 0 && parseFloat(DiscountValToCompare) != 0) {
+                if (parseFloat(DiscountValToCompare) > parseFloat(DiscountLimit)) {
+                    alert("The Discount Limit is : " + DiscountLimit + " Rs. \nThis record has exceeded discount Limit; So it can be verified only by the Management!");
+                    return;
+                }
+            }
+        }
+    }
+    var alertCls = confirm("Do you want to Reject Other Charges ?");
+    if (alertCls) {
+        VisitOrderEntryService.UpdateVisitOrderOtherCharges(Code, Amount, '0', level).then(function (response) {
+            if (response.Status === 'Y') {
+                toastr.success("Other Charges Rejected! you can now verify order!");
+                $('#txtOtherCharges_' + Code).val(0);
+                $('#hfIsOtherChargesVerify_' + Code).val("Y");
+                calFinalAmt(Code);
+            } else {
+                toastr.error(response.Msg);
+            }
+        });
+     }
+}
+window.ViewOrder = ViewOrder;
+window.EditLvl1 = EditLvl1;
+window.calFinalAmt = calFinalAmt;
+window.Verify = Verify;
+window.Reject = Reject;
+window.SaveRejectVisit = SaveRejectVisit;
+window.OtherChargesVerifyLv1 = OtherChargesVerifyLv1;
+window.OtherChargesRejectLvl1 = OtherChargesRejectLvl1;
+window.GPVerifyLv1 = GPVerifyLv1;
+window.AdminVerifyLv2 = AdminVerifyLv2;
+
+
