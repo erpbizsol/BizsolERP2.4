@@ -75,9 +75,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bizsol.WebERP.UI.Tools", "B
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bizsol.WebERP.UI.Shared", "Bizsol.WebERP.UI.Shared\Bizsol.WebERP.UI.Shared.csproj", "{2B82BE7D-BBC8-4242-A06C-ADC94E47E355}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bizsol.WebERP.UI.CRM.Reports", "Bizsol.WebERP.UI.CRM.Reports\Bizsol.WebERP.UI.CRM.Reports.csproj", "{ECC937D5-8BAD-43E4-98B7-179CF36BFA8B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bizsol.WebERP.UI.CRM.Reports", "Bizsol.WebERP.UI.CRM.Reports\Bizsol.WebERP.UI.CRM.Reports.csproj", "{C9F7F83D-2460-497E-82A3-27FBAF05A581}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bizsol.WebERP.UI.CRM.Transactions", "Bizsol.WebERP.UI.CRM.Transactions\Bizsol.WebERP.UI.CRM.Transactions.csproj", "{531F4BC0-40B2-4D2E-AF78-C038AFD4EC1D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bizsol.WebERP.UI.CRM.Transactions", "Bizsol.WebERP.UI.CRM.Transactions\Bizsol.WebERP.UI.CRM.Transactions.csproj", "{E0BF22D6-C68D-45AC-8133-25BE9F8C964C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -229,6 +229,14 @@ Global
 		{2B82BE7D-BBC8-4242-A06C-ADC94E47E355}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2B82BE7D-BBC8-4242-A06C-ADC94E47E355}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B82BE7D-BBC8-4242-A06C-ADC94E47E355}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9F7F83D-2460-497E-82A3-27FBAF05A581}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9F7F83D-2460-497E-82A3-27FBAF05A581}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9F7F83D-2460-497E-82A3-27FBAF05A581}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9F7F83D-2460-497E-82A3-27FBAF05A581}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0BF22D6-C68D-45AC-8133-25BE9F8C964C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0BF22D6-C68D-45AC-8133-25BE9F8C964C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0BF22D6-C68D-45AC-8133-25BE9F8C964C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0BF22D6-C68D-45AC-8133-25BE9F8C964C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
