@@ -1,30 +1,194 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/CRMDashboard.js"></script>
+<style>
+    .row > * {
+        position: relative;
+    }
+    .row > * {
+        -ms-flex-negative: 0 !important;
+        flex-shrink: 0 !important;
+        max-width: 100% !important;
+        padding-left: calc(var(--bs-gutter-x)* .9) !important;
+    }
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
 
-<div>
-    <div class="row">
-        <h5>CRM Dashboard</h5>
-        <div class="col-md-3 form-group">
-            <label for="txtUserName" class="col-form-label-sm fw-bold">user </label>
-            <input type="text" id="txtUserName" class="box_border form-control form-control-sm" autocomplete="off" value="">
-        </div>
-        <div class="col-md-3">
-            <label for="txtdate" class="col-form-label-sm fw-bold">Date</label>
-            <input ID="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
-        </div>
-        <div class="col-md-3">
-            <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Check In Time</label>
-            <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" readonly="readonly" />
-        </div>
-        <div class="col-md-3">
-            <label for="txtLocation" class="col-form-label-sm fw-bold">Location</label>
-            <input type="text" id="txtAddLocation" name="txtAddLocation" class="box_border form-control form-control-sm" readonly="readonly" hidden required />
-            <input type="text" id="txtLocation" name="txtLocation" class="box_border form-control form-control-sm" value=""  required />
+    .card {
+        background-color: #275481;
+        color: white;
+        width: 200px;
+        height: 150px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        position: relative;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+        .card .checkmark {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 30px;
+            height: 30px;
+            background-color: white;
+            color: #25aabf;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 90%;
+            font-size: 18px;
+            font-weight: bold;
+           
+        }
+
+        .card .number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .card .label {
+            font-size: 14px;
+            text-align: center;
+        }
+
+    #btnShow {
+        width: 15% !important;
+        /* height: 29px; */
+        text-align: center !important;
+        padding: 0px;
+        color: white;
+        border-radius: 8px;
+        margin-top:33px;
+        margin-left: -55px;
+    }
+
+    .col-form-label-sm {
+        padding-top: calc(.25rem + var(--bs-border-width));
+        /* padding-bottom: calc(.25rem + var(--bs-border-width)); */
+        /* font-size: .765625rem; */
+    }
+    .modal-dialog{
+        width: 100%;
+    }
+    .modal-header {
+        background-color: #3f51b5;
+    }
+    .modal-title {
+        text-align: center;
+        color: #eef6f2;
+    }
+    .modal {
+        overflow: visible !important;
+        position: absolute;
+        top: 9%;
+    }
+</style>
+<div class="">
+    <div class="card1 shadow-sm">
+        <div class="card-body  shadow-sm">
+            <div class="row">
+                <div class="col-md-3" style="padding-bottom:10px">
+                    <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Sales Person</label>
+                    <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Sales Person" value="All" maxlength="500" required onfocusout="DataListValidation('txtSalesPersonlist', this.value, 'Invalid Sales Person !', 'txtSalesPerson');">
+                    <datalist id="txtSalesPersonlist"></datalist>
+                </div>
+                <div class="col-md-2">
+                    <label for="txtSalesPerson" class="col-form-label-sm fw-bold"></label>
+                    <input type="checkbox" id="chkShowSubordinateData" name="chkShowSubordinateData" class="box_border" checked />
+                    <label for="chkShowSubordinateData" style="margin-top:35px">Show Subordinate Data</label> &nbsp;&nbsp;&nbsp;
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group" id="txtshowhide">
+                        <input type="checkbox" id="chkShowTodaysData" name="chkShowTodaysData" class="box_border" />
+                        <label for="chkShowTodaysData" style="margin-top:35px">Show Today's Data</label>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <input type="button" name="btnShow" id="btnShow" class="submit-btn btn-primary" value="Show" onclick="ShowDashboard();" />
+
+                </div>
+            </div>
+            <div class="row">
+                <div class="dashboard-grid" id="DivIndxDashboard">
+                </div>
+            </div>
+            <div class="row">
+                <div id="ShowDetailModal" class="modal fade" tabindex="-1" role="dialog">
+                    <div class=" modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h6 class="modal-title" id="ShowDetailModalTitle">Marketing Man wise dealer wise current month Outstanding Details</h6>
+                                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="table-wrapper fixed-height-table">
+                                    <table id="table" class="fixed-width-table table">
+                                        <thead id="table-header">
+                                        </thead>
+                                        <tbody id="table-body">
+                                        </tbody>
+
+                                    </table>
+
+                                </div>
+                                <!-- Paginator -->
+                                <div class="paginator" id="paginator-table">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+
+                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div id="ShowDetailModal1" class="modal fade" tabindex="-1" role="dialog">
+                    <div class=" modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h6 class="modal-title" id="ShowDetailModalTitle">Marketing Man Wise dealer wise Overdue Details</h6>
+                                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="table-wrapper fixed-height-table">
+                                    <table id="table1" class="fixed-width-table table">
+                                        <thead id="table-header1">
+                                        </thead>
+                                        <tbody id="table-body1">
+                                        </tbody>
+
+                                    </table>
+
+                                </div>
+                                <!-- Paginator -->
+                                <div class="paginator" id="paginator-table1">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    
-
 </div>
-
-

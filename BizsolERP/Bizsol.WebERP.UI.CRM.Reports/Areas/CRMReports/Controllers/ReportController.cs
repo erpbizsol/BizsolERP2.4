@@ -3,7 +3,7 @@
 namespace Bizsol.WebERP.UI.CRM.Reports.Areas.CRMReports.Controllers
 {
     [Area("CRMReports")]
-    public class DailyVisitReportController : Controller
+    public class ReportController : Controller
     {
         public IActionResult GetDailyVisitReport()
         {
@@ -13,5 +13,15 @@ namespace Bizsol.WebERP.UI.CRM.Reports.Areas.CRMReports.Controllers
         {
             return View();
         }
+        public IActionResult ExpenseEntryReport()
+        {
+            return View();
+        }
+        public IActionResult CheckInCheckOutReport()
+        {
+            return View();
+        }
+       
+
     }
 }

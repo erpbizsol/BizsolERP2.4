@@ -1,11 +1,15 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-@* <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-<link href="~/assets/css/filter.css" rel="stylesheet" />
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="~/assets/script/filter.js"></script> *@
 
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+<script>
+    var param_VisitMode='@ViewBag.VisitMode';
+    var param_RoutePlanCode='@ViewBag.RoutePlanCode';
+    var param_VisitMaster_Code='@ViewBag.VisitMaster_Code';
+
+</script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/VisitOrderEntry.js"></script>
 
 <style>
@@ -73,8 +77,9 @@
         </div>
         <div class="col-md-3">
             <label for="txtLocation" class="col-form-label-sm fw-bold">Location</label>
-            <input type="text" id="txtAddLocation" name="txtAddLocation" class="box_border form-control form-control-sm" readonly="readonly" hidden required />
+            <input type="text" id="txtAddLocation" name="txtAddLocation" class="box_border form-control form-control-sm"  hidden required />
             <input type="text" id="txtCurrentLocation" name="txtCurrentLocation" class="box_border form-control form-control-sm" value="" required />
+            <input type="text" id="txtCheckOutLocation" name="txtCheckOutLocation" class="box_border form-control form-control-sm" hidden required />
             <input type="hidden" id="hflatlong" name="hflatlong" value="" />
         </div>
     </div>
@@ -96,195 +101,14 @@
         <div class="col-md-3">
             <label for="txtAttachment" class="col-form-label-sm fw-bold">Attachment</label>
             <div class="form-group">
-                <input type="file" id="myFile" name="filename" class="box_border form-control form-control-sm" accept="image/*" capture="camera" />
+                <input type="file" id="txtFileInput" name="txtFileInput" class="box_border form-control form-control-sm" accept="image/*" capture="camera" />
+                <input type="hidden" id="hfFileInput" name="hfFileInput" value="" />
             </div>
         </div>
     </div>
 
 </div><br/>
-@*  <div class="row">
-    <div class="col-md-12">
-        <div class="card border-primary">
-            <div class="card-body">
-                <ul class="nav nav-pills nav-justified" role="tablist">
-                    <li class="nav-item waves-effect waves-light" role="presentation">
-                        <a class="nav-link active" data-bs-toggle="tab" href="#Dashboard" role="tab" aria-selected="true" title="Dashboard">
-                            <span class="d-block d-sm-none"><i class="fas fa-grip-horizontal"></i></span>
-                            <span class="d-none d-sm-block text-sm-center">Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="nav-item waves-effect waves-light" role="presentation">
-                        <a class="nav-link" data-bs-toggle="tab" href="#tabPendingOrder" role="tab" aria-selected="false" tabindex="-1" title="Pending Order">
-                            <span class="d-block d-sm-none"><i class="fab fa-first-order"></i></span>
-                            <span class="d-none d-sm-block text-sm-center">Pending Order</span>
-                        </a>
-                    </li>
-                    <li class="nav-item waves-effect waves-light" role="presentation">
-                        <a class="nav-link" data-bs-toggle="tab" href="#tabSizeWiseSales" role="tab" aria-selected="false" tabindex="-1" title="Size Wise Sales">
-                            <span class="d-block d-sm-none"><i class="fas fa-chart-line"></i></span>
-                            <span class="d-none d-sm-block text-sm-center">Size Wise Sales</span>
-                        </a>
-                    </li>
-                    <li class="nav-item waves-effect waves-light" role="presentation">
-                        <a class="nav-link" data-bs-toggle="tab" href="#tabPaymentHistory" role="tab" aria-selected="false" tabindex="-1" title="Payment History">
-                            <span class="d-block d-sm-none"><i class="fas fa-history"></i></span>
-                            <span class="d-none d-sm-block text-sm-center">Payment History</span>
-                        </a>
-                    </li>
-                </ul>
 
-                <div class="tab-content">
-                    <div id="Dashboard" role="tabpanel" class="tab-pane active border-1 ">
-                        <div id="otherdata">
-                            <div class="row">
-                                <div class="col-md-3 colPhn">
-                                    <label for="txtCreditLimitRs" class="col-form-label-sm fw-bold">Credit Limits</label>
-                                    <div class="form-group">
-                                        <input type="text" id="txtCreditLimitRs" class="box_border form-control form-control-sm textRight" name="txtCreditLimitRs" placeholder="Credit Limit" value="0" autocomplete="off" readonly="readonly" required>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-3 colPhn">
-                                    <label for="txtCreditDays" class="col-form-label-sm fw-bold">Credit Days</label>
-                                    <div class="form-group">
-                                        <input type="text" id="txtCreditDays" name="txtCreditDays" class="box_border form-control form-control-sm textRight" placeholder="Credit Days" value="0.00" autocomplete="off" readonly="readonly" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 colPhn">
-                                    <label for="txtOverDueAmount" class="col-form-label-sm fw-bold">Over Due Amount</label>
-                                    <div class="form-group">
-                                        <input type="text" class="box_border form-control form-control-sm textRight" id="txtOverDueAmount" name="txtOverDueAmount" placeholder="Over Due Amount" value="0" autocomplete="off" readonly="readonly" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 colPhn">
-                                    <label for="txtOutstanding" class="col-form-label-sm fw-bold">Outstanding</label>
-                                    <div class="form-group">
-                                        <input type="number" class="box_border form-control form-control-sm" id="txtOutstanding" name="txtOutstanding" placeholder="Outstanding" value="0.00" autocomplete="off" readonly="readonly" required>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-3 colPhn">
-                                    <label for="txtTarget" class="col-form-label-sm fw-bold">Target Amount</label>
-                                    <div class="form-group">
-                                        <input type="text" class="form-control  form-control-sm textRight" id="txtTarget" name="txtTarget" placeholder="Target Amount" value="0.00" autocomplete="off" readonly="readonly" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 colPhn">
-                                    <label for="txtTargetShortFall" class="col-form-label-sm fw-bold">Target Shortfall</label>
-                                    <div class="form-group">
-                                        <input type="text" class="form-control  form-control-sm textRight" id="txtTargetShortFall" name="txtTargetShortFall" placeholder="Target Shortfall" value="0.00" autocomplete="off" readonly="readonly" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 colPhn">
-                                    <label for="txtLastMonthSales" class="col-form-label-sm fw-bold">Last Month Sale</label>
-                                    <div class="form-group">
-                                        <input type="text" class="form-control  form-control-sm textRight" id="txtLastMonthSales" name="txtLastMonthSales" value="0.00" placeholder="Last Month Sale" readonly="readonly" autocomplete="off" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 colPhn">
-                                    <label for="txtCurrentMonthSale" class="col-form-label-sm fw-bold">Current Month Sale</label>
-                                    <div class="form-group">
-                                        <input type="text" class="form-control  form-control-sm textRight" id="txtCurrentMonthSale" name="txtCurrentMonthSale" value="0.00" placeholder="Current Month Sale" readonly="readonly" autocomplete="off" required>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tab-content">
-                    <div id="tabPendingOrder" role="tabpanel" class="tab-pane  ">
-                        <div class="table-wrapper table-responsive">
-                            <table id="tblPendingOrder" class="table  table-responsive-sm text-sm-center" style="width:100%;">
-                                <thead>
-                                    <tr>
-                                        <th class="lead-Date">AccountDesp</th>
-                                        <th class="lead-text">OrderNo</th>
-                                        <th class="lead-text">ItemName</th>
-                                        <th class="lead-text">SizeDesp</th>
-                                        <th class="lead-text">BalQtyPC</th>
-                                        <th class="lead-text">BalQtyMT</th>
-                                        <th class="lead-text">BalQtyMTRS</th>
-                                    </tr>
-                                    <!-- end table row-->
-                                </thead>
-                                <tbody id="PendingOrderdata"></tbody>
-                            </table>
-                            <!-- end table -->
-                        </div>
-                    </div>
-                </div>
-
-
-
-
-                <div class="tab-content">
-                    <div id="tabSizeWiseSales" role="tabpanel" class="tab-pane  ">
-                        <div class="row">
-                            <div class="form-group col-md-3">
-                                <div class="input-group">
-                                    <input type="text" class="form-control  form-control-sm" placeholder="Search ..."
-                                           aria-label="Search Result">
-                                    <button class="btn btn-primary" type="submit">
-                                        <i class="mdi mdi-magnify"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="table-wrapper table-responsive">
-                            <table class="table table-responsive-sm text-sm-center" role="table">
-                                <thead role="rowgroup">
-                                    <tr role="row">
-                                        <th class="lead-Date width_cust" role="columnheader">ItemName</th>
-                                        <th class="lead-Date width_cust" role="columnheader">Size</th>
-                                        <th class="lead-text width_cust" role="columnheader">Thickness</th>
-                                        <th class="lead-text width_cust" role="columnheader">QtyMT</th>
-                                        <th class="lead-text width_cust" role="columnheader">Pcs</th>
-                                        </tr>
-                                    <!-- end table row-->
-                                </thead>
-                                <tbody id="SizeWiseSalesdata" role="rowgroup"></tbody>
-                            </table>
-                            <!-- end table -->
-                        </div>
-                    </div>
-
-                </div>
-                <div class="tab-content">
-                    <div id="tabPaymentHistory" role="tabpanel" class="tab-pane  ">
-                        <table class="table  table-responsive-sm text-sm-center" role="table">
-                            <thead role="rowgroup">
-                                <tr role="row">
-                                    <th class="lead-Date width_cust text-sm-center w-25" role="columnheader">OrderNo</th>
-                                    <th class="lead-Date width_cust" role="columnheader">OrderDate</th>
-                                    <th class="lead-text width_cust" role="columnheader">DeliveryDate</th>
-                                    <th class="lead-text width_cust" role="columnheader">InvoiceNo</th>
-                                    <th class="lead-text width_cust" role="columnheader">DispatchQty</th>
-                                    <th class="lead-Date width_cust" role="columnheader">DispatchDate</th>
-                                    <th class="lead-Date width_cust" role="columnheader">CreditDays</th>
-                                    <th class="lead-text width_cust" role="columnheader">Paymentdate</th>
-                                    <th class="lead-text width_cust" role="columnheader">BillAmount</th>
-                                    <th class="lead-text width_cust" role="columnheader">ReceiptPayment</th>
-                                    <th class="lead-text width_cust" role="columnheader">OtherThanReceiptPayment</th>
-                                    <th class="lead-text width_cust" role="columnheader">OlderThanThreeMonthPayment</th>
-                                    <th class="lead-text width_cust" role="columnheader">Balance</th>
-                                    <th class="lead-text width_cust" role="columnheader">DelayDays</th>
-                                </tr>
-                                <!-- end table row-->
-                            </thead>
-                            <tbody id="PaymentHistorydata" role="rowgroup"></tbody>
-                        </table>
-                        <!-- end table -->
-
-                    </div>
-                </div>
-            </div>
-            <div>
-            </div>
-        </div>
-        </div>
-     </div> *@
 
      <div class="row">
     
@@ -366,24 +190,17 @@
                         <div id="flush-collapseTwo" class="accordion-collapse collapse " aria-labelledby="flush-headingTwo" data-bs-parent="#accordionFlushExample" style="">
                             <div class="accordion-body text-muted">
                             <div class="col-md-12 form-group">
-                                <div class="table-wrapper" style="overflow: auto;">
-                                    <table id="tblPendingOrder" class="fl-table" style="width: 100%">
-                                        <thead>
-                                            <tr>
-                                                <th class="lead-Date text-sm-center">AccountDesp</th>
-                                                <th class="lead-text">OrderNo</th>
-                                                <th class="lead-text">ItemName</th>
-                                                <th class="lead-text">SizeDesp</th>
-                                                <th class="lead-text">BalQtyPC</th>
-                                                <th class="lead-text">BalQtyMT</th>
-                                                <th class="lead-text">BalQtyMTRS</th>
-                                            </tr>
+                                <div class="table-wrapper  fixed-height-table" id="divtblPendingOrder">
+                                    <table id="tblPendingOrder" class="fixed-width-table table">
+                                        <thead id="thPendingOrder">
+                                           
                                             <!-- end table row-->
                                         </thead>
-                                        <tbody id="PendingOrderdata"></tbody>
+                                        <tbody id="PendingOrderdata" class="filter-class"></tbody>
                                     </table>
                                     <!-- end table -->
                                 </div>
+                                <div class="paginator" id="paginator-tblPendingOrder">
                                 </div>
                             </div>
                         </div>
@@ -408,22 +225,19 @@
                                     </div>
                                 </div>
                             <div class="col-md-12 form-group">
-                                <div class="table-wrapper" style="overflow: auto;">
-                                    <table id="tblSizeWiseSales" class="fl-table" style="width: 100%">
-                                        <thead role="rowgroup">
-                                            <tr role="row">
-                                                <th class="lead-Date width_cust" role="columnheader">ItemName</th>
-                                                <th class="lead-Date width_cust" role="columnheader">Size</th>
-                                                <th class="lead-text width_cust" role="columnheader">Thickness</th>
-                                                <th class="lead-text width_cust" role="columnheader">QtyMT</th>
-                                                <th class="lead-text width_cust" role="columnheader">Pcs</th>
-                                            </tr>
-                                            <!-- end table row-->
-                                        </thead>
-                                        <tbody id="SizeWiseSalesdata" role="rowgroup"></tbody>
-                                    </table>
-                                    <!-- end table -->
-                                </div>
+                                    <div class="table-wrapper  fixed-height-table" id="divtblSizeWiseSales">
+                                        <table id="tblSizeWiseSales" class="fixed-width-table table">
+                                            <thead id="thSizeWiseSales">
+
+                                                <!-- end table row-->
+                                            </thead>
+                                            <tbody id="SizeWiseSalesdata" class="filter-class"></tbody>
+                                        </table>
+                                        <!-- end table -->
+                                    </div>
+                                    <div class="paginator" id="paginator-SizeWiseSalesdata">
+                                    </div>
+                               
                                 </div>
                             </div>
                         </div>
@@ -437,30 +251,19 @@
                         <div id="flush-collapsePayment" class="accordion-collapse collapse" aria-labelledby="flush-headingPayment" data-bs-parent="#accordionFlushExample" style="">
                             <div class="accordion-body text-muted  overflow-auto">
                             <div class="col-md-12 form-group">
-                                <div class="table-wrapper" style="overflow: auto;">
-                                    <table id="tblPaymentHistory" class="fl-table" style="width: 100%">
-                                    <thead role="rowgroup">
-                                        <tr role="row">
-                                            <th class="lead-Date width_cust text-sm-center w-25" role="columnheader">OrderNo</th>
-                                            <th class="lead-Date width_cust" role="columnheader">OrderDate</th>
-                                            <th class="lead-text width_cust" role="columnheader">DeliveryDate</th>
-                                            <th class="lead-text width_cust" role="columnheader">InvoiceNo</th>
-                                            <th class="lead-text width_cust" role="columnheader">DispatchQty</th>
-                                            <th class="lead-Date width_cust" role="columnheader">DispatchDate</th>
-                                            <th class="lead-Date width_cust" role="columnheader">CreditDays</th>
-                                            <th class="lead-text width_cust" role="columnheader">Paymentdate</th>
-                                            <th class="lead-text width_cust" role="columnheader">BillAmount</th>
-                                            <th class="lead-text width_cust" role="columnheader">ReceiptPayment</th>
-                                            <th class="lead-text width_cust" role="columnheader">OtherThanReceiptPayment</th>
-                                            <th class="lead-text width_cust" role="columnheader">OlderThanThreeMonthPayment</th>
-                                            <th class="lead-text width_cust" role="columnheader">Balance</th>
-                                            <th class="lead-text width_cust" role="columnheader">DelayDays</th>
-                                        </tr>
-                                        <!-- end table row-->
-                                    </thead>
-                                    <tbody id="PaymentHistorydata" role="rowgroup"></tbody>
-                                </table>
-                                </div>
+                                    <div class="table-wrapper  fixed-height-table" id="divtblPaymentHistory">
+                                        <table id="tblPaymentHistory" class="fixed-width-table table">
+                                            <thead id="thPaymentHistory">
+
+                                                <!-- end table row-->
+                                            </thead>
+                                            <tbody id="PaymentHistorydata" class="filter-class"></tbody>
+                                        </table>
+                                        <!-- end table -->
+                                    </div>
+                                    <div class="paginator" id="paginator-PaymentHistorydata">
+                                    </div>
+                                
 
                                 </div>
                             </div>
@@ -592,8 +395,7 @@
                                         </div>
 
                                     </div>
-                                    @* @if (ViewBag.ShowPaymentTermsInDirectOrder == "Y")
-                                    { *@
+                                    
                                         <div class="col-md-2 colPhn" id="divShowFreight">
                                         <label for="txtlistFreight" class="col-form-label-sm fw-bold">Freight </label>
                                             <div class="form-group">
@@ -601,29 +403,21 @@
                                             </div>
 
                                         </div>
-                                  @*   } *@
-
-                                   @*  @if (ViewBag.ShowDeliveryLocationInOrder == "Y" || ViewBag.ShowDeliveryLocationInOrder == "M")
-                                    { *@
+                                  
                                         <div class="col-md-3 colPhn" id="divDeliveryLocation">
                                         <label for="txtDeliveryLocation" class="col-form-label-sm fw-bold">Delivery Location<span class="universal"></span></label>
                                             <div class="form-group">
                                         <input type="text" list="listDeliveryLocation" class="box_border form-control form-control-sm" id="txtDeliveryLocation" name="txtDeliveryLocation" placeholder="" value="" onblur="" autocomplete="off" maxlength="500" required>
                                             </div>
                                         </div>
-                                    @* }
-                                    @if (ViewBag.ShowCreditDaysForDC == "Y")
-                                    { *@
+                                  
                                         <div class="col-md-3 colPhn" id="divCreditDays">
                                         <label for="txtCreditDaysForDC" class="col-form-label-sm fw-bold">Credit Days<span class="universal"></span></label>
                                             <div class="form-group">
                                                 <input type="number" class="box_border form-control form-control-sm" id="txtCreditDaysForDC" name="txtCreditDaysForDC" placeholder="" value="" autocomplete="off" maxlength="3" required>
                                             </div>
                                         </div>
-                                    @* }
-
-                                    @if (ViewBag.ShowMRateUnit == "Y")
-                                    { *@
+                                   
                                         <div class="col-md-3 colPhn" id="divRateUnit">
                                         <label for="txtMRateUnit" class="col-form-label-sm fw-bold">Rate Unit <span class="universal">*</span></label>
                                             <div class="form-group">
@@ -640,12 +434,7 @@
                                     </div>
                                 </div>
 
-                                   @*  }
-
-
-
-                                    @if (ViewBag.AskOtherCharges == "Y")
-                                    { *@
+                                  
                                         <div class="col-md-1 colPhn" id="divBasicRate">
                                         <label for="txtBasicRateLock" class="col-form-label-sm fw-bold">Basic Rate<span class="universal"></span></label>
                                             <div class="form-group">
@@ -666,7 +455,7 @@
                                 <div class="col-md-1 colPhn" id="divAmt">
                                     <label for="txtAmt" class="col-form-label-sm fw-bold">Amount<span class="universal"></span></label>
                                             <div class="form-group">
-                                            <input type="number" onkeypress="return numberdecimalOnly(event); calFinalAmt();" onfocusout="" ID="txtAmt" name="txtAmt" class="box_border form-control form-control-sm number" autocomplete="off" value="0" placeholder=" " />
+                                        <input type="number" onkeypress="return numberdecimalOnly(event); " onfocusout="ValidateDiscountLimit();calFinalAmt();" ID="txtAmt" name="txtAmt" class="box_border form-control form-control-sm number" autocomplete="off" value="0" placeholder=" " />
                                             </div>
                                         </div>
                                         <div class="col-md-2 colPhn" id="divFinalRate">
@@ -675,8 +464,7 @@
                                             <input type="text" onkeypress="return numberdecimalOnly(event);" ID="txtAmtFinal" name="txtAmtFinal" class="box_border form-control form-control-sm number" autocomplete="off" value="0" readonly />
                                             </div>
                                         </div>
-                                   @*  } *@
-
+                                  
                                 </div>
                                 
                              </div>
@@ -697,24 +485,15 @@
                 <div class="col-md-12 colPhn">
                     <label for="txtRemarks" class="col-form-label-sm fw-bold">Remarks </label>
                     <div class="form-group">
-                        <input type="text" class="box_border form-control form-control-sm" id="txtRemarks" value="" name="txtRemarks" placeholder="Remarks" autocomplete="off" maxlength="250">
+                        <input type="text" class="box_border form-control form-control-sm" id="txtRemarks" value="" name="txtRemarks" placeholder="Remarks" autocomplete="off" maxlength="200">
 
                     </div>
                 </div>
-                <div class="col-md-3 colPhn">
-                    @if ("V" == "O")
-                    {
-                        <div class="form-group" hidden>
-                            <input ID="txtNextVistDate" name="txtNextVistDate" class="box_border form-control form-control-sm textRight" autocomplete="off" placeholder="Next Visit Date" required value="" />
-                        </div>
-                    }
-                    else
-                    {
-                        <label for="txtEndTime" class="col-form-label-sm fw-bold">Next Visit Date <span class="universal">*</span></label>
+                    <div class="col-md-3 colPhn" id="divtxtNextVistDate">
+                        <label for="txtNextVistDate" class="col-form-label-sm fw-bold">Next Visit Date <span class="universal">*</span></label>
                         <div class="form-group">
                             <input ID="txtNextVistDate" type="date" name="txtNextVistDate" class="box_border form-control form-control-sm textRight" autocomplete="off" placeholder="Next Visit Date" required value="" />
                         </div>
-                    }
                 </div>
             </div>
             
@@ -725,9 +504,11 @@
     <div class="col-md-12 colPhn">
         <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-sm waves-effect waves-light" onclick="SaveData();" />
         <input type="button" name="btnCheckOut" id="btnCheckOut" value="Check Out" class="btn btn-primary btn-sm waves-effect waves-light" />
-        <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-sm waves-effect waves-light" />
+            <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-sm waves-effect waves-light" />
     </div>
 </div>
+    <input type="hidden" id="hfVisitType" name="hfVisitType" value="" />
+    <input type="hidden" id="hfDealerZone" name="hfDealerZone" value="" />
 <datalist id="listdealer"></datalist>
 <datalist id="listItem"></datalist>
 <datalist id="listItemSize"></datalist>
@@ -736,3 +517,5 @@
 <datalist id="listFreight"></datalist>
 <datalist id="listFreightType"></datalist>
 <datalist id="listZone"></datalist>
+
+    <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>

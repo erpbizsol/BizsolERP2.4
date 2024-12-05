@@ -3,9 +3,9 @@
 namespace Bizsol.WebERP.UI.CRM.Transactions.Areas.CRMTransactions.Controllers
 {
     [Area("CRMTransactions")]
-    public class OrderEntryListController : Controller
+    public class ClosePendingOrderController : Controller
     {
-        public IActionResult OrderEntryList()
+        public IActionResult ClosePendingOrder()
         {
             return View();
         }

@@ -3,8 +3,22 @@
 }
 
 
-@* <div style="background-image: url('../assets/images/users/erp-banner1.png')" alt="banner" class="banner"> *@
-     <div> 
+<style>
+    /* In your dashboard BG CSS */
+    .main-content {
+        /* background-image: url('/assets/images/users/erp-banner-copy.png'); */
+        background-image: url('./assets/images/users/erp-banner-copy.png');
+        /*background-image: url('/assets/images/users/download.jpg');*/
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 90vh;
+        /* margin-left: 70px; */
+    }
+</style>
+
+
+<div alt="banner" class="banner">
 
     <!-- start page title -->
    
@@ -13,7 +27,7 @@
     <div class="row">
         <div class="col-md-12">
             @* <img src="/assets/images/users/erpBanner.png" alt="banner" class="banner"/> *@
-             <img src="~/assets/images/users/erp-banner1.png" alt="banner" class="banner"/> 
+             @* <img src="~/assets/images/users/erp-banner1.png" alt="banner" class="banner"/> *@
         </div>
     </div>
 

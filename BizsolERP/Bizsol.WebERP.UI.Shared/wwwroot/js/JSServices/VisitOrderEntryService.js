@@ -66,6 +66,73 @@ const VisitOrderEntryService = {
             }
         );
     },
+    GetNestedMarketingManList: function GetNestedMarketingManList() {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_SALESPERSON + `/GetNestedMarketingManList?UserMaster_Code=`+ userMasterCode + `&MarketingManMaster_Code=0`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+
+    GetVisitMasterList: function GetVisitMasterList(FromDate, ToDate, MarketingMan) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetVerifiedRoutePlanUserAndDateWise?User_ID=${userMasterCode}&MarketingMan_Name=${MarketingMan}&FromDate=${FromDate}&ToDate=${ToDate}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRoutePlanList: function GetRoutePlanList() {
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + `/GetRoutePlanList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    NotVisitedRoutePlan: function NotVisitedRoutePlan(RoutePlanMaster_Code, Reason) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/NotVisitedRoutePlan?RoutePlanMaster_Code=${RoutePlanMaster_Code}&UserMaster_Code=${userMasterCode}&ReasonForClose=${Reason}`;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    CheckInVisit: function CheckInVisit(RoutePlanMaster_Code, CheckIn, location, ChekedInLocation) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/CheckInVisit?RoutePlanMaster_Code=${RoutePlanMaster_Code}&CheckIn=${CheckIn}&Location=${location}&ChekedInLocation=${ChekedInLocation}&UserMaster_Code=${userMasterCode}`;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetOrderTypeList: function GetOrderTypeList() {
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetOrderTypeList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetVerifyOrderList: function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `GetVerifyOrderList?DealerName=${DealerName} &SalesPerson=${SalesPerson}&OrderType=${OrderType}&ChkWithOrder=${ChkWithOrder}&UserMaster_Code=${userMasterCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetItemSizeListByItemCode: function GetItemSizeListByItemCode(ItemMaster_Code) {
         let url = UrlService.API_ENDPOINT_ItemSize + "/GetItemSizeListByItemCode?ItemMaster_Code=" + ItemMaster_Code;
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
@@ -132,7 +199,24 @@ const VisitOrderEntryService = {
             }
         );
     },
-    
+    GetEditVisitDetails: function GetEditVisitDetails(RoutePlan_Code,VisitMaster_Code) {
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + "/GetEditVisitDetails?RoutePlanMaster_Code=" + RoutePlan_Code + `&VisitMaster_Code=` + VisitMaster_Code;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    CheckOut: function CheckOut(Data) {
+        var json_data = JSON.stringify(Data, null, 2);
+        var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + "/CheckOut?UserMaster_Code=" + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('POST', url, json_data).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VisitOrderEntryService }

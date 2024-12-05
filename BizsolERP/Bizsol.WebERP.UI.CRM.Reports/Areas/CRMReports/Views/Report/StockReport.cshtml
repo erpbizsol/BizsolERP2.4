@@ -5,21 +5,19 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/StockReport.js"></script>
-<div class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h5 class="m-0">Stock Report</h5>
-            </div><!-- /.col -->
+<style>
 
-        </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-
-</div>
-<div class="mt-4">
+    #fetchReportButton {
+        width: 100% !important;
+        height: 29px;
+        text-align: center !important;
+        padding: 0px;
+    }
+</style>
+<div class="">
     <div class="card shadow-sm">
         <div class="card-body  shadow-sm">
-            <div class="row g-3">
+            <div class="row">
                 <div class="col-md-3">
                     <label for="txtReportType" class="col-form-label-sm fw-bold">Report Type</label>
                     <datalist id="txtReportTypelists"></datalist>
@@ -30,14 +28,14 @@
                     <datalist id="txtItemNamelist"></datalist>
                     <input list="txtItemNamelist" id="txtItemName" type="text" name="txtItemName" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Item Name" required>
                 </div>
-                <div class="col-md-1 form-group text-end mt-5">
-                    <input type="button" name="btnSearch" id="fetchReportButton" class="btn btn-primary btn-sm waves-effect waves-light" value="Show" />
+                <div class="col-md-1 text-end" style="margin-top:30px;">
+                    <button type="button" id="fetchReportButton" class="btn btn-primary btn-sm waves-effect waves-light">Show</button>
+
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 <div class="card-body">
     <div class="table-wrapper fixed-height-table">
         <table id="table" class="fixed-width-table table">
@@ -45,9 +43,7 @@
             </thead>
             <tbody id="table-body">
             </tbody>
-
         </table>
-
     </div>
     <!-- Paginator -->
     <div class="paginator" id="paginator-table">

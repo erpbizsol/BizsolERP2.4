@@ -2,6 +2,22 @@
     .toolbar1 {
         text-align:left;
     }
+
+    .footer .text-left,
+    .footer .text-end {
+        text-align: center !important;
+    }
+
+    .main-content {
+/*        background-size: contain !important; */
+        background-position: top !important; 
+        height: auto;
+    }
+
+
+    .modal-content-width-sm {
+        width: 100%;
+    }
 }
 
 

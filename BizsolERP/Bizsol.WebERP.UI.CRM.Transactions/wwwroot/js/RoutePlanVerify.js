@@ -1,4 +1,4 @@
-﻿import { RoutePlanMasterService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/RoutePlanService.js';
+﻿import { RoutePlanMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/RoutePlanService.js';
 
 let MultiRoutePlanCodes = [];
 $(document).ready(function () {
@@ -9,21 +9,27 @@ function GetUserWiseRoutePlanDetails() {
     RoutePlanMasterService.GetUserWiseRoutePlanDetails().then(function (response) {
       
         if (response && Array.isArray(response) && response.length > 0) {
-            const stringFilterColumn = ["UserName", "VisitType", "CityName", "StateName", "Description","AccountDesp","IsVerify"];
+            const stringFilterColumn = ["User Name", "Visit Type", "City Name", "State Name", "Description","Dealer Name","Status"];
             const numericFilterColumn = [];
             const dateFilterColumn = ["Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = ["Code", "VisitTypeMaster_Code", "DealerMaster_Code", "CityMaster_Code", "StateMaster_Code","UserMaster_Code"];
-            
+            const ColumnAlignment = {
+                //"Total Amount": 'right',
+                //"Total Order Qty": 'right',
+                "Date": 'center',
+                "Status": 'center',
+                //"Closed": 'center',
+            };
             const updatedResponse = response.map(item => ({
                 ...item,
-                Action: `<button class="btn btn-success btn-sm" title="Verify" onclick="Verify('${item.Code}')">Verify</button>
-                <button class="btn btn-info btn-sm" title="Reject" onclick="Reject('${item.Code}')">Reject</button>`
+                Action: `<button class="btn btn-success btn-sm icon-height" title="Verify" onclick="Verify('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
+                <button class="btn btn-danger btn-sm icon-height" title="Reject" onclick="Reject('${item.Code}')"><i class="fa-regular fa-circle-xmark"></i></button>`
                
             }));
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
              MultiRoutePlanCodes = response.map(item => item.Code);
         } else {
             console.error("No valid data found:", response);
@@ -59,9 +65,9 @@ function SaveModal() {
             return;
         }
         else {
-            toastr.success(results.Msg);
+            toastr.success(response.Msg);
             $('#myModal').modal('hide');
-            document.getElementById('rejectReason').value = '';
+            $('#rejectReason').val('');
             GetUserWiseRoutePlanDetails();
         }
     });
@@ -71,7 +77,7 @@ function CloseModal() {
 }
 function VerifyAll() {
     RoutePlanMasterService.VerifyAllRoutePlan(MultiRoutePlanCodes).then(function (res) {
-        toastr.success(result.Msg);
+        toastr.success(res.Msg);
         GetUserWiseRoutePlanDetails();
     });
 }
@@ -93,12 +99,10 @@ function SaveAllModal() {
         else {
             toastr.success(results.Msg);
             $('#myAllDeleteModal').modal('hide');
-            document.getElementById('rejectAllReason').value = '';
+            $('#rejectAllReason').val('');
             GetUserWiseRoutePlanDetails();
         }
     });
-   
-    
 }
 function CloseAllModal() {
     $('#myAllDeleteModal').modal('hide');

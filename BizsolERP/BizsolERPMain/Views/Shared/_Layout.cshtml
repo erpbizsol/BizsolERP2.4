@@ -55,7 +55,7 @@
                 <div class="d-flex">
                     <!-- LOGO -->
                     <div class="navbar-brand-box">
-                        <a href="index.html" class="logo logo-dark">
+                        <a href="https://bizsol.in" class="logo logo-dark">
                             <span class="logo-sm">
                                 <img src="~/assets/images/logo-full.jpeg" alt="" height="30">
                             </span>
@@ -64,7 +64,7 @@
                             </span>
                         </a>
 
-                        <a href="index.html" class="logo logo-light">
+                        <a href="https://bizsol.in" class="logo logo-light">
                             <span class="logo-sm">
                                 <img src="~/assets/images/logo-sm.svg" alt="" height="24">
                             </span>
@@ -184,11 +184,11 @@
                         </button>
                         <div class="dropdown-menu dropdown-menu-end">
                             <!-- item-->
-                            <a class="dropdown-item" href="apps-contacts-profile.html">
+                            <a class="dropdown-item" href="#">
                                 <i class='bx bxs-user align-middle userIcon me-1'></i> <span>Profile</span>
                             </a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="auth-logout.html">
+                            <a class="dropdown-item" href="#" onclick="logoutUser()">
                                 <i class="mdi mdi-logout align-middle me-1 userIcon"></i> <span>Logout</span>
                             </a>
                         </div>
@@ -228,8 +228,8 @@
         <!-- Start right Content here -->
         <!-- ============================================================== -->
         <div class="main-content">
-            <div class="page-content">
-                <div class="container-fluid">
+            <div class="container-fluid">
+                <div class="page-content">
                     <main role="main" class="pb-3">
                         @RenderBody()
                     </main>
@@ -243,14 +243,14 @@
         <footer class="footer">
             <div class="container-fluid">
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-4 text-left">
                         <div>
                             <span class="userTextBig" id="ERPUserName">PINKI BIZSOL</span>
                             <span class="userTextSmall" id="ERPCompanyCode">(ERP2.4 DEV)</span>
                         </div>
                     </div>
-                    <div class="col-md-8 text-center">
-                        <div><p class="m-0 copyright">Copyright © 2024 <a href="">BizSol Technologies Pvt. Ltd.</a> All rights reserved.</p></div>
+                    <div class="col-md-8 text-end">
+                        <div><p class="m-0 copyright">Copyright © 2024 <a href="https://bizsol.in">BizSol Technologies Pvt. Ltd.</a> All rights reserved.</p></div>
                     </div>
                     @* <div class="col-sm-6">
                         <script>document.write(new Date().getFullYear())</script> © Minia.
@@ -455,7 +455,7 @@
     <!-- App script should come last -->
     <script src="~/assets/js/app.js"></script>
     <!-- apexcharts -->
-    <script src="assets/libs/apexcharts/apexcharts.min.js"></script>
+    <script src="~/assets/libs/apexcharts/apexcharts.min.js"></script>
     <!-- Plugins js-->
 
 
@@ -467,8 +467,10 @@
     <script>
         // $(document).ready(function () {
         var authKey = '@Html.Raw(ViewBag.AuthKey)';
-        if (authKey !== '') {
-            sessionStorage.setItem('authKey', authKey);
+       if (authKey !== '') {
+              sessionStorage.setItem('authKey', authKey);
+              sessionStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
+              window.AppBaseURL='@Html.Raw(ViewBag.AppBaseURL)';
         }
         // });
 
@@ -485,6 +487,7 @@
     </script> *@
     <script type="module" src="~/assets/script/menu.js"></script>
     <script type="module" src="~/assets/script/webnotification.js"></script>
+    <script src="~/assets/script/Logout.js"></script>
 
 </body>
 </html>

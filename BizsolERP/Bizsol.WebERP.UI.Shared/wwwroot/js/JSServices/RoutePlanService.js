@@ -128,7 +128,7 @@ const RoutePlanMasterService = {
     },
     RejectRoutePlan: function RejectRoutePlan(Code,ReasonForDelete) {
         var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/RejectRoutePlan?Code=" + Code + "&ReasonForDelete='" + ReasonForDelete +"'" + "&UserMaster_Code=" + userMasterCode;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/RejectRoutePlan?Code=" + Code + "&UserMaster_Code=" + userMasterCode+ "&ReasonForDelete=" + ReasonForDelete +"";
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
@@ -137,7 +137,7 @@ const RoutePlanMasterService = {
     },
     VerifyAllRoutePlan: function VerifyAllRoutePlan(MultiRoutePlanCodes) {
         var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/VerifyAllRoutePlan?MultiRoutePlanCodes='" + MultiRoutePlanCodes + "'" + "&UserMaster_Code=" + userMasterCode;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/VerifyAllRoutePlan?MultiRoutePlanCodes=" + MultiRoutePlanCodes + "" + "&UserMaster_Code=" + userMasterCode;
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
@@ -146,7 +146,7 @@ const RoutePlanMasterService = {
     },
     RejectAllRoutePlan: function RejectAllRoutePlan(MultiRoutePlanCodes,ReasonForDelete) {
         var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/RejectAllRoutePlan?MultiRoutePlanCodes='" + MultiRoutePlanCodes + "'" + "&UserMaster_Code=" + userMasterCode + "&ReasonForDelete='" + ReasonForDelete +"'";
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/RejectAllRoutePlan?MultiRoutePlanCodes=" + MultiRoutePlanCodes + "" + "&UserMaster_Code=" + userMasterCode + "&ReasonForDelete=" + ReasonForDelete +"";
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
