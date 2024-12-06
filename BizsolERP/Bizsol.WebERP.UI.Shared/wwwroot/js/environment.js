@@ -1,5 +1,5 @@
 ﻿ const environment = {
-   BASE_URL: window.location.href.includes('test') == true ? 'https://web.bizsol.in/erpapitest/api' : window.location.href.includes('dev') == true || window.location.href.includes('localhost') == true ? 'https://web.bizsol.in/erpapidev/api' : 'https://' + window.location.hostname + '/erpapi/api'  // development API
+     BASE_URL: window.location.href.toLowerCase().includes('erp25test') == true ? 'https://'+ window.location.hostname +'/erp25apitest/api': window.location.href.toLowerCase().includes('test') == true ? 'https://web.bizsol.in/erpapitest/api' : window.location.href.toLowerCase().includes('dev') == true || window.location.href.toLowerCase().includes('localhost') == true ? 'https://web.bizsol.in/erpapidev/api' : 'https://' + window.location.hostname + '/erpapi/api'  // development API
 };
 
 $.ajaxSetup({
