@@ -17,60 +17,69 @@ function GetUserWiseRoutePlanDetails() {
             const showButtons = [];
             const hiddenColumns = ["Code", "VisitTypeMaster_Code", "DealerMaster_Code", "CityMaster_Code", "StateMaster_Code","UserMaster_Code"];
             const ColumnAlignment = {
-                //"Total Amount": 'right',
-                //"Total Order Qty": 'right',
                 "Date": 'center',
                 "Status": 'center',
-                //"Closed": 'center',
             };
+            const pendingRows = response.filter(item => item.Status === 'Pending');
+            MultiRoutePlanCodes = pendingRows.map(item => item.Code);
             const updatedResponse = response.map(item => ({
                 ...item,
-                Action: `<button class="btn btn-success btn-sm icon-height" title="Verify" onclick="Verify('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
-                <button class="btn btn-danger btn-sm icon-height" title="Reject" onclick="Reject('${item.Code}')"><i class="fa-regular fa-circle-xmark"></i></button>`
+                Action: `<button class="btn btn-success icon-height" title="Verify" ${item.Status !== 'Pending' ? 'disabled' : ''} onclick="Verify('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
+                <button class="btn btn-danger icon-height" title="Reject" ${item.Status !== 'Pending' ? 'disabled' : ''} onclick="Reject('${item.Code}')"><i class="fa-regular fa-circle-xmark"></i></button>`
                
             }));
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
-             MultiRoutePlanCodes = response.map(item => item.Code);
+            if (MultiRoutePlanCodes.length > 0) {
+                //VerifyAll();
+            }
+            //MultiRoutePlanCodes = response.map(item => item.Code);
         } else {
-            console.error("No valid data found:", response);
+            toastr.error("No valid data found:", response);
             alert("No data available.");
         }
     }).catch(error => {
-        console.error("Error in fetching data:", error);
+        toastr.error("Error in fetching data:", error);
         alert("Failed to load data.");
     });
 }
 function Verify(Code) {
     RoutePlanMasterService.VerifyRoutePlan(Code).then(function (result) {
-        toastr.success(result.Msg);
-        GetUserWiseRoutePlanDetails();
+            toastr.success(result.Msg);
+            GetUserWiseRoutePlanDetails();
     });
 }
 function Reject(Code) {
-    $('#myModal').modal('show');
-    $('#myModal').modal({
-        backdrop: 'static',
-        
-    });
-    $("#txtcode").val(Code);
+        $('#myModal').modal('show');
+        $('#myModal').modal({
+            backdrop: 'static',
+
+        });
+        $("#txtcode").val(Code); 
 }
 function SaveModal() {
     var reason = $("#rejectReason").val();
     var code = $("#txtcode").val();
-    RoutePlanMasterService.RejectRoutePlan(code, reason).then(function (response) {
-       
-        if (reason == "") {
-            alert('Please enter a reason before proceeding.');
-            toastr.error(response.Msg);
-            return;
-        }
-        else {
-            toastr.success(response.Msg);
-            $('#myModal').modal('hide');
-            $('#rejectReason').val('');
-            GetUserWiseRoutePlanDetails();
-        }
-    });
+    if (reason == "") {
+        toastr.error('Please enter a reason before proceeding.');
+        return;
+    } else {
+        RoutePlanMasterService.RejectRoutePlan(code, reason).then(function (response) {
+            if (response.Msg) {
+                toastr.success(response.Msg);
+                $('#rejectReason').val('');
+                $('#txtCode').val('');
+                GetUserWiseRoutePlanDetails();
+                $('#myModal').modal('hide');
+            } else {
+                toastr.error('An error occurred. Please try again.');
+            }
+        })
+            .catch(function (error) {
+                toastr.error('An unexpected error occurred.');
+                console.error(error);
+            });
+    }
+   
 }
 function CloseModal() {
     $('#myModal').modal('hide');
