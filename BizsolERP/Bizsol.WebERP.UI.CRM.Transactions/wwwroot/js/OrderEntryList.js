@@ -304,11 +304,13 @@ function GetUserNameList() {
 
 function openEditVisitMaster(VisitMaster_Code, Code) {
         const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-        window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=0&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
+        const RoutePlanCode = window.btoa(0);
+    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode="+RoutePlanCode+"&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
 }
 function openViewVisitMaster(VisitMaster_Code, Code) {
     const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=0&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
+    const RoutePlanCode = window.btoa(0);
+    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode="+RoutePlanCode +"&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
 }
 function encodeHash(value) {
     return btoa(value); 
