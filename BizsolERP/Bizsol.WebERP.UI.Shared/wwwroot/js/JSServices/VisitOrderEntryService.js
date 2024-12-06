@@ -39,7 +39,7 @@ const VisitOrderEntryService = {
     GetAccountMasterDetails: function GetAccountMasterDetails(AccountDesp) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_ACCOUNT_MASTER + `/GetAccountMasterByAccountDesp?AccountDesp=` + AccountDesp;
+        var URL = UrlService.API_ENDPOINT_ENQUIRY + `/GetAccountDetailsByAccountDesp?AccountDesp=` + AccountDesp;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -128,6 +128,90 @@ const VisitOrderEntryService = {
         var userMasterCode = authKeyData.UserMaster_Code;
         var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetVerifyOrderList?DealerName=${DealerName} &SalesPerson=${SalesPerson}&OrderType=${OrderType}&ChkWithOrder=${ChkWithOrder}&UserMaster_Code=${userMasterCode}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetItemSizeListByItemCode: function GetItemSizeListByItemCode(ItemMaster_Code) {
+        let url = UrlService.API_ENDPOINT_ItemSize + "/GetItemSizeListByItemCode?ItemMaster_Code=" + ItemMaster_Code;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetSizeParameterAsPerChart: function GetSizeParameterAsPerChart(ItemName) {
+        let url = UrlService.API_ENDPOINT_ItemSize + "/GetSizeParameterAsPerChart?ItemName=" + ItemName;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetThkParameterAsPerChart: function GetThkParameterAsPerChart(ItemName,Size) {
+        let url = UrlService.API_ENDPOINT_ItemSize + "/GetThkParameterAsPerChart?ItemName=" + ItemName + `&Size=` + Size;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetFreightList: function GetFreightList(ItemName) {
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + "/GetFreightList" ;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetFreightTypeList: function GetFreightTypeList(ItemName, Size) {
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + "/GetFreightTypeList";
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetAccountDeliveryLocationDetails: function GetAccountDeliveryLocationDetails(AccountDesp) {
+        let url = UrlService.API_ENDPOINT_ACCOUNT_MASTER + "/GetAccountDeliveryLocationDetails?AccountDesp=" + AccountDesp;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SaveVisit: function SaveVisit(Data) {
+        var json_data = JSON.stringify(Data, null, 2);
+        var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + "/SaveVisit?UserMaster_Code=" + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('POST', URL, json_data).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetZoneMasterList: function GetZoneMasterList() {
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + "/GetZoneMasterList";
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetEditVisitDetails: function GetEditVisitDetails(RoutePlan_Code,VisitMaster_Code) {
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + "/GetEditVisitDetails?RoutePlanMaster_Code=" + RoutePlan_Code + `&VisitMaster_Code=` + VisitMaster_Code;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    CheckOut: function CheckOut(Data) {
+        var json_data = JSON.stringify(Data, null, 2);
+        var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + "/CheckOut?UserMaster_Code=" + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('POST', url, json_data).then(
             function (value) {
                 return value;
             }
