@@ -6,7 +6,7 @@ namespace Bizsol.WebERP.UI.Purchase.Transactions.Areas.PurchaseTransactions.Cont
     [Route("[area]/[controller]/[action]")]
     public class GateEntryController : Controller
     {
-        public IActionResult GateEntryDate()
+        public IActionResult GateEntryView()
         {
             return View();
         }

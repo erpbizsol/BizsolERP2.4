@@ -4,7 +4,7 @@ function ListValidation(List,ColNo, strValue) {
 
         var Valid = false;
         var array =List;
-
+    var arr ;
         for (var i = 0; i < array.length; i++) {
             arr = array[i];
             var b_col = arr.map(x => x.Value);

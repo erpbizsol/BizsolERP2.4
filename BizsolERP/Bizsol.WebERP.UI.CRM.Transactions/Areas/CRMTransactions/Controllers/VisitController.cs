@@ -7,8 +7,23 @@ namespace Bizsol.WebERP.UI.CRM.Transactions.Areas.CRMTransactions.Controllers
     {
         public IActionResult VisitOrderEntry()
         {
+            string Encrypt_RoutePlanCode = HttpContext.Request.Query["RoutePlanCode"].ToString();
+            string Encrypt_VisitMaster_Code = HttpContext.Request.Query["VisitMaster_Code"].ToString();
+            string VisitMode = HttpContext.Request.Query["VisitMode"].ToString();
+
+            byte[] RoutePlanCodedata = Convert.FromBase64String(Encrypt_RoutePlanCode);
+            string RoutePlanCode = System.Text.Encoding.UTF8.GetString(RoutePlanCodedata);
+
+            byte[] VisitMaster_Codedata = Convert.FromBase64String(Encrypt_VisitMaster_Code);
+            string VisitMaster_Code = System.Text.Encoding.UTF8.GetString(VisitMaster_Codedata);
+
+            ViewBag.RoutePlanCode = RoutePlanCode==""?0 : Convert.ToInt32(RoutePlanCode);
+            ViewBag.VisitMaster_Code = VisitMaster_Code == "" ? 0 : Convert.ToInt32(VisitMaster_Code);
+            ViewBag.VisitMode = VisitMode ==""?  "New":VisitMode;
+
             return View();
         }
+        
         public IActionResult Visit()
         {
             return View();

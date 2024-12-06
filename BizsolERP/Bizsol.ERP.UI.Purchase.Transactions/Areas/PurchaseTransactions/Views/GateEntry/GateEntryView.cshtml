@@ -1,0 +1,39 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-sm-3">
+        <label for="from-date">From Date</label>
+        <input type="date" class="form-control" id="txtFromDate" onchange="GateEntryGirdByDates()">
+    </div>
+    <div class="col-sm-3">
+        <label for="to-date">To Date</label>
+        <input type="date" class="form-control" id="txtToDate" onchange="GateEntryGirdByDates()">
+    </div>
+    <div class="col-sm-6 text-end">
+        <label></label>
+        <button type="button" class="btn btn-primary icon-height">DOWNLOAD</button>
+        <button type="button" class="btn btn-primary icon-height">CREATE NEW</button>
+        &nbsp;
+        <i class="fa fa-gear"></i>
+    </div>
+</div>
+
+<div class="table-wrapper mt-2">
+    <table id="tbGateEntyView" class="table fixed-width-table">
+        <thead id="tbGateEntyViewHeader">
+        </thead>
+        <tbody id="tbGateEntyViewBody">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-tbGateEntyView">
+</div>
+
+<div id="GateEntry_AttachmentControlmodal"></div>
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GateEntry.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+

@@ -17,7 +17,7 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             return PartialView("_SizeControl");
             
         }
-        public ActionResult AttachmentControl(string MasterTableName, int MasterTableCode,string DetailTableName,int DetailTableCode,int EntryNo,string EntryDate, string CallBackFunctionName_btnDone)
+        public ActionResult AttachmentControl(string MasterTableName, int MasterTableCode,string DetailTableName,int DetailTableCode,int EntryNo,string EntryDate, string Mode)
         {
 
             ViewBag.MasterTableName = MasterTableName;
@@ -26,7 +26,7 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             ViewBag.DetailTableCode = DetailTableCode;
             ViewBag.EntryNo = EntryNo;
             ViewBag.EntryDate = EntryDate;
-            ViewBag.CallBackFunctionName_btnDone = CallBackFunctionName_btnDone;
+            ViewBag.Mode = Mode;
             return PartialView("_AttachmentControl");
 
         }

@@ -269,7 +269,7 @@ function showLocation(position) {
 function EditData(code, VisitMaster_Code) {
     const codes = window.btoa(code);
     const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-    window.location = baseUrl +"/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&Visit&VistMaster_Code=" + VisitMaster_Codes + "&VistMode=Edit";
+    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
 }
 function ViewData(code, VisitMaster_Code) {
     if (typeof VisitMaster_Code === 'undefined') {
@@ -278,7 +278,7 @@ function ViewData(code, VisitMaster_Code) {
     }
     const codes = window.btoa(code);
     const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes +"Visit&VistMaster_Code=" + VisitMaster_Codes + "&VistMode=View";
+    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
 }
 function IsNotVisited(code) {
     const alertCls = confirm("Are you sure you want to close this visit?");
@@ -325,7 +325,7 @@ function IsCheckIn(RoutePlanMaster_Code, date) {
     const visitDate = new Date(date);
     const visitDateOnly = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate());
     if (visitDateOnly < currentDateOnly) {
-        alert('Check-In is not allowed because the visit date is earlier than the current date.');
+        toastr.info('Check-In is not allowed because the visit date is earlier than the current date.');
         return false;
     }
     GetActualLocation();
@@ -342,7 +342,7 @@ function IsCheckIn(RoutePlanMaster_Code, date) {
             const encodedRoutePlanCode = window.btoa(RoutePlanMaster_Code);
             const encodedVisitMasterCode = window.btoa(response.Code);
             window.location = `${baseUrl}/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&Visit&VistMaster_Code=${encodedVisitMasterCode}&VistMode=New`;
-            alert("Check-In successful! You can view and edit the selected plan details.");
+            toastr.success("Check-In successful! You can view and edit the selected plan details.");
         } else {
             toastr.error(response.Msg);
         }
