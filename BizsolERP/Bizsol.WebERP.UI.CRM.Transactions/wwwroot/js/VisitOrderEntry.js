@@ -1358,12 +1358,12 @@ function GetEditVisitDetails() {
                 $('#txtRemarks').val(response.VisitORroutePlanMaster[0].Remarks);             
                 $('#txtAddLocation').val(response.VisitORroutePlanMaster[0].Location);                
                 $('#txtNextVistDate').val(response.VisitORroutePlanMaster[0].NextVisitDate);                   
-                $('#txtFreightType').val(response.VisitORroutePlanMaster[0].Freight);                     
+                $('#txtFreightType').val(response.VisitORroutePlanMaster[0].FreightType);                     
                 $('#txtCurrentLocation').val(response.VisitORroutePlanMaster[0].CheckInLocation);             
                 $('#txtDeliveryDays').val(response.VisitORroutePlanMaster[0].DeliveryDaysForOrder);    
                 $('#hfFileInput').val(response.VisitORroutePlanMaster[0].PanelOneAttachment);  
                 $('#txtCreditDaysForDC').val(response.VisitORroutePlanMaster[0].CreditDays);      
-                $('#txtlistFreight').val(response.VisitORroutePlanMaster[0].FreightType);     
+                $('#txtlistFreight').val(response.VisitORroutePlanMaster[0].Freight);     
                 $('#txtZone').val(response.VisitORroutePlanMaster[0].ZoneName);
                 $('#hfVisitType').val(response.VisitORroutePlanMaster[0].VisitType);
                 
