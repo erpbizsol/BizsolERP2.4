@@ -41,7 +41,6 @@
     .btn:not(:disabled):not(.disabled) {
         cursor: pointer !important;
     }
-
 </style>
 <div class="card">
     <div class="card-body">
@@ -61,24 +60,42 @@
             </div>
             <div class="col-md-3">
                 <label for="orderstatus" class="form-label">Order Status <span class="text-danger">*</span></label>
-                <input list="ddlOrderStatusList" id="ddlOrderStatus" name="ddlOrderStatus" class="form-control form-control-sm box_border" placeholder="Order Status" autocomplete="off" required>
+                <input list="ddlOrderStatusList" id="ddlOrderStatus" name="ddlOrderStatus" class="form-control form-control-sm box_border" placeholder="Order Status" autocomplete="off" value="All" required>
                 <datalist id="ddlOrderStatusList"></datalist>
             </div>
 
             <div class="col-md-2 d-flex align-items-end">
-                <button type="button" id="btnShow" onclick="GetRouteDataFromOrderEntry()" class="btn btn-primary btn-sm">Show</button>
+                <button type="button" id="btnShow" class="btn btn-primary icon-height">Show</button>
             </div>
         </div>
     </div>
 </div>
 <div class="table-wrapper fixed-height-table">
-    <table id="Visit" class="fixed-width-table table">
+    <table id="OrderList" class="fixed-width-table table">
         <thead id="table-header">
         </thead>
         <tbody id="table-body">
         </tbody>
     </table>
 </div>
-<div class="paginator" id="paginator-Visit">
+<div class="paginator" id="paginator-OrderList">
 </div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
 
+                <input type="text" id="deleteReason" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="DeleteModal()" >Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div> 

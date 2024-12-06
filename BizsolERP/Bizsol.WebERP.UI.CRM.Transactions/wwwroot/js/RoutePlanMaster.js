@@ -47,8 +47,23 @@ $(document).ready(function () {
  });
 
  document.addEventListener("DOMContentLoaded", function() {
-        const today = new Date().toISOString().split("T")[0];
-        document.getElementById("txtdate").value = today;
+     const today = new Date().toISOString().split("T")[0];
+     document.getElementById("txtdate").value = today;
+
+     const inputs = document.querySelectorAll(".BizSolFormControl");
+
+     inputs.forEach((input, index) => {
+         input.addEventListener("keydown", function (e) {
+             if (e.key === "Enter") {
+                 e.preventDefault(); // Prevent form submission
+                 const nextInput = inputs[index + 1]; // Get the next input
+                 if (nextInput) {
+                     nextInput.focus(); // Move focus to the next input
+                 }
+             }
+         });
+     });
+
     });
 
  function GetNestedDealerList() {
@@ -171,9 +186,9 @@ function PopulateTable(data) {
       var td_DeleteBtn = '';
       var td_StatusBtn = '';
       if(item.RoutePlanStatus=='Un-Verified' ){
-          td_DeleteBtn ='<a id="btnDelete" class=" btn btn-primary btn-sm waves-effect waves-light" title="Delete" onclick="DeleteRoutePlan(this);"><i class="fa fa-times" aria-hidden="true"></i></a>';
+          td_DeleteBtn ='<a id="btnDelete" class=" btn btn-danger btn-sm waves-effect waves-light" title="Delete" onclick="DeleteRoutePlan(this);"><i class="fa fa-times" aria-hidden="true"></i></a>';
         }else{
-            td_DeleteBtn='<a id="btnDelete" class=" btn btn-primary btn-sm waves-effect waves-light disabled" title="Delete" "><i class="fa fa-times" aria-hidden="true"></i></a>';
+          td_DeleteBtn ='<a id="btnDelete" class=" btn btn-danger btn-sm waves-effect waves-light disabled" title="Delete" "><i class="fa fa-times" aria-hidden="true"></i></a>';
       }
 
       if (item.RoutePlanStatus == 'Verified') {
@@ -228,11 +243,11 @@ function AddNewRow()
             var Code = row.insertCell(TblIndx.Code);
 
                
-      VisitType.innerHTML = '<input type="text"  id="ddlVisitType' + tbItemConsumeRowNo + '" class="BizSolFormControl box_border form-control form-control-sm" name="ddlVisitType" placeholder="Visit Type" list="listVisitType" autocomplete="off" onclick="$(this).val(\'\')"  onchange="getVisitType(\'ddlVisitType' + tbItemConsumeRowNo + '\',\'ddldealerName' + tbItemConsumeRowNo + '\',' + tbItemConsumeRowNo + ');" required>';
-      DealerName.innerHTML = '<input type="text" id="ddldealerName' + tbItemConsumeRowNo + '" class="BizSolFormControl box_border form-control form-control-sm" name="ddldealerName" placeholder="Dealer Name"  list="listdealer" autocomplete="off" onclick="$(this).val(\'\');"  onfocusout="checkDealerListValid(this.value,\'listdealer\',\'txtCity' + tbItemConsumeRowNo + '\',' + tbItemConsumeRowNo + ');" readonly="readonly" required>';
-      CityName.innerHTML = '<input type="text" id="txtCity' + tbItemConsumeRowNo + '" class="BizSolFormControl box_border form-control form-control-sm" name="txtCity" placeholder="City Name"  list="listCity" onclick="$(this).val(\'\')" onChange="GetCityDetailsByName(this);" autocomplete="off" disabled required>';
+      VisitType.innerHTML = '<input type="text"  id="ddlVisitType' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="ddlVisitType" placeholder="Visit Type" list="listVisitType" autocomplete="off" onclick="$(this).val(\'\')"  onchange="getVisitType(\'ddlVisitType' + tbItemConsumeRowNo + '\',\'ddldealerName' + tbItemConsumeRowNo + '\',' + tbItemConsumeRowNo + ');" required>';
+      DealerName.innerHTML = '<input type="text" id="ddldealerName' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="ddldealerName" placeholder="Dealer Name"  list="listdealer" autocomplete="off" onclick="$(this).val(\'\');"  onfocusout="checkDealerListValid(this.value,\'listdealer\',\'txtCity' + tbItemConsumeRowNo + '\',' + tbItemConsumeRowNo + ');" readonly="readonly" required>';
+      CityName.innerHTML = '<input type="text" id="txtCity' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtCity" placeholder="City Name"  list="listCity" onclick="$(this).val(\'\')" onChange="GetCityDetailsByName(this);" autocomplete="off" disabled required>';
       StateName.innerHTML = '<input type="text" id="txtState' + tbItemConsumeRowNo + '" class="BizSolFormControl box_border form-control form-control-sm" name="txtState" placeholder="State Name" list="listState" onclick="$(this).val(\'\')" autocomplete="off" disabled  required>';
-            Description.innerHTML = '<input type="text" class="BizSolFormControl box_border form-control form-control-sm" id="txtdescription"  name="txtdescription" placeholder="Description" autocomplete="off" required="" onfocusout="SaveData(this);">';
+      Description.innerHTML = '<input type="text" class="BizSolFormControl box_border form-control form-control-sm" id="txtdescription" onkeypress="BizSolhandleEnterKey(event);"  name="txtdescription" placeholder="Description" autocomplete="off" required="" onfocusout="SaveData(this);">';
       Status.innerHTML = '<input type="hidden" value="0">';
       DeleteButton.innerHTML = '';
             Code.innerHTML = '<input type="hidden" value="0"  id="hdn_Code" name="hdn_Code">';
@@ -493,7 +508,7 @@ function checkDealerListValid(Text, ListValue, City, rowNo) {
         $('#txtState' + rowNo).val('');
         if ($('#ddlVisitType' + rowNo).val() != 'New Acquisition') {
             
-            alert("Dealer Name is invalid");
+            toastr.error("Dealer Name is invalid")
             $('#ddldealerName' + rowNo).val('');
         }
           return false;
@@ -532,8 +547,24 @@ function GetAccountMasterDetails(rowNo) {
     });
 }
 
+function BizSolhandleEnterKey(event) {
+    if (event.key === "Enter") {
+        //const inputs = document.getElementsByTagName('input')
+        const inputs = $('.BizSolFormControl')
+        const index = [...inputs].indexOf(event.target);
+        if ((index + 1) == inputs.length) {
+            inputs[0].focus();
+        } else {
+            inputs[index + 1].focus();
+        }
+
+        event.preventDefault();
+    }
+}
+
 window.SaveData = SaveData;
 window.getVisitType = getVisitType;
 window.GetCityDetailsByName = GetCityDetailsByName;
 window.DeleteRoutePlan = DeleteRoutePlan;
 window.checkDealerListValid = checkDealerListValid;
+window.BizSolhandleEnterKey = BizSolhandleEnterKey;

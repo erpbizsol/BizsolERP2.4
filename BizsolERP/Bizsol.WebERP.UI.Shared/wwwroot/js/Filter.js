@@ -1,24 +1,31 @@
 ﻿
 let data = [];
-let filteredData = [];
-let currentPage = 1;
-let itemsPerPage = 5;
+//let filteredData = [];
+//let currentPage = 1;
+//let itemsPerPage = 5;
 let button = false;
-let showButtons = [];
-let hiddenColumns = [];
-let columnAlignment = [];
+//let showButtons = [];
+//let hiddenColumns = [];
+//let columnAlignment = [];
 const BizsolCustomFilterGrid = {
     CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment) {
         const columns = Object.keys(data[0]);
         const tableId = $('#' + bodyId).closest('table').attr('id');
         renderTableHeader(HiddenColumns, headerId, bodyId, columns, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
-        hiddenColumns = HiddenColumns;
-        columnAlignment = ColumnAlignment;
+        //hiddenColumns = HiddenColumns;
+        window[`hiddenColumns_${bodyId}`] = HiddenColumns;
+        //columnAlignment = ColumnAlignment;
+        window[`columnAlignment_${bodyId}`] = ColumnAlignment;
         renderTable(data, bodyId);
         button = Button;
-        showButtons = ShowButtons;
-        filteredData = data;
+        window[`ShowButtons_${bodyId}`] = ShowButtons;
+        //showButtons = ShowButtons;
+        //filteredData = data;
+        window[`filteredData_${tableId}`] = data;
         bodyId = bodyId;
+        window[`currentPage_${tableId}`] = 1;
+        window[`itemsPerPage_${tableId}`] = 10;
+        //itemsPerPage = 5;
         createPaginator(tableId, bodyId);
         renderTableWithPagination(tableId, bodyId);
     }
@@ -643,11 +650,12 @@ function sortTable(columnIndex, order, tbodyId) {
 function stopPropagationdouble(event) {
     event.stopPropagation();
 };
-function renderTable(items,bodyId) {
+function renderTable(items, bodyId) {
+    showButtons = window[`ShowButtons_${bodyId}`]
     const rows = items.map((item, index) => {
         const row = Object.keys(item).map((key) => {
-            const alignment = columnAlignment[key] || 'left';
-            const style = hiddenColumns.includes(key)
+            const alignment = window[`columnAlignment_${bodyId}`][key] || 'left';
+            const style = window[`hiddenColumns_${bodyId}`].includes(key)
                 ? 'display:none'
                 : `text-align:${alignment}`;
 
@@ -701,49 +709,69 @@ function renderTable(items,bodyId) {
 //    $('#nextBtn, #lastBtn').prop('disabled', currentPage === totalPages);
 //}
 function updatePageInfo(tableId) {
+    var filteredData = window[`filteredData_${tableId}`];
+    var currentPage = window[`currentPage_${tableId}`];
+    itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
     const start = (currentPage - 1) * itemsPerPage + 1;
     const end = Math.min(start + itemsPerPage - 1, filteredData.length);
     $(`#pageInfo-${tableId}`).text(`${start} – ${end} of ${filteredData.length}`);
 }
 function updateButtons(tableId) {
+    var filteredData = window[`filteredData_${tableId}`];
+    itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
+    var currentPage = window[`currentPage_${tableId}`];
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     $(`#firstBtn-${tableId}, #prevBtn-${tableId}`).prop('disabled', currentPage === 1);
     $(`#nextBtn-${tableId}, #lastBtn-${tableId}`).prop('disabled', currentPage === totalPages);
 }
 function renderTableWithPagination(tableId, bodyId) {
-    
+    var filteredData = window[`filteredData_${tableId}`];
+    itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
+    var currentPage = window[`currentPage_${tableId}`];
+
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const itemsToDisplay = filteredData.slice(start, end);
-
     renderTable(itemsToDisplay,bodyId);
     updatePageInfo(tableId);
     updateButtons(tableId);
 }
-function firstBtn(tableId,bodyId) {
-    currentPage = 1;
+function firstBtn(tableId, bodyId) {
+    var currentPage = window[`currentPage_${tableId}`];
+    window[`currentPage_${tableId}`] = 1;
     renderTableWithPagination(tableId, bodyId);
 };
 function prevBtn(tableId, bodyId) {
+    var currentPage = window[`currentPage_${tableId}`];
+
     if (currentPage > 1) {
-        currentPage--;
+        window[`currentPage_${tableId}`]--;
         renderTableWithPagination(tableId, bodyId);
     }
 };
 function nextBtn(tableId, bodyId) {
+    var filteredData = window[`filteredData_${tableId}`];
+    itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
+    var currentPage = window[`currentPage_${tableId}`];
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     if (currentPage < totalPages) {
-        currentPage++;
+        window[`currentPage_${tableId}`]++;
         renderTableWithPagination(tableId, bodyId);
    }
 };
 function lastBtn(tableId, bodyId) {
-    currentPage = Math.ceil(filteredData.length / itemsPerPage);
+    var filteredData = window[`filteredData_${tableId}`];
+    var currentPage = window[`currentPage_${tableId}`];
+
+    itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
+    window[`currentPage_${tableId}`] = Math.ceil(filteredData.length / itemsPerPage);
     renderTableWithPagination(tableId, bodyId);
 };
 function pageSize(tableId, bodyId) {
     //itemsPerPage = parseInt($("#pageSize-tableId").val());
     itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
+    var currentPage = window[`currentPage_${tableId}`];
+
     currentPage = 1;
     renderTableWithPagination(tableId, bodyId);
 };
@@ -754,10 +782,10 @@ function createPaginator(tableId, bodyId) {
         <div class="page-size-select">
             <label for="pageSize-${tableId}">Lines Per Page:</label>
             <select onchange="pageSize('${tableId}','${bodyId}')" class="pageSize" id="pageSize-${tableId}">
-            <option value="5">5</option>   
-            <option value="10">10</option>
+                <option value="10">10</option>
                 <option value="20">20</option>
                 <option value="30">30</option>
+                <option value="50">50</option>   
             </select>
         </div>
         <button id="firstBtn-${tableId}" onclick="firstBtn('${tableId}','${bodyId}')" class="btn btn-primary paginator-btn icon-height">
