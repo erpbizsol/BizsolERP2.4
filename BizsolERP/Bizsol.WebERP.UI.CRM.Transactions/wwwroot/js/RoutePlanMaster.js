@@ -540,9 +540,17 @@ function GetAccountMasterDetails(rowNo) {
     RoutePlanMasterService.GetAccountMasterDetails(AccountDesp).then(function (response) {
 
         if (response != '') {
-            
-            $('#txtCity' + rowNo).val(response.City);
-            $('#txtState' + rowNo).val(response.State);
+            if (response.City != null) {
+                $('#txtCity' + rowNo).val(response.City);
+            }
+            else {
+                toastr.error("City Not Found")
+            }
+            if (response.State != null) {
+                $('#txtState' + rowNo).val(response.State);
+            } else {
+                toastr.error("State Not Found")
+            }
         }
     });
 }
