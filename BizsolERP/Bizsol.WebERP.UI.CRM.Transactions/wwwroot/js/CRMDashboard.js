@@ -123,7 +123,8 @@ function bindDashboardData(data) {
         var cardHtml = '';
         if (item.DetailKeyDesp === "Marketing Man Wise dealer wise Overdue") {
             cardHtml = `
-            <div class="card" onclick="bindDashboardDatalist()" style="border-radius: 30px;width:90%">
+            <div class="card card-width" onclick="bindDashboardDatalist()">
+            <div class="dashboard-courses-item_bg"></div>
             <div class="number">${item.DataValue}</div>
             <div class="label">${item.DataDesp} ${item.SubDesp}</div>
             <i class="fas fa-arrow-circle-right"></i>
@@ -131,7 +132,8 @@ function bindDashboardData(data) {
             `;
         } else if (item.DetailKeyDesp === "Marketing Man wise dealer wise current month Outstanding") {
             cardHtml = `
-            <div class="card" onclick="bindDashboardDatalistOutstanding()" style="border-radius: 30px;width:90%">
+            <div class="card card-width" onclick="bindDashboardDatalistOutstanding()">
+            <div class="dashboard-courses-item_bg"></div>
             <div class="number">${item.DataValue}</div>
             <div class="label">${item.DataDesp} ${item.SubDesp}</div>
             <i class="fas fa-arrow-circle-right"></i>
@@ -139,7 +141,8 @@ function bindDashboardData(data) {
             `;
         } else {
             cardHtml = `
-            <div class="card" style="border-radius: 30px;width:90%">
+            <div class="card card-width">
+            <div class="dashboard-courses-item_bg"></div>
             <div class="number">${item.DataValue}</div>
             <div class="label">${item.DataDesp} ${item.SubDesp}</div>
             </div>

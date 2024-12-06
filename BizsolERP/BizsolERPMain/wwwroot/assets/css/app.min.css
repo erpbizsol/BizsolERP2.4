@@ -282,12 +282,12 @@ body[data-bs-theme=dark] .layout-mode-light {
     font-size: 12pt !important;
 }
 
-
 .navbar-header .resetBTN .resetIcon {
     font-size: 9pt;
     position: relative;
-    right: 2px;
-    bottom: 2px;
+    right: 5px;
+    /*right: 2px;
+    bottom: 2px;*/
 }
 
 .navbar-header .time {
@@ -295,6 +295,7 @@ body[data-bs-theme=dark] .layout-mode-light {
     top: 16px;
     color: #fff;
 }
+
 
 .noti-icon i {
     font-size: 22px;
@@ -369,7 +370,7 @@ body[data-bs-theme=dark] .header-item {
     [data-topbar=light] .header-item.bg-light-subtle,
     body[data-bs-theme=dark] .header-item.bg-light-subtle {
         /* background-color: #f6f6f9 !important;
-    border-color: #e9e9ef !important*/
+border-color: #e9e9ef !important*/
     }
 
 [data-topbar=light] #page-topbar,
@@ -5888,7 +5889,7 @@ table, th, td, tr {
     width: 100px;
 }
 
-.icon-height {
+button, .icon-height {
     border-radius: 6px;
     height: 25px;
     font-size: 7pt;
@@ -5958,6 +5959,9 @@ table, th, td, tr {
     opacity: 0.5 !important;
 }
 
+.without-label-field {
+
+}
 /*======== Tab-Section Start ========*/
 .tab-section .tab-content {
     color: #000;
@@ -5969,11 +5973,6 @@ table, th, td, tr {
     border-radius: 0px 0px 20px 20px;
     position: relative;
 }
-
-/*#FirstTabSection .tab-section {
-    border-radius: 22px 21px 0px 0px;
-    margin-bottom: 1rem;
-}*/
 
 .tab-section .nav-tabs {
     padding: 10px 10px;
@@ -6085,3 +6084,11 @@ table, th, td, tr {
     color: #fff;
     font-family: arial, sans-serif;
 }
+
+ a.icon-height {
+    border-radius: 6px;
+    height: 25px;
+    font-size: 7pt;
+    line-height: 0.6;
+    padding: 9px 10px;
+ }

@@ -341,8 +341,8 @@ function IsCheckIn(RoutePlanMaster_Code, date) {
             toastr.success(response.Msg);
             const encodedRoutePlanCode = window.btoa(RoutePlanMaster_Code);
             const encodedVisitMasterCode = window.btoa(response.Code);
-            window.location = `${baseUrl}/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&Visit&VistMaster_Code=${encodedVisitMasterCode}&VistMode=New`;
             toastr.success("Check-In successful! You can view and edit the selected plan details.");
+            window.location = `${baseUrl}/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&VistMaster_Code=${encodedVisitMasterCode}&VistMode=New`;
         } else {
             toastr.error(response.Msg);
         }

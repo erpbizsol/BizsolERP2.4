@@ -6,72 +6,134 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/CRMDashboard.js"></script>
 <style>
-    .row > * {
+    .card-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        padding-top: 20px;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    /* // card */
+    .card {
+        overflow: hidden;
+        background-color: #dee3e7;
+    }
+
+    .card:hover .dashboard-courses-item_bg {
+        /* // top: 0; */
+        -webkit-transform: scale(10);
+        -ms-transform: scale(10);
+        transform: scale(10);
+    }
+
+    .card:hover .card-heading {
+        color: #FFF;
+        z-index: 2;
         position: relative;
     }
-    .row > * {
-        -ms-flex-negative: 0 !important;
-        flex-shrink: 0 !important;
-        max-width: 100% !important;
-        padding-left: calc(var(--bs-gutter-x)* .9) !important;
+
+    .card:hover :is(.number, .label) {
+        color: #FFF;
+        z-index: 2;
+        position: relative;
     }
+
+    .dashboard-courses-item_bg {
+        height: 128px;
+        width: 128px;
+        background-color: #fa8071;
+        z-index: 1;
+        position: absolute;
+        top: -75px;
+        right: -75px;
+        border-radius: 50%;
+        -webkit-transition: all .5s ease;
+        -o-transition: all .5s ease;
+        transition: all .5s ease;
+        opacity: 0.8;
+    }
+
+    .card:nth-child(2n) .dashboard-courses-item_bg {
+        background-color: #f4a361;
+    }
+
+    .card:nth-child(3n) .dashboard-courses-item_bg {
+        background-color: #00d0ce;
+    }
+
+    .card:nth-child(4n) .dashboard-courses-item_bg {
+        background-color: #ffa07a;
+    }
+
+    .card:nth-child(5n) .dashboard-courses-item_bg {
+        background-color: #9470dc;
+    }
+
+    .card:nth-child(6n) .dashboard-courses-item_bg {
+        background-color: #00bffe;
+    }
+
+    .card:nth-child(7n) .dashboard-courses-item_bg {
+        background-color: #3fd5b8;
+    }
+
+    .card:nth-child(8n) .dashboard-courses-item_bg {
+        background-color: #4169e2;
+    }
+    /* .row > * { */
+    /*     position: relative; */
+    /* } */
+    /* .row > * { */
+    /*     -ms-flex-negative: 0 !important; */
+    /*     flex-shrink: 0 !important; */
+    /*     max-width: 100% !important; */
+    /*     padding-left: calc(var(--bs-gutter-x)* .9) !important; */
+    /* } */
+
     .dashboard-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
 
     .card {
-        background-color: #275481;
-        color: white;
-        width: 200px;
-        height: 150px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        position: relative;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+        /* background-color: #275481; */
+        /* color: #fff; */
+        color: #000; 
+        justify-content: center; 
         align-items: center;
+        padding: 20px;
     }
 
-        .card .checkmark {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            width: 30px;
-            height: 30px;
-            background-color: white;
-            color: #25aabf;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 90%;
-            font-size: 18px;
-            font-weight: bold;
-           
-        }
+    /* .card .checkmark { */
+    /*     position: absolute; */
+    /*     top: 10px; */
+    /*     left: 10px; */
+    /*     width: 30px; */
+    /*     height: 30px; */
+    /*     background-color: white; */
+    /*     color: #25aabf; */
+    /*     display: flex; */
+    /*     justify-content: center; */
+    /*     align-items: center; */
+    /*     border-radius: 90%; */
+    /*     font-size: 18px; */
+    /*     font-weight: bold;     */
+    /* } */
 
-        .card .number {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
+    .card .number {
+        font-size: 32px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
 
-        .card .label {
-            font-size: 14px;
-            text-align: center;
-        }
-
-    #btnShow {
-        width: 15% !important;
-        /* height: 29px; */
-        text-align: center !important;
-        padding: 0px;
-        color: white;
-        border-radius: 8px;
-        margin-top:33px;
-        margin-left: -55px;
+    .card .label {
+        font-size: 14px;
+        text-align: center;
     }
 
     .col-form-label-sm {
@@ -79,112 +141,119 @@
         /* padding-bottom: calc(.25rem + var(--bs-border-width)); */
         /* font-size: .765625rem; */
     }
+
     .modal-dialog{
         width: 100%;
     }
+
     .modal-header {
         background-color: #3f51b5;
     }
+
     .modal-title {
         text-align: center;
         color: #eef6f2;
     }
+
     .modal {
         overflow: visible !important;
         position: absolute;
         top: 9%;
     }
+
+    .card-section .card-width {
+        border-radius: 10px;
+        width: 96%
+    }
+
 </style>
-<div class="">
-    <div class="card1 shadow-sm">
-        <div class="card-body  shadow-sm">
-            <div class="row">
-                <div class="col-md-3" style="padding-bottom:10px">
-                    <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Sales Person</label>
-                    <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Sales Person" value="All" maxlength="500" required onfocusout="DataListValidation('txtSalesPersonlist', this.value, 'Invalid Sales Person !', 'txtSalesPerson');">
-                    <datalist id="txtSalesPersonlist"></datalist>
-                </div>
-                <div class="col-md-2">
-                    <label for="txtSalesPerson" class="col-form-label-sm fw-bold"></label>
-                    <input type="checkbox" id="chkShowSubordinateData" name="chkShowSubordinateData" class="box_border" checked />
-                    <label for="chkShowSubordinateData" style="margin-top:35px">Show Subordinate Data</label> &nbsp;&nbsp;&nbsp;
-                </div>
-                <div class="col-md-2">
-                    <div class="form-group" id="txtshowhide">
-                        <input type="checkbox" id="chkShowTodaysData" name="chkShowTodaysData" class="box_border" />
-                        <label for="chkShowTodaysData" style="margin-top:35px">Show Today's Data</label>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <input type="button" name="btnShow" id="btnShow" class="submit-btn btn-primary" value="Show" onclick="ShowDashboard();" />
 
+<div class="card1 card-section">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3" style="padding-bottom:10px">
+                <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Sales Person</label>
+                <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Sales Person" value="All" maxlength="500" required onfocusout="DataListValidation('txtSalesPersonlist', this.value, 'Invalid Sales Person !', 'txtSalesPerson');">
+                <datalist id="txtSalesPersonlist"></datalist>
+            </div>
+            <div class="col-md-2 without-label-field">
+                <label for="txtSalesPerson" class="col-form-label-sm fw-bold"></label>
+                <input type="checkbox" id="chkShowSubordinateData" name="chkShowSubordinateData" class="box_border" checked />
+                <label for="chkShowSubordinateData">Show Subordinate Data</label> &nbsp;&nbsp;&nbsp;
+            </div>
+            <div class="col-md-2 without-label-field">
+                <div class="form-group" id="txtshowhide">
+                    <input type="checkbox" id="chkShowTodaysData" name="chkShowTodaysData" class="box_border" />
+                    <label for="chkShowTodaysData">Show Today's Data</label>
                 </div>
             </div>
-            <div class="row">
-                <div class="dashboard-grid" id="DivIndxDashboard">
-                </div>
+            <div class="col-md-3 without-label-field">
+                <input type="button" name="btnShow" id="btnShow" class="submit-btn btn btn-primary btn-height btn-width" value="Show" onclick="ShowDashboard();" />
             </div>
-            <div class="row">
-                <div id="ShowDetailModal" class="modal fade" tabindex="-1" role="dialog">
-                    <div class=" modal-dialog modal-lg" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h6 class="modal-title" id="ShowDetailModalTitle">Marketing Man wise dealer wise current month Outstanding Details</h6>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
+        </div>
+        <div class="row">
+        <div class="dashboard-grid" id="DivIndxDashboard">
+          
+        </div>
+        </div>
+        <div class="row">
+            <div id="ShowDetailModal" class="modal fade" tabindex="-1" role="dialog">
+                <div class=" modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h6 class="modal-title" id="ShowDetailModalTitle">Marketing Man wise dealer wise current month Outstanding Details</h6>
+                            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="table-wrapper fixed-height-table">
+                                <table id="table" class="fixed-width-table table">
+                                    <thead id="table-header">
+                                    </thead>
+                                    <tbody id="table-body">
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="modal-body">
-                                <div class="table-wrapper fixed-height-table">
-                                    <table id="table" class="fixed-width-table table">
-                                        <thead id="table-header">
-                                        </thead>
-                                        <tbody id="table-body">
-                                        </tbody>
-
-                                    </table>
-
-                                </div>
-                                <!-- Paginator -->
-                                <div class="paginator" id="paginator-table">
-                                </div>
+                            <!-- Paginator -->
+                            <div class="paginator" id="paginator-table">
                             </div>
-                            <div class="modal-footer">
+                        </div>
+                        <div class="modal-footer">
 
-                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
-                            </div>
+                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="row">
-                <div id="ShowDetailModal1" class="modal fade" tabindex="-1" role="dialog">
-                    <div class=" modal-dialog modal-lg" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h6 class="modal-title" id="ShowDetailModalTitle">Marketing Man Wise dealer wise Overdue Details</h6>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="table-wrapper fixed-height-table">
-                                    <table id="table1" class="fixed-width-table table">
-                                        <thead id="table-header1">
-                                        </thead>
-                                        <tbody id="table-body1">
-                                        </tbody>
+        </div>
+        <div class="row">
+            <div id="ShowDetailModal1" class="modal fade" tabindex="-1" role="dialog">
+                <div class=" modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h6 class="modal-title" id="ShowDetailModalTitle">Marketing Man Wise dealer wise Overdue Details</h6>
+                            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="table-wrapper fixed-height-table">
+                                <table id="table1" class="fixed-width-table table">
+                                    <thead id="table-header1">
+                                    </thead>
+                                    <tbody id="table-body1">
+                                    </tbody>
 
-                                    </table>
+                                </table>
 
-                                </div>
-                                <!-- Paginator -->
-                                <div class="paginator" id="paginator-table1">
-                                </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                            <!-- Paginator -->
+                            <div class="paginator" id="paginator-table1">
                             </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
                         </div>
                     </div>
                 </div>
@@ -192,3 +261,7 @@
         </div>
     </div>
 </div>
+
+<style>
+   
+</style>
