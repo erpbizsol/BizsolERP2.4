@@ -30,4 +30,9 @@
     .modal-content-width-sm {
         width: 100%;
     }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    }
 }
