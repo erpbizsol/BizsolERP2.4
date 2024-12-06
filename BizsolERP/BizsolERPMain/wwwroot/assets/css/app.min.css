@@ -6063,3 +6063,11 @@ table, th, td, tr {
     color: #fff;
     font-family: arial, sans-serif;
 }
+
+ a.icon-height {
+    border-radius: 6px;
+    height: 25px;
+    font-size: 7pt;
+    line-height: 0.6;
+    padding: 9px 10px;
+ }
