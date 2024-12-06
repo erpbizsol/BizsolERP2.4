@@ -152,28 +152,38 @@ function PageLoad() {
 
     // When the user selects a file
     $('#txtFileInput').change(function (event) {
-        var file = event.target.files[0];  // Get the selected file
-        if (file) {
-            // Convert file to Base64 string using the Promise-based function
-            fileToBase64(file)
-                .then(function (base64String) {
-                    // Display the Base64 string in the output div
-                    $('#hfFileInput').val(removeBase64Prefix(base64String));
-                    console.log('Base64 String:', base64String);  // For debugging
-                })
-                .catch(function (error) {
-                    console.error('Error:', error);
-                });
-        } else {
-            $('#hfFileInput').val('No file selected');
+        if (validateFileType()) {
+            var file = event.target.files[0];  // Get the selected file
+            if (file) {
+                // Convert file to Base64 string using the Promise-based function
+                fileToBase64(file)
+                    .then(function (base64String) {
+                        // Display the Base64 string in the output div
+                        $('#hfFileInput').val(removeBase64Prefix(base64String));
+                        $('#imgSelfie').attr('src', base64String);
+                        console.log('Base64 String:', base64String);  // For debugging
+                    })
+                    .catch(function (error) {
+                        console.error('Error:', error);
+                    });
+            
+            } else {
+                $('#hfFileInput').val('No file selected');
+                }
         }
     });
 
-    $('#btnCheckOut').click(function (e) {
-        CheckOutVisit();
+    //$('#btnCheckOut').click(function (e) {
+    //    CheckOutVisit();
+
+    //});
+
+    $('#imgSelfie').click(function () {
+        ShowImageModal(this.src);
+
 
     });
-    
+   
 }
 function addDays(date, days) {
     var result = new Date(date);
@@ -184,8 +194,13 @@ function addDays(date, days) {
 function GetCurrentLocation() {
     BizSolGeoLocation.GetActualLocation().then(function (response) {
         console.log(response);
-        $('#txtCurrentLocation').val(response.Address);
-        $('#hflatlong').val('Latitude: ' + response.latitude + ' Longitude: ' + response.longitude);
+        if (param_VisitMode == 'New') {
+            $('#txtCurrentLocation').val(response.Address);
+            $('#hflatlong').val('Latitude: ' + response.latitude + ' Longitude: ' + response.longitude);
+        } else {
+            //$('#txtCheckOutLocation').val(response.Address);
+        }
+        
     });
 }
 
@@ -201,7 +216,66 @@ function GetUserDetails() {
 
     });
 }
+function validateFileType() {
+    var IsValid = true;
+    var fileName = document.getElementById("txtFileInput").value;
+    var SizeOverload = false;
+    if (fileName.trim() != '') {
 
+        var idxDot = fileName.lastIndexOf(".") + 1;
+        var extFile = fileName.substr(idxDot, fileName.length).toLowerCase();
+        if (extFile == "jpg" || extFile == "jpeg" || extFile == "png" || extFile == "gif") {
+            //TO DO
+        } else {
+
+            IsValid = false;
+        }
+
+        var file = $('#txtFileInput')[0].files[0];
+        var Size = parseFloat(parseInt(file.size) / 1000);
+        if (Size > 4096) {
+
+            fileName.value = '';
+            IsValid = false;
+            SizeOverload = true;
+
+        }
+    }
+    if (IsValid == true && SizeOverload == false) {
+        const elements = document.querySelectorAll(`[id^="Photo_"]`);
+
+        elements.forEach(element => {
+
+            var photo_FileName = element.value;
+            if (photo_FileName.trim() != '') {
+
+                var idxDot1 = photo_FileName.lastIndexOf(".") + 1;
+                var extFile = photo_FileName.substr(idxDot1, photo_FileName.length).toLowerCase();
+                if (extFile == "jpg" || extFile == "jpeg" || extFile == "png" || extFile == "gif") {
+                    //TO DO
+                } else {
+
+                    IsValid = false;
+                }
+                var photo_Size = parseFloat(parseInt(element.files[0].size) / 1000);
+                if (photo_Size > 4096) {
+
+                    element.value = '';
+                    IsValid = false;
+                    SizeOverload = true;
+
+                }
+            }
+        });
+    }
+    if (IsValid == false && SizeOverload == false) {
+        toastr.error("Only jpg, jpeg, png and gif files are allowed as Attachment!");
+    }
+    else if (IsValid == false && SizeOverload == true) {
+        toastr.error("Please upload an image less than 4MB!");
+    }
+    return IsValid;
+}
 function GetMaxBasicRate() {
     var maxVal = 0;
 
@@ -530,7 +604,12 @@ function ValidateData() {
 
             MsgStr += "* Please select the attachment file!" + newLine;
             Valid = false;
+        } else {
+            if (validateFileType() == false) {
+                Valid = false;
+            }
         }
+        
     }
 
     //if (ZoneMandatoryInDirectOrder == 'Y') {
@@ -685,7 +764,7 @@ function SaveData() {
     visitMasterRow["checkInLocation"] = $("#txtCurrentLocation").val() !== null ? $("#txtCurrentLocation").val() : '';
     visitMasterRow["checkOutLocation"] = 0;
     visitMasterRow["mRateUnit"] = '';
-    visitMasterRow["creditDays"] = 0;
+    visitMasterRow["creditDays"] = $('#txtCreditDaysForDC') !== null ? $("#txtCreditDaysForDC").val() : 0;
     visitMasterRow["freight"] = $("#txtlistFreight").val() !== null ? $("#txtlistFreight").val() : '';
     visitMasterRow["dispatchFrom"] = '';
     visitMasterRow["buyerPONo"] = 0;
@@ -803,14 +882,14 @@ function SaveData() {
             if (response.Status == 'N') {
                 toastr.error(response.Msg);
             } else {
-                toastr.success(response.Msg);
+                
 
                 if (param_RoutePlanCode > 0) {
                     window.location = baseUrl + "/CRMTransactions/Visit/Visit";
                 } else {
                     window.location = baseUrl + "/CRMTransactions/OrderEntryList/OrderEntryList";
                 }
-
+                toastr.success(response.Msg);
             }
 
         }
@@ -1297,6 +1376,7 @@ function GetEditVisitDetails() {
         GetDealerDetailsByDealerName();
         GetMaxBasicRate();
         calFinalAmt();
+        SetImageControl();
 
     });
 
@@ -1455,6 +1535,23 @@ function SetFieldsAsPerConfig() {
     }
 }
 
+function SetImageControl() {
+    if ($('#hfFileInput').val() !=='') {
+        var imgdata = $('#hfFileInput').val();
+        var base64String = 'data:image/png;base64,' + imgdata;
+        $('#imgSelfie').attr('src', base64String);
+    }
+}
+function CloseModal() {
+    $('#ImgModal').modal('hide');
+}
+function ShowImageModal(strSrc) {
+
+    $('#ImgModal').attr("src", strSrc);
+    $('#ImageModal').modal('show');
+
+    $(".modal-backdrop").remove();
+}
 function CheckOutVisit() {
     var visitMasterData = [];
     var visitMasterRow = {};
@@ -1582,3 +1679,4 @@ window.GetZoneMasterList = GetZoneMasterList;
 window.GetMaxBasicRate = GetMaxBasicRate;
 window.calFinalAmt = calFinalAmt;
 window.ValidateDiscountLimit = ValidateDiscountLimit;
+window.CloseModal = CloseModal;
