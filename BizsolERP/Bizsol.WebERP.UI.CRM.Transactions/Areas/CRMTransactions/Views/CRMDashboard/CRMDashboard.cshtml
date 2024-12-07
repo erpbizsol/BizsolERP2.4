@@ -85,6 +85,7 @@
     .card:nth-child(8n) .dashboard-courses-item_bg {
         background-color: #4169e2;
     }
+
     /* .row > * { */
     /*     position: relative; */
     /* } */
@@ -136,18 +137,8 @@
         text-align: center;
     }
 
-    .col-form-label-sm {
-        padding-top: calc(.25rem + var(--bs-border-width));
-        /* padding-bottom: calc(.25rem + var(--bs-border-width)); */
-        /* font-size: .765625rem; */
-    }
-
     .modal-dialog{
         width: 100%;
-    }
-
-    .modal-header {
-        background-color: #3f51b5;
     }
 
     .modal-title {
@@ -177,7 +168,7 @@
                 <datalist id="txtSalesPersonlist"></datalist>
             </div>
             <div class="col-md-2 without-label-field">
-                <label for="txtSalesPerson" class="col-form-label-sm fw-bold"></label>
+               @*  <label for="txtSalesPerson" class="col-form-label-sm fw-bold"></label> *@
                 <input type="checkbox" id="chkShowSubordinateData" name="chkShowSubordinateData" class="box_border" checked />
                 <label for="chkShowSubordinateData">Show Subordinate Data</label> &nbsp;&nbsp;&nbsp;
             </div>
@@ -187,8 +178,8 @@
                     <label for="chkShowTodaysData">Show Today's Data</label>
                 </div>
             </div>
-            <div class="col-md-3 without-label-field">
-                <input type="button" name="btnShow" id="btnShow" class="submit-btn btn btn-primary btn-height btn-width" value="Show" onclick="ShowDashboard();" />
+            <div class="col-md-3 mobile-btn-bottom without-label-field">
+                <input type="button" name="btnShow" id="btnShow" class="submit-btn btn btn-primary btn-height btn-width mb-2" value="Show" onclick="ShowDashboard();" />
             </div>
         </div>
         <div class="row">
