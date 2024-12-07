@@ -58,7 +58,30 @@
             background: #F8F8F8;
         }
 
- 
+   /*  .modal-dialog {
+        width: 100%;
+    }
+
+    .modal-header {
+        background-color: #3f51b5;
+        height: 40px;
+    }
+
+    .modal-title {
+        text-align: center;
+        color: #eef6f2;
+    }*/
+
+    .modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 90%; /* Optional: Adjust to fit the screen size */
+        width: auto;
+        overflow-x: hidden;
+        overflow-y: hidden;
+    } 
 
 </style>
 <div>
@@ -98,11 +121,19 @@
             <label for="txtAddress" class="col-form-label-sm fw-bold">Address</label>
             <textarea type="text" id="txtAddress" name="txtAddress" class="box_border form-control form-control-sm" value="" readonly="readonly" rows="2" ></textarea>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label for="txtAttachment" class="col-form-label-sm fw-bold">Attachment</label>
             <div class="form-group">
                 <input type="file" id="txtFileInput" name="txtFileInput" class="box_border form-control form-control-sm" accept="image/*" capture="camera" />
+               
                 <input type="hidden" id="hfFileInput" name="hfFileInput" value="" />
+            </div>
+        </div>
+        <div class="col-md-1">
+            <div class="form-group">
+                
+                <img id="imgSelfie" class="rounded-circle avatar-lg" src="" />
+                
             </div>
         </div>
     </div>
@@ -372,6 +403,7 @@
 
                                                 <td style="text-align: left;">
                                                     <input id="btnAddNewRow" type="button" class="submit-btn btn btn-primary btn-sm waves-effect waves-light"  value="Add New Row"  />
+                                                       
                                                 </td>
                                              </tr>
 
@@ -503,7 +535,7 @@
 <div class="row">
     <div class="col-md-12 colPhn">
         <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-sm waves-effect waves-light" onclick="SaveData();" />
-        <input type="button" name="btnCheckOut" id="btnCheckOut" value="Check Out" class="btn btn-primary btn-sm waves-effect waves-light" />
+        @* <input type="button" name="btnCheckOut" id="btnCheckOut" value="Check Out" class="btn btn-primary btn-sm waves-effect waves-light" /> *@
             <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-sm waves-effect waves-light" />
     </div>
 </div>
@@ -517,5 +549,25 @@
 <datalist id="listFreight"></datalist>
 <datalist id="listFreightType"></datalist>
 <datalist id="listZone"></datalist>
+    <div class="row">
+        <div class="modal fade" id="ImageModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog  modal-lg">
+                <div class="modal-content modal-content-width-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title">Image</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" onclick="CloseModal()" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <img id="ImgModal" style="border: 1px solid #555; width:80%; display: block; margin-left: auto; margin-right: auto; " />
 
+                </div>
+                <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm waves-effect waves-light" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
     <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>

@@ -71,11 +71,13 @@ const getButtonSet = (status, Code,date, VisitMaster_Code, Verified, Closed, Che
     if (VisitMaster_Code > 0) {
         if (Verified === "Y" && Closed !== "Y") {
             if (CheckOut === "--:--") {
-                buttons += getButtonHTML("", "btn btn-success btn-height", "", "fa-solid fa-sign-out", "Checked-in", true, "Already checked in");
+                buttons += getButtonHTML("", "btn btn-success btn-height", "", "fa-solid fa-sign-in", "Checked-in", true, "Already checked in");
+                buttons += getButtonHTML("", "btn btn-danger btn-height", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out");
                 buttons += getButtonHTML("", "btn btn-primary icon-height", `EditData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-pencil", "Edit");
                 buttons += getButtonHTML("", "btn btn-primary icon-height", `ViewData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-eye", "View");
             } else {
-                buttons += getButtonHTML("", "btn btn-danger btn-height", "", "fa-solid fa-sign-out", "Checked Out", true, "Already checked out");
+                buttons += getButtonHTML("", "btn btn-success btn-height", "", "fa-solid fa-sign-in", "Checked-In", true, "");
+                buttons += getButtonHTML("", "btn btn-danger btn-height", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out", true);
                 buttons += getButtonHTML("", "btn btn-primary icon-height", `EditData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-pencil", "Edit", true, "Edit");
                 buttons += getButtonHTML("", "btn btn-primary icon-height", `ViewData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-eye", "View");
             }
@@ -87,10 +89,12 @@ const getButtonSet = (status, Code,date, VisitMaster_Code, Verified, Closed, Che
     } else {
         if (Closed === 'Y') {
             buttons += getButtonHTML("", "btn btn-primary icon-height", `IsCheckIn(${Code}, this)`, "fa-solid fa-sign-in", true, "Check-In");
+            buttons += getButtonHTML("", "btn btn-danger btn-height", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out", true);
             buttons += getButtonHTML("", "btn btn-danger icon-height", "", "fa-solid fa-pencil", "Edit", true, "Edit disabled for unregistered visits");
             buttons += getButtonHTML("", "btn btn-danger icon-height", "", "fa-solid fa-eye", "View", true, "View disabled for unregistered visits");
         } else {
             buttons += getButtonHTML("", "btn btn-primary icon-height", `IsCheckIn(${Code}, '${date}')`, "fa-solid fa-sign-in", "Check-In");
+            buttons += getButtonHTML("", "btn btn-danger btn-height", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out", true);
             buttons += getButtonHTML("", "btn btn-danger icon-height", "", "fa-solid fa-pencil", "Edit", true, "Edit disabled for unregistered visits");
             buttons += getButtonHTML("", "btn btn-danger icon-height", "", "fa-solid fa-eye", "View", true, "View disabled for unregistered visits");
         }
@@ -341,8 +345,8 @@ function IsCheckIn(RoutePlanMaster_Code, date) {
             toastr.success(response.Msg);
             const encodedRoutePlanCode = window.btoa(RoutePlanMaster_Code);
             const encodedVisitMasterCode = window.btoa(response.Code);
-            window.location = `${baseUrl}/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&Visit&VistMaster_Code=${encodedVisitMasterCode}&VistMode=New`;
             toastr.success("Check-In successful! You can view and edit the selected plan details.");
+            window.location = `${baseUrl}/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&VisitMaster_Code=${encodedVisitMasterCode}&VisitMode=Edit`;
         } else {
             toastr.error(response.Msg);
         }
@@ -351,6 +355,58 @@ function IsCheckIn(RoutePlanMaster_Code, date) {
     });
 
     return true;
+}
+function CheckOutVisit(VisitMaster_Code) {
+    var visitMasterData = [];
+    var visitMasterRow = {};
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const formattedTime = `${hours}:${minutes}`;
+    GetActualLocation();
+    const location = $('#txtLocation').val();
+    const checkedInAddress = $('#txtAddress').val();
+    visitMasterRow["code"] = VisitMaster_Code;
+    visitMasterRow["date"] = new Date().toISOString().split("T")[0];
+    visitMasterRow["visitType"] = 0;
+    visitMasterRow["accountDesp"] ='';
+    visitMasterRow["photo"] = '';
+    visitMasterRow["location"] = location !== null ? location : '';
+    visitMasterRow["checkIn"] = '';
+    visitMasterRow["checkOut"] = formattedTime;
+    visitMasterRow["remarks"] = '';
+    visitMasterRow["routePlanMaster_code"] = 0;
+    visitMasterRow["nextVisitDate"] = '';
+    visitMasterRow["verified"] = 'N';
+    visitMasterRow["paymentTermsMasterCode"] = 0;
+    visitMasterRow["deliveryDays"] =  0;
+    visitMasterRow["freightCondition"] = '';
+    visitMasterRow["orderDealerName"] = '';
+    visitMasterRow["userMasterCode"] = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+    visitMasterRow["checkInLocation"] = '';
+    visitMasterRow["checkOutLocation"] = checkedInAddress !== null ? checkedInAddress : '';
+    visitMasterRow["mRateUnit"] = '';
+    visitMasterRow["creditDays"] = 0;
+    visitMasterRow["freight"] = '';
+    visitMasterRow["dispatchFrom"] = '';
+    visitMasterRow["buyerPONo"] = 0;
+    visitMasterRow["buyerPODate"] = new Date().toISOString().split("T")[0];
+    visitMasterRow["zoneName"] = '';
+    visitMasterData.push(visitMasterRow);
+    VisitOrderEntryService.CheckOut(visitMasterData).then(function (response) {
+        if (response != '') {
+            if (response.Status == 'N') {
+                toastr.error(response.Msg);
+            } else {
+                toastr.success(response.Msg);
+                var FromDate = $('#txtFromDate').val();
+                var ToDate = $('#txtToDate').val();
+                var SalesPerson = $('#ddlSalesPerson').val();
+                GetVisitMasterList(FromDate, ToDate, SalesPerson);
+            }
+        }
+
+    });
 }
 function GetCurrentTime() {
     const now = new Date();
@@ -365,3 +421,4 @@ window.EditData = EditData;
 window.SaveNotVisited = SaveNotVisited;
 window.Close = Close;
 window.IsCheckIn = IsCheckIn;
+window.CheckOutVisit = CheckOutVisit;
