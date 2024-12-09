@@ -36,6 +36,12 @@ $(document).ready(function () {
             $("#btnShow").focus();
         }
     });
+    $('#ddlSalesPerson').on('focus', function (e) {
+        $("#ddlSalesPerson").val('');
+    });
+    $('#ddlDealerName').on('focus', function (e) {
+        $("#ddlDealerName").val('');
+    });
 });
 
 function GetOrderVerifyData() {
@@ -93,8 +99,7 @@ function GetNestedMarketingManList() {
 
             $('#ddlSalesPersonList')[0].innerHTML = option;
         } else {
-            $('#ErrorMsg').removeClass('invisible');
-            $('#ErrorMsg').addClass('visible');
+            toastr.error('No Data Found')
             return false;
         }
     });
@@ -125,8 +130,7 @@ function GetOrderType() {
                 select.append(`<option value="${item.Field}">${item.Field}</option>`);
             });
         } else {
-            $('#ErrorMsg').removeClass('invisible');
-            $('#ErrorMsg').addClass('visible');
+            toastr.error('No Data Found')
             return false;
         }
     });
@@ -448,7 +452,7 @@ function updateFooter(data) {
             newTfoot.innerHTML = tfootContent;
             table.appendChild(newTfoot);
         } else {
-            console.error("Table element with id 'table' not found.");
+            toastr.error("Table element with id 'table' not found.");
         }
     }
 }
@@ -574,7 +578,7 @@ function GPVerifyLv1(Code, e) {
     }
     if (AskOtherCharges == "Y") {
         if ($('#hfIsOtherChargesVerify_' + Code).val() === "N") {
-            alert("Please Check! You not verify other Charges..");
+            toastr.error("Please Check! You not verify other Charges..");
             return;
         }
     }
@@ -588,7 +592,7 @@ function AdminVerifyLv2(Code, element) {
     }
     if (AskOtherCharges == "Y") {
         if ($('#hfIsOtherChargesVerify_' + Code).val() === "N") {
-            alert("Please Check! You not verify other Charges..");
+            toastr.error("Please Check! You not verify other Charges..");
             return;
         }
     }
@@ -642,7 +646,7 @@ function UpdateVisitOrderOtherCharges(Code, OldAmount) {
     var AmountNew = $('#txtOtherCharges_' + Code).val();
     var level = $('#hflv_' + Code).val();
     if (AmountNew === "") {
-        alert("Other Charges Not Found");
+        toastr.error("Other Charges Not Found");
         return;
     }
     var Sign = $('#selectSign_' + Code).val();

@@ -5,7 +5,7 @@ let QtyPCHeader = '';
 let QtyMTRHeader = '';
 let ThreeLevelVerification = '';
 let DiscountLimit = '';
-let indx_DiscountCol =15;
+let indx_DiscountCol =16;
 let AskOtherCharges = '';
 $(document).ready(function () {
     $("#ERPHeading").text("Verify Order/Visit");
@@ -35,6 +35,15 @@ $(document).ready(function () {
         if (e.key === "Enter") {
             $("#btnShow").focus();
         }
+    });
+    $('#ddlSalesPerson').on('focus', function (e) {
+        $("#ddlSalesPerson").val('');
+    });
+    $('#ddlDealerName').on('focus', function (e) {
+        $("#ddlDealerName").val('');
+    });
+    $('#ddlOrderType').on('focus', function (e) {
+        $("#ddlOrderType").val('');
     });
 });
 function GetOrderVerifyData() {
@@ -92,8 +101,7 @@ function GetNestedMarketingManList() {
 
             $('#ddlSalesPersonList')[0].innerHTML = option;
         } else {
-            $('#ErrorMsg').removeClass('invisible');
-            $('#ErrorMsg').addClass('visible');
+            toastr.error('No Data Found')
             return false;
         }
     });
@@ -124,8 +132,7 @@ function GetOrderType() {
                 select.append(`<option value="${item.Field}">${item.Field}</option>`);
             });
         } else {
-            $('#ErrorMsg').removeClass('invisible');
-            $('#ErrorMsg').addClass('visible');
+            toastr.error('No Data Found')
             return false;
         }
     });
@@ -135,12 +142,12 @@ function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
         if (response.length > 0) {
             $("#txtTable").show();
             const StringFilterColumn = ["Order Id", "Sale Person", "Visit Type"];
-            const NumericFilterColumn = ["Avg Rate", "Total Order Amount", "Over Due Amount", "Total Final Amount", "Discount", "Basic Rate", "Final Rate"];
+            const NumericFilterColumn = ["Out Standing", "Over Due Amount", "Total Final Amount", "Discount", "Basic Rate", "Final Rate"];
             const DateFilterColumn = ["Visit Date"];
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = ["Zone", "Dealer Name", "City", "State"];
-            const hiddenColumns = ["Code", "Outstanding", "OrderVisitType"];
+            const hiddenColumns = ["Code", "OrderVisitType", "Avg Rate", "Total Order Amount",];
             if (ThreeLevelVerification === 'N') {
                 hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                 response.forEach(item => {
@@ -233,7 +240,8 @@ function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
                 "Total Final Amount": "right",
                 "Discount": "right",
                 "Basic Rate": "right",
-                "Final Rate": "right"
+                "Final Rate": "right",
+                "Out Standing":"right"
             };
             if (QtyMTHeader != '') {
                 ColumnAlignment[QtyMTHeader] = "right";
@@ -285,12 +293,12 @@ function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
                         if (ThreeLevelVerification == "Y") {
                             if (item.VerifiedLv1 == "Verify") {
                                 if (item['Over Due Amount'] > 0) {
-                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>";
+                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>";
                                     VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
                                     VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
                                 }
                                 else {
-                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>";
+                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>";
                                     VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
                                     VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
                                 }
@@ -298,12 +306,12 @@ function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
                             if (item.VerifiedLv1 != "Verify" && item.VerifiedLv2 == "Verify") {
                                 if (item['Over Due Amount'] > 0) {
                                     VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
-                                    VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"GPVerifyLv1(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject1\" id=\"btnReject1\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV1\" >";
+                                    VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"GPVerifyLv1(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject1\" id=\"btnReject1\" value=\"Reject\" class=\"btn btn-danger  btn-height mb-1\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV1\" >";
                                     VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
                                 }
                                 else {
                                     VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
-                                    VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"GPVerifyLv1(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject1\" id=\"btnReject1\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV1\" >";
+                                    VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"GPVerifyLv1(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject1\" id=\"btnReject1\" value=\"Reject\" class=\"btn btn-danger  btn-height mb-1\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV1\" >";
                                     VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
                                 }
                             }
@@ -311,19 +319,19 @@ function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
                                 if (item['Over Due Amount'] > 0) {
                                     VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
                                     VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
-                                    VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"AdminVerifyLv2(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject2\" id=\"btnReject2\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV2\" >";
+                                    VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"AdminVerifyLv2(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject2\" id=\"btnReject2\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV2\" >";
                                 }
                                 else {
                                     VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
                                     VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
-                                    VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"AdminVerifyLv2(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject2\" id=\"btnReject2\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV2\" >";
+                                    VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"AdminVerifyLv2(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject2\" id=\"btnReject2\" value=\"Reject\" class=\"btn btn-danger  btn-height mb-1\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV2\" >";
                                 }
                             }
                         }
                         else {
                             if (item.Verify == "Verify") {
                                 if (item['Over Due Amount'] > 0) {
-                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>"
+                                    VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>"
                                 }
                                 else {
                                     VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>"
@@ -337,12 +345,12 @@ function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
                     if (ThreeLevelVerification == "Y") {
                         if (item.VerifiedLv1 == "Verify") {
                             if (item['Over Due Amount'] > 0) {
-                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>";
+                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>";
                                 VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
                                 VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
                             }
                             else {
-                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>";
+                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>";
                                 VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
                                 VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
                             }
@@ -350,13 +358,13 @@ function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
                         if (item.VerifiedLv1 != "Verify" && item.VerifiedLv2 == "Verify") {
                             if (item['Over Due Amount'] > 0) {
                                 VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
-                                VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"GPVerifyLv1(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject1\" id=\"btnReject1\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV1\" ></td>";
+                                VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"GPVerifyLv1(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject1\" id=\"btnReject1\" value=\"Reject\" class=\"btn btn-danger  btn-height mb-1\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV1\" ></td>";
                                 VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
 
                             }
                             else {
                                 VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
-                                VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"GPVerifyLv1(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject1\" id=\"btnReject1\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV1\" >";
+                                VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"GPVerifyLv1(" + item.Code + ",this);\" />&nbsp;<input  type=\"button\" name=\"btnReject1\" id=\"btnReject1\" value=\"Reject\" class=\"btn btn-danger  btn-height mb-1\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV1\" >";
                                 VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Pending\" class=\"btn btn-primary  btn-height\" disabled/>";
                             }
                         }
@@ -364,22 +372,22 @@ function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
                             if (item['Over Due Amount'] > 0) {
                                 VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
                                 VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
-                                VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Verify\" class=\"btn btn-primary btn-sm\" onclick=\"AdminVerifyLv2(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject2\" id=\"btnReject2\" value=\"Reject\" class=\"btn btn-danger btn-sm\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV2\" >";
+                                VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Verify\" class=\"btn btn-primary btn-height mb-1\" onclick=\"AdminVerifyLv2(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject2\" id=\"btnReject2\" value=\"Reject\" class=\"btn btn-danger btn-height mb-1\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV2\" >";
                             }
                             else {
                                 VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
                                 VerifiedLv2Button = "<input type=\"button\" name=\"btnVerify1\" id=\"btnVerify1\" value=\"Verified\" class=\"btn btn-primary  btn-height\" disabled/>";
-                                VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Verify\" class=\"btn btn-primary btn-sm\" onclick=\"AdminVerifyLv2(" + item.Code + ",this);\" />&nbsp;<input type =\"button\" name=\"btnReject2\" id=\"btnReject2\" value=\"Reject\" class=\"btn btn-danger btn-sm\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV2\" >";
+                                VerifiedLv3Button = "<input type=\"button\" name=\"btnVerify2\" id=\"btnVerify2\" value=\"Verify\" class=\"btn btn-primary btn-height mb-1\" onclick=\"AdminVerifyLv2(" + item.Code + ",this);\" />&nbsp;<input type =\"button\" name=\"btnReject2\" id=\"btnReject2\" value=\"Reject\" class=\"btn btn-danger btn-height mb-1\" onclick=\"Reject(" + item.Code + ");\"/>" + EditOtherCharges + "<input type=\"hidden\" class=\"box_border form-control\" id=\"hflv_" + item.Code + "\" value=\"LV2\" >";
                             }
                         }
                     }
                     else {
                         if (item.Verify == "Verify") {
                             if (item['Over Due Amount'] > 0) {
-                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>"
+                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>"
                             }
                             else {
-                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>"
+                                VerifiedLv1Button = "<input type=\"button\" name=\"btnVerify\" id=\"btnVerify\" value=\"Verify\" class=\"btn btn-primary  btn-height mb-1\" onclick=\"Verify(" + item.Code + ",this);\"/>&nbsp;&nbsp;<input type=\"button\" name=\"btnReject\" id=\"btnReject\" value=\"Reject\" class=\"btn btn-danger  btn-height\" onclick=\"Reject(" + item.Code + ");\"/>"
                             }
                         }
                     }
@@ -495,7 +503,8 @@ function updateFooter(data) {
             newTfoot.innerHTML = tfootContent;
             table.appendChild(newTfoot);
         } else {
-            console.error("Table element with id 'table' not found.");
+            toastr.error("Table element with id 'table' not found.")
+            return false;
         }
     }
 }
@@ -621,7 +630,7 @@ function GPVerifyLv1(Code,e) {
     }
     if (AskOtherCharges == "Y") {
         if ($('#hfIsOtherChargesVerify_' + Code).val() === "N") {
-            alert("Please Check! You not verify other Charges..");
+            toastr.error("Please Check! You not verify other Charges..")
             return;
         }
     }
@@ -650,8 +659,8 @@ function AdminVerifyLv2(Code,element) {
     }
     if(AskOtherCharges == "Y") {
         if ($('#hfIsOtherChargesVerify_' + Code).val() === "N") {
-        alert("Please Check! You not verify other Charges..");
-        return;
+            toastr.error("Please Check! You not verify other Charges..")
+            return;
         }
     }
     VerifyForAll(Code, Mode)
@@ -704,7 +713,7 @@ function UpdateVisitOrderOtherCharges(Code,OldAmount) {
     var AmountNew = $('#txtOtherCharges_' + Code).val();
     var level = $('#hflv_' + Code).val();
     if (AmountNew === "") {
-        alert("Other Charges Not Found");
+        toastr.error("Other Charges Not Found");
         return;
     }
     var Sign = $('#selectSign_' + Code).val();
@@ -712,7 +721,6 @@ function UpdateVisitOrderOtherCharges(Code,OldAmount) {
         AmountNew *= -1;
     }
     const alertCls = confirm("Do you want to verify Other Charges ?");
-    alert(alertCls)
     if (alertCls) {
         VisitOrderEntryService.UpdateVisitOrderOtherCharges(Code, OldAmount, AmountNew, level).then(function (response) {
             if (response.Status === 'Y') {

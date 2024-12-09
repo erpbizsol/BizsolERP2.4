@@ -1,7 +1,8 @@
 ﻿//import { VisitOrderEntryService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
 import { VisitOrderEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
 let selectedDates = [];
-var baseUrl = `${window.location.protocol}//${window.location.host}`;
+//var baseUrl = `${window.location.protocol}//${window.location.host}`;
+var baseUrl = sessionStorage.getItem('AppBaseURL');
 $(document).ready(function () {
     $("#ERPHeading").text("Visit");
     GetNestedMarketingManList();
@@ -40,7 +41,9 @@ $(document).ready(function () {
             $("#btnShow").focus();
         }
     });
-    
+    $('#ddlSalesPerson').on('focus', function (e) {
+        $("#ddlSalesPerson").val('');
+    });
 });
 function GetNestedMarketingManList() {
     VisitOrderEntryService.GetNestedMarketingManList().then(function (response) {
@@ -71,32 +74,32 @@ const getButtonSet = (status, Code,date, VisitMaster_Code, Verified, Closed, Che
     if (VisitMaster_Code > 0) {
         if (Verified === "Y" && Closed !== "Y") {
             if (CheckOut === "--:--") {
-                buttons += getButtonHTML("", "btn btn-success btn-height", "", "fa-solid fa-sign-in", "Checked-in", true, "Already checked in");
-                buttons += getButtonHTML("", "btn btn-danger btn-height", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out");
-                buttons += getButtonHTML("", "btn btn-primary icon-height", `EditData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-pencil", "Edit");
-                buttons += getButtonHTML("", "btn btn-primary icon-height", `ViewData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-eye", "View");
+                buttons += getButtonHTML("", "btn btn-success btn-height mb-1", "", "fa-solid fa-sign-in", "Checked-in", true, "Already checked in");
+                buttons += getButtonHTML("", "btn btn-danger btn-height mb-1", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out");
+                buttons += getButtonHTML("", "btn btn-primary icon-height mb-1", `EditData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-pencil", "Edit");
+                buttons += getButtonHTML("", "btn btn-primary icon-height mb-1", `ViewData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-eye", "View");
             } else {
-                buttons += getButtonHTML("", "btn btn-success btn-height", "", "fa-solid fa-sign-in", "Checked-In", true, "");
-                buttons += getButtonHTML("", "btn btn-danger btn-height", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out", true);
-                buttons += getButtonHTML("", "btn btn-primary icon-height", `EditData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-pencil", "Edit", true, "Edit");
-                buttons += getButtonHTML("", "btn btn-primary icon-height", `ViewData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-eye", "View");
+                buttons += getButtonHTML("", "btn btn-success btn-height mb-1", "", "fa-solid fa-sign-in", "Checked-In", true, "");
+                buttons += getButtonHTML("", "btn btn-danger btn-height mb-1", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out", true);
+                buttons += getButtonHTML("", "btn btn-primary icon-height mb-1", `EditData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-pencil", "Edit", true, "Edit");
+                buttons += getButtonHTML("", "btn btn-primary icon-height mb-1", `ViewData(${Code}, ${VisitMaster_Code})`, "fa-solid fa-eye", "View");
             }
         } else if (Closed === "Y") {
-            buttons += getButtonHTML("Closed", "btn btn-primary btn-height", "", "", "Closed", true, "Cannot modify closed records");
+            buttons += getButtonHTML("Closed", "btn btn-primary btn-height mb-1", "", "", "Closed", true, "Cannot modify closed records");
         } else {
-            buttons += getButtonHTML("Verify", "btn btn-primary btn-height", `Verify(${Code}, ${VisitMaster_Code})`, "", "Verify");
+            buttons += getButtonHTML("Verify", "btn btn-primary btn-height mb-1", `Verify(${Code}, ${VisitMaster_Code})`, "", "Verify");
         }
     } else {
         if (Closed === 'Y') {
-            buttons += getButtonHTML("", "btn btn-primary icon-height", `IsCheckIn(${Code}, this)`, "fa-solid fa-sign-in", true, "Check-In");
-            buttons += getButtonHTML("", "btn btn-danger btn-height", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out", true);
-            buttons += getButtonHTML("", "btn btn-danger icon-height", "", "fa-solid fa-pencil", "Edit", true, "Edit disabled for unregistered visits");
-            buttons += getButtonHTML("", "btn btn-danger icon-height", "", "fa-solid fa-eye", "View", true, "View disabled for unregistered visits");
+            buttons += getButtonHTML("", "btn btn-primary icon-height mb-1", `IsCheckIn(${Code}, this)`, "fa-solid fa-sign-in", true, "Check-In");
+            buttons += getButtonHTML("", "btn btn-danger btn-height mb-1", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out", true);
+            buttons += getButtonHTML("", "btn btn-danger icon-height mb-1", "", "fa-solid fa-pencil", "Edit", true, "Edit disabled for unregistered visits");
+            buttons += getButtonHTML("", "btn btn-danger icon-height mb-1", "", "fa-solid fa-eye", "View", true, "View disabled for unregistered visits");
         } else {
-            buttons += getButtonHTML("", "btn btn-primary icon-height", `IsCheckIn(${Code}, '${date}')`, "fa-solid fa-sign-in", "Check-In");
-            buttons += getButtonHTML("", "btn btn-danger btn-height", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out", true);
-            buttons += getButtonHTML("", "btn btn-danger icon-height", "", "fa-solid fa-pencil", "Edit", true, "Edit disabled for unregistered visits");
-            buttons += getButtonHTML("", "btn btn-danger icon-height", "", "fa-solid fa-eye", "View", true, "View disabled for unregistered visits");
+            buttons += getButtonHTML("", "btn btn-primary icon-height mb-1", `IsCheckIn(${Code}, '${date}')`, "fa-solid fa-sign-in", "Check-In");
+            buttons += getButtonHTML("", "btn btn-danger btn-height mb-1", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out", true);
+            buttons += getButtonHTML("", "btn btn-danger icon-height mb-1", "", "fa-solid fa-pencil", "Edit", true, "Edit disabled for unregistered visits");
+            buttons += getButtonHTML("", "btn btn-danger icon-height mb-1", "", "fa-solid fa-eye", "View", true, "View disabled for unregistered visits");
         }
         
 
@@ -129,7 +132,7 @@ function GetVisitMasterList(FromDate, ToDate, SalesPerson) {
                 if (item.Status === 'Closed') {
                     statusButtonHTML = `<button class="btn btn-danger waves-effect waves-light btn-sm btn-height" style="cursor: not-allowed">${item.Status}</button>`;
                 } else if  (item.Status === 'Checked Out') {
-                    statusButtonHTML = `<button class="btn btn-danger waves-effect waves-light btn-sm btn-height disabled" style="cursor: not-allowed">${item.Status}</button>`;
+                    statusButtonHTML = `<button class="btn btn-danger waves-effect waves-light btn-sm btn-height btn-width disabled" style="cursor: not-allowed">${item.Status}</button>`;
                 }
                 else {
                         statusButtonHTML = item.Status === "Not Visited"
@@ -329,7 +332,7 @@ function IsCheckIn(RoutePlanMaster_Code, date) {
     const visitDate = new Date(date);
     const visitDateOnly = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate());
     if (visitDateOnly < currentDateOnly) {
-        toastr.info('Check-In is not allowed because the visit date is earlier than the current date.');
+        toastr.error('Check-In is not allowed because the visit date is earlier than the current date.');
         return false;
     }
     GetActualLocation();
