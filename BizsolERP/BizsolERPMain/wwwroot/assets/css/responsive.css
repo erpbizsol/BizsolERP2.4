@@ -35,4 +35,8 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
     }
+
+    .without-label-field {
+        margin-top: 0.2rem;
+    }
 }

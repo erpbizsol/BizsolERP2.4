@@ -273,6 +273,16 @@ const VisitOrderEntryService = {
             }
         );
     },
+    UnVerifiedExceededDiscountList: function UnVerifiedExceededDiscountList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetUnVerifiedExceededDiscountList?DealerName=${DealerName} &SalesPerson=${SalesPerson}&OrderType=${OrderType}&ChkWithOrder=${ChkWithOrder}&UserMaster_Code=${userMasterCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VisitOrderEntryService }
