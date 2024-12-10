@@ -51,7 +51,7 @@
 
             .fl-table thead th:nth-child(odd) {
                 color: #ffffff;
-                background: #5682ae;
+                background: #6699cc;
             }
 
         .fl-table tr:nth-child(even) {
@@ -82,6 +82,18 @@
         overflow-x: hidden;
         overflow-y: hidden;
     } 
+
+    /* Hide the spinner arrows in most modern browsers */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* Hide the spinner arrows in Firefox */
+    input[type="number"] {
+        -moz-appearance: textfield;
+    }
 
 </style>
 <div>
@@ -159,26 +171,26 @@
                                     <div class="col-md-3 colPhn">
                                         <label for="txtCreditLimitRs" class="col-form-label-sm fw-bold">Credit Limits</label>
                                         <div class="form-group">
-                                            <input type="text" id="txtCreditLimitRs" class="box_border form-control form-control-sm textRight" name="txtCreditLimitRs" placeholder="Credit Limit" value="0" autocomplete="off" readonly="readonly" required>
+                                        <input type="text" id="txtCreditLimitRs" class="box_border form-control form-control-sm text-end" name="txtCreditLimitRs" placeholder="Credit Limit" value="0" autocomplete="off" readonly="readonly" required>
                                         </div>
                                     </div>
 
                                     <div class="col-md-3 colPhn">
                                         <label for="txtCreditDays" class="col-form-label-sm fw-bold">Credit Days</label>
                                         <div class="form-group">
-                                            <input type="text" id="txtCreditDays" name="txtCreditDays" class="box_border form-control form-control-sm textRight" placeholder="Credit Days" value="0.00" autocomplete="off" readonly="readonly" required>
+                                        <input type="text" id="txtCreditDays" name="txtCreditDays" class="box_border form-control form-control-sm text-end" placeholder="Credit Days" value="0.00" autocomplete="off" readonly="readonly" required>
                                         </div>
                                     </div>
                                     <div class="col-md-3 colPhn">
                                         <label for="txtOverDueAmount" class="col-form-label-sm fw-bold">Over Due Amount</label>
                                         <div class="form-group">
-                                            <input type="text" class="box_border form-control form-control-sm textRight" id="txtOverDueAmount" name="txtOverDueAmount" placeholder="Over Due Amount" value="0" autocomplete="off" readonly="readonly" required>
+                                        <input type="text" class="box_border form-control form-control-sm text-end" id="txtOverDueAmount" name="txtOverDueAmount" placeholder="Over Due Amount" value="0" autocomplete="off" readonly="readonly" required>
                                         </div>
                                     </div>
                                     <div class="col-md-3 colPhn">
                                         <label for="txtOutstanding" class="col-form-label-sm fw-bold">Outstanding</label>
                                         <div class="form-group">
-                                            <input type="number" class="box_border form-control form-control-sm" id="txtOutstanding" name="txtOutstanding" placeholder="Outstanding" value="0.00" autocomplete="off" readonly="readonly" required>
+                                        <input type="number" class="box_border form-control form-control-sm text-end" id="txtOutstanding" name="txtOutstanding" placeholder="Outstanding" value="0.00" autocomplete="off" readonly="readonly" required>
                                         </div>
                                     </div>
                                 </div>
@@ -186,25 +198,25 @@
                                     <div class="col-md-3 colPhn">
                                         <label for="txtTarget" class="col-form-label-sm fw-bold">Target Amount</label>
                                         <div class="form-group">
-                                            <input type="text" class="form-control  form-control-sm textRight" id="txtTarget" name="txtTarget" placeholder="Target Amount" value="0.00" autocomplete="off" readonly="readonly" required>
+                                        <input type="text" class="form-control  form-control-sm text-end " id="txtTarget" name="txtTarget" placeholder="Target Amount" value="0.00" autocomplete="off" readonly="readonly" required>
                                         </div>
                                     </div>
                                     <div class="col-md-3 colPhn">
                                         <label for="txtTargetShortFall" class="col-form-label-sm fw-bold">Target Shortfall</label>
                                         <div class="form-group">
-                                            <input type="text" class="form-control  form-control-sm textRight" id="txtTargetShortFall" name="txtTargetShortFall" placeholder="Target Shortfall" value="0.00" autocomplete="off" readonly="readonly" required>
+                                        <input type="text" class="form-control  form-control-sm text-end" id="txtTargetShortFall" name="txtTargetShortFall" placeholder="Target Shortfall" value="0.00" autocomplete="off" readonly="readonly" required>
                                         </div>
                                     </div>
                                     <div class="col-md-3 colPhn">
                                         <label for="txtLastMonthSales" class="col-form-label-sm fw-bold">Last Month Sale</label>
                                         <div class="form-group">
-                                            <input type="text" class="form-control  form-control-sm textRight" id="txtLastMonthSales" name="txtLastMonthSales" value="0.00" placeholder="Last Month Sale" readonly="readonly" autocomplete="off" required>
+                                        <input type="text" class="form-control  form-control-sm text-end" id="txtLastMonthSales" name="txtLastMonthSales" value="0.00" placeholder="Last Month Sale" readonly="readonly" autocomplete="off" required>
                                         </div>
                                     </div>
                                     <div class="col-md-3 colPhn">
                                         <label for="txtCurrentMonthSale" class="col-form-label-sm fw-bold">Current Month Sale</label>
                                         <div class="form-group">
-                                            <input type="text" class="form-control  form-control-sm textRight" id="txtCurrentMonthSale" name="txtCurrentMonthSale" value="0.00" placeholder="Current Month Sale" readonly="readonly" autocomplete="off" required>
+                                        <input type="text" class="form-control  form-control-sm text-end" id="txtCurrentMonthSale" name="txtCurrentMonthSale" value="0.00" placeholder="Current Month Sale" readonly="readonly" autocomplete="off" required>
                                         </div>
                                     </div>
                                 </div>
@@ -283,7 +295,7 @@
                             <div class="accordion-body text-muted  overflow-auto">
                             <div class="col-md-12 form-group">
                                     <div class="table-wrapper  fixed-height-table" id="divtblPaymentHistory">
-                                        <table id="tblPaymentHistory" class="fixed-width-table table">
+                                        <table id="PaymentHistory" class="fixed-width-table table">
                                             <thead id="thPaymentHistory">
 
                                                 <!-- end table row-->
@@ -292,7 +304,7 @@
                                         </table>
                                         <!-- end table -->
                                     </div>
-                                    <div class="paginator" id="paginator-PaymentHistorydata">
+                                    <div class="paginator" id="paginator-PaymentHistory">
                                     </div>
                                 
 
@@ -305,7 +317,7 @@
         </div><!-- end card -->
     
      </div>
-<div class="row">
+<div class="row" id="divOrderBooking">
     
         <div class="card  border-primary">
             <div class="card-body">
@@ -376,31 +388,32 @@
                                         </thead>
                                         <tbody id="Orderdata" role="rowgroup"></tbody>
                                         <tfoot>
-                                           @*  <tr role="row" id="trTotal" class="text-sm-center">
+                                                <tr role="row" id="trTotal" class="text-sm-center ">
 
                                                 <td style="text-align: right;"></td>
                                                 <td style="text-align: right;"></td>
+                                                    <td style="text-align: center;" class="font-weight-bold">Total</td>
                                                 <td style="text-align: right;"></td>
                                                 <td style="text-align: right;"></td>
                                                 <td style="text-align: right;"></td>
                                                 <td style="text-align: right;"></td>
-                                                <td style="text-align: right;"></td>
-                                                <td style="text-align: right;" id="txtStockTotal"></td>
-                                                <td style="text-align: right;" id="txtOrderQtyPCTotal"></td>
-                                                <td style="text-align: right;" id="txtOrderQtyMTTotal"></td>
-                                                <td style="text-align: right;" id="txtOrderQtyMTRTotal"></td>
+                                                    <td style="text-align: right;" class="font-weight-bold" id="txtStockTotal"></td>
+                                                    <td style="text-align: right;" class="font-weight-bold"  id="txtOrderQtyPCTotal"></td>
+                                                    <td style="text-align: right;" class="font-weight-bold"  id="txtOrderQtyMTTotal"></td>
+                                                    <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyMTRTotal"></td>
                                                 <td style="text-align: right;" ></td>
-                                                <td style="text-align: right;" id="txtOrderQtyTotal"></td>
+                                                    <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyTotal"></td>
                                                 <td style="text-align: right;"></td>
                                                 <td style="text-align: right;"></td>
                                                 <td style="text-align: right;"></td>
-                                                <td style="text-align: right;" id="txtAmountTotal"></td>
+                                                    <td style="text-align: right;" class="font-weight-bold" id="txtAmountTotal"></td>
                                                 <td style="text-align: right;"></td>
                                                 <td style="text-align: right;"></td>
                                                 <td style="text-align: right;"></td>
-                                            </tr> *@
+                                            </tr>
                                             <tr role="row" id="trAddBtn">
-
+                                                    <td style="text-align: right;"></td>
+                                                    <td style="text-align: right;"></td>
                                                 <td style="text-align: left;">
                                                     <input id="btnAddNewRow" type="button" class="submit-btn btn btn-primary btn-sm waves-effect waves-light"  value="Add New Row"  />
                                                        
@@ -416,25 +429,26 @@
                                     <div class="col-md-3 colPhn">
                                         <label for="txtDeliveryDays" class="col-form-label-sm fw-bold">Delivery Days <span class="universal">*</span></label>
                                         <div class="form-group">
-                                            <input type="number" class="box_border form-control form-control-sm" id="txtDeliveryDays" value="" name="txtDeliveryDays" placeholder="" autocomplete="off" maxlength="3" required>
+                                            <input type="number" class="box_border form-control form-control-sm text-end" id="txtDeliveryDays" value="" name="txtDeliveryDays" placeholder="" autocomplete="off" maxlength="3" required>
                                         </div>
-                                    </div>
-                                    <div class="col-md-2 colPhn">
-                                        <label for="txtFreightType" class="col-form-label-sm fw-bold">Freight Type <span class="universal">*</span></label>
-                                        <div class="form-group">
-                                            <input type="text" list="listFreightType" class="box_border form-control form-control-sm" onclick="this.value=''" id="txtFreightType" name="txtFreightType" value="" placeholder="" autocomplete="off" number maxlength="250" required />
-
-                                        </div>
-
                                     </div>
                                     
-                                        <div class="col-md-2 colPhn" id="divShowFreight">
+                                    
+                                   <div class="col-md-2 colPhn" >
                                         <label for="txtlistFreight" class="col-form-label-sm fw-bold">Freight </label>
                                             <div class="form-group">
                                         <input type="text" list="listFreight" class="box_border form-control form-control-sm" id="txtlistFreight" onclick="this.value=''" name="txtlistFreight" value="" placeholder="" autocomplete="off" maxlength="250" required>
                                             </div>
 
                                         </div>
+                                    <div class="col-md-2 colPhn" id="divShowFreight">
+                                        <label for="txtFreightType" class="col-form-label-sm fw-bold">Freight Type </label>
+                                        <div class="form-group">
+                                            <input type="text" list="listFreightType" class="box_border form-control form-control-sm" onclick="this.value=''" id="txtFreightType" name="txtFreightType" value="" placeholder="" autocomplete="off" number maxlength="250" required />
+
+                                        </div>
+
+                                    </div>
                                   
                                         <div class="col-md-3 colPhn" id="divDeliveryLocation">
                                         <label for="txtDeliveryLocation" class="col-form-label-sm fw-bold">Delivery Location<span class="universal"></span></label>
@@ -446,7 +460,7 @@
                                         <div class="col-md-3 colPhn" id="divCreditDays">
                                         <label for="txtCreditDaysForDC" class="col-form-label-sm fw-bold">Credit Days<span class="universal"></span></label>
                                             <div class="form-group">
-                                                <input type="number" class="box_border form-control form-control-sm" id="txtCreditDaysForDC" name="txtCreditDaysForDC" placeholder="" value="" autocomplete="off" maxlength="3" required>
+                                            <input type="number" class="box_border form-control form-control-sm text-end" id="txtCreditDaysForDC" name="txtCreditDaysForDC" placeholder="" value="" autocomplete="off" maxlength="3" required>
                                             </div>
                                         </div>
                                    
@@ -470,7 +484,7 @@
                                         <div class="col-md-1 colPhn" id="divBasicRate">
                                         <label for="txtBasicRateLock" class="col-form-label-sm fw-bold">Basic Rate<span class="universal"></span></label>
                                             <div class="form-group">
-                                                <input type="text" class="box_border form-control form-control-sm" id="txtBasicRateLock" value="0" readonly>
+                                            <input type="text" class="box_border form-control form-control-sm text-end" id="txtBasicRateLock" value="0" readonly>
                                             </div>
                                         </div>
 
@@ -487,13 +501,13 @@
                                 <div class="col-md-1 colPhn" id="divAmt">
                                     <label for="txtAmt" class="col-form-label-sm fw-bold">Amount<span class="universal"></span></label>
                                             <div class="form-group">
-                                        <input type="number" onkeypress="return numberdecimalOnly(event); " onfocusout="ValidateDiscountLimit();calFinalAmt();" ID="txtAmt" name="txtAmt" class="box_border form-control form-control-sm number" autocomplete="off" value="0" placeholder=" " />
+                                            <input type="number" onkeypress="return numberdecimalOnly(event); " onfocusout="ValidateDiscountLimit();calFinalAmt();" ID="txtAmt" name="txtAmt" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" placeholder=" " />
                                             </div>
                                         </div>
                                         <div class="col-md-2 colPhn" id="divFinalRate">
                                         <label for="txtDeliveryLocation" class="col-form-label-sm fw-bold">Final Rate<span class="universal"></span></label>
                                             <div class="form-group">
-                                            <input type="text" onkeypress="return numberdecimalOnly(event);" ID="txtAmtFinal" name="txtAmtFinal" class="box_border form-control form-control-sm number" autocomplete="off" value="0" readonly />
+                                            <input type="text" onkeypress="return numberdecimalOnly(event);" ID="txtAmtFinal" name="txtAmtFinal" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" readonly />
                                             </div>
                                         </div>
                                   
@@ -570,4 +584,4 @@
         </div>
     </div>
     </div>
-    <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+    <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js?v1"></script>

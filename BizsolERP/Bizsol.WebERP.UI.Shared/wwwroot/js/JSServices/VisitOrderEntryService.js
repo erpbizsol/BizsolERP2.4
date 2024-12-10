@@ -283,6 +283,16 @@ const VisitOrderEntryService = {
             }
         );
     },
+    DeleteVisitOrderDetails: function DeleteVisitOrderDetails(Code, DealerName, ReasonForDelete) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/DeleteVisitOrderDetails?Code=${DealerName} &UserMaster_Code=${userMasterCode}&ReasonForDelete=${ReasonForDelete}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VisitOrderEntryService }
