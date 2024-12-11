@@ -309,9 +309,9 @@ window.applyNumericFilter = function (columnName, bodyId) {
 
     closeAllFilters();
 };
-function closeAllFilters() {
-    $('.filter-dropdown').hide();
-}
+//function closeAllFilters() {
+//    $('.filter-dropdown').hide();
+//}
 function ClearFilter(bodyId) {
     $(`#${bodyId} tr`).each(function () {
         $(this).show();
@@ -651,7 +651,12 @@ function stopPropagationdouble(event) {
     event.stopPropagation();
 };
 function renderTable(items, bodyId) {
-    showButtons = window[`ShowButtons_${bodyId}`]
+    let showButtons = ''
+    
+    if (button == true) {
+        window[`ShowButtons_${bodyId}`]
+    }
+    
     const rows = items.map((item, index) => {
         const row = Object.keys(item).map((key) => {
             const alignment = window[`columnAlignment_${bodyId}`][key] || 'left';
@@ -664,7 +669,7 @@ function renderTable(items, bodyId) {
 
         let buttons = '';
 
-        if (Array.isArray(showButtons) && showButtons.length > 0) {
+        if (button == true && Array.isArray(showButtons) && showButtons.length > 0) {
             buttons = '<td>';
 
             //if (showButtons.includes('E')) {
@@ -711,14 +716,14 @@ function renderTable(items, bodyId) {
 function updatePageInfo(tableId) {
     var filteredData = window[`filteredData_${tableId}`];
     var currentPage = window[`currentPage_${tableId}`];
-    itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
+    let itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
     const start = (currentPage - 1) * itemsPerPage + 1;
     const end = Math.min(start + itemsPerPage - 1, filteredData.length);
     $(`#pageInfo-${tableId}`).text(`${start} – ${end} of ${filteredData.length}`);
 }
 function updateButtons(tableId) {
     var filteredData = window[`filteredData_${tableId}`];
-    itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
+    let itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
     var currentPage = window[`currentPage_${tableId}`];
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     $(`#firstBtn-${tableId}, #prevBtn-${tableId}`).prop('disabled', currentPage === 1);
@@ -726,7 +731,7 @@ function updateButtons(tableId) {
 }
 function renderTableWithPagination(tableId, bodyId) {
     var filteredData = window[`filteredData_${tableId}`];
-    itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
+    let itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
     var currentPage = window[`currentPage_${tableId}`];
 
     const start = (currentPage - 1) * itemsPerPage;
@@ -751,7 +756,7 @@ function prevBtn(tableId, bodyId) {
 };
 function nextBtn(tableId, bodyId) {
     var filteredData = window[`filteredData_${tableId}`];
-    itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
+    let itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
     var currentPage = window[`currentPage_${tableId}`];
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     if (currentPage < totalPages) {
@@ -763,13 +768,13 @@ function lastBtn(tableId, bodyId) {
     var filteredData = window[`filteredData_${tableId}`];
     var currentPage = window[`currentPage_${tableId}`];
 
-    itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
+    let itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
     window[`currentPage_${tableId}`] = Math.ceil(filteredData.length / itemsPerPage);
     renderTableWithPagination(tableId, bodyId);
 };
 function pageSize(tableId, bodyId) {
     //itemsPerPage = parseInt($("#pageSize-tableId").val());
-    itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
+    let itemsPerPage = parseInt($(`#pageSize-${tableId}`).val());
     var currentPage = window[`currentPage_${tableId}`];
 
     currentPage = 1;
