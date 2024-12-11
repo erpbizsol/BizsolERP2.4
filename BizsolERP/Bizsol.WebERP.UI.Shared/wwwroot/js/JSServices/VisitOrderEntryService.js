@@ -76,25 +76,24 @@ const VisitOrderEntryService = {
             }
         );
     },
-
-    GetVisitMasterList: function GetVisitMasterList(FromDate, ToDate, MarketingMan) {
+    GetVisitMasterList: function GetVisitMasterList(FromDate, ToDate, MarketingMan, User_Id) {
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetVerifiedRoutePlanUserAndDateWise?User_ID=${User_Id}&MarketingMan_Name=${MarketingMan}&FromDate=${FromDate}&ToDate=${ToDate}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRoutePlanList: function GetRoutePlanList(Mode) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetVerifiedRoutePlanUserAndDateWise?User_ID=${userMasterCode}&MarketingMan_Name=${MarketingMan}&FromDate=${FromDate}&ToDate=${ToDate}`;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + `/GetRoutePlanList?UserMaster_Code=${userMasterCode}&Mode=${Mode}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
             }
         );
-    },
-    GetRoutePlanList: function GetRoutePlanList() {
-        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + `/GetRoutePlanList`;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
-            function (value) {
-                return value;
-            }
-        );
-    },
+    }, 
     NotVisitedRoutePlan: function NotVisitedRoutePlan(RoutePlanMaster_Code, Reason) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
@@ -277,6 +276,16 @@ const VisitOrderEntryService = {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
         var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetUnVerifiedExceededDiscountList?DealerName=${DealerName} &SalesPerson=${SalesPerson}&OrderType=${OrderType}&ChkWithOrder=${ChkWithOrder}&UserMaster_Code=${userMasterCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    DeleteVisitOrderDetails: function DeleteVisitOrderDetails(Code, DealerName, ReasonForDelete) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/DeleteVisitOrderDetails?Code=${DealerName} &UserMaster_Code=${userMasterCode}&ReasonForDelete=${ReasonForDelete}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

@@ -10,6 +10,7 @@ $(document).ready(function () {
     GetOrderStatusList();
     GetUserNameList();
     highlightSelectedDates();
+    GetFixedParameterConfiguration();
 
     const order = {
         VisitMaster_Code: '',
@@ -39,7 +40,6 @@ $(document).ready(function () {
             $('#ddlOrderStatus').focus();
         }else {
             GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus);
-            GetFixedParameterConfiguration();
         }
     });
     $('#txtFromDate').on('keydown', function (e) {
@@ -61,6 +61,12 @@ $(document).ready(function () {
         if (e.key === "Enter") {
             $("#btnShow").focus();
         }
+    });
+    $('#ddlUserName').on('focus', function (e) {
+        $("#ddlUserName").val("");
+    });
+    $('#ddlOrderStatus').on('focus', function (e) {
+        $("#ddlOrderStatus").val("");
     });
 });
 function manageEditButton(order) {
@@ -143,12 +149,12 @@ function convertDateFormat(dateString) {
     const monthAbbreviation = monthNames[parseInt(month, 10) - 1];
     return `${day} - ${monthAbbreviation} - ${year}`;
 }
-
 function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
     OrderEntryListService.GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus).then(function (response) {
         if (response && Array.isArray(response) && response.length > 0) {
+            $("#tblOrderList").show();
             const stringFilterColumn = [ "Visit Type", "City Name","Time", "State Name", "Remarks", "Dealer Name", "IsVerify"];
-            const numericFilterColumn = ["Basic Rate", "Final Amount", "Final Rate"];
+            const numericFilterColumn = ["Basic Rate", "Final Amount", "Final Rate", "Credit Days"];
             const dateFilterColumn = ["Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
@@ -161,6 +167,7 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
                 "Date": 'center',
                 "Verified": 'center',
                 "Closed": 'center',
+                "Credit Days": 'right',
             };
             if (QtyMTRHeader !== '') {
                 response = response.map(item => {
@@ -257,9 +264,11 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
         }
         else {
             toastr.error('No Data Found');
+            $("#tblOrderList").hide();
         }
     }).catch(error => {
         toastr.error(error.Msg);
+        $("#tblOrderList").hide();
     });
 }
 function GetOrderStatusList() {
