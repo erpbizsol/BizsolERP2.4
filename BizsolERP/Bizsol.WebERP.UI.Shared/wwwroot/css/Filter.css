@@ -66,6 +66,7 @@ th {
     border: 1px solid #ddd;
     padding: 15px;
     top: 26px;
+/*top: 58px;*/
     z-index: 1;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     border-radius: 4px;
@@ -125,6 +126,7 @@ i:hover {
     padding: 8px;
     width: 215px;
     top: 26px;
+/*    top: 58px;*/
 }
 
 .filter-dropdown-double label {
@@ -223,8 +225,10 @@ i:hover {
 
 .dropdown-content {
     position: absolute;
-    top: 13px;
-    right: -72px;
+        top: 13px;
+    /*    top: 5px;*/
+/*    right: -72px;*/
+right: -84px;
     background-color: #eff1f5;
     min-width: 150px;
     box-shadow: 0px 8px 16px rgb(34 34 34 / 20%);
