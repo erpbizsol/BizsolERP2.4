@@ -188,7 +188,11 @@ body[data-bs-theme=dark] .layout-mode-light {
 }
 
 .page-content {
-    padding: calc(0px + 1.5rem) calc(0.3rem * .75) 60px calc(0.3rem * .75)
+/*        padding: calc(0px + 1.5rem) calc(0.3rem * .75) 60px calc(0.3rem * .75);*/
+    padding: calc(0px + 1.5rem) calc(0.3rem* .75) 10px calc(0.3rem* .75);
+/*    display: flex;
+    flex-direction: column;
+    height: 90vh;*/
 }
 
 .header-item {
@@ -679,7 +683,7 @@ body[data-layout=horizontal] .footer {
     margin-left: 250px;
     overflow: hidden;
     min-height: 175.667px;
-    /*min-height: 511.667px;*/
+/*    min-height: 511.667px;*/
 }
 
     .main-content .content {
@@ -5814,12 +5818,12 @@ table {
 }
 
 .fixed-height-table {
-    height: 350px;
+        height: 355px;
     overflow-x: auto;
     overflow-y: auto;
     display: block;
     border-collapse: collapse;
-    /*height: calc(100vh - 260px);*/
+/*    height: calc(90vh - 208px);*/
 }
 
 table > thead, th {
@@ -5852,8 +5856,9 @@ table, th, td, tr {
 
 .filter-table-heading-div {
     display: flex;
-    /*justify-content: space-between;*/
+    justify-content: space-between;
     align-items: center;
+/*align-items:self-end;*/
 }
 
 .filter-table-heading {
@@ -5946,12 +5951,10 @@ button, .icon-height {
     --bs-table-bg-type: var(--bs-table-striped-bg);
 }
 
-/*.form-control {
-    padding: 4px 5px !important;
-    font-size: 8pt;
-}*/
+/*----- form design ---------*/ 
 
 .form-control-sm {
+    margin-bottom: 8px;
 }
 
 .form-control:disabled {
@@ -5959,9 +5962,62 @@ button, .icon-height {
     opacity: 0.5 !important;
 }
 
-.without-label-field {
-    margin-top: 2.3rem;
+fieldset {
+    /* background-color: #fafbfc; */
+    background-color: #f5f5f5;
+    border: 1px solid #b7b7b7;
+    display: block;
+    margin-inline-start: 2px;
+    margin-inline-end: 2px;
+    padding-block-start: 1.35em;
+    padding-inline-start: 1.75em;
+    padding-inline-end: 1.75em;
+    padding-block-end: 0.625em;
+    min-inline-size: min-content;
+    border-style: groove;
+    border: var(--bs-border-width) var(--bs-border-style) #607d8b !important;
+    border-image: initial;
 }
+
+legend {
+    background-color: #607d8b;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    width: auto;
+    margin-bottom: 0px;
+    font-size: 10pt;
+    border-bottom: 0;
+}
+
+.card {
+    --bs-card-spacer-y: 1rem !important;
+    --bs-card-spacer-x: 1rem !important;
+}
+
+:is(input[type="text"], .form-control):focus {
+    outline: none;
+    background-color: #e8f0fe;
+    box-shadow: 0 0 4px rgb(168 168 168);
+    color: #000;
+    /* box-shadow: none !important;
+          background-color: #607d8b;
+        color: #fff; */
+}
+
+:is(.form-control, .form-control-sm) {
+    border: var(--bs-border-width) solid #b5bfc3 !important;
+}
+
+label {
+    margin-bottom: .1rem !important;
+}
+
+.without-label-field {
+    margin-top: 1.9rem;
+}
+
+/*----- form design ---------*/ 
 
 /*======== Tab-Section Start ========*/
 .tab-section .tab-content {
