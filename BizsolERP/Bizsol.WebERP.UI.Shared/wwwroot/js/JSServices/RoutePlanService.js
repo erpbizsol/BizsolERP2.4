@@ -66,10 +66,10 @@ const RoutePlanMasterService = {
         );
     },
 
-    GetRoutePlanList: function GetRoutePlanList(){
+    GetRoutePlanList: function GetRoutePlanList(Mode){
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + `/GetRoutePlanList?UserMaster_Code=` + userMasterCode;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + `/GetRoutePlanList?UserMaster_Code=${userMasterCode}&Mode=${Mode}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -108,9 +108,9 @@ const RoutePlanMasterService = {
             }
         );
     },
-    GetUserWiseRoutePlanDetails: function GetUserWiseRoutePlanDetails() {
+    GetUserWiseRoutePlanDetails: function GetUserWiseRoutePlanDetails(FromDate,ToDate) {
         let userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/GetUserWiseRoutePlanDetails?UserMaster_Code=" + userMasterCode;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/GetUserWiseRoutePlanDetails?FromDate=" + FromDate + "&ToDate=" + ToDate +"&UserMaster_Code=" + userMasterCode;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
