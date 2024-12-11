@@ -1,14 +1,17 @@
 ﻿//import { VisitOrderEntryService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
 import { VisitOrderEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
 let selectedDates = [];
+let User_Id ="";
 //var baseUrl = `${window.location.protocol}//${window.location.host}`;
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 $(document).ready(function () {
     $("#ERPHeading").text("Visit");
+    GetUserdetails();
     GetNestedMarketingManList();
     setupDateInputFormatting();
-    GetVisitMasterListForDate();
     GetActualLocation();
+    GetVisitMasterListForDate();
+
     $('#btnShow').on('click', function () {
         var FromDate = $('#txtFromDate').val();
         var ToDate = $('#txtToDate').val();
@@ -45,6 +48,20 @@ $(document).ready(function () {
         $("#ddlSalesPerson").val('');
     });
 });
+function GetUserdetails() {
+    VisitOrderEntryService.GetUserDetails().then(function (response) {
+        if (response && response.length > 0) {
+            response.forEach(item => {
+                if (item.UserID) {
+                    User_Id = item.UserID;
+                }
+            });
+        }
+        else {
+            toastr.error('No Data Found')
+        }
+    });
+}
 function GetNestedMarketingManList() {
     VisitOrderEntryService.GetNestedMarketingManList().then(function (response) {
         if (response.length > 0) {
@@ -109,7 +126,7 @@ const getButtonSet = (status, Code,date, VisitMaster_Code, Verified, Closed, Che
 function GetVisitMasterList(FromDate, ToDate, SalesPerson) {
     var fromDate = convertDateFormat(FromDate);
     var toDate = convertDateFormat(ToDate);
-    VisitOrderEntryService.GetVisitMasterList(fromDate, toDate, SalesPerson).then(function (response) {
+    VisitOrderEntryService.GetVisitMasterList(fromDate, toDate, SalesPerson, User_Id).then(function (response) {
         if (response.length > 0) {
             $("#txtTable").show();
             const StringFilterColumn = ["Created By", "Visit Type", ];
@@ -130,14 +147,14 @@ function GetVisitMasterList(FromDate, ToDate, SalesPerson) {
                 const buttonsHTML = getButtonSet(item.Status, item.Code, item.Date, item.VisitMaster_Code, item.Verified, item.Closed, item.CheckOut);
                 let statusButtonHTML;
                 if (item.Status === 'Closed') {
-                    statusButtonHTML = `<button class="btn btn-danger waves-effect waves-light btn-sm btn-height" style="cursor: not-allowed">${item.Status}</button>`;
+                    statusButtonHTML = `<button class="btn btn-danger  btn-height" style="cursor: not-allowed">${item.Status}</button>`;
                 } else if  (item.Status === 'Checked Out') {
-                    statusButtonHTML = `<button class="btn btn-danger waves-effect waves-light btn-sm btn-height btn-width disabled" style="cursor: not-allowed">${item.Status}</button>`;
+                    statusButtonHTML = `<button class="btn btn-danger  btn-height btn-width disabled" style="cursor: not-allowed">${item.Status}</button>`;
                 }
                 else {
                         statusButtonHTML = item.Status === "Not Visited"
-                            ? `<button class="btn btn-primary waves-effect waves-light btn-sm btn-height" onclick="IsNotVisited('${item.Code}')">Not-Visited</button>`
-                            : `<button class="btn btn-success waves-effect waves-light btn-sm btn-height" style="cursor: not-allowed">${item.Status}</button>`;
+                            ? `<button class="btn btn-primary  btn-height btn-width" onclick="IsNotVisited('${item.Code}')">Not-Visited</button>`
+                            : `<button class="btn btn-success  btn-height btn-width" style="cursor: not-allowed">${item.Status}</button>`;
                 }
 
                 return {
@@ -157,7 +174,7 @@ function GetVisitMasterList(FromDate, ToDate, SalesPerson) {
     });
 }
 function GetVisitMasterListForDate() {
-    VisitOrderEntryService.GetRoutePlanList().then(function (response) {
+    VisitOrderEntryService.GetRoutePlanList('Visit').then(function (response) {
         if (response && response.length > 0) {
             response.forEach(item => {
                 if (item.Date) {
@@ -168,6 +185,7 @@ function GetVisitMasterListForDate() {
         }
         else {
             toastr.error('No Data Found')
+            highlightSelectedDates();
         }
     });
 

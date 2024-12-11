@@ -10,7 +10,7 @@ const TblIndx = {
     DeleteButton: 6,
     Code: 7
 }
-
+let selectedDates = [];
 $(document).ready(function () {
     //$('#tblRoutePlan').DataTable();
     $("#ERPHeading").text("Route Plan");
@@ -33,16 +33,16 @@ $(document).ready(function () {
                     GetRoutePlanListByPlanDate(dtPlanDate);
                 }
      });
-    var dtPlanDate = $('#txtdate').val();
+    //var dtPlanDate = $('#txtdate').val();
 
    
-    if (typeof $('#txtdate').val() === 'undefined' || $('#txtdate').val() === '' || $('#txtdate').val() === null) {
+    //if (typeof $('#txtdate').val() === 'undefined' || $('#txtdate').val() === '' || $('#txtdate').val() === null) {
 
-        $('#txtdate').focus();
+    //    $('#txtdate').focus();
        
-    } else {
-        GetRoutePlanListByPlanDate(dtPlanDate);
-    }
+    //} else {
+    //    GetRoutePlanListByPlanDate(dtPlanDate);
+    //}
 
  });
 
@@ -89,7 +89,7 @@ $(document).ready(function () {
 }
 
  function GetRoutePlanListByPlanDate(dtPlanDate) {
-    RoutePlanMasterService.GetRoutePlanListByPlanDate(dtPlanDate).then(function (response) {
+     RoutePlanMasterService.GetRoutePlanListByPlanDate(convertDateFormat(dtPlanDate)).then(function (response) {
         /*const StringFilterColumn = ["VisitType", "AccountDesp","CityName","StateName","Description"];
         const NumericFilterColumn = [];
         const DateFilterColumn = [];
@@ -223,9 +223,14 @@ function PopulateTable(data) {
 
 function AddNewRow()
     {
-        var today = new Date().toISOString().split("T")[0];
-        var dtPlanDate=document.getElementById("txtdate").value ;
-  if(today==dtPlanDate){
+    //var today = new Date().toISOString().split("T")[0];
+    var today = new Date();
+    var day = ('0' + today.getDate()).slice(-2);
+    var month = ('0' + (today.getMonth() + 1)).slice(-2);
+    var year = today.getFullYear();
+    var TodayDate=`${day}/${month}/${year}`;
+    var dtPlanDate = document.getElementById("txtdate").value;
+    if (convertDateFormat(TodayDate) ==convertDateFormat(dtPlanDate)){
         var tbItemConsumeRowNo = 1;
         var table = $('#tblRoutePlan');
         var tbody=$('#tblRoutePlan tbody');
@@ -254,30 +259,30 @@ function AddNewRow()
            } 
     }
 
-    function GetRoutePlanDates() {
-    RoutePlanMasterService.GetRoutePlanList().then(function (response) {
-      var PlanDates = []
-       if (response.length > 0) {
-           for (var i = 0; i < response.length; i++) {
-                  PlanDates.push(response[i].Date);
-                }
-          }
+//    function GetRoutePlanDates() {
+//    RoutePlanMasterService.GetRoutePlanList().then(function (response) {
+//      var PlanDates = []
+//       if (response.length > 0) {
+//           for (var i = 0; i < response.length; i++) {
+//                  PlanDates.push(response[i].Date);
+//                }
+//          }
           
-      //$('#txtdate').datepicker({
-      //          dateFormat: 'dd/mm/yy',
-      //          beforeShowDay: function (date) {
-      //              var Highlight = PlanDates[date];
-      //              if (Highlight) {
-      //                  return [true, "Highlighted", Highlight];
-      //              }
-      //              else {
-      //                  return [true, '', ''];
-      //              }
-      //          },
-      //});
+//      //$('#txtdate').datepicker({
+//      //          dateFormat: 'dd/mm/yy',
+//      //          beforeShowDay: function (date) {
+//      //              var Highlight = PlanDates[date];
+//      //              if (Highlight) {
+//      //                  return [true, "Highlighted", Highlight];
+//      //              }
+//      //              else {
+//      //                  return [true, '', ''];
+//      //              }
+//      //          },
+//      //});
       
-    });
-}
+//    });
+//}
 
 $(function () {
     // Array of dates to highlight (format: yyyy-mm-dd)
@@ -584,6 +589,98 @@ function SearchInput(x) {
     });
 }
 
+function GetRoutePlanDates() {
+    RoutePlanMasterService.GetRoutePlanList('Locate').then(function (response) {
+        if (response && response.length > 0) {
+            response.forEach(item => {
+                if (item.Date) {
+                    selectedDates.push(item.Date);
+                }
+            });
+            highlightSelectedDates();
+        }
+        else {
+            toastr.error('No Data Found')
+            highlightSelectedDates();
+        }
+    });
+
+}
+function setupDateInputFormatting() {
+    $('#txtdate').on('input', function () {
+        let value = $(this).val().replace(/[^\d]/g, '');
+
+        if (value.length >= 2 && value.length < 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2);
+        } else if (value.length >= 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
+        }
+        $(this).val(value);
+
+        if (value.length === 10) {
+            validateDate(value);
+        } else {
+            $(this).val(value);
+        }
+    });
+}
+function validateDate(value) {
+    let regex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    let isValidFormat = regex.test(value);
+
+    if (isValidFormat) {
+        let parts = value.split('/');
+        let day = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10);
+        let year = parseInt(parts[2], 10);
+
+        let date = new Date(year, month - 1, day);
+
+        if (date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day) {
+
+            $(this).val(value);
+        } else {
+            $('#txtdate').val('');
+
+        }
+    } else {
+        $('#txtdate').val('');
+
+    }
+}
+function highlightSelectedDates() {
+    var highlightedDates = {};
+    selectedDates.forEach(date => {
+        var parts = date.split('/');
+        var formattedDate = new Date(parts[2], parts[1] - 1, parts[0]).toDateString();
+        highlightedDates[formattedDate] = true;
+    });
+
+    var today = new Date();
+    var day = ('0' + today.getDate()).slice(-2);
+    var month = ('0' + (today.getMonth() + 1)).slice(-2);
+    var year = today.getFullYear();
+
+    $('#txtdate').val(`${day}/${month}/${year}`);
+    GetRoutePlanListByPlanDate($('#txtdate').val());
+    $('#txtdate').datepicker({
+        format: 'dd/mm/yyyy',
+        autoclose: true,
+        beforeShowDay: function (date) {
+            const formattedDate = date.toDateString();
+            if (highlightedDates[formattedDate]) {
+                return { classes: 'highlighted-date', tooltip: 'Data Available' };
+            }
+            return { classes: '', tooltip: '' };
+        }
+    });
+}
+function convertDateFormat(dateString) {
+    const [day, month, year] = dateString.split('/');
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthAbbreviation = monthNames[parseInt(month) - 1];
+    return `${day}-${monthAbbreviation}-${year}`;
+}
 window.SaveData = SaveData;
 window.getVisitType = getVisitType;
 window.GetCityDetailsByName = GetCityDetailsByName;
