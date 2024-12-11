@@ -88,7 +88,9 @@ const VisitOrderEntryService = {
         );
     },
     GetRoutePlanList: function GetRoutePlanList() {
-        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + `/GetRoutePlanList`;
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + `/GetRoutePlanList?UserMaster_Code=` + userMasterCode;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
