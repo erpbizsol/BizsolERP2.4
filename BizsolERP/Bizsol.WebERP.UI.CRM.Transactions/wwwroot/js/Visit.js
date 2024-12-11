@@ -279,7 +279,7 @@ function showLocation(position) {
     var longitude = position.coords.longitude;
     $("#txtLocation").val("Latitude: " + latitude + " Longitude: " + longitude)
     $.ajax({
-        url: `/GetLocation?latlng=${latitude},${longitude}`,
+        url: `${baseUrl}/GetLocation?latlng=${latitude},${longitude}`,
         type: 'POST',
         dataType: 'json',
         success: function (response) {
