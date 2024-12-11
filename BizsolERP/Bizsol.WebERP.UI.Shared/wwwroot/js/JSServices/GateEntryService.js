@@ -76,7 +76,15 @@ const GateEntryService = {
                 return value;
             }
         );
-    }
+    },
+    GetTransportersNameList: function GetTransportersNameList() {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/GetTransportersNameList`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 
 }
 
