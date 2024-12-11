@@ -284,8 +284,6 @@ function GetOrderStatusList() {
 
             $('#ddlOrderStatusList')[0].innerHTML = option;
         } else {
-            $('#ErrorMsg').removeClass('invisible');
-            $('#ErrorMsg').addClass('visible');
             return false;
         }
     }).catch(function (error) {
