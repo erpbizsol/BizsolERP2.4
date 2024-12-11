@@ -99,6 +99,20 @@
         }
 
         
+    },
+    OnChangeOnlyAlphaNumericTextBox: function OnChangeOnlyAlphaNumericTextBox(element) {
+
+        const regex = /^[a-zA-Z0-9_]*$/
+
+        if (regex.test(element.value) == true) {
+
+            element.setCustomValidity("");
+            BizSolhandleEnterKey(event);
+        } else {
+            element.setCustomValidity("Only Alpha Numeric allowed");
+        }
+
+        element.reportValidity();
     }
 
 }

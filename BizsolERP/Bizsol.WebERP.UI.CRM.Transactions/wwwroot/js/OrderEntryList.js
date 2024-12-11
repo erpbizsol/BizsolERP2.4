@@ -154,7 +154,7 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
         if (response && Array.isArray(response) && response.length > 0) {
             $("#tblOrderList").show();
             const stringFilterColumn = [ "Visit Type", "City Name","Time", "State Name", "Remarks", "Dealer Name", "IsVerify"];
-            const numericFilterColumn = ["Basic Rate", "Final Amount", "Final Rate"];
+            const numericFilterColumn = ["Basic Rate", "Final Amount", "Final Rate", "Credit Days"];
             const dateFilterColumn = ["Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
@@ -167,6 +167,7 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
                 "Date": 'center',
                 "Verified": 'center',
                 "Closed": 'center',
+                "Credit Days": 'right',
             };
             if (QtyMTRHeader !== '') {
                 response = response.map(item => {
