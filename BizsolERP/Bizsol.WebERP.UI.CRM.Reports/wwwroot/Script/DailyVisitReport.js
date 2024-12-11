@@ -49,6 +49,21 @@ $(document).ready(function () {
             $("#fetchReportButton").focus();
         }
     });
+    $('#txtSalesPerson').on('focus', function (e) {
+        $("#txtSalesPerson").val('');
+    });
+    $('#txtDealerName').on('focus', function (e) {
+        $("#txtDealerName").val('');
+    });
+    $('#txtOrderType').on('focus', function (e) {
+        $("#txtOrderType").val('');
+    });
+    $('#txtOrderStatus').on('focus', function (e) {
+        $("#txtOrderStatus").val('');
+    });
+    $('#txtReportType').on('focus', function (e) {
+        $("#txtReportType").val('');
+    });
 });
 function GetSalespersonLists() {
     CRMReportsServices.GetSalespersonList().then(function (response) {

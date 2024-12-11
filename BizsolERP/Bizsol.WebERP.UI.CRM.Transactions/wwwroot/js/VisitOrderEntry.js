@@ -1,7 +1,8 @@
 ﻿import { VisitOrderEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
 import { BizSolGeoLocation } from '../../Bizsol.WebERP.UI.Shared/js/BizSolGeoLocation.js';
 
-var baseUrl = `${window.location.protocol}//${window.location.host}`;
+//var baseUrl = `${window.location.protocol}//${window.location.host}`;
+var baseUrl = sessionStorage.getItem('AppBaseURL');
 
 var options = {
     enableHighAccuracy: true,
@@ -53,6 +54,7 @@ function PageLoad() {
     if (param_VisitMode == 'View' && param_VisitMaster_Code > 0) {
         $('input, textarea').prop('disabled', true);
         $("#btnBack").prop("disabled", false); 
+
         GetEditVisitDetails();
     }
 
@@ -60,6 +62,7 @@ function PageLoad() {
         GetEditVisitDetails();
     }
 
+   
     if (param_VisitMode == 'New') {
         SetOrderBookingTableHeaderAsPerConfig();
     }
@@ -145,6 +148,7 @@ function PageLoad() {
 
     //SetOrderBookingTableHeaderAsPerConfig();
     $('#txtDeliveryDays').val(2);
+    $('#txtCreditDaysForDC').val(1);
     $('#txtNextVistDate').val(addDays(new Date(), 2).toISOString().split("T")[0]);
 
     SetFieldsAsPerConfig();
@@ -360,20 +364,25 @@ function GetNestedDealerList() {
     });
 }
 function GetZoneMasterList() {
+    
     VisitOrderEntryService.GetZoneMasterList().then(function (response) {
-
+        var defaultValue = '';
         if (response.length > 0) {
             $('#listZone option').empty();
             var option = '';
             for (var i = 0; i < response.length; i++) {
-
+                if (i == 0) {
+                    defaultValue = response[0].Field;
+                }
                 option += '<option text="' + response[i].Code + '">' + response[i].Field + '</option>'
             }
             $('#listZone')[0].innerHTML = option;
 
         }
-
+        $('#txtZone').val(defaultValue);
     });
+    
+   
 }
 
 function GetItemMasterDropdown() {
@@ -401,7 +410,8 @@ function SetBlankOrderBookingTable() {
 }
 
 function AddFiveNewRows() {
-    var VisitType = 'Order';
+    //var VisitType = 'Order';
+    var VisitType = $('#hfVisitType').val();
     var EntryType = 'O';
 
     if (param_RoutePlanCode > 0) {
@@ -436,7 +446,8 @@ function AddNewRow() {
     var QtyPCHeader = CRM_Config.QtyPCHeader;
     var QtyMTRHeader = CRM_Config.QtyMTRHeader;
     var QtyMTHeader_MT = CRM_Config.QtyMTHeader_MT;
-    var VisitType = 'Order';
+    //var VisitType = 'Order';
+    var VisitType = $('#hfVisitType').val();
     var EntryType = 'O';
 
     if (param_RoutePlanCode > 0) {
@@ -516,14 +527,14 @@ function AddNewRow() {
     UOM.innerHTML = '<datalist id="listUOM_' + tbItemConsumeRowNo + '"></datalist><input type="text"  id="txtUOM' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtUOM" placeholder="" list="listUOM_' + tbItemConsumeRowNo + '" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
     Stock.innerHTML = '<input type="text"  id="txtStock' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtStock" placeholder="" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
     OrderQtyPC.innerHTML = '<input type="text"  id="txtOrderQtyPC' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtOrderQtyPC" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
-    OrderQtyMT.innerHTML = '<input type="number"  id="txtOrderQtyMT' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtOrderQtyMT" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="CalculateAmount(this);" required>';
+    OrderQtyMT.innerHTML = '<input type="number"  id="txtOrderQtyMT' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm text-end" name="txtOrderQtyMT" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="CalculateAmount(this);" required>';
     OrderQtyMTR.innerHTML = '<input type="number"  id="txtOrderQtyMTR' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtOrderQtyMTR" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
     OrderUOM.innerHTML = '<input type="text"  id="txtOrderUOM' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtOrderUOM" placeholder="" list="listUOM" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
     OrderQTY.innerHTML = '<input type="number"  id="txtOrderQTY' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtOrderQTY" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
-    BasicRate.innerHTML = '<input type="number"  id="txtBasicRate' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtBasicRate" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="CalculateAmount(this);GetMaxBasicRate();calFinalAmt();" required>';
+    BasicRate.innerHTML = '<input type="number"  id="txtBasicRate' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm text-end" name="txtBasicRate" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="CalculateAmount(this);GetMaxBasicRate();calFinalAmt();" required>';
     ExtraCharges.innerHTML = '<input type="number"  id="txtExtraCharges' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtExtraCharges" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
     OrderRate.innerHTML = '<input type="number"  id="txtOrderRate' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtOrderRate" placeholder=""autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
-    Amount.innerHTML = '<input type="number"  id="txtAmount' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm " disabled name="txtAmount" placeholder="" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
+    Amount.innerHTML = '<input type="number"  id="txtAmount' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm text-end" disabled name="txtAmount" placeholder="" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
     DeliveryDate.innerHTML = '<input type="date"  id="txtDeliveryDate' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtDeliveryDate" placeholder="" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
     Remarks.innerHTML = '<input type="text"  id="txtRemarks' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtRemarks" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required  maxlength="200">';
     Delete.innerHTML = '<a id="btnDelete" class=" btn btn-danger btn-sm waves-effect waves-light disabled" title="Delete" onclick="DeleteOrderItem(this);"><i class="fa fa-times" aria-hidden="true"></i></a>';
@@ -559,6 +570,7 @@ function CalculateAmount(x) {
     var Amount = parseFloat(QtyMT * BasicRate).toFixed(2);
 
     ObjCurrRow.find('td:eq(' + Indx_TblOrder.Amount + ')')[0].getElementsByTagName('input')[0].value = Amount;
+    ShowFooterTotal();
 }
 
 function ValidateData() {
@@ -613,11 +625,16 @@ function ValidateData() {
     }
 
     //if (ZoneMandatoryInDirectOrder == 'Y') {
+    var VisitType = $('#hfVisitType').val();
+    if (VisitType != '' && VisitType != undefined && VisitType != null && VisitType == 'New Acquisition' && EntryType == 'V') {
+       
+    } else {
         if ($('#txtZone').val() == '') {
 
             MsgStr += "* Please select Zone!" + newLine;
             Valid = false;
         }
+    }
     //}
 
    
@@ -804,7 +821,7 @@ function SaveData() {
             rowData["lengthDesp"] = '';
             rowData["orderQty"] = QtyMT;
 
-            rowData["rate"] = 0;
+            rowData["rate"] = BasicRate;
             rowData["discount"] = 0;
             rowData["amount"] = Amount;
             rowData["remarks"] = Remarks;
@@ -921,7 +938,10 @@ function GetAccountMasterDetails() {
     //        $('#txtAddress').val(Address);
     //    }
     //});
-
+   if (AccountDesp == "") {
+        toastr.error("Please Select Dealer Name!")
+        return false;
+    }
     GetDealerDetailsByDealerName();
     SetBlankOrderBookingTable();
     AddFiveNewRows();
@@ -947,10 +967,13 @@ function GetDealerDetailsByDealerName() {
             $('#txtTargetShortFall').val(response.GetSaleDataPanelTwoDashboardDirectOrder[0].TargetShortFall);
         }
         if (response.GetAllPaymentHistoryDataForDirectOrder.length > 0) {
+            $('#divtblPaymentHistory').prop('hidden', false);
+            $('#paginator-PaymentHistorydata').prop('hidden', false);
+
             const StringFilterColumn = ["OrderNo", "InvoiceNo"];
             const NumericFilterColumn = ["BillAmount"];
             const DateFilterColumn = ["OrderDate", "DeliveryDate", "Paymentdate"];
-            const Button = true;
+            const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
             const hiddenColumns = [];
@@ -959,22 +982,25 @@ function GetDealerDetailsByDealerName() {
                 "Balance": 'right',
                 "BillAmount": 'right',
                 "DispatchQtyMt": 'right',
-                "CreditDays": 'right',
-                "OrderDate": 'center',
-                "DeliveryDate": 'center',
-                "Paymentdate": 'center',
+                "CreditDays": 'right'
+                //"OrderDate": 'center',
+                //"DeliveryDate": 'center',
+                //"Paymentdate": 'center',
             };
-            BizsolCustomFilterGrid.CreateDataTable("thPaymentHistory", "PaymentHistorydata", response.GetAllPaymentHistoryDataForDirectOrder[0], Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns)
+            BizsolCustomFilterGrid.CreateDataTable("thPaymentHistory", "PaymentHistorydata", response.GetAllPaymentHistoryDataForDirectOrder, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
         } else {
             $('#divtblPaymentHistory').prop('hidden', true);
             $('#paginator-PaymentHistorydata').prop('hidden', true);
         }
 
         if (response.GetPendingData.length > 0) {
+            $('#divtblPendingOrder').prop('hidden', false);
+            $('#paginator-tblPendingOrder').prop('hidden', false);
+
             const StringFilterColumn = ["OrderNo", "ItemName","SizeDesp"];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
-            const Button = true;
+            const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
             const hiddenColumns = ["AccountDesp"];
@@ -983,7 +1009,7 @@ function GetDealerDetailsByDealerName() {
                 "BalQtyMT": 'right',
                 "BalQtyMTRS": 'right',
             };
-            BizsolCustomFilterGrid.CreateDataTable("thPendingOrder", "PendingOrderdata", response.GetPendingData[0], Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns)
+            BizsolCustomFilterGrid.CreateDataTable("thPendingOrder", "PendingOrderdata", response.GetPendingData, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
         }
         else {
             $('#divtblPendingOrder').prop('hidden', true);
@@ -991,10 +1017,13 @@ function GetDealerDetailsByDealerName() {
         }
 
         if (response.GetSizeWiseSalesDataForDirectOrder.length > 0) {
+            $('#divtblSizeWiseSales').prop('hidden', false);
+            $('#paginator-SizeWiseSalesdata').prop('hidden', false);
+
             const StringFilterColumn = ["ItemName", "Size","Thickness"];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
-            const Button = true;
+            const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
             const hiddenColumns = [];
@@ -1002,7 +1031,7 @@ function GetDealerDetailsByDealerName() {
                 "QtyMT": 'right',
                 "Pcs": 'right',
             };
-            BizsolCustomFilterGrid.CreateDataTable("thSizeWiseSales", "SizeWiseSalesdata", response.GetSizeWiseSalesDataForDirectOrder[0], Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns)
+            BizsolCustomFilterGrid.CreateDataTable("thSizeWiseSales", "SizeWiseSalesdata", response.GetSizeWiseSalesDataForDirectOrder, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
 
         }
         else {
@@ -1130,14 +1159,17 @@ function SetOrderBookingTableHeaderAsPerConfig() {
     if (QtyPCHeader == '') {
         $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQtyPC + 1) + ")").css('display', 'none');
         $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.OrderQtyPC + 1) + ")").css('display', 'none');
+        $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.OrderQtyPC + 1) + ")").css('display', 'none');
     }
     if (QtyMTRHeader == '') {
         $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQtyMTR + 1) + ")").css('display', 'none');
         $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.OrderQtyMTR + 1) + ")").css('display', 'none');
+        $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.OrderQtyMTR + 1) + ")").css('display', 'none');
     }
     if (QtyMTHeader_MT == '') {
         $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQtyMT + 1) + ")").css('display', 'none');
         $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.OrderQtyMT + 1) + ")").css('display', 'none');
+        $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.OrderQtyMTR + 1) + ")").css('display', 'none');
     }
 
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.Consignee + 1) + ")").css('display', 'none');
@@ -1152,6 +1184,7 @@ function SetOrderBookingTableHeaderAsPerConfig() {
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.ExtraCharges + 1) + ")").css('display', 'none');
     //$("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.Amount + 1) + ")").css('display', 'none');
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQTY + 1) + ")").css('display', 'none');
+    $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.Delete + 1) + ")").css('display', 'none');
 
 
     // Hide Columns
@@ -1167,24 +1200,47 @@ function SetOrderBookingTableHeaderAsPerConfig() {
     $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.ExtraCharges + 1) + ")").css('display', 'none');
     //$("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.Amount + 1) + ")").css('display', 'none');
     $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.OrderQTY + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.Delete + 1) + ")").css('display', 'none');
 
     // Hide Footer Columns
 
-    //var firstFooterRow = $("#tblorderbooking tfoot tr").eq(0);
+    
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.Consignee + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.DeliveryAddress + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.Size + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.Thickness + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.SizeDesp + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.UOM + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.Stock + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.OrderUOM + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.OrderRate + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.ExtraCharges + 1) + ")").css('display', 'none');
+    //$("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.Amount + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.OrderQTY + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.Delete + 1) + ")").css('display', 'none');
 
-    //$(firstFooterRow).find('td:eq(' + Indx_TblOrder.Consignee + ')')[0].style["display"] = "none";
-    //$(firstFooterRow).find('td:eq(' + Indx_TblOrder.DeliveryAddress + ')')[0].style["display"] = "none";
-    //$(firstFooterRow).find('td:eq(' + Indx_TblOrder.Size + ')')[0].style["display"] = "none";
-    //$(firstFooterRow).find('td:eq(' + Indx_TblOrder.Thickness + ')')[0].style["display"] = "none";
-    //$(firstFooterRow).find('td:eq(' + Indx_TblOrder.SizeDesp + ')')[0].style["display"] = "none";
-    //$(firstFooterRow).find('td:eq(' + Indx_TblOrder.UOM + ')')[0].style["display"] = "none";
-    //$(firstFooterRow).find('td:eq(' + Indx_TblOrder.Stock + ')')[0].style["display"] = "none";
-    //$(firstFooterRow).find('td:eq(' + Indx_TblOrder.OrderUOM + ')')[0].style["display"] = "none";
-    //$(firstFooterRow).find('td:eq(' + Indx_TblOrder.OrderRate + ')')[0].style["display"] = "none";
-    //$(firstFooterRow).find('td:eq(' + Indx_TblOrder.ExtraCharges + ')')[0].style["display"] = "none";
-    //$(firstFooterRow).find('td:eq(' + Indx_TblOrder.OrderQTY + ')')[0].style["display"] = "none";
-
+    
   
+}
+
+function ShowFooterTotal() {
+    var totalAmount = 0;
+    var totalQty = 0;
+    $('#tblorderbooking tbody tr').each(function () {
+        var Amount = parseFloat($(this).find('input[name="txtAmount"]').val());
+        var qty = parseFloat($(this).find('input[name="txtOrderQtyMT"]').val());
+        if (!isNaN(Amount)) {
+            totalAmount += Amount;
+        }
+        if (!isNaN(qty)) {
+            totalQty += qty;
+        }
+    });
+    totalAmount = parseFloat(totalAmount).toFixed(2);
+    totalQty = parseFloat(totalQty).toFixed(1);
+    $('#txtAmountTotal').text(totalAmount);
+    $('#txtOrderQtyMTTotal').text(totalQty);
+   
 }
 
 function GetUOM(rowNo) {
@@ -1296,34 +1352,45 @@ function GetUOM(rowNo) {
 
 
 function GetFreightList() {
+    
     VisitOrderEntryService.GetFreightList().then(function (response) {
+        var defaultValue = '';
+
         if (response.length > 0) {
             $('#listFreight option').empty();
             var option = '';
             for (var i = 0; i < response.length; i++) {
-
+                if (i == 0) {
+                    defaultValue = response[0].Field;
+                }
                 option += '<option text="' + response[i].Code + '">' + response[i].Field + '</option>'
             }
             $('#listFreight')[0].innerHTML = option;
 
         }
-
+        $('#txtlistFreight').val(defaultValue);
     });
+   
 }
 function GetFreightTypeList() {
+    
     VisitOrderEntryService.GetFreightTypeList().then(function (response) {
+        var defaultValue = '';
         if (response.length > 0) {
             $('#listFreightType option').empty();
             var option = '';
             for (var i = 0; i < response.length; i++) {
-
+                if (i == 0) {
+                    defaultValue = response[i].Field;
+                }
                 option += '<option text="' + response[i].Code + '">' + response[i].Field + '</option>'
             }
             $('#listFreightType')[0].innerHTML = option;
 
         }
-
+        $('#txtFreightType').val(defaultValue);
     });
+   
 }
 
 function GetAccountDeliveryLocationDetails() {
@@ -1358,12 +1425,12 @@ function GetEditVisitDetails() {
                 $('#txtRemarks').val(response.VisitORroutePlanMaster[0].Remarks);             
                 $('#txtAddLocation').val(response.VisitORroutePlanMaster[0].Location);                
                 $('#txtNextVistDate').val(response.VisitORroutePlanMaster[0].NextVisitDate);                   
-                $('#txtFreightType').val(response.VisitORroutePlanMaster[0].Freight);                     
+                $('#txtFreightType').val(response.VisitORroutePlanMaster[0].FreightType);                     
                 $('#txtCurrentLocation').val(response.VisitORroutePlanMaster[0].CheckInLocation);             
                 $('#txtDeliveryDays').val(response.VisitORroutePlanMaster[0].DeliveryDaysForOrder);    
                 $('#hfFileInput').val(response.VisitORroutePlanMaster[0].PanelOneAttachment);  
                 $('#txtCreditDaysForDC').val(response.VisitORroutePlanMaster[0].CreditDays);      
-                $('#txtlistFreight').val(response.VisitORroutePlanMaster[0].FreightType);     
+                $('#txtlistFreight').val(response.VisitORroutePlanMaster[0].Freight);     
                 $('#txtZone').val(response.VisitORroutePlanMaster[0].ZoneName);
                 $('#hfVisitType').val(response.VisitORroutePlanMaster[0].VisitType);
                 
@@ -1377,10 +1444,17 @@ function GetEditVisitDetails() {
         GetMaxBasicRate();
         calFinalAmt();
         SetImageControl();
+        var VisitType = $('#hfVisitType').val();
+        if (VisitType != '' && VisitType != undefined && VisitType != null && VisitType == 'New Acquisition' ) {
+            $('#divOrderBooking').prop('hidden', true);
+        } else {
+            $('#divOrderBooking').prop('hidden', false);
+        }
+
 
     });
-
     
+
 
     //GetDealerDetailsByDealerName();
     
@@ -1394,7 +1468,7 @@ function PopulateOrderBookingTable(data) {
 
     // Clear any existing rows
     tbody.empty();
-    SetOrderBookingTableHeaderAsPerConfig();
+    //SetOrderBookingTableHeaderAsPerConfig();
 
     // Loop through the data and append rows
     data.forEach(function (item, index) {
@@ -1415,16 +1489,16 @@ function PopulateOrderBookingTable(data) {
         var td_Thickness = `<datalist id="listItemThickness_` + tbItemConsumeRowNo + `"></datalist><input type="text"  id="txtThickness` + tbItemConsumeRowNo + `"  value="${item.Thickness}" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtThickness" placeholder="" list="listItemThickness_` + tbItemConsumeRowNo + `" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
         var td_SizeDesp = `<input type="text"  id="txtSizeDesp` + tbItemConsumeRowNo + `" onkeypress="BizSolhandleEnterKey(event);"  value=""  class="BizSolFormControl box_border form-control form-control-sm" name="txtSizeDesp" placeholder="" list="listItemName" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
         var td_UOM = `<datalist id="listUOM_` + tbItemConsumeRowNo + `"></datalist><input type="text"  id="txtUOM` + tbItemConsumeRowNo + `"  value=""  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtUOM" placeholder="" list="listUOM_` + tbItemConsumeRowNo + `" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
-        var td_Stock = `<input type="text"  id="txtStock` + tbItemConsumeRowNo + `" onkeypress="BizSolhandleEnterKey(event);"  value=""  class="BizSolFormControl box_border form-control form-control-sm" name="txtStock" placeholder="" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
-        var td_OrderQtyPC = `<input type="text"  id="txtOrderQtyPC` + tbItemConsumeRowNo + `" onkeypress="BizSolhandleEnterKey(event);"  value=""  class="BizSolFormControl box_border form-control form-control-sm" name="txtOrderQtyPC" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
-        var td_OrderQtyMT = `<input type = "number"  id = "txtOrderQtyMT` + tbItemConsumeRowNo + `"  value="${item.OrderQty}"  onkeypress = "BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name = "txtOrderQtyMT" placeholder = ""  autocomplete = "off" onclick = "$(this).val(\'\')"  onchange = "CalculateAmount(this);" required >`;
+        var td_Stock = `<input type="text"  id="txtStock` + tbItemConsumeRowNo + `" onkeypress="BizSolhandleEnterKey(event);"  value=""  class="BizSolFormControl box_border form-control form-control-sm  text-end" name="txtStock" placeholder="" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
+        var td_OrderQtyPC = `<input type="text"  id="txtOrderQtyPC` + tbItemConsumeRowNo + `" onkeypress="BizSolhandleEnterKey(event);"  value=""  class="BizSolFormControl box_border form-control form-control-sm  text-end" name="txtOrderQtyPC" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
+        var td_OrderQtyMT = `<input type = "number"  id = "txtOrderQtyMT` + tbItemConsumeRowNo + `"  value="${item.OrderQty}"  onkeypress = "BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm  text-end" name = "txtOrderQtyMT" placeholder = ""  autocomplete = "off" onclick = "$(this).val(\'\')"  onchange = "CalculateAmount(this);" required >`;
         var td_OrderQtyMTR = `<input type="number"  id="txtOrderQtyMTR` + tbItemConsumeRowNo + `"  value=""  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtOrderQtyMTR" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
         var td_OrderUOM = `<input type="text"  id="txtOrderUOM` + tbItemConsumeRowNo + `"  value=""  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtOrderUOM" placeholder="" list="listUOM" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
         var td_OrderQTY = `<input type="number"  id="txtOrderQTY` + tbItemConsumeRowNo + `"  value=""  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtOrderQTY" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
-        var td_BasicRate = `<input type="number"  id="txtBasicRate` + tbItemConsumeRowNo + `"  value="${item.BasicRate}"  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtBasicRate" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="CalculateAmount(this);GetMaxBasicRate();calFinalAmt();" required>`;
-        var td_ExtraCharges = `<input type="number"  id="txtExtraCharges` + tbItemConsumeRowNo + `"  value=""  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtExtraCharges" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
-        var td_OrderRate = `<input type="number"  id="txtOrderRate` + tbItemConsumeRowNo + `"  value=""  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtOrderRate" placeholder=""autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
-        var td_Amount = `<input type="number"  id="txtAmount` + tbItemConsumeRowNo + `"  value="${item.Amount}"  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm " disabled name="txtAmount" placeholder="" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
+        var td_BasicRate = `<input type="number"  id="txtBasicRate` + tbItemConsumeRowNo + `"  value="${item.BasicRate}"  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm  text-end" name="txtBasicRate" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="CalculateAmount(this);GetMaxBasicRate();calFinalAmt();" required>`;
+        var td_ExtraCharges = `<input type="number"  id="txtExtraCharges` + tbItemConsumeRowNo + `"  value=""  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm  text-end" name="txtExtraCharges" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
+        var td_OrderRate = `<input type="number"  id="txtOrderRate` + tbItemConsumeRowNo + `"  value=""  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm  text-end" name="txtOrderRate" placeholder=""autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
+        var td_Amount = `<input type="number"  id="txtAmount` + tbItemConsumeRowNo + `"  value="${item.Amount}"  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm  text-end" disabled name="txtAmount" placeholder="" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
         var td_DeliveryDate = `<input type="date"  id="txtDeliveryDate` + tbItemConsumeRowNo + `"  value="${formattedDate}"  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtDeliveryDate" placeholder="" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>`;
         var td_Remarks = `<input type="text"  id="txtRemarks` + tbItemConsumeRowNo + `"  value="${item.Remarks}"  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtRemarks" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required  maxlength="200">`;
         var td_Delete           = `<a id="btnDelete" class=" btn btn-danger btn-sm waves-effect waves-light disabled" title="Delete" onclick="DeleteOrderItem(this);"><i class="fa fa-times" aria-hidden="true"></i></a>`;
@@ -1482,6 +1556,11 @@ function PopulateOrderBookingTable(data) {
             $('#selectSign').val("+");
         }
         //calFinalAmt();
+    }
+    ShowFooterTotal();
+    SetOrderBookingTableHeaderAsPerConfig();
+    if (param_VisitMode == 'View' && param_VisitMaster_Code > 0) {
+        $('#tblorderbooking input').prop('disabled', true)
     }
 }
 
@@ -1680,3 +1759,4 @@ window.GetMaxBasicRate = GetMaxBasicRate;
 window.calFinalAmt = calFinalAmt;
 window.ValidateDiscountLimit = ValidateDiscountLimit;
 window.CloseModal = CloseModal;
+window.ShowFooterTotal = ShowFooterTotal;

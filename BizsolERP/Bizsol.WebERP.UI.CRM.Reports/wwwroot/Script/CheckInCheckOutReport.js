@@ -9,7 +9,7 @@ $(document).ready(function () {
     const currentDate = `${yyyy}-${mm}-${dd}`;
     $('#txtdateFrom, #txtdateTo').val(currentDate);
     GetSalespersonList();
-    Getcheckinoutlist();
+    //Getcheckinoutlist();
     GetDisplayNameForReportTypes();
     $('#txtdateFrom').on('keydown', function (e) {
         if (e.key === "Enter") {
@@ -30,6 +30,12 @@ $(document).ready(function () {
         if (e.key === "Enter") {
             $("#fetchReportButton").focus();
         }
+    });
+    $('#txtSalesPerson').on('focus', function (e) {
+        $("#txtSalesPerson").val('');
+    });
+    $('#txtReportType').on('focus', function (e) {
+        $("#txtReportType").val('');
     });
 });
 function GetSalespersonList() {

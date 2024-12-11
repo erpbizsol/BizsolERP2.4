@@ -2,12 +2,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <style>
-    #btnShow {
-        width: 58% !important;
-        height: 29px;
-        text-align: center !important;
-        padding: 0px;
-    }
+    
     .align-items-end{
         margin-top:24px;
     }
@@ -45,17 +40,17 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-3">
-                <label for="ddlSalesPerson" class="form-label">Sales Person</label>
+                <label for="ddlSalesPerson" class="form-label">Sales Person <span class="text-danger">*</span></label>
                 <input list="ddlSalesPersonList" id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border" placeholder="Sales Person" autocomplete="off" value="All">
                 <datalist id="ddlSalesPersonList"></datalist>
             </div>
             <div class="col-md-3">
-                <label for="ddlDealerName" class="form-label">Dealer Name</label>
+                <label for="ddlDealerName" class="form-label">Dealer Name  <span class="text-danger">*</span></label>
                 <input list="ddlDealerNameList" id="ddlDealerName" name="ddlDealerName" class="form-control form-control-sm box_border" placeholder="Dealer Name" autocomplete="off" value="All">
                 <datalist id="ddlDealerNameList"></datalist>
             </div>
             <div class="col-md-3">
-                <label for="ddlOrderType" class="form-label">Order Type</label>
+                <label for="ddlOrderType" class="form-label">Order Type <span class="text-danger">*</span></label>
                 <select id="ddlOrderType" name="ddlOrderType" class="form-control form-control-sm box_border" autocomplete="off">
                 </select>
             </div>
@@ -90,8 +85,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h6 class="modal-title" id="ShowDetailModal">ORDER DETAILS</h6>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
+                    <button type="button" class="close modal-close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true" class="modal-close-icon">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
@@ -109,7 +104,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger btn-height" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -120,10 +115,12 @@
         <div class="modal-content modal-content-width-sm">
             <div class="modal-header">
                 <h5 class="modal-title">Reason</h5>
-                <button type="button" class="btn-close" onclick="Close()"></button>
+                <button type="button" class="close modal-close" data-bs-dismiss="modal">
+                    <span aria-hidden="true" class="modal-close-icon">&times;</span>
+                </button>
             </div>
             <div class="modal-body">
-                <input type="text" id="txtReason" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="text" id="txtReason" class="form-control form-control-sm" placeholder="Enter reason" autocomplete="off" />
                 <input type="hidden" id="txtCode" class="form-control" value="0" />
             </div>
             <div class="modal-footer">

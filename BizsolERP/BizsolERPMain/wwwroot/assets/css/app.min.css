@@ -6125,7 +6125,10 @@ label {
     width: 25px;
     line-height: 0.4;
 }
-
+.modal-dialog .modal-close-icon {
+    font-size: 15pt;
+    line-height: 1.1;
+}
 .modal-footer {
     border-top: none !important;
 }
