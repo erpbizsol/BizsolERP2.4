@@ -306,7 +306,7 @@ function ViewData(code, VisitMaster_Code) {
     window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
 }
 function IsNotVisited(code) {
-    const alertCls = confirm("Are you sure you want to close this visit?");
+    const alertCls = confirm("Are you sure you want to close this?");
     if (alertCls) {
         CloseVisit(code);
     }

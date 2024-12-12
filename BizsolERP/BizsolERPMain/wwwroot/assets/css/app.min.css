@@ -8,6 +8,21 @@ body {
     background-color: #f8f8f8;
 }
 
+/* width */
+::-webkit-scrollbar {
+    width: 4px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: #bec1d8;
+}
+
 [data-bs-theme=dark] .bg-dark {
     background-color: var(--bs-sidebar-dark-bg) !important
 }
@@ -188,9 +203,9 @@ body[data-bs-theme=dark] .layout-mode-light {
 }
 
 .page-content {
-/*        padding: calc(0px + 1.5rem) calc(0.3rem * .75) 60px calc(0.3rem * .75);*/
+    /*        padding: calc(0px + 1.5rem) calc(0.3rem * .75) 60px calc(0.3rem * .75);*/
     padding: calc(0px + 1.5rem) calc(0.3rem* .75) 10px calc(0.3rem* .75);
-/*    display: flex;
+    /*    display: flex;
     flex-direction: column;
     height: 90vh;*/
 }
@@ -544,7 +559,8 @@ body[data-layout=horizontal][data-sidebar=dark] .navbar-brand-box {
 
 .footer {
     padding: 2px !important;
-    height: auto;
+    /*height: auto;*/
+    height: 26px;
 }
 
     .footer .copyright {
@@ -681,15 +697,27 @@ body[data-layout=horizontal] .footer {
 
 .main-content {
     margin-left: 250px;
-    overflow: hidden;
-    min-height: 175.667px;
-/*    min-height: 511.667px;*/
+    /*    overflow: hidden;*/
+    /*    min-height: 175.667px;*/
+    /*    min-height: 511.667px;*/
+    position: relative;
+    z-index: 1;
+    display: block;
+    height: 100%;
+    overflow: auto;
+    overflow-y: hidden;
 }
 
-    .main-content .content {
-        padding: 0 15px 10px 15px;
-        margin-top: 70px
-    }
+.PAGE {
+    flex: 1;
+    overflow-y: auto;
+    height: calc(100vh - 77px);
+}
+
+.main-content .content {
+    padding: 0 15px 10px 15px;
+    margin-top: 70px
+}
 
 #sidebar-menu {
     padding: 10px 9px;
@@ -744,6 +772,7 @@ body[data-layout=horizontal] .footer {
             color: var(--bs-sidebar-menu-item-icon-color);
             fill: var(--bs-sidebar-menu-item-icon-effact-color);
             /*    margin-right: 10px;
+}
 */ margin-top: -3px
         }
 
@@ -5818,12 +5847,12 @@ table {
 }
 
 .fixed-height-table {
-        height: 355px;
+    height: 355px;
     overflow-x: auto;
     overflow-y: auto;
     display: block;
     border-collapse: collapse;
-/*    height: calc(90vh - 208px);*/
+    /*    height: calc(90vh - 208px);*/
 }
 
 table > thead, th {
@@ -5858,7 +5887,7 @@ table, th, td, tr {
     display: flex;
     justify-content: space-between;
     align-items: center;
-/*align-items:self-end;*/
+    /*align-items:self-end;*/
 }
 
 .filter-table-heading {
@@ -5951,7 +5980,7 @@ button, .icon-height {
     --bs-table-bg-type: var(--bs-table-striped-bg);
 }
 
-/*----- form design ---------*/ 
+/*----- form design ---------*/
 
 .form-control-sm {
     margin-bottom: 8px;
@@ -5964,7 +5993,7 @@ button, .icon-height {
 
 fieldset {
     /* background-color: #fafbfc; */
-    background-color: #f5f5f5;
+    background-color: #fffcfc;
     border: 1px solid #b7b7b7;
     display: block;
     margin-inline-start: 2px;
@@ -6017,7 +6046,7 @@ label {
     margin-top: 1.9rem;
 }
 
-/*----- form design ---------*/ 
+/*----- form design ---------*/
 
 /*======== Tab-Section Start ========*/
 .tab-section .tab-content {
@@ -6125,10 +6154,12 @@ label {
     width: 25px;
     line-height: 0.4;
 }
+
 .modal-dialog .modal-close-icon {
     font-size: 15pt;
     line-height: 1.1;
 }
+
 .modal-footer {
     border-top: none !important;
 }
@@ -6145,21 +6176,23 @@ label {
     font-family: arial, sans-serif;
 }
 
- a.icon-height {
+a.icon-height {
     border-radius: 6px;
     height: 25px;
     font-size: 7pt;
     line-height: 0.6;
     padding: 9px 10px;
- }
+}
+
 input.form-control[readonly] {
     background-color: #e7e3e3 !important;
     opacity: 0.5 !important;
+    color: #000;
 }
 
 .AutoSuggestion-list {
     display: none; /*Initially hidden   position: relative;*/
-    position:absolute;
+    position: absolute;
     background-color: white;
     border: 1px solid #ccc;
     /*width: 251px;*/
@@ -6169,7 +6202,7 @@ input.form-control[readonly] {
     padding: 0;
     margin-top: 5px;
     list-style-type: none;
-    z-index: 1000;  /*Ensure it appears above other content */
+    z-index: 1000; /*Ensure it appears above other content */
 }
 
     .AutoSuggestion-list li {
@@ -6185,8 +6218,5 @@ input.form-control[readonly] {
 .AutoSuggestion-list-highlighted {
     background-color: #9aa0a5;
     Highlight color color: white;
-    Text color for highlighted item
+    Text color for highlighted item;
 }
-
-
-
