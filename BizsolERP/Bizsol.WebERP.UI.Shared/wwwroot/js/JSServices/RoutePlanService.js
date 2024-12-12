@@ -108,9 +108,9 @@ const RoutePlanMasterService = {
             }
         );
     },
-    GetUserWiseRoutePlanDetails: function GetUserWiseRoutePlanDetails(FromDate,ToDate) {
+    GetUserWiseRoutePlanDetails: function GetUserWiseRoutePlanDetails(FromDate,ToDate,Status) {
         let userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/GetUserWiseRoutePlanDetails?FromDate=" + FromDate + "&ToDate=" + ToDate +"&UserMaster_Code=" + userMasterCode;
+        var URL = UrlService.API_ENDPOINT_ROUTE_PLAN + "/GetUserWiseRoutePlanDetails?FromDate=" + FromDate + "&ToDate=" + ToDate + "&UserMaster_Code=" + userMasterCode+"&VerifyStatus=" + Status;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
