@@ -6152,3 +6152,41 @@ label {
     line-height: 0.6;
     padding: 9px 10px;
  }
+input.form-control[readonly] {
+    background-color: #e7e3e3 !important;
+    opacity: 0.5 !important;
+}
+
+.AutoSuggestion-list {
+    display: none; /*Initially hidden   position: relative;*/
+    position:absolute;
+    background-color: white;
+    border: 1px solid #ccc;
+    /*width: 251px;*/
+    font-size: 10pt;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0;
+    margin-top: 5px;
+    list-style-type: none;
+    z-index: 1000;  /*Ensure it appears above other content */
+}
+
+    .AutoSuggestion-list li {
+        padding: 8px;
+        cursor: pointer;
+    }
+
+        .AutoSuggestion-list li:hover {
+            background-color: #f0f0f0;
+            Highlight on hover
+        }
+
+.AutoSuggestion-list-highlighted {
+    background-color: #9aa0a5;
+    Highlight color color: white;
+    Text color for highlighted item
+}
+
+
+
