@@ -152,8 +152,171 @@
 
 </div><br/>
 
+ <div class="row">
+    <div class="col-md-12">
+        <div class="card border-primary">
+            <div class="card-body">
+                <ul class="nav nav-pills nav-justified" role="tablist">
+                    <li class="nav-item waves-effect waves-light" role="presentation">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#Dashboard" role="tab" aria-selected="true" title="Dashboard">
+                            <span class="d-block d-sm-none"><i class="fas fa-grip-horizontal"></i></span>
+                            <span class="d-none d-sm-block text-sm-center">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item waves-effect waves-light" role="presentation">
+                        <a class="nav-link" data-bs-toggle="tab" href="#tabPendingOrder" role="tab" aria-selected="false" tabindex="-1" title="Pending Order">
+                            <span class="d-block d-sm-none"><i class="fab fa-first-order"></i></span>
+                            <span class="d-none d-sm-block text-sm-center">Pending Order</span>
+                        </a>
+                    </li>
+                    <li class="nav-item waves-effect waves-light" role="presentation">
+                        <a class="nav-link" data-bs-toggle="tab" href="#tabSizeWiseSales" role="tab" aria-selected="false" tabindex="-1" title="Size Wise Sales">
+                            <span class="d-block d-sm-none"><i class="fas fa-chart-line"></i></span>
+                            <span class="d-none d-sm-block text-sm-center">Size Wise Sales</span>
+                        </a>
+                    </li>
+                    <li class="nav-item waves-effect waves-light" role="presentation">
+                        <a class="nav-link" data-bs-toggle="tab" href="#tabPaymentHistory" role="tab" aria-selected="false" tabindex="-1" title="Payment History">
+                            <span class="d-block d-sm-none"><i class="fas fa-history"></i></span>
+                            <span class="d-none d-sm-block text-sm-center">Payment History</span>
+                        </a>
+                    </li>
+                </ul>
 
-     <div class="row">
+                <div class="tab-content">
+                    <div id="Dashboard" role="tabpanel" class="tab-pane active border-1 ">
+                        <div id="otherdata">
+                            <div class="row">
+                                <div class="col-md-3 colPhn">
+                                    <label for="txtCreditLimitRs" class="col-form-label-sm fw-bold">Credit Limits</label>
+                                    <div class="form-group">
+                                        <input type="text" id="txtCreditLimitRs" class="box_border form-control form-control-sm text-end" name="txtCreditLimitRs" placeholder="Credit Limit" value="0" autocomplete="off" readonly="readonly" required>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3 colPhn">
+                                    <label for="txtCreditDays" class="col-form-label-sm fw-bold">Credit Days</label>
+                                    <div class="form-group">
+                                        <input type="text" id="txtCreditDays" name="txtCreditDays" class="box_border form-control form-control-sm text-end" placeholder="Credit Days" value="0.00" autocomplete="off" readonly="readonly" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 colPhn">
+                                    <label for="txtOverDueAmount" class="col-form-label-sm fw-bold">Over Due Amount</label>
+                                    <div class="form-group">
+                                        <input type="text" class="box_border form-control form-control-sm text-end" id="txtOverDueAmount" name="txtOverDueAmount" placeholder="Over Due Amount" value="0" autocomplete="off" readonly="readonly" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 colPhn">
+                                    <label for="txtOutstanding" class="col-form-label-sm fw-bold">Outstanding</label>
+                                    <div class="form-group">
+                                        <input type="number" class="box_border form-control form-control-sm text-end" id="txtOutstanding" name="txtOutstanding" placeholder="Outstanding" value="0.00" autocomplete="off" readonly="readonly" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3 colPhn">
+                                    <label for="txtTarget" class="col-form-label-sm fw-bold">Target Amount</label>
+                                    <div class="form-group">
+                                        <input type="text" class="form-control  form-control-sm text-end " id="txtTarget" name="txtTarget" placeholder="Target Amount" value="0.00" autocomplete="off" readonly="readonly" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 colPhn">
+                                    <label for="txtTargetShortFall" class="col-form-label-sm fw-bold">Target Shortfall</label>
+                                    <div class="form-group">
+                                        <input type="text" class="form-control  form-control-sm text-end" id="txtTargetShortFall" name="txtTargetShortFall" placeholder="Target Shortfall" value="0.00" autocomplete="off" readonly="readonly" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 colPhn">
+                                    <label for="txtLastMonthSales" class="col-form-label-sm fw-bold">Last Month Sale</label>
+                                    <div class="form-group">
+                                        <input type="text" class="form-control  form-control-sm text-end" id="txtLastMonthSales" name="txtLastMonthSales" value="0.00" placeholder="Last Month Sale" readonly="readonly" autocomplete="off" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 colPhn">
+                                    <label for="txtCurrentMonthSale" class="col-form-label-sm fw-bold">Current Month Sale</label>
+                                    <div class="form-group">
+                                        <input type="text" class="form-control  form-control-sm text-end" id="txtCurrentMonthSale" name="txtCurrentMonthSale" value="0.00" placeholder="Current Month Sale" readonly="readonly" autocomplete="off" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content">
+                    <div id="tabPendingOrder" role="tabpanel" class="tab-pane  ">
+                        <div class="table-wrapper  fixed-height-table" id="divtblPendingOrder">
+                            <table id="tblPendingOrder" class="fixed-width-table table">
+                                <thead id="thPendingOrder">
+
+                                    <!-- end table row-->
+                                </thead>
+                                <tbody id="PendingOrderdata" class="filter-class"></tbody>
+                            </table>
+                            <!-- end table -->
+                        </div>
+                        <div class="paginator" id="paginator-tblPendingOrder">
+                    </div>
+                </div>
+
+
+
+
+                <div class="tab-content">
+                    <div id="tabSizeWiseSales" role="tabpanel" class="tab-pane  ">
+                        <div class="row">
+                            <div class="form-group col-md-3">
+                                <div class="input-group">
+                                    <input type="text" class="form-control  form-control-sm" placeholder="Search ..."
+                                           aria-label="Search Result">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="mdi mdi-magnify"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                                <div class="table-wrapper  fixed-height-table" id="divtblSizeWiseSales">
+                                    <table id="tblSizeWiseSales" class="fixed-width-table table">
+                                        <thead id="thSizeWiseSales">
+
+                                            <!-- end table row-->
+                                        </thead>
+                                        <tbody id="SizeWiseSalesdata" class="filter-class"></tbody>
+                                    </table>
+                                    <!-- end table -->
+                                </div>
+                                <div class="paginator" id="paginator-tblSizeWiseSales">
+                                </div>
+
+                                <!-- end table -->
+                        
+                    </div>
+
+                </div>
+                <div class="tab-content">
+                    <div id="tabPaymentHistory" role="tabpanel" class="tab-pane  ">
+                            <div class="table-wrapper  fixed-height-table" id="divtblPaymentHistory">
+                                <table id="PaymentHistory" class="fixed-width-table table">
+                                    <thead id="thPaymentHistory">
+
+                                        <!-- end table row-->
+                                    </thead>
+                                    <tbody id="PaymentHistorydata" class="filter-class"></tbody>
+                                </table>
+                                <!-- end table -->
+                            </div>
+                            <div class="paginator" id="paginator-PaymentHistory">
+                            </div>
+                    </div>
+                </div>
+            </div>
+            <div>
+            </div>
+        </div>
+        </div>
+     </div> 
+    @*  <div class="row">
     
         <div class="card  border-primary">
       
@@ -316,7 +479,7 @@
             </div><!-- end card-body -->
         </div><!-- end card -->
     
-     </div>
+     </div> *@
 <div class="row" id="divOrderBooking">
     
         <div class="card  border-primary">
@@ -474,13 +637,13 @@
                                             </div>
                                         </div>
 
-                                <div class="col-md-3 colPhn" id="divZone">
+                              @*   <div class="col-md-3 colPhn" id="divZone">
                                     <label for="txtZone" class="col-form-label-sm fw-bold">Price List <span class="universal">*</span></label>
                                     <div class="form-group">
                                         <input type="text" list="listZone" class="box_border form-control form-control-sm" id="txtZone" name="txtZone" value="" placeholder="" autocomplete="off" number maxlength="50" required>
 
                                     </div>
-                                </div>
+                                </div> *@
 
                                   
                                         <div class="col-md-1 colPhn" id="divBasicRate">

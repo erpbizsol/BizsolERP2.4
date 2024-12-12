@@ -292,6 +292,16 @@ const VisitOrderEntryService = {
             }
         );
     },
+    GetSameDayDuplicateAlert: function GetSameDayDuplicateAlert(OrderDate, DealerName) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetSameDayDuplicateAlert?DealerName=${DealerName}&OrderDate=${OrderDate} `;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VisitOrderEntryService }
