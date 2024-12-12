@@ -96,7 +96,10 @@ function setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListEleme
                 AutoSuggestionInput.val(selectedItem);
                 AutoSuggestionList.hide(); // Hide dropdown after selection
                 currentIndex = -1;
+                BizSolhandleEnterKey(event);
             }
+            
+           
         }
     });
 
