@@ -6205,18 +6205,17 @@ input.form-control[readonly] {
     z-index: 1000; /*Ensure it appears above other content */
 }
 
-    .AutoSuggestion-list li {
+.AutoSuggestion-list li {
         padding: 8px;
         cursor: pointer;
-    }
+}
 
-        .AutoSuggestion-list li:hover {
+.AutoSuggestion-list li:hover {
             background-color: #f0f0f0;
-            Highlight on hover
-        }
+           
+}
 
 .AutoSuggestion-list-highlighted {
     background-color: #9aa0a5;
-    Highlight color color: white;
-    Text color for highlighted item;
+   
 }
