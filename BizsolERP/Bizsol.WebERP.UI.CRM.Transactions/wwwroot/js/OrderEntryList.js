@@ -350,7 +350,7 @@ function DeleteModal() {
                 if ($('#ddlOrderStatus').val() === 'All') {
                     OrderStatus = '';
                 }
-                GetUserWiseRoutePlanDetails(FromDate, ToDate, UserName, OrderStatus);
+                GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus);
             } else {
                 toastr.error('An error occurred. Please try again.');
             }
