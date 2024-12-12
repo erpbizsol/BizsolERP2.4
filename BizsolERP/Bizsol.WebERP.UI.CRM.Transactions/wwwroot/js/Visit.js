@@ -129,13 +129,13 @@ function GetVisitMasterList(FromDate, ToDate, SalesPerson) {
     VisitOrderEntryService.GetVisitMasterList(fromDate, toDate, SalesPerson, User_Id).then(function (response) {
         if (response.length > 0) {
             $("#txtTable").show();
-            const StringFilterColumn = ["Created By", "Visit Type", ];
+            const StringFilterColumn = ["Created By", "Visit Type", "Status" ];
             const NumericFilterColumn = ["Total Amount","Total Order Qty"];
             const DateFilterColumn = ["Date"];
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = ["Dealer Name", "City","State"];
-            const hiddenColumns = ["Code", "VisitMaster_Code", "ButtonStatus", "Verified", "Closed", "CheckIn", "CheckOut"];
+            const hiddenColumns = ["Code", "VisitMaster_Code", "Button", "Verified", "Closed", "CheckIn", "CheckOut"];
             const ColumnAlignment = { 
                 "Total Amount": 'right',
                 "Total Order Qty": 'right',
@@ -143,6 +143,20 @@ function GetVisitMasterList(FromDate, ToDate, SalesPerson) {
                 "Verified" : 'center',
                 "Closed": 'center',
             };
+            response = response.map(item => {
+                if (item.hasOwnProperty('ButtonStatus')) {
+                    const reorderedItem = {};
+                    for (const key in item) {
+                        if (key === 'ButtonStatus') {
+                            reorderedItem['Button'] = item[key];
+                        } else {
+                            reorderedItem[key] = item[key];
+                        }
+                    }
+                    return reorderedItem;
+                }
+                return item;
+            });
             const updatedResponse = response.map(item => {
                 const buttonsHTML = getButtonSet(item.Status, item.Code, item.Date, item.VisitMaster_Code, item.Verified, item.Closed, item.CheckOut);
                 let statusButtonHTML;
@@ -279,7 +293,7 @@ function showLocation(position) {
     var longitude = position.coords.longitude;
     $("#txtLocation").val("Latitude: " + latitude + " Longitude: " + longitude)
     $.ajax({
-        url: `/GetLocation?latlng=${latitude},${longitude}`,
+        url: `${baseUrl}/GetLocation?latlng=${latitude},${longitude}`,
         type: 'POST',
         dataType: 'json',
         success: function (response) {
@@ -306,7 +320,7 @@ function ViewData(code, VisitMaster_Code) {
     window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
 }
 function IsNotVisited(code) {
-    const alertCls = confirm("Are you sure you want to close this visit?");
+    const alertCls = confirm("Are you sure you want to close this?");
     if (alertCls) {
         CloseVisit(code);
     }

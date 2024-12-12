@@ -9,24 +9,34 @@ $(document).ready(function () {
     GetUserdetails();
     GetVisitMasterListForDate();
     $("#btnShow").click(function () {
-        var FromDate = $('#txtFromDate').val();
-        var ToDate = $('#txtToDate').val();
-        if (typeof $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null) {
-            $('#txtFromDate').focus();
-        }
-        if (typeof $('#txtToDate').val() === 'undefined' || $('#txtToDate').val() === '' || $('#txtToDate').val() === null) {
-            $('#txtToDate').focus();
-        } else {
-            GetUserWiseRoutePlanDetails(FromDate, ToDate);
-        }
+        GetUserWiseRoutePlanDetailsAll();
     });
     
 });
-
-function GetUserWiseRoutePlanDetails(FromDate, ToDate) {
-    RoutePlanMasterService.GetUserWiseRoutePlanDetails(convertDateFormat(FromDate), convertDateFormat(ToDate)).then(function (response) {
+function GetUserWiseRoutePlanDetailsAll(){
+    var FromDate = $('#txtFromDate').val();
+    var ToDate = $('#txtToDate').val();
+    var Status = $('#ddlStatus').val();
+    if (typeof $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null) {
+        $('#txtFromDate').focus();
+        toastr.error("Please select valid from date !")
+    }
+    else if (typeof $('#txtToDate').val() === 'undefined' || $('#txtToDate').val() === '' || $('#txtToDate').val() === null) {
+        $('#txtToDate').focus();
+        toastr.error("Please select valid to date !")
+    } else if ($("#ddlStatus").val()=='') {
+        $('#ddlStatus').focus();
+        toastr.error("Please select valid status !")
+    }
+    else {
+        GetUserWiseRoutePlanDetails(FromDate, ToDate, Status);
+    }
+}
+function GetUserWiseRoutePlanDetails(FromDate, ToDate,Status)   {
+    RoutePlanMasterService.GetUserWiseRoutePlanDetails(convertDateFormat(FromDate), convertDateFormat(ToDate), Status).then(function (response) {
       
         if (response && Array.isArray(response) && response.length > 0) {
+            $("#tblTable").show();
             const stringFilterColumn = ["User Name", "Visit Type", "City Name", "State Name", "Description","Dealer Name","Status"];
             const numericFilterColumn = [];
             const dateFilterColumn = ["Date"];
@@ -48,7 +58,8 @@ function GetUserWiseRoutePlanDetails(FromDate, ToDate) {
             }));
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
         } else {
-            toastr.error("No valid data found:", response);
+            toastr.error("No data found", response);
+            $("#tblTable").hide();
         }
     }).catch(error => {
         toastr.error("Error in fetching data:", error);
@@ -56,9 +67,15 @@ function GetUserWiseRoutePlanDetails(FromDate, ToDate) {
 }
 function Verify(Code) {
     RoutePlanMasterService.VerifyRoutePlan(Code).then(function (result) {
+        if (result.Status === 'Y') {
             toastr.success(result.Msg);
-            GetUserWiseRoutePlanDetails();
-    });
+            GetUserWiseRoutePlanDetailsAll()
+        } else {
+            toastr.error(result.Msg);
+        }
+    }).catch (error => {
+    toastr.error("Error in fetching data:", error);
+});
 }
 function Reject(Code) {
         $('#myModal').modal('show');
@@ -76,17 +93,16 @@ function SaveModal() {
         return;
     } else {
         RoutePlanMasterService.RejectRoutePlan(code, reason).then(function (response) {
-            if (response.Msg) {
+            if (response.Status === 'Y') {
                 toastr.success(response.Msg);
                 $('#rejectReason').val('');
                 $('#txtCode').val('');
-                GetUserWiseRoutePlanDetails();
+                GetUserWiseRoutePlanDetailsAll()
                 $('#myModal').modal('hide');
             } else {
                 toastr.error('An error occurred. Please try again.');
             }
-        })
-            .catch(function (error) {
+        }).catch(function (error) {
                 toastr.error('An unexpected error occurred.');
                 console.error(error);
             });
@@ -97,33 +113,52 @@ function CloseModal() {
     $('#myModal').modal('hide');
 }
 function VerifyAll() {
-    RoutePlanMasterService.VerifyAllRoutePlan(MultiRoutePlanCodes).then(function (res) {
-        toastr.success(res.Msg);
-        GetUserWiseRoutePlanDetails();
-    });
+    if (MultiRoutePlanCodes.length > 0) {
+        RoutePlanMasterService.VerifyAllRoutePlan(MultiRoutePlanCodes).then(function (result) {
+            if (result.Status === 'Y') {
+                toastr.success(result.Msg);
+                GetUserWiseRoutePlanDetailsAll();
+            } else {
+                toastr.error(result.Msg);
+            }
+        }).catch(error => {
+            toastr.error("Error in fetching data:", error);
+        });
+    } else
+    {
+        toastr.error("No Data Found");
+    }
 }
 function RejectAll() {
-    $('#myAllDeleteModal').modal('show');
-    $('#myAllDeleteModal').modal({
-        backdrop: 'static',
-    });
+    if (MultiRoutePlanCodes.length > 0) {
+        $('#myAllDeleteModal').modal('show');
+        $('#myAllDeleteModal').modal({
+            backdrop: 'static',
+        });
+    } else {
+        toastr.error("No Data Found");
+    }
     
 }
 function SaveAllModal() {
     var reasonAll = $("#rejectAllReason").val();
-    RoutePlanMasterService.RejectAllRoutePlan(MultiRoutePlanCodes, reasonAll).then(function (results) {
-        if (reasonAll == "") {
-            alert('Please enter a reason before proceeding.');
-            toastr.error(results.Msg);
-            return;
-        }
-        else {
-            toastr.success(results.Msg);
-            $('#myAllDeleteModal').modal('hide');
-            $('#rejectAllReason').val('');
-            GetUserWiseRoutePlanDetails();
-        }
-    });
+    if (reasonAll == "") {
+        alert('Please enter a reason before proceeding.');
+        return;
+    }
+    else {
+        RoutePlanMasterService.RejectAllRoutePlan(MultiRoutePlanCodes, reasonAll).then(function (results) {
+            if (results.Status === 'Y') {
+                toastr.success(results.Msg);
+                $('#myAllDeleteModal').modal('hide');
+                $('#rejectAllReason').val('');
+                GetUserWiseRoutePlanDetailsAll();
+            } else {
+                toastr.error(results.Msg);
+            }
+        });
+
+    }
 }
 function CloseAllModal() {
     $('#myAllDeleteModal').modal('hide');
@@ -153,7 +188,6 @@ function GetVisitMasterListForDate() {
             highlightSelectedDates();
         }
         else {
-            toastr.error('No Data Found')
             highlightSelectedDates();
         }
     });
@@ -226,9 +260,7 @@ function highlightSelectedDates() {
             return { classes: '', tooltip: '' };
         }
     });
-    var FromDate = $('#txtFromDate').val();
-    var ToDate = $('#txtToDate').val();
-    GetUserWiseRoutePlanDetails(FromDate, ToDate);
+    GetUserWiseRoutePlanDetailsAll();
 }
 function convertDateFormat(dateString) {
     const [day, month, year] = dateString.split('/');

@@ -40,16 +40,25 @@
 </div> *@
 
         <div class="row">
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label for="txtFromDate" class="form-label">From Date  <span class="text-danger">*</span></label>
                 <input type="text" id="txtFromDate" name="FromDate" class="form-control form-control-sm box_border" autocomplete="off" />
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label for="txtToDate" class="form-label">To Date  <span class="text-danger">*</span></label>
                 <input type="text" id="txtToDate" name="ToDate" class="form-control form-control-sm box_border" autocomplete="off" />
             </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width mt-2">Show</button>
+            <div class="col-md-2">
+                <label for="txtToDate" class="form-label">Status<span class="text-danger">*</span></label>
+                <select id="ddlStatus" class="form-control form-control-sm box_border" autocomplete="off">
+                    <option value="All">All</option>
+                    <option value="P" selected>Pending</option>
+                    <option value="Y">Verified</option>
+                    <option value="N">Rejected</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex mt-4">
+                <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
             </div>
         </div>
 <div class="row mb-2">
@@ -62,8 +71,7 @@
     </div>
    
 </div>
-<div class="row">
-
+<div class="row" id="tblTable">
 <div class="table-wrapper fixed-height-table">
     <table id="table" class="fixed-width-table table">
         <thead id="table-header">

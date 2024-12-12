@@ -68,6 +68,12 @@ $(document).ready(function () {
     $('#ddlOrderStatus').on('focus', function (e) {
         $("#ddlOrderStatus").val("");
     });
+
+    $('#btnAddDirectOrder').click(function (e) {
+        
+            window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry";
+
+    });
 });
 function manageEditButton(order) {
     const isEnabled = order.ButtonStatus === 'UnVerified';
@@ -284,8 +290,6 @@ function GetOrderStatusList() {
 
             $('#ddlOrderStatusList')[0].innerHTML = option;
         } else {
-            $('#ErrorMsg').removeClass('invisible');
-            $('#ErrorMsg').addClass('visible');
             return false;
         }
     }).catch(function (error) {
@@ -352,7 +356,7 @@ function DeleteModal() {
                 if ($('#ddlOrderStatus').val() === 'All') {
                     OrderStatus = '';
                 }
-                GetUserWiseRoutePlanDetails(FromDate, ToDate, UserName, OrderStatus);
+                GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus);
             } else {
                 toastr.error('An error occurred. Please try again.');
             }
