@@ -34,29 +34,27 @@
         font-weight:bold;
     }
 
-
-
 </style>
 <div class="card">
     <div class="card-body">
             <div class="row">
                 <div class="col-md-3">
-                    <label for="txtFromDate" class="form-label">From Date</label>
+                <label for="txtFromDate" class="form-label">From Date  <span class="text-danger">*</span></label>
                     <input type="text" id="txtFromDate" name="FromDate" class="form-control form-control-sm box_border" autocomplete="off" />
                     <input type="hidden" id="txtLocation" name="txtLocation" class="form-control form-control-sm box_border" />
                     <input type="hidden" id="txtAddress" name="txtAddress" class="form-control form-control-sm box_border"  />
                 </div>
                 <div class="col-md-3">
-                    <label for="txtToDate" class="form-label">To Date</label>
+                <label for="txtToDate" class="form-label">To Date  <span class="text-danger">*</span></label>
                     <input type="text" id="txtToDate" name="ToDate" class="form-control form-control-sm box_border" autocomplete="off" />
                 </div>
                 <div class="col-md-3">
-                    <label for="ddlSalesPerson" class="form-label">Sales Person</label>
+                <label for="ddlSalesPerson" class="form-label">Sales Person  <span class="text-danger">*</span></label>
                     <input list="ddlSalesPersonList" id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border" placeholder="Sales Person" autocomplete="off" value="All">
                     <datalist id="ddlSalesPersonList"></datalist>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+                <div class="col-md-2">
+                    <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width mt-4">Show</button>
                 </div>
             </div>
     </div>
@@ -74,20 +72,38 @@
 </div>
 </div>
 
-<div class="modal fade" id="ReasonModal" tabindex="-1" role="dialog" aria-hidden="true">
+@* <div class="modal fade" id="ReasonModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Reason</h5>
-                <button type="button" class="btn-close" onclick="Close()"></button>
+                <button type="button" class="btn-close modal-close" onclick="Close()"></button>
             </div>
             <div class="modal-body">
-                <input type="text" id="txtReason" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="text" id="txtReason" class="form-control form-control-sm" placeholder="Enter reason" autocomplete="off" />
                 <input type="hidden" id="txtCode" class="form-control" value="0"/>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-success btn-sm" onclick="SaveNotVisited()" >OK</button>
-                <button type="button" class="btn btn-danger btn-sm" onclick="Close()" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success btn-height" onclick="SaveNotVisited()" >OK</button>
+                <button type="button" class="btn btn-danger btn-height" onclick="Close()" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div> *@
+<div class="modal fade" id="ReasonModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span class="modal-close-icon" aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="txtReason" class="form-control form-control-sm" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtCode" class="form-control" value="0" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveNotVisited()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="Close()">Cancel</button>
             </div>
         </div>
     </div>

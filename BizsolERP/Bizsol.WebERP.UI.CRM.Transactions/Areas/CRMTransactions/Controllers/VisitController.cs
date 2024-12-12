@@ -32,6 +32,10 @@ namespace Bizsol.WebERP.UI.CRM.Transactions.Areas.CRMTransactions.Controllers
         {
             return View();
         }
+        public IActionResult UnverifiedExceededOrder()
+        {
+            return View();
+        }
         //[HttpGet]
         [HttpPost]
         [Route("GetLocation")]

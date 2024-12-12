@@ -4,14 +4,54 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <script src="~/assets/js/jquery-3.6.0.min.js"></script>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/RoutePlanVerify.js"></script>
 <style>
-     
+    .highlighted-date {
+        background-color: #3926B6;
+        color: white;
+        border-radius: 30px;
+    }
+
+    .datepicker td, .datepicker th {
+        border-radius: 20px !important;
+    }
+
+    .datepicker table tr td, .datepicker table tr td {
+        padding: 8px 9px !important;
+        height: 16px !important;
+    }
+
+    .datepicker table tfoot {
+        display: none;
+    }
+
+    #hidetexbox {
+        display: none;
+    }
+
+    .form-label {
+        font-weight: bold;
+    }
 </style>
 @* <div style="text-align:right">
     <input type="button" onclick="CreateNew()" class="btn btn-primary" value="Create New" />
 </div> *@
+
+        <div class="row">
+            <div class="col-md-3">
+                <label for="txtFromDate" class="form-label">From Date  <span class="text-danger">*</span></label>
+                <input type="text" id="txtFromDate" name="FromDate" class="form-control form-control-sm box_border" autocomplete="off" />
+            </div>
+            <div class="col-md-3">
+                <label for="txtToDate" class="form-label">To Date  <span class="text-danger">*</span></label>
+                <input type="text" id="txtToDate" name="ToDate" class="form-control form-control-sm box_border" autocomplete="off" />
+            </div>
+            <div class="col-md-2 d-flex mt-4">
+                <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+            </div>
+        </div>
 <div class="row mb-2">
     @* <div class="col-md-3">
         <input type="text" id="searchBox" class="box_border form-control form-control-sm" placeholder="Search" />
@@ -22,8 +62,7 @@
     </div>
    
 </div>
-<div class="row">
-
+<div class="row" id="tblTable">
 <div class="table-wrapper fixed-height-table">
     <table id="table" class="fixed-width-table table">
         <thead id="table-header">
