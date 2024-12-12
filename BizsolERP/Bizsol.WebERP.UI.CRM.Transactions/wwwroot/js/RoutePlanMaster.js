@@ -284,30 +284,30 @@ function AddNewRow()
 //    });
 //}
 
-$(function () {
-    // Array of dates to highlight (format: yyyy-mm-dd)
-   RoutePlanMasterService.GetRoutePlanList().then(function (response) {
-        var PlanDates = []
-        if (response.length > 0) {
-            for (var i = 0; i < response.length; i++) {
-                PlanDates.push(response[i].Date);
-            }
-        }
-    // Function to check and highlight dates
-    function highlightDates(date) {
-        const dateString = $.datepicker.formatDate('yy-mm-dd', date);
-        if (PlanDates.includes(dateString)) {
-            return [true, "Highlighted", "Highlighted date"];
-        }
-        return [true, "", ""];
-    }
+//$(function () {
+//    // Array of dates to highlight (format: yyyy-mm-dd)
+//   RoutePlanMasterService.GetRoutePlanList().then(function (response) {
+//        var PlanDates = []
+//        if (response.length > 0) {
+//            for (var i = 0; i < response.length; i++) {
+//                PlanDates.push(response[i].Date);
+//            }
+//        }
+//    // Function to check and highlight dates
+//    function highlightDates(date) {
+//        const dateString = $.datepicker.formatDate('yy-mm-dd', date);
+//        if (PlanDates.includes(dateString)) {
+//            return [true, "Highlighted", "Highlighted date"];
+//        }
+//        return [true, "", ""];
+//    }
 
-    // Initialize datepicker
-    $("#datepicker").datepicker({
-        beforeShowDay: highlightDates
-    });
-   });
-});
+//    // Initialize datepicker
+//    $("#datepicker").datepicker({
+//        beforeShowDay: highlightDates
+//    });
+//   });
+//});
 
 function IsVaildFrm(x) {
 
