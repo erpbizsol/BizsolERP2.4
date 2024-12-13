@@ -1013,6 +1013,7 @@ function GetAccountMasterDetails() {
     //        return false;
     //    }
     //}
+    AccountDesp = normalizeText(AccountDesp);
 
     GetDealerDetailsByDealerName();
     SetBlankOrderBookingTable();
@@ -1035,10 +1036,22 @@ function formatDate(date) {
     let year = date.getFullYear();
     return month + "/" + day + "/" + year;
 }
+function normalizeText(text) {
+    var newValue = '';
+    var specialChars = ".-#,=}]')[(*&$/@@ ";
+
+    for (var i = 0; i < text.length; i++) {
+        if (!specialChars.includes(text[i])) {
+            newValue += text[i];
+        }
+    }
+    return newValue.toUpperCase();
+}
 function GetDealerDetailsByDealerName() {
 
 
     var AccountDesp = $('#txtDealer').val();
+    AccountDesp = normalizeText(AccountDesp);
     VisitOrderEntryService.GetDealerDetailsByDealerName(AccountDesp).then(function (response) {
 
         if (response.GetERPDataPanelTwoDirectOrderDashBoard.length > 0) {
@@ -1286,6 +1299,7 @@ function SetOrderBookingTableHeaderAsPerConfig() {
     //$("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.Amount + 1) + ")").css('display', 'none');
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQTY + 1) + ")").css('display', 'none');
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.Delete + 1) + ")").css('display', 'none');
+    $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.DeliveryDate + 1) + ")").css('display', 'none');
 
 
     // Hide Columns
@@ -1302,6 +1316,7 @@ function SetOrderBookingTableHeaderAsPerConfig() {
     //$("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.Amount + 1) + ")").css('display', 'none');
     $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.OrderQTY + 1) + ")").css('display', 'none');
     $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.Delete + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.DeliveryDate + 1) + ")").css('display', 'none');
 
     // Hide Footer Columns
 
@@ -1319,6 +1334,7 @@ function SetOrderBookingTableHeaderAsPerConfig() {
     //$("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.Amount + 1) + ")").css('display', 'none');
     $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.OrderQTY + 1) + ")").css('display', 'none');
     $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.Delete + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.DeliveryDate + 1) + ")").css('display', 'none');
 
     
   
@@ -1502,6 +1518,7 @@ function GetFreightTypeList() {
 function GetAccountDeliveryLocationDetails() {
 
     var AccountDesp = $("#txtDealer").val();
+    AccountDesp = normalizeText(AccountDesp);
     VisitOrderEntryService.GetAccountDeliveryLocationDetails(AccountDesp).then(function (response) {
         if (response.length > 0) {
             $('#listDeliveryLocation option').empty();

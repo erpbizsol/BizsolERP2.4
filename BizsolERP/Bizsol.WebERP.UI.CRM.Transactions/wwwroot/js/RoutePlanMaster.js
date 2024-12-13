@@ -537,11 +537,22 @@ function IsValidDealerCode(codeText, list) {
     });
     return index1;
 }
+function normalizeText(text) {
+    var newValue = '';
+    var specialChars = ".-#,=}]')[(*&$/@@ ";
 
+    for (var i = 0; i < text.length; i++) {
+        if (!specialChars.includes(text[i])) {
+            newValue += text[i];
+        }
+    }
+    return newValue.toUpperCase();
+}
 function GetAccountMasterDetails(rowNo) {
     
 
     var AccountDesp = $('#ddldealerName' + rowNo).val();
+    AccountDesp = normalizeText(AccountDesp);
     RoutePlanMasterService.GetAccountMasterDetails(AccountDesp).then(function (response) {
 
         if (response != '') {
