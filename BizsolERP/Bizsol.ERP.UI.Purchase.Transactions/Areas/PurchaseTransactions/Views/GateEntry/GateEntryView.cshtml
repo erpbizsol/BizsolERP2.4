@@ -127,7 +127,7 @@
                     </div>
                     <div class="row">
                         <div class="col-sm-12 text-end">
-                            <button id="frmEmptyIn_btnSave" type="button" class="btn btn-primary icon-height" onclick="">Save</button> &nbsp;
+                            <button id="frmEmptyIn_btnSave" type="button" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('EmptyInSave')">Save</button> &nbsp;
                             <button id="frmEmptyIn_btnCancel" type="button" class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
                         </div>
                     </div>
@@ -275,13 +275,13 @@
                             E-Way Bill Date.
                         </div>
                         <div class="col-8">
-                            <input id="frmLoadedOut_txtEWayBillNo" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                            <input id="frmLoadedOut_txtEWayBillDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-sm-12 text-end">
-                            <button type="button" id="frmLoadedOut_btnSave" class="btn btn-primary icon-height" onclick="">Save</button> &nbsp;
+                            <button type="button" id="frmLoadedOut_btnSave" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('UpdateEmptyInSave')">Save</button> &nbsp;
                             <button type="button" id="frmLoadedOut_btnCancel" class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
                         </div>
                     </div>
@@ -457,13 +457,13 @@
                             QTY
                         </div>
                         <div class="col-3">
-                            <input id="frmLoadedIn_txtQTY" class="BizSolFormControl form-control form-control-sm" type="text" readonly>
+                            <input id="frmLoadedIn_txtQTY" class="BizSolFormControl form-control form-control-sm" type="text" >
                         </div>
                         <div class="col-2">
                             UOM
                         </div>
                         <div class="col-3">
-                            <input id="frmLoadedIn_txtUOM" class="BizSolFormControl form-control form-control-sm" type="text" readonly>
+                            <input id="frmLoadedIn_txtUOM" class="BizSolFormControl form-control form-control-sm" type="text" >
                         </div>
                     </div>
                     <div class="row">
@@ -471,7 +471,7 @@
                             Vendor Name
                         </div>
                         <div class="col-8">
-                            <input class="BizSolFormControl form-control form-control-sm" type="text" readonly>
+                            <input class="BizSolFormControl form-control form-control-sm" type="text" >
                         </div>
                     </div>
                     @* <div class="row">
@@ -487,7 +487,7 @@
                             Document No.
                         </div>
                         <div class="col-8">
-                            <input class="BizSolFormControl form-control form-control-sm" type="text" readonly>
+                            <input id="frmLoadedIn_txtDocumentNo" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
                         </div>
                     </div>
                     <div class="row">
@@ -495,7 +495,7 @@
                             Document date.
                         </div>
                         <div class="col-8">
-                            <input class="BizSolFormControl form-control form-control-sm" type="text" readonly>
+                            <input id="frmLoadedIn_txtDocumentDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
                         </div>
                     </div>
                     <div class="row" id="RowfrmLoadedInReportingDatetime">
@@ -511,7 +511,7 @@
                             E-Way Bill No.
                         </div>
                         <div class="col-8">
-                            <input class="BizSolFormControl form-control form-control-sm" type="text" readonly>
+                            <input id="frmLoadedIn_txtEWayBillNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
                         </div>
                     </div>
                     <div class="row">
@@ -519,7 +519,7 @@
                             E-Way Bill Date.
                         </div>
                         <div class="col-8">
-                            <input class="BizSolFormControl form-control form-control-sm" type="text" readonly>
+                            <input id="frmLoadedOut_txtEWayBillDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
                         </div>
                     </div>
                     <div class="row">
@@ -527,12 +527,12 @@
                             Remarks
                         </div>
                         <div class="col-8">
-                            <input class="BizSolFormControl form-control form-control-sm" type="text">
+                            <input id="frmLoadedOut_txtRemarks" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-sm-12 text-end">
-                            <button type="button" id="frmLoadedIn_btnSave" class="btn btn-primary icon-height" onclick="">Save</button> &nbsp;
+                            <button type="button" id="frmLoadedIn_btnSave" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('LoadedInSave')">Save</button> &nbsp;
                             <button type="button" id="frmLoadedIn_btnCancel" class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
                         </div>
                     </div>
@@ -574,7 +574,7 @@
 
                     <div class="row">
                         <div class="col-sm-12 text-end">
-                            <button type="button" id="frmEmptyOut_btnSave" class="btn btn-primary icon-height" onclick="">Save</button> &nbsp;
+                            <button type="button" id="frmEmptyOut_btnSave" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('UpdateLoadedInSave')">Save</button> &nbsp;
                             <button type="button" id="frmEmptyOut_btnCancel" class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
                         </div>
                     </div>

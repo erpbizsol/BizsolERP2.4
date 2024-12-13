@@ -25,7 +25,7 @@ function GateEntryGirdByDates() {
         //));
 
         response.forEach(item => {
-            item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
+            item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
         });
         console.log(response);
         const StringFilterColumn = ["Type In", "Party name", "Vehicle No."];
@@ -70,6 +70,10 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
     }
     else if (Mode === 'form' && EntryType.includes('loadedout')==true) {
         UpdateEmptyIn_loadedout();
+    }
+    else if (EntryType.includes('print') == true) {
+        let GateEntyMaster_Code = EntryType.split('_')[1];
+        PrintGateEntry(GateEntyMaster_Code);
     }
     
 }
@@ -152,11 +156,15 @@ function EmptyInNew() {
 
 function UpdateLoadedIn_Emptyout() {
     $('.nav-tabs button[data-bs-target="#LoadedInTab"]').tab('show')
+    $('#frmLoadedIn_btnSave').attr('disabled', 'disabled')
+    $('#frmLoadedIn_btnCancel').attr('disabled', 'disabled')
     $('#DivfrmEmptyOut').show();
 }
 
 function UpdateEmptyIn_loadedout() {
     $('.nav-tabs button[data-bs-target="#EmptyInTab"]').tab('show')
+    $('#frmEmptyIn_btnSave').attr('disabled', 'disabled')
+    $('#frmEmptyIn_btnCancel').attr('disabled', 'disabled')
     $('#DivfrmLoadedOut').show();
 }
 //function BindSelectList(element, list) {
@@ -238,9 +246,36 @@ function WithPO() {
         $('#RowfrmLoadedInddlPurchaseOrder').hide();
     }
 }
+
+function PrintGateEntry(GateEntyMaster_Code) {
+    GateEntryService.Print(GateEntyMaster_Code).then(function (response) {
+        let url = response.Url;
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.target = '_blank';
+        a.href = url;
+        document.body.appendChild(a);
+        a.click();
+    });
+}
+
+function ValidateForm(Mode) {
+    let valid = true;
+    return valid;
+}
+function GateEntry_SaveData(Mode) {
+
+    if (ValidateForm(Mode) == true) {
+        alert('Save Alert!' + Mode);
+    }
+
+}
+
+
 window.GateEntyMode_GateEntry = GateEntyMode_GateEntry
 window.GateEntryGirdByDates = GateEntryGirdByDates
 window.ViewAttachment_GateEntry = ViewAttachment_GateEntry
 window.ShowGateEntryConfigurationModal = ShowGateEntryConfigurationModal
 window.setGateEntryParamater = setGateEntryParamater
 window.GateEntry_rdPOAccess_onClick = GateEntry_rdPOAccess_onClick
+window.GateEntry_SaveData = GateEntry_SaveData

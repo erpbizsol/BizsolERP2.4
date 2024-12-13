@@ -43,7 +43,8 @@ const GateEntryService = {
             }
         );
     },
-    Print: function Print(GateEntryMaster_Code, CompanyCode) {
+    Print: function Print(GateEntryMaster_Code) {
+        let CompanyCode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
         let url = `${UrlService.API_ENDPOINT_CRYSTAL}/PrintGateEntryReport?GateEntryMaster_Code=${GateEntryMaster_Code}&CompanyCode=${CompanyCode}`;
 
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
