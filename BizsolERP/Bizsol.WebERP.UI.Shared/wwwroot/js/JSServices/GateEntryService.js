@@ -85,6 +85,14 @@ const GateEntryService = {
             }
         );
     },
+    GetConfigGateEntry: function GetConfigGateEntry() {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/getConfigGateEntryTest`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    }
 
 }
 
