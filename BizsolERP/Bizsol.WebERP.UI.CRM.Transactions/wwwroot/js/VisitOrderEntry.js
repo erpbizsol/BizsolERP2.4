@@ -857,7 +857,13 @@ function SaveData() {
 
             rowData["sizeDesp"] = '';
             rowData["itemSizeMasterCode"] = 0;
-            rowData["DeliveryDate"] = DeliveryDate;
+
+            //let d = new Date(DeliveryDate);
+
+            //// Display output
+            //console.log(formatDate(d));
+
+            rowData["DeliveryDate"] = convertDateFormatForDeliveryDate(DeliveryDate);
             rowData["ZoneName"] = ZonePriceListCode;
           
 
@@ -943,7 +949,7 @@ function GetCRMFixedParameterConfig() {
 function GetSameDayDuplicateAlert(OrderDate, DealerName) {
     VisitOrderEntryService.GetSameDayDuplicateAlert(OrderDate,DealerName).then(function (response) {
 
-        if (response.length > 0) {
+        if (response.AlertMsg !='') {
 
             return response.AlertMsg;
         } else {
@@ -957,6 +963,18 @@ function convertDateFormat(dateString) {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthAbbreviation = monthNames[parseInt(month) - 1];
     return `${day}-${monthAbbreviation}-${year}`;
+}
+function convertDateFormatForDeliveryDate(dateString) {
+    const [year, month,day ] = dateString.split('-');
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthAbbreviation = monthNames[parseInt(month) - 1];
+    var date = new Date(dateString);
+    var isoString = date.toISOString();
+    //return `${year}-${monthAbbreviation}-${day}`;
+   return `${day}-${monthAbbreviation}-${year}`;
+    //return `${day}-${monthAbbreviation}-24`;
+    //return `${monthAbbreviation}-${day}-24`;
+    //return '13-12-2024';
 }
 function GetAccountMasterDetails() {
 
@@ -985,8 +1003,8 @@ function GetAccountMasterDetails() {
         now.getFullYear();
 
 
-    //var msg = GetSameDayDuplicateAlert(convertDateFormat(formattedDate), AccountDesp);
-    //if (msg != '') {
+    //var msg = GetSameDayDuplicateAlert(formattedDate, AccountDesp);
+    //if (msg != undefined && msg !='') {
        
     //    var r = confirm(" '" + msg + "' ");
     //    if (r == true) {
@@ -1001,6 +1019,21 @@ function GetAccountMasterDetails() {
     AddFiveNewRows();
     GetAccountDeliveryLocationDetails();
     SetOrderBookingTableHeaderAsPerConfig();
+}
+
+
+// Funciton to extract day, month, and year 
+function formatDate(date) {
+    let day = date.getDate();
+    if (day < 10) {
+        day = "0" + day;
+    }
+    let month = date.getMonth() + 1;
+    if (month < 10) {
+        month = "0" + month;
+    }
+    let year = date.getFullYear();
+    return month + "/" + day + "/" + year;
 }
 function GetDealerDetailsByDealerName() {
 

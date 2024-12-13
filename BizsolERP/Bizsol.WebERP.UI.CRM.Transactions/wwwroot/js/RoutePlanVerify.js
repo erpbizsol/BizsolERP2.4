@@ -9,22 +9,31 @@ $(document).ready(function () {
     GetUserdetails();
     GetVisitMasterListForDate();
     $("#btnShow").click(function () {
-        var FromDate = $('#txtFromDate').val();
-        var ToDate = $('#txtToDate').val();
-        if (typeof $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null) {
-            $('#txtFromDate').focus();
-        }
-        if (typeof $('#txtToDate').val() === 'undefined' || $('#txtToDate').val() === '' || $('#txtToDate').val() === null) {
-            $('#txtToDate').focus();
-        } else {
-            GetUserWiseRoutePlanDetails(FromDate, ToDate);
-        }
+        GetUserWiseRoutePlanDetailsAll();
     });
     
 });
-
-function GetUserWiseRoutePlanDetails(FromDate, ToDate)   {
-    RoutePlanMasterService.GetUserWiseRoutePlanDetails(convertDateFormat(FromDate), convertDateFormat(ToDate)).then(function (response) {
+function GetUserWiseRoutePlanDetailsAll(){
+    var FromDate = $('#txtFromDate').val();
+    var ToDate = $('#txtToDate').val();
+    var Status = $('#ddlStatus').val();
+    if (typeof $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null) {
+        $('#txtFromDate').focus();
+        toastr.error("Please select valid from date !")
+    }
+    else if (typeof $('#txtToDate').val() === 'undefined' || $('#txtToDate').val() === '' || $('#txtToDate').val() === null) {
+        $('#txtToDate').focus();
+        toastr.error("Please select valid to date !")
+    } else if ($("#ddlStatus").val()=='') {
+        $('#ddlStatus').focus();
+        toastr.error("Please select valid status !")
+    }
+    else {
+        GetUserWiseRoutePlanDetails(FromDate, ToDate, Status);
+    }
+}
+function GetUserWiseRoutePlanDetails(FromDate, ToDate,Status)   {
+    RoutePlanMasterService.GetUserWiseRoutePlanDetails(convertDateFormat(FromDate), convertDateFormat(ToDate), Status).then(function (response) {
       
         if (response && Array.isArray(response) && response.length > 0) {
             $("#tblTable").show();
@@ -60,9 +69,7 @@ function Verify(Code) {
     RoutePlanMasterService.VerifyRoutePlan(Code).then(function (result) {
         if (result.Status === 'Y') {
             toastr.success(result.Msg);
-            var FromDate = $('#txtFromDate').val();
-            var ToDate = $('#txtToDate').val();
-            GetUserWiseRoutePlanDetails(FromDate, ToDate);
+            GetUserWiseRoutePlanDetailsAll()
         } else {
             toastr.error(result.Msg);
         }
@@ -90,9 +97,7 @@ function SaveModal() {
                 toastr.success(response.Msg);
                 $('#rejectReason').val('');
                 $('#txtCode').val('');
-                var FromDate = $('#txtFromDate').val();
-                var ToDate = $('#txtToDate').val();
-                GetUserWiseRoutePlanDetails(FromDate, ToDate);
+                GetUserWiseRoutePlanDetailsAll()
                 $('#myModal').modal('hide');
             } else {
                 toastr.error('An error occurred. Please try again.');
@@ -112,9 +117,7 @@ function VerifyAll() {
         RoutePlanMasterService.VerifyAllRoutePlan(MultiRoutePlanCodes).then(function (result) {
             if (result.Status === 'Y') {
                 toastr.success(result.Msg);
-                var FromDate = $('#txtFromDate').val();
-                var ToDate = $('#txtToDate').val();
-                GetUserWiseRoutePlanDetails(FromDate, ToDate);
+                GetUserWiseRoutePlanDetailsAll();
             } else {
                 toastr.error(result.Msg);
             }
@@ -149,9 +152,7 @@ function SaveAllModal() {
                 toastr.success(results.Msg);
                 $('#myAllDeleteModal').modal('hide');
                 $('#rejectAllReason').val('');
-                var FromDate = $('#txtFromDate').val();
-                var ToDate = $('#txtToDate').val();
-                GetUserWiseRoutePlanDetails(FromDate, ToDate);
+                GetUserWiseRoutePlanDetailsAll();
             } else {
                 toastr.error(results.Msg);
             }
@@ -259,9 +260,7 @@ function highlightSelectedDates() {
             return { classes: '', tooltip: '' };
         }
     });
-    var FromDate = $('#txtFromDate').val();
-    var ToDate = $('#txtToDate').val();
-    GetUserWiseRoutePlanDetails(FromDate, ToDate);
+    GetUserWiseRoutePlanDetailsAll();
 }
 function convertDateFormat(dateString) {
     const [day, month, year] = dateString.split('/');
