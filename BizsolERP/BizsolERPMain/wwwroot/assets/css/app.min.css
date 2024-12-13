@@ -2135,6 +2135,17 @@ body[data-layout=horizontal][data-layout-size=boxed] .navbar-header {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23313533'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e")
 }
 
+.accordion-button {
+    background-color: #d5d6e0 ;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #bdbede;
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+}
 .avatar-xs {
     height: 1rem;
     width: 1rem
@@ -5992,8 +6003,15 @@ button, .icon-height {
 }
 
 .form-control:disabled {
-    background-color: #e7e3e3 !important;
+    background-color: #c5ced8 !important;
     opacity: 0.5 !important;
+    color: #000;
+}
+
+input.form-control[readonly] {
+    background-color: #c5ced8 !important;
+    opacity: 0.5 !important;
+    color: #000;
 }
 
 fieldset {
@@ -6039,15 +6057,17 @@ legend {
 }
 
 :is(.form-control, .form-control-sm) {
-    border: var(--bs-border-width) solid #b5bfc3 !important;
+    /*border: var(--bs-border-width) solid #b5bfc3 !important;*/
+    border: var(--bs-border-width) solid #275481 !important;
 }
 
 label {
-    margin-bottom: .1rem !important;
+    margin-bottom: .4rem !important;
+    font-size: 9pt !important;
 }
 
 .without-label-field {
-    margin-top: 1.9rem;
+    margin-top: 1.7rem;
 }
 
 /*----- form design ---------*/
@@ -6188,12 +6208,6 @@ a.icon-height {
     font-size: 7pt;
     line-height: 0.6;
     padding: 9px 10px;
-}
-
-input.form-control[readonly] {
-    background-color: #c5ced8 !important;
-    opacity: 0.5 !important;
-    color: #000;
 }
 
 .AutoSuggestion-list {
