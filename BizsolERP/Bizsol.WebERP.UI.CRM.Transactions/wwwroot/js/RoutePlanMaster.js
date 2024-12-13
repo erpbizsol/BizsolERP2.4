@@ -187,9 +187,9 @@ function PopulateTable(data) {
       var td_StatusBtn = '';
       
       if(item.RoutePlanStatus=='Un-Verified' ){
-          td_DeleteBtn ='<a id="btnDelete" class=" btn btn-danger btn-sm waves-effect waves-light" title="Delete" onclick="DeleteRoutePlan(this);"><i class="fa fa-times" aria-hidden="true"></i></a>';
+          td_DeleteBtn ='<a id="btnDelete" class="btn btn-danger icon-height mb-1" title="Delete" onclick="DeleteRoutePlan(this);"><i class="fa fa-times" aria-hidden="true"></i></a>';
         }else{
-          td_DeleteBtn ='<a id="btnDelete" class=" btn btn-danger btn-sm waves-effect waves-light disabled" title="Delete" "><i class="fa fa-times" aria-hidden="true"></i></a>';
+          td_DeleteBtn ='<a id="btnDelete" class="btn btn-danger icon-height mb-1" title="Delete" "><i class="fa fa-times" aria-hidden="true"></i></a>';
       }
 
       if (item.RoutePlanStatus == 'Verified') {
@@ -254,7 +254,7 @@ function AddNewRow()
       StateName.innerHTML = '<input type="text" id="txtState' + tbItemConsumeRowNo + '" class="BizSolFormControl box_border form-control form-control-sm" name="txtState" placeholder="State Name" list="listState" onclick="$(this).val(\'\')" autocomplete="off" disabled  required>';
       Description.innerHTML = '<input type="text" class="BizSolFormControl box_border form-control form-control-sm" id="txtdescription" onkeypress="BizSolhandleEnterKey(event);"  name="txtdescription" placeholder="Description" autocomplete="off" required="">';
       Status.innerHTML = '<input type="hidden" value="0">';
-        DeleteButton.innerHTML = '<a id="btnSave" class=" btn btn-success btn-sm waves-effect waves-light " title="Save" onclick="SaveData(this);"><i class="fa fa-save" aria-hidden="true"></i></a>';
+        DeleteButton.innerHTML = '<a id="btnSave" class="btn btn-success icon-height mb-1" title="Save" onclick="SaveData(this);"><i class="fa fa-save" aria-hidden="true"></i></a>';
             Code.innerHTML = '<input type="hidden" value="0"  id="hdn_Code" name="hdn_Code">';
            } 
     }
