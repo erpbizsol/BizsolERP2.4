@@ -380,7 +380,9 @@ function GetZoneMasterList() {
             $('#listZone')[0].innerHTML = option;
 
         }
-        $('#txtZone').val(defaultValue);
+        if (param_VisitMode == 'New') {
+            $('#txtZone').val(defaultValue);
+        }
     });
     
    
@@ -628,16 +630,16 @@ function ValidateData() {
     }
 
     //if (ZoneMandatoryInDirectOrder == 'Y') {
-    var VisitType = $('#hfVisitType').val();
-    if (VisitType != '' && VisitType != undefined && VisitType != null && VisitType == 'New Acquisition' && EntryType == 'V') {
+    //var VisitType = $('#hfVisitType').val();
+    //if (VisitType != '' && VisitType != undefined && VisitType != null && VisitType == 'New Acquisition' && EntryType == 'V') {
        
-    } else {
-        if ($('#txtZone').val() == '') {
+    //} else {
+    //    if ($('#txtZone').val() == '') {
 
-            MsgStr += "* Please select Zone!" + newLine;
-            Valid = false;
-        }
-    }
+    //        MsgStr += "* Please select Zone!" + newLine;
+    //        Valid = false;
+    //    }
+    //}
     //}
 
    
@@ -795,7 +797,7 @@ function SaveData() {
     visitMasterRow["dispatchFrom"] = '';
     visitMasterRow["buyerPONo"] = 0;
     visitMasterRow["buyerPODate"] = new Date().toISOString().split("T")[0];
-    visitMasterRow["zoneName"] = $("#txtZone").val() !== null ? $("#txtZone").val() : '';
+    visitMasterRow["zoneName"] = '';
 
     visitMasterData.push(visitMasterRow);
 
@@ -855,7 +857,13 @@ function SaveData() {
 
             rowData["sizeDesp"] = '';
             rowData["itemSizeMasterCode"] = 0;
-            rowData["DeliveryDate"] = DeliveryDate;
+
+            //let d = new Date(DeliveryDate);
+
+            //// Display output
+            //console.log(formatDate(d));
+
+            rowData["DeliveryDate"] = convertDateFormatForDeliveryDate(DeliveryDate);
             rowData["ZoneName"] = ZonePriceListCode;
           
 
@@ -937,6 +945,37 @@ function GetCRMFixedParameterConfig() {
 
     });
 }
+
+function GetSameDayDuplicateAlert(OrderDate, DealerName) {
+    VisitOrderEntryService.GetSameDayDuplicateAlert(OrderDate,DealerName).then(function (response) {
+
+        if (response.AlertMsg !='') {
+
+            return response.AlertMsg;
+        } else {
+            return '';
+        }
+
+    });
+}
+function convertDateFormat(dateString) {
+    const [day, month, year] = dateString.split('/');
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthAbbreviation = monthNames[parseInt(month) - 1];
+    return `${day}-${monthAbbreviation}-${year}`;
+}
+function convertDateFormatForDeliveryDate(dateString) {
+    const [year, month,day ] = dateString.split('-');
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthAbbreviation = monthNames[parseInt(month) - 1];
+    var date = new Date(dateString);
+    var isoString = date.toISOString();
+    //return `${year}-${monthAbbreviation}-${day}`;
+   return `${day}-${monthAbbreviation}-${year}`;
+    //return `${day}-${monthAbbreviation}-24`;
+    //return `${monthAbbreviation}-${day}-24`;
+    //return '13-12-2024';
+}
 function GetAccountMasterDetails() {
 
 
@@ -954,11 +993,47 @@ function GetAccountMasterDetails() {
         toastr.error("Please Select Dealer Name!")
         return false;
     }
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const formattedTime = `${hours}:${minutes}`;
+
+    const formattedDate = ('0' + now.getDate()).slice(-2) + '/' +
+        ('0' + (now.getMonth() + 1)).slice(-2) + '/' +
+        now.getFullYear();
+
+
+    //var msg = GetSameDayDuplicateAlert(formattedDate, AccountDesp);
+    //if (msg != undefined && msg !='') {
+       
+    //    var r = confirm(" '" + msg + "' ");
+    //    if (r == true) {
+
+    //    } else {
+    //        return false;
+    //    }
+    //}
+
     GetDealerDetailsByDealerName();
     SetBlankOrderBookingTable();
     AddFiveNewRows();
     GetAccountDeliveryLocationDetails();
     SetOrderBookingTableHeaderAsPerConfig();
+}
+
+
+// Funciton to extract day, month, and year 
+function formatDate(date) {
+    let day = date.getDate();
+    if (day < 10) {
+        day = "0" + day;
+    }
+    let month = date.getMonth() + 1;
+    if (month < 10) {
+        month = "0" + month;
+    }
+    let year = date.getFullYear();
+    return month + "/" + day + "/" + year;
 }
 function GetDealerDetailsByDealerName() {
 
@@ -1386,15 +1461,18 @@ function GetFreightList() {
             $('#listFreight option').empty();
             var option = '';
             for (var i = 0; i < response.length; i++) {
-                if (i == 0) {
-                    defaultValue = response[0].Field;
+                if (i == 1) {
+                    defaultValue = response[1].Field;
                 }
                 option += '<option text="' + response[i].Code + '">' + response[i].Field + '</option>'
             }
             $('#listFreight')[0].innerHTML = option;
 
         }
-        $('#txtlistFreight').val(defaultValue);
+        if (param_VisitMode == 'New') {
+            $('#txtlistFreight').val(defaultValue);
+        }
+        
     });
    
 }
@@ -1406,7 +1484,7 @@ function GetFreightTypeList() {
             $('#listFreightType option').empty();
             var option = '';
             for (var i = 0; i < response.length; i++) {
-                if (i == 0) {
+                if (i == 1) {
                     defaultValue = response[i].Field;
                 }
                 option += '<option text="' + response[i].Code + '">' + response[i].Field + '</option>'
@@ -1414,7 +1492,9 @@ function GetFreightTypeList() {
             $('#listFreightType')[0].innerHTML = option;
 
         }
-        $('#txtFreightType').val(defaultValue);
+        if (param_VisitMode == 'New') {
+            $('#txtFreightType').val(defaultValue);
+        }
     });
    
 }
@@ -1457,7 +1537,7 @@ function GetEditVisitDetails() {
                 $('#hfFileInput').val(response.VisitORroutePlanMaster[0].PanelOneAttachment);  
                 $('#txtCreditDaysForDC').val(response.VisitORroutePlanMaster[0].CreditDays);      
                 $('#txtlistFreight').val(response.VisitORroutePlanMaster[0].Freight);     
-                $('#txtZone').val(response.VisitORroutePlanMaster[0].ZoneName);
+                //$('#txtZone').val(response.VisitORroutePlanMaster[0].ZoneName);
                 $('#hfVisitType').val(response.VisitORroutePlanMaster[0].VisitType);
                 
               
@@ -1693,7 +1773,7 @@ function CheckOutVisit() {
     visitMasterRow["dispatchFrom"] = '';
     visitMasterRow["buyerPONo"] = 0;
     visitMasterRow["buyerPODate"] = new Date().toISOString().split("T")[0];
-    visitMasterRow["zoneName"] = $("#txtZone").val() !== null ? $("#txtZone").val() : '';
+    visitMasterRow["zoneName"] = '';//$("#txtZone").val() !== null ? $("#txtZone").val() : '';
 
     visitMasterData.push(visitMasterRow);
 

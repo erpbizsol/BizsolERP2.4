@@ -246,7 +246,7 @@ function AddNewRow()
       var Status = row.insertCell(TblIndx.Status);
       var DeleteButton = row.insertCell(TblIndx.DeleteButton);
             var Code = row.insertCell(TblIndx.Code);
-
+        Code.style["display"] = "none";
                
       VisitType.innerHTML = '<input type="text"  id="ddlVisitType' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="ddlVisitType" placeholder="Visit Type" list="listVisitType" autocomplete="off" onclick="$(this).val(\'\')"  onchange="getVisitType(\'ddlVisitType' + tbItemConsumeRowNo + '\',\'ddldealerName' + tbItemConsumeRowNo + '\',' + tbItemConsumeRowNo + ');" required>';
       DealerName.innerHTML = '<input type="text" id="ddldealerName' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);"  class="BizSolFormControl box_border form-control form-control-sm" name="ddldealerName" placeholder="Dealer Name"  list="listdealer" autocomplete="off" onclick="$(this).val(\'\');"  onfocusout="checkDealerListValid(this.value,\'listdealer\',\'txtCity' + tbItemConsumeRowNo + '\',' + tbItemConsumeRowNo + ');" readonly="readonly" required>';
@@ -284,30 +284,30 @@ function AddNewRow()
 //    });
 //}
 
-$(function () {
-    // Array of dates to highlight (format: yyyy-mm-dd)
-   RoutePlanMasterService.GetRoutePlanList().then(function (response) {
-        var PlanDates = []
-        if (response.length > 0) {
-            for (var i = 0; i < response.length; i++) {
-                PlanDates.push(response[i].Date);
-            }
-        }
-    // Function to check and highlight dates
-    function highlightDates(date) {
-        const dateString = $.datepicker.formatDate('yy-mm-dd', date);
-        if (PlanDates.includes(dateString)) {
-            return [true, "Highlighted", "Highlighted date"];
-        }
-        return [true, "", ""];
-    }
+//$(function () {
+//    // Array of dates to highlight (format: yyyy-mm-dd)
+//   RoutePlanMasterService.GetRoutePlanList().then(function (response) {
+//        var PlanDates = []
+//        if (response.length > 0) {
+//            for (var i = 0; i < response.length; i++) {
+//                PlanDates.push(response[i].Date);
+//            }
+//        }
+//    // Function to check and highlight dates
+//    function highlightDates(date) {
+//        const dateString = $.datepicker.formatDate('yy-mm-dd', date);
+//        if (PlanDates.includes(dateString)) {
+//            return [true, "Highlighted", "Highlighted date"];
+//        }
+//        return [true, "", ""];
+//    }
 
-    // Initialize datepicker
-    $("#datepicker").datepicker({
-        beforeShowDay: highlightDates
-    });
-   });
-});
+//    // Initialize datepicker
+//    $("#datepicker").datepicker({
+//        beforeShowDay: highlightDates
+//    });
+//   });
+//});
 
 function IsVaildFrm(x) {
 

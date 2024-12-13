@@ -68,6 +68,12 @@ $(document).ready(function () {
     $('#ddlOrderStatus').on('focus', function (e) {
         $("#ddlOrderStatus").val("");
     });
+
+    $('#btnAddDirectOrder').click(function (e) {
+        
+            window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry";
+
+    });
 });
 function manageEditButton(order) {
     const isEnabled = order.ButtonStatus === 'UnVerified';
