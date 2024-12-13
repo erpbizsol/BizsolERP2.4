@@ -37,6 +37,9 @@ $(document).ready(function () {
     $('#txtReportType').on('focus', function (e) {
         $("#txtReportType").val('');
     });
+    $('#fetchReportButton').click(function () {
+        Getcheckinoutlist();
+    });
 });
 function GetSalespersonList() {
     CRMReportsServices.GetSalespersonList().then(function (response) {
@@ -82,9 +85,7 @@ function GetDisplayNameForReportTypes() {
     });
 }
 
-$('#fetchReportButton').click(function () {
-    Getcheckinoutlist();
-});
+
 function Getcheckinoutlist() {
     var formValues = {
         fromDate: convertDateFormat($("#txtdateFrom").val()),
@@ -98,6 +99,7 @@ function Getcheckinoutlist() {
     var reportType = formValues.ReportTypeName;
     CRMReportsServices.Getcheckinoutlist(fromDate, toDate, salesperson,reportType).then(function (response) {
         if (response.length > 0) {
+            $("#tblTable").show();
             const StringFilterColumn = [];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
@@ -111,10 +113,52 @@ function Getcheckinoutlist() {
                 "Date": 'center',
             };
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns,ColumnAlignment);
+            if (reportType === 'Distance Detail Report') {
+                updateFooter(response)
+            } else {
+                clearFooter();
+            }
         } else {
             toastr.error("Record not found...!");
+            clearFooter();
+            $("#tblTable").hide();
         }
     });
+}
+
+function updateFooter(data) {
+        let totalQuantity = 0;
+        data.forEach(row => {
+            totalQuantity += parseFloat(row["Distance KM"] || 0);
+        });
+
+        const tfootContent = `
+        <tr>
+            <td colspan="5"><b>Total :</b></td>
+            <td style="text-align: right;">${totalQuantity.toFixed(2)}</td>   
+        </tr>
+        `;
+
+         const tfoot = document.querySelector("#table tfoot");
+
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#table");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+    }
+}
+function clearFooter() {
+    const tfoot = document.querySelector("#table tfoot");
+    if (tfoot) {
+        tfoot.innerHTML = "";
+    }
 }
 function convertDateFormat(dateString) {
     const [day, month, year] = dateString.split('-');
