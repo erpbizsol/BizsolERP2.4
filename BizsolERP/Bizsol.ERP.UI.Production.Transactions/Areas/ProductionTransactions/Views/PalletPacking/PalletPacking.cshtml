@@ -1,0 +1,38 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/PalletPackingService.js"></script>
+<form class="form-card">
+    <div class="row">
+        <input type="hidden" formControlName="Code" class="form-control" value="0">
+        <div class="form-group col-md-3">
+            <span class="radioSection">
+                <mat-radio-group formControlName="filterType" aria-label="Select an option">
+                    <mat-radio-button value="dateWise" name="filterType" checked>Date Wise</mat-radio-button>
+                    <mat-radio-button value="orderWise" name="filterType">Order Wise</mat-radio-button>
+                </mat-radio-group>
+            </span>
+        </div>
+    </div>
+    <!-- Date Filter -->
+    <div class="row" *ngIf="palletForm.get('filterType').value === 'dateWise'">
+        <div class="col-md-1 pe-0">
+            <label>Pallet Date :</label>
+        </div>
+        <div class="col-md-2 ps-0">
+            <input type="date" formControlName="date" id="dateInput" class="form-control" readonly />
+        </div>
+    </div>
+    <!-- Order Filter -->
+    <div class="row" *ngIf="palletForm.get('filterType').value === 'orderWise'">
+        <div class="col-md-1 pe-0">
+            <label>Order No :</label>
+        </div>
+        <div class="col-md-2 ps-0">
+            <ng-select [items]="orderNoSuggestions" bindLabel="Desp" bindValue="Desp" formControlName="orderNo" [id]="'ddl_OrderNo'" placeholder="Select Order No" (change)="orderNoSuggestion($event)">
+            </ng-select>
+        </div>
+    </div>
+</form>

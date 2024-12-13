@@ -299,3 +299,4 @@ window.getPartyNamePendingPackingListActualDespatch = getPartyNamePendingPacking
 window.CloseModal = CloseModal;
 window.SaveReceivedData = SaveReceivedData;
 window.toggleSelection = toggleSelection;
+window.triggerFileInputClick = triggerFileInputClick;
