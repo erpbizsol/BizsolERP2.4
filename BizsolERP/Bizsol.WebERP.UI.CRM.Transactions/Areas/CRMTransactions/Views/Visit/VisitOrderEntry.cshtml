@@ -16,11 +16,11 @@
 
     /* Table Styles */
 
-    .table-wrapper {
-        margin: 5px 5px 5px;
-        box-shadow: 0px 35px 50px rgba( 0, 0, 0, 0.2 );
-    }
-
+    /*  .table-wrapper {
+            margin: 5px 5px 5px;
+            box-shadow: 0px 35px 50px rgba( 0, 0, 0, 0.2 );
+        }
+     */
     .fl-table {
         border-radius: 5px;
         font-size: 11px;
@@ -58,19 +58,19 @@
             background: #F8F8F8;
         }
 
-   /*  .modal-dialog {
-        width: 100%;
-    }
+    /*  .modal-dialog {
+            width: 100%;
+        }
 
-    .modal-header {
-        background-color: #3f51b5;
-        height: 40px;
-    }
+        .modal-header {
+            background-color: #3f51b5;
+            height: 40px;
+        }
 
-    .modal-title {
-        text-align: center;
-        color: #eef6f2;
-    }*/
+        .modal-title {
+            text-align: center;
+            color: #eef6f2;
+        }*/
 
     .modal {
         position: fixed;
@@ -81,7 +81,7 @@
         width: auto;
         overflow-x: hidden;
         overflow-y: hidden;
-    } 
+    }
 
     /* Hide the spinner arrows in most modern browsers */
     input[type="number"]::-webkit-outer-spin-button,
@@ -96,154 +96,336 @@
     }
 
 </style>
-<div>
-    <div class="row">
-        <div class="col-md-3 form-group">
-            <label for="txtUserName" class="col-form-label-sm fw-bold">User Name</label>
-            <input type="text" id="txtUserName" class="box_border form-control form-control-sm" autocomplete="off" value="">
-        </div>
-        <div class="col-md-3">
-            <label for="txtdate" class="col-form-label-sm fw-bold">Date</label>
-            <input ID="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
-        </div>
-        <div class="col-md-3">
-            <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Check In Time</label>
-            <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" readonly="readonly" />
-        </div>
-        <div class="col-md-3">
-            <label for="txtLocation" class="col-form-label-sm fw-bold">Location</label>
-            <input type="text" id="txtAddLocation" name="txtAddLocation" class="box_border form-control form-control-sm"  hidden required />
-            <input type="text" id="txtCurrentLocation" name="txtCurrentLocation" class="box_border form-control form-control-sm" value="" required />
-            <input type="text" id="txtCheckOutLocation" name="txtCheckOutLocation" class="box_border form-control form-control-sm" hidden required />
-            <input type="hidden" id="hflatlong" name="hflatlong" value="" />
-        </div>
-    </div>
-    <div class="row">
 
-        
-        <div class="col-md-3 form-group">
-            <label for="txtDealer" class="col-form-label-sm fw-bold">Dealer</label>
-            <input type="text" class="box_border form-control form-control-sm" id="txtDealer" list="listdealer" name="txtDealer" value="" onclick="$(this).val('');" placeholder="" autocomplete="off" required onfocusout="GetAccountMasterDetails();" />
-        </div>
-        <div class="col-md-3">
-            <label for="txtGSTNo" class="col-form-label-sm fw-bold">GST No</label>
-            <input ID="txtGSTNo" name="txtGSTNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="" value="" readonly="readonly" required />
-        </div>
-        <div class="col-md-3">
-            <label for="txtAddress" class="col-form-label-sm fw-bold">Address</label>
-            <textarea type="text" id="txtAddress" name="txtAddress" class="box_border form-control form-control-sm" value="" readonly="readonly" rows="2" ></textarea>
-        </div>
-        <div class="col-md-2">
-            <label for="txtAttachment" class="col-form-label-sm fw-bold">Attachment</label>
-            <div class="form-group">
-                <input type="file" id="txtFileInput" name="txtFileInput" class="box_border form-control form-control-sm" accept="image/*" capture="camera" />
-               
-                <input type="hidden" id="hfFileInput" name="hfFileInput" value="" />
-            </div>
-        </div>
-        <div class="col-md-1">
-            <div class="form-group">
-                
-                <img id="imgSelfie" class="rounded-circle avatar-lg" src="" />
-                
-            </div>
-        </div>
-    </div>
-
-</div><br/>
-
- <div class="row">
+<div class="row mb-2">
     <div class="col-md-12">
-        <div class="card border-primary">
-            <div class="card-body">
-                <ul class="nav nav-pills nav-justified" role="tablist">
-                    <li class="nav-item waves-effect waves-light" role="presentation">
-                        <a class="nav-link active" data-bs-toggle="tab" href="#Dashboard" role="tab" aria-selected="true" title="Dashboard">
-                            <span class="d-block d-sm-none"><i class="fas fa-grip-horizontal"></i></span>
-                            <span class="d-none d-sm-block text-sm-center">Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="nav-item waves-effect waves-light" role="presentation">
-                        <a class="nav-link" data-bs-toggle="tab" href="#tabPendingOrder" role="tab" aria-selected="false" tabindex="-1" title="Pending Order">
-                            <span class="d-block d-sm-none"><i class="fab fa-first-order"></i></span>
-                            <span class="d-none d-sm-block text-sm-center">Pending Order</span>
-                        </a>
-                    </li>
-                    <li class="nav-item waves-effect waves-light" role="presentation">
-                        <a class="nav-link" data-bs-toggle="tab" href="#tabSizeWiseSales" role="tab" aria-selected="false" tabindex="-1" title="Size Wise Sales">
-                            <span class="d-block d-sm-none"><i class="fas fa-chart-line"></i></span>
-                            <span class="d-none d-sm-block text-sm-center">Size Wise Sales</span>
-                        </a>
-                    </li>
-                    <li class="nav-item waves-effect waves-light" role="presentation">
-                        <a class="nav-link" data-bs-toggle="tab" href="#tabPaymentHistory" role="tab" aria-selected="false" tabindex="-1" title="Payment History">
-                            <span class="d-block d-sm-none"><i class="fas fa-history"></i></span>
-                            <span class="d-none d-sm-block text-sm-center">Payment History</span>
-                        </a>
-                    </li>
-                </ul>
+        <fieldset class="rounded-1 p-3">
+            <legend class="float-none w-auto px-2">Entry Details</legend>
 
-                <div class="tab-content">
+            <div class="row">
+                <div class="col-md-3 form-group">
+                    <label for="txtUserName" class="col-form-label-sm fw-bold">User Name</label>
+                    <input type="text" id="txtUserName" class="box_border form-control form-control-sm" autocomplete="off" value="">
+                </div>
+                <div class="col-md-3">
+                    <label for="txtdate" class="col-form-label-sm fw-bold">Date</label>
+                    <input ID="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
+                </div>
+                <div class="col-md-3">
+                    <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Check In Time</label>
+                    <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" readonly="readonly" />
+                </div>
+                <div class="col-md-3">
+                    <label for="txtLocation" class="col-form-label-sm fw-bold">Location</label>
+                    <input type="text" id="txtAddLocation" name="txtAddLocation" class="box_border form-control form-control-sm" hidden required />
+                    <input type="text" id="txtCurrentLocation" name="txtCurrentLocation" class="box_border form-control form-control-sm" value="" required />
+                    <input type="text" id="txtCheckOutLocation" name="txtCheckOutLocation" class="box_border form-control form-control-sm" hidden required />
+                    <input type="hidden" id="hflatlong" name="hflatlong" value="" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3 form-group">
+                    <label for="txtDealer" class="col-form-label-sm fw-bold">Dealer</label>
+                    <input type="text" class="box_border form-control form-control-sm" id="txtDealer" list="listdealer" name="txtDealer" value="" onclick="$(this).val('');" placeholder="" autocomplete="off" required onfocusout="GetAccountMasterDetails();" />
+                </div>
+                <div class="col-md-3">
+                    <label for="txtGSTNo" class="col-form-label-sm fw-bold">GST No</label>
+                    <input ID="txtGSTNo" name="txtGSTNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="" value="" readonly="readonly" required />
+                </div>
+                <div class="col-md-3">
+                    <label for="txtAddress" class="col-form-label-sm fw-bold">Address</label>
+                    <textarea type="text" id="txtAddress" name="txtAddress" class="box_border form-control form-control-sm" value="" readonly="readonly" rows="2"></textarea>
+                </div>
+                <div class="col-md-2">
+                    <label for="txtAttachment" class="col-form-label-sm fw-bold">Attachment</label>
+                    <div class="form-group">
+                        <input type="file" id="txtFileInput" name="txtFileInput" class="box_border form-control form-control-sm" accept="image/*" capture="camera" />
+
+                        <input type="hidden" id="hfFileInput" name="hfFileInput" value="" />
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class="form-group">
+
+                        <img id="imgSelfie" class="rounded-circle avatar-lg" src="" />
+
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+</div>
+
+
+<div class="row mb-2">
+    <div class="col-md-12">
+        @* <ul class="nav nav-pills nav-justified" role="tablist">
+            <li class="nav-item waves-effect waves-light" role="presentation">
+                <a class="nav-link active" data-bs-toggle="tab" href="#Dashboard" role="tab" aria-selected="true" title="Dashboard">
+                    <span class="d-block d-sm-none"><i class="fas fa-grip-horizontal"></i></span>
+                    <span class="d-none d-sm-block text-sm-center">Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item waves-effect waves-light" role="presentation">
+                <a class="nav-link" data-bs-toggle="tab" href="#tabPendingOrder" role="tab" aria-selected="false" tabindex="-1" title="Pending Order">
+                    <span class="d-block d-sm-none"><i class="fab fa-first-order"></i></span>
+                    <span class="d-none d-sm-block text-sm-center">Pending Order</span>
+                </a>
+            </li>
+            <li class="nav-item waves-effect waves-light" role="presentation">
+                <a class="nav-link" data-bs-toggle="tab" href="#tabSizeWiseSales" role="tab" aria-selected="false" tabindex="-1" title="Size Wise Sales">
+                    <span class="d-block d-sm-none"><i class="fas fa-chart-line"></i></span>
+                    <span class="d-none d-sm-block text-sm-center">Size Wise Sales</span>
+                </a>
+            </li>
+            <li class="nav-item waves-effect waves-light" role="presentation">
+                <a class="nav-link" data-bs-toggle="tab" href="#tabPaymentHistory" role="tab" aria-selected="false" tabindex="-1" title="Payment History">
+                    <span class="d-block d-sm-none"><i class="fas fa-history"></i></span>
+                    <span class="d-none d-sm-block text-sm-center">Payment History</span>
+                </a>
+            </li>
+        </ul> *@
+
+        @*  <div class="tab-content">
+            <div id="Dashboard" role="tabpanel" class="tab-pane active border-1 ">
+                <div id="otherdata">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="txtCreditLimitRs" class="col-form-label-sm fw-bold">Credit Limits</label>
+                            <div class="form-group">
+                                <input type="text" id="txtCreditLimitRs" class="box_border form-control form-control-sm text-end" name="txtCreditLimitRs" placeholder="Credit Limit" value="0" autocomplete="off" readonly="readonly" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="txtCreditDays" class="col-form-label-sm fw-bold">Credit Days</label>
+                            <div class="form-group">
+                                <input type="text" id="txtCreditDays" name="txtCreditDays" class="box_border form-control form-control-sm text-end" placeholder="Credit Days" value="0.00" autocomplete="off" readonly="readonly" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="txtOverDueAmount" class="col-form-label-sm fw-bold">Over Due Amount</label>
+                            <div class="form-group">
+                                <input type="text" class="box_border form-control form-control-sm text-end" id="txtOverDueAmount" name="txtOverDueAmount" placeholder="Over Due Amount" value="0" autocomplete="off" readonly="readonly" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="txtOutstanding" class="col-form-label-sm fw-bold">Outstanding</label>
+                            <div class="form-group">
+                                <input type="number" class="box_border form-control form-control-sm text-end" id="txtOutstanding" name="txtOutstanding" placeholder="Outstanding" value="0.00" autocomplete="off" readonly="readonly" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="txtTarget" class="col-form-label-sm fw-bold">Target Amount</label>
+                            <div class="form-group">
+                                <input type="text" class="form-control  form-control-sm text-end " id="txtTarget" name="txtTarget" placeholder="Target Amount" value="0.00" autocomplete="off" readonly="readonly" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="txtTargetShortFall" class="col-form-label-sm fw-bold">Target Shortfall</label>
+                            <div class="form-group">
+                                <input type="text" class="form-control  form-control-sm text-end" id="txtTargetShortFall" name="txtTargetShortFall" placeholder="Target Shortfall" value="0.00" autocomplete="off" readonly="readonly" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="txtLastMonthSales" class="col-form-label-sm fw-bold">Last Month Sale</label>
+                            <div class="form-group">
+                                <input type="text" class="form-control  form-control-sm text-end" id="txtLastMonthSales" name="txtLastMonthSales" value="0.00" placeholder="Last Month Sale" readonly="readonly" autocomplete="off" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="txtCurrentMonthSale" class="col-form-label-sm fw-bold">Current Month Sale</label>
+                            <div class="form-group">
+                                <input type="text" class="form-control  form-control-sm text-end" id="txtCurrentMonthSale" name="txtCurrentMonthSale" value="0.00" placeholder="Current Month Sale" readonly="readonly" autocomplete="off" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content">
+            <div id="tabPendingOrder" role="tabpanel" class="tab-pane  ">
+                <div class="table-wrapper  fixed-height-table" id="divtblPendingOrder">
+                    <table id="tblPendingOrder" class="fixed-width-table table">
+                        <thead id="thPendingOrder">
+
+                            <!-- end table row-->
+                        </thead>
+                        <tbody id="PendingOrderdata" class="filter-class"></tbody>
+                    </table>
+                    <!-- end table -->
+                </div>
+                <div class="paginator" id="paginator-tblPendingOrder">
+            </div>
+        </div>
+
+        <div class="tab-content">
+            <div id="tabSizeWiseSales" role="tabpanel" class="tab-pane  ">
+                <div class="row">
+                    <div class="form-group col-md-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control  form-control-sm" placeholder="Search ..."
+                                    aria-label="Search Result">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="mdi mdi-magnify"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                        <div class="table-wrapper  fixed-height-table" id="divtblSizeWiseSales">
+                            <table id="tblSizeWiseSales" class="fixed-width-table table">
+                                <thead id="thSizeWiseSales">
+
+                                    <!-- end table row-->
+                                </thead>
+                                <tbody id="SizeWiseSalesdata" class="filter-class"></tbody>
+                            </table>
+                            <!-- end table -->
+                        </div>
+                        <div class="paginator" id="paginator-tblSizeWiseSales">
+                        </div>
+
+                        <!-- end table -->
+
+            </div>
+
+        </div>
+
+        <div class="tab-content">
+            <div id="tabPaymentHistory" role="tabpanel" class="tab-pane  ">
+                    <div class="table-wrapper  fixed-height-table" id="divtblPaymentHistory">
+                        <table id="PaymentHistory" class="fixed-width-table table">
+                            <thead id="thPaymentHistory">
+
+                                <!-- end table row-->
+                            </thead>
+                            <tbody id="PaymentHistorydata" class="filter-class"></tbody>
+                        </table>
+                        <!-- end table -->
+                    </div>
+                    <div class="paginator" id="paginator-PaymentHistory">
+                    </div>
+            </div>
+        </div> *@
+
+
+        @* my *@
+
+        <div class="tab-section">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard"
+                            type="button" role="tab" aria-controls="dashboard" aria-selected="true">
+                        Dashboard
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pendingOrder-tab" data-bs-toggle="tab" data-bs-target="#pendingOrder"
+                            type="button" role="tab" aria-controls="pendingOrder" aria-selected="false">
+                        Pending Order
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="sizeWiseS-tab" data-bs-toggle="tab" data-bs-target="#sizeWiseS" type="button"
+                            role="tab" aria-controls="sizeWiseS" aria-selected="true">
+                        Size Wise Sales
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="paymentHis-tab" data-bs-toggle="tab" data-bs-target="#paymentHis" type="button"
+                            role="tab" aria-controls="paymentHis" aria-selected="false">
+                        Payment History
+                    </button>
+                </li>
+            </ul>
+            <div class="tab-content" id="myTabContent">
+                @* 1 *@
+                <div class="tab-pane fade show active" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
                     <div id="Dashboard" role="tabpanel" class="tab-pane active border-1 ">
                         <div id="otherdata">
                             <div class="row">
-                                <div class="col-md-3 colPhn">
+                                <div class="col-md-3">
                                     <label for="txtCreditLimitRs" class="col-form-label-sm fw-bold">Credit Limits</label>
                                     <div class="form-group">
-                                        <input type="text" id="txtCreditLimitRs" class="box_border form-control form-control-sm text-end" name="txtCreditLimitRs" placeholder="Credit Limit" value="0" autocomplete="off" readonly="readonly" required>
+                                        <input type="text" id="txtCreditLimitRs"
+                                               class="box_border form-control form-control-sm text-end" name="txtCreditLimitRs"
+                                               placeholder="Credit Limit" value="0" autocomplete="off" readonly="readonly"
+                                               required>
                                     </div>
                                 </div>
 
-                                <div class="col-md-3 colPhn">
+                                <div class="col-md-3">
                                     <label for="txtCreditDays" class="col-form-label-sm fw-bold">Credit Days</label>
                                     <div class="form-group">
-                                        <input type="text" id="txtCreditDays" name="txtCreditDays" class="box_border form-control form-control-sm text-end" placeholder="Credit Days" value="0.00" autocomplete="off" readonly="readonly" required>
+                                        <input type="text" id="txtCreditDays" name="txtCreditDays"
+                                               class="box_border form-control form-control-sm text-end" placeholder="Credit Days"
+                                               value="0.00" autocomplete="off" readonly="readonly" required>
                                     </div>
                                 </div>
-                                <div class="col-md-3 colPhn">
+                                <div class="col-md-3">
                                     <label for="txtOverDueAmount" class="col-form-label-sm fw-bold">Over Due Amount</label>
                                     <div class="form-group">
-                                        <input type="text" class="box_border form-control form-control-sm text-end" id="txtOverDueAmount" name="txtOverDueAmount" placeholder="Over Due Amount" value="0" autocomplete="off" readonly="readonly" required>
+                                        <input type="text" class="box_border form-control form-control-sm text-end"
+                                               id="txtOverDueAmount" name="txtOverDueAmount" placeholder="Over Due Amount"
+                                               value="0" autocomplete="off" readonly="readonly" required>
                                     </div>
                                 </div>
-                                <div class="col-md-3 colPhn">
+                                <div class="col-md-3">
                                     <label for="txtOutstanding" class="col-form-label-sm fw-bold">Outstanding</label>
                                     <div class="form-group">
-                                        <input type="number" class="box_border form-control form-control-sm text-end" id="txtOutstanding" name="txtOutstanding" placeholder="Outstanding" value="0.00" autocomplete="off" readonly="readonly" required>
+                                        <input type="number" class="box_border form-control form-control-sm text-end"
+                                               id="txtOutstanding" name="txtOutstanding" placeholder="Outstanding" value="0.00"
+                                               autocomplete="off" readonly="readonly" required>
                                     </div>
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-3 colPhn">
+                                <div class="col-md-3">
                                     <label for="txtTarget" class="col-form-label-sm fw-bold">Target Amount</label>
                                     <div class="form-group">
-                                        <input type="text" class="form-control  form-control-sm text-end " id="txtTarget" name="txtTarget" placeholder="Target Amount" value="0.00" autocomplete="off" readonly="readonly" required>
+                                        <input type="text" class="form-control  form-control-sm text-end " id="txtTarget"
+                                               name="txtTarget" placeholder="Target Amount" value="0.00" autocomplete="off"
+                                               readonly="readonly" required>
                                     </div>
                                 </div>
-                                <div class="col-md-3 colPhn">
+                                <div class="col-md-3">
                                     <label for="txtTargetShortFall" class="col-form-label-sm fw-bold">Target Shortfall</label>
                                     <div class="form-group">
-                                        <input type="text" class="form-control  form-control-sm text-end" id="txtTargetShortFall" name="txtTargetShortFall" placeholder="Target Shortfall" value="0.00" autocomplete="off" readonly="readonly" required>
+                                        <input type="text" class="form-control  form-control-sm text-end"
+                                               id="txtTargetShortFall" name="txtTargetShortFall" placeholder="Target Shortfall"
+                                               value="0.00" autocomplete="off" readonly="readonly" required>
                                     </div>
                                 </div>
-                                <div class="col-md-3 colPhn">
-                                    <label for="txtLastMonthSales" class="col-form-label-sm fw-bold">Last Month Sale(Weight)</label>
+                                <div class="col-md-3">
+                                    <label for="txtLastMonthSales" class="col-form-label-sm fw-bold">Last Month Sale</label>
                                     <div class="form-group">
-                                        <input type="text" class="form-control  form-control-sm text-end" id="txtLastMonthSales" name="txtLastMonthSales" value="0.00" placeholder="Last Month Sale" readonly="readonly" autocomplete="off" required>
+                                        <input type="text" class="form-control  form-control-sm text-end" id="txtLastMonthSales"
+                                               name="txtLastMonthSales" value="0.00" placeholder="Last Month Sale"
+                                               readonly="readonly" autocomplete="off" required>
                                     </div>
                                 </div>
-                                <div class="col-md-3 colPhn">
-                                    <label for="txtCurrentMonthSale" class="col-form-label-sm fw-bold">Current Month Sale(Weight)</label>
+                                <div class="col-md-3">
+                                    <label for="txtCurrentMonthSale" class="col-form-label-sm fw-bold">
+                                        Current Month
+                                        Sale
+                                    </label>
                                     <div class="form-group">
-                                        <input type="text" class="form-control  form-control-sm text-end" id="txtCurrentMonthSale" name="txtCurrentMonthSale" value="0.00" placeholder="Current Month Sale" readonly="readonly" autocomplete="off" required>
+                                        <input type="text" class="form-control  form-control-sm text-end"
+                                               id="txtCurrentMonthSale" name="txtCurrentMonthSale" value="0.00"
+                                               placeholder="Current Month Sale" readonly="readonly" autocomplete="off" required>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="tab-content">
+                @* 2 *@
+                <div class="tab-pane fade" id="pendingOrder" role="tabpanel" aria-labelledby="profile-tab">
                     <div id="tabPendingOrder" role="tabpanel" class="tab-pane  ">
                         <div class="table-wrapper  fixed-height-table" id="divtblPendingOrder">
                             <table id="tblPendingOrder" class="fixed-width-table table">
@@ -256,70 +438,74 @@
                             <!-- end table -->
                         </div>
                         <div class="paginator" id="paginator-tblPendingOrder">
+                        </div>
                     </div>
                 </div>
-
-
-
-
-                <div class="tab-content">
+                @* 3 *@
+                <div class="tab-pane fade show" id="sizeWiseS" role="tabpanel" aria-labelledby="home-tab">
                     <div id="tabSizeWiseSales" role="tabpanel" class="tab-pane  ">
                         <div class="row">
-                            <div class="form-group col-md-3">
-                                <div class="input-group">
+                            <div class="col-md-3 col-sm-6 col-8">
+                                @* <div class="input-group">
                                     <input type="text" class="form-control  form-control-sm" placeholder="Search ..."
                                            aria-label="Search Result">
                                     <button class="btn btn-primary" type="submit">
                                         <i class="mdi mdi-magnify"></i>
                                     </button>
+                                </div> *@
+
+                                <div class="app-search">
+                                    <div class="position-relative">
+                                        <input type="text" class="form-control  form-control-sm" placeholder="Search ..."
+                                               aria-label="Search Result">
+                                        <button class="btn btn-search" type="submit"><i class="bx bx-search-alt align-middle"></i></button>
+                                    </div>
                                 </div>
+
                             </div>
                         </div>
-                        
-                                <div class="table-wrapper  fixed-height-table" id="divtblSizeWiseSales">
-                                    <table id="tblSizeWiseSales" class="fixed-width-table table">
-                                        <thead id="thSizeWiseSales">
 
-                                            <!-- end table row-->
-                                        </thead>
-                                        <tbody id="SizeWiseSalesdata" class="filter-class"></tbody>
-                                    </table>
-                                    <!-- end table -->
-                                </div>
-                                <div class="paginator" id="paginator-tblSizeWiseSales">
-                                </div>
+                        <div class="table-wrapper  fixed-height-table" id="divtblSizeWiseSales">
+                            <table id="tblSizeWiseSales" class="fixed-width-table table">
+                                <thead id="thSizeWiseSales">
 
-                                <!-- end table -->
-                        
+                                    <!-- end table row-->
+                                </thead>
+                                <tbody id="SizeWiseSalesdata" class="filter-class"></tbody>
+                            </table>
+                            <!-- end table -->
+                        </div>
+                        <div class="paginator" id="paginator-tblSizeWiseSales">
+                        </div>
+                        <!-- end table -->
                     </div>
-
                 </div>
-                <div class="tab-content">
-                    <div id="tabPaymentHistory" role="tabpanel" class="tab-pane  ">
-                            <div class="table-wrapper  fixed-height-table" id="divtblPaymentHistory">
-                                <table id="PaymentHistory" class="fixed-width-table table">
-                                    <thead id="thPaymentHistory">
 
-                                        <!-- end table row-->
-                                    </thead>
-                                    <tbody id="PaymentHistorydata" class="filter-class"></tbody>
-                                </table>
-                                <!-- end table -->
-                            </div>
-                            <div class="paginator" id="paginator-PaymentHistory">
-                            </div>
+                @* 4 *@
+                <div class="tab-pane fade" id="paymentHis" role="tabpanel" aria-labelledby="profile-tab">
+                    <div id="tabPaymentHistory" role="tabpanel" class="tab-pane">
+                        <div class="table-wrapper  fixed-height-table" id="divtblPaymentHistory">
+                            <table id="PaymentHistory" class="fixed-width-table table">
+                                <thead id="thPaymentHistory">
+
+                                    <!-- end table row-->
+                                </thead>
+                                <tbody id="PaymentHistorydata" class="filter-class"></tbody>
+                            </table>
+                            <!-- end table -->
+                        </div>
+                        <div class="paginator" id="paginator-PaymentHistory">
+                        </div>
                     </div>
                 </div>
             </div>
-            <div>
-            </div>
         </div>
-        </div>
-     </div> 
-    @*  <div class="row">
-    
+    </div>
+</div>
+@*  <div class="row">
+
         <div class="card  border-primary">
-      
+
             <div class="card-body">
                 <div class="accordion accordion-flush" id="accordionFlushExample">
                     <div class="accordion-item">
@@ -331,26 +517,26 @@
                         <div id="flush-collapseOne" class="accordion-collapse collapse show" aria-labelledby="flush-headingOne" data-bs-parent="#accordionFlushExample" style="">
                             <div class="accordion-body text-muted">
                                 <div class="row">
-                                    <div class="col-md-3 colPhn">
+                                    <div class="col-md-3">
                                         <label for="txtCreditLimitRs" class="col-form-label-sm fw-bold">Credit Limits</label>
                                         <div class="form-group">
                                         <input type="text" id="txtCreditLimitRs" class="box_border form-control form-control-sm text-end" name="txtCreditLimitRs" placeholder="Credit Limit" value="0" autocomplete="off" readonly="readonly" required>
                                         </div>
                                     </div>
 
-                                    <div class="col-md-3 colPhn">
+                                    <div class="col-md-3">
                                         <label for="txtCreditDays" class="col-form-label-sm fw-bold">Credit Days</label>
                                         <div class="form-group">
                                         <input type="text" id="txtCreditDays" name="txtCreditDays" class="box_border form-control form-control-sm text-end" placeholder="Credit Days" value="0.00" autocomplete="off" readonly="readonly" required>
                                         </div>
                                     </div>
-                                    <div class="col-md-3 colPhn">
+                                    <div class="col-md-3">
                                         <label for="txtOverDueAmount" class="col-form-label-sm fw-bold">Over Due Amount</label>
                                         <div class="form-group">
                                         <input type="text" class="box_border form-control form-control-sm text-end" id="txtOverDueAmount" name="txtOverDueAmount" placeholder="Over Due Amount" value="0" autocomplete="off" readonly="readonly" required>
                                         </div>
                                     </div>
-                                    <div class="col-md-3 colPhn">
+                                    <div class="col-md-3">
                                         <label for="txtOutstanding" class="col-form-label-sm fw-bold">Outstanding</label>
                                         <div class="form-group">
                                         <input type="number" class="box_border form-control form-control-sm text-end" id="txtOutstanding" name="txtOutstanding" placeholder="Outstanding" value="0.00" autocomplete="off" readonly="readonly" required>
@@ -358,32 +544,32 @@
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-md-3 colPhn">
+                                    <div class="col-md-3">
                                         <label for="txtTarget" class="col-form-label-sm fw-bold">Target Amount</label>
                                         <div class="form-group">
                                         <input type="text" class="form-control  form-control-sm text-end " id="txtTarget" name="txtTarget" placeholder="Target Amount" value="0.00" autocomplete="off" readonly="readonly" required>
                                         </div>
                                     </div>
-                                    <div class="col-md-3 colPhn">
+                                    <div class="col-md-3">
                                         <label for="txtTargetShortFall" class="col-form-label-sm fw-bold">Target Shortfall</label>
                                         <div class="form-group">
                                         <input type="text" class="form-control  form-control-sm text-end" id="txtTargetShortFall" name="txtTargetShortFall" placeholder="Target Shortfall" value="0.00" autocomplete="off" readonly="readonly" required>
                                         </div>
                                     </div>
-                                    <div class="col-md-3 colPhn">
+                                    <div class="col-md-3">
                                         <label for="txtLastMonthSales" class="col-form-label-sm fw-bold">Last Month Sale</label>
                                         <div class="form-group">
                                         <input type="text" class="form-control  form-control-sm text-end" id="txtLastMonthSales" name="txtLastMonthSales" value="0.00" placeholder="Last Month Sale" readonly="readonly" autocomplete="off" required>
                                         </div>
                                     </div>
-                                    <div class="col-md-3 colPhn">
+                                    <div class="col-md-3">
                                         <label for="txtCurrentMonthSale" class="col-form-label-sm fw-bold">Current Month Sale</label>
                                         <div class="form-group">
                                         <input type="text" class="form-control  form-control-sm text-end" id="txtCurrentMonthSale" name="txtCurrentMonthSale" value="0.00" placeholder="Current Month Sale" readonly="readonly" autocomplete="off" required>
                                         </div>
                                     </div>
                                 </div>
-                               
+
                             </div>
                         </div>
                     </div>
@@ -399,7 +585,7 @@
                                 <div class="table-wrapper  fixed-height-table" id="divtblPendingOrder">
                                     <table id="tblPendingOrder" class="fixed-width-table table">
                                         <thead id="thPendingOrder">
-                                           
+
                                             <!-- end table row-->
                                         </thead>
                                         <tbody id="PendingOrderdata" class="filter-class"></tbody>
@@ -443,7 +629,7 @@
                                     </div>
                                     <div class="paginator" id="paginator-tblSizeWiseSales">
                                     </div>
-                               
+
                                 </div>
                             </div>
                         </div>
@@ -469,7 +655,7 @@
                                     </div>
                                     <div class="paginator" id="paginator-PaymentHistory">
                                     </div>
-                                
+
 
                                 </div>
                             </div>
@@ -478,248 +664,231 @@
                 </div><!-- end accordion -->
             </div><!-- end card-body -->
         </div><!-- end card -->
-    
+
      </div> *@
-<div class="row" id="divOrderBooking">
-    
-        <div class="card  border-primary">
-            <div class="card-body">
-                <div class="accordion accordion-flush" id="accordionFlushOrder">
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="flush-headingOne">
-                            <button class="accordion-button fw-medium " type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOrder" aria-expanded="false" aria-controls="flush-collapseOrder">
-                                Order Booking
-                            </button>
-                        </h2>
-                        <div id="flush-collapseOrder" class="accordion-collapse collapse show" aria-labelledby="flush-collapseOrder" data-bs-parent="#accordionFlushOrder" style="">
-                            <div class="accordion-body text-muted">
-                                
-                                    <div class="row colPhn">
-                                        <div class="col-md-2">
-                                            <div class="form-group">
-                                            <input type="button" name="btnShow" id="btnShow" class="btn btn-primary btn-sm waves-effect waves-light" value="Show Stock" onclick="return GetAllOrderBookingData();" />
+<div class="row" id="divOrderBooking mb-2">
+    <div class="accordion accordion-flush" id="accordionFlushOrder">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="flush-headingOne">
+                <button class="accordion-button fw-medium " type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOrder" aria-expanded="false" aria-controls="flush-collapseOrder">
+                    Order Booking
+                </button>
+            </h2>
+            <div id="flush-collapseOrder" class="accordion-collapse collapse show" aria-labelledby="flush-collapseOrder" data-bs-parent="#accordionFlushOrder" style="">
+                <div class="accordion-body-sec">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <input type="button" name="btnShow" id="btnShow" class="btn btn-primary btn-sm waves-effect waves-light" value="Show Stock" onclick="return GetAllOrderBookingData();" />
 
-                                            <button type="button" class="btn btn-primary  btn-sm waves-effect waves-light" id="btnLoading" hidden="true">
-                                                <i class="bx bx-loader bx-spin font-size-16 align-middle me-2"></i> Loading
-                                            </button>
-                                                <label id="lblStockDate"></label>
-
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="form-group" id="divShowSizeButton">
-                                                
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input"
-                                                           type="checkbox"
-                                                           id="toggleSwitch"
-                                                           data-on-label="Yes"
-                                                           data-off-label="No">
-                                                <label class="form-check-label align-text-bottom col-form-label-sm fw-bold" for="toggleSwitch">Show Size Button</label>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                            <div class="col-md-12 form-group">
-                            <div class="table-wrapper" style="overflow: auto;">
-                                    <table id="tblorderbooking" class="fl-table" style="width: 100%">
-                                    <thead role="rowgroup" class="text-sm-center">
-                                            <tr role="row">
-                                                <th class="lead-Date width_cust" role="columnheader">Consignee</th>
-                                                <th class="lead-Date width_cust" role="columnheader">Delivery Address</th>
-                                                <th class="lead-text width_cust" role="columnheader">Item Name</th>
-                                                <th class="lead-text width_cust" role="columnheader">Size</th>
-                                                <th class="lead-text width_cust" role="columnheader">Thickness</th>
-                                                <th class="lead-Date width_cust" role="columnheader">SizeDesp</th>
-                                                <th class="lead-Date width_cust" role="columnheader">UOM</th>
-                                                <th class="lead-text width_cust" role="columnheader">Stock</th>
-                                                <th class="lead-text width_cust" role="columnheader">Order Qty PC</th>
-                                                <th class="lead-text width_cust" role="columnheader">Order Qty MT</th>
-                                                <th class="lead-text width_cust" role="columnheader">Order Qty MTR</th>
-                                                <th class="lead-text width_cust" role="columnheader">Order UOM</th>
-                                                <th class="lead-text width_cust" role="columnheader">Order QTY</th>
-                                                <th class="lead-text width_cust" role="columnheader">Basic Rate</th>
-                                                <th class="lead-text width_cust" role="columnheader">Extra Charges</th>
-                                                <th class="lead-text width_cust" role="columnheader">Order Rate</th>
-                                                <th class="lead-text width_cust" role="columnheader">Amount</th>
-                                                <th class="lead-text width_cust" role="columnheader">Delivery Date</th>
-                                                    <th class="lead-text width_cust" role="columnheader">Price List</th>
-                                                <th class="lead-text width_cust" role="columnheader">Remarks</th>
-                                                <th class="lead-text width_cust" role="columnheader">Delete</th>
-                                            </tr>
-                                            <!-- end table row-->
-                                        </thead>
-                                        <tbody id="Orderdata" role="rowgroup"></tbody>
-                                        <tfoot>
-                                                <tr role="row" id="trTotal" class="text-sm-center ">
-
-                                                <td style="text-align: right;"></td>
-                                                <td style="text-align: right;"></td>
-                                                    <td style="text-align: center;"><b>Total</b></td>
-                                                <td style="text-align: right;"></td>
-                                                <td style="text-align: right;"></td>
-                                                <td style="text-align: right;"></td>
-                                                <td style="text-align: right;"></td>
-                                                    <td style="text-align: right;" class="font-weight-bold" id="txtStockTotal"></td>
-                                                    <td style="text-align: right;" class="font-weight-bold"  id="txtOrderQtyPCTotal"></td>
-                                                    <td style="text-align: right;" class="font-weight-bold"  id="txtOrderQtyMTTotal"></td>
-                                                    <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyMTRTotal"></td>
-                                                <td style="text-align: right;" ></td>
-                                                    <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyTotal"></td>
-                                                <td style="text-align: right;"></td>
-                                                <td style="text-align: right;"></td>
-                                                <td style="text-align: right;"></td>
-                                                    <td style="text-align: right;" class="font-weight-bold" id="txtAmountTotal"></td>
-                                                <td style="text-align: right;"></td>
-                                                    <td style="text-align: right;"></td>
-                                                <td style="text-align: right;"></td>
-                                                <td style="text-align: right;"></td>
-                                            </tr>
-                                            <tr role="row" id="trAddBtn">
-                                                    <td style="text-align: right;"></td>
-                                                    <td style="text-align: right;"></td>
-                                                <td style="text-align: left;">
-                                                    <input id="btnAddNewRow" type="button" class="submit-btn btn btn-primary btn-sm waves-effect waves-light"  value="Add New Row"  />
-                                                       
-                                                </td>
-                                             </tr>
-
-                                        </tfoot>
-                                    </table>
-                               </div>
-                               </div>
-                            <br/>
-                                <div class="row">
-                                    <div class="col-md-3 colPhn">
-                                        <label for="txtDeliveryDays" class="col-form-label-sm fw-bold">Delivery Days <span class="universal">*</span></label>
-                                        <div class="form-group">
-                                            <input type="number" class="box_border form-control form-control-sm text-end" id="txtDeliveryDays" value="" name="txtDeliveryDays" placeholder="" autocomplete="off" maxlength="3" required>
-                                        </div>
-                                    </div>
-                                    
-                                    
-                                   <div class="col-md-2 colPhn" >
-                                        <label for="txtlistFreight" class="col-form-label-sm fw-bold">Freight </label>
-                                            <div class="form-group">
-                                        <input type="text" list="listFreight" class="box_border form-control form-control-sm" id="txtlistFreight" onclick="this.value=''" name="txtlistFreight" value="" placeholder="" autocomplete="off" maxlength="250" required>
-                                            </div>
-
-                                        </div>
-                                    <div class="col-md-2 colPhn" id="divShowFreight">
-                                        <label for="txtFreightType" class="col-form-label-sm fw-bold">Freight Type </label>
-                                        <div class="form-group">
-                                            <input type="text" list="listFreightType" class="box_border form-control form-control-sm" onclick="this.value=''" id="txtFreightType" name="txtFreightType" value="" placeholder="" autocomplete="off" number maxlength="250" required />
-
-                                        </div>
-
-                                    </div>
-                                  
-                                        <div class="col-md-3 colPhn" id="divDeliveryLocation">
-                                        <label for="txtDeliveryLocation" class="col-form-label-sm fw-bold">Delivery Location<span class="universal"></span></label>
-                                            <div class="form-group">
-                                        <input type="text" list="listDeliveryLocation" class="box_border form-control form-control-sm" id="txtDeliveryLocation" name="txtDeliveryLocation" placeholder="" value="" onblur="" autocomplete="off" maxlength="500" required>
-                                            </div>
-                                        </div>
-                                  
-                                        <div class="col-md-3 colPhn" id="divCreditDays">
-                                        <label for="txtCreditDaysForDC" class="col-form-label-sm fw-bold">Credit Days<span class="universal"></span></label>
-                                            <div class="form-group">
-                                            <input type="number" class="box_border form-control form-control-sm text-end" id="txtCreditDaysForDC" name="txtCreditDaysForDC" placeholder="" value="" autocomplete="off" maxlength="3" required>
-                                            </div>
-                                        </div>
-                                   
-                                        <div class="col-md-3 colPhn" id="divRateUnit">
-                                        <label for="txtMRateUnit" class="col-form-label-sm fw-bold">Rate Unit <span class="universal">*</span></label>
-                                            <div class="form-group">
-                                                <input type="text" list="listMRateUnit" class="box_border form-control form-control-sm" id="txtMRateUnit" name="txtMRateUnit" value="" placeholder="" autocomplete="off" number maxlength="50" required>
-
-                                            </div>
-                                        </div>
-
-                              @*   <div class="col-md-3 colPhn" id="divZone">
-                                    <label for="txtZone" class="col-form-label-sm fw-bold">Price List <span class="universal">*</span></label>
-                                    <div class="form-group">
-                                        <input type="text" list="listZone" class="box_border form-control form-control-sm" id="txtZone" name="txtZone" value="" placeholder="" autocomplete="off" number maxlength="50" required>
-
-                                    </div>
-                                </div> *@
-
-                                  
-                                        <div class="col-md-1 colPhn" id="divBasicRate">
-                                        <label for="txtBasicRateLock" class="col-form-label-sm fw-bold">Basic Rate<span class="universal"></span></label>
-                                            <div class="form-group">
-                                            <input type="text" class="box_border form-control form-control-sm text-end" id="txtBasicRateLock" value="0" readonly>
-                                            </div>
-                                        </div>
-
-                                <div class="col-md-1 colPhn" id="divselectSign">
-                                        <label class="col-form-label-sm fw-bold">Discount<span class="universal"></span></label>
-                                            <div class="form-group">
-                                        <select id="selectSign" onchange="ValidateDiscountLimit();calFinalAmt();" name="selectSign" class="box_border form-control form-control-sm sizewidth">
-                                                    <option value="-" selected>-</option>
-                                                    <option value="+">+</option>
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                <div class="col-md-1 colPhn" id="divAmt">
-                                    <label for="txtAmt" class="col-form-label-sm fw-bold">Amount<span class="universal"></span></label>
-                                            <div class="form-group">
-                                            <input type="number" onkeypress="return numberdecimalOnly(event); " onfocusout="ValidateDiscountLimit();calFinalAmt();" ID="txtAmt" name="txtAmt" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" placeholder=" " />
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2 colPhn" id="divFinalRate">
-                                        <label for="txtDeliveryLocation" class="col-form-label-sm fw-bold">Final Rate<span class="universal"></span></label>
-                                            <div class="form-group">
-                                            <input type="text" onkeypress="return numberdecimalOnly(event);" ID="txtAmtFinal" name="txtAmtFinal" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" readonly />
-                                            </div>
-                                        </div>
-                                  
+                                <button type="button" class="btn btn-primary  btn-sm waves-effect waves-light" id="btnLoading" hidden="true">
+                                    <i class="bx bx-loader bx-spin font-size-16 align-middle me-2"></i> Loading
+                                </button>
+                                <label id="lblStockDate"></label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group" id="divShowSizeButton">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           id="toggleSwitch"
+                                           data-on-label="Yes"
+                                           data-off-label="No">
+                                    <label class="form-check-label align-text-bottom col-form-label-sm fw-bold" for="toggleSwitch">Show Size Button</label>
                                 </div>
-                                
-                             </div>
-                           
+                            </div>
                         </div>
-                        
-                    </div>
-                </div>
-            </div>
-        </div>
-   
-</div>
-
-<div class="row">
-    <div class="card  border-primary">
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-12 colPhn">
-                    <label for="txtRemarks" class="col-form-label-sm fw-bold">Remarks </label>
-                    <div class="form-group">
-                        <input type="text" class="box_border form-control form-control-sm" id="txtRemarks" value="" name="txtRemarks" placeholder="Remarks" autocomplete="off" maxlength="200">
 
                     </div>
-                </div>
-                    <div class="col-md-3 colPhn" id="divtxtNextVistDate">
-                        <label for="txtNextVistDate" class="col-form-label-sm fw-bold">Next Visit Date <span class="universal">*</span></label>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="table-wrapper" style="overflow: auto;">
+                                <table id="tblorderbooking" class="table">
+                                    <thead role="rowgroup" class="text-sm-center">
+                                        <tr role="row">
+                                            <th class="lead-Date width_cust" role="columnheader">Consignee</th>
+                                            <th class="lead-Date width_cust" role="columnheader">Delivery Address</th>
+                                            <th class="lead-text width_cust" role="columnheader">Item Name</th>
+                                            <th class="lead-text width_cust" role="columnheader">Size</th>
+                                            <th class="lead-text width_cust" role="columnheader">Thickness</th>
+                                            <th class="lead-Date width_cust" role="columnheader">SizeDesp</th>
+                                            <th class="lead-Date width_cust" role="columnheader">UOM</th>
+                                            <th class="lead-text width_cust" role="columnheader">Stock</th>
+                                            <th class="lead-text width_cust" role="columnheader">Order Qty PC</th>
+                                            <th class="lead-text width_cust" role="columnheader">Order Qty MT</th>
+                                            <th class="lead-text width_cust" role="columnheader">Order Qty MTR</th>
+                                            <th class="lead-text width_cust" role="columnheader">Order UOM</th>
+                                            <th class="lead-text width_cust" role="columnheader">Order QTY</th>
+                                            <th class="lead-text width_cust" role="columnheader">Basic Rate</th>
+                                            <th class="lead-text width_cust" role="columnheader">Extra Charges</th>
+                                            <th class="lead-text width_cust" role="columnheader">Order Rate</th>
+                                            <th class="lead-text width_cust" role="columnheader">Amount</th>
+                                            <th class="lead-text width_cust" role="columnheader">Delivery Date</th>
+                                            <th class="lead-text width_cust" role="columnheader">Price List</th>
+                                            <th class="lead-text width_cust" role="columnheader">Remarks</th>
+                                            <th class="lead-text width_cust" role="columnheader">Delete</th>
+                                        </tr>
+                                        <!-- end table row-->
+                                    </thead>
+                                    <tbody id="Orderdata" role="rowgroup"></tbody>
+                                    <tfoot>
+                                        <tr role="row" id="trTotal" class="text-sm-center ">
+
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: center;"><b>Total</b></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;" class="font-weight-bold" id="txtStockTotal"></td>
+                                            <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyPCTotal"></td>
+                                            <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyMTTotal"></td>
+                                            <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyMTRTotal"></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyTotal"></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;" class="font-weight-bold" id="txtAmountTotal"></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;"></td>
+                                        </tr>
+                                        <tr role="row" id="trAddBtn">
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: right;"></td>
+                                            <td style="text-align: left;">
+                                                <input id="btnAddNewRow" type="button" class="submit-btn btn btn-primary btn-sm waves-effect waves-light" value="Add New Row" />
+
+                                            </td>
+                                        </tr>
+
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                   
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="txtDeliveryDays" class="col-form-label-sm fw-bold">Delivery Days <span class="universal">*</span></label>
+                            <div class="form-group">
+                                <input type="number" class="box_border form-control form-control-sm text-end" id="txtDeliveryDays" value="" name="txtDeliveryDays" placeholder="" autocomplete="off" maxlength="3" required>
+                            </div>
+                        </div>
+
+
+                        <div class="col-md-2">
+                            <label for="txtlistFreight" class="col-form-label-sm fw-bold">Freight </label>
+                            <div class="form-group">
+                                <input type="text" list="listFreight" class="box_border form-control form-control-sm" id="txtlistFreight" onclick="this.value=''" name="txtlistFreight" value="" placeholder="" autocomplete="off" maxlength="250" required>
+                            </div>
+
+                        </div>
+                        <div class="col-md-2" id="divShowFreight">
+                            <label for="txtFreightType" class="col-form-label-sm fw-bold">Freight Type </label>
+                            <div class="form-group">
+                                <input type="text" list="listFreightType" class="box_border form-control form-control-sm" onclick="this.value=''" id="txtFreightType" name="txtFreightType" value="" placeholder="" autocomplete="off" number maxlength="250" required />
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-3" id="divDeliveryLocation">
+                            <label for="txtDeliveryLocation" class="col-form-label-sm fw-bold">Delivery Location<span class="universal"></span></label>
+                            <div class="form-group">
+                                <input type="text" list="listDeliveryLocation" class="box_border form-control form-control-sm" id="txtDeliveryLocation" name="txtDeliveryLocation" placeholder="" value="" onblur="" autocomplete="off" maxlength="500" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3" id="divCreditDays">
+                            <label for="txtCreditDaysForDC" class="col-form-label-sm fw-bold">Credit Days<span class="universal"></span></label>
+                            <div class="form-group">
+                                <input type="number" class="box_border form-control form-control-sm text-end" id="txtCreditDaysForDC" name="txtCreditDaysForDC" placeholder="" value="" autocomplete="off" maxlength="3" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3" id="divRateUnit">
+                            <label for="txtMRateUnit" class="col-form-label-sm fw-bold">Rate Unit <span class="universal">*</span></label>
+                            <div class="form-group">
+                                <input type="text" list="listMRateUnit" class="box_border form-control form-control-sm" id="txtMRateUnit" name="txtMRateUnit" value="" placeholder="" autocomplete="off" number maxlength="50" required>
+
+                            </div>
+                        </div>
+
+                        @*   <div class="col-md-3" id="divZone">
+                        <label for="txtZone" class="col-form-label-sm fw-bold">Price List <span class="universal">*</span></label>
                         <div class="form-group">
-                            <input ID="txtNextVistDate" type="date" name="txtNextVistDate" class="box_border form-control form-control-sm textRight" autocomplete="off" placeholder="Next Visit Date" required value="" />
+                            <input type="text" list="listZone" class="box_border form-control form-control-sm" id="txtZone" name="txtZone" value="" placeholder="" autocomplete="off" number maxlength="50" required>
+
                         </div>
+                    </div> *@
+
+
+                        <div class="col-md-1" id="divBasicRate">
+                            <label for="txtBasicRateLock" class="col-form-label-sm fw-bold">Basic Rate<span class="universal"></span></label>
+                            <div class="form-group">
+                                <input type="text" class="box_border form-control form-control-sm text-end" id="txtBasicRateLock" value="0" readonly>
+                            </div>
+                        </div>
+
+                        <div class="col-md-1" id="divselectSign">
+                            <label class="col-form-label-sm fw-bold">Discount<span class="universal"></span></label>
+                            <div class="form-group">
+                                <select id="selectSign" onchange="ValidateDiscountLimit();calFinalAmt();" name="selectSign" class="box_border form-control form-control-sm sizewidth">
+                                    <option value="-" selected>-</option>
+                                    <option value="+">+</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-1" id="divAmt">
+                            <label for="txtAmt" class="col-form-label-sm fw-bold">Amount<span class="universal"></span></label>
+                            <div class="form-group">
+                                <input type="number" onkeypress="return numberdecimalOnly(event); " onfocusout="ValidateDiscountLimit();calFinalAmt();" ID="txtAmt" name="txtAmt" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" placeholder=" " />
+                            </div>
+                        </div>
+                        <div class="col-md-2" id="divFinalRate">
+                            <label for="txtDeliveryLocation" class="col-form-label-sm fw-bold">Final Rate<span class="universal"></span></label>
+                            <div class="form-group">
+                                <input type="text" onkeypress="return numberdecimalOnly(event);" ID="txtAmtFinal" name="txtAmtFinal" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" readonly />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
         </div>
     </div>
 </div>
+
 <div class="row">
-    <div class="col-md-12 colPhn">
+    <div class="col-md-12">
+        <label for="txtRemarks" class="col-form-label-sm fw-bold">Remarks </label>
+        <div class="form-group">
+            <input type="text" class="box_border form-control form-control-sm" id="txtRemarks" value="" name="txtRemarks" placeholder="Remarks" autocomplete="off" maxlength="200">
+
+        </div>
+    </div>
+    <div class="col-md-3" id="divtxtNextVistDate">
+        <label for="txtNextVistDate" class="col-form-label-sm fw-bold">Next Visit Date <span class="universal">*</span></label>
+        <div class="form-group">
+            <input ID="txtNextVistDate" type="date" name="txtNextVistDate" class="box_border form-control form-control-sm textRight" autocomplete="off" placeholder="Next Visit Date" required value="" />
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
         <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-sm waves-effect waves-light" onclick="SaveData();" />
         @* <input type="button" name="btnCheckOut" id="btnCheckOut" value="Check Out" class="btn btn-primary btn-sm waves-effect waves-light" /> *@
-            <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-sm waves-effect waves-light" />
+        <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-sm waves-effect waves-light" />
     </div>
 </div>
-    <input type="hidden" id="hfVisitType" name="hfVisitType" value="" />
-    <input type="hidden" id="hfDealerZone" name="hfDealerZone" value="" />
+<input type="hidden" id="hfVisitType" name="hfVisitType" value="" />
+<input type="hidden" id="hfDealerZone" name="hfDealerZone" value="" />
 <datalist id="listdealer"></datalist>
 <datalist id="listItem"></datalist>
 <datalist id="listItemSize"></datalist>
@@ -728,10 +897,10 @@
 <datalist id="listFreight"></datalist>
 <datalist id="listFreightType"></datalist>
 <datalist id="listZone"></datalist>
-    <div class="row">
-        <div class="modal fade" id="ImageModal" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog  modal-lg">
-                <div class="modal-content modal-content-width-lg">
+<div class="row">
+    <div class="modal fade" id="ImageModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog  modal-lg">
+            <div class="modal-content modal-content-width-lg">
                 <div class="modal-header">
                     <h5 class="modal-title">Image</h5>
                     <button type="button" class="close" data-bs-dismiss="modal" onclick="CloseModal()" aria-label="Close">
@@ -743,10 +912,10 @@
 
                 </div>
                 <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary btn-sm waves-effect waves-light" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary btn-sm waves-effect waves-light" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
-    </div>
-    <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js?v1"></script>
+</div>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js?v1"></script>
