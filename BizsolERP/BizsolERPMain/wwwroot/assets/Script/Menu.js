@@ -2,7 +2,7 @@
 import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 import { CRMDashboardService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/CRMDashboardService.js';
 $(document).ready(function () {
-    bindMenu();
+        bindMenu();
 });
 
 function bindMenu() {
@@ -40,25 +40,48 @@ function bindMenu() {
                 $('#side-menu').html(menuHtml);
 
                 feather.replace();
+                setActiveMenu();
+                //$('.menu-toggle').click(function (e) {
+                //    var parentLi = $(this).parent();
 
+                //    if (!$(this).hasClass('has-arrow')) {
+
+                //        return;
+                //    }
+
+                //    e.preventDefault();
+                //    parentLi.toggleClass('mm-active');
+                //    parentLi.children('ul.sub-menu').slideToggle();
+
+                //    var arrowIcon = $(this).find('.arrow-icon');
+                //    if (parentLi.hasClass('active')) {
+                //        arrowIcon.attr('data-feather', 'chevron-down');
+                //    } else {
+                //        arrowIcon.attr('data-feather', 'chevron-right');
+                //    }
+                //    feather.replace();
+                //});
                 $('.menu-toggle').click(function (e) {
                     var parentLi = $(this).parent();
+                    var subMenu = parentLi.children('ul');
 
                     if (!$(this).hasClass('has-arrow')) {
-
-                        return;
+                        return; // If it's not a parent with a submenu, do nothing
                     }
 
                     e.preventDefault();
-                    parentLi.toggleClass('mm-active');
-                    parentLi.children('ul.sub-menu').slideToggle();
 
-                    var arrowIcon = $(this).find('.arrow-icon');
-                    if (parentLi.hasClass('active')) {
-                        arrowIcon.attr('data-feather', 'chevron-down');
+                    if (subMenu.is(":visible")) {
+                        subMenu.slideUp();
+                        parentLi.removeClass('mm-active');
                     } else {
-                        arrowIcon.attr('data-feather', 'chevron-right');
+                        //$('#side-menu ul.sub-menu').slideUp();
+                        $('#side-menu li').removeClass('mm-active');
+
+                        subMenu.slideDown();
+                        parentLi.addClass('mm-active'); 
                     }
+
                     feather.replace();
                 });
             });
@@ -90,3 +113,22 @@ function getChildMenu(value, masterCode, baseUrl) {
     });
     return childMenuHtml;
 }
+
+function setActiveMenu() {
+    var currentUrl = window.location.pathname;
+
+    $('#side-menu ul.sub-menu').hide();
+
+    $('#side-menu li').removeClass('mm-active last-active');
+    $('#side-menu a').removeClass('active');
+
+    $('#side-menu a').each(function () {
+        var menuLink = $(this).attr('href');
+        if (menuLink && (currentUrl === new URL(menuLink, window.location.origin).pathname) && currentUrl !=="/") {
+            $(this).addClass('active');
+            $(this).parents('li').last().addClass('last-active');
+            $(this).parents('ul.sub-menu').show();
+        }
+    });
+}
+
