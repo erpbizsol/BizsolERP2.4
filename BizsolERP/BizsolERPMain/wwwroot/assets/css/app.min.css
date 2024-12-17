@@ -864,7 +864,7 @@ body[data-layout=horizontal] .footer {
 
     #sidebar-menu li > a:hover {
         border-radius: 0px 0px 0px 0px;
-        border-left: 5px solid #1a355b;
+        /*border-left: 5px solid #1a355b;*/
         color: #fff !important;
         font-family: Arial;
         /*background-image: linear-gradient(#5880b7, #69bafa);*/
@@ -6009,8 +6009,8 @@ button, .icon-height {
 }
 
 input.form-control[readonly] {
-    background-color: #c5ced8 !important;
-    opacity: 0.5 !important;
+    background-color: #e2e2e3 !important;
+    /* opacity: 0.5 !important;*/
     color: #000;
 }
 
@@ -6193,7 +6193,7 @@ label {
 .modal {
     --bs-modal-margin: 0 !important;
     padding: 9px;
-    margin-top: 4rem;
+    /*margin-top: 4rem;*/
 }
 
 .modal-title {
