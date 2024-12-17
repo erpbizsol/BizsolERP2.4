@@ -1,15 +1,8 @@
 ﻿import { CRMReportsServices } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CRMReportsService.js';
-
 $(document).ready(function () {
     $("#ERPHeading").text("Check In/Check Out Report");
-    var today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = (today.getMonth() + 1).toString().padStart(2, '0');
-    const dd = today.getDate().toString().padStart(2, '0');
-    const currentDate = `${yyyy}-${mm}-${dd}`;
-    $('#txtdateFrom, #txtdateTo').val(currentDate);
+    DatePicker();
     GetSalespersonList();
-    //Getcheckinoutlist();
     GetDisplayNameForReportTypes();
     $('#txtdateFrom').on('keydown', function (e) {
         if (e.key === "Enter") {
@@ -37,6 +30,9 @@ $(document).ready(function () {
     $('#txtReportType').on('focus', function (e) {
         $("#txtReportType").val('');
     });
+    $('#fetchReportButton').click(function () {
+        Getcheckinoutlist();
+    });
 });
 function GetSalespersonList() {
     CRMReportsServices.GetSalespersonList().then(function (response) {
@@ -56,7 +52,6 @@ function GetSalespersonList() {
         $('#txtSalesPersonlist').empty();
     });
 }
-
 function GetDisplayNameForReportTypes() {
     CRMReportsServices.GetDisplayNameForReportTypes().then(function (response) {
         if (response.length > 0) {
@@ -81,23 +76,15 @@ function GetDisplayNameForReportTypes() {
         $('#txtReportType').val('');
     });
 }
-
-$('#fetchReportButton').click(function () {
-    Getcheckinoutlist();
-});
 function Getcheckinoutlist() {
-    var formValues = {
-        fromDate: convertDateFormat($("#txtdateFrom").val()),
-        toDate: convertDateFormat($("#txtdateTo").val()),
-        ReportTypeName: $('#txtReportType').val(),
-        PersonName: $('#txtSalesPerson').val(),
-    };
-    var fromDate = formValues.fromDate;
-    var toDate = formValues.toDate;
-    var salesperson = formValues.PersonName;
-    var reportType = formValues.ReportTypeName;
-    CRMReportsServices.Getcheckinoutlist(fromDate, toDate, salesperson,reportType).then(function (response) {
+    var fromDate = convertDateFormat($("#txtdateFrom").val());
+    var toDate = convertDateFormat($("#txtdateTo").val());
+    var ReportTypeName = $('#txtReportType').val();
+    var PersonName = $('#txtSalesPerson').val();
+
+    CRMReportsServices.Getcheckinoutlist(fromDate,toDate, PersonName, ReportTypeName).then(function (response) {
         if (response.length > 0) {
+            $("#tblTable").show();
             const StringFilterColumn = [];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
@@ -111,16 +98,152 @@ function Getcheckinoutlist() {
                 "Date": 'center',
             };
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns,ColumnAlignment);
+            if (ReportTypeName === 'Distance Detail Report') {
+                updateFooter(response)
+            } else {
+                clearFooter();
+            }
         } else {
             toastr.error("Record not found...!");
+            clearFooter();
+            $("#tblTable").hide();
         }
     });
 }
+function updateFooter(data) {
+        let totalQuantity = 0;
+        data.forEach(row => {
+            totalQuantity += parseFloat(row["Distance KM"] || 0);
+        });
+
+        const tfootContent = `
+        <tr>
+            <td colspan="5"><b>Total :</b></td>
+            <td style="text-align: right;">${totalQuantity.toFixed(2)}</td>   
+        </tr>
+        `;
+
+         const tfoot = document.querySelector("#table tfoot");
+
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#table");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+    }
+}
+function clearFooter() {
+    const tfoot = document.querySelector("#table tfoot");
+    if (tfoot) {
+        tfoot.innerHTML = "";
+    }
+}
 function convertDateFormat(dateString) {
-    const [day, month, year] = dateString.split('-');
+    const [day, month, year] = dateString.split('/');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthAbbreviation = monthNames[parseInt(month) - 1];
     return `${ day } -${ monthAbbreviation } -${ year }`;
+}
+function setupDateInputFormatting() {
+    $('#txtdateTo').on('input', function () {
+        let value = $(this).val().replace(/[^\d]/g, '');
+
+        if (value.length >= 2 && value.length < 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2);
+        } else if (value.length >= 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
+        }
+        $(this).val(value);
+
+        if (value.length === 10) {
+            validateDate(value);
+        } else {
+            $(this).val(value);
+        }
+    });
+    $('#txtdateFrom').on('input', function () {
+        let value = $(this).val().replace(/[^\d]/g, '');
+
+        if (value.length >= 2 && value.length < 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2);
+        } else if (value.length >= 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
+        }
+        $(this).val(value);
+
+        if (value.length === 10) {
+            validateDateFrom(value);
+        } else {
+            $(this).val(value);
+        }
+    });
+}
+function validateDateFrom(value) {
+    let regex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    let isValidFormat = regex.test(value);
+
+    if (isValidFormat) {
+        let parts = value.split('/');
+        let day = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10);
+        let year = parseInt(parts[2], 10);
+
+        let date = new Date(year, month - 1, day);
+
+        if (date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day) {
+
+            $(this).val(value);
+        } else {
+            $('#txtdateFrom').val('');
+
+        }
+    } else {
+        $('#txtdateFrom').val('');
+
+    }
+}
+function validateDate(value) {
+    let regex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    let isValidFormat = regex.test(value);
+
+    if (isValidFormat) {
+        let parts = value.split('/');
+        let day = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10);
+        let year = parseInt(parts[2], 10);
+
+        let date = new Date(year, month - 1, day);
+
+        if (date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day) {
+
+            $(this).val(value);
+        } else {
+            $('#txtdateTo').val('');
+
+        }
+    } else {
+        $('#txtdateTo').val('');
+
+    }
+}
+function DatePicker() {
+
+    var today = new Date();
+    var day = ('0' + today.getDate()).slice(-2);
+    var month = ('0' + (today.getMonth() + 1)).slice(-2);
+    var year = today.getFullYear();
+
+    $('#txtdateTo, #txtdateFrom').val(`${day}/${month}/${year}`);
+    $('#txtdateTo, #txtdateFrom').datepicker({
+        format: 'dd/mm/yyyy',
+        autoclose: true,
+    });
 }
 
 

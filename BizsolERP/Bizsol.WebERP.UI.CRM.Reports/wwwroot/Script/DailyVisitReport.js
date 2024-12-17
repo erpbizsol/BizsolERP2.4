@@ -3,17 +3,13 @@
 var VerficationCheck = "N";
 $(document).ready(function () {
     $("#ERPHeading").text("Daily Visit Report");
-    var today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = (today.getMonth() + 1).toString().padStart(2, '0');
-    const dd = today.getDate().toString().padStart(2, '0');
-    const currentDate = `${yyyy}-${mm}-${dd}`;
-    $('#txtdateFrom, #txtdateTo').val(currentDate);
+
     GetSalespersonLists();
     GetDealerLists();
     GetOrderTypeLists();
     GetOrderStatusLists();
     GetDisplayNameForReportTypes();
+    DatePicker();
     $('#txtdateFrom').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#txtdateTo").focus();
@@ -63,6 +59,9 @@ $(document).ready(function () {
     });
     $('#txtReportType').on('focus', function (e) {
         $("#txtReportType").val('');
+    });
+    $('#fetchReportButton').click(function () {
+        GetDailyVistList();
     });
 });
 function GetSalespersonLists() {
@@ -206,9 +205,7 @@ function GetDisplayNameForReportTypes() {
     });
 }
 
-$('#fetchReportButton').click(function () {
-    GetDailyVistList();
-});
+
 function GetDailyVistList() {
    
     const formValues = {
@@ -253,19 +250,17 @@ function GetDailyVistList() {
                 "Date": 'center',
             };
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns,ColumnAlignment);
-            if (reportType === "Visit Report With Size and Thk") {
-                updateFooter(response);
+            if (reportType == 'Visit Report With Size and Thk' || reportType == 'Visit Report' || reportType == 'Visit Report 1.0' || reportType == "Route Plan Report" ) {
+                updateFooter(response, reportType);
             } else {
                 clearFooter();
             }
         } else {
             toastr.error("Record not found...!");
-            //alert("Record not found...!");
         }
     });
 }
-function updateFooter(data) {
-    const reportType = "Visit Report With Size and Thk";
+function updateFooter(data, reportType) {
     if (reportType === "Visit Report With Size and Thk") {
         const rowCount = data.length;
         let totalQuantity = 0;
@@ -284,13 +279,110 @@ function updateFooter(data) {
         <tr>
             <td colspan="1"></td>
             <td colspan="10"><b>Row Count :</b>  ${rowCount}</td>
-            <td><b>Total</b></td>
-            <td>${totalQuantity.toFixed(2)}</td>
-            <td>${totalBasicRate.toFixed(2)}</td>
-            <td>${totalDiscount.toFixed(2)}</td>
-            <td>${totalExtraCharges.toFixed(2)}</td>
+            <td style="text-align:right"><b>Total</b></td>
+            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${totalBasicRate.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${totalDiscount.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${totalExtraCharges.toFixed(2)}</b></td>
             <td colspan="1"></td>
-            <td>${paymentAmount.toFixed(2)}</td>
+            <td style="text-align:right"><b>${paymentAmount.toFixed(2)}</b></td>
+        </tr>
+        `;
+        const tfoot = document.querySelector("#table tfoot");
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#table");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+        }
+    }
+    if (reportType === "Visit Report") {
+        let totalQuantity = 0;
+        let totalBasicRate = 0;
+        let TotalOrderAmount = 0;
+        let totalDiscount = 0;
+        let FinalRate = 0;
+        let FinalOrderAmount = 0;
+        let paymentAmount = 0;
+        data.forEach(row => {
+            totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
+            totalBasicRate += parseFloat(row["Basic Rate"] || 0);
+            TotalOrderAmount += parseFloat(row["Total Order Amount"] || 0);
+            totalDiscount += parseFloat(row["Discount"] || 0);
+            FinalRate += parseFloat(row["Final Rate"] || 0);
+            FinalOrderAmount += parseFloat(row["Final Order Amount"] || 0);
+            paymentAmount += parseFloat(row["Payment Amount"] || 0);
+        });
+        const tfootContent = `
+        <tr>
+            <td colspan="10"><b>Total :</b></td>
+            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${totalBasicRate.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${TotalOrderAmount.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${totalDiscount.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${FinalRate.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${FinalOrderAmount.toFixed(2)}</b></td>
+            <td colspan="1"></td>
+            <td style="text-align:right"><b>${paymentAmount.toFixed(2)}</b></td>
+        </tr>
+        `;
+        const tfoot = document.querySelector("#table tfoot");
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#table");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+        }
+    }
+    if (reportType === "Visit Report 1.0") {
+        let totalQuantity = 0;
+        let TotalOrderAmount = 0;
+        data.forEach(row => {
+            totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
+            TotalOrderAmount += parseFloat(row["Total Order Amount"] || 0);
+        });
+        const tfootContent = `
+        <tr>
+            <td colspan="8"><b>Total :</b></td>
+            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${TotalOrderAmount.toFixed(2)}</b></td>
+        </tr>
+        `;
+        const tfoot = document.querySelector("#table tfoot");
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#table");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+        }
+    }
+    if (reportType === "Route Plan Report") {
+        let totalQuantity = 0;
+        data.forEach(row => {
+            totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
+        });
+        const tfootContent = `
+        <tr>
+            <td colspan="9"><b>Total :</b></td>
+            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
         </tr>
         `;
         const tfoot = document.querySelector("#table tfoot");
@@ -315,11 +407,105 @@ function clearFooter() {
     }
 }
 function convertDateFormat(dateString) {
-    const [day, month, year] = dateString.split('-');
+    const [day, month, year] = dateString.split('/');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthAbbreviation = monthNames[parseInt(month) - 1];
     return `${ day } -${ monthAbbreviation } -${ year }`;
 }
+function setupDateInputFormatting() {
+    $('#txtdateTo').on('input', function () {
+        let value = $(this).val().replace(/[^\d]/g, '');
 
+        if (value.length >= 2 && value.length < 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2);
+        } else if (value.length >= 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
+        }
+        $(this).val(value);
+
+        if (value.length === 10) {
+            validateDate(value);
+        } else {
+            $(this).val(value);
+        }
+    });
+    $('#txtdateFrom').on('input', function () {
+        let value = $(this).val().replace(/[^\d]/g, '');
+
+        if (value.length >= 2 && value.length < 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2);
+        } else if (value.length >= 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
+        }
+        $(this).val(value);
+
+        if (value.length === 10) {
+            validateDateFrom(value);
+        } else {
+            $(this).val(value);
+        }
+    });
+}
+function validateDateFrom(value) {
+    let regex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    let isValidFormat = regex.test(value);
+
+    if (isValidFormat) {
+        let parts = value.split('/');
+        let day = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10);
+        let year = parseInt(parts[2], 10);
+
+        let date = new Date(year, month - 1, day);
+
+        if (date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day) {
+
+            $(this).val(value);
+        } else {
+            $('#txtdateFrom').val('');
+
+        }
+    } else {
+        $('#txtdateFrom').val('');
+
+    }
+}
+function validateDate(value) {
+    let regex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    let isValidFormat = regex.test(value);
+
+    if (isValidFormat) {
+        let parts = value.split('/');
+        let day = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10);
+        let year = parseInt(parts[2], 10);
+
+        let date = new Date(year, month - 1, day);
+
+        if (date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day) {
+
+            $(this).val(value);
+        } else {
+            $('#txtdateTo').val('');
+
+        }
+    } else {
+        $('#txtdateTo').val('');
+
+    }
+}
+function DatePicker() {
+ 
+    var today = new Date();
+    var day = ('0' + today.getDate()).slice(-2);
+    var month = ('0' + (today.getMonth() + 1)).slice(-2);
+    var year = today.getFullYear();
+
+    $('#txtdateTo, #txtdateFrom').val(`${day}/${month}/${year}`);
+    $('#txtdateTo, #txtdateFrom').datepicker({
+        format: 'dd/mm/yyyy',
+        autoclose: true,
+    });
+}
 
 
