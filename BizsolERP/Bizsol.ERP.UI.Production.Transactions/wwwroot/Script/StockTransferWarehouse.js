@@ -9,7 +9,9 @@ let base64Data = [];
 let imageBase64Data = [];
 let selectedRows = [];
 let PartyName = '';
-    $(document).ready(function () {
+$(document).ready(function () {
+    $("#ERPHeading").text("Warehouse Receive");
+
         $('#myTab').on('shown.bs.tab', function (e) {
             const targetTab = $(e.target).attr('id');  
             if (targetTab === 'home-tab') {
@@ -21,7 +23,28 @@ let PartyName = '';
         if ($('#home-tab').hasClass('active')) {
             getWarehouse();
             
+    }
+    $('#ddlWarehouse').on('focus', function (e) {
+        $("#ddlWarehouse").val("");
+    });
+    $('#ddlRollIdNo').on('focus', function (e) {
+        $("#ddlRollIdNo ").val("");
+    });
+    $('#ddlWarehouse').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#fileInput").focus();
         }
+    });
+    $('#fileInput').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#ddlRollIdNo").focus();
+        }
+    });
+    $('#ddlRollIdNo').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            StockTransferWherehouseReceive();
+        }
+    });
     });
 function getWarehouse() {
     $('#ddlWarehouse').on('keydown', function (e) {
@@ -39,6 +62,7 @@ function getWarehouse() {
             StockTransferWherehouseReceive();
         }
     });
+    
     StockTransferReceiveService.GetWarehouse().then(function (response) {
         if (response && response.length > 0) {
             $('#ddlWarehouseList option').remove();

@@ -5,7 +5,7 @@ namespace Bizsol.WebERP.UI.Production.Transactions.Areas.ProductionTransactions.
     [Area("ProductionTransactions")]
     public class PalletPackingController : Controller
     {
-        public IActionResult GetPackedPalletDateAndOrderWise()
+        public IActionResult PalletPacking()
         {
             return View();
         }

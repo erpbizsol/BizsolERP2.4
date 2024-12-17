@@ -3,36 +3,166 @@
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/PalletPackingService.js"></script>
-<form class="form-card">
-    <div class="row">
-        <input type="hidden" formControlName="Code" class="form-control" value="0">
-        <div class="form-group col-md-3">
-            <span class="radioSection">
-                <mat-radio-group formControlName="filterType" aria-label="Select an option">
-                    <mat-radio-button value="dateWise" name="filterType" checked>Date Wise</mat-radio-button>
-                    <mat-radio-button value="orderWise" name="filterType">Order Wise</mat-radio-button>
-                </mat-radio-group>
-            </span>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/PalletPacking.js"></script>
+<style>
+
+    .modal-dialog-scrollable {
+        max-width: 950px;
+    }
+</style>
+<div class="card">
+    <div class="card-header">
+        <div class="row">
+            <input type="hidden" name="Code" class="form-control" value="0">
+            <div class="form-group col-md-3">
+                <span class="radioSection">
+                    <input type="radio" id="dateWise" name="filterType" class="col-form-label-sm fw-bold" value="dateWise" checked> Date Wise
+                    <input type="radio" id="orderWise" name="filterType" class="col-form-label-sm fw-bold" value="orderWise"> Order Wise
+                </span>
+            </div>
+        </div>
+        <form class="form-card">
+            <!-- Date Filter Section -->
+            <div class="row" id="dateWiseSection">
+                <div class="col-md-2 pe-0">
+                    <label for="txtdate" class="col-form-label-sm fw-bold">Pallet Date:<span class="text-danger">*</span></label>
+                    <input id="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
+                </div>
+                <div class="col-md-2 without-label-field ">
+                    <input type="button" onclick="CreateNew()" data-bs-target="#createPallet" class="btn btn-primary btn-height" value="Create New" />
+                </div>
+            </div>
+            <div class="row" id="orderWiseSection" style="display:none;">
+                <div class="col-md-2 pe-0">
+                    <label for="txtorderNo" class="col-form-label-sm fw-bold">Order No:<span class="text-danger">*</span></label>
+                    <datalist id="txtOrderNoList"></datalist>
+                    <input list="txtOrderNoList" id="txtOrderNo" type="text" name="txtOrderNo" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Order No" required />
+                    </div>                    
+                    <div class="col-md-2 without-label-field">
+                        <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" />
+                    </div>
+
+            </div>
+
+        </form>
+    </div>
+</div>
+<div class="table-wrapper fixed-height-table">
+    <table id="PalletPacking" class="fixed-width-table table">
+        <thead id="table-header-PalletPacking">
+        </thead>
+        <tbody id="table-body-PalletPacking">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-PalletPacking">
+</div>
+<div class="modal" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content custom-modal-width">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Pallet Packing</h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row mb-2">
+                        <input type="hidden" name="Code" class="form-control" value="0">
+
+                        <!-- Pallet Date -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="txtdate" class="col-form-label-sm fw-bold">Pallet Date:<span class="text-danger">*</span></label>
+                                <input id="txtPalletdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
+                            </div>
+                        </div>
+
+                        <!-- Pallet No -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="col-form-label-sm fw-bold required"><b>Pallet No:<span class="text-danger">*</span></b></label>
+                                <input type="text" name="palletNo" id="form1" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Pallet No" readonly />
+                            </div>
+                        </div>
+
+                        <!-- Warehouse -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="col-form-label-sm fw-bold required"><b>Warehouse:</b><span class="text-danger">*</span></label>
+                                <datalist id="txtWarehouseList"></datalist>
+                                <input list="txtWarehouseList" id="txtWarehouse" type="text" name="txtWarehouse" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Warehouse" required />
+
+                            </div>
+                        </div>
+
+                        <!-- Packing Weight -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="col-form-label-sm fw-bold required"><b>Packing Wt:</b><span class="text-danger">*</span></label>
+                                <input type="text" name="packingWt" id="packingWt" class="box_border form-control form-control-sm" autocomplete="off" maxlength="8" placeholder="Packing Wt" required />
+                            </div>
+                        </div>
+
+                        <!-- Reference No -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="col-form-label-sm fw-bold required"><b>Reference No:</b><span class="text-danger">*</span></label>
+                                <input type="text" name="referenceNo" id="referenceNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Reference No" maxlength="8" required />
+                            </div>
+                        </div>
+
+                        <!-- Pallet Type -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="col-form-label-sm fw-bold required"><b>Pallet Type:</b><span class="text-danger">*</span></label>
+                                <datalist id="txtPalletTypeList"></datalist>
+                                <input list="txtPalletTypeList" id="txtPalletType" type="text" name="txtPalletType" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Pallet Type" required />
+                            </div>
+                        </div>
+
+                        <!-- Order No -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="col-form-label-sm fw-bold required"><b>Order No:</b><span class="text-danger">*</span></label>
+                                <datalist id="txtOrderNoList1"></datalist>
+                                <input list="txtOrderNoList1" id="txtOrderNo1" type="text" name="txtOrderNo1" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Order No" required />
+                            </div>
+                        </div>
+
+                        <!-- Scan Identification No -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="col-form-label-sm fw-bold required"><b>Scan Identification No:</b><span class="text-danger">*</span></label>
+                                <datalist id="txtScanIdentificationNoList"></datalist>
+                                <input list="txtScanIdentificationNoList" id="txtScanIdentificationNo" oninput="onScanIdSelect()" type="text" name="txtScanIdentificationNo" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Scan Identification No" required />
+
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12 mb-2 text-end">
+                                    <button class="btn btn-primary btn-height me-1" title="Print" onclick="printpallet()">PRINT</button>
+                                    <input type="button" onclick="CreateNew()" title="Create New" class="btn btn-primary btn-height" value="Create New" />
+                                    <button class="btn btn-primary btn-height" title="Back" onclick="CloseModal()">BACK</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div class="table-wrapper">
+                    <table id="ScanIdentification" class="fixed-width-table table">
+                        <thead id="table-header-ScanIdentification">
+                        </thead> 
+                        <tbody id="table-body-ScanIdentification">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-ScanIdentification">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-height" onclick="SaveReceivedData()">Received</button>
+                <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()">Cancel</button>
+            </div>
         </div>
     </div>
-    <!-- Date Filter -->
-    <div class="row" *ngIf="palletForm.get('filterType').value === 'dateWise'">
-        <div class="col-md-1 pe-0">
-            <label>Pallet Date :</label>
-        </div>
-        <div class="col-md-2 ps-0">
-            <input type="date" formControlName="date" id="dateInput" class="form-control" readonly />
-        </div>
-    </div>
-    <!-- Order Filter -->
-    <div class="row" *ngIf="palletForm.get('filterType').value === 'orderWise'">
-        <div class="col-md-1 pe-0">
-            <label>Order No :</label>
-        </div>
-        <div class="col-md-2 ps-0">
-            <ng-select [items]="orderNoSuggestions" bindLabel="Desp" bindValue="Desp" formControlName="orderNo" [id]="'ddl_OrderNo'" placeholder="Select Order No" (change)="orderNoSuggestion($event)">
-            </ng-select>
-        </div>
-    </div>
-</form>
+</div>
