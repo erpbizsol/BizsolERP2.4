@@ -1887,9 +1887,9 @@ function GetLatestPriceListByItemName(x, RowNo) {
             $('#ZonePriceListCode' + RowNo)[0].innerHTML = option;
 
         }
-        if (param_VisitMode == 'New') {
+        //if (param_VisitMode == 'New') {
             $('#txtZonePriceListCode' + RowNo).val(defaultValue);
-        }
+        //}
     });
 
 

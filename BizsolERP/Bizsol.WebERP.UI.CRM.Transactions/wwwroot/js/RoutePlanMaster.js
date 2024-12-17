@@ -441,6 +441,7 @@ function getVisitType(elementId, txtdealer, rowNo) {
         $('#' + txtdealer).attr("readonly", false);
         $('#' + txtdealer).val('');
 
+        $('#txtCity' + rowNo).attr("disabled", "disabled");
         $('#txtCity' + rowNo).val('');
         $('#txtState' + rowNo).val('');
 

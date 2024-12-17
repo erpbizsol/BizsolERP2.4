@@ -6,9 +6,10 @@ let OnlyToday = "N";
 let showtodayIndashboard;
 let usertype;
 $(document).ready(function () {
-    BindDashBoard();
+    //BindDashBoard();
     GetSalespersonList();
-    setTimeout(GetCRMFixedParameterConfig(),2000);
+    setTimeout(GetCRMFixedParameterConfig(), 2000);
+    GetCRMDashboardRefreshText();
 });
 function ShowDashboard() {
     var chkShowSubordinate = $('#chkShowSubordinateData');
@@ -29,6 +30,18 @@ function ShowDashboard() {
     }
   
     BindDashBoard();
+}
+
+function GetCRMDashboardRefreshText() {
+    CRMDashboardService.GetCRMDashboardRefreshText()
+        .then(function (response) {
+            if (response && response.length > 0) {
+                $('#lblDataAsOn').text(response[0].DataAsOnText);
+
+            } else {
+                $('#lblDataAsOn').text('');
+            }
+        });
 }
 function GetSalespersonList() {
     CRMDashboardService.GetSalespersonList().then(function (response) {
