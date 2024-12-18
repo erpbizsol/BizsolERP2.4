@@ -484,7 +484,7 @@ function updateFooter(data) {
     const tfootContent = `
     <tr>
         <td><b>Total</b></td>
-        <td colspan="8"></td>
+        <td colspan="7"></td>
         ${QtyMTHeader !=''? `<td style="text-align:right"><b>${TotalOrderQty.toFixed(2)}</b></td>` : ''}
         ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyPC.toFixed(2)}</b></td>` : ''}
         ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyMR.toFixed(2)}</b></td>` : ''}
