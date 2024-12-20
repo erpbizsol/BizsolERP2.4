@@ -302,6 +302,14 @@ const VisitOrderEntryService = {
             }
         );
     },
+    GetLatestPriceListByItemName: function GetLatestPriceListByItemName(ItemName) {
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetLatestPriceListByItemName?ItemName=${ItemName}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VisitOrderEntryService }

@@ -6,6 +6,10 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/CRMDashboard.js"></script>
 <style>
+
+    .without-label-field {
+        margin-top: 2.1rem;
+    }
     .card-container {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -172,14 +176,18 @@
                 <input type="checkbox" id="chkShowSubordinateData" name="chkShowSubordinateData" class="box_border" checked />
                 <label for="chkShowSubordinateData">Show Subordinate Data</label> &nbsp;&nbsp;&nbsp;
             </div>
-            <div class="col-md-2 without-label-field">
+            <div class="col-md-5 without-label-field">
                 <div class="form-group" id="txtshowhide">
                     <input type="checkbox" id="chkShowTodaysData" name="chkShowTodaysData" class="box_border" />
                     <label for="chkShowTodaysData">Show Today's Data</label>
                 </div>
-            </div>
-            <div class="col-md-3 mobile-btn-bottom without-label-field">
+            
                 <input type="button" name="btnShow" id="btnShow" class="submit-btn btn btn-primary btn-height btn-width mb-2" value="Show" onclick="ShowDashboard();" />
+            </div>
+            <div class="col-md-2 without-label-field">
+                <div class="form-group" id="txtshowDataAsOn">
+                    <label id="lblDataAsOn" class="fw-bold"></label>
+                </div>
             </div>
         </div>
         <div class="row">

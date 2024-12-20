@@ -52,8 +52,8 @@ function GetUserWiseRoutePlanDetails(FromDate, ToDate,Status)   {
             MultiRoutePlanCodes = pendingRows.map(item => item.Code);
             const updatedResponse = response.map(item => ({
                 ...item,
-                Action: `<button class="btn btn-success icon-height mb-1" title="Verify" ${item.Status !== 'Pending' ? 'disabled' : ''} onclick="Verify('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
-                <button class="btn btn-danger icon-height mb-1" title="Reject" ${item.Status !== 'Pending' ? 'disabled' : ''} onclick="Reject('${item.Code}')"><i class="fa-regular fa-circle-xmark"></i></button>`
+                Action: `<button class="btn btn-success icon-height mb-1" title="Verify" ${item.Status !== 'Pending' ? 'disabled' : ''} onclick="Verify('${item.Code}')"><i class="fa fa-check" aria-hidden="true"></i></button>
+                <button class="btn btn-danger icon-height mb-1" title="Reject" ${item.Status !== 'Pending' ? 'disabled' : ''} onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>`
                
             }));
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
