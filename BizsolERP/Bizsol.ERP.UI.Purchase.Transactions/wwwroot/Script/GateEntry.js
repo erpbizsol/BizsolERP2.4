@@ -47,8 +47,8 @@ function GateEntryGirdByDates() {
             item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
         });
         //console.log(response);
-        const StringFilterColumn = ["Type In", "Party name", "Vehicle No."];
-        const NumericFilterColumn = ["Entry No."];
+        const StringFilterColumn = ["Type In", "Party name", "Vehicle No"];
+        const NumericFilterColumn = ["Entry No"];
         const DateFilterColumn = ["Date In Time", "Date Out Time"];
         const Button = false;
         const showButtons = []
@@ -70,9 +70,10 @@ GateEntryService.GetMinPending().then(function (response) {
 
 function ViewAttachment_GateEntry(GateEntryMaster_Code) {
     InitAttachmentControl('GateEntryMaster', GateEntryMaster_Code, '', 0, 0, '', "View");
+   // InitAttachmentControl('GateEntryMaster', GateEntryMaster_Code, '', 0, 0, '', "all");
 }
 function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode) {
-    var url = '/CustomControl/AttachmentControl';
+    var url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
     $('#GateEntry_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode });
 }
 function GateEntyMode_GateEntry(Mode,EntryType) {
@@ -112,7 +113,7 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
     else if (EntryType.includes('view') == true) {
         GateEntryMaster_Code = EntryType.split('_')[1];
         GateEntryService.GetGateEntryDetails(GateEntryMaster_Code).then(function (response) {
-            console.log(response);
+           // console.log(response);
             ViewGateEntry(response, EntryType);
         });
 
@@ -157,9 +158,9 @@ function LoadedInNew() {
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'POWiseEntryMendatory').PeramaterValue === 'Y') {
         
         GateEntryService.GetPendingPONO().then(function (response) {
-            console.log(response);
+            //console.log(response);
 
-            BindSelectList($('#frmLoadedIn_ddlPurchaseOrder')[0], response.map((item) => ({ Code: item.PurchaseOrderMaster_Code, Desp: item.PONo })));
+            BindSelectList($('#frmLoadedIn_ddlPurchaseOrder')[0], response.map((item) => ({ Code: item.PurchaseOrderMaster_Code, Desp: item.PONo, VendorName: item.VendorName })));
             $('#frmLoadedIn_ddlPurchaseOrder').select2({
                 width: '-webkit-fill-available'
             });
@@ -183,7 +184,7 @@ function LoadedInNew() {
 
     GateEntryService.GetUOMMasterList().then(function (response) {
 
-        BindSelectList($('#frmLoadedIn_txtUOM')[0], response.map((item) => ({ Code: item.UOM, Desp: item.UOM })));
+        BindSelectList($('#frmLoadedIn_txtUOM')[0], response.map((item) => ({ Code: item.UOM, Desp: item.UOM, VendorName: '' })));
         $('#frmLoadedIn_txtUOM').select2({
             width: '-webkit-fill-available'
         });
@@ -232,6 +233,7 @@ function EmptyInNew() {
 }
 
 function UpdateLoadedIn_Emptyout(gateEntryData) {
+    console.log(gateEntryData);
     $('#RowfrmLoadedInReportingDatetime').hide();
     $('#RowfrmLoadedInVehicleLoadedWeight').hide();
     $('#RowfrmLoadedInWeightmentSlipNoLoaded').hide();
@@ -249,17 +251,17 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtVehicleNo').val(gateEntryData[0].VehicleNo);
     $('#frmLoadedIn_txtDriverName').val(gateEntryData[0].DriverName);
     $('#frmLoadedIn_txtDriverNo').val(gateEntryData[0].DriverMobile);
-    $('#frmLoadedIn_ddlTransporterName').val(gateEntryData[0].AccountMasterCodeTransporter_AccountDesp);
+    $('#frmLoadedIn_ddlTransporterName').val(gateEntryData[0].OtherTransporterName);
 
-    $('#frmLoadedIn_txtReportingDatetime').val(new Date(gateEntryData[0].ReportingDatetime).toISOString().slice(0, 10));
+    
+    $('#frmLoadedIn_txtReportingDatetime').val(gateEntryData[0].ReportingDatetime);
     $('#frmLoadedIn_txtVehicleLoadedWeight').val(gateEntryData[0].LoadedWeight);
     $('#frmLoadedIn_txtWeightmentSlipNoLoaded').val(gateEntryData[0].WeightmentSlipNumberIn);
-    $('#frmLoadedIn_txtGoodsDescription').val(gateEntryData[0].GoodDescription);
-    $('#frmLoadedIn_txtQTY').val(gateEntryData[0].Qty);
+    
     
     GateEntryService.GetUOMMasterList().then(function (response) {
 
-        BindSelectList($('#frmLoadedIn_txtUOM')[0], response.map((item) => ({ Code: item.UOM, Desp: item.UOM })));
+        BindSelectList($('#frmLoadedIn_txtUOM')[0], response.map((item) => ({ Code: item.UOM, Desp: item.UOM, VendorName: '' })));
         $('#frmLoadedIn_txtUOM').select2({
             width: '-webkit-fill-available'
         });
@@ -325,12 +327,13 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'POWiseEntryMendatory').PeramaterValue === 'Y') {
         GateEntryService.GetPendingPONO().then(function (response) {
                 console.log(response);
+            console.log(gateEntryData[0].PurchaseOrderMaster_Code);
 
-                BindSelectList($('#frmLoadedIn_ddlPurchaseOrder')[0], response.map((item) => ({ Code: item.PurchaseOrderMaster_Code, Desp: item.PONo })));
+            BindSelectList($('#frmLoadedIn_ddlPurchaseOrder')[0], response.map((item) => ({ Code: item.PurchaseOrderMaster_Code, Desp: item.PONo, VendorName: item.VendorName })));
                 $('#frmLoadedIn_ddlPurchaseOrder').select2({
                     width: '-webkit-fill-available'
                 });
-            $('#frmLoadedIn_ddlPurchaseOrder').val(gateEntryData[0].PurchaseOrderMaster_PONo);
+            $('#frmLoadedIn_ddlPurchaseOrder').val(gateEntryData[0].PurchaseOrderMaster_Code);
             $('#frmLoadedIn_ddlPurchaseOrder').select2({
                 width: '-webkit-fill-available'
             });
@@ -358,6 +361,19 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
         IsWithPo = true;
         WithPO();
     }
+    if (parseInt(gateEntryData[0].PurchaseOrderMaster_Code) == 0) { //Entry saved without PO...
+
+        IsWithPo = false;
+        WithPO();
+        $('#frmLoadedIn_txtGoodsDescription').val(gateEntryData[0].GoodDescription);
+        $('#frmLoadedIn_txtQTY').val(gateEntryData[0].Qty);
+        $('#frmLoadedIn_txtUOM').attr('disabled', 'disabled');
+        $('#frmLoadedIn_txtUOM').attr('disabled', 'disabled');
+        jQuery('input:radio[name="rdPOAccess"]').filter('[value="withoutpo"]').attr('checked', true);
+    }
+    else {
+        jQuery('input:radio[name="rdPOAccess"]').filter('[value="withpo"]').attr('checked', true);
+    }
     $('#DivfrmEmptyOut').show();
    
 }
@@ -369,7 +385,7 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#frmEmptyIn_txtVehicleNo').val(gateEntryData[0].VehicleNo); 
     $('#frmEmptyIn_txtDriverName').val(gateEntryData[0].DriverName);
     $('#frmEmptyIn_txtDriverNo').val(gateEntryData[0].DriverMobile);
-    $('#frmEmptyIn_ddlTransporterName').val(gateEntryData[0].AccountMasterCodeTransporter_AccountDesp);
+    $('#frmEmptyIn_ddlTransporterName').val(gateEntryData[0].OtherTransporterName);
     $('#frmEmptyIn_txtRemarks').val(gateEntryData[0].Remarks);
     $('#frmEmptyIn_txtVehicleEmptyWeight').val(gateEntryData[0].EmptyWeight);
     $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val(gateEntryData[0].WeightmentSlipNumberIn);
@@ -413,14 +429,14 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
 
     GateEntryService.GetUOMMasterList().then(function (response) {
         
-        BindSelectList($('#frmLoadedOut_ddlUOM')[0], response.map((item) => ({ Code: item.UOM, Desp: item.UOM })));
+        BindSelectList($('#frmLoadedOut_ddlUOM')[0], response.map((item) => ({ Code: item.UOM, Desp: item.UOM, VendorName: '' })));
         $('#frmLoadedOut_ddlUOM').select2({
             width: '-webkit-fill-available'
         });
        
     });
 
-    BindSelectList($('#frmLoadedOut_ddlDocumentType')[0], doctype.map((item) => ({ Code: item.name, Desp: item.name })));
+    BindSelectList($('#frmLoadedOut_ddlDocumentType')[0], doctype.map((item) => ({ Code: item.name, Desp: item.name, VendorName: '' })));
     $('#frmLoadedOut_ddlDocumentType').select2({
         width: '-webkit-fill-available'
     });
@@ -433,7 +449,7 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
 function BindSelectList(element, list) {
     let option = '<option value="0"></option>';
     $.each(list, function (key, val) {
-        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+        option += '<option value="' + val.Code + '" VendorName="' + val.VendorName + '">' + val.Desp + '</option>';
     });
     element.innerHTML = option;
 }
@@ -497,6 +513,9 @@ function WithPO() {
         $('#RowfrmLoadedInQTYorUOM').hide();
         $('#RowfrmLoadedInGoodsDescription').hide();
         $('#RowfrmLoadedInddlPurchaseOrder').show();
+
+        
+
         $('#RowfrmLoadedInPoItemGrid').show();
     } else {
         
@@ -575,6 +594,7 @@ function GateEntry_SaveData(Mode) {
             $('#frmEmptyIn_txtVehicleNo').focus();
             return;
         }
+        
         if (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null) {
             valid = false;
             toastr.error('Please Check! Driver Name can not be blank');
@@ -586,6 +606,13 @@ function GateEntry_SaveData(Mode) {
             toastr.error('Please Check! Driver No. can not be blank');
             $('#frmEmptyIn_txtDriverNo').focus();
             return;
+        }
+        if (BizSolInputControl.IsMobileNumber(DriverMobile) == false) {
+            valid = false;
+            toastr.error('Please enter valid mobile number.');
+            $('#frmEmptyIn_txtDriverNo').focus();
+            return;
+
         }
         if (typeof TransporterName === 'undefined' || TransporterName === '' || TransporterName === null) {
             valid = false;
@@ -794,6 +821,14 @@ function GateEntry_SaveData(Mode) {
             $('#frmLoadedIn_txtDriverNo').focus();
             return;
         }
+        if (BizSolInputControl.IsMobileNumber(DriverMobile) == false) {
+            valid = false;
+            toastr.error('Please enter valid mobile number.');
+            $('#frmLoadedIn_txtDriverNo').focus();
+            return;
+
+        }
+        
         if (typeof TransporterName === 'undefined' || TransporterName === '' || TransporterName === null) {
             valid = false;
             toastr.error('Please Check! Transporter Name can not be blank');
@@ -867,7 +902,7 @@ function GateEntry_SaveData(Mode) {
                     POItemsData += 'PurchaseOrderMaster' + '*' + purchaseOrderMaster + '*' + 'PurchaseOrderTransaction' + '*' + purchaseOrderTransaction + '*' + BalQty + '*' + RecvQty + '(';
                 }
             }
-            alert(POItemsData);
+            //alert(POItemsData);
             if (POItemsData === "") {
                 valid = false;
                 toastr.error('Please Check! You not fill any billed qty in Po Items ');
@@ -1056,7 +1091,7 @@ function GateEntry_SaveData(Mode) {
 
         GateEntryService.SaveGateEntryMaster(JSON.stringify(GateEntryPostdata), POItemsData).then(function (response) {
             if (response.Status === 'Y') {
-                toastr.success(`${Mode}  is success`);
+                toastr.success(`Entry save success`);
                 // window.location.href = sessionStorage.getItem('AppBaseURL') +'PurchaseTransactions/GateEntry/GateEntryView';
                 GateEntyMode_GateEntry('grid', '');
                 GateEntryGirdByDates();
@@ -1090,12 +1125,17 @@ function ConvertFileToByteArry(File) {
 }
 
 function GateEntry_frmLoadedIn_ddlPurchaseOrder_Change() {
-   
+    let frmLoadedIn_ddlPurchaseOrder = document.getElementById("frmLoadedIn_ddlPurchaseOrder");
+    let frmLoadedIn_ddlPurchaseOrder_VendorName = frmLoadedIn_ddlPurchaseOrder.options[frmLoadedIn_ddlPurchaseOrder.selectedIndex].attributes["vendorname"].value;
+
     let purchaseOrderMaster_Code = $('#frmLoadedIn_ddlPurchaseOrder').val();
 
     GateEntryService.GetPOItems(purchaseOrderMaster_Code).then(function (response) {
-            console.log(response)
+            //console.log(response)
         $('#RowfrmLoadedInPoItemGrid').show();
+        $('#frmLoadedIn_txtVendorName').val(frmLoadedIn_ddlPurchaseOrder_VendorName);
+        $('#frmLoadedIn_txtVendorName').attr('readonly', 'readonly');
+
         response.forEach(item => {
             item["BiLLED QTY"] = '<input class="BizSolFormControl form-control form-control-sm" type="text" onchange="BizSolInputControl.OnChangeFloatTextBox(this,2)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" autocomplete="off" maxlength="7"><input type="hidden" value="' + item.PurchaseOrderMaster_Code + '" id="hfPurchaseOrderMaster_Code"/><input type="hidden" value="' + item.PurchaseOrderTransaction_Code +'" id="hfPurchaseOrderTransaction_Code"/>';
         });
@@ -1260,6 +1300,17 @@ function ClearAllFrm() {
     $('#frmEmptyIn_txtReportingDatetime').val('');
     $('#frmEmptyIn_txtRemarks').val('');
 
+    $('#frmLoadedOut_txtVehicleLoadedWeight').val('');
+    $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val('');
+    $('#frmLoadedOut_txtGoodsDescription').val('');
+    $('#frmLoadedOut_txtQty').val('');
+    $('#frmLoadedOut_ddlUOM').val('');
+    $('#frmLoadedOut_txtCustomerName').val('');
+    $('#frmLoadedOut_ddlDocumentType').val('');
+    $('#frmLoadedOut_txtDocumentNo').val('');
+    $('#frmLoadedOut_txtDocumentDate').val('');
+    $('#frmLoadedOut_txtEWayBillNo').val('');
+    $('#frmLoadedOut_txtEWayBillDate').val();
 
     $('#frmEmptyIn_txtVehicleNo').removeAttr('readonly')
     $('#frmEmptyIn_txtDriverName').removeAttr('readonly')
@@ -1271,6 +1322,18 @@ function ClearAllFrm() {
     $('#frmEmptyIn_txtReportingDatetime').removeAttr('readonly')
     $('#frmEmptyIn_btnSave').removeAttr('disabled')
     $('#frmEmptyIn_btnCancel').removeAttr('disabled')
+
+    $('#frmLoadedOut_txtVehicleLoadedWeight').removeAttr('readonly');
+    $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').removeAttr('readonly');
+    $('#frmLoadedOut_txtGoodsDescription').removeAttr('readonly');
+    $('#frmLoadedOut_txtQty').removeAttr('readonly');
+    $('#frmLoadedOut_ddlUOM').removeAttr('disabled');
+    $('#frmLoadedOut_txtCustomerName').removeAttr('readonly');
+    $('#frmLoadedOut_ddlDocumentType').removeAttr('disabled');
+    $('#frmLoadedOut_txtDocumentNo').removeAttr('readonly');
+    $('#frmLoadedOut_txtDocumentDate').removeAttr('readonly');
+    $('#frmLoadedOut_txtEWayBillNo').removeAttr('readonly');
+    $('#frmLoadedOut_txtEWayBillDate').removeAttr('readonly');
     //Loaded-in
 
     $('#frmLoadedIn_txtDateIn').val('');
@@ -1305,6 +1368,7 @@ function ClearAllFrm() {
     $('#frmLoadedIn_txtWeightmentSlipNoLoaded').removeAttr('readonly');
     $('#frmLoadedIn_txtGoodsDescription').removeAttr('readonly');
     $('#frmLoadedIn_txtQTY').removeAttr('readonly');
+    $('#frmLoadedIn_txtUOM').removeAttr('disabled');
     $('#frmLoadedIn_txtVendorName').removeAttr('readonly');
     $('#frmLoadedIn_txtDocumentNo').removeAttr('readonly');
     $('#frmLoadedIn_txtDocumentDate').removeAttr('readonly');
@@ -1326,7 +1390,14 @@ function ClearAllFrm() {
     $('#frmEmptyOut_btnSave').removeAttr('disabled')
     $('#frmLoadedOut_btnSave').removeAttr('disabled', 'disabled')
 
+    $('#frmLoadedIn_ddlPurchaseOrder').removeAttr('disabled');
 
+    $('#tbGateEntyLoadedInPoItem tr').empty();
+    $('#frmLoadedIn_txtVendorName').removeAttr('readonly');
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'POWiseEntryMendatory').PeramaterValue === 'Y') {
+        IsWithPo = true;
+    }
+    WithPO();
     ClearEmptyOutOrLoadedOutFrm();
 }
 function ClearEmptyOutOrLoadedOutFrm() {
@@ -1386,6 +1457,37 @@ function ViewGateEntry(gateEntryData, EntryType) {
     } else if (mode.toLowerCase() === 'emptyinview') {
         ClearEmptyOutOrLoadedOutFrm();
         UpdateEmptyIn_loadedout(gateEntryData);
+
+        $('#frmLoadedOut_txtVehicleLoadedWeight').val(gateEntryData[0].LoadedWeight);
+        $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val(gateEntryData[0].WeightmentSlipNumberOut);
+        $('#frmLoadedOut_txtGoodsDescription').val(gateEntryData[0].GoodDescription);
+        $('#frmLoadedOut_txtQty').val(gateEntryData[0].Qty);
+        $('#frmLoadedOut_ddlUOM').val(gateEntryData[0].UOM);
+        $('#frmLoadedOut_ddlUOM').select2({
+            width: '-webkit-fill-available'
+        });
+        $('#frmLoadedOut_txtCustomerName').val(gateEntryData[0].VendorName);
+        $('#frmLoadedOut_ddlDocumentType').val(gateEntryData[0].DocumentType);
+        $('#frmLoadedOut_ddlDocumentType').select2({
+            width: '-webkit-fill-available'
+        });
+        $('#frmLoadedOut_txtDocumentNo').val(gateEntryData[0].DocNo);
+        $('#frmLoadedOut_txtDocumentDate').val(new Date(gateEntryData[0].InvoiceDate).toISOString().slice(0, 10));
+        $('#frmLoadedOut_txtEWayBillNo').val(gateEntryData[0].EwaybillNo);
+        $('#frmLoadedOut_txtEWayBillDate').val(gateEntryData[0].EwaybillDate);
+
+        $('#frmLoadedOut_txtVehicleLoadedWeight').attr('readonly', 'readonly');
+        $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').attr('readonly', 'readonly');
+        $('#frmLoadedOut_txtGoodsDescription').attr('readonly', 'readonly');
+        $('#frmLoadedOut_txtQty').attr('readonly', 'readonly');
+        $('#frmLoadedOut_ddlUOM').attr('disabled', 'disabled');
+        $('#frmLoadedIn_ddlPurchaseOrder').attr('disabled');
+        $('#frmLoadedOut_txtCustomerName').attr('readonly', 'readonly');
+        $('#frmLoadedOut_ddlDocumentType').attr('disabled', 'disabled');
+        $('#frmLoadedOut_txtDocumentNo').attr('readonly', 'readonly');
+        $('#frmLoadedOut_txtDocumentDate').attr('readonly', 'readonly');
+        $('#frmLoadedOut_txtEWayBillNo').attr('readonly', 'readonly');
+        $('#frmLoadedOut_txtEWayBillDate').attr('readonly', 'readonly');
 
         $('#frmLoadedOut_btnSave').attr('disabled', 'disabled')
     }
