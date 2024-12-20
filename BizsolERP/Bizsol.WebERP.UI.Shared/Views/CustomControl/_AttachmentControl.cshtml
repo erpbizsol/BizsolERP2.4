@@ -1,11 +1,12 @@
 ﻿
 
-<div class="modal fade bs-example-modal-center" id="AttachmentControlmodal" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="false">
+<div class="modal fade bs-example-modal-center" id="AttachmentControlmodal" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="true">
     <div class="modal-dialog modal-dialog-scrollable" style="max-width:800px">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Bizsol ERP Document Control</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                @* <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> *@
+                <button type="button" class="btn-close" onclick="$('#AttachmentControlmodal').modal('hide')"></button>
             </div>
             <div class="modal-body">
                 <form action="#" class="dropzone" id="fileUploadForm">
@@ -110,12 +111,12 @@
    
 </style>
 
-<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
-<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+@* <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script> *@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_AttachmentControlPage.js"></script>
 <script>
     $(document).ready(function () {
-
+        GatAllAttachment();
         $("#AttachmentControlmodal").modal({
             backdrop: 'static',
             // keyboard: false
