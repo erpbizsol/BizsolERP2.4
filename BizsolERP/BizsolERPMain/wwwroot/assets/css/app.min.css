@@ -750,9 +750,9 @@ body[data-layout=horizontal] .footer {
         display: block;
         padding: .6rem;
         /*padding: .60rem 1.1rem;*/
-        color: var(--bs-sidebar-menu-item-color);
+        color: #0a0d17;
         position: relative;
-        font-size: 10pt;
+        font-size: 12px;
         -webkit-transition: all .4s;
         transition: all .4s;
         font-weight: 500
@@ -771,13 +771,11 @@ body[data-layout=horizontal] .footer {
         }
 
         #sidebar-menu ul li a svg {
-            height: 14px;
-            width: 14px;
+            height: 15px;
+            width: 13px;
             color: var(--bs-sidebar-menu-item-icon-color);
             fill: var(--bs-sidebar-menu-item-icon-effact-color);
-            /*    margin-right: 10px;
-}
-*/ margin-top: -3px
+            margin-top: -2px;
         }
 
         #sidebar-menu ul li a:hover {
@@ -803,22 +801,22 @@ body[data-layout=horizontal] .footer {
 
         #sidebar-menu ul li ul.sub-menu li a {
             padding: .4rem 1.5rem .4rem 3rem;
-            font-size: .85rem;
-            color: var(--bs-sidebar-menu-sub-item-color)
+            font-size: 12px;
+            color: var(--bs-sidebar-menu-sub-item-color);
         }
 
-            #sidebar-menu ul li ul.sub-menu li a:hover {
-                color: var(--bs-sidebar-menu-item-hover-color)
-            }
+        #sidebar-menu ul li ul.sub-menu li a:hover {
+            color: #545a6d;
+        }
 
         #sidebar-menu ul li ul.sub-menu li ul.sub-menu {
             padding: 0
         }
 
-            #sidebar-menu ul li ul.sub-menu li ul.sub-menu li a {
-                padding: .4rem 1.5rem .4rem 3.5rem;
-                font-size: 13px
-            }
+        #sidebar-menu ul li ul.sub-menu li ul.sub-menu li a {
+            padding: .4rem 1.5rem .4rem 3.5rem;
+            font-size: 12px;
+        }
 
     #sidebar-menu .iconBg {
         background-color: #607d8b;
@@ -854,22 +852,34 @@ body[data-layout=horizontal] .footer {
         margin-bottom: 4px;
     } */
 
-    #sidebar-menu .sub-menu .mm-active > a {
-        background-color: #e2eaee;
-        border: 1px solid;
-        border-radius: 10px;
-        margin-bottom: 4px;
-        color: #3f51b5 !important;
-    }
+#side-menu .active {
+    border-radius: 4px;
+    color: #fff !important;
+    font-family: Arial;
+    background-color: #607d8b;
+}
 
-    #sidebar-menu li > a:hover {
-        border-radius: 0px 0px 0px 0px;
-        /*border-left: 5px solid #1a355b;*/
-        color: #fff !important;
-        font-family: Arial;
-        /*background-image: linear-gradient(#5880b7, #69bafa);*/
-        background-color: #607d8b;
-    }
+#side-menu .mm-active > a {
+    color: #0d6efd; /* Highlight active parent */
+}
+
+#side-menu .mm-active > .sub-menu {
+    display: block !important; /* Ensure submenu stays open */
+}
+#sidebar-menu .sub-menu .mm-active > a {
+    background-color: #d2d5ea;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    color: #3f51b5 !important;
+}
+
+#sidebar-menu li > a:hover {
+    border-radius: 2px;
+    /*border-left: 5px solid #1a355b;*/
+    color: #000 !important;
+    font-family: Arial;
+    background-color: #dde0f9;
+}
 /*#sidebar-menu .metismenu {
     position: relative;
     right: 0.6rem;
@@ -6002,18 +6012,6 @@ button, .icon-height {
     margin-bottom: 8px;
 }
 
-.form-control:disabled {
-    background-color: #c5ced8 !important;
-    opacity: 0.5 !important;
-    color: #000;
-}
-
-input.form-control[readonly] {
-    background-color: #e2e2e3 !important;
-    /* opacity: 0.5 !important;*/
-    color: #000;
-}
-
 fieldset {
     /* background-color: #fafbfc; */
     background-color: #fffcfc;
@@ -6056,9 +6054,16 @@ legend {
         color: #fff; */
 }
 
+
 :is(.form-control, .form-control-sm) {
     /*border: var(--bs-border-width) solid #b5bfc3 !important;*/
     border: var(--bs-border-width) solid #275481 !important;
+    color: #000;
+}
+
+:is(.form-control:disabled, input.form-control[readonly]) {
+    background-color: #e2e2e3 !important;
+    color: #000;
 }
 
 label {
