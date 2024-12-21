@@ -1,7 +1,7 @@
 ﻿import { AttachmentControlService } from '../../JSServices/_AttachmentControlService.js'
 
-
-function GatAllAttachment() {
+ 
+window.GatAllAttachment = function GatAllAttachment() {
 
     $('#hfMode').val().toLowerCase() == "view" ? $('#fileUploadForm').hide() : $('#fileUploadForm').show();
 
@@ -317,5 +317,6 @@ window.DownloadAll_AttachmentControl = DownloadAll_AttachmentControl;
 window.DeleteFile_AttachmentControl = DeleteFile_AttachmentControl;
 window.ViewFile_AttachmentControl = ViewFile_AttachmentControl;
 window.Save_AttachmentControl = Save_AttachmentControl;
-GatAllAttachment()
+
+
 
