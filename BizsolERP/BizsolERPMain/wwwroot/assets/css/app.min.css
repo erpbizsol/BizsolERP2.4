@@ -5853,13 +5853,13 @@ body[data-layout=horizontal] .chat-conversation {
         padding: 16px 20px
     }
 
-        .pricing-tab-box .nav-link.active i {
-            color: #5156be !important
-        }
+    .pricing-tab-box .nav-link.active i {
+        color: #5156be !important
+    }
 
-        .pricing-tab-box .nav-link.active h1 {
-            color: #5156be !important
-        }
+    .pricing-tab-box .nav-link.active h1 {
+        color: #5156be !important
+    }
 
 [data-bs-theme=dark] .pricing-tab-box .nav-link {
     border-color: var(--bs-border-color)
@@ -5971,10 +5971,10 @@ button, .icon-height {
     background-color: #275481;
 }
 
-    .btn-primary:hover {
-        background-image: linear-gradient(#26557d, #3878af, #175489);
-        border-radius: 7px !important;
-    }
+.btn-primary:hover {
+    background-image: linear-gradient(#26557d, #3878af, #175489);
+    border-radius: 7px !important;
+}
 
 .btn-danger {
     box-shadow: 0 2px 6px 0 rgb(99 97 97 / 50%);
@@ -5982,14 +5982,14 @@ button, .icon-height {
     border: none;
 }
 
-    .btn-danger:disabled {
-        background-color: #d4282c;
-        border: none !important;
-    }
+.btn-danger:disabled {
+    background-color: #d4282c;
+    border: none !important;
+}
 
-    .btn-danger:hover {
-        background-image: linear-gradient(#af1f2c, #e55d6ad9, #af1f2c);
-    }
+.btn-danger:hover {
+    background-image: linear-gradient(#af1f2c, #e55d6ad9, #af1f2c);
+}
 
 .btn-success {
     box-shadow: 0 2px 6px 0 rgb(94 96 95);
@@ -5997,9 +5997,9 @@ button, .icon-height {
     border: none;
 }
 
-    .btn-success:hover {
-        background-image: linear-gradient(#216c4a, #469974, #216c4a);
-    }
+.btn-success:hover {
+    background-image: linear-gradient(#216c4a, #469974, #216c4a);
+}
 
 .table > tbody > tr:nth-of-type(odd) > * {
     --bs-table-color-type: var(--bs-table-striped-color);
@@ -6010,6 +6010,7 @@ button, .icon-height {
 
 .form-control-sm {
     margin-bottom: 8px;
+    padding: .25rem .4rem !important;
 }
 
 fieldset {
@@ -6068,7 +6069,13 @@ legend {
 
 label {
     margin-bottom: .4rem !important;
-    font-size: 9pt !important;
+    font-size: 12px !important;
+    font-weight: bold;
+}
+
+.col-Date-1 {
+    padding-right: 0;
+    width: 4.66%;
 }
 
 .without-label-field {
