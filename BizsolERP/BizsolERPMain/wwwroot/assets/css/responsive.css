@@ -1,4 +1,19 @@
 ﻿@media only screen and (max-width: 760px), (min-device-width: 768px) and (max-device-width: 1024px) {
+    /*.mobile-content {
+        background-image: url('./assets/images/users/erp1.png');
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+    }*/
+
+
+    /*.main-content {*/
+    /*        background-size: contain !important; */
+    /*background-position: top !important;
+        height: auto;
+    }*/
+
+
     .navbar-header .erpHedTextSize {
         font-size: 9pt !important;
     }
@@ -20,13 +35,6 @@
         text-align: center !important;
     }
 
-    .main-content {
-        /*        background-size: contain !important; */
-        background-position: top !important;
-        height: auto;
-    }
-
-
     .modal-content-width-sm {
         width: 100%;
     }
@@ -39,4 +47,61 @@
     .without-label-field {
         margin-top: 0.2rem;
     }
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) {
+
+    /* CSS */
+
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+
+    /* CSS */
+
+}
+
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+
+    /* CSS */
+
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+
+    /* CSS */
+
+}
+
+@media (min-width: 320px) and (max-width: 480px) {
+    /*input field*/
+
+    .col-Date-1 {
+        width:auto;
+    }
+
+    #tblorderbooking {
+        width: 174%;
+    }
+
+    .itemName {
+        width: 128px;
+    }
+
+    .width-5 {
+        width: 61px;
+    }
+    
+    .width-6 {
+        width: 69px;
+    }
+
+    .width-12 {
+        width: 109px;
+    }
+
+    .priceList {
+        width: 139px;
+    }
+
 }

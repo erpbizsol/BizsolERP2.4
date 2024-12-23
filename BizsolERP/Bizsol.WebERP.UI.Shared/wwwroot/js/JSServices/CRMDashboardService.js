@@ -51,9 +51,16 @@ const CRMDashboardService = {
                 return value;
             }
         );
+    },
+
+     GetCRMDashboardRefreshText: function GetCRMDashboardRefreshText() {
+         const url = `${UrlService.API_ENDPOINT_CRM_DASHBOARD}/GetCRMDashboardRefreshText`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
     }
-
-
 
 }
 export { CRMDashboardService }

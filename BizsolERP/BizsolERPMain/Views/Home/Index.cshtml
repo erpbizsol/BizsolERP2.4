@@ -6,15 +6,63 @@
 <style>
     /* In your dashboard BG CSS */
     .main-content {
-        /* background-image: url('/assets/images/users/erp-banner-copy.png'); */
-        background-image: url('./assets/images/users/erp-banner-copy.png');
-        /*background-image: url('/assets/images/users/download.jpg');*/
+        background-image: url('./assets/images/users/erp-banner-copy.jpg');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         min-height: 90vh;
         /* margin-left: 70px; */
     }
+
+
+    @@media only screen and (width: 1024px) and (height: 1366px) {
+        
+       /*  .mobile-content {
+            background-image: url('./assets/images/users/erp1.png');
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+        } */
+    }
+
+    @@media only screen and (width: 768px) and (max-width: 1366px) {
+        .mobile-content {
+            background-image: url('./assets/images/users/erp-ipad3.png');
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+        }
+    }
+
+    @@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+        /* .mobile-content {
+            background-image: url('./assets/images/users/erp-ipad.png');
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+        }
+ */
+    }
+
+    @@media (min-width: 481px) and (max-width: 767px) {
+        .mobile-content {
+           /*  background-image: url('./assets/images/users/erp1.png'); */
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+        }
+    }
+
+    @@media (min-width: 320px) and (max-width: 480px) {
+        .mobile-content {
+            background-image: url('./assets/images/users/erp1.png');
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+        }
+    }
+
+
 </style>
 
 

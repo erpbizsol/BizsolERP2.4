@@ -140,11 +140,21 @@ i:hover {
     margin-bottom: 10px;
 }
 
-.checkbox-container-double {
+/*.checkbox-container-double {
     display: none;
     flex-direction: column;
     margin-top: 10px;
     color: #000;
+}*/
+
+.checkbox-container-double {
+    display: flex;
+    flex-direction: column;
+    color: #000;
+    padding: 6px 0;
+    max-height: 181px;
+    overflow-y: auto;
+    overflow-x: auto;
 }
 
 .checkbox-container-double label {

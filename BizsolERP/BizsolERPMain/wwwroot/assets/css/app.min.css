@@ -750,9 +750,9 @@ body[data-layout=horizontal] .footer {
         display: block;
         padding: .6rem;
         /*padding: .60rem 1.1rem;*/
-        color: var(--bs-sidebar-menu-item-color);
+        color: #0a0d17;
         position: relative;
-        font-size: 10pt;
+        font-size: 12px;
         -webkit-transition: all .4s;
         transition: all .4s;
         font-weight: 500
@@ -771,13 +771,11 @@ body[data-layout=horizontal] .footer {
         }
 
         #sidebar-menu ul li a svg {
-            height: 14px;
-            width: 14px;
+            height: 15px;
+            width: 13px;
             color: var(--bs-sidebar-menu-item-icon-color);
             fill: var(--bs-sidebar-menu-item-icon-effact-color);
-            /*    margin-right: 10px;
-}
-*/ margin-top: -3px
+            margin-top: -2px;
         }
 
         #sidebar-menu ul li a:hover {
@@ -803,22 +801,22 @@ body[data-layout=horizontal] .footer {
 
         #sidebar-menu ul li ul.sub-menu li a {
             padding: .4rem 1.5rem .4rem 3rem;
-            font-size: .85rem;
-            color: var(--bs-sidebar-menu-sub-item-color)
+            font-size: 12px;
+            color: var(--bs-sidebar-menu-sub-item-color);
         }
 
-            #sidebar-menu ul li ul.sub-menu li a:hover {
-                color: var(--bs-sidebar-menu-item-hover-color)
-            }
+        #sidebar-menu ul li ul.sub-menu li a:hover {
+            color: #545a6d;
+        }
 
         #sidebar-menu ul li ul.sub-menu li ul.sub-menu {
             padding: 0
         }
 
-            #sidebar-menu ul li ul.sub-menu li ul.sub-menu li a {
-                padding: .4rem 1.5rem .4rem 3.5rem;
-                font-size: 13px
-            }
+        #sidebar-menu ul li ul.sub-menu li ul.sub-menu li a {
+            padding: .4rem 1.5rem .4rem 3.5rem;
+            font-size: 12px;
+        }
 
     #sidebar-menu .iconBg {
         background-color: #607d8b;
@@ -854,22 +852,34 @@ body[data-layout=horizontal] .footer {
         margin-bottom: 4px;
     } */
 
-    #sidebar-menu .sub-menu .mm-active > a {
-        background-color: #e2eaee;
-        border: 1px solid;
-        border-radius: 10px;
-        margin-bottom: 4px;
-        color: #3f51b5 !important;
-    }
+#side-menu .active {
+    border-radius: 4px;
+    color: #fff !important;
+    font-family: Arial;
+    background-color: #607d8b;
+}
 
-    #sidebar-menu li > a:hover {
-        border-radius: 0px 0px 0px 0px;
-        /*border-left: 5px solid #1a355b;*/
-        color: #fff !important;
-        font-family: Arial;
-        /*background-image: linear-gradient(#5880b7, #69bafa);*/
-        background-color: #607d8b;
-    }
+#side-menu .mm-active > a {
+    color: #0d6efd; /* Highlight active parent */
+}
+
+#side-menu .mm-active > .sub-menu {
+    display: block !important; /* Ensure submenu stays open */
+}
+#sidebar-menu .sub-menu .mm-active > a {
+    background-color: #d2d5ea;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    color: #3f51b5 !important;
+}
+
+#sidebar-menu li > a:hover {
+    border-radius: 2px;
+    /*border-left: 5px solid #1a355b;*/
+    color: #000 !important;
+    font-family: Arial;
+    background-color: #dde0f9;
+}
 /*#sidebar-menu .metismenu {
     position: relative;
     right: 0.6rem;
@@ -5843,13 +5853,13 @@ body[data-layout=horizontal] .chat-conversation {
         padding: 16px 20px
     }
 
-        .pricing-tab-box .nav-link.active i {
-            color: #5156be !important
-        }
+    .pricing-tab-box .nav-link.active i {
+        color: #5156be !important
+    }
 
-        .pricing-tab-box .nav-link.active h1 {
-            color: #5156be !important
-        }
+    .pricing-tab-box .nav-link.active h1 {
+        color: #5156be !important
+    }
 
 [data-bs-theme=dark] .pricing-tab-box .nav-link {
     border-color: var(--bs-border-color)
@@ -5961,10 +5971,10 @@ button, .icon-height {
     background-color: #275481;
 }
 
-    .btn-primary:hover {
-        background-image: linear-gradient(#26557d, #3878af, #175489);
-        border-radius: 7px !important;
-    }
+.btn-primary:hover {
+    background-image: linear-gradient(#26557d, #3878af, #175489);
+    border-radius: 7px !important;
+}
 
 .btn-danger {
     box-shadow: 0 2px 6px 0 rgb(99 97 97 / 50%);
@@ -5972,14 +5982,14 @@ button, .icon-height {
     border: none;
 }
 
-    .btn-danger:disabled {
-        background-color: #d4282c;
-        border: none !important;
-    }
+.btn-danger:disabled {
+    background-color: #d4282c;
+    border: none !important;
+}
 
-    .btn-danger:hover {
-        background-image: linear-gradient(#af1f2c, #e55d6ad9, #af1f2c);
-    }
+.btn-danger:hover {
+    background-image: linear-gradient(#af1f2c, #e55d6ad9, #af1f2c);
+}
 
 .btn-success {
     box-shadow: 0 2px 6px 0 rgb(94 96 95);
@@ -5987,9 +5997,9 @@ button, .icon-height {
     border: none;
 }
 
-    .btn-success:hover {
-        background-image: linear-gradient(#216c4a, #469974, #216c4a);
-    }
+.btn-success:hover {
+    background-image: linear-gradient(#216c4a, #469974, #216c4a);
+}
 
 .table > tbody > tr:nth-of-type(odd) > * {
     --bs-table-color-type: var(--bs-table-striped-color);
@@ -6000,18 +6010,7 @@ button, .icon-height {
 
 .form-control-sm {
     margin-bottom: 8px;
-}
-
-.form-control:disabled {
-    background-color: #c5ced8 !important;
-    opacity: 0.5 !important;
-    color: #000;
-}
-
-input.form-control[readonly] {
-    background-color: #c5ced8 !important;
-    opacity: 0.5 !important;
-    color: #000;
+    padding: .25rem .4rem !important;
 }
 
 fieldset {
@@ -6056,14 +6055,27 @@ legend {
         color: #fff; */
 }
 
+
 :is(.form-control, .form-control-sm) {
     /*border: var(--bs-border-width) solid #b5bfc3 !important;*/
     border: var(--bs-border-width) solid #275481 !important;
+    color: #000;
+}
+
+:is(.form-control:disabled, input.form-control[readonly]) {
+    background-color: #e2e2e3 !important;
+    color: #000;
 }
 
 label {
     margin-bottom: .4rem !important;
-    font-size: 9pt !important;
+    font-size: 12px !important;
+    font-weight: bold;
+}
+
+.col-Date-1 {
+    padding-right: 0;
+    width: 4.66%;
 }
 
 .without-label-field {
@@ -6193,7 +6205,7 @@ label {
 .modal {
     --bs-modal-margin: 0 !important;
     padding: 9px;
-    margin-top: 4rem;
+    /*margin-top: 4rem;*/
 }
 
 .modal-title {
