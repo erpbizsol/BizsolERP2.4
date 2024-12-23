@@ -115,15 +115,17 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script> *@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_AttachmentControlPage.js"></script>
 <script>
+        
     $(document).ready(function () {
-        GatAllAttachment();
+         GatAllAttachment();
+         loadatta();
         $("#AttachmentControlmodal").modal({
             backdrop: 'static',
             // keyboard: false
         });
         $("#AttachmentControlmodal").modal('show');
        
-        
+         
     });
 </script>
 

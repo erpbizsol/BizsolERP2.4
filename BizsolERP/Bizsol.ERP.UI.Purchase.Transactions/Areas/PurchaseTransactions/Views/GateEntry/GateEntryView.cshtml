@@ -656,9 +656,17 @@
             <label for="to-date">To Date</label>
             <input type="date" class="form-control form-control-sm" id="txtToDate" onchange="GateEntryGirdByDates()">
         </div>
-        <div class="col-sm-6 text-end">
+        <div class="col-sm-3">
+            <label for="to-date">Vehicles IN</label>
+            <select class="form-control form-control-sm" id="ddlVehiclesStatusInFectory" >
+                <option value="all">All</option>
+                <option value="LIN">Loaded IN</option>
+                <option value="EIN">Empty IN</option>
+            </select>
+        </div>
+        <div class="col-sm-3 without-label-field text-end">
             <label></label>
-            <button type="button" class="btn btn-primary icon-height">DOWNLOAD</button>
+            <button type="button" class="btn btn-primary icon-height" onclick="GateEntryGirdByDates()">Show</button>
             <button type="button" class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','EmptyInNew')">CREATE NEW</button>
             &nbsp;
             <i class="fa fa-gear" onclick="ShowGateEntryConfigurationModal()" style="cursor:pointer"></i>

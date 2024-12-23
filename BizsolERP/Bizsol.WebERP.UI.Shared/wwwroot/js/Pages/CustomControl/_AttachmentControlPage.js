@@ -1,7 +1,7 @@
 ﻿import { AttachmentControlService } from '../../JSServices/_AttachmentControlService.js'
 
  
-window.GatAllAttachment = function GatAllAttachment() {
+function GatAllAttachment() {
 
     $('#hfMode').val().toLowerCase() == "view" ? $('#fileUploadForm').hide() : $('#fileUploadForm').show();
 
@@ -100,7 +100,7 @@ const fileInput = document.getElementById('file-input');
 const fileNamesInput = document.getElementById('file-names');
 let fileList = document.getElementById('fileList');
 let fileListArry=[]
-loadatta();
+
 function loadatta() {
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         fileNamesInput.addEventListener(eventName, preventDefaults, false);
@@ -172,6 +172,7 @@ function UpdateFileUploadGrid() {
         const deleteBtn = document.createElement('button');
         deleteBtn.classList.add('btn');
         deleteBtn.classList.add('btn-danger');
+        deleteBtn.classList.add('icon-height');
         deleteBtn.classList.add('m-2');
         deleteBtn.innerHTML = "<i class='fa fa-trash'></i>"
         deleteBtn.setAttribute("onclick", "DeleteFile_AttachmentControl("+index+")");
@@ -317,6 +318,9 @@ window.DownloadAll_AttachmentControl = DownloadAll_AttachmentControl;
 window.DeleteFile_AttachmentControl = DeleteFile_AttachmentControl;
 window.ViewFile_AttachmentControl = ViewFile_AttachmentControl;
 window.Save_AttachmentControl = Save_AttachmentControl;
-
+window.GatAllAttachment = GatAllAttachment;
+window.loadatta = loadatta;
+//GatAllAttachment();
+//loadatta();
 
 
