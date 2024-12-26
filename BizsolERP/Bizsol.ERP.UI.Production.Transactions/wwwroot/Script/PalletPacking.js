@@ -5,12 +5,15 @@ let Godownmaster_Code = 0;
 let IdentificationNo = '';
 let ColForWhere ='';
 let ColValue = '';
-let scanIdCheck= [];
-let scanEditIdCheck = [];
+let scanIdCheck = [];
+let PalletNo = 0;
+let todayDate = '';
+let todayDate1 = '';
 $(document).ready(function () {
     $("#ERPHeading").text("Pallet Packing");
     highlightSelectedDates();
-    let todayDate = convertDateFormat($('#txtdate').val());
+    todayDate = convertDateFormat($('#txtdate').val());
+    todayDate1 = $('#txtdate').val();
     $('input[name="filterType"]').on('change', function () {
         const selectedValue = $(this).val();  
         if (selectedValue === 'dateWise') {
@@ -165,7 +168,7 @@ function convertDateFormat(dateString) {
     const [day, month, year] = dateString.split('/');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthAbbreviation = monthNames[parseInt(month, 10) - 1];
-    return `${day} - ${monthAbbreviation} - ${year}`;
+    return `${day}-${monthAbbreviation}-${year}`;
 }
 
 function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
@@ -282,16 +285,33 @@ function FillPendingOrderModal() {
         toastr.error('Error fetching user list:', error);
     });
 }
+//function CreateNew() {
+//    $('#newCreateForm').show();
+//    $('#dateAndOrderByPallet').hide();
+//    $('#tdlScanIdentification').hide();
+//    $("#txtPalletdate").val(todayDate);
+//    $("#txtOrderNo1").val($("#txtOrderNo").val());
+//    $("#palletNo").val('');
+//    $('#txtWarehouse').val('');
+//    $('#txtPalletType').val('');
+//    $('#packingWt').val('');
+//    FillWarehouse();
+//    FillPendingOrderModal();
+//    FillPalletType();
+//}
 function CreateNew() {
     $('#newCreateForm').show();
     $('#dateAndOrderByPallet').hide();
     $('#tdlScanIdentification').hide();
-    $("#txtPalletdate").val($("#txtdate").val());
-    $("#txtOrderNo1").val($("#txtOrderNo").val());
+    $("#txtPalletdate").val(todayDate1);
     $("#palletNo").val('');
-    $('#txtWarehouse').val('');
-    $('#txtPalletType').val('');
-    $('#packingWt').val('');
+    $("#txtWarehouse").val('');
+    $("#packingWt").val('');
+    $("#referenceNo").val('');
+    $("#txtPalletType").val('');
+    $("#txtOrderNo1").val($("#txtOrderNo").val());
+    $("#txtScanIdentificationNo").val('');
+    $('#newCreateForm input').prop('disabled', false);
     FillWarehouse();
     FillPendingOrderModal();
     FillPalletType();
@@ -397,8 +417,11 @@ function ScanID() {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Stock Type", "ColForWhere","Pallet Weight"];
-            const columnAlignment = {};
+            const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight","Pallet No"];
+            const columnAlignment = {
+                "Qty MT": 'right',
+                "QtyPC": 'right',
+            };
             const updatedResponse = uniqueData.map(item => {
                 let ColValue = item?.['Identification No'];
                 let buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${item.ColForWhere}','${ColValue}')"><i class="fa-regular fa-circle-xmark"></i></button>`;
@@ -413,6 +436,7 @@ function ScanID() {
                 ColForWhere = updatedResponse[0]?.ColForWhere;
                 ColValue = updatedResponse[0]?.['Identification No'];
                 AddIDInPallet();
+                updateFooter(response);
             }
         } else {
             toastr.error('No Data Found');
@@ -427,14 +451,13 @@ function AddIDInPallet() {
     var PalletType = $("#txtPalletType").val();
     var PalletWeight = $("#packingWt").val();
     var PalletRemark = $("#referenceNo").val();
-    var date = convertDateFormat($('#txtdate').val());
+    var PalletDate = convertDateFormat($('#txtPalletdate').val());
     if (PalletNo === '') {
         PalletNo = 0;
     }
-    PalletPackingService.AddIDInPallet(ColForWhere, ColValue, PalletNo, PalletRemark, PalletWeight, date, PalletType).then(function (response) {
+    PalletPackingService.AddIDInPallet(ColForWhere, ColValue, PalletNo, PalletRemark, PalletWeight, PalletDate, PalletType).then(function (response) {
         if (response?.Msg) {
             $("#palletNo").val(response?.Msg);
-            //EditPallet(PalletNo, GodownMaster_Code);
                 toastr.success("Pallet No is Saved Successfully");
             $("#Code").val(0);
             $("#txtScanIdentificationNo").val('');
@@ -444,7 +467,8 @@ function AddIDInPallet() {
         }
     });
 }
-function EditPallet(PalletNo) {
+function EditPallet(PalletNo1) {
+    PalletNo = PalletNo1;
     PalletPackingService.GetPalletDetail(PalletNo).then(function (response) {
         if (response.length > 0) {
         let EditPalletPackingList = response.map((item, index) => ({ SN: index + 1, ...item }));
@@ -456,53 +480,14 @@ function EditPallet(PalletNo) {
             $('#txtPalletType').val(response[0]?.['Pallet Type']);
             $('#txtOrderNo1').val(response[0]?.['Order No']);
             $('#newCreateForm input').prop('disabled', true);
-            $('#txtScanIdentificationNo').prop('disabled', false).val('');
+            $('#txtScanIdentificationNo').val('').prop('disabled', false);
             $('#newCreateForm').show();
             $('#dateAndOrderByPallet').hide();
             $('#tdlScanIdentification').show();
             
             BuyerPOMaster_Code = response[0].BuyerPOMaster_Code;
             Godownmaster_Code = response[0].GodownMaster_Code;
-            PalletPackingService.EditPallet(PalletNo, Godownmaster_Code).then(function (response) {
-                if (response.length > 0) {
-                    const newEditData = response.map((item, index) => ({
-                        SN: scanEditIdCheck.length + index + 1,
-                        ...item
-                    }));
-                    const existingEditIds = scanEditIdCheck.map(item => item?.['Identification No']);
-                    const uniqueEditData = newEditData.filter(item => !existingEditIds.includes(item?.['Identification No']));
-                    if (uniqueEditData.length === 0) {
-                        toastr.warning('Identification number already exists in the grid.');
-                        return;
-                    }
-                    $("#tdlScanIdentification").show();
-
-                    const stringFilterColumn = [];
-                    const numericFilterColumn = [];
-                    const dateFilterColumn = [];
-                    const button = false;
-                    const stringDoubleFilterColumn = [];
-                    const showButtons = [];
-                    const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight"];
-                    const columnAlignment = {};
-                    const updatedResponse = uniqueEditData.map(item => {
-                        let ColValue = item?.['Identification No'];
-                        let buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${item.ColForWhere}','${ColValue}')"><i class="fa-regular fa-circle-xmark"></i></button>`;
-                        return {
-                            ...item,
-                            Action: buttonsHTML,
-                        };
-                    });
-                    scanEditIdCheck = [...scanEditIdCheck, ...updatedResponse];
-                    BizsolCustomFilterGrid.CreateDataTable("table-header-ScanIdentification", "table-body-ScanIdentification", scanEditIdCheck, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
-                    
-                } else {
-                    toastr.error('No Data Found');
-                }
-            })
-                .catch(function (error) {
-                    toastr.error(error.Msg || 'Error during Pallet ');
-                });
+            editPalletTable(PalletNo, Godownmaster_Code);
             GetPendingIDOrderWise(BuyerPOMaster_Code, Godownmaster_Code);
         } else {
             toastr.error('No Data Found');
@@ -511,6 +496,51 @@ function EditPallet(PalletNo) {
         .catch(function (error) {
             toastr.error(error.Msg || 'Error during stock transfer');
         });  
+}
+function editPalletTable(PalletNo, Godownmaster_Code) {
+    PalletPackingService.EditPallet(PalletNo, Godownmaster_Code).then(function (response) {
+        if (response.length > 0) {
+            const newEditData = response.map((item, index) => ({
+                SN: scanIdCheck.length + index + 1,
+                ...item
+            }));
+            const existingEditIds = scanIdCheck.map(item => item?.['Identification No']);
+            const uniqueEditData = newEditData.filter(item => !existingEditIds.includes(item?.['Identification No']));
+            //if (uniqueEditData.length === 0) {
+            //    toastr.warning('Identification number already exists in the grid.');
+            //    return;
+            //}
+            $("#tdlScanIdentification").show();
+
+            const stringFilterColumn = [];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight", "Pallet No"];
+            const columnAlignment = {
+                "Qty MT": 'right',
+                "QtyPC": 'right',
+};
+            const updatedResponse = uniqueEditData.map(item => {
+                let ColValue = item?.['Identification No'];
+                let buttonsHTML = `<button class="btn btn-danger icon-height mb-1 btndelete" title="Delete" onclick="Delete('${item.ColForWhere}','${ColValue}')"><i class="fa-regular fa-circle-xmark"></i></button>`;
+                return {
+                    ...item,
+                    Action: buttonsHTML,
+                };
+            });
+            scanIdCheck = [...scanIdCheck, ...updatedResponse];
+            BizsolCustomFilterGrid.CreateDataTable("table-header-ScanIdentification", "table-body-ScanIdentification", scanIdCheck, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+            updateFooter(response);
+        } else {
+            toastr.error('No Data Found');
+        }
+    })
+        .catch(function (error) {
+            toastr.error(error.Msg || 'Error during Pallet ');
+        });
 }
 function GetPalletDetail(PalletNo) {
     PalletPackingService.GetPalletDetail(PalletNo).then(function (response) {
@@ -534,7 +564,10 @@ function GetPalletDetail(PalletNo) {
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = ["Stock Type", "ColForWhere"];
-            const columnAlignment = {};
+            const columnAlignment = {
+                "Qty MT": 'right',
+                "QtyPC": 'right',
+            };
             const updatedResponse = response.map(item => {
                 let ColValue = item?.['Identification No'];
                 let buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${item.ColForWhere}','${ColValue}')"><i class="fa-regular fa-circle-xmark"></i></button>`;
@@ -544,6 +577,7 @@ function GetPalletDetail(PalletNo) {
                 };
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header-ScanIdentification", "table-body-ScanIdentification", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+            updateFooter(response); 
         } else {
             toastr.error('No Data Found');
         }
@@ -554,32 +588,27 @@ function GetPalletDetail(PalletNo) {
 }
 function updateFooter(data) {
     const calculateTotalAmount = "Total Amount";
-
     if (calculateTotalAmount === "Total Amount") {
-        const rowCount = data.length;
         let totalQtyBalWeight = 0;
-        
-
         data.forEach(row => {
-            totalQtyBalWeight += parseFloat(row[QtyMTHeader] || row[QtyMTRHeader] || row[QtyPCHeader] || 0);
-            totalBasicRate += parseFloat(row["Basic Rate"] || 0);
-            
+            totalQtyBalWeight += parseFloat(row["Qty MT"]);
         });
 
         const tfootContent = `
         <tr>
-            <td colspan="5"><b>Row Count :</b> ${rowCount}</td>
-            <td><b>Total</b></td>
-            <td style="text-align: right;">${totalQtyBalWeight.toFixed(2)}</td>
+        <td>Total</td>
+        <td colspan="3"></td>
+        <td style="text-align: right;">${totalQtyBalWeight}</td>
+        <td></td>
         </tr>
         `;
 
-        const tfoot = document.querySelector("#OrderList tfoot");
+        const tfoot = document.querySelector("#ScanIdentification tfoot");
 
         if (tfoot) {
             tfoot.innerHTML = tfootContent;
         } else {
-            const table = document.querySelector("#OrderList");
+            const table = document.querySelector("#ScanIdentification");
             if (table) {
                 const newTfoot = document.createElement("tfoot");
                 newTfoot.innerHTML = tfootContent;
@@ -591,18 +620,22 @@ function updateFooter(data) {
     }
 }
 function clearFooter() {
-    const tfoot = document.querySelector("#table tfoot");
+    const tfoot = document.querySelector("#table-header-ScanIdentification tfoot");
     if (tfoot) {
         tfoot.innerHTML = "";
     }
 }
 function Delete(ColForWhere, ColValue) {
-    const userConfirmed = confirm("Are you sure you want to delete this pallet?");
+    var button = $(event.target); 
+    var row = button.closest('tr');
+    var rowIndex = row.index();
+    const userConfirmed = confirm("Are you sure you want to delete this Pallet ID?");
     if (userConfirmed) {
         PalletPackingService.RemoveIDFromPallet(ColForWhere, ColValue).then(function (response) {
             if (response) {
+                editPalletTable(PalletNo, Godownmaster_Code);
+                scanIdCheck.pop(rowIndex)
                 toastr.success("Pallet No is Deleted Successfully");
-                EditPallet(PalletNo);
             } else {
                 toastr.error('Error deleting pallet');
             }
@@ -613,6 +646,7 @@ function Delete(ColForWhere, ColValue) {
         toastr.info('Delete action cancelled');
     }
 }
+
 
 
 window.GetPackedPalletDateAndOrderWise = GetPackedPalletDateAndOrderWise;
