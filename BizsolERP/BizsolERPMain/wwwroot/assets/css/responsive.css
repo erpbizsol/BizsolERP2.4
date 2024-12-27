@@ -74,7 +74,11 @@
 }
 
 @media (min-width: 320px) and (max-width: 480px) {
-
+    #tblorderbooking {
+        width: 240%;
+        overflow-x: auto;
+        table-layout: fixed;
+    }
     
 
 }
