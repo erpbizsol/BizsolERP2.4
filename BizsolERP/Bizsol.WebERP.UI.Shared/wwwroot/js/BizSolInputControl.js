@@ -113,6 +113,16 @@
         }
 
         element.reportValidity();
+    },
+    IsMobileNumber: function IsMobileNumber(txtMobId) {
+        var mob = /^[6-9]{1}[0-9]{9}$/;
+        if (mob.test(txtMobId) == false) {
+            //alert("Please enter valid mobile number.");
+            //M.toast({ html: 'Please enter valid mobile number.', classes: 'rounded' });
+            //txtMobId.value = '';
+            return false;
+        }
+        return true;
     }
 
 }

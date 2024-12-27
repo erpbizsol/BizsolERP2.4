@@ -1,6 +1,6 @@
 ﻿import { AttachmentControlService } from '../../JSServices/_AttachmentControlService.js'
 
-
+ 
 function GatAllAttachment() {
 
     $('#hfMode').val().toLowerCase() == "view" ? $('#fileUploadForm').hide() : $('#fileUploadForm').show();
@@ -96,91 +96,102 @@ function Delete_AttachmentControl(Code) {
     } 
 }
 //------- Attachment Upload Begin-----------//
-const fileInput = document.getElementById('file-input');
-const fileNamesInput = document.getElementById('file-names');
-let fileList = document.getElementById('fileList');
-let fileListArry=[]
-loadatta();
-function loadatta() {
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        fileNamesInput.addEventListener(eventName, preventDefaults, false);
-    });
+//var fileInput = document.getElementById('file-input');
+//var fileNamesInput = document.getElementById('file-names');
 
-    // Highlight text input when item is dragged over it
-    ['dragenter', 'dragover'].forEach(eventName => {
-        fileNamesInput.addEventListener(eventName, function () { fileNamesInput.classList.add('hover') }, false);
-    });
+////window['AttachmentControl_fileInput']  = document.getElementById('file-input');
+////window['AttachmentControl_fileNamesInput'] = document.getElementById('file-names');
 
-    // Remove highlight when item is dragged out
-    ['dragleave', 'drop'].forEach(eventName => {
-        fileNamesInput.addEventListener(eventName, function () { fileNamesInput.classList.remove('hover') }, false);
-    });
+//var fileList = document.getElementById('fileList');
+//var fileListArry=[]
 
-    // Handle drop event on text input
-    fileNamesInput.addEventListener('drop', handleDrop, false);
+//function loadatta() {
+//    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+//        fileNamesInput.addEventListener(eventName, preventDefaults, false);
+//       // window['AttachmentControl_fileNamesInput'].addEventListener(eventName, preventDefaults, false);
+//    });
 
-    // Handle file input selection
-    fileInput.addEventListener('change', () => handleFiles(fileInput.files), false);
-}
-function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}
+//    // Highlight text input when item is dragged over it
+//    ['dragenter', 'dragover'].forEach(eventName => {
+//        fileNamesInput.addEventListener(eventName, function () { fileNamesInput.classList.add('hover') }, false);
+//        //window['AttachmentControl_fileNamesInput'].addEventListener(eventName, function () { window['AttachmentControl_fileNamesInput'].classList.add('hover') }, false);
+//    });
 
-function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    handleFiles(files);
-}
+//   //  Remove highlight when item is dragged out
+//    ['dragleave', 'drop'].forEach(eventName => {
+//        fileNamesInput.addEventListener(eventName, function () { fileNamesInput.classList.remove('hover') }, false);
+//       // window['AttachmentControl_fileNamesInput'].addEventListener(eventName, function () { window['AttachmentControl_fileNamesInput'].classList.remove('hover') }, false);
+//    });
 
-function handleFiles(files) {
-    if (files.length > 0) {
-        for (let index = 0; index<files.length; index++) {
-            const file = files[index];
-            fileListArry.push(file);
-        }
-        UpdateFileUploadGrid();
-    }
-}
+//   //  Handle drop event on text input
+//    fileNamesInput.addEventListener('drop', handleDrop, false);
+//    //window['AttachmentControl_fileNamesInput'].addEventListener('drop', handleDrop, false);
 
-function UpdateFileUploadGrid() {
-    fileList.innerHTML='';
-    $.each(fileListArry, function (index, val) {
-        const file = val;
+//    // Handle file input selection
+//    fileInput.addEventListener('change', () => handleFiles(fileInput.files), false);
+//    //window['AttachmentControl_fileInput'].addEventListener('change', () => handleFiles(window['AttachmentControl_fileInput'].files), false);
+//}
 
-        const fileItem = document.createElement('div');
+//function preventDefaults(e) {
+//    e.preventDefault();
+//    e.stopPropagation();
+//}
+
+//function handleDrop(e) {
+//    const dt = e.dataTransfer;
+//    const files = dt.files;
+//    handleFiles(files);
+//}
+
+//function handleFiles(files) {
+//    if (files.length > 0) {
+//        for (let index = 0; index<files.length; index++) {
+//            const file = files[index];
+//            fileListArry.push(file);
+//        }
+//        UpdateFileUploadGrid();
+//    }
+//}
+
+//function UpdateFileUploadGrid() {
+//    fileList.innerHTML='';
+//    $.each(fileListArry, function (index, val) {
+//        const file = val;
+
+//        const fileItem = document.createElement('div');
         
-        fileItem.classList.add('file-list-item');
+//        fileItem.classList.add('file-list-item');
 
-        const fileParticularsInput = document.createElement('input');
-        fileParticularsInput.type = "text";
-        fileParticularsInput.placeholder = "Document Particulars";
-        fileParticularsInput.classList.add('file-particulars-input');
-        fileParticularsInput.setAttribute("id", "txtParticularsInput_" + index);
+//        const fileParticularsInput = document.createElement('input');
+//        fileParticularsInput.type = "text";
+//        fileParticularsInput.placeholder = "Document Particulars";
+//        fileParticularsInput.classList.add('file-particulars-input');
+//        fileParticularsInput.setAttribute("id", "txtParticularsInput_" + index);
 
-        const fileNameInput = document.createElement('a');
-        fileNameInput.href = "#";
-        fileNameInput.classList.add('file-name-input');
-        fileNameInput.classList.add('m-2');
-        fileNameInput.innerHTML = file.name;
-        fileNameInput.setAttribute("onclick", "ViewFile_AttachmentControl(" + index +")");
+//        const fileNameInput = document.createElement('a');
+//        fileNameInput.href = "#";
+//        fileNameInput.classList.add('file-name-input');
+//        fileNameInput.classList.add('m-2');
+//        fileNameInput.innerHTML = file.name;
+//        fileNameInput.setAttribute("onclick", "ViewFile_AttachmentControl(" + index +")");
 
-        fileItem.appendChild(fileParticularsInput);
-        fileItem.appendChild(fileNameInput);
+//        fileItem.appendChild(fileParticularsInput);
+//        fileItem.appendChild(fileNameInput);
 
-        // Add delete button
-        const deleteBtn = document.createElement('button');
-        deleteBtn.classList.add('btn');
-        deleteBtn.classList.add('btn-danger');
-        deleteBtn.classList.add('m-2');
-        deleteBtn.innerHTML = "<i class='fa fa-trash'></i>"
-        deleteBtn.setAttribute("onclick", "DeleteFile_AttachmentControl("+index+")");
+//        // Add delete button
+//        const deleteBtn = document.createElement('button');
+//        deleteBtn.classList.add('btn');
+//        deleteBtn.classList.add('btn-danger');
+//        deleteBtn.classList.add('icon-height');
+//        deleteBtn.classList.add('m-2');
+//        deleteBtn.innerHTML = "<i class='fa fa-trash'></i>"
+//        deleteBtn.setAttribute("onclick", "DeleteFile_AttachmentControl("+index+")");
         
 
-        fileItem.appendChild(deleteBtn);
-        fileList.appendChild(fileItem);
-    });
-}
+//        fileItem.appendChild(deleteBtn);
+//        fileList.appendChild(fileItem);
+//    });
+//}
 function DeleteFile_AttachmentControl(index) {
     const items = document.querySelectorAll('.file-list-item');
     if (items[index]) {
@@ -318,5 +329,8 @@ window.DeleteFile_AttachmentControl = DeleteFile_AttachmentControl;
 window.ViewFile_AttachmentControl = ViewFile_AttachmentControl;
 window.Save_AttachmentControl = Save_AttachmentControl;
 window.GatAllAttachment = GatAllAttachment;
+//window.loadatta = loadatta;
+//GatAllAttachment();
+//loadatta();
 
 
