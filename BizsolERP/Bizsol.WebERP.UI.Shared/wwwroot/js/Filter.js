@@ -654,7 +654,7 @@ function renderTable(items, bodyId) {
     let showButtons = ''
     
     if (button == true) {
-        window[`ShowButtons_${bodyId}`]
+       showButtons= window[`ShowButtons_${bodyId}`]
     }
     
     const rows = items.map((item, index) => {
@@ -677,22 +677,22 @@ function renderTable(items, bodyId) {
             //}
 
             if (showButtons.includes('E')) {
-                buttons += ` <button class="btn btn-primary icon-height mb-1"><i aria-hidden="true" class="fa fa-pencil" type="button" onclick="EditData('${item.Code}')" /></i></button> `;
+                buttons += ` <button class="btn btn-primary icon-height mb-1" title="Edit"><i aria-hidden="true" class="fa fa-pencil" type="button" onclick="EditData('${item.Code}')" /></i></button> `;
             }
             if (showButtons.includes('D')) {
-                buttons += ` <button class="btn btn-danger icon-height mb-1"><i aria-hidden="true" class="fa fa-trash" type="button" onclick="DeleteData('${item.Code}')" /></i></button> `;
+                buttons += ` <button class="btn btn-danger icon-height mb-1" title="Delete"><i aria-hidden="true" class="fa fa-trash" type="button" onclick="DeleteData('${item.Code}')" /></i></button> `;
             }
             if (showButtons.includes('V')) {
-                buttons += `<button class="btn btn-info icon-height mb-1"> <i aria-hidden="true" class="fa fa-eye" type="button" onclick="ViewData('${item.Code}')" value="View"/></i></button> `;
+                buttons += `<button class="btn btn-info icon-height mb-1" title="View"> <i aria-hidden="true" class="fa fa-eye" type="button" onclick="ViewData('${item.Code}')" value="View"/></i></button> `;
             }
             if (showButtons.includes('VE')) {
-                buttons += `<button class="btn btn-success icon-height mb-1"><i class="fa fa-check" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/></i></button> `;
+                buttons += `<button class="btn btn-success icon-height mb-1" title="Verify"><i class="fa fa-check" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/></i></button> `;
             }
             if (showButtons.includes('A')) {
-                buttons += `<button class="btn btn-warning icon-height mb-1"><i class="fa fa-check-square-o" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/></i></button> `;
+                buttons += `<button class="btn btn-warning icon-height mb-1" title="Approve"><i class="fa fa-check-square-o" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/></i></button> `;
             }
             if (showButtons.includes('M')) {
-                buttons += `<button class="btn btn-info icon-height mb-1"><i class="" type="button" onclick="MoreData('${item.Code}')" value="..."/></i></button> `;
+                buttons += `<button class="btn btn-info icon-height mb-1" title="More Info"><i class="" type="button" onclick="MoreData('${item.Code}')" value="..."/></i></button> `;
             }
 
             buttons += '</td>';

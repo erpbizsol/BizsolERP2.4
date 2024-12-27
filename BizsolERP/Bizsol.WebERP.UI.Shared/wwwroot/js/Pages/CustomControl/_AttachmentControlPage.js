@@ -317,5 +317,6 @@ window.DownloadAll_AttachmentControl = DownloadAll_AttachmentControl;
 window.DeleteFile_AttachmentControl = DeleteFile_AttachmentControl;
 window.ViewFile_AttachmentControl = ViewFile_AttachmentControl;
 window.Save_AttachmentControl = Save_AttachmentControl;
-GatAllAttachment()
+window.GatAllAttachment = GatAllAttachment;
+
 
