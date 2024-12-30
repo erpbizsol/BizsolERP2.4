@@ -1,4 +1,4 @@
-﻿import { StockTransferReceiveService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/StockTransferReceiveService.js';
+﻿import { StockTransferReceiveService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/StockTransferReceiveService.js';
 
 let Godownmaster_Code = 0;
 let imageSrc = null;
@@ -7,23 +7,31 @@ let files = [];
 let fileName = '';
 let base64Data = [];
 let imageBase64Data = [];
-let selectedRows = [];
+
 let PartyName = '';
-    $(document).ready(function () {
+$(document).ready(function () {
+    $("#ERPHeading").text("Warehouse Receive");
+
         $('#myTab').on('shown.bs.tab', function (e) {
             const targetTab = $(e.target).attr('id');  
             if (targetTab === 'home-tab') {
                 getWarehouse();
+                $('#tblActualDispatch').hide();
             } else if (targetTab === 'profile-tab') {
                 getPartyNamePendingPackingListActualDespatch();
+                $('#tblStockReceive').hide();
             }
         });
         if ($('#home-tab').hasClass('active')) {
             getWarehouse();
             
-        }
+    }
+    $('#ddlWarehouse').on('focus', function (e) {
+        $("#ddlWarehouse").val("");
     });
-function getWarehouse() {
+    $('#ddlRollIdNo').on('focus', function (e) {
+        $("#ddlRollIdNo ").val("");
+    });
     $('#ddlWarehouse').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#fileInput").focus();
@@ -39,6 +47,24 @@ function getWarehouse() {
             StockTransferWherehouseReceive();
         }
     });
+    });
+function getWarehouse() {
+    //$('#ddlWarehouse').on('keydown', function (e) {
+    //    if (e.key === "Enter") {
+    //        $("#fileInput").focus();
+    //    }
+    //});
+    //$('#fileInput').on('keydown', function (e) {
+    //    if (e.key === "Enter") {
+    //        $("#ddlRollIdNo").focus();
+    //    }
+    //});
+    //$('#ddlRollIdNo').on('keydown', function (e) {
+    //    if (e.key === "Enter") {
+    //        StockTransferWherehouseReceive();
+    //    }
+    //});
+    
     StockTransferReceiveService.GetWarehouse().then(function (response) {
         if (response && response.length > 0) {
             $('#ddlWarehouseList option').remove();
@@ -112,11 +138,12 @@ function StockTransferWherehouseReceive() {
     }];
 
     if ($('#ddlRollIdNo').val()?.includes("*")) {
-        $('#myModal').modal('show');
-        $('#myModal').modal({
-            backdrop: 'static',
-        });
-        StockTransferReceiveService.GetPendingRoll(Godownmaster_Code, obj[0].rollIdNo).then(function (res) {
+        if ($('#fileInput').val() !== '') {
+            $('#myModal').modal({
+                backdrop: 'static',
+            });
+            $('#myModal').modal('show');
+            StockTransferReceiveService.GetPendingRoll(Godownmaster_Code, obj[0].rollIdNo).then(function (res) {
                 if (res && Array.isArray(res) && res.length > 0) {
                     const stringFilterColumn = [];
                     const numericFilterColumn = [];
@@ -124,7 +151,7 @@ function StockTransferWherehouseReceive() {
                     const button = false;
                     const showButtons = [];
                     const stringDoubleFilterColumn = [];
-                    const hiddenColumns = [];
+                    const hiddenColumns = ["PackingListMaster_Code"];
                     const columnAlignment = {
                         "PackingListNo": 'right',
                         "BalQtyPC": 'right',
@@ -132,85 +159,156 @@ function StockTransferWherehouseReceive() {
                     };
                     const updatedResponse = res.map(item => {
                         let buttonsHTML = `<input type="checkbox" onchange="toggleSelection(this, this.checked)">`;
-                        let inputHTML = `<input type="number" id="receviedQTYPC" value="${item.BalQtyPC}" min="1" max="${item.BalQtyPC}">`;
+                        let inputHTML = `<input type="number" id="receviedQTYPC" data-packing-list-no="${item.PackingListNo}" value="${item.BalQtyPC}" min="1" max="${item.BalQtyPC}">`;
                         return {
                             ...item,
                             select: buttonsHTML,
                             ['Recevied QTY PC']: inputHTML,
                         };
                     });
-                    BizsolCustomFilterGrid.CreateDataTable("table-header-NoOfVerify", "table-body-NoOfVerify", updatedResponse,button,showButtons,stringFilterColumn,numericFilterColumn,dateFilterColumn,stringDoubleFilterColumn,hiddenColumns,columnAlignment);
+                    BizsolCustomFilterGrid.CreateDataTable("table-header-NoOfVerify", "table-body-NoOfVerify", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
                 } else {
                     toastr.error('No Data Found');
                 }
             })
-            .catch(function (error) {
-                toastr.error(error.Msg || 'Error fetching pending rolls');
-            });
-            } else {
-                    StockTransferReceiveService.StockTransferWherehouseReceive(JSON.stringify(obj)).then(function (response) {
-                            if (response && Array.isArray(response) && response.length > 0) {
-                                const stringFilterColumn = [];
-                                const numericFilterColumn = [];
-                                const dateFilterColumn = [];
-                                const button = false;
-                                const stringDoubleFilterColumn = [];
-                                const showButtons = [];
-                                const hiddenColumns = [];
-                                const columnAlignment = {};
+                .catch(function (error) {
+                    toastr.error(error.Msg || 'Error fetching pending rolls');
+                });
+        }
+        else {
+            toastr.error('Please select a file to proceed');
+            return;
+        }
+    } else {
+        if ($('#fileInput').val() !== '') {
+            StockTransferReceiveService.StockTransferWherehouseReceive(JSON.stringify(obj)).then(function (response) {
+                if (response && Array.isArray(response) && response.length > 0) {
+                    const stringFilterColumn = [];
+                    const numericFilterColumn = [];
+                    const dateFilterColumn = [];
+                    const button = false;
+                    const stringDoubleFilterColumn = [];
+                    const showButtons = [];
+                    const hiddenColumns = [];
+                    const columnAlignment = {};
 
-                                BizsolCustomFilterGrid.CreateDataTable("table-header","table-body",response,button,showButtons,stringFilterColumn,numericFilterColumn,dateFilterColumn,stringDoubleFilterColumn,hiddenColumns,columnAlignment);
-                            } else {
-                                toastr.error('No Data Found');
-                            }
-                        })
-                        .catch(function (error) {
-                            toastr.error(error.Msg || 'Error during stock transfer');
-                        });
+                    BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+                } else {
+                    toastr.error('No Data Found');
+                }
+            })
+                .catch(function (error) {
+                    toastr.error(error.Msg || 'Error during stock transfer');
+                });
+        }
+        else {
+            toastr.error('Please select a file to proceed');
+            return;
+        }         
     }
 }
-function toggleSelection(row, isChecked) {
-    const rowData = $(row).closest('tr'); 
-    let PackingListNo = rowData[0].children[3].innerText;
-    const rowValues = {
-        PackingListNo: PackingListNo,
-        ReceviedQty: rowData.find('#receviedQTYPC').val() 
-    };
+//function toggleSelection(row, isChecked) {
+    
+//}
+//function SaveReceivedData() {
+//    if (selectedRows.length > 0) {
+//        let Data = selectedRows.map(row => ({
+//            godownMaster_Code: Godownmaster_Code,
+//            rollIdNo: $("#ddlRollIdNo").val(),
+//            user_Code: JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code,
+//            companyCode: JSON.parse(sessionStorage.getItem('authKey')).CompanyCode,
+//            attachFileName: fileName,
+//            attachData: imageBase64Data,
+//            packingListMaster_Code: row.PackingListNo,
+//            receviedQTY: row.ReceviedQty
+//        }));
+//        StockTransferReceiveService.ItemWaiseVerifyRollIdInPackingList(JSON.stringify(Data)).then(function (response) {
+//            if (response.Status === 'Y') {
+//                toastr.success(response.Msg);
+//                CloseModal();
+//            }
+//        }).catch(function (error) {
+//            toastr.error(error.Msg || 'Error processing received data');
+//        });
+//    } else {
+//        toastr.error('No rows selected');
+//    }
+//}
+function SaveReceivedData() {
+    
+    let ReveivedTable = document.getElementById("table-body-NoOfVerify");
+    let selectedRows = [];
+    for (let i = 0; i < ReveivedTable.rows.length; i++) {
+        const rowData = ReveivedTable.rows[i];
+        let isChecked = rowData.children[0].getElementsByTagName('input')[0].checked;
 
-    if (isChecked) {
-        selectedRows.push(rowValues);
-    } else {
-        const index = selectedRows.findIndex(r => r.PackingListNo === rowValues.PackingListNo);
-        if (index !== -1) {
-            selectedRows.splice(index, 1);
+        let PackingListNo = rowData.children[3].innerText;
+
+        const rowValues = {
+            PackingListNo: PackingListNo,
+            ReceviedQty: rowData.children[6].getElementsByTagName('input')[0].value
+        };
+
+        if (isChecked) {
+            selectedRows.push(rowValues);
+        } else {
+            const index = selectedRows.findIndex(r => r.PackingListNo === rowValues.PackingListNo);
+            if (index !== -1) {
+                selectedRows.splice(index, 1);
+            }
         }
     }
-}
-function SaveReceivedData() {
+
     if (selectedRows.length > 0) {
-        let Data = selectedRows.map(row => ({
-            godownMaster_Code: Godownmaster_Code,
-            rollIdNo: $("#ddlRollIdNo").val(),
-            user_Code: JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code,
-            companyCode: JSON.parse(sessionStorage.getItem('authKey')).CompanyCode,
-            attachFileName: fileName,
-            attachData: imageBase64Data,
-            packingListMaster_Code: row.PackingListNo,
-            receviedQTY: row.ReceviedQty
-        }));
-        StockTransferReceiveService.ItemWaiseVerifyRollIdInPackingList(JSON.stringify(Data)).then(function (response) {
-            if (response.Status === 'Y') {
-                toastr.success(response.Msg);
-                CloseModal();
-            } 
-        }).catch(function (error) {
-            toastr.error(error.Msg || 'Error processing received data');
-        });
+        let isValid = true;
+        let Data = selectedRows.map(row => {
+            const receviedQty = row.ReceviedQty;
+            const inputField = $(`#receviedQTYPC[data-packing-list-no="${row.PackingListNo}"]`); 
+            if (!receviedQty || receviedQty < 1 || receviedQty > inputField.attr('max')) {
+                toastr.error('Received quantity must be between 1 and the available balance.');
+                isValid = false;
+                return null; 
+            }
+
+            return {
+                godownMaster_Code: Godownmaster_Code,
+                rollIdNo: $("#ddlRollIdNo").val(),
+                user_Code: JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code,
+                companyCode: JSON.parse(sessionStorage.getItem('authKey')).CompanyCode,
+                attachFileName: fileName,
+                attachData: imageBase64Data,
+                packingListMaster_Code: row.PackingListNo,
+                receviedQTY: receviedQty
+            };
+        }).filter(item => item !== null); 
+        if (isValid && Data.length > 0) {
+            StockTransferReceiveService.ItemWaiseVerifyRollIdInPackingList(JSON.stringify(Data)).then(function (response) {
+                if (response.Status === 'Y') {
+                    toastr.success(response.Msg);
+                    CloseModal();
+                    ClearForm();
+                }
+            }).catch(function (error) {
+                toastr.error(error.Msg || 'Error processing received data');
+            });
+        } 
     } else {
         toastr.error('No rows selected');
     }
 }
+function CloseModal() {
+    $('#myModal').modal('hide');
+}
+function ClearForm() {
+    $("#fileInput").val('');
+    //$("#ddlRollIdNoList").val('');
+    getPendingRoll(Godownmaster_Code);
+}
+
 function getPartyNamePendingPackingListActualDespatch() {
+    $('#ddlPalletNo').on('focus', function (e) {
+        $("#ddlPalletNo ").val("");
+    });
     $('#ddlPartyName').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#ddlPalletNo").focus();
@@ -218,7 +316,7 @@ function getPartyNamePendingPackingListActualDespatch() {
     });
     $('#ddlPalletNo').on('keydown', function (e) {
         if (e.key === "Enter") {
-            GetPalletActualDespatchDetails();
+            PackingActualPalletIDDispatch();
         }
     });
     StockTransferReceiveService.GetPartyNamePendingPackingListActualDespatch().then(function (response) {
@@ -264,31 +362,33 @@ function getPendingPackingListPalletsActualDespatch(PartyName) {
         toastr.error('Error fetching user list:', error);
     });
 }
-function GetPalletActualDespatchDetails() {
+function PackingActualPalletIDDispatch() {
     let PalletNo = $("#ddlPalletNo").val();
     PartyName = $("#ddlPartyName").val();
-    StockTransferReceiveService.GetPalletActualDespatchDetails(PalletNo, PartyName).then(function (results) {
-        if (results && Array.isArray(results) && results.length > 0) {
-            const stringFilterColumn = [];
-            const numericFilterColumn = [];
-            const dateFilterColumn = [];
-            const button = false;
-            const stringDoubleFilterColumn = [];
-            const showButtons = [];
-            const hiddenColumns = [];
-            const ColumnAlignment = {};
-            BizsolCustomFilterGrid.CreateDataTable("table-header-ActualDispatch", "table-body-ActualDispatch", results, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
-        }
-        else {
-            toastr.error('No Data Found');
-        }
-    }).catch(error => {
-        toastr.error(error.Msg);
+    StockTransferReceiveService.PackingActualPalletIDDispatch(PalletNo, PartyName).then(function (response) {
+        
+            toastr.success(response.Msg);
+            StockTransferReceiveService.GetPalletActualDespatchDetails(PalletNo, PartyName).then(function (results) {
+                if (results && Array.isArray(results) && results.length > 0) {
+                    const stringFilterColumn = [];
+                    const numericFilterColumn = [];
+                    const dateFilterColumn = [];
+                    const button = false;
+                    const stringDoubleFilterColumn = [];
+                    const showButtons = [];
+                    const hiddenColumns = [];
+                    const ColumnAlignment = {};
+                    BizsolCustomFilterGrid.CreateDataTable("table-header-ActualDispatch", "table-body-ActualDispatch", results, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+                }
+                else {
+                    toastr.error('No Data Found');
+                }
+            }).catch(error => {
+                toastr.error(error.Msg);
+            });
+
+        
     });
-    
-}
-function CloseModal() {
-    $('#myModal').modal('hide');
 }
 
 window.getWarehouse = getWarehouse;
@@ -298,4 +398,4 @@ window.getPendingPackingListPalletsActualDespatch = getPendingPackingListPallets
 window.getPartyNamePendingPackingListActualDespatch = getPartyNamePendingPackingListActualDespatch;
 window.CloseModal = CloseModal;
 window.SaveReceivedData = SaveReceivedData;
-window.toggleSelection = toggleSelection;
+window.triggerFileInputClick = triggerFileInputClick;

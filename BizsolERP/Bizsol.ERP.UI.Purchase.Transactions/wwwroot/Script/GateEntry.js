@@ -24,10 +24,19 @@ let GateEntryImageDetail = [{
 function GateEntryGirdByDates() {
 
     let FromDate = $('#txtFromDate').val(), Todate = $('#txtToDate').val();
+    let ddlVehiclesStatusInFectory = $('#ddlVehiclesStatusInFectory').val();
+    let QueryCondition = ".";
+    if (ddlVehiclesStatusInFectory === 'LIN') {
+        QueryCondition = " and TransactionType='LIN' and GateEntryOutDate is null"
+
+    } else if (ddlVehiclesStatusInFectory === 'EIN'){
+        QueryCondition = " and TransactionType='EIN' and GateEntryOutDate is null"
+    }
+
     if (FromDate == "" && Todate == "") {
         return false;
     }
-    GateEntryService.GateEntryDate(FromDate, Todate).then(function (response) {
+    GateEntryService.GateEntryDate(FromDate, Todate, QueryCondition).then(function (response) {
         // + item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? 'Empty Out' : 'Loaded Out' +
        // response = response.map((item) => ({ Code: item.Code, "Type In": item["Type In"], "Entry No.": item["Entry No."], "Date In Time": item["Date In Time"], "Date Out Time": item["Date Out Time"], "Vehicle No.": item["Vehicle No."], "Party name": item["Party name"], Action: '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + '_' + item.Code + '\')">mansojs</a>' }))
         //console.log(response);
@@ -55,8 +64,11 @@ function GateEntryGirdByDates() {
         const StringdoubleFilterColumn = [];
         const hiddenColumns = ["Code","Hour"];
         const ColumnAlignment = {};
-        BizsolCustomFilterGrid.CreateDataTable("tbGateEntyViewHeader", "tbGateEntyViewBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
-
+        if (response.length > 0) {
+            BizsolCustomFilterGrid.CreateDataTable("tbGateEntyViewHeader", "tbGateEntyViewBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+        } else {
+            $('#tbGateEntyView tr').empty()
+        }
 
     });
     $('#DivGateEntryForm').hide();

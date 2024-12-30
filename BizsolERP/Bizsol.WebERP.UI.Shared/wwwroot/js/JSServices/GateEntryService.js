@@ -3,8 +3,8 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 
 const GateEntryService = {
-    GateEntryDate: function GateEntryDate(FormDate,ToDate) {
-        var url = UrlService.API_ENDPOINT_GateEntryMaster + `/GateEntryDate?Fromdate=${FormDate}&Todate=${ToDate}`;
+    GateEntryDate: function GateEntryDate(FormDate, ToDate, QueryCondition=".") {
+        var url = UrlService.API_ENDPOINT_GateEntryMaster + `/GateEntryDate?Fromdate=${FormDate}&Todate=${ToDate}&QueryCondition=${QueryCondition}`;
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
                 return value;
@@ -122,6 +122,23 @@ const GateEntryService = {
     },
     getPODetailByGateEntryCode: function getPODetailByGateEntryCode(gateEntryMaster_Code) {
         let url = UrlService.API_ENDPOINT_GateEntryMaster + `/getPODetailByGateEntryCode?Code=${gateEntryMaster_Code}`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    }, 
+    
+    getTransitMaterialList: function getTransitMaterialList(FormDate, ToDate) {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/getTransitMaterialList?Fromdate=${FormDate}&Todate=${ToDate}`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    getVehiclesStatusList: function getVehiclesStatusList(FormDate, ToDate) {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/getVehiclesStatusList?Fromdate=${FormDate}&Todate=${ToDate}`
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
                 return value;
