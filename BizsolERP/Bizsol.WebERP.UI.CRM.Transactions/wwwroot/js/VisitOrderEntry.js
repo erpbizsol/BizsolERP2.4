@@ -1300,6 +1300,7 @@ function SetOrderBookingTableHeaderAsPerConfig() {
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQTY + 1) + ")").css('display', 'none');
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.Delete + 1) + ")").css('display', 'none');
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.DeliveryDate + 1) + ")").css('display', 'none');
+    $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.Remarks + 1) + ")").css('display', 'none');
 
 
     // Hide Columns
@@ -1317,6 +1318,7 @@ function SetOrderBookingTableHeaderAsPerConfig() {
     $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.OrderQTY + 1) + ")").css('display', 'none');
     $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.Delete + 1) + ")").css('display', 'none');
     $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.DeliveryDate + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.Remarks + 1) + ")").css('display', 'none');
 
     // Hide Footer Columns
 
@@ -1335,6 +1337,7 @@ function SetOrderBookingTableHeaderAsPerConfig() {
     $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.OrderQTY + 1) + ")").css('display', 'none');
     $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.Delete + 1) + ")").css('display', 'none');
     $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.DeliveryDate + 1) + ")").css('display', 'none');
+    $("#tblorderbooking tfoot tr td:nth-child(" + (Indx_TblOrder.Remarks + 1) + ")").css('display', 'none');
 
     
   

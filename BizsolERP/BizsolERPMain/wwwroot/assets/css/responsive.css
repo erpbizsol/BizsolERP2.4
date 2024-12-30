@@ -74,15 +74,21 @@
 }
 
 @media (min-width: 320px) and (max-width: 480px) {
+    #tblorderbooking {
+        width: 240%;
+        overflow-x: auto;
+        table-layout: fixed;
+    }
+    
     /*input field*/
 
     .col-Date-1 {
         width:auto;
     }
 
-    #tblorderbooking {
+    /*#tblorderbooking {
         width: 174%;
-    }
+    }*/
 
     .itemName {
         width: 128px;
