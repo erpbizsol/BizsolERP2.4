@@ -1,4 +1,4 @@
-﻿import { PalletPackingService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/PalletPackingService.js';
+﻿import { PalletPackingService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PalletPackingService.js';
 
 let BuyerPOMaster_Code = 0;
 let Godownmaster_Code = 0;
@@ -187,7 +187,8 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
                 "Pallet Remark":'right',
                 "Qty PC":'right',
                 "Qty MT":'right',
-                "Pallet Date":'center',
+                "Pallet Date": 'center',
+                "Qty":'right',
             };
             const updatedResponse = response.map(item => {
                 let buttonsCheckBox = `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`;
@@ -320,6 +321,12 @@ function Close() {
     $('#dateAndOrderByPallet').show();
     $('#newCreateForm').hide();
     $('#tdlScanIdentification').hide();
+    var selectedDate = $('#txtdate').val();
+    var parts = selectedDate.split('/');
+    var formattedSelectedDate = new Date(parts[2], parts[1] - 1, parts[0]);
+    formattedSelectedDate = convertDateFormat($('#txtdate').val());
+    GetPackedPalletDateAndOrderWise(formattedSelectedDate, BuyerPOMaster_Code);
+
 }
 
 function FillWarehouse() {
@@ -399,6 +406,7 @@ function onScanIdSelect(event) {
 function ScanID() {
     PalletPackingService.ScanID(IdentificationNo, Godownmaster_Code).then(function (response) {
         if (response.length > 0) {
+            //console.log(response);
             const newData = response.map((item, index) => ({
                 SN: scanIdCheck.length + index + 1, 
                 ...item
@@ -420,7 +428,8 @@ function ScanID() {
             const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight","Pallet No"];
             const columnAlignment = {
                 "Qty MT": 'right',
-                "QtyPC": 'right',
+                "Qty PC": 'right',
+                "Qty": 'right',
             };
             const updatedResponse = uniqueData.map(item => {
                 let ColValue = item?.['Identification No'];
@@ -431,6 +440,7 @@ function ScanID() {
                 };
             });
             scanIdCheck = [...scanIdCheck, ...updatedResponse];
+            console.log(scanIdCheck);
             BizsolCustomFilterGrid.CreateDataTable("table-header-ScanIdentification", "table-body-ScanIdentification", scanIdCheck, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
             if (updatedResponse?.length > 0) {
                 ColForWhere = updatedResponse[0]?.ColForWhere;
@@ -521,7 +531,8 @@ function editPalletTable(PalletNo, Godownmaster_Code) {
             const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight", "Pallet No"];
             const columnAlignment = {
                 "Qty MT": 'right',
-                "QtyPC": 'right',
+                "Qty PC": 'right',
+                "Qty": 'right',
 };
             const updatedResponse = uniqueEditData.map(item => {
                 let ColValue = item?.['Identification No'];
@@ -566,7 +577,8 @@ function GetPalletDetail(PalletNo) {
             const hiddenColumns = ["Stock Type", "ColForWhere"];
             const columnAlignment = {
                 "Qty MT": 'right',
-                "QtyPC": 'right',
+                "Qty PC": 'right',
+                "Qty": 'right',
             };
             const updatedResponse = response.map(item => {
                 let ColValue = item?.['Identification No'];

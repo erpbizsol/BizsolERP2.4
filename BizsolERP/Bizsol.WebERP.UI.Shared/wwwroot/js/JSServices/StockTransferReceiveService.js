@@ -37,8 +37,9 @@ ItemWaiseVerifyRollIdInPackingList: function ItemWaiseVerifyRollIdInPackingList(
         }
     );
 },
-PackingActualPalletIDDispatch: function PackingActualPalletIDDispatch(PalletNo, PartyName, Data) {
-    var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/PackingActualPalletIDDispatch?PalletNo=" + PalletNo +"" + "&PartyName=" + PartyName+"";
+    PackingActualPalletIDDispatch: function PackingActualPalletIDDispatch(PalletNo, PartyName) {
+    let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/PackingActualPalletIDDispatch?PalletNo=" + PalletNo + "" + "&PartyName=" + PartyName + "" + "&UserMaster_Code=" + userCode;
     return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
         function (value) {
             return value;

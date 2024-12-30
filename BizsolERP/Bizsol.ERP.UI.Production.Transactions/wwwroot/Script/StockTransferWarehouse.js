@@ -1,4 +1,4 @@
-﻿import { StockTransferReceiveService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/StockTransferReceiveService.js';
+﻿import { StockTransferReceiveService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/StockTransferReceiveService.js';
 
 let Godownmaster_Code = 0;
 let imageSrc = null;
@@ -296,6 +296,9 @@ function SaveReceivedData() {
         toastr.error('No rows selected');
     }
 }
+function CloseModal() {
+    $('#myModal').modal('hide');
+}
 function ClearForm() {
     $("#fileInput").val('');
     //$("#ddlRollIdNoList").val('');
@@ -303,6 +306,9 @@ function ClearForm() {
 }
 
 function getPartyNamePendingPackingListActualDespatch() {
+    $('#ddlPalletNo').on('focus', function (e) {
+        $("#ddlPalletNo ").val("");
+    });
     $('#ddlPartyName').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#ddlPalletNo").focus();
@@ -310,7 +316,7 @@ function getPartyNamePendingPackingListActualDespatch() {
     });
     $('#ddlPalletNo').on('keydown', function (e) {
         if (e.key === "Enter") {
-            GetPalletActualDespatchDetails();
+            PackingActualPalletIDDispatch();
         }
     });
     StockTransferReceiveService.GetPartyNamePendingPackingListActualDespatch().then(function (response) {
@@ -356,31 +362,33 @@ function getPendingPackingListPalletsActualDespatch(PartyName) {
         toastr.error('Error fetching user list:', error);
     });
 }
-function GetPalletActualDespatchDetails() {
+function PackingActualPalletIDDispatch() {
     let PalletNo = $("#ddlPalletNo").val();
     PartyName = $("#ddlPartyName").val();
-    StockTransferReceiveService.GetPalletActualDespatchDetails(PalletNo, PartyName).then(function (results) {
-        if (results && Array.isArray(results) && results.length > 0) {
-            const stringFilterColumn = [];
-            const numericFilterColumn = [];
-            const dateFilterColumn = [];
-            const button = false;
-            const stringDoubleFilterColumn = [];
-            const showButtons = [];
-            const hiddenColumns = [];
-            const ColumnAlignment = {};
-            BizsolCustomFilterGrid.CreateDataTable("table-header-ActualDispatch", "table-body-ActualDispatch", results, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
-        }
-        else {
-            toastr.error('No Data Found');
-        }
-    }).catch(error => {
-        toastr.error(error.Msg);
+    StockTransferReceiveService.PackingActualPalletIDDispatch(PalletNo, PartyName).then(function (response) {
+        
+            toastr.success(response.Msg);
+            StockTransferReceiveService.GetPalletActualDespatchDetails(PalletNo, PartyName).then(function (results) {
+                if (results && Array.isArray(results) && results.length > 0) {
+                    const stringFilterColumn = [];
+                    const numericFilterColumn = [];
+                    const dateFilterColumn = [];
+                    const button = false;
+                    const stringDoubleFilterColumn = [];
+                    const showButtons = [];
+                    const hiddenColumns = [];
+                    const ColumnAlignment = {};
+                    BizsolCustomFilterGrid.CreateDataTable("table-header-ActualDispatch", "table-body-ActualDispatch", results, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+                }
+                else {
+                    toastr.error('No Data Found');
+                }
+            }).catch(error => {
+                toastr.error(error.Msg);
+            });
+
+        
     });
-    
-}
-function CloseModal() {
-    $('#myModal').modal('hide');
 }
 
 window.getWarehouse = getWarehouse;
