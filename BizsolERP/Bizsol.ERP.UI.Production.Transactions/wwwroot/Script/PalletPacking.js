@@ -188,7 +188,7 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
                 "Qty PC":'right',
                 "Qty MT":'right',
                 "Pallet Date": 'center',
-                "Qty":'right',
+                "Qty ":'right',
             };
             const updatedResponse = response.map(item => {
                 let buttonsCheckBox = `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`;
