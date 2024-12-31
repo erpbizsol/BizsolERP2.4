@@ -29,24 +29,6 @@
     <link href="~/assets/css/app.min.css" rel="stylesheet" />
     <link href="~/assets/css/responsive.css" rel="stylesheet"/>
     <script src="~/assets/js/jquery-3.6.0.min.js"></script>
-
-
-    <style>
-       /*  #side-menu .active {
-            border-radius: 4px;
-            color: #fff !important;
-            font-family: Arial;
-            background-color: #607d8b;
-        }
-
-        #side-menu .mm-active > a {
-            color: #0d6efd; 
-        }
-
-        #side-menu .mm-active > .sub-menu {
-            display: block !important; 
-        } */
-    </style>
     <style>
         .Highlighted {
             background-color: #FFD700 !important; /* Gold color */
@@ -55,7 +37,12 @@
     </style>
 </head>
 <body>
-    <div id="layout-wrapper">
+    <!-- Loader (hidden by default) -->
+    <div id="loader" class="loader-overlay">
+        <img src="~/assets/images/logo-gifR2.gif" alt="Loading..." class="loader-img">
+    </div>
+
+    <div id="layout-wrapper" class="content-hidden">
         <header id="page-topbar">
             <div class="navbar-header">
                 <div class="d-flex">
@@ -493,6 +480,36 @@
     myInput.focus()
     })
     </script> *@
+
+
+    
+    @* Loder Start *@
+    <script>
+        
+        function Showloader(){
+                 document.getElementById('loader').style.visibility = 'visible';
+        }
+        function HideLoader(){
+                 document.getElementById('loader').style.visibility = 'hidden';
+                 document.getElementById('layout-wrapper').classList.remove('content-hidden');
+        }
+        
+         window.Showloader=Showloader;
+         window.HideLoader=HideLoader;
+         HideLoader();
+         // window.addEventListener('load', function() {
+         //     // Show the loader immediately
+
+         //      Showloader();
+         //     // Simulate loading time with a setTimeout (e.g., 3 seconds)
+         //     setTimeout(function() {
+         //         // Hide the loader after 3 seconds (or any time you want)
+         //         HideLoader();
+         //     }, 3000);  // 3000 ms = 3 seconds
+         // });
+    </script>
+    @* Loder End *@
+
     <script type="module" src="~/assets/script/menu.js"></script>
     <script type="module" src="~/assets/script/webnotification.js"></script>
     <script src="~/assets/script/Logout.js"></script>
