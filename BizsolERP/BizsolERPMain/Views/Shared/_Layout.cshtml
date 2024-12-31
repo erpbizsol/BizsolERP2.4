@@ -483,22 +483,30 @@
 
 
     
-   @* Loder Start *@
-   <script>
-        // Wait for the page to load and then start the loader logic
-        window.addEventListener('load', function() {
-            // Show the loader immediately
-            document.getElementById('loader').style.visibility = 'visible';
+    @* Loder Start *@
+    <script>
+        
+        function Showloader(){
+                 document.getElementById('loader').style.visibility = 'visible';
+        }
+        function HideLoader(){
+                 document.getElementById('loader').style.visibility = 'hidden';
+                 document.getElementById('layout-wrapper').classList.remove('content-hidden');
+        }
+        
+         window.Showloader=Showloader;
+         window.HideLoader=HideLoader;
+         HideLoader();
+         // window.addEventListener('load', function() {
+         //     // Show the loader immediately
 
-            // Simulate loading time with a setTimeout (e.g., 3 seconds)
-            setTimeout(function() {
-                // Hide the loader after 3 seconds (or any time you want)
-                document.getElementById('loader').style.visibility = 'hidden';
-
-                // Show the content by removing the 'content-hidden' class
-                document.getElementById('layout-wrapper').classList.remove('content-hidden');
-            }, 3000);  // 3000 ms = 3 seconds
-        });
+         //      Showloader();
+         //     // Simulate loading time with a setTimeout (e.g., 3 seconds)
+         //     setTimeout(function() {
+         //         // Hide the loader after 3 seconds (or any time you want)
+         //         HideLoader();
+         //     }, 3000);  // 3000 ms = 3 seconds
+         // });
     </script>
     @* Loder End *@
 

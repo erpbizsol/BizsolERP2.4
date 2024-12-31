@@ -20,6 +20,7 @@ $(document).ready(function () {
             } else if (targetTab === 'profile-tab') {
                 getPartyNamePendingPackingListActualDespatch();
                 $('#tblStockReceive').hide();
+                $('#tblActualDispatch').show();
             }
         });
         if ($('#home-tab').hasClass('active')) {
@@ -319,8 +320,10 @@ function getPartyNamePendingPackingListActualDespatch() {
             PackingActualPalletIDDispatch();
         }
     });
+    Showloader();
     StockTransferReceiveService.GetPartyNamePendingPackingListActualDespatch().then(function (response) {
         if (response && response.length > 0) {
+            HideLoader();
             $('#ddlPartyNameList option').remove();
             var option = '';
             for (var i = 0; i < response.length; i++) {
@@ -365,8 +368,11 @@ function getPendingPackingListPalletsActualDespatch(PartyName) {
 function PackingActualPalletIDDispatch() {
     let PalletNo = $("#ddlPalletNo").val();
     PartyName = $("#ddlPartyName").val();
+    if (PalletNo == "") {
+        return;
+    }
     StockTransferReceiveService.PackingActualPalletIDDispatch(PalletNo, PartyName).then(function (response) {
-        
+            $("#ddlPalletNo ").val("");
             toastr.success(response.Msg);
             StockTransferReceiveService.GetPalletActualDespatchDetails(PalletNo, PartyName).then(function (results) {
                 if (results && Array.isArray(results) && results.length > 0) {
