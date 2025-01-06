@@ -6,16 +6,6 @@ $(document).ready(function () {
     getPartyNamePendingPackingListActualDespatch();
 });
 function getPartyNamePendingPackingListActualDespatch() {
-    //$('#ddlPartyName').on('focus', function (e) {
-    //    $("#ddlPartyName").val("");
-    //    $("#tblActualDispatch").hide();
-    //});
-
-    //$('#ddlPartyName').on('change', function (e) {
-    //    if ($(this).val() !== "") {
-    //        $("#tblActualDispatch").show();
-    //    }
-    //});
     $('#ddlPartyName').on('focus', function (e) {
         $("#ddlPartyName").val("");
 
@@ -134,7 +124,7 @@ function onPartyNameSelectGrid() {
             };
             const updatedResponse = response.map(item => {
                 let Action = `<button class="btn btn-success icon-height mb-1" title="Update All" onclick="updateAll(${item?.PackingListMaster_Code})"><i class="fa fa-check-circle"></i></button>
-                <button class="btn btn-primary icon-height mb-1" title="Edit" onclick="openModal(${item?.PackingListMaster_Code})"><i class="fa-solid fa-pencil"></i></button>`;
+                <button class="btn btn-primary icon-height mb-1" title="Edit" onclick="openModal(${item?.PackingListMaster_Code},${item?.PackingListNo})"><i class="fa-solid fa-pencil"></i></button>`;
                 return {
                     ...item,
                     Action
@@ -156,30 +146,29 @@ function updateAll(PackingListMaster_Code) {
             onPartyNameSelectGrid();
             toastr.success(response.Msg);
         });
-        //toastr.success("The pallet has been updated successfully!");
     }     
 }
-function openModal(PackingListMaster_Code) {
+function openModal(PackingListMaster_Code, PackingListNo) {
     $('#txtPackingListMaster_Code').val(PackingListMaster_Code);
     $('#myModal').modal({
         backdrop: 'static',
     });
-    GetPendingPackingListActualDespatchDetails(PackingListMaster_Code);
+    GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, PackingListNo);
     $('#myModal').modal('show');
 }
-function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code){
+function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, PackingListNo) {
     StockTransferReceiveService.GetPendingPackingListActualDespatchDetails(PackingListMaster_Code).then(function (response) {
         if (response.length > 0) {
             const item = response[0];
             let PartyName = $('#ddlPartyName').val();
-            $('#modal-title').text(PartyName + ' (' + item.PackingListNo + ')');
+            $('#modal-title').text(`${PartyName} (${PackingListNo})`);
             const stringFilterColumn = [];
             const numericFilterColumn = [];
             const dateFilterColumn = [];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["PackingListNo"];
+            const hiddenColumns = [];
             const ColumnAlignment = {
                 "QtyPc": 'right',
                 "QtyMT": 'right',
