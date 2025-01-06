@@ -6271,9 +6271,10 @@ a.icon-height {
 
 /* Style for the loader image */
 .loader-img {
-    width: 100px; /* Resize the GIF if needed */
+    width: 300px; /* Resize the GIF if needed */
     height: auto;
     border-radius: 50%;
+    
 }
 
 .content-visible {
