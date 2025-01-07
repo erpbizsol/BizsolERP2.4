@@ -107,17 +107,20 @@ function onPartyNameSelectGrid() {
     }
     StockTransferReceiveService.GetPendingPackingListActualDespatch(PartyName).then(function (response) {
         if (response.length > 0) {
-                const stringFilterColumn = [];
-                const numericFilterColumn = [];
-                const dateFilterColumn = [];
-                const button = false;
-                const stringDoubleFilterColumn = [];
-                const showButtons = [];
+            const stringFilterColumn = ["Party Name", "Warehouse"];
+            const numericFilterColumn = ["QtyPc", "QtyMT", "QtyMTRS", "Bal Qty PC", "Bal Qty MT", "Bal Qty Mtrs", "PackingListNo"];
+            const dateFilterColumn = ["Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
             const hiddenColumns = ["PackingListMaster_Code"];
             const ColumnAlignment = {
-                "QtyPc":'right',
-                "QtyMT":'right',
+                "QtyPc": 'right',
+                "QtyMT": 'right',
                 "QtyMTRS": 'right',
+                "Bal Qty PC": 'right',
+                "Bal Qty MT": 'right',
+                "Bal Qty Mtrs": 'right',
                 "PackingListDate": 'center',
                 "PackingListNo": 'center',
 
@@ -131,13 +134,16 @@ function onPartyNameSelectGrid() {
                 };
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header-ActualDispatch", "table-body-ActualDispatch", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            if (updatedResponse?.length > 0) {
+                updateFooter(response);
             }
-            else {
-                toastr.error('No Data Found');
-            }
-        }).catch(error => {
-            toastr.error(error.Msg);
-        });
+        }
+        else {
+            toastr.error('No Data Found');
+        }
+    }).catch(error => {
+        toastr.error(error.Msg);
+    });
 }
 function updateAll(PackingListMaster_Code) {
     const isConfirmed = confirm("Are You Sure! Dispatch All Pallet Of This Packing List");
@@ -146,7 +152,7 @@ function updateAll(PackingListMaster_Code) {
             onPartyNameSelectGrid();
             toastr.success(response.Msg);
         });
-    }     
+    }
 }
 function openModal(PackingListMaster_Code, PackingListNo) {
     $('#txtPackingListMaster_Code').val(PackingListMaster_Code);
@@ -162,7 +168,7 @@ function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, Pack
             const item = response[0];
             let PartyName = $('#ddlPartyName').val();
             $('#modal-title').text(`${PartyName} (${PackingListNo})`);
-            const stringFilterColumn = [];
+            const stringFilterColumn = ["PalletNo", "SizeDesp", "ItemName"];
             const numericFilterColumn = [];
             const dateFilterColumn = [];
             const button = false;
@@ -194,22 +200,83 @@ function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, Pack
     });
 }
 function toggleSelection(PalletNo) {
-                    let ReveivedTable = document.getElementById("table-body-NoOfDispatch");
-                    let PartyName = $('#ddlPartyName').val();
+    let ReveivedTable = document.getElementById("table-body-NoOfDispatch");
+    let PartyName = $('#ddlPartyName').val();
     StockTransferReceiveService.PackingActualPalletIDDispatch(PalletNo, PartyName).then(function (response) {
-                        var PackingListMaster_Code=$('#txtPackingListMaster_Code').val();
-                        GetPendingPackingListActualDespatchDetails(PackingListMaster_Code);
-                        toastr.success(response.Msg);
-                        })
-                        .catch(function (error) {
-                            toastr.error(error.Msg);
-                        });
-                }
+        var PackingListMaster_Code = $('#txtPackingListMaster_Code').val();
+        GetPendingPackingListActualDespatchDetails(PackingListMaster_Code);
+        toastr.success(response.Msg);
+    })
+        .catch(function (error) {
+            toastr.error(error.Msg);
+        });
+}
 function CloseModal() {
     onPartyNameSelectGrid();
     $('#myModal').modal('hide');
 }
-//window.getPendingPackingListPalletsActualDespatch = getPendingPackingListPalletsActualDespatch;
+function updateFooter(data) {
+    const calculateTotalAmount = "Total Amount";
+    if (calculateTotalAmount === "Total Amount") {
+        let totalQtyBalWeight = 0;
+        let totalQtyMTWeight = 0;
+        let totalQtyMTRSWeight = 0;
+
+        let totalQtyBalPCWeight = 0;
+        let totalQtyBalMTWeight = 0;
+        let totalQtyBalMTRSWeight = 0;
+        data.forEach(row => {
+            totalQtyBalWeight += parseFloat(row["QtyPc"]);
+            totalQtyMTWeight += parseFloat(row["QtyMT"]);
+            totalQtyMTRSWeight += parseFloat(row["QtyMTRS"]);
+
+            totalQtyBalPCWeight += parseFloat(row["Bal Qty PC"]);
+            totalQtyBalMTWeight += parseFloat(row["Bal Qty MT"]);
+            totalQtyBalMTRSWeight += parseFloat(row["Bal Qty Mtrs"]);
+        });
+        totalQtyMTWeight = totalQtyMTWeight.toFixed(3);
+        totalQtyMTRSWeight = totalQtyMTRSWeight.toFixed(3);
+
+        totalQtyBalMTWeight = totalQtyBalMTWeight.toFixed(3);
+        totalQtyBalMTRSWeight = totalQtyBalMTRSWeight.toFixed(3);
+
+        const tfootContent = `
+        <tr>
+        <td style="text-align: center;">Total</td>
+        <td colspan="3"></td>
+        <td style="text-align: right;">${totalQtyBalWeight}</td>
+        <td style="text-align: right;">${totalQtyMTWeight}</td>
+        <td style="text-align: right;">${totalQtyMTRSWeight}</td>
+        <td style="text-align: right;">${totalQtyBalPCWeight}</td>
+        <td style="text-align: right;">${totalQtyBalMTWeight}</td>
+        <td style="text-align: right;">${totalQtyBalMTRSWeight}</td>
+        <td></td>
+        </tr>
+        `;
+
+        const tfoot = document.querySelector("#ActualDispatch tfoot");
+
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#ActualDispatch");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+        }
+    }
+}
+function clearFooter() {
+    const tfoot = document.querySelector("#table-header-ActualDispatch tfoot");
+    if (tfoot) {
+        tfoot.innerHTML = "";
+    }
+}
+
 window.getPartyNamePendingPackingListActualDespatch = getPartyNamePendingPackingListActualDespatch;
 window.onPartyNameSelectGrid = onPartyNameSelectGrid;
 window.updateAll = updateAll;
