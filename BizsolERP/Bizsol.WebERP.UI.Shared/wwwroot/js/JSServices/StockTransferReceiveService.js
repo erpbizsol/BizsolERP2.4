@@ -78,5 +78,30 @@ GetPendingPackingListPalletsActualDespatch: function GetPendingPackingListPallet
             }
         );
     },
+    GetPendingPackingListActualDespatch: function GetPendingPackingListActualDespatch(PartyName) {
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPendingPackingListActualDespatch?PartyName=" + PartyName + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetPendingPackingListActualDespatchDetails: function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPendingPackingListActualDespatchDetails?PackingListMaster_Code=" + PackingListMaster_Code + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    PackingListActualDespatchAllPallet: function PackingListActualDespatchAllPallet(PackingListMaster_Code) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/PackingListActualDespatchAllPallet?PackingListMaster_Code=" + PackingListMaster_Code + "" + "&UserMaster_Code=" + userCode;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 export { StockTransferReceiveService }
