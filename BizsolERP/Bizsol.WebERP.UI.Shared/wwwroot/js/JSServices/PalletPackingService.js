@@ -94,6 +94,14 @@ EditPallet: function EditPallet(PalletNo, GodownMaster_Code) {
         }
     );
     },
+    GetPackedPalletDate: function GetPackedPalletDate() {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/GetPackedPalletDate";
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+    },
 }
 
 export { PalletPackingService }

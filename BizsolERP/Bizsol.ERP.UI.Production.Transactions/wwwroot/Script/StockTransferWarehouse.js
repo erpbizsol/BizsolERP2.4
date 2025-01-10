@@ -49,23 +49,7 @@ $(document).ready(function () {
         }
     });
     });
-function getWarehouse() {
-    //$('#ddlWarehouse').on('keydown', function (e) {
-    //    if (e.key === "Enter") {
-    //        $("#fileInput").focus();
-    //    }
-    //});
-    //$('#fileInput').on('keydown', function (e) {
-    //    if (e.key === "Enter") {
-    //        $("#ddlRollIdNo").focus();
-    //    }
-    //});
-    //$('#ddlRollIdNo').on('keydown', function (e) {
-    //    if (e.key === "Enter") {
-    //        StockTransferWherehouseReceive();
-    //    }
-    //});
-    
+function getWarehouse() {    
     StockTransferReceiveService.GetWarehouse().then(function (response) {
         if (response && response.length > 0) {
             $('#ddlWarehouseList option').remove();
@@ -140,12 +124,13 @@ function StockTransferWherehouseReceive() {
 
     if ($('#ddlRollIdNo').val()?.includes("*")) {
         if ($('#fileInput').val() !== '') {
-            $('#myModal').modal({
-                backdrop: 'static',
-            });
-            $('#myModal').modal('show');
+            
             StockTransferReceiveService.GetPendingRoll(Godownmaster_Code, obj[0].rollIdNo).then(function (res) {
                 if (res && Array.isArray(res) && res.length > 0) {
+                    $('#myModal').modal({
+                        backdrop: 'static',
+                    });
+                    $('#myModal').modal('show');
                     const stringFilterColumn = [];
                     const numericFilterColumn = [];
                     const dateFilterColumn = [];
@@ -243,17 +228,17 @@ function SaveReceivedData() {
         const rowData = ReveivedTable.rows[i];
         let isChecked = rowData.children[0].getElementsByTagName('input')[0].checked;
 
-        let PackingListNo = rowData.children[3].innerText;
+        let PackingListMaster_Code = rowData.children[3].innerText;
 
         const rowValues = {
-            PackingListNo: PackingListNo,
+            PackingListMaster_Code: PackingListMaster_Code,
             ReceviedQty: rowData.children[6].getElementsByTagName('input')[0].value
         };
 
         if (isChecked) {
             selectedRows.push(rowValues);
         } else {
-            const index = selectedRows.findIndex(r => r.PackingListNo === rowValues.PackingListNo);
+            const index = selectedRows.findIndex(r => r.PackingListMaster_Code === rowValues.PackingListMaster_Code);
             if (index !== -1) {
                 selectedRows.splice(index, 1);
             }
@@ -264,7 +249,7 @@ function SaveReceivedData() {
         let isValid = true;
         let Data = selectedRows.map(row => {
             const receviedQty = row.ReceviedQty;
-            const inputField = $(`#receviedQTYPC[data-packing-list-no="${row.PackingListNo}"]`); 
+            const inputField = $(`#receviedQTYPC[data-packing-list-no="${row.PackingListMaster_Code}"]`); 
             if (!receviedQty || receviedQty < 1 || receviedQty > inputField.attr('max')) {
                 toastr.error('Received quantity must be between 1 and the available balance.');
                 isValid = false;
@@ -278,7 +263,7 @@ function SaveReceivedData() {
                 companyCode: JSON.parse(sessionStorage.getItem('authKey')).CompanyCode,
                 attachFileName: fileName,
                 attachData: imageBase64Data,
-                packingListMaster_Code: row.PackingListNo,
+                packingListMaster_Code: row.PackingListMaster_Code,
                 receviedQTY: receviedQty
             };
         }).filter(item => item !== null); 
