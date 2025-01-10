@@ -10,11 +10,12 @@ function getPartyNamePendingPackingListActualDespatch() {
         $("#ddlPartyName").val("");
 
         $("#tblActualDispatch tbody").empty();
-
         $("#tblActualDispatch").hide();
     });
     $('#ddlPartyName').on('change', function (e) {
         if ($(this).val() !== "") {
+            $('#ActualDispatch tfoot').empty();
+            $("#table-header-ActualDispatch").empty();
             $("#tblActualDispatch").show();
         }
     });
@@ -107,27 +108,27 @@ function onPartyNameSelectGrid() {
     }
     StockTransferReceiveService.GetPendingPackingListActualDespatch(PartyName).then(function (response) {
         if (response.length > 0) {
-            const stringFilterColumn = ["Party Name", "Warehouse"];
-            const numericFilterColumn = ["QtyPc", "QtyMT", "QtyMTRS", "Bal Qty PC", "Bal Qty MT", "Bal Qty Mtrs", "PackingListNo"];
-            const dateFilterColumn = ["Date"];
+            const stringFilterColumn = ["Warehouse"];
+            const numericFilterColumn = ["Packing List No"];
+            const dateFilterColumn = [];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = ["PackingListMaster_Code"];
             const ColumnAlignment = {
-                "QtyPc": 'right',
-                "QtyMT": 'right',
-                "QtyMTRS": 'right',
+                "Qty PC": 'right',
+                "Qty KG": 'right',
+                "Qty SQM": 'right',
                 "Bal Qty PC": 'right',
-                "Bal Qty MT": 'right',
-                "Bal Qty Mtrs": 'right',
-                "PackingListDate": 'center',
-                "PackingListNo": 'center',
+                "Bal Qty KG": 'right',
+                "Bal Qty SQM": 'right',
+                "Date": 'center',
+                "Packing List No": 'center',
 
             };
             const updatedResponse = response.map(item => {
                 let Action = `<button class="btn btn-success icon-height mb-1" title="Update All" onclick="updateAll(${item?.PackingListMaster_Code})"><i class="fa fa-check-circle"></i></button>
-                <button class="btn btn-primary icon-height mb-1" title="Edit" onclick="openModal(${item?.PackingListMaster_Code},${item?.PackingListNo})"><i class="fa-solid fa-pencil"></i></button>`;
+                <button class="btn btn-primary icon-height mb-1" title="Edit" onclick="openModal(${item?.PackingListMaster_Code},${item["Packing List No"]})"><i class="fa-solid fa-pencil"></i></button>`;
                 return {
                     ...item,
                     Action
@@ -139,6 +140,7 @@ function onPartyNameSelectGrid() {
             }
         }
         else {
+            $('#tblActualDispatch').empty();
             toastr.error('No Data Found');
         }
     }).catch(error => {
@@ -168,7 +170,7 @@ function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, Pack
             const item = response[0];
             let PartyName = $('#ddlPartyName').val();
             $('#modal-title').text(`${PartyName} (${PackingListNo})`);
-            const stringFilterColumn = ["PalletNo", "SizeDesp", "ItemName"];
+            const stringFilterColumn = ["Pallet No", "SizeDesp", "ItemName"];
             const numericFilterColumn = [];
             const dateFilterColumn = [];
             const button = false;
@@ -176,15 +178,12 @@ function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, Pack
             const showButtons = [];
             const hiddenColumns = [];
             const ColumnAlignment = {
-                "QtyPc": 'right',
-                "QtyMT": 'right',
-                "QtyMTRS": 'right',
-                "PackingListDate": 'center',
-                "PackingListNo": 'center',
-
+                "Qty PC": 'right',
+                "Qty KG": 'right',
+                "Qty SQM": 'right',
             };
             const updatedResponse = response.map(item => {
-                let Action = `<input type="checkbox" onchange="toggleSelection(${item?.PalletNo})">`;
+                let Action = `<input type="checkbox" onchange="toggleSelection(${item["Pallet No"]})">`;
                 return {
                     ...item,
                     Action
@@ -225,14 +224,32 @@ function updateFooter(data) {
         let totalQtyBalPCWeight = 0;
         let totalQtyBalMTWeight = 0;
         let totalQtyBalMTRSWeight = 0;
+
+        let totalQtyBalWeightTotal = 0;
+        let totalQtyMTWeightTotal = 0;
+        let totalQtyMTRSWeightTotal = 0;
+
+        let totalQtyBalPCWeightTotal = 0;
+        let totalQtyBalMTWeightTotal = 0;
+        let totalQtyBalMTRSWeightTotal = 0;
+        $('#ActualDispatch tbody tr:visible').each(function () {
+            const row = $(this);
+
+            totalQtyBalWeightTotal += parseFloat(row.find("td:nth-child(6)").text()) || 0;
+            totalQtyMTWeightTotal += parseFloat(row.find("td:nth-child(7)").text()) || 0;
+            totalQtyMTRSWeightTotal += parseFloat(row.find("td:nth-child(8)").text()) || 0;
+            totalQtyBalPCWeightTotal += parseFloat(row.find("td:nth-child(9)").text()) || 0;
+            totalQtyBalMTWeightTotal += parseFloat(row.find("td:nth-child(10)").text()) || 0;
+            totalQtyBalMTRSWeightTotal += parseFloat(row.find("td:nth-child(11)").text()) || 0;
+        });
         data.forEach(row => {
-            totalQtyBalWeight += parseFloat(row["QtyPc"]);
-            totalQtyMTWeight += parseFloat(row["QtyMT"]);
-            totalQtyMTRSWeight += parseFloat(row["QtyMTRS"]);
+            totalQtyBalWeight += parseFloat(row["Qty PC"]);
+            totalQtyMTWeight += parseFloat(row["Qty KG"]);
+            totalQtyMTRSWeight += parseFloat(row["Qty SQM"]);
 
             totalQtyBalPCWeight += parseFloat(row["Bal Qty PC"]);
-            totalQtyBalMTWeight += parseFloat(row["Bal Qty MT"]);
-            totalQtyBalMTRSWeight += parseFloat(row["Bal Qty Mtrs"]);
+            totalQtyBalMTWeight += parseFloat(row["Bal Qty KG"]);
+            totalQtyBalMTRSWeight += parseFloat(row["Bal Qty SQM"]);
         });
         totalQtyMTWeight = totalQtyMTWeight.toFixed(3);
         totalQtyMTRSWeight = totalQtyMTRSWeight.toFixed(3);
@@ -240,10 +257,27 @@ function updateFooter(data) {
         totalQtyBalMTWeight = totalQtyBalMTWeight.toFixed(3);
         totalQtyBalMTRSWeight = totalQtyBalMTRSWeight.toFixed(3);
 
+        totalQtyMTWeightTotal = totalQtyMTWeightTotal.toFixed(3);
+        totalQtyMTRSWeightTotal = totalQtyMTRSWeightTotal.toFixed(3);
+
+        totalQtyBalMTWeightTotal = totalQtyBalMTWeightTotal.toFixed(3);
+        totalQtyBalMTRSWeightTotal = totalQtyBalMTRSWeightTotal.toFixed(3);
+
         const tfootContent = `
-        <tr>
-        <td style="text-align: center;">Total</td>
+        <tr id="trTotal">
         <td colspan="3"></td>
+        <td style="text-align: center;">Total</td>
+        <td style="text-align: right;">${totalQtyBalWeightTotal}</td>
+        <td style="text-align: right;">${totalQtyMTWeightTotal}</td>
+        <td style="text-align: right;">${totalQtyMTRSWeightTotal}</td>
+        <td style="text-align: right;">${totalQtyBalPCWeightTotal}</td>
+        <td style="text-align: right;">${totalQtyBalMTWeightTotal}</td>
+        <td style="text-align: right;">${totalQtyBalMTRSWeightTotal}</td>
+        <td></td>
+        </tr>
+        <tr id="trGrandTotal">
+        <td colspan="3"></td>
+        <td style="text-align: center;">Grand Total</td>
         <td style="text-align: right;">${totalQtyBalWeight}</td>
         <td style="text-align: right;">${totalQtyMTWeight}</td>
         <td style="text-align: right;">${totalQtyMTRSWeight}</td>
@@ -277,6 +311,42 @@ function clearFooter() {
     }
 }
 
+function calculateTotal() {
+
+    let Data = $('#ActualDispatch tbody tr:visible');
+    let totalQtyBalWeightTotal = 0;
+    let totalQtyMTWeightTotal = 0;
+    let totalQtyMTRSWeightTotal = 0;
+
+    let totalQtyBalPCWeightTotal = 0;
+    let totalQtyBalMTWeightTotal = 0;
+    let totalQtyBalMTRSWeightTotal = 0;
+    if (Data.length > 0) {
+        
+        for (let i = 0; i < Data.length; i++) {
+            let ItemRow = Data[i];
+
+            totalQtyBalWeightTotal += parseFloat(ItemRow.children[5].innerHTML);
+            totalQtyMTWeightTotal += parseFloat(ItemRow.children[6].innerHTML);
+            totalQtyMTRSWeightTotal += parseFloat(ItemRow.children[7].innerHTML) ;
+            totalQtyBalPCWeightTotal += parseFloat(ItemRow.children[8].innerHTML) ;
+            totalQtyBalMTWeightTotal += parseFloat(ItemRow.children[9].innerHTML) ;
+            totalQtyBalMTRSWeightTotal += parseFloat(ItemRow.children[10].innerHTML);
+
+        }
+        $('#trTotal')[0].children[2].innerHTML = totalQtyBalWeightTotal;
+        $('#trTotal')[0].children[3].innerHTML = parseFloat(totalQtyMTWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[4].innerHTML = parseFloat(totalQtyMTRSWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[5].innerHTML = totalQtyBalPCWeightTotal;
+        $('#trTotal')[0].children[6].innerHTML = parseFloat(totalQtyBalMTWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[7].innerHTML = parseFloat(totalQtyBalMTRSWeightTotal).toFixed(3);
+
+    }
+
+}
+setInterval(function () {
+    calculateTotal();
+}, 1000);
 window.getPartyNamePendingPackingListActualDespatch = getPartyNamePendingPackingListActualDespatch;
 window.onPartyNameSelectGrid = onPartyNameSelectGrid;
 window.updateAll = updateAll;

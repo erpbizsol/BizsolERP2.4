@@ -1,0 +1,111 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/PhysicalStockTaking.js"></script> 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<style>
+    .modal-dialog {
+        max-width: 1050px;
+    }
+    .highlighted-date {
+        background-color: #3926B6;
+        color: white;
+        border-radius: 30px;
+    }
+
+    .datepicker td, .datepicker th {
+        border-radius: 20px !important;
+    }
+
+    .datepicker table tr td, .datepicker table tr td {
+        padding: 8px 9px !important;
+        height: 16px !important;
+    }
+
+    .datepicker table tfoot {
+        display: none;
+    }
+
+    #hidetexbox {
+        display: none;
+    }
+
+    .btn:not(:disabled):not(.disabled) {
+        cursor: pointer !important;
+    }
+
+    .without-label-field {
+        margin-top: 2.1rem;
+    }
+</style>
+<div class="tab-section">
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="true">Physical Stock Taking</button>
+        </li>
+    </ul>
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+            
+            <div class="row">
+                <input type="hidden" name="Code" id="Code" class="form-control" value="0">
+                <!-- Date -->
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="txtdate" class="col-form-label-sm fw-bold">Date:<span class="text-danger">*</span></label>
+                        <input id="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" required />
+                    </div>
+                </div>
+
+                <!-- Remarks -->
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="col-form-label-sm fw-bold required"><b>Remarks:<span class="text-danger">*</span></b></label>
+                        <input type="text" name="remarks" id="remarks" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Remarks" required/>
+                    </div>
+                </div>
+
+                <!-- Physical Warehouse -->
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="col-form-label-sm fw-bold required"><b>Physical Warehouse:</b><span class="text-danger">*</span></label>
+                        <datalist id="txtPhysicalWarehouseList"></datalist>
+                        <input list="txtPhysicalWarehouseList" id="txtPhysicalWarehouse" type="text" name="txtPhysicalWarehouse" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Physical Warehouse" required />
+                    </div>
+                </div>
+
+                <!-- Item Name -->
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="col-form-label-sm fw-bold required"><b>Item Name:</b><span class="text-danger">*</span></label>
+                        <input type="text" name="itemName" id="itemName" class="box_border form-control form-control-sm" autocomplete="off" maxlength="8" placeholder="Item Name" required />
+                    </div>
+                </div>
+
+                <!-- Scan Identification No -->
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="col-form-label-sm fw-bold required"><b>Scan Identification No:</b><span class="text-danger">*</span></label>
+                        <datalist id="txtScanIdentificationNoList"></datalist>
+                        <input list="txtScanIdentificationNoList" id="txtScanIdentificationNo" oninput="onScanIdSelect(event)" type="text" name="txtScanIdentificationNo" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Scan Identification No" required />
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+<div id="tblPhysicalStockTaking">
+    <div class="table-wrapper fixed-height-table">
+        <table id="PhysicalStockTaking" class="fixed-width-table table">
+            <thead id="table-header-PhysicalStockTaking">
+            </thead>
+            <tbody id="table-body-PhysicalStockTaking">
+            </tbody>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-PhysicalStockTaking">
+    </div>
+</div>
