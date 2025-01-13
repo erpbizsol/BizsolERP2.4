@@ -30,6 +30,34 @@
     .without-label-field {
         margin-top: 2.1rem;
     }
+
+    input[type="checkbox"] {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+        position: relative;
+        cursor: pointer;
+    }
+
+        /* When checkbox is checked, make the background green */
+        input[type="checkbox"]:checked {
+            background-color: green;
+            border-color: green;
+        }
+
+            /* Adding a checkmark when checked */
+            input[type="checkbox"]:checked::after {
+                content: '✔';
+                color: white;
+                font-size: 15px;
+                position: absolute;
+                top: 0;
+                left: 2px;
+            }
 </style>
 <div id="dateAndOrderByPallet">
 <div class="card">
@@ -51,7 +79,9 @@
                     <input id="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" required />
                 </div>
                 <div class="col-md-2 without-label-field ">
-                    <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" />
+                    <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" /> &nbsp;
+                     <input type="button" onclick="Print()" class="btn btn-primary btn-height" value="Print" />
+
                 </div>
             </div>
             <div class="row" id="orderWiseSection" style="display:none;">
@@ -61,9 +91,10 @@
                     <input list="txtOrderNoList" id="txtOrderNo" type="text" name="txtOrderNo" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Order No" required />
                     </div>                    
                     <div class="col-md-2 without-label-field">
-                        <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" />
-                    </div>
+                        <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" /> &nbsp;
+                        <input type="button" onclick="Print()" class="btn btn-primary btn-height" value="Print" />
 
+                    </div>
             </div>
 
         </form>
@@ -116,7 +147,7 @@
             <div class="col-md-3">
                 <div class="form-group">
                     <label class="col-form-label-sm fw-bold required"><b>Packing Wt:</b><span class="text-danger">*</span></label>
-                    <input type="text" name="packingWt" id="packingWt" class="box_border form-control form-control-sm" autocomplete="off" maxlength="8" placeholder="Packing Wt" required />
+                    <input type="text" name="packingWt" id="packingWt" class="box_border form-control form-control-sm" autocomplete="off" maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '');" placeholder="Packing Wt" required />
                 </div>
             </div>
 
@@ -124,7 +155,7 @@
             <div class="col-md-3">
                 <div class="form-group">
                     <label class="col-form-label-sm fw-bold required"><b>Reference No:</b><span class="text-danger">*</span></label>
-                    <input type="text" name="referenceNo" id="referenceNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Reference No" maxlength="8" required />
+                    <input type="text" name="referenceNo" id="referenceNo" class="box_border form-control form-control-sm" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '');"  placeholder="Reference No" maxlength="8" required />
                 </div>
             </div>
 
@@ -157,7 +188,7 @@
 
                 <div class="row">
                     <div class="col-md-12 mb-2 text-end">
-                        <button type="button" title="Print" class="btn btn-primary btn-height" >Print</button>
+                        <button type="button" title="Print" onclick="Print()" class="btn btn-primary btn-height">Print</button>
                         <button type="button" onclick="CreateNew()" title="Create New" class="btn btn-primary btn-height">Create New</button>
                         <button type="button" class="btn btn-primary btn-height" title="Back" onclick="Close()">BACK</button>
                     </div>
