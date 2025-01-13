@@ -113,6 +113,7 @@ function FileUploadChange(event) {
     }
 }
 function StockTransferWherehouseReceive() {
+    $('#StockTransferReceive').show();
     let obj = [{
         godownMaster_Code: Godownmaster_Code,
         rollIdNo: $("#ddlRollIdNo").val(),
@@ -127,6 +128,7 @@ function StockTransferWherehouseReceive() {
             
             StockTransferReceiveService.GetPendingRoll(Godownmaster_Code, obj[0].rollIdNo).then(function (res) {
                 if (res && Array.isArray(res) && res.length > 0) {
+                    $('#StockTransferReceive').hide();
                     $('#myModal').modal({
                         backdrop: 'static',
                     });
@@ -144,8 +146,8 @@ function StockTransferWherehouseReceive() {
                         "PackingListMaster_Code": 'right'
                     };
                     const updatedResponse = res.map(item => {
-                        let buttonsHTML = `<input type="checkbox" onchange="toggleSelection(this, this.checked)">`;
-                        let inputHTML = `<input type="number" id="receviedQTYPC" data-packing-list-no="${item.PackingListNo}" value="${item.BalQtyPC}" min="1" max="${item.BalQtyPC}">`;
+                        let buttonsHTML = `<input type="checkbox" checked>`;
+                        let inputHTML = `<input type="number" id="receviedQTYPC" data-packing-list-no="${item.PackingListMaster_Code}" value="${item.BalQtyPC}" min="1" max="${item.BalQtyPC}">`;
                         return {
                             ...item,
                             select: buttonsHTML,
@@ -153,6 +155,7 @@ function StockTransferWherehouseReceive() {
                         };
                     });
                     BizsolCustomFilterGrid.CreateDataTable("table-header-NoOfVerify", "table-body-NoOfVerify", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+                    
                 } else {
                     toastr.error('No Data Found');
                 }
@@ -163,6 +166,7 @@ function StockTransferWherehouseReceive() {
         }
         else {
             toastr.error('Please select a file to proceed');
+            $('#StockTransferReceive').hide();
             return;
         }
     } else {
@@ -179,6 +183,7 @@ function StockTransferWherehouseReceive() {
                     const columnAlignment = {};
 
                     BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+                    $("#ddlRollIdNo").val('');
                 } else {
                     toastr.error('No Data Found');
                 }
@@ -189,37 +194,12 @@ function StockTransferWherehouseReceive() {
         }
         else {
             toastr.error('Please select a file to proceed');
+            $('#StockTransferReceive').hide();
             return;
         }         
     }
 }
-//function toggleSelection(row, isChecked) {
-    
-//}
-//function SaveReceivedData() {
-//    if (selectedRows.length > 0) {
-//        let Data = selectedRows.map(row => ({
-//            godownMaster_Code: Godownmaster_Code,
-//            rollIdNo: $("#ddlRollIdNo").val(),
-//            user_Code: JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code,
-//            companyCode: JSON.parse(sessionStorage.getItem('authKey')).CompanyCode,
-//            attachFileName: fileName,
-//            attachData: imageBase64Data,
-//            packingListMaster_Code: row.PackingListNo,
-//            receviedQTY: row.ReceviedQty
-//        }));
-//        StockTransferReceiveService.ItemWaiseVerifyRollIdInPackingList(JSON.stringify(Data)).then(function (response) {
-//            if (response.Status === 'Y') {
-//                toastr.success(response.Msg);
-//                CloseModal();
-//            }
-//        }).catch(function (error) {
-//            toastr.error(error.Msg || 'Error processing received data');
-//        });
-//    } else {
-//        toastr.error('No rows selected');
-//    }
-//}
+
 function SaveReceivedData() {
     
     let ReveivedTable = document.getElementById("table-body-NoOfVerify");
@@ -228,7 +208,7 @@ function SaveReceivedData() {
         const rowData = ReveivedTable.rows[i];
         let isChecked = rowData.children[0].getElementsByTagName('input')[0].checked;
 
-        let PackingListMaster_Code = rowData.children[3].innerText;
+        let PackingListMaster_Code = rowData.children[6].getElementsByTagName('input')[0].attributes["data-packing-list-no"].value;
 
         const rowValues = {
             PackingListMaster_Code: PackingListMaster_Code,
