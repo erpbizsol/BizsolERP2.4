@@ -7,9 +7,11 @@ let notificationList = '';
 
 function GetWebNotificationList() {
     let totalNotificationCount = 0;
+    let UserDetailsobj = JSON.parse(sessionStorage.getItem('UserDetails'));
+    let UserID = UserDetailsobj[0].UserID
   
     // Fetch notifications
-    WebNotificationService.GetWebNotificationMasterList("BIZANKIT").then(function (value) {
+    WebNotificationService.GetWebNotificationMasterList(UserID).then(function (value) {
         notificationList = ''
         value.forEach(notification => {
             totalNotificationCount += notification.NotificationCount;
