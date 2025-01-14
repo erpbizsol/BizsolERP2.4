@@ -20,9 +20,8 @@ const QuotationApprovalService = {
         );
     },
     QuotationApproved: function QuotationApproved(QuotationMaster_Code) {
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var userMasterCode = authKeyData.UserMaster_Code;
-        var url = UrlService.API_ENDPOINT_QuotationApproval + "/QuotationApproved?QuotationMaster_Code=" + QuotationMaster_Code + "&UserMaster_Code" + userMasterCode;
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var url = UrlService.API_ENDPOINT_QuotationApproval + "/QuotationApproved?QuotationMaster_Code=" + QuotationMaster_Code + "&UserMaster_Code" + userCode;
         return promiseAjaxCallApi.CallAPI('POST', url, "").then(
             function (value) {
                 return value;
