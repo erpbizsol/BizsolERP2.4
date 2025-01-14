@@ -1,0 +1,124 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/StockTransferWarehouse.js"></script>
+<style>
+    .custom-modal-width {
+        width: 650px;
+    }
+</style>
+
+<div class="tab-section">
+      <ul class="nav nav-tabs" id="myTab" role="tablist">
+         <li class="nav-item" role="presentation">
+             <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true">Warehouse Receive</button>
+         </li>
+        @*  <li class="nav-item" role="presentation">
+             <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="false"> Actual Dispatch</button>
+         </li> *@
+       
+     </ul> 
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+            <form asp-action="YourAction" asp-controller="YourController" method="post" enctype="multipart/form-data">
+                <input type="hidden" asp-for="Code" value="0" />
+
+                <div class="row">
+                    <!-- Warehouse Field -->
+                    <div class="col-md-4 form-group">
+                        <label for="ddlWarehouse" class="form-label">Warehouse <span class="text-danger">*</span></label>
+                        <input list="ddlWarehouseList" id="ddlWarehouse" name="ddlWarehouse" class="form-control form-control-sm box_border" placeholder="Warehouse" autocomplete="off" required>
+                        <datalist id="ddlWarehouseList"></datalist>
+                    </div>
+
+                    <!-- Attachment Field -->
+                    <div class="col-md-4 form-group">
+                        <label for="attachment" class="form-label">Attachment <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text" onclick="triggerFileInputClick()" style="cursor: pointer; height:28px">
+                                <i class="fa fa-camera"></i>
+                            </span>
+                            <input type="file" accept=".jpg, .png, .jpeg" onchange="FileUploadChange(event)" class="form-control form-control-sm box_border" id="fileInput" />
+                        </div>
+                    </div>
+
+                    <!-- Roll Id No Field -->
+                    <div class="col-md-4 form-group">
+                        <label for="ddlRollIdNo" class="form-label">Roll Id No <span class="text-danger">*</span></label>
+                        <input list="ddlRollIdNoList" id="ddlRollIdNo" name="ddlRollIdNo" class="form-control form-control-sm box_border" placeholder="Roll Id No" autocomplete="off" required>
+                        <datalist id="ddlRollIdNoList"></datalist>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+            <div class="row">
+                <div class="col-md-4 form-group">
+                    <label for="partyName" class="form-label">Party Name <span class="text-danger">*</span></label>
+                    <input list="ddlPartyNameList" id="ddlPartyName" name="ddlPartyName" class="form-control form-control-sm box_border" placeholder="Party Name" autocomplete="off" required>
+                    <datalist id="ddlPartyNameList"></datalist>
+                </div>
+                <div class="col-md-4 form-group">
+                    <label for="ddlPalletNo" class="form-label">Pallet No.<span class="text-danger">*</span></label>
+                    <input list="ddlPalletNoList" id="ddlPalletNo" name="ddlPalletNo" class="form-control form-control-sm box_border" placeholder="Pallet No" autocomplete="off" required>
+                    <datalist id="ddlPalletNoList"></datalist>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="tblStockReceive">
+<div class="table-wrapper fixed-height-table">
+    <table id="StockTransferReceive" class="fixed-width-table table">
+        <thead id="table-header">
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-StockTransferReceive">
+</div>
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content custom-modal-width">
+            <div class="modal-header">
+                <h5 class="modal-title">No. of Verify</h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="NoOfVerify" class="fixed-width-table table">
+                        <thead id="table-header-NoOfVerify">
+                        </thead>
+                        <tbody id="table-body-NoOfVerify">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-NoOfVerify">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-height" onclick="SaveReceivedData()">Received</button>
+                <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="tblActualDispatch">
+<div class="modal-body">
+    <div class="table-wrapper fixed-height-table">
+        <table id="ActualDispatch" class="fixed-width-table table">
+            <thead id="table-header-ActualDispatch">
+            </thead>
+            <tbody id="table-body-ActualDispatch">
+            </tbody>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-ActualDispatch">
+    </div>
+    </div>
+</div>

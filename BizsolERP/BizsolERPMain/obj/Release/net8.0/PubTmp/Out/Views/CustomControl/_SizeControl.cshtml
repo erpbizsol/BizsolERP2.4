@@ -1,0 +1,77 @@
+﻿
+<div class="modal fade bs-example-modal-center" id="SizeControlmodal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Size Details:</h5>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-3 p-4">
+                        Size Desp
+                    </div>
+                    <div class="col-md-5 p-4">
+                        <select id="ddlItemSizeMaster" onchange="onSizeControl_ddlItemSizeMasterChange()">
+                        </select>
+                    </div>
+                </div>
+               
+                <table  class="table mt-1" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>
+                                Parameter
+                            </th>
+                            <th style="width:40%">Value</th>
+
+                        </tr>
+                    </thead>
+                    <tbody id="tbSizeParameter">
+
+                        @*  @foreach (var item in ViewBag.SizeTable)
+                        {
+                        <tr>
+                        <td>@item.ParameterName</td>
+                        <td>
+                        <input type="text" id="" value="@item.ParameterValue" list="list_@item.ParameterName.ToString().Replace(" ","")" onfocusout="checkDataListValidSize(this.value, 'list_@item.ParameterName.ToString().Replace(" ","")', 'hf_@item.ParameterName.ToString().Replace(" ","")')" onclick="$(this).val('');" autocomplete="off" style="background-color: #ccc !important; pointer-events: none;" />
+                        <datalist id="list_@item.ParameterName.ToString().Replace(" ","")">
+                        </datalist>
+                        <input type="hidden" value="@item.ValueCode" id="hf_@item.ParameterName.ToString().Replace(" ","")" />
+                        <input type="hidden" value="@item.ParameterCode" id="hf_ItemParameterMaster_Code_@item.ParameterName.ToString().Replace(" ","")" />
+                        </td>
+                        </tr>
+
+                        } *@
+                    </tbody>
+
+                    <tfoot>
+                    </tfoot>
+                </table>
+                
+                <div class="text-end mt-1">
+                    <a class="btn btn-primary" onclick="onSizeControl_CreateSize();">
+                        Done
+                    </a>
+                    &nbsp;
+                    <a class="btn btn-danger" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                    <input type="hidden" value="@ViewBag.ItemMaster_Code" id="hfItemMaster_Code" />
+                    <input type="hidden" value="@ViewBag.ItemSizeMaster_Code" id="hfItemSizeMaster_Code" />
+                    <input type="hidden" value="@ViewBag.CallBackFunctionName_btnDone" id="hfCallBackFunctionName_btnDone" />
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_SizeControlpage.js"></script>
+<script>
+    $(document).ready(function () {
+       // ME();
+        getAllSize();
+
+        $("#SizeControlmodal").modal({
+            backdrop: 'static',
+           // keyboard: false
+        });
+        $("#SizeControlmodal").modal('show');
+    });
+</script>
