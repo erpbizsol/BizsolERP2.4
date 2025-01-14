@@ -1,4 +1,4 @@
-﻿import { PalletPackingService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/PalletPackingService.js';
+﻿import { PalletPackingService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PalletPackingService.js';
 
 let BuyerPOMaster_Code = 0;
 let Godownmaster_Code = 0;
@@ -9,11 +9,20 @@ let scanIdCheck = [];
 let PalletNo = 0;
 let todayDate = '';
 let todayDate1 = '';
+let selectedDates = [];
 $(document).ready(function () {
     $("#ERPHeading").text("Pallet Packing");
-    highlightSelectedDates();
+    var today = new Date();
+    var day = ('0' + today.getDate()).slice(-2);
+    var month = ('0' + (today.getMonth() + 1)).slice(-2);
+    var year = today.getFullYear();
+
+    $('#txtdate').val(`${day}/${month}/${year}`);
+    setupDateInputFormatting();
+    GetPackedPalletDate();
     todayDate = convertDateFormat($('#txtdate').val());
     todayDate1 = $('#txtdate').val();
+
     $('input[name="filterType"]').on('change', function () {
         const selectedValue = $(this).val();  
         if (selectedValue === 'dateWise') {
@@ -40,9 +49,7 @@ $(document).ready(function () {
     });
     if ($('#dateWise').is(':checked')) {
         GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code);
-    } else {
-
-    }
+    } 
     $('#txtWarehouse').on('focus', function (e) {
         $("#txtWarehouse").val("");
     });
@@ -89,6 +96,23 @@ $(document).ready(function () {
         }
     });
 });
+function GetPackedPalletDate() {
+    PalletPackingService.GetPackedPalletDate().then(function (response) {
+        if (response && response.length > 0) {
+            response.forEach(item => {
+                if (item.PalletDate) {
+                    selectedDates.push(item.PalletDate);
+                }
+            });
+            highlightSelectedDates();
+        }
+        else {
+            toastr.error('No Data Found')
+            highlightSelectedDates();
+        }
+    });
+
+}
 function setupDateInputFormatting() {
     $('#txtdate').on('input', function () {
         let value = $(this).val().replace(/[^\d]/g, '');
@@ -133,7 +157,6 @@ function validateDate(value) {
 }
 function highlightSelectedDates() {
     var highlightedDates = {};
-    var selectedDates = ['01/10/2024', '05/10/2024', '11/11/2024'];
     selectedDates.forEach(date => {
         var parts = date.split('/');
         var formattedDate = new Date(parts[2], parts[1] - 1, parts[0]).toDateString();
@@ -172,8 +195,10 @@ function convertDateFormat(dateString) {
 }
 
 function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
+    Showloader();
     PalletPackingService.GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code).then(function (response) {
-        if (response && Array.isArray(response) && response.length > 0) {
+        if (response && response.length > 0) {
+            HideLoader();
             $("#tblDateOrderPallet").show();
             const stringFilterColumn = [];
             const numericFilterColumn = [];
@@ -187,7 +212,8 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
                 "Pallet Remark":'right',
                 "Qty PC":'right',
                 "Qty MT":'right',
-                "Pallet Date":'center',
+                "Pallet Date": 'center',
+                "Qty ":'right',
             };
             const updatedResponse = response.map(item => {
                 let buttonsCheckBox = `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`;
@@ -200,11 +226,12 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
                 return {
                     ...item,
                     Action: buttonsHTML,
-                    '<input type="checkbox" id="checkAllPrint" onchange="toggleAllSelection(this)" checked> Print': buttonsCheckBox,
+                    'Print <input type="checkbox" id="checkAllPrint" onchange="toggleAllSelection(this)" checked>': buttonsCheckBox,
                 };
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header-PalletPacking", "table-body-PalletPacking", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
         } else {
+            HideLoader();
             toastr.error('No Data Found');
             $("#tblDateOrderPallet").hide();
         }
@@ -285,20 +312,6 @@ function FillPendingOrderModal() {
         toastr.error('Error fetching user list:', error);
     });
 }
-//function CreateNew() {
-//    $('#newCreateForm').show();
-//    $('#dateAndOrderByPallet').hide();
-//    $('#tdlScanIdentification').hide();
-//    $("#txtPalletdate").val(todayDate);
-//    $("#txtOrderNo1").val($("#txtOrderNo").val());
-//    $("#palletNo").val('');
-//    $('#txtWarehouse').val('');
-//    $('#txtPalletType').val('');
-//    $('#packingWt').val('');
-//    FillWarehouse();
-//    FillPendingOrderModal();
-//    FillPalletType();
-//}
 function CreateNew() {
     $('#newCreateForm').show();
     $('#dateAndOrderByPallet').hide();
@@ -320,6 +333,12 @@ function Close() {
     $('#dateAndOrderByPallet').show();
     $('#newCreateForm').hide();
     $('#tdlScanIdentification').hide();
+    var selectedDate = $('#txtdate').val();
+    var parts = selectedDate.split('/');
+    var formattedSelectedDate = new Date(parts[2], parts[1] - 1, parts[0]);
+    formattedSelectedDate = convertDateFormat($('#txtdate').val());
+    GetPackedPalletDateAndOrderWise(formattedSelectedDate, BuyerPOMaster_Code);
+
 }
 
 function FillWarehouse() {
@@ -399,6 +418,7 @@ function onScanIdSelect(event) {
 function ScanID() {
     PalletPackingService.ScanID(IdentificationNo, Godownmaster_Code).then(function (response) {
         if (response.length > 0) {
+            //console.log(response);
             const newData = response.map((item, index) => ({
                 SN: scanIdCheck.length + index + 1, 
                 ...item
@@ -420,7 +440,8 @@ function ScanID() {
             const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight","Pallet No"];
             const columnAlignment = {
                 "Qty MT": 'right',
-                "QtyPC": 'right',
+                "Qty PC": 'right',
+                "Qty": 'right',
             };
             const updatedResponse = uniqueData.map(item => {
                 let ColValue = item?.['Identification No'];
@@ -431,6 +452,7 @@ function ScanID() {
                 };
             });
             scanIdCheck = [...scanIdCheck, ...updatedResponse];
+            console.log(scanIdCheck);
             BizsolCustomFilterGrid.CreateDataTable("table-header-ScanIdentification", "table-body-ScanIdentification", scanIdCheck, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
             if (updatedResponse?.length > 0) {
                 ColForWhere = updatedResponse[0]?.ColForWhere;
@@ -521,7 +543,8 @@ function editPalletTable(PalletNo, Godownmaster_Code) {
             const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight", "Pallet No"];
             const columnAlignment = {
                 "Qty MT": 'right',
-                "QtyPC": 'right',
+                "Qty PC": 'right',
+                "Qty": 'right',
 };
             const updatedResponse = uniqueEditData.map(item => {
                 let ColValue = item?.['Identification No'];
@@ -566,7 +589,8 @@ function GetPalletDetail(PalletNo) {
             const hiddenColumns = ["Stock Type", "ColForWhere"];
             const columnAlignment = {
                 "Qty MT": 'right',
-                "QtyPC": 'right',
+                "Qty PC": 'right',
+                "Qty": 'right',
             };
             const updatedResponse = response.map(item => {
                 let ColValue = item?.['Identification No'];
@@ -647,7 +671,9 @@ function Delete(ColForWhere, ColValue) {
     }
 }
 
+function Print() {
 
+}
 
 window.GetPackedPalletDateAndOrderWise = GetPackedPalletDateAndOrderWise;
 window.FillPendingOrder = FillPendingOrder;

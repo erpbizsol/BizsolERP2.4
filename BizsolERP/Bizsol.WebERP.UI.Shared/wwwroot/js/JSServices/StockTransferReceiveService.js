@@ -37,8 +37,9 @@ ItemWaiseVerifyRollIdInPackingList: function ItemWaiseVerifyRollIdInPackingList(
         }
     );
 },
-PackingActualPalletIDDispatch: function PackingActualPalletIDDispatch(PalletNo, PartyName, Data) {
-    var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/PackingActualPalletIDDispatch?PalletNo=" + PalletNo +"" + "&PartyName=" + PartyName+"";
+    PackingActualPalletIDDispatch: function PackingActualPalletIDDispatch(PalletNo, PartyName) {
+    let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/PackingActualPalletIDDispatch?PalletNo=" + PalletNo + "" + "&PartyName=" + PartyName + "" + "&UserMaster_Code=" + userCode;
     return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
         function (value) {
             return value;
@@ -71,6 +72,31 @@ GetPendingPackingListPalletsActualDespatch: function GetPendingPackingListPallet
     },
     GetPalletActualDespatchDetails: function GetPalletActualDespatchDetails(PalletNo, PartyName){
         var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPalletActualDespatchDetails?PalletNo=" + `${PalletNo}` + "&PartyName=" + `${PartyName}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetPendingPackingListActualDespatch: function GetPendingPackingListActualDespatch(PartyName) {
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPendingPackingListActualDespatch?PartyName=" + PartyName + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetPendingPackingListActualDespatchDetails: function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPendingPackingListActualDespatchDetails?PackingListMaster_Code=" + PackingListMaster_Code + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    PackingListActualDespatchAllPallet: function PackingListActualDespatchAllPallet(PackingListMaster_Code) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/PackingListActualDespatchAllPallet?PackingListMaster_Code=" + PackingListMaster_Code + "" + "&UserMaster_Code=" + userCode;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

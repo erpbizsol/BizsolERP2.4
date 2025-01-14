@@ -29,6 +29,7 @@
                 error: function (xhr, status, error) {
                     var errorMessage = status + ': ' + error;
                     alert('Data Error: ' + errorMessage);
+                    HideLoader();
                 }
             });
         });

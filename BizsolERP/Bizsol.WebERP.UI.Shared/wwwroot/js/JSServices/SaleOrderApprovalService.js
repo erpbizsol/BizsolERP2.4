@@ -12,7 +12,6 @@ const SaleOrderApprovalService = {
     },
     GetSaleOrderDetail: function GetSaleOrderDetail(BuyerPOMaster_Code) {
         var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/GetSaleOrderDetail?BuyerPOMaster_Code=" + BuyerPOMaster_Code;
-       /* return this._http.post(url, {}, { headers: this.headers() });*/
         return promiseAjaxCallApi.CallAPI('POST', url, "").then(
             function (value) {
                 return value;
@@ -21,15 +20,13 @@ const SaleOrderApprovalService = {
     },
 
     SaleOrderApproved: function SaleOrderApproved(BuyerPOMaster_Code) {
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var userMasterCode = authKeyData.UserMaster_Code;
-        var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/SaleOrderApproved?BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&UserMaster_Code" + userMasterCode;
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/SaleOrderApproved?BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&UserMaster_Code=" + userCode;
         return promiseAjaxCallApi.CallAPI('POST', url, "").then(
             function (value) {
                 return value;
             }
         );
-        //return this._http.post(url, {}, { headers: this.headers() });
     },
 }
 export { SaleOrderApprovalService }

@@ -1,56 +1,59 @@
-﻿
-import { QuotationApprovalService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/QuotationApprovalService.js';
+﻿import { QuotationApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/QuotationApprovalService.js';
 
 $(document).ready(function () {
-    $('[data-toggle="tooltip"]').tooltip();
+    $("#ERPHeading").text("Quotation Approval");
     GetApprovedQuotationList();
 });
 function GetApprovedQuotationList() {
     QuotationApprovalService.GetUnApprovedQuotation().then(function (resData) {
-        if (resData.length > 0) {
-        const StringFilterColumn = ["Quotation No"];
+        if (resData && resData.length > 0) {
+            const StringFilterColumn = ["Quotation No", "Party"];
         const NumericFilterColumn = ["Total Amount"];
-        const DateFilterColumn = ["Quotation Date"];
+        const DateFilterColumn = [];
         const Button = false;
-        const StringdoubleFilterColumn = ["Party"];
+        const StringdoubleFilterColumn = [];
         const hiddenColumns = ["Code"];
         const showButtons = [];
+            const ColumnAlignment = {
+                "Quotation Date": "center",
+                "Quotation No": "center",
+                "Total Amount": "right",
+            };
         const updatedResponse = resData.map(item => ({
-            ...item, Action: item.Action ? `<button style="background-color:#198754;border-radius: 5px; " onclick="ViewData('${item.Code}')"><i class="fa-solid fa-folder-open" data-toggle="tooltip" data-placement="top" title="View Details" style="color:white;"></i></button>
-                   <button style="background-color:#3f51b5;border-radius: 5px" onclick="QuotationApprovedlist('${item.Code}')"><i class="fa fa-check-circle" data-toggle="tooltip" data-placement="top" title="Approve" style="color:white;"></i></button>
+            ...item, Action: item.Action ? `<button class="btn btn-primary icon-height mb-1" title="View Details" onclick="ViewData('${item.Code}')"><i class="fa-solid fa-folder-open"></i></button>
+                   <button class="btn btn-success icon-height mb-1" title="Approve" onclick="QuotationApprovedlist('${item.Code}')"><i class="fa fa-check-circle"></i></button>
                 ` : ""
         }));
        
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
+            BizsolCustomFilterGrid.CreateDataTable("table-header-QuotationTable", "table-body-QuotationTable", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
         }
         else {
-            toastr.error("Record not found...!");
-           // alert("No data available.");
+            toastr.error("No data available");
         }
 
     });
 }
-window.GetQuotationDetails = function (Code) {
-    QuotationApprovalService.GetQuotationDetail(Code).then(function (data) {
-        const StringFilterColumn = [];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = [];
-        const Button = false;
-        const showButtons = [];
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["Code"];
-        BizsolCustomFilterGrid.CreateDataTable("table-header1", "table-body1", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
 
-    });
-}
 function ViewData(Code) {
-    $('#myModal').modal('show');
-    $('#myModal').modal({
-        backdrop: 'static',
+    QuotationApprovalService.GetQuotationDetail(Code).then(function (response) {
+            if (response && response.length > 0) {
+                $('#myModal').modal({
+                    backdrop: 'static',
+                });
+                $('#myModal').modal('show');
+            const StringFilterColumn = [];
+            const NumericFilterColumn = [];
+            const DateFilterColumn = [];
+            const Button = false;
+            const showButtons = [];
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = ["Code"];
+            const ColumnAlignment = {};
+                BizsolCustomFilterGrid.CreateDataTable("table-header-Quotation", "table-body-Quotation", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        }
     });
-    GetQuotationDetails(Code);
 }
-function closeModal() {
+function CloseModal() {
     $('#myModal').modal('hide');
 }
 function QuotationApprovedlist(code) {
@@ -75,5 +78,5 @@ function QuotationApprovedlist(code) {
 };
 
 window.ViewData = ViewData;
-window.closeModal = closeModal;
+window.CloseModal = CloseModal;
 window.QuotationApprovedlist = QuotationApprovedlist;

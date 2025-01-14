@@ -1,6 +1,6 @@
 ﻿import { SaleOrderApprovalService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/SaleOrderApprovalService.js';
 $(document).ready(function () {
-    $('[data-toggle="tooltip"]').tooltip();
+    $("#ERPHeading").text("Sale Order Approval");
     GetSaleOrderApproval();
 });
 function GetSaleOrderApproval() {
@@ -13,56 +13,61 @@ function GetSaleOrderApproval() {
             const StringdoubleFilterColumn = ["PartyName"];
             const showButtons = [];
             const hiddenColumns = ["Code", "BuyerPOMaster_Code"];
-            // const searchInput = document.getElementById('btnSearch');
-            //function renderTable() {
-            //    const searchText = searchInput.value.toLowerCase();
-            //    const filteredResponse = response.filter(item =>
-            //        Object.values(item).some(value =>
-            //            value && value.toString().toLowerCase().includes(searchText)
-            //        )
-            //    );
+            const ColumnAlignment = {
+                "Order Date": "center",
+                "Qty KG":"right",
+                "Qty PC":"right",
+                "Qty SQM":"right",
+                "Amount":"right",
+                "TotalOrderAmount":"right",
+            };
             const updatedResponse = response.map(item => ({
-                ...item, Action: item.Action ? `<button style="background-color:#198754;border-radius: 5px; " onclick="ViewData('${item.BuyerPOMaster_Code}')"><i class="fa-solid fa-folder-open" data-toggle="tooltip" data-placement="top" title="View Details" style="color:white;"></i></button>
-                   <button style="background-color:#3f51b5;border-radius: 5px" onclick="SaleOrderApprovedlist('${item.BuyerPOMaster_Code}')"><i class="fa fa-check-circle" data-toggle="tooltip" data-placement="top" title="Approve" style="color:white;"></i></button>
+                ...item, Action: item.Action ? `<button class="btn btn-primary icon-height mb-1" title="View Details" onclick="ViewData('${item.BuyerPOMaster_Code}')"><i class="fa-solid fa-folder-open"></i></button>
+                   <button class="btn btn-success icon-height mb-1" title="Approve" onclick="SaleOrderApprovedlist('${item.BuyerPOMaster_Code}')"><i class="fa fa-check-circle"></i></button>
                 ` : ""
             }));
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
-            // }
-            // renderTable();
-            // searchInput.addEventListener('input', renderTable);
+            BizsolCustomFilterGrid.CreateDataTable("table-header-SaleOrderApproval", "table-body-SaleOrderApproval", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);  
         }
         else {
-            toastr.error("Record not found...!");
-           // alert("No data available.");-
+            toastr.error("No valid data found:", response);
         }
-        });
-
-}
-window.GetSaleOrderDetails = function (Code) {
-    SaleOrderApprovalService.GetSaleOrderDetail(Code).then(function (data) {
-        const StringFilterColumn = [];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = [];
-        const Button = false;
-        const showButtons = [];
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["Code"];
-        BizsolCustomFilterGrid.CreateDataTable("table-header1", "table-body1", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns);
-
+    }).catch(error => {
+        toastr.error("Error in fetching data:", error);
     });
 }
 function ViewData(Code) {
-    $('#myModal').modal('show');
-    $('#myModal').modal({
-        backdrop: 'static',
+    SaleOrderApprovalService.GetSaleOrderDetail(Code).then(function (response) {
+        if (response && response.length > 0) {
+            $('#myModal').modal({
+                backdrop: 'static',
+            });
+            $('#myModal').modal('show');
+            const StringFilterColumn = [];
+            const NumericFilterColumn = [];
+            const DateFilterColumn = [];
+            const Button = false;
+            const showButtons = [];
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = ["Code"];
+            const ColumnAlignment = {
+                "BuyerPOMaster_Code":"center",
+                "Qty KG": "right",
+                "Qty PC": "right",
+                "Qty SQM": "right",
+                "Amount": "right",
+                };
+            BizsolCustomFilterGrid.CreateDataTable("table-header-SaleOrderApprovalTable", "table-body-SaleOrderApprovalTable", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        } else {
+            toastr.error("No valid data found:", response);
+        }
+    }).catch(error => {
+        toastr.error("Error in fetching data:", error);
     });
-    GetSaleOrderDetails(Code);
 }
-function closeModal() {
+function CloseModal() {
     $('#myModal').modal('hide');
 }
 function SaleOrderApprovedlist(BCode) {
-    toastr.options.positionClass = "toast-top-right";
     SaleOrderApprovalService.SaleOrderApproved(BCode).then(function (resdata) {
         if (resdata.Status === "Y") {
             toastr.success(resdata.Msg);
@@ -79,6 +84,6 @@ function SaleOrderApprovedlist(BCode) {
 };
 
 window.ViewData = ViewData;
-window.closeModal = closeModal;
+window.CloseModal = CloseModal;
 window.SaleOrderApprovedlist = SaleOrderApprovedlist;
 
