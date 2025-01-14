@@ -1,105 +1,75 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-<script src="~/assets/js/jquery-3.6.0.min.js"></script>
-@* <script src="~/assets/script/filter.js"></script>
-<link href="~/assets/css/filter.css" rel="stylesheet" /> *@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/js/POApproval.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/POApproval.js"></script>
 <style>
     .modal-dialog {
-        width: 100%;
-    }
-
-    .modal-header {
-        background-color: #3f51b5;
-    }
-
-    .modal-title {
-        text-align: center;
-        color: #eef6f2;
+        max-width: 1100px;
     }
 </style>
-@* <div style="text-align:right">
-    <input type="button" onclick="CreateNew()" class="btn btn-primary" value="Create New" />
-</div> *@
-<div class="row">
-    <div class="col-12">
-        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 class="mb-sm-0 font-size-18">PO Approval</h4>
 
-            @* <div class="page-title-right">
-            <ol class="breadcrumb m-0">
-            <li class="breadcrumb-item"><a href="javascript: void(0);">Dashboard</a></li>
-            <li class="breadcrumb-item active">Dashboard</li>
-            </ol>
+<div class="table-wrapper fixed-height-table">
+    <table id="POApproval" class="fixed-width-table table">
+        <thead id="table-header-POApproval">
+        </thead>
+        <tbody id="table-body-POApproval">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-POApproval">
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">View Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">x</span></button>
             </div>
-            *@
+            <div class="modal-body">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="PoapprovalModal" class="fixed-width-table table">
+                        <thead id="table-header-PoapprovalModal">
+                        </thead>
+                        <tbody id="table-body-PoapprovalModal">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-PoapprovalModal">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()">Cancel</button>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="table-wrapper mt-2">
-    <table id="table" class="fixed-width-table">
-        <thead id="table-header">
-        </thead>
-        <tbody id="table-body">
-        </tbody>
-    </table>
-</div>
-
-<div class="paginator" id="paginator-table">
-</div>
-
- @* <button type="button" class="btn btn-primary" onclick="ViewData()">Open Modal</button> *@
-
-<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content" style="width: 1029px;right: 246px;">
+<div class="modal fade" id="myHistoryModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">View Details</h5>
-                <button type="button" class="btn-close" onclick="CloseModal()">&times;</button>
+                <h5 class="modal-title" id="modal-title"></h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseHistoryModal()"><span aria-hidden="true">x</span></button>
             </div>
             <div class="modal-body">
-                <div class="table-wrapper mt-2">
-                    <table id="modal-table" class="fixed-width-table">
-                        <thead id="modal-table-header">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="PoaprrovalHistory" class="fixed-width-table table">
+                        <thead id="table-header-PoaprrovalHistory">
                         </thead>
-                        <tbody id="modal-table-body">
+                        <tbody id="table-body-PoaprrovalHistory">
                         </tbody>
                     </table>
                 </div>
-                <div class="paginator" id="paginator-modal-table">
+                <div class="paginator" id="paginator-PoaprrovalHistory">
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-danger" onclick="closeModal()" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger btn-height" onclick="CloseHistoryModal()">Cancel</button>
             </div>
-        </div><!-- /.modal-content -->
-    </div><!-- /.modal-dialog -->
+        </div>
+    </div>
 </div>
-
-<div class="modal fade" id="myHistoryModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content" style="width: 1029px;right: 246px;">
-            <div class="modal-header">
-                <h5 class="modal-title">View History</h5>
-                <button type="button" class="btn-close" onclick="CloseHistoryModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="table-wrapper mt-2">
-                    <table id="modal-history-table" class="fixed-width-table">
-                        <thead id="modal-history-table-header">
-                        </thead>
-                        <tbody id="modal-history-table-body">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="paginator" id="paginator-modal-history-table">
-                </div>
-            </div>
-        </div><!-- /.modal-content -->
-    </div><!-- /.modal-dialog -->
-</div>
+<div id="POApproval_AttachmentControlmodal"></div>
