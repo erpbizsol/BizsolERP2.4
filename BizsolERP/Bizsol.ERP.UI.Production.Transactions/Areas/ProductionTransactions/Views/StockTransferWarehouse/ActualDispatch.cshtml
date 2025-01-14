@@ -8,6 +8,10 @@
     .modal-dialog {
         max-width: 1050px;
     }
+
+    .mt-4 {
+        margin-top: 1.6rem !important;
+    }
 </style>
 <div class="tab-section">
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -20,16 +24,14 @@
             <div class="row">
                 <div class="col-md-4 form-group">
                     <label for="partyName" class="form-label">Party Name <span class="text-danger">*</span></label>
-                    <input list="ddlPartyNameList" id="ddlPartyName" name="ddlPartyName" class="form-control form-control-sm box_border" placeholder="Party Name" autocomplete="off" required>
-                    <datalist id="ddlPartyNameList"></datalist>
+                    @* <input list="ddlPartyNameList" id="ddlPartyName" name="ddlPartyName" class="form-control form-control-sm box_border" placeholder="Party Name" autocomplete="off" required> *@
+                    <select id="ddlPartyName" class="form-control form-control-sm box_border">
+                    </select>
+                    @* <datalist id="ddlPartyNameList"></datalist> *@
                 </div>
                     <div class="col-md-1 align-items-end mt-4">
                     <button type="button" id="btnShow" class="btn btn-primary btn-height" onclick="onPartyNameSelectGrid()">Show</button>
                     </div>
-
-                    @* <label for="ddlPalletNo" class="form-label">Pallet No.<span class="text-danger">*</span></label>
-                    <input list="ddlPalletNoList" id="ddlPalletNo" name="ddlPalletNo" class="form-control form-control-sm box_border" placeholder="Pallet No" autocomplete="off" required>
-                    <datalist id="ddlPalletNoList"></datalist> *@
             </div>
         </div>
     </div>
