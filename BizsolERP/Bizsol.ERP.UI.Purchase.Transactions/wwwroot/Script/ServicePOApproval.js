@@ -1,41 +1,36 @@
 ﻿import { ServicePOApprovalService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/ServicePOApprovalService.js';
 
 $(document).ready(function () {
+    $("#ERPHeading").text("Service PO Approval");
     unApprovedServicePO();
 
 });
 function unApprovedServicePO() {
     ServicePOApprovalService.GetUnApprovedServicePO().then(function (response) {
-        console.log(response)
-        const stringFilterColumn = ["Party", "Description", "Payment Terms"];
-        const numericFilterColumn = ["Code", "PO No.", "Amount"];
-        const dateFilterColumn = ["PO Date"];
-        const button = false;
-        const stringDoubleFilterColumn = [];
-        const showButtons = [];
-        const hiddenColumns = [];
-        const updatedResponse = response.map(item => ({
-            ...item, Action: `<button class="btn btn-success" title="Approve" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
-        <button class="btn btn-info" title="View Details" onclick="ViewData('${item.Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>`
-        }));
-        // Initialize the data table with the response
-        BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
-
-    });
-}
-window.openServicePODetails = function (code) {
-    //alert(code);
-    ServicePOApprovalService.GetServicePODetail(code).then(function (data) {
-        const stringFilterColumn = ["Description"];
-        const numericFilterColumn = ["Qty", "Rate", "Amount"];
-        const dateFilterColumn = [];
-        const button = false;
-        const stringDoubleFilterColumn = [];
-        const showButtons = [];
-        const hiddenColumns = [];
-        const updatedResponse = data.map(item => ({ ...item }));
-        // Update or re-create the data table with the specific PO details
-        BizsolCustomFilterGrid.CreateDataTable("modal-table-header", "modal-table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
+        if (response && response.length > 0) {
+            const stringFilterColumn = ["Party", "Description", "Payment Terms"];
+            const numericFilterColumn = ["Code", "PO No.", "Amount"];
+            const dateFilterColumn = ["PO Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+            const ColumnAlignment = {
+                "PO Amount": 'right',
+                "PO Date": 'center',
+                "PO No": 'center',
+                "Code": 'center',
+            };
+            const updatedResponse = response.map(item => ({
+                ...item, Action: `<button class="btn btn-success icon-height mb-1" title="Approve" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
+        <button class="btn btn-info icon-height mb-1" title="View Details" onclick="ViewData('${item.Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>`
+            }));
+            BizsolCustomFilterGrid.CreateDataTable("table-header-ServicePOApproval", "table-body-ServicePOApproval", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        } else {
+            toastr.error("No valid data found:", response);
+        }
+    }).catch(error => {
+        toastr.error("Error in fetching data:", error);
     });
 }
 
@@ -44,21 +39,42 @@ function Approval(Code) {
         if (approve.Status === "Y") {
             unApprovedServicePO();
             GetWebNotificationList();
-            alert(approve.Msg);
+            toastr.success(approve.Msg);
         }
         else {
-            alert(approve.Msg);
+            toastr.error(approve.Msg);
             
         }
     });
 }
 
 function ViewData(Code) {
-    $('#myModal').modal('show');
-    $('#myModal').modal({
-        backdrop: 'static',
+    ServicePOApprovalService.GetServicePODetail(Code).then(function (data) {
+        if (data && data.length > 0) {
+            $('#myModal').modal({
+                backdrop: 'static',
+            });
+            $('#myModal').modal('show');
+            const stringFilterColumn = ["Description"];
+            const numericFilterColumn = ["Qty", "Rate", "Amount"];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+            const ColumnAlignment = {
+                "PO Amount": 'right',
+                "PO Date": 'center',
+                "PO No": 'center',
+                "Code": 'center',
+            };
+            BizsolCustomFilterGrid.CreateDataTable("table-header-PoapprovalModalTable", "table-body-PoapprovalModalTable", data, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        } else {
+            toastr.error("No valid data found:", data);
+        }
+    }).catch(error => {
+        toastr.error("Error in fetching data:", error);
     });
-    openServicePODetails(Code);
 }
 function CloseModal(Code) {
     $('#myModal').modal('hide');

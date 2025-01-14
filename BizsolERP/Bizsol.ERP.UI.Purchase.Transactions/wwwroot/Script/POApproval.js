@@ -1,133 +1,80 @@
-﻿import { POApprovalService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/POApprovalService.js';
+﻿import { POApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/POApprovalService.js';
 $(document).ready(function () {
+    $("#ERPHeading").text("PO Approval");
     unApprovedPO();
 });
 function unApprovedPO() {
     POApprovalService.GetUnApprovedPO().then(function (response) {
-        if (response && Array.isArray(response) && response.length > 0) {
-            const stringFilterColumn = ["Party Name", "Product", "Payment Terms"];
+        if (response && response.length > 0) {
+            const stringFilterColumn = ["Party Name"];
             const numericFilterColumn = ["Code", "PO No", "PO Amount"];
-            const dateFilterColumn = ["PO Date"];
+            const dateFilterColumn = [];
             const button = false;
-            const stringDoubleFilterColumn = ["Product"];
+            const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = [];
             const ColumnAlignment = {
-                "Total Amount": 'right',
-                "Total Order Qty": 'right',
-                "Date": 'center',
-                "Verified": 'center',
-                "Closed": 'center',
+                "PO Amount": 'right',
+                "PO Date": 'center',
+                "PO No": 'center',
+                "Code": 'center',
             };
             const updatedResponse = response.map(item => ({
                 ...item,
-                Action: `<button class="btn btn-success" title="Approve" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
-                <button class="btn btn-info" title="View Details" onclick="ViewData('${item.Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>
-                <button class="btn btn-info" title="Attchment" onclick="Approval('${item.Approve}')"><i class="fa-solid fa-paperclip"></i></button>
-                <button class="btn btn-info" title="Preview" onclick="ViewData('${item.Code}')"><i class="fa fa-eye" aria-hidden="true"></i></button>`
+                Action: `<button class="btn btn-success icon-height mb-1" title="Approve" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
+                <button class="btn btn-primary icon-height mb-1" title="View Detail" onclick="ViewData('${item.Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>
+                <button class="btn btn-info icon-height mb-1" title="Attchment" onclick="AttchmentFile('${item.Code}')"><i class="fa-solid fa-paperclip"></i></button>`
+                //<button class="btn btn-primary icon-height mb-1" title="Preview" onclick="ViewData('${item.Code}')"><i class="fa fa-eye" aria-hidden="true"></i></button>`
             }));
 
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
-
-            // Add listeners for each item
-            response.forEach(item => {
-                $(`#l-${item.Code}`).on("click", function () {
-                    openPODetails(item.Code);
-                });
-            });
+            BizsolCustomFilterGrid.CreateDataTable("table-header-POApproval", "table-body-POApproval", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment); 
         } else {
-            console.error("No valid data found:", response);
-            alert("No data available.");
+            toastr.error("No valid data found:", response);
         }
     }).catch(error => {
-        console.error("Error in fetching data:", error);
-        alert("Failed to load data.");
+        toastr.error("Error in fetching data:", error);
     });
 }
-
-
-//function unApprovedPO() {
-//    POApprovalService.GetUnApprovedPO().then(function (response) {
-//        if (response != "0") {
-//            const stringFilterColumn = ["Party Name", "Product", "Payment Terms"];
-//            const numericFilterColumn = ["Code", "PO No", "PO Amount"];
-//            const dateFilterColumn = ["PO Date"];
-//            const button = false;
-//            const stringDoubleFilterColumn = ["Product"];
-//            const showButtons = [];
-//            const hiddenColumns = [];
-//            const updatedResponse = response.map(item => ({
-//                ...item, Action: `<button class="btn btn-success" title="Approve" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
-//        <button class="btn btn-info" title="View Details" onclick="ViewData('${item.Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>
-//        <button class="btn btn-info" title="Attchment" onclick="Approval('${item.Approve}')"><i class="fa-solid fa-paperclip"></i></button>
-//        <button class="btn btn-info" title="Preview" onclick="ViewData('${item.Code}')"><i class="fa fa-eye" aria-hidden="true"></i></button>`
-//            }));
-
-//            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
-
-
-//            // Initialize the data table with the response
-
-//            // Set up the event listener for each row or button in the table, if needed
-//            response.forEach(item => {
-//                // Example: Add click listener for each item
-//                $(`#l-${item.Code}`).on("click", function () {
-//                    // Call function to handle button click, e.g., open modal with PO details
-//                    openPODetails(item.Code);
-//                });
-//            });
-//        }
-//        });
-//}
-window.openPODetails = function (code) {
-    //alert(code);
-    POApprovalService.GetPODetail(code).then(function (data) {
-        const stringFilterColumn = ["Item Code", "Item Description", "Requested By", "Last Purchased From"];
-        const numericFilterColumn = ["PO Qty", "IndentMaster_Code", "Rate", "Rate After Discount", "Amount", "Indent No", "ItemMaster_Code", "itemsizemaster_Code", "Last PO Rate", "Last Purchased Qty", "Dis. (%)", "Tolerance %"];
-        const dateFilterColumn = ["PO Date", "Last Po Date"];
-        const button = false;
-        const stringDoubleFilterColumn = ["Product"];
-        const showButtons = [];
-        const hiddenColumns = ["AllowPOWithOutIndent_RawMaterial_Code", "Size Description", "Specification"];
-        const updatedResponse = data.map(item => ({ ...item, Action: `<button class="btn btn-info" title="View History" onclick="ViewHistory('${item.ItemMaster_Code}', '${item.itemsizemaster_Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>` }));
-        //alert(data)
-        // Update or re-create the data table with the specific PO details
-        BizsolCustomFilterGrid.CreateDataTable("modal-table-header", "modal-table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
-        data.forEach(item => {
-            // Example: Add click listener for each item
-            $(`#l-${item.ItemMaster_Code, item.itemsizemaster_Code}`).on("click", function () {
-                // Call function to handle button click, e.g., open modal with PO details
-                openPOHistory(item.ItemMaster_Code, item.itemsizemaster_Code);
-            });
-        });
-    });
-}
-
-window.openPOHistory = function (ItemMaster_Code, itemsizemaster_Code) {
-    //alert(ItemMaster_Code);
-    //alert(itemsizemaster_Code);
-    POApprovalService.GetPOHistory(ItemMaster_Code, itemsizemaster_Code).then(function (result) {
-        console.log(result);
-        const stringFilterColumn = [];
-        const numericFilterColumn = [];
-        const dateFilterColumn = [];
-        const button = false;
-        const stringDoubleFilterColumn = [];
-        const showButtons = [];
-        const hiddenColumns = [];
-        //alert(data) 
-        // Update or re-create the data table with the specific PO details
-        BizsolCustomFilterGrid.CreateDataTable("modal-history-table-header", "modal-history-table-body", result, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns);
-
-    });
-}
-
 function ViewData(Code) {
-    $('#myModal').modal('show');
-    $('#myModal').modal({
-        backdrop: 'static',
+    POApprovalService.GetPODetail(Code).then(function (response) {
+        if (response && response.length > 0) {
+            $('#myModal').modal({
+                backdrop: 'static',
+            });
+            $('#myModal').modal('show');
+            const stringFilterColumn = [];
+            const numericFilterColumn = ["Amount"];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = ["Product"];
+            const showButtons = [];
+            const hiddenColumns = ["AllowPOWithOutIndent_RawMaterial_Code", "Size Description", "Specification", "itemsizemaster_Code", "ItemMaster_Code","IndentMaster_Code"];
+            const ColumnAlignment = {};
+            const updatedResponse = response.map(item => {
+                const showPOWithOutIndentButton = item.AllowPOWithOutIndent_RawMaterial_Code === 'N';
+
+                return {
+                    ...item,
+                    Action: `
+                        <button class="btn btn-success icon-height mb-1" title="View History" onclick="ViewHistory('${item.ItemMaster_Code}', '${item.itemsizemaster_Code}')">
+                            <i class="fa fa-eye" aria-hidden="true"></i>
+                        </button>
+                        ${showPOWithOutIndentButton ?
+                        `<button class="btn btn-primary icon-height mb-1" title="Price Comparison" onclick="POWithOutIndent('${item.IndentMaster_Code}')">
+                                <i class="fa fa-eye" aria-hidden="true"></i>
+                            </button>`
+                            : ''
+                        }
+                    `
+                }; 
+            });
+            BizsolCustomFilterGrid.CreateDataTable("table-header-PoapprovalModal", "table-body-PoapprovalModal", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        } else {
+            toastr.error("No valid data found:", response);
+        }
+    }).catch(error => {
+        toastr.error("Error in fetching data:", error);
     });
-    openPODetails(Code);
 }
 
 function CloseModal() {
@@ -140,25 +87,84 @@ function Approval(Code) {
             unApprovedPO();
             GetWebNotificationList();
             alert(approve.Msg);
+            toastr.success(approvedata.Msg);
         }
         else {
-            alert(approve.Msg);
+            toastr.error("Error in fetching Data", error);
         }
     });
 }
-function ViewHistory(ItemMaster_Code, itemsizemaster_Code) {
-    $('#myHistoryModal').modal('show');
-    $('#myHistoryModal').modal({
-        backdrop: 'static',
+function ViewHistory(ItemMaster_Code, itemsizemaster_Code) {   
+    POApprovalService.GetPOHistory(ItemMaster_Code, itemsizemaster_Code).then(function (response) {
+        if (response && response.length > 0) {
+            $('#myHistoryModal').modal({
+                backdrop: 'static',
+            });
+            CloseModal();
+            $('#myHistoryModal').modal('show');
+            $('#modal-title').text(`View History`);
+            const stringFilterColumn = [];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+            const ColumnAlignment = {
+                "PODate": "center",
+                "PONo": "center",
+                "QtyMT": "right",
+            };
+            BizsolCustomFilterGrid.CreateDataTable("table-header-PoaprrovalHistory", "table-body-PoaprrovalHistory", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        } else {
+            toastr.error("No valid data found:", response);
+        }
+    }).catch(error => {
+        toastr.error("Error in fetching data:", error);
     });
-    openPOHistory(ItemMaster_Code, itemsizemaster_Code);
 }
 function CloseHistoryModal() {
     $('#myHistoryModal').modal('hide');
 }
-// Expose OpenModal and CloseModal globally if needed
+function POWithOutIndent(IndentMaster_Code) {
+    POApprovalService.GetPOIndentPriceComparisonDetails(IndentMaster_Code).then(function (response) {
+        if (response && response.length > 0) {
+            $('#myHistoryModal').modal({
+                backdrop: 'static',
+            });
+            CloseModal();
+            $('#myHistoryModal').modal('show');
+            $('#modal-title').text(`PO WithOut Indent History`);
+            const stringFilterColumn = [];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+            const ColumnAlignment = {};
+            BizsolCustomFilterGrid.CreateDataTable("table-header-PoaprrovalHistory", "table-body-PoaprrovalHistory", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        } else {
+            toastr.error("No valid data found:", response);
+        }
+    }).catch(error => {
+        toastr.error("Error in fetching data:", error);
+    });
+}
+function AttchmentFile(Code) {
+    InitAttachmentControl('PurchaseOrderMaster', Code, '', 0, 0, '', "View");
+    
+}
+function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode) {
+    var url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
+    $('#POApproval_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode });
+}
+
+
 window.ViewData = ViewData;
 window.CloseModal = CloseModal;
 window.Approval = Approval;
 window.ViewHistory = ViewHistory;
 window.CloseHistoryModal = CloseHistoryModal;
+window.POWithOutIndent = POWithOutIndent;
+window.AttchmentFile = AttchmentFile;
