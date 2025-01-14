@@ -91,12 +91,11 @@ function bindMenu() {
 }
 
 function getChildMenu(value, masterCode, baseUrl) {
-   // var baseUrl = `${window.location.protocol}//${window.location.host}`;
-   // var baseUrl = window.AppBaseURL;
+   
     var baseUrl = sessionStorage.getItem('AppBaseURL');
     var childMenuHtml = '';
     $.each(value, function (index, item) {
-        if (item.MasterCode === masterCode) {
+        if (item.MasterCode === masterCode && item.NotificationApplicable==='N') {
             var subChildMenuHtml = getChildMenu(value, item.Code);
             var hasArrow = subChildMenuHtml ? 'has-arrow' : '';
             childMenuHtml += '<li>';
