@@ -1,0 +1,247 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"> 
+<link href="~/assets/css/filter.css" rel="stylesheet" />
+<script type="module" src="~/_content/bizsol.WEBERP.ui.shared/js/BizsolPBControls.js"></script>
+
+<style>
+    /* Container styling for the toolbar */
+    /* .toolbar {
+        display: flex;
+        background-color: #f4a261; 
+        padding: 5px;
+        border-radius: 2px;
+    } */
+
+    /* Style for each button */
+    /* .toolbar .nav-btn {
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        color: #333;
+        background-color: #f4a261;
+        border: 1px solid #333;
+        padding: 10px 15px;
+        margin-right: 5px;
+        cursor: pointer;
+        text-transform: uppercase;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+    }
+ */
+    /* Hover effect for buttons */
+   /*  .toolbar .nav-btn:hover {
+        background-color: #e9c46a; 
+    } */
+
+    /* Disabled button styling */
+   /*  .toolbar .nav-btn:disabled {
+        background-color: #d3d3d3; 
+        color: #a9a9a9; 
+        cursor: not-allowed;
+        border: 1px solid #a9a9a9; 
+    } */
+
+    /* Style for the save button */
+    /* .toolbar .save-btn {
+        background-color: #e76f51; 
+        color: white;
+    } */
+
+    /* Style for the cancel button */
+    /* .toolbar .cancel-btn {
+        background-color: #e76f51; 
+        color: white;
+    } */
+</style>
+<div>
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label><b>Country Name</b></label>
+            <input type="text" Id="txtCode" class="form-control" value="0" style="display:none" autocomplete="off" tabindex="0" />
+            <select id="ddlCountry" class="form-control"></select>
+        </div>
+        <div class="col-md-6">
+            <label><b>State Name</b></label>
+            <input type="text" Id="txtState" class="form-control" placeholder="State" autocomplete="off" tabindex="0" />
+        </div>
+        <div class="col-md-6">
+            <label><b>State Initial</b></label>
+            <input type="text" Id="txtStateInitial" class="form-control" minlength="2" maxlength="2" autocomplete="off" placeholder="State Initial" tabindex="1" />
+        </div>
+        <div class="col-md-6">
+            <label><b>State Code</b></label>
+            <input type="text" Id="txtStateCode" class="form-control" maxlength="2" placeholder="State Code" autocomplete="off" onkeypress="allowNumberOnly(event)" tabindex="2" />
+        </div>
+    </div>
+<div id="PBControls"></div>
+  
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="~/assets/script/filter.js"></script>
+<script>
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    let editValue = urlParams.get('Edit');
+    let currentIndex = urlParams.get('Index');
+    let codeValues = JSON.parse(decodeURIComponent(urlParams.get('codeValues')));
+    const authToken = '{"ERPDBConStr":"Data Source=220.158.165.98,65446;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBBizDev; User ID=sa;pwd=biz1981;Packet Size=32000","ERPMainDBConStr":"data source = 220.158.165.98,65446; initial catalog = BizSolERPMainDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000","ERPDMSDBConStr":"data source = 220.158.165.98,65446; initial catalog = BizSolERPDMSDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000","ERPDB_Name":"BizSolERPDBBizDev","ERPMainDB_Name":"BizSolERPMainDB_BizDev","ERPDMSDB_Name":"BizSolERPDMSDB_BizDev","AuthToken":"xyz","UserMaster_Code":"145","CompanyCode":"104"}';
+
+    $(document).ready(function () {
+        PBControls();
+        $('#ddlCountry').on('keydown', function (e) {
+            if (e.key === "Enter") {
+                $("#txtState").focus();
+            }
+        });
+        $('#txtState').on('keydown', function (e) {
+            if (e.key === "Enter") {
+                $("#txtStateInitial").focus();
+            }
+        });
+        $('#txtStateInitial').on('keydown', function (e) {
+            if (e.key === "Enter") {
+                $("#txtStateCode").focus();
+            }
+        });
+        $('#txtStateCode').on('keydown', function (e) {
+            if (e.key === "Enter") {
+                $("#ddlCountry").focus();
+            }
+        });
+
+        $.ajax({
+            url: 'https://web.bizsol.in/erpapidev/api/Country/GetCountryMasterList',
+            type: 'GET',
+            contentType: 'json',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader('Auth-Key', authToken);
+            },
+            success: function (response) {
+                data = response;
+                let Country = '';
+                const rows = data.map(item => {
+                    return `<option>${item.CountryName}</option > `;
+                }).join('');
+                $('#ddlCountry').html(rows);
+            },
+            error: function (error) {
+                console.error('Error fetching data:', error);
+            }
+        });
+        if (editValue != null && editValue != '') {
+            EditData(editValue)
+            GetallData(editValue, currentIndex, codeValues, 'EditData',true);
+        } else {
+                setTimeout(() => {
+                NavigationButtonsControll();
+                }, 100);
+                ClearData();
+        }
+    });
+
+    function EditData(editValue) {
+        $.ajax({
+            url: 'https://web.bizsol.in/erpapidev/api/State/' + editValue,
+            type: 'GET',
+            contentType: 'json',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader('Auth-Key', authToken);
+            },
+            success: function (response) {
+                if (response) {
+                    $("#txtCode").val(response.Code);
+                    $("#ddlCountry").val(response.CountryName);
+                    $("#txtState").val(response.StateName);
+                    $("#txtStateInitial").val(response.StateShortName);
+                    $("#txtStateCode").val(response.StateCode);
+                } else {
+                    alert('No states found.');
+                }
+            },
+            error: function (error) {
+                console.error('Error fetching data:', error);
+            }
+        });
+    }
+    
+    function Save() {
+        var Data = {
+            Code: $("#txtCode").val(),
+            CountryName: $("#ddlCountry").val(),
+            StateName: $("#txtState").val(),
+            StateShortName: $("#txtStateInitial").val(),
+            StateCode: $("#txtStateCode").val()
+        };
+
+        $.ajax({
+            url: 'https://web.bizsol.in/erpapidev/api/State/SaveStateMaster',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(Data),
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader('Auth-Key', authToken);
+            },
+            success: function (response) {
+                if (response) {
+                    alert(response.Msg);
+                    Back();
+                } else {
+                    alert('No states found.');
+                }
+            },
+            error: function (error) {
+                console.error('Error saving data:', error);
+            }
+        });
+    }
+
+    function Delete() {
+        var code = $("#txtCode").val();
+        $.ajax({
+            url: `https://web.bizsol.in/erpapidev/api/State/DeleteStateMaster?Code=${code}&UserMaster_Code=145&ReasonForDelete=Test&IPAddress=1&Location=1`,
+            type: 'Post',
+            contentType: 'application/json',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader('Auth-Key', authToken);
+            },
+            success: function (response) {
+                if (response) {
+                    Back();
+                    alert(response.Msg);
+                } else {
+                    alert('No states found.');
+                }
+            },
+            error: function (error) {
+                console.error('Error deleting data:', error);
+            }
+        });
+    }
+
+    function Back() {
+        window.location.href = '/CommonMasters/statemaster/StateList';
+    }
+
+    function ClearData() {
+        $("#txtCode").val('0');
+        $("#ddlCountry").val('');
+        $("#txtState").val('');
+        $("#txtStateInitial").val('');
+        $("#txtStateCode").val('');
+    }
+
+    function buttonProperty() {
+        return {
+            Save: { color: 'btn-success', visible: true, disabled: false, title: 'Save' },
+            Print: { color: 'btn-secondary', visible: true, disabled: false, title: 'Print' },
+            Back: { color: 'btn-primary', visible: true, disabled: false, title: 'Back' },
+            Attachment: { color: 'btn-warning', visible: true, disabled: false, title: 'View' },
+            Delete: { color: 'btn-danger', visible: true, disabled: false, title: 'Delete' },
+            Verify: { color: 'btn-danger', visible: true, disabled: false, title: 'Verify' },
+            Other: { color: 'btn-primary', visible: true, disabled: false, title: 'Other' }
+        };
+    }
+
+</script>

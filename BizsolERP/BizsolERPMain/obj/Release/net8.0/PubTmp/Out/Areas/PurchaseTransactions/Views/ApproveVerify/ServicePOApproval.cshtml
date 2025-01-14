@@ -1,0 +1,51 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/ServicePOApproval.js"></script>
+<style>
+    .modal-dialog {
+        max-width: 1100px;
+    }
+</style>
+
+<div class="table-wrapper fixed-height-table">
+    <table id="ServicePOApproval" class="fixed-width-table table">
+        <thead id="table-header-ServicePOApproval">
+        </thead>
+        <tbody id="table-body-ServicePOApproval">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-ServicePOApproval">
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">View Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="PoapprovalModalTable" class="fixed-width-table table">
+                        <thead id="table-header-PoapprovalModalTable">
+                        </thead>
+                        <tbody id="table-body-PoapprovalModalTable">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-PoapprovalModalTable">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
