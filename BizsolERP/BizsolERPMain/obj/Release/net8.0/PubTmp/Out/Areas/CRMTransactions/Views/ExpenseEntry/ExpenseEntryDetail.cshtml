@@ -1,0 +1,115 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/ExpenseEntryDetail.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<script>
+    var param_ExpenseEntryMaster_Code='@ViewBag.ExpenseEntryMaster_Code';
+    var param_Mode='@ViewBag.Mode';
+    var param_MarketingMan_Name = '@ViewBag.MarketingMan_Name';
+</script>
+<style>
+    .highlighted-date {
+        background-color: #3926B6;
+        color: white;
+        border-radius: 30px;
+    }
+
+    .datepicker td, .datepicker th {
+        border-radius: 20px !important;
+    }
+
+    .datepicker table tr td, .datepicker table tr td {
+        padding: 8px 9px !important;
+        height: 16px !important;
+    }
+
+    .datepicker table tfoot {
+        display: none;
+    }
+
+    #hidetexbox {
+        display: none;
+    }
+
+    .btn:not(:disabled):not(.disabled) {
+        cursor: pointer !important;
+    }
+
+    /* Hide the spinner arrows in most modern browsers */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* Hide the spinner arrows in Firefox */
+    input[type="number"] {
+        -moz-appearance: textfield;
+    }
+</style>
+<div class="row mb-2">
+    <div class="col-md-9">
+        <fieldset class="rounded-1 p-3">
+            
+
+            <div class="row">
+                <div class="col-md-2 form-group">
+                    <label for="txtEntryNo" class="col-form-label-sm fw-bold">Entry No</label>
+                    <input type="text" id="txtEntryNo" class="box_border form-control form-control-sm" readonly="readonly" autocomplete="off" value="">
+                </div>
+                <div class="col-md-2 ">
+                    <label for="txtEntryDate" class="col-form-label-sm fw-bold">Entry Date</label>
+                    <input ID="txtEntryDate" name="txtEntryDate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
+                </div>
+                <div class="col-md-2">
+                    <label for="txtFromDate" class="col-form-label-sm fw-bold">From</label>
+                    <input type="text" id="txtFromDate" name="txtFromDate" class="box_border form-control form-control-sm" value=""  />
+                </div>
+                <div class="col-md-2">
+                   <label for="txtToDate" class="col-form-label-sm fw-bold">To</label>
+                    <input type="text" id="txtToDate" name="txtToDate" class="box_border form-control form-control-sm" value=""  />
+                   
+                    <input type="hidden" id="hfCode" name="hfCode" value="" />
+                </div>
+                <div class="col-md-2">
+                    <label for="txtTotalDays" class="col-form-label-sm fw-bold">Total Days</label>
+                    <input type="text" id="txtTotalDays" name="txtTotalDays" class="box_border form-control form-control-sm" readonly="readonly" value="" />
+                </div>
+            </div>
+
+   
+        </fieldset>
+    </div>
+</div>
+
+
+<div class="row">
+     <div class="col-md-9">
+    <div id="tblExpenseEntryDetails">
+        <div class="table-wrapper fixed-height-table">
+            <table id="ExpenseEntryDetails" class="fixed-width-table table">
+                <thead id="ExpenseEntryDetails-header">
+                </thead>
+                <tbody id="ExpenseEntryDetails-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-ExpenseEntryDetails">
+        </div>
+    </div>
+    </div>
+</div>
+<div class="row mt-4">
+    <div class="col-md-12">
+        <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-height btn-width" />
+        <input type="button" name="btnVerify" id="btnVerify" value="Verify" class="btn btn-primary btn-height btn-width"  />
+        <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-height btn-width" />
+    </div>
+</div>
+
+<div id="ExpenseEntryDetail_AttachmentControlmodal"></div>

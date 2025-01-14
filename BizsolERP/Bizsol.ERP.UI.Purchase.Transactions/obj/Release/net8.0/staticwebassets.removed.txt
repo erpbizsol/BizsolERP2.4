@@ -1,0 +1,2 @@
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Purchase.Transactions\wwwroot\js\POApproval.js
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Purchase.Transactions\wwwroot\js\ServicePOApproval.js
