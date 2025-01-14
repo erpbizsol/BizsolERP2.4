@@ -189,7 +189,7 @@ function PopulateTable(data) {
       if(item.RoutePlanStatus=='Un-Verified' ){
           td_DeleteBtn ='<a id="btnDelete" class="btn btn-danger icon-height mb-1" title="Delete" onclick="DeleteRoutePlan(this);"><i class="fa fa-times" aria-hidden="true"></i></a>';
         }else{
-          td_DeleteBtn ='<a id="btnDelete" class="btn btn-danger icon-height mb-1" title="Delete" "><i class="fa fa-times" aria-hidden="true"></i></a>';
+          td_DeleteBtn ='<a id="btnDelete" class="btn btn-danger icon-height mb-1 disabled" title="Delete" ><i class="fa fa-times" aria-hidden="true"></i></a>';
       }
 
       if (item.RoutePlanStatus == 'Verified') {
@@ -197,7 +197,7 @@ function PopulateTable(data) {
       } else if (item.RoutePlanStatus == 'Rejected') {
           td_StatusBtn = `<button type="button" class="btn btn-danger  btn-rounded waves-effect waves-light btn-sm btn-width" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
       } else {
-          td_StatusBtn = `<button type="button" class="btn btn-secondary  btn-rounded waves-effect waves-light btn-sm btn-width" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
+          td_StatusBtn = `<button type="button" class="btn btn-secondary  btn-rounded waves-effect waves-light btn-sm " style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
       }
       
     var row = `
@@ -267,7 +267,7 @@ function AddNewRow()
 //                  PlanDates.push(response[i].Date);
 //                }
 //          }
-          
+
 //      //$('#txtdate').datepicker({
 //      //          dateFormat: 'dd/mm/yy',
 //      //          beforeShowDay: function (date) {
@@ -280,7 +280,7 @@ function AddNewRow()
 //      //              }
 //      //          },
 //      //});
-      
+
 //    });
 //}
 
@@ -309,6 +309,27 @@ function AddNewRow()
 //   });
 //});
 
+function ValidateVisitType(VisitType) {
+
+    var list = $('#listVisitType option');
+    var indexNO = IsValidList(VisitType, list);
+    if (indexNO == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function ValidateCity(CityName) {
+
+    var list = $('#listCity option');
+    var indexNO = IsValidList(CityName, list);
+    if (indexNO == -1) {
+        return false;
+    } else {
+        return true;
+    }
+}
 function IsVaildFrm(x) {
 
     var Valid = true;
@@ -327,15 +348,20 @@ function IsVaildFrm(x) {
     var StateName = ObjCurrRow.find("input[name='txtState']").val();
     var Description = ObjCurrRow.find("input[name='txtdescription']").val();
     var Code = ObjCurrRow.find("input[name='hdn_Code']").val();
-
-    
+        
 
     if (typeof VisitType === 'undefined' || VisitType === '' || VisitType === null || VisitType.toLowerCase() === '0') {
         toastr.error("Visit Type is invalid");
         
         Valid = false;
-        return Valid
+        return Valid;
+    } else if (ValidateVisitType( VisitType) == false) {
+        toastr.error("Visit Type doesn't match from list.");
+        Valid = false;
+        return false;
+
     }
+
     if (typeof DealerName === 'undefined' || DealerName === '' || DealerName === null || DealerName === '0') {
         toastr.error("Dealer Name is invalid")
         
@@ -348,6 +374,11 @@ function IsVaildFrm(x) {
         
         Valid = false;
         return Valid
+    } else if (ValidateCity(CityName) == false) {
+        toastr.error("City Name doesn't match from list.");
+        Valid = false;
+        return false;
+
     }
     if (typeof StateName === 'undefined' || StateName === '' || StateName === null || StateName === '0') {
         toastr.error("State Name is invalid")
@@ -508,7 +539,7 @@ function DeleteRoutePlan(x) {
 
 function checkDealerListValid(Text, ListValue, City, rowNo) {
     var list = $('#' + ListValue + ' option');//[0].attributes["text"].value;
-    var indexNO = IsValidDealerCode(Text, list);
+    var indexNO = IsValidList(Text, list);
     if (indexNO == -1) {
         $('#txtCity' + rowNo).val('');
         $('#txtState' + rowNo).val('');
@@ -526,7 +557,7 @@ function checkDealerListValid(Text, ListValue, City, rowNo) {
     }
 }
 
-function IsValidDealerCode(codeText, list) {
+function IsValidList(codeText, list) {
     var index1 = -1;
     $.each(list, function (index, value) {
         // alert(index + ": " + value);
@@ -693,6 +724,7 @@ function convertDateFormat(dateString) {
     const monthAbbreviation = monthNames[parseInt(month) - 1];
     return `${day}-${monthAbbreviation}-${year}`;
 }
+
 window.SaveData = SaveData;
 window.getVisitType = getVisitType;
 window.GetCityDetailsByName = GetCityDetailsByName;

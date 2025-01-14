@@ -310,6 +310,32 @@ const VisitOrderEntryService = {
             }
         );
     },
+    GetPaymentTermsMasterList: function GetPaymentTermsMasterList() {
+        let url = UrlService.API_ENDPOINT_PAYMENT_TERMS_MASTER + `/GetPaymentTermsMasterList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetBasicRateFromPriceList: function GetBasicRateFromPriceList(ApplicableFrom, ItemName, DealerName) {
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetBasicRateFromPriceList?ApplicableFrom=${ApplicableFrom}&ItemName=${ItemName}&DealerName=${DealerName}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetDistributorDealerList: function GetDistributorDealerList(AccountDesp) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        let url = UrlService.API_ENDPOINT_DEALER_MASTER + `/GetDealerList?AccountDesp=${AccountDesp} &UserMaster_Code=${userMasterCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VisitOrderEntryService }

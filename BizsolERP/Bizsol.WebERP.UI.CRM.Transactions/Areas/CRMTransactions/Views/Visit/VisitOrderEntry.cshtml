@@ -730,6 +730,7 @@
                                             <th class="lead-text width_cust" role="columnheader">Price List</th>
                                             <th class="lead-text width_cust" role="columnheader">Remarks</th>
                                             <th class="lead-text width_cust" role="columnheader">Delete</th>
+                                            <th class="lead-text width_cust" role="columnheader">Dealer</th>
                                         </tr>
                                         <!-- end table row-->
                                     </thead>
@@ -754,6 +755,7 @@
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: right;" class="font-weight-bold" id="txtAmountTotal"></td>
+                                            <td style="text-align: right;"></td>
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: right;"></td>
@@ -859,7 +861,15 @@
                                 <input type="text" onkeypress="return numberdecimalOnly(event);" ID="txtAmtFinal" name="txtAmtFinal" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" readonly />
                             </div>
                         </div>
+                        <div class="col-md-3" id="divPaymentTerms">
+                            <label for="txtPaymentTerm" class="col-form-label-sm fw-bold">Payment Term </label>
+                            <div class="form-group">
+                                <input type="text" list="listPaymentTerms" class="box_border form-control form-control-sm" id="txtPaymentTerms" name="txtPaymentTerms" onclick="this.value=''" value="" placeholder="" autocomplete="off" maxlength="250" required>
+                                <input type="hidden" id="hiddentxtPaymentTerm" name="hiddentxtPaymentTerm">
+                            </div>
+                        </div>
                     </div>
+                    
                 </div>
             </div>
         </div>
@@ -899,6 +909,8 @@
 <datalist id="listFreight"></datalist>
 <datalist id="listFreightType"></datalist>
 <datalist id="listZone"></datalist>
+<datalist id="listPaymentTerms"></datalist>
+<datalist id="listDistributorDealer"></datalist>
 
 <div class="row">
     <div class="modal fade" id="ImageModal" tabindex="-1" role="dialog" aria-hidden="true">
