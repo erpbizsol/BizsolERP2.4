@@ -38,6 +38,10 @@ body {
     /*border-bottom: 1px solid #4e6b89;*/
 }
 
+#layout-wrapper {
+    margin-top: 3rem;
+}
+
 .banner {
     width: 100%;
     border-radius: 0;
