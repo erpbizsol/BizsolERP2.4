@@ -1,0 +1,91 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/ClosePendingOrder.js"></script>
+<style>
+
+    #fetchReportButton {
+        width: 60% !important;
+        height: 29px;
+        text-align: center !important;
+        padding: 0px;
+    }
+
+    .paginator {
+        display: flex;
+        align-items: center;
+        margin-top: 10px;
+        font-size: 8pt;
+        margin-left: -11px;
+    }
+</style>
+<div class="">
+    <div class="card shadow-sm">
+        <div class="card-body  shadow-sm">
+            <div class="row">
+                <div class="col-md-2">
+                    <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Sales Person</label>
+                    <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Sales Person" value="">
+                    <datalist id="txtSalesPersonlist"></datalist>
+                </div>
+
+                <div class="col-md-2">
+                    <label for="txtPartyName" class="col-form-label-sm fw-bold">Party Name</label>
+                    <input list="txtPartyNamelist" id="txtPartyName" name="txtPartyName" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Party Name" value="">
+                    <datalist id="txtPartyNamelist"></datalist>
+                </div>
+                <div class="col-md-2">
+                    <label for="txtdateFrom" class="col-form-label-sm fw-bold">From Date</label>
+                    <input id="txtdateFrom" type="date" name="txtdateFrom" autocomplete="off" class="form-control form-control-sm box_border" placeholder="" required>
+                </div>
+                <div class="col-md-2">
+                    <label for="txtdateTo" class="col-form-label-sm fw-bold">To Date</label>
+                    <input id="txtdateTo" type="date" name="txtdateTo" autocomplete="off" class="form-control form-control-sm box_border" placeholder="" required>
+                </div>
+                <div class="col-md-2" style="margin-top: 30px !important;">
+                    
+                        <button type="button" id="fetchReportButton" class="btn btn-primary btn-sm waves-effect waves-light">Show</button>
+
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<div class="card-body">
+    <div class="table-wrapper fixed-height-table">
+        <table id="table" class="fixed-width-table table">
+            <thead id="table-header">
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+
+        </table>
+
+    </div>
+    <!-- Paginator -->
+    <div class="paginator" id="paginator-table">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <label for="remark" class="col-form-label-sm fw-bold">Remark</label>
+        <input id="txtremark" type="text" name="remark" autocomplete="off" class="form-control form-control-sm box_border" placeholder="remark">
+    </div>
+    <div class="col-md-4">
+        <button class="btn btn-primary btn-height" style="margin-top: 36px;">Save</button>
+        <button class="btn btn-danger btn-height" style="margin-top: 36px;">Cancel</button>
+    </div>
+    
+</div>
+
+
+
+
+
+

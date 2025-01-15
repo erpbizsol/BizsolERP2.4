@@ -1,0 +1,101 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/OrderEntryList.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<style>
+    .highlighted-date {
+        background-color: #3926B6;
+        color: white;
+        border-radius: 30px;
+    }
+
+    .datepicker td, .datepicker th {
+        border-radius: 20px !important;
+    }
+
+    .datepicker table tr td, .datepicker table tr td {
+        padding: 8px 9px !important;
+        height: 16px !important;
+    }
+
+    .datepicker table tfoot {
+        display: none;
+    }
+
+    #hidetexbox {
+        display: none;
+    }
+
+    .btn:not(:disabled):not(.disabled) {
+        cursor: pointer !important;
+    }
+</style>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-2 col-sm-6 col-6">
+                <label for="fromDate" class="form-label">From Date <span class="text-danger">*</span></label>
+                <input type="text" id="txtFromDate" name="FromDate" class="form-control form-control-sm box_border" autocomplete="off" required/>
+            </div>
+            <div class="col-md-2 col-sm-6 col-6">
+                <label for="toDate" class="form-label">To Date <span class="text-danger">*</span></label>
+                <input type="text" id="txtToDate" name="ToDate" class="form-control form-control-sm box_border" autocomplete="off" required/>
+            </div>
+            <div class="col-md-3">
+                <label for="userName" class="form-label">User Name <span class="text-danger">*</span></label>
+                <input list="ddlUserNameList" id="ddlUserName" name="ddlUserName" class="form-control form-control-sm box_border" placeholder="User Name" autocomplete="off" required>
+                <datalist id="ddlUserNameList"></datalist>
+            </div>
+            <div class="col-md-2">
+                <label for="orderstatus" class="form-label">Order Status <span class="text-danger">*</span></label>
+                <input list="ddlOrderStatusList" id="ddlOrderStatus" name="ddlOrderStatus" class="form-control form-control-sm box_border" placeholder="Order Status" autocomplete="off" value="All" required>
+                <datalist id="ddlOrderStatusList"></datalist>
+            </div>
+
+
+            <div class="col-md-3 without-label-field">
+                <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+                &nbsp;
+                <button type="button" id="btnAddDirectOrder" class="btn btn-primary btn-height">Create New</button>
+
+            </div>
+            
+        </div>
+    </div>
+</div>
+<div id="tblOrderList">
+<div class="table-wrapper fixed-height-table">
+    <table id="OrderList" class="fixed-width-table table">
+        <thead id="table-header">
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-OrderList">
+</div>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="deleteReason" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="DeleteModal()" >Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div> 

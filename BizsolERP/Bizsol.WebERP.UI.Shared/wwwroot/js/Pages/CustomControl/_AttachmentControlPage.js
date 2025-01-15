@@ -4,8 +4,9 @@
 function GatAllAttachment() {
 
     $('#hfMode').val().toLowerCase() == "view" ? $('#fileUploadForm').hide() : $('#fileUploadForm').show();
-
-    AttachmentControlService.GetAttachmentUploadFiles($('#hfMasterTableName').val(), $('#hfMasterTableCode').val()).then(function (response) {
+    var DetailTableName = $('#hfDetailTableName').val() == undefined || $('#hfDetailTableName').val() == "" ? "" : $('#hfDetailTableName').val();
+    var DetailTableCode = $('#hfDetailTableCode').val() == undefined || $('#hfDetailTableCode').val() == "" ? 0 : $('#hfDetailTableCode').val();
+    AttachmentControlService.GetAttachmentUploadFiles($('#hfMasterTableName').val(), $('#hfMasterTableCode').val(), DetailTableName, DetailTableCode).then(function (response) {
         console.log(response);
         response = $('#hfMode').val().toLowerCase() == "view" ? response.map((item) => ({ Code: item.Code, "Document Particulars": item.DocumentParticulars, "File": '<a href="#" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'N\')">' + item.DocumentName + '</a>', Download: '<a class="icon-height"><i class="fa fa-download" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'Y\')"></i></a>' }))
                     : response.map((item) => ({ Code: item.Code, "Document Particulars": item.DocumentParticulars, "File": '<a href="#" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'N\')">' + item.DocumentName + '</a>', Download: '<a class="icon-height"><i class="fa fa-download" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'Y\')"></i></a>', Action: '<a class="btn btn-danger icon-height" onclick="Delete_AttachmentControl(' + item.Code + ')"> <i class="fa fa-trash"></i></a>' }));
@@ -66,7 +67,10 @@ function Download_AttachmentControl(Code,fileName,IsDownload) {
 }
 function DownloadAll_AttachmentControl() {
     //  alert('downloadlol' + Code);
-    AttachmentControlService.DownloadAllAttachment($('#hfMasterTableName').val(), $('#hfMasterTableCode').val()).then(blob => {
+    var DetailTableName = $('#hfDetailTableName').val() == undefined || $('#hfDetailTableName').val() == "" ? "" : $('#hfDetailTableName').val();
+    var DetailTableCode = $('#hfDetailTableCode').val() == undefined || $('#hfDetailTableCode').val() == "" ? 0 : $('#hfDetailTableCode').val();
+
+    AttachmentControlService.DownloadAllAttachment($('#hfMasterTableName').val(), $('#hfMasterTableCode').val(), DetailTableName, DetailTableCode).then(blob => {
 
         console.log(blob);
             const url = window.URL.createObjectURL(blob);

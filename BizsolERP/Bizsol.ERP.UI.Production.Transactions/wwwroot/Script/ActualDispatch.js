@@ -1,6 +1,7 @@
 ﻿import { StockTransferReceiveService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/StockTransferReceiveService.js';
 
 let PartyName = '';
+let PackingListNo = 0;
 $(document).ready(function () {
     $("#ERPHeading").text("Actual Dispatch");
     getPartyNamePendingPackingListActualDespatch();
@@ -12,13 +13,6 @@ function getPartyNamePendingPackingListActualDespatch() {
         $("#tblActualDispatch tbody").empty();
         $("#tblActualDispatch").hide();
     });
-    $('#ddlPartyName').on('change', function (e) {
-        if ($(this).val() !== "") {
-            $('#ActualDispatch tfoot').empty();
-            $("#table-header-ActualDispatch").empty();
-            $("#tblActualDispatch").show();
-        }
-    });
     $('#ddlPartyName').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#btnShow").focus();
@@ -28,27 +22,30 @@ function getPartyNamePendingPackingListActualDespatch() {
     StockTransferReceiveService.GetPartyNamePendingPackingListActualDespatch().then(function (response) {
         if (response && response.length > 0) {
             HideLoader();
-            $('#ddlPartyNameList option').remove();
-            var option = '';
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].AccountDesp + '" >' + response[i].AccountDesp + '</option>';
-            }
-            $('#ddlPartyNameList')[0].innerHTML = option;
+            BindSelectList($('#ddlPartyName')[0], response.map((item) => ({ Code: item.AccountDesp, Desp: item.AccountDesp })));
+
+            $('#ddlPartyName').select2();
+            //$('#ddlPartyNameList option').remove();
+            //var option = '';
+            //for (var i = 0; i < response.length; i++) {
+            //    option += '<option text="' + response[i].Code + '" value="' + response[i].AccountDesp + '" >' + response[i].AccountDesp + '</option>';
+            //}
+            //$('#ddlPartyNameList')[0].innerHTML = option;
         } else {
             toastr.error('No data received or empty response');
         }
-        const inputElement = document.getElementById("ddlPartyName");
-        const dataList = document.getElementById("ddlPartyNameList");
-        inputElement.addEventListener("input", () => {
-            const inputValue = inputElement.value;
-            const selectedOption = Array.from(dataList.options).find(
-                option => option.value === inputValue
-            );
-            if (selectedOption) {
-                PartyName = $("#ddlPartyName").val();
-                //getPendingPackingListPalletsActualDespatch(PartyName);
-            }
-        });
+        //const inputElement = document.getElementById("ddlPartyName");
+        //const dataList = document.getElementById("ddlPartyNameList");
+        //inputElement.addEventListener("input", () => {
+        //    const inputValue = inputElement.value;
+        //    const selectedOption = Array.from(dataList.options).find(
+        //        option => option.value === inputValue
+        //    );
+        //    if (selectedOption) {
+        //        PartyName = $("#ddlPartyName").val();
+        //        //getPendingPackingListPalletsActualDespatch(PartyName);
+        //    }
+        //});
     }).catch(function (error) {
         toastr.error('Error fetching warehouse data:', error);
     });
@@ -108,13 +105,14 @@ function onPartyNameSelectGrid() {
     }
     StockTransferReceiveService.GetPendingPackingListActualDespatch(PartyName).then(function (response) {
         if (response.length > 0) {
+            $('#tblActualDispatch').show();
             const stringFilterColumn = ["Warehouse"];
             const numericFilterColumn = ["Packing List No"];
             const dateFilterColumn = [];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["PackingListMaster_Code"];
+            const hiddenColumns = ["PackingListMaster_Code","Party Name"];
             const ColumnAlignment = {
                 "Qty PC": 'right',
                 "Qty KG": 'right',
@@ -127,11 +125,12 @@ function onPartyNameSelectGrid() {
 
             };
             const updatedResponse = response.map(item => {
+                
                 let Action = `<button class="btn btn-success icon-height mb-1" title="Update All" onclick="updateAll(${item?.PackingListMaster_Code})"><i class="fa fa-check-circle"></i></button>
                 <button class="btn btn-primary icon-height mb-1" title="Edit" onclick="openModal(${item?.PackingListMaster_Code},${item["Packing List No"]})"><i class="fa-solid fa-pencil"></i></button>`;
                 return {
                     ...item,
-                    Action
+                    Action,
                 };
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header-ActualDispatch", "table-body-ActualDispatch", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
@@ -140,7 +139,7 @@ function onPartyNameSelectGrid() {
             }
         }
         else {
-            $('#tblActualDispatch').empty();
+            $('#tblActualDispatch').hide();
             toastr.error('No Data Found');
         }
     }).catch(error => {
@@ -156,7 +155,8 @@ function updateAll(PackingListMaster_Code) {
         });
     }
 }
-function openModal(PackingListMaster_Code, PackingListNo) {
+function openModal(PackingListMaster_Code, packingListNo) {
+    PackingListNo = packingListNo;
     $('#txtPackingListMaster_Code').val(PackingListMaster_Code);
     $('#myModal').modal({
         backdrop: 'static',
@@ -203,7 +203,7 @@ function toggleSelection(PalletNo) {
     let PartyName = $('#ddlPartyName').val();
     StockTransferReceiveService.PackingActualPalletIDDispatch(PalletNo, PartyName).then(function (response) {
         var PackingListMaster_Code = $('#txtPackingListMaster_Code').val();
-        GetPendingPackingListActualDespatchDetails(PackingListMaster_Code);
+        GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, PackingListNo);
         toastr.success(response.Msg);
     })
         .catch(function (error) {
@@ -265,7 +265,7 @@ function updateFooter(data) {
 
         const tfootContent = `
         <tr id="trTotal">
-        <td colspan="3"></td>
+        <td colspan="2"></td>
         <td style="text-align: center;">Total</td>
         <td style="text-align: right;">${totalQtyBalWeightTotal}</td>
         <td style="text-align: right;">${totalQtyMTWeightTotal}</td>
@@ -276,7 +276,7 @@ function updateFooter(data) {
         <td></td>
         </tr>
         <tr id="trGrandTotal">
-        <td colspan="3"></td>
+        <td colspan="2"></td>
         <td style="text-align: center;">Grand Total</td>
         <td style="text-align: right;">${totalQtyBalWeight}</td>
         <td style="text-align: right;">${totalQtyMTWeight}</td>
@@ -347,6 +347,14 @@ function calculateTotal() {
 setInterval(function () {
     calculateTotal();
 }, 1000);
+
+function BindSelectList(element, list) {
+    let option = '<option value="0"></option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
 window.getPartyNamePendingPackingListActualDespatch = getPartyNamePendingPackingListActualDespatch;
 window.onPartyNameSelectGrid = onPartyNameSelectGrid;
 window.updateAll = updateAll;

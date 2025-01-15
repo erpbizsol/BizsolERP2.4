@@ -1,4 +1,4 @@
-﻿import { ServicePOApprovalService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/ServicePOApprovalService.js';
+﻿import { ServicePOApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ServicePOApprovalService.js';
 
 $(document).ready(function () {
     $("#ERPHeading").text("Service PO Approval");

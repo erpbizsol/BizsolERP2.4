@@ -1,0 +1,51 @@
+﻿
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/QuotationApproval.js"></script>
+<style>
+    .modal-dialog {
+        max-width: 1100px;
+    }
+</style>
+
+<div class="table-wrapper fixed-height-table">
+    <table id="QuotationTable" class="fixed-width-table table">
+        <thead id="table-header-QuotationTable">
+        </thead>
+        <tbody id="table-body-QuotationTable">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-QuotationTable">
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quotation Approval Detail</h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="Quotation" class="fixed-width-table table">
+                        <thead id="table-header-Quotation">
+                        </thead>
+                        <tbody id="table-body-Quotation">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-Quotation">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
