@@ -33,6 +33,9 @@ $(document).ready(function () {
     $('#fetchReportButton').click(function () {
         Getcheckinoutlist();
     });
+    $('#btnDownload').click(function () {
+        Export();
+    });
 });
 function GetSalespersonList() {
     CRMReportsServices.GetSalespersonList().then(function (response) {
@@ -98,11 +101,13 @@ function Getcheckinoutlist() {
                 "Date": 'center',
             };
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns,ColumnAlignment);
+            PopulateTableForPrint(response);
             if (ReportTypeName === 'Distance Detail Report') {
                 updateFooter(response)
             } else {
                 clearFooter();
             }
+           
         } else {
             toastr.error("Record not found...!");
             clearFooter();
@@ -119,7 +124,7 @@ function updateFooter(data) {
         const tfootContent = `
         <tr>
             <td colspan="5"><b>Total :</b></td>
-            <td style="text-align: right;">${totalQuantity.toFixed(2)}</td>   
+            <td style="text-align: right;"><b>${totalQuantity.toFixed(2)}</b></td>
         </tr>
         `;
 
@@ -137,11 +142,42 @@ function updateFooter(data) {
                 console.error("Table element with id 'table' not found.");
             }
     }
+
+
+    /// footer total for Excel
+
+    const tfootContentPrint = `
+        <tr>
+            <td><b>Total :</b></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td style="text-align: right;"><b>${totalQuantity.toFixed(2)}</b></td>
+        </tr>
+        `;
+
+    const tfootPrint = document.querySelector("#tblReport tfoot");
+
+    if (tfootPrint) {
+        tfootPrint.innerHTML = tfootContentPrint;
+    } else {
+        const tablePrint = document.querySelector("#tblReport");
+        if (tablePrint) {
+            const newTfootPrint = document.createElement("tfoot");
+            newTfootPrint.innerHTML = tfootContentPrint;
+            tablePrint.appendChild(newTfootPrint);
+        } 
+    }
 }
 function clearFooter() {
     const tfoot = document.querySelector("#table tfoot");
     if (tfoot) {
         tfoot.innerHTML = "";
+    }
+    const tfootPrint = document.querySelector("#tblReport tfoot");
+    if (tfootPrint) {
+        tfootPrint.innerHTML = "";
     }
 }
 function convertDateFormat(dateString) {
@@ -247,4 +283,49 @@ function DatePicker() {
 }
 
 
+function PopulateTableForPrint(data) {
+    const tableBody = document.querySelector('#tblReport tbody');
+    const tableHeader = document.querySelector('#tblReport thead tr');
 
+    $('#tblReport  thead tr').empty();
+    $('#tblReport tbody').empty();
+
+    // Get the keys from the first object to generate the header dynamically
+    const headers = Object.keys(data[0]);
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header.charAt(0).toUpperCase() + header.slice(1); // Capitalize the first letter
+        tableHeader.appendChild(th);
+    });
+
+    $('#tblReport th').css('font-weight', 'bold');
+    // Generate the rows for the table
+    data.forEach(item => {
+        const row = document.createElement('tr');
+
+        headers.forEach(header => {
+            const td = document.createElement('td');
+            td.textContent = item[header];
+            row.appendChild(td);
+        });
+
+        tableBody.appendChild(row);
+    });
+
+}
+function Export() {
+    var ReportType = $("#txtReportType").val().replace(" ", "").replace(".", "");
+    var currentDate = new Date();
+    var dateString = currentDate.getFullYear() + "-" +
+        (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
+        currentDate.getDate().toString().padStart(2, "0") + "_" +
+        currentDate.getHours().toString().padStart(2, "0") + "-" +
+        currentDate.getMinutes().toString().padStart(2, "0") + "-" +
+        currentDate.getSeconds().toString().padStart(2, "0");
+
+    $("#tblReport").table2excel({
+        filename: ReportType + "_" + dateString,
+        fileext: ".xlsx"
+    });
+}
+window.Export = Export;

@@ -1,0 +1,128 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/StockReport.js"></script>
+
+
+<style>
+    .form-group {
+        margin-bottom: 8px;
+    }
+
+</style>
+
+<form>
+    <div class="card shadow-sm">
+        <div class="card-body shadow-sm">
+            <fieldset class="rounded-1 p-3">
+                <legend class="float-none w-auto px-3">Stock Report</legend>
+                <div class="row">
+                    <div class="col-md-3 col-sm-6">
+                        <label for="txtUserName" class="col-form-label-sm fw-bold">User Name</label>
+                        <input type="text" class="box_border form-control form-control-sm" autocomplete="off" value="">
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <label for="txtLocation" class="col-form-label-sm fw-bold">Location</label>
+                        <input type="text" id="txtAddLocation" name="txtAddLocation" class="box_border form-control form-control-sm" hidden required />
+                        <input type="text" id="txtCurrentLocation" name="txtCurrentLocation" class="box_border form-control form-control-sm" value="" required />
+                        <input type="text" id="txtCheckOutLocation" name="txtCheckOutLocation" class="box_border form-control form-control-sm" hidden required />
+                        <input type="hidden" id="hflatlong" name="hflatlong" value="" />
+                    </div>
+
+                    <div class="col-md-3 col-sm-6 col-6">
+                        <label for="txtdate" class="col-form-label-sm fw-bold">Date</label>
+                        <input ID="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
+                    </div>
+                    <div class="col-md-3 col-sm-6 col-6">
+                        <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Check In Time</label>
+                        <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" readonly="readonly" />
+                    </div>
+                   
+                </div>
+                <div class="row">
+                    <div class="col-md-3 col-sm-6">
+                        <label for="txtReportType" class="col-form-label-sm fw-bold">Report Type</label>
+                        <datalist id="txtReportTypelists"></datalist>
+                        <input list="txtReportTypelists" type="text" name="txtReportType" autocomplete="off" class="form-control form-control-sm box_border" placeholder="" required>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <label for="txtItemName" class="col-form-label-sm fw-bold">Itemdd Name</label>
+                        <datalist id="txtItemNamelist"></datalist>
+                        <input list="txtItemNamelist" id="txtItemName" type="text" name="txtItemName" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Item Name" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="txtAttachment" class="col-form-label-sm fw-bold">Attachment</label>
+                        <div class="form-group">
+                            <input type="file" id="txtFileInput" name="txtFileInput" class="box_border form-control form-control-sm" accept="image/*" capture="camera" />
+                            <input type="hidden" id="hfFileInput" name="hfFileInput" value="" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-3  col-sm-6">
+                        <label for="txtCreditLimitRs" class="col-form-label-sm fw-bold">Credit Limits</label>
+                        <div class="form-group">
+                            <input type="text" id="txtCreditLimitRs" class="box_border form-control form-control-sm textRight" name="txtCreditLimitRs" placeholder="Credit Limit" value="0" autocomplete="off" readonly="readonly" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3  col-sm-6">
+                        <label for="txtCreditDays" class="col-form-label-sm fw-bold">Credit Days</label>
+                        <div class="form-group">
+                            <input type="text" id="txtCreditDays" name="txtCreditDays" class="box_border form-control form-control-sm textRight" placeholder="Credit Days" value="0.00" autocomplete="off" readonly="readonly" required>
+                        </div>
+                    </div>
+                    <div class="col-md-3  col-sm-6 col-6">
+                        <label for="fromDate" class="col-form-label-sm fw-bold">From Date <span class="text-danger">*</span></label>
+                        <input type="text" id="txtFromDate" name="FromDate" class="form-control form-control-sm box_border" autocomplete="off" required />
+                    </div>
+                    <div class="col-md-3  col-sm-6 col-6">
+                        <label for="toDate" class="col-form-label-sm fw-bold">To Date <span class="text-danger">*</span></label>
+                        <input type="text" id="txtToDate" name="ToDate" class="form-control form-control-sm box_border" autocomplete="off" required />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="txtAddress" class="col-form-label-sm fw-bold">Address</label>
+                        <textarea type="text" id="txtAddress" name="txtAddress" class="box_border form-control form-control-sm" value="" readonly="readonly" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-md-3 form-group">
+                        <input type="checkbox" id="chkShowSubordinateData" name="chkShowSubordinateData" class="box_border" checked />
+                        <label for="chkShowSubordinateData">Show Subordinate Data</label> &nbsp;&nbsp;&nbsp;
+                    </div>
+
+                    <div class="col-md-3 form-group">
+                        <div class="form-group" id="txtshowhide">
+                            <input type="checkbox" id="chkShowTodaysData" name="chkShowTodaysData" class="box_border" />
+                            <label for="chkShowTodaysData">Show Today's Data</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <button type="button" id="fetchReportButton" class="btn btn-primary btn-height waves-effect">Show</button>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+    </div>
+</form>
+
+<div class="card-body">
+    <div class="table-wrapper fixed-height-table">
+        <table id="table" class="fixed-width-table table">
+            <thead id="table-header">
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+    </div>
+    <!-- Paginator -->
+    <div class="paginator" id="paginator-table">
+    </div>
+</div>
+
+
+

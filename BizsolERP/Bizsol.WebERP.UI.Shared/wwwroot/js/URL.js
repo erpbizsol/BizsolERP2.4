@@ -75,7 +75,7 @@ let UrlService = {
     API_ENDPOINT_CRM_CONFIG: `${environment.BASE_URL}/ConfigCRM`,
     API_ENDPOINT_ITEM: `${environment.BASE_URL}/Item`,
     API_ENDPOINT_EXPENSE_ENTRY: `${environment.BASE_URL}/ExpenseEntryMaster`,
-
+    API_ENDPOINT_DEALER_MASTER: `${environment.BASE_URL}/DealerMaster`,
 }
 
 export { UrlService  }

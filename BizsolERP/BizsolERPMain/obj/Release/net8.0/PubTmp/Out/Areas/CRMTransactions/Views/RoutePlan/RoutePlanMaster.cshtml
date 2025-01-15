@@ -1,0 +1,85 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/RoutePlanMaster.js"></script>
+
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<style>
+    
+/* Table Styles */
+
+    .highlighted-date {
+        background-color: #3926B6;
+        color: white;
+        border-radius: 30px;
+    }
+
+    .datepicker td, .datepicker th {
+        border-radius: 20px !important;
+    }
+
+    .datepicker table tr td, .datepicker table tr td {
+        padding: 8px 9px !important;
+        height: 16px !important;
+    }
+
+    .datepicker table tfoot {
+        display: none;
+    }
+
+    #hidetexbox {
+        display: none;
+    }
+</style>
+
+<div id="RoutePlanMaster">
+     <div class="row">
+        <div class="col-Date-1 col-md-1 col-sm-6 col-6">
+              <label for="txtdate" class="col-form-label-sm fw-bold">Date</label>
+        </div>
+
+        <div class="col-md-2 col-sm-6 col-6">
+           <input id="txtdate" type="text" name="txtdate"  autocomplete="off" class="BizSolFormControl box_border form-control form-control-sm" placeholder="" onkeypress="BizSolhandleEnterKey(event)" required value="" />
+        </div>
+          <div class="col-md-2 col-3">
+              <input type="button" name="btnSearch" id="btnSearch" class="btn btn-primary btn-width btn-sm waves-effect waves-light" value="Search"  />
+          </div>
+    </div>
+
+    
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="table-wrapper" style="overflow: auto;">
+                <table id="tblRoutePlan" class="table">
+                                <thead>
+                                    <tr>
+                                        <th style="display:none"></th>
+                                        <th>Visit Type</th>
+                                        <th>Dealer Name </th>
+                                        <th>City</th>
+                                        <th>State  </th>
+                                        <th>Description </th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                    <!--end table row-->
+                                </thead>
+                    <tbody id="tbody">
+                        </tbody>
+                  </table>
+             </div>
+        </div>
+    </div>
+
+</div>
+<datalist id="listdealer"></datalist>
+<datalist id="listVisitType"></datalist>
+<datalist id="listCity"></datalist>
+<datalist id="listState"></datalist>
+<div class="alert alert-danger  alert-label-icon label-arrow fade show invisible" role="alert" id="ErrorMsg" >
+  <i class="mdi mdi-block-helper label-icon"></i> No Dealer is assigned to you, So Route Plan can't be created!                                   
+</div>

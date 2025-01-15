@@ -1,0 +1,90 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/CheckInCheckOutReport.js"></script>
+<style>
+
+    #fetchReportButton {
+        width: 100% !important;
+        height: 29px;
+        text-align: center !important;
+        padding: 0px;
+        margin-left: auto;
+    }
+
+    .datepicker td, .datepicker th {
+        border-radius: 20px !important;
+    }
+
+    .datepicker table tr td, .datepicker table tr td {
+        padding: 8px 9px !important;
+        height: 16px !important;
+    }
+
+    .datepicker table tfoot {
+        display: none;
+    }
+
+    #hidetexbox {
+        display: none;
+    }
+
+    .form-label {
+        font-weight: bold;
+    }
+</style>
+<div class="">
+    <div class="card shadow-sm">
+        <div class="card-body  shadow-sm">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="txtdateFrom" class="col-form-label-sm fw-bold">From Date</label>
+                    <input id="txtdateFrom" type="text" name="txtdateFrom" autocomplete="off" class="form-control form-control-sm box_border" placeholder="" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="txtdateTo" class="col-form-label-sm fw-bold">To Date</label>
+                    <input id="txtdateTo" type="text" name="txtdateTo" autocomplete="off" class="form-control form-control-sm box_border" placeholder="" required>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Sales Person</label>
+                    <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Sales Person" value="All">
+                    <datalist id="txtSalesPersonlist"></datalist>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="txtReportType" class="col-form-label-sm fw-bold">Report Type</label>
+                    <datalist id="txtReportTypelist"></datalist>
+                    <input list="txtReportTypelist" id="txtReportType" name="txtReportType" class="form-control form-control-sm box_border" placeholder="Report Type" autocomplete="off">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-1" style="margin-top: 30px !important;margin-left: auto !important;">
+                    <button type="button" id="fetchReportButton" class="btn btn-primary btn-sm waves-effect waves-light">Show</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card-body" id="tblTable" style="display:none">
+    <div class="table-wrapper fixed-height-table">
+        <table id="table" class="fixed-width-table table">
+            <thead id="table-header">
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+
+    </div>
+    <!-- Paginator -->
+    <div class="paginator" id="paginator-table">
+    </div>
+</div>
+
+
+

@@ -1,4 +1,4 @@
-﻿import { SaleOrderApprovalService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/SaleOrderApprovalService.js';
+﻿import { SaleOrderApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SaleOrderApprovalService.js';
 $(document).ready(function () {
     $("#ERPHeading").text("Sale Order Approval");
     GetSaleOrderApproval();
