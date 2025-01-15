@@ -1,7 +1,14 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+
+<style>
+    .without-label-field {
+        margin-top: 2.3rem;
+    }
+</style>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+
 
 <div class="row mb-2" id="DivPackingListFGForm">
     <div class="col-md-12">
@@ -9,24 +16,59 @@
             <legend class="float-none w-auto px-2">Packing List Entry</legend>
 
             <div class="row">
-                <div class="col-md-3 form-group">
-                    <label for="txtUserName" class="col-form-label-sm fw-bold">User Name</label>
-                    <input type="text" id="txtUserName" class="box_border form-control form-control-sm" autocomplete="off" value="">
+                <div class="col-md-2 col-6">
+                    <label for="txtUserName" class="col-form-label-sm fw-bold">Packing List No:</label>
+                    <input type="text" id="txtUserName" class="box_border form-control form-control-sm" autocomplete="off" value="" readonly="readonly">
                 </div>
-                <div class="col-md-3 col-sm-6 col-6">
-                    <label for="txtdate" class="col-form-label-sm fw-bold">Date</label>
+                <div class="col-md-2 col-6">
+                    <label for="txtdate" class="col-form-label-sm fw-bold">Packing Date:</label>
                     <input ID="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
                 </div>
-                <div class="col-md-3 col-sm-6 col-6">
-                    <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Check In Time</label>
+                <div class="col-md-2 col-6">
+                    <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Packing Type:</label>
+                    <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value=""  />
+                </div>
+                <div class="col-md-3 col-6">
+                    <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Buyer Name:</label>
+                    <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value=""  />
+                </div>
+                <div class="col-md-3 col-6">
+                    <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Consignee:</label>
+                    <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value=""  />
+                </div>
+                <div class="col-md-2 col-6">
+                    <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Order No::</label>
+                    <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value=""  />
+                </div>
+                <div class="col-md-2 col-6">
+                    <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Warehouse:</label>
+                    <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value=""  />
+                </div>
+                <div class="col-md-2 col-6">
+                    <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Warehouse To:</label>
+                    <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value=""  />
+                </div>
+                <div class="col-md-1 col-3 without-label-field">
+                    <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Show List</label>
+                    <input type="checkbox" id="txtCheckInTime" />
+                </div>
+                <div class="col-md-1 col-3 without-label-field">
+                    <button type="button" class="btn btn-success icon-height" onclick="PackingListFG_Back()">Start Scan</button>
+                </div>
+                <div class="col-md-3 col-6">
+                    <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Scan Batch No / ID:</label>
                     <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" readonly="readonly" />
                 </div>
-                <div class="col-md-3">
-                    <label for="txtLocation" class="col-form-label-sm fw-bold">Location</label>
-                    <input type="text" id="txtAddLocation" name="txtAddLocation" class="box_border form-control form-control-sm" hidden required />
-                    <input type="text" id="txtCurrentLocation" name="txtCurrentLocation" class="box_border form-control form-control-sm" value="" required />
-                    <input type="text" id="txtCheckOutLocation" name="txtCheckOutLocation" class="box_border form-control form-control-sm" hidden required />
-                    <input type="hidden" id="hflatlong" name="hflatlong" value="" />
+                <div class="col-md-1 col-6 without-label-field">
+                    <button type="button" class="btn btn-danger icon-height" onclick="PackingListFG_Back()" disabled>Loading End</button>
+                </div>
+            </div>
+            <div class="row">
+                
+            </div>
+            <div class="row">
+                <div class="col-md-3 without-label-field">
+                    <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_Back()">Back</button>
                 </div>
             </div>
            
@@ -37,30 +79,30 @@
 
 <div id="DivPackingListFGViewGrid">
     <div class="row">
-        <div class="col-sm-3">
+        <div class="col-sm-3 col-6">
             <label for="from-date">From Date</label>
-            <input type="date" class="form-control form-control-sm" id="txtFromDate" onchange="PackingListFGViewGirdByDates()">
+            <input type="date" class="form-control form-control-sm" id="txtFromDate" onchange="PackingListFG_ShowViewGrid()">
         </div>
-        <div class="col-sm-3">
+        <div class="col-sm-3 col-6">
             <label for="to-date">To Date</label>
-            <input type="date" class="form-control form-control-sm" id="txtToDate" onchange="PackingListFGViewGirdByDates()">
+            <input type="date" class="form-control form-control-sm" id="txtToDate" onchange="PackingListFG_ShowViewGrid()">
         </div>
         
-        <div class="col-sm-3 without-label-field text-end">
+        <div class="col-sm-3 col-12 without-label-field text-end">
             <label></label>
-            <button type="button" class="btn btn-primary icon-height" onclick="GateEntyMode_PackingListFGView('form','EmptyInNew')">CREATE NEW</button>
+            <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_CreateNew()">CREATE NEW</button>
             
         </div>
     </div>
     <div class="table-wrapper mt-2">
-        <table id="tbGateEntyView" class="table fixed-width-table">
-            <thead id="tbGateEntyViewHeader">
+        <table id="tbPackingListFGView" class="table fixed-width-table">
+            <thead id="tbPackingListFGViewHeader">
             </thead>
-            <tbody id="tbGateEntyViewBody">
+            <tbody id="tbPackingListFGViewBody">
             </tbody>
         </table>
     </div>
-    <div class="paginator" id="paginator-tbGateEntyView">
+    <div class="paginator" id="paginator-tbPackingListFGView">
     </div>
 </div>
 
