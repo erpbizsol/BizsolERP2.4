@@ -4,6 +4,7 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/ActualDispatch.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 <style>
     .modal-dialog {
         max-width: 1050px;
@@ -81,9 +82,18 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" id="btnExport" class="btn btn-primary btn-height" onclick="">Export</button>
+                <button type="button" id="btnExport" class="btn btn-primary btn-height">Export</button>
                 <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()">Cancel</button>
             </div>
         </div>
     </div>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+<table id="tblReport" hidden="hidden">
+    <thead id="table-headerPrint">
+        <tr></tr>
+    </thead>
+    <tbody id="table-bodyPrint">
+    </tbody>
+</table>
 </div>

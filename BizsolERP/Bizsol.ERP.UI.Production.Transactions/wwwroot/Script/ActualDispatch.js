@@ -5,6 +5,9 @@ let PackingListNo = 0;
 $(document).ready(function () {
     $("#ERPHeading").text("Actual Dispatch");
     getPartyNamePendingPackingListActualDespatch();
+    $('#btnExport').click(function () {
+        Export();
+    });
 });
 function getPartyNamePendingPackingListActualDespatch() {
     $('#ddlPartyName').on('focus', function (e) {
@@ -138,6 +141,15 @@ function onPartyNameSelectGrid() {
             BizsolCustomFilterGrid.CreateDataTable("table-header-ActualDispatch", "table-body-ActualDispatch", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
             if (updatedResponse?.length > 0) {
                 updateFooter(response);
+            }
+            
+            if (response.length>0) {
+                updateFooterPrint(response);
+                response=response.map((item)=>({'Packing List No':item['Packing List No'],Warehouse:item.Warehouse,Date:item.Date,'Order No':item['Order No'],'Invoice No':item['Invoice No'],'Party Name':item['Party Name'],
+                'No of Pallet':item['No of Pallet'],'Qty PC':item['Qty PC'],'Qty KG':item['Qty KG'],'Qty SQM':item['Qty SQM'],'Bal Qty PC':item['Bal Qty PC'],'Bal Qty KG':item['Bal Qty KG'],'Bal Qty SQM':item['Bal Qty SQM']}))
+                PopulateTableForPrint(response);
+            } else {
+                clearFooterPrint();
             }
         }
         else {
@@ -364,9 +376,126 @@ function BindSelectList(element, list) {
     });
     element.innerHTML = option;
 }
+function updateFooterPrint(data){
+    const calculateTotalAmount = "Total Amount";
+    if (calculateTotalAmount === "Total Amount") {
+        let totalNoOFPallets = 0;
+        let totalQtyBalWeight = 0;
+        let totalQtyMTWeight = 0;
+        let totalQtyMTRSWeight = 0;
+
+        let totalQtyBalPCWeight = 0;
+        let totalQtyBalMTWeight = 0;
+        let totalQtyBalMTRSWeight = 0;
+
+        data.forEach(row => {
+            totalNoOFPallets += parseFloat(row["No of Pallet"]);
+            totalQtyBalWeight += parseFloat(row["Qty PC"]);
+            totalQtyMTWeight += parseFloat(row["Qty KG"]);
+            totalQtyMTRSWeight += parseFloat(row["Qty SQM"]);
+
+            totalQtyBalPCWeight += parseFloat(row["Bal Qty PC"]);
+            totalQtyBalMTWeight += parseFloat(row["Bal Qty KG"]);
+            totalQtyBalMTRSWeight += parseFloat(row["Bal Qty SQM"]);
+        });
+        totalQtyMTWeight = totalQtyMTWeight.toFixed(3);
+        totalQtyMTRSWeight = totalQtyMTRSWeight.toFixed(3);
+        totalQtyBalMTWeight = totalQtyBalMTWeight.toFixed(3);
+        totalQtyBalMTRSWeight = totalQtyBalMTRSWeight.toFixed(3);
+
+        const tfootContent = `
+        
+        <tr id="trGrandTotal">
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td style="text-align: center;">Total</td>
+        <td style="text-align: right;">${totalNoOFPallets}</td>
+        <td style="text-align: right;">${totalQtyBalWeight}</td>
+        <td style="text-align: right;">${totalQtyMTWeight}</td>
+        <td style="text-align: right;">${totalQtyMTRSWeight}</td>
+        <td style="text-align: right;">${totalQtyBalPCWeight}</td>
+        <td style="text-align: right;">${totalQtyBalMTWeight}</td>
+        <td style="text-align: right;">${totalQtyBalMTRSWeight}</td>
+        <td></td>
+        </tr>
+        `;
+
+        const tfoot = document.querySelector("#tblReport tfoot");
+
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#tblReport");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+        }
+    }
+}
+function clearFooterPrint() {
+    const tfoot = document.querySelector("#tblReport tfoot");
+    if (tfoot) {
+        tfoot.innerHTML = "";
+    }
+}
+function PopulateTableForPrint(data) {
+    const tableBody = document.querySelector('#tblReport tbody');
+    const tableHeader = document.querySelector('#tblReport thead tr');
+
+    //tableBody.empty();
+    $('#tblReport  thead tr').empty();
+    $('#tblReport tbody').empty();
+
+    // Get the keys from the first object to generate the header dynamically
+    const headers = Object.keys(data[0]);
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header.charAt(0).toUpperCase() + header.slice(1); // Capitalize the first letter
+        tableHeader.appendChild(th);
+    });
+
+    $('#tblReport th').css('font-weight', 'bold');
+    // Generate the rows for the table
+    data.forEach(item => {
+        const row = document.createElement('tr');
+
+        headers.forEach(header => {
+            const td = document.createElement('td');
+            td.textContent = item[header];
+            row.appendChild(td);
+        });
+
+        tableBody.appendChild(row);
+    });
+
+}
+function Export() {
+    var ReportType ="ActualDispatch";// $("#txtReportType").val().replace(" ", "").replace(".", "");
+    var currentDate = new Date();
+    var dateString = currentDate.getFullYear() + "-" +
+        (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
+        currentDate.getDate().toString().padStart(2, "0") + "_" +
+        currentDate.getHours().toString().padStart(2, "0") + "-" +
+        currentDate.getMinutes().toString().padStart(2, "0") + "-" +
+        currentDate.getSeconds().toString().padStart(2, "0");
+
+    $("#tblReport").table2excel({
+        filename: ReportType + "_" + dateString,
+        fileext: ".xlsx"
+    });
+}
+
 window.getPartyNamePendingPackingListActualDespatch = getPartyNamePendingPackingListActualDespatch;
 window.onPartyNameSelectGrid = onPartyNameSelectGrid;
 window.updateAll = updateAll;
 window.openModal = openModal;
 window.CloseModal = CloseModal;
 window.toggleSelection = toggleSelection;
+window.Export=Export;
