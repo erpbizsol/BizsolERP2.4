@@ -33,15 +33,16 @@
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
             <div class="row">
-                <div class="col-md-4 form-group">
+                <div class="col-md-3 form-group">
                     <label for="partyName" class="form-label">Party Name <span class="text-danger">*</span></label>
                     @* <input list="ddlPartyNameList" id="ddlPartyName" name="ddlPartyName" class="form-control form-control-sm box_border" placeholder="Party Name" autocomplete="off" required> *@
                     <select id="ddlPartyName" class="form-control form-control-sm box_border">
                     </select>
                     @* <datalist id="ddlPartyNameList"></datalist> *@
                 </div>
-                    <div class="col-md-1 align-items-end mt-4">
+                    <div class="col-md-2 align-items-end mt-4">
                     <button type="button" id="btnShow" class="btn btn-primary btn-height" onclick="onPartyNameSelectGrid()">Show</button>
+                    <button type="button" id="btnExport" class="btn btn-primary btn-height" onclick="">Export</button>
                     </div>
             </div>
         </div>
@@ -80,6 +81,7 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button type="button" id="btnExport" class="btn btn-primary btn-height" onclick="">Export</button>
                 <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()">Cancel</button>
             </div>
         </div>

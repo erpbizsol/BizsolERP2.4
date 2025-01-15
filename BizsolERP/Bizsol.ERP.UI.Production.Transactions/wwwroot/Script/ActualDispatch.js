@@ -24,7 +24,9 @@ function getPartyNamePendingPackingListActualDespatch() {
             HideLoader();
             BindSelectList($('#ddlPartyName')[0], response.map((item) => ({ Code: item.AccountDesp, Desp: item.AccountDesp })));
 
-            $('#ddlPartyName').select2();
+            $('#ddlPartyName').select2({
+                width: '-webkit-fill-available'
+            });
             //$('#ddlPartyNameList option').remove();
             //var option = '';
             //for (var i = 0; i < response.length; i++) {
@@ -122,7 +124,7 @@ function onPartyNameSelectGrid() {
                 "Bal Qty SQM": 'right',
                 "Date": 'center',
                 "Packing List No": 'center',
-
+                "No of Pallet":'right',
             };
             const updatedResponse = response.map(item => {
                 
@@ -217,6 +219,7 @@ function CloseModal() {
 function updateFooter(data) {
     const calculateTotalAmount = "Total Amount";
     if (calculateTotalAmount === "Total Amount") {
+        let totalNoOFPallets = 0;
         let totalQtyBalWeight = 0;
         let totalQtyMTWeight = 0;
         let totalQtyMTRSWeight = 0;
@@ -225,6 +228,7 @@ function updateFooter(data) {
         let totalQtyBalMTWeight = 0;
         let totalQtyBalMTRSWeight = 0;
 
+        let totalNoOFPalletsTotal = 0;
         let totalQtyBalWeightTotal = 0;
         let totalQtyMTWeightTotal = 0;
         let totalQtyMTRSWeightTotal = 0;
@@ -234,15 +238,16 @@ function updateFooter(data) {
         let totalQtyBalMTRSWeightTotal = 0;
         $('#ActualDispatch tbody tr:visible').each(function () {
             const row = $(this);
-
-            totalQtyBalWeightTotal += parseFloat(row.find("td:nth-child(6)").text()) || 0;
-            totalQtyMTWeightTotal += parseFloat(row.find("td:nth-child(7)").text()) || 0;
-            totalQtyMTRSWeightTotal += parseFloat(row.find("td:nth-child(8)").text()) || 0;
-            totalQtyBalPCWeightTotal += parseFloat(row.find("td:nth-child(9)").text()) || 0;
-            totalQtyBalMTWeightTotal += parseFloat(row.find("td:nth-child(10)").text()) || 0;
-            totalQtyBalMTRSWeightTotal += parseFloat(row.find("td:nth-child(11)").text()) || 0;
+            totalNoOFPalletsTotal += parseFloat(row.find("td:nth-child(8)").text()) || 0;
+            totalQtyBalWeightTotal += parseFloat(row.find("td:nth-child(9)").text()) || 0;
+            totalQtyMTWeightTotal += parseFloat(row.find("td:nth-child(10)").text()) || 0;
+            totalQtyMTRSWeightTotal += parseFloat(row.find("td:nth-child(11)").text()) || 0;
+            totalQtyBalPCWeightTotal += parseFloat(row.find("td:nth-child(12)").text()) || 0;
+            totalQtyBalMTWeightTotal += parseFloat(row.find("td:nth-child(13)").text()) || 0;
+            totalQtyBalMTRSWeightTotal += parseFloat(row.find("td:nth-child(14)").text()) || 0;
         });
         data.forEach(row => {
+            totalNoOFPallets += parseFloat(row["No of Pallet"]);
             totalQtyBalWeight += parseFloat(row["Qty PC"]);
             totalQtyMTWeight += parseFloat(row["Qty KG"]);
             totalQtyMTRSWeight += parseFloat(row["Qty SQM"]);
@@ -265,8 +270,9 @@ function updateFooter(data) {
 
         const tfootContent = `
         <tr id="trTotal">
-        <td colspan="2"></td>
+        <td colspan="4"></td>
         <td style="text-align: center;">Total</td>
+        <td style="text-align: right;">${totalNoOFPalletsTotal}</td>
         <td style="text-align: right;">${totalQtyBalWeightTotal}</td>
         <td style="text-align: right;">${totalQtyMTWeightTotal}</td>
         <td style="text-align: right;">${totalQtyMTRSWeightTotal}</td>
@@ -276,8 +282,9 @@ function updateFooter(data) {
         <td></td>
         </tr>
         <tr id="trGrandTotal">
-        <td colspan="2"></td>
+        <td colspan="4"></td>
         <td style="text-align: center;">Grand Total</td>
+        <td style="text-align: right;">${totalNoOFPallets}</td>
         <td style="text-align: right;">${totalQtyBalWeight}</td>
         <td style="text-align: right;">${totalQtyMTWeight}</td>
         <td style="text-align: right;">${totalQtyMTRSWeight}</td>
@@ -314,6 +321,7 @@ function clearFooter() {
 function calculateTotal() {
 
     let Data = $('#ActualDispatch tbody tr:visible');
+    let totalNoOFPalletsTotal = 0;
     let totalQtyBalWeightTotal = 0;
     let totalQtyMTWeightTotal = 0;
     let totalQtyMTRSWeightTotal = 0;
@@ -325,21 +333,22 @@ function calculateTotal() {
         
         for (let i = 0; i < Data.length; i++) {
             let ItemRow = Data[i];
-
-            totalQtyBalWeightTotal += parseFloat(ItemRow.children[5].innerHTML);
-            totalQtyMTWeightTotal += parseFloat(ItemRow.children[6].innerHTML);
-            totalQtyMTRSWeightTotal += parseFloat(ItemRow.children[7].innerHTML) ;
-            totalQtyBalPCWeightTotal += parseFloat(ItemRow.children[8].innerHTML) ;
-            totalQtyBalMTWeightTotal += parseFloat(ItemRow.children[9].innerHTML) ;
-            totalQtyBalMTRSWeightTotal += parseFloat(ItemRow.children[10].innerHTML);
+            totalNoOFPalletsTotal += parseFloat(ItemRow.children[7].innerHTML);
+            totalQtyBalWeightTotal += parseFloat(ItemRow.children[8].innerHTML);
+            totalQtyMTWeightTotal += parseFloat(ItemRow.children[9].innerHTML);
+            totalQtyMTRSWeightTotal += parseFloat(ItemRow.children[10].innerHTML) ;
+            totalQtyBalPCWeightTotal += parseFloat(ItemRow.children[11].innerHTML) ;
+            totalQtyBalMTWeightTotal += parseFloat(ItemRow.children[12].innerHTML) ;
+            totalQtyBalMTRSWeightTotal += parseFloat(ItemRow.children[13].innerHTML);
 
         }
-        $('#trTotal')[0].children[2].innerHTML = totalQtyBalWeightTotal;
-        $('#trTotal')[0].children[3].innerHTML = parseFloat(totalQtyMTWeightTotal).toFixed(3);
-        $('#trTotal')[0].children[4].innerHTML = parseFloat(totalQtyMTRSWeightTotal).toFixed(3);
-        $('#trTotal')[0].children[5].innerHTML = totalQtyBalPCWeightTotal;
-        $('#trTotal')[0].children[6].innerHTML = parseFloat(totalQtyBalMTWeightTotal).toFixed(3);
-        $('#trTotal')[0].children[7].innerHTML = parseFloat(totalQtyBalMTRSWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[2].innerHTML = totalNoOFPalletsTotal;
+        $('#trTotal')[0].children[3].innerHTML = totalQtyBalWeightTotal;
+        $('#trTotal')[0].children[4].innerHTML = parseFloat(totalQtyMTWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[5].innerHTML = parseFloat(totalQtyMTRSWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[6].innerHTML = totalQtyBalPCWeightTotal;
+        $('#trTotal')[0].children[7].innerHTML = parseFloat(totalQtyBalMTWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[8].innerHTML = parseFloat(totalQtyBalMTRSWeightTotal).toFixed(3);
 
     }
 
