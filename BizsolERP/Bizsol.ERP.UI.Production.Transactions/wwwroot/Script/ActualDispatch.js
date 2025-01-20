@@ -8,6 +8,7 @@ $(document).ready(function () {
     $('#btnExport').click(function () {
         Export();
     });
+    
 });
 function getPartyNamePendingPackingListActualDespatch() {
     $('#ddlPartyName').on('focus', function (e) {
@@ -30,27 +31,9 @@ function getPartyNamePendingPackingListActualDespatch() {
             $('#ddlPartyName').select2({
                 width: '-webkit-fill-available'
             });
-            //$('#ddlPartyNameList option').remove();
-            //var option = '';
-            //for (var i = 0; i < response.length; i++) {
-            //    option += '<option text="' + response[i].Code + '" value="' + response[i].AccountDesp + '" >' + response[i].AccountDesp + '</option>';
-            //}
-            //$('#ddlPartyNameList')[0].innerHTML = option;
         } else {
             toastr.error('No data received or empty response');
         }
-        //const inputElement = document.getElementById("ddlPartyName");
-        //const dataList = document.getElementById("ddlPartyNameList");
-        //inputElement.addEventListener("input", () => {
-        //    const inputValue = inputElement.value;
-        //    const selectedOption = Array.from(dataList.options).find(
-        //        option => option.value === inputValue
-        //    );
-        //    if (selectedOption) {
-        //        PartyName = $("#ddlPartyName").val();
-        //        //getPendingPackingListPalletsActualDespatch(PartyName);
-        //    }
-        //});
     }).catch(function (error) {
         toastr.error('Error fetching warehouse data:', error);
     });
@@ -111,9 +94,9 @@ function onPartyNameSelectGrid() {
     StockTransferReceiveService.GetPendingPackingListActualDespatch(PartyName).then(function (response) {
         if (response.length > 0) {
             $('#tblActualDispatch').show();
-            const stringFilterColumn = ["Warehouse"];
+            const stringFilterColumn = ["Warehouse","Order No","Invoice No"];
             const numericFilterColumn = ["Packing List No"];
-            const dateFilterColumn = [];
+            const dateFilterColumn = ["Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
@@ -204,8 +187,15 @@ function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, Pack
                 };
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header-NoOfDispatch", "table-body-NoOfDispatch", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        if (response.length>0) {
+                response=response.map((item)=>({'Item Name':item['Item Name'],'Size Desp':item['Size Desp'],'Pallet No':item['Pallet No'],'Identification No':item['Identification No'],'Qty PC':item['Qty PC'],'Qty KG':item['Qty KG'],
+                'Qty SQM':item['Qty SQM']}))
+                PopulateTableForDownload(response);
+                $('#trGrandTotalPrint').empty();
+            } 
         }
         else {
+            CloseModal();
             toastr.error('No Data Found');
         }
     }).catch(error => {
@@ -405,7 +395,7 @@ function updateFooterPrint(data){
 
         const tfootContent = `
         
-        <tr id="trGrandTotal">
+        <tr id="trGrandTotalPrint">
         <td></td>
         <td></td>
         <td></td>
@@ -449,20 +439,17 @@ function PopulateTableForPrint(data) {
     const tableBody = document.querySelector('#tblReport tbody');
     const tableHeader = document.querySelector('#tblReport thead tr');
 
-    //tableBody.empty();
     $('#tblReport  thead tr').empty();
     $('#tblReport tbody').empty();
 
-    // Get the keys from the first object to generate the header dynamically
     const headers = Object.keys(data[0]);
     headers.forEach(header => {
         const th = document.createElement('th');
-        th.textContent = header.charAt(0).toUpperCase() + header.slice(1); // Capitalize the first letter
+        th.textContent = header.charAt(0).toUpperCase() + header.slice(1); 
         tableHeader.appendChild(th);
     });
 
     $('#tblReport th').css('font-weight', 'bold');
-    // Generate the rows for the table
     data.forEach(item => {
         const row = document.createElement('tr');
 
@@ -477,7 +464,50 @@ function PopulateTableForPrint(data) {
 
 }
 function Export() {
-    var ReportType ="ActualDispatch";// $("#txtReportType").val().replace(" ", "").replace(".", "");
+    var ReportType ="ActualDispatch";
+    var currentDate = new Date();
+    var dateString = currentDate.getFullYear() + "-" +
+        (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
+        currentDate.getDate().toString().padStart(2, "0") + "_" +
+        currentDate.getHours().toString().padStart(2, "0") + "-" +
+        currentDate.getMinutes().toString().padStart(2, "0") + "-" +
+        currentDate.getSeconds().toString().padStart(2, "0");
+
+    $("#tblReport").table2excel({
+        filename: ReportType + "_" + dateString,
+        fileext: ".xlsx"
+    });
+}
+function PopulateTableForDownload(data) {
+    const tableBody = document.querySelector('#tblReport tbody');
+    const tableHeader = document.querySelector('#tblReport thead tr');
+
+    $('#tblReport  thead tr').empty();
+    $('#tblReport tbody').empty();
+
+    const headers = Object.keys(data[0]);
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header.charAt(0).toUpperCase() + header.slice(1); 
+        tableHeader.appendChild(th);
+    });
+
+    $('#tblReport th').css('font-weight', 'bold');
+    data.forEach(item => {
+        const row = document.createElement('tr');
+
+        headers.forEach(header => {
+            const td = document.createElement('td');
+            td.textContent = item[header];
+            row.appendChild(td);
+        });
+
+        tableBody.appendChild(row);
+    });
+
+}
+function Download(){
+    var ReportType ="ActualDispatch";
     var currentDate = new Date();
     var dateString = currentDate.getFullYear() + "-" +
         (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
@@ -499,3 +529,4 @@ window.openModal = openModal;
 window.CloseModal = CloseModal;
 window.toggleSelection = toggleSelection;
 window.Export=Export;
+window.Download=Download;
