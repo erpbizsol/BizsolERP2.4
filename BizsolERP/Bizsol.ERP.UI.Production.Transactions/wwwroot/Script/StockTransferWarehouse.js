@@ -172,7 +172,7 @@ function StockTransferWherehouseReceive() {
     } else {
         if ($('#fileInput').val() !== '') {
             StockTransferReceiveService.StockTransferWherehouseReceive(JSON.stringify(obj)).then(function (response) {
-                if (response && Array.isArray(response) && response.length > 0) {
+                if (response && response.length > 0) {
                     const stringFilterColumn = [];
                     const numericFilterColumn = [];
                     const dateFilterColumn = [];
@@ -184,6 +184,7 @@ function StockTransferWherehouseReceive() {
 
                     BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
                     $("#ddlRollIdNo").val('');
+                    ChangeBackgroundColor();
                 } else {
                     toastr.error('No Data Found');
                 }
@@ -199,7 +200,22 @@ function StockTransferWherehouseReceive() {
         }         
     }
 }
-
+function ChangeBackgroundColor() {
+    const tableRows = document.querySelectorAll('#table-body tr');
+    tableRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        cells.forEach(cell => {
+            if (cell.textContent.trim() === 'Entry is invalid') {
+                cell.style.backgroundColor = 'red';
+                cell.style.color = 'white';
+            }
+            else if (cell.textContent.trim() === 'Entry is valid'){
+                cell.style.backgroundColor = 'green';
+                cell.style.color = 'white';
+            }
+        });
+    });
+}
 function SaveReceivedData() {
     
     let ReveivedTable = document.getElementById("table-body-NoOfVerify");
