@@ -5,6 +5,9 @@ let PackingListNo = 0;
 $(document).ready(function () {
     $("#ERPHeading").text("Actual Dispatch");
     getPartyNamePendingPackingListActualDespatch();
+    $('#btnExport').click(function () {
+        Export();
+    });
 });
 function getPartyNamePendingPackingListActualDespatch() {
     $('#ddlPartyName').on('focus', function (e) {
@@ -24,7 +27,9 @@ function getPartyNamePendingPackingListActualDespatch() {
             HideLoader();
             BindSelectList($('#ddlPartyName')[0], response.map((item) => ({ Code: item.AccountDesp, Desp: item.AccountDesp })));
 
-            $('#ddlPartyName').select2();
+            $('#ddlPartyName').select2({
+                width: '-webkit-fill-available'
+            });
             //$('#ddlPartyNameList option').remove();
             //var option = '';
             //for (var i = 0; i < response.length; i++) {
@@ -122,7 +127,7 @@ function onPartyNameSelectGrid() {
                 "Bal Qty SQM": 'right',
                 "Date": 'center',
                 "Packing List No": 'center',
-
+                "No of Pallet":'right',
             };
             const updatedResponse = response.map(item => {
                 
@@ -136,6 +141,15 @@ function onPartyNameSelectGrid() {
             BizsolCustomFilterGrid.CreateDataTable("table-header-ActualDispatch", "table-body-ActualDispatch", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
             if (updatedResponse?.length > 0) {
                 updateFooter(response);
+            }
+            
+            if (response.length>0) {
+                updateFooterPrint(response);
+                response=response.map((item)=>({'Packing List No':item['Packing List No'],Warehouse:item.Warehouse,Date:item.Date,'Order No':item['Order No'],'Invoice No':item['Invoice No'],'Party Name':item['Party Name'],
+                'No of Pallet':item['No of Pallet'],'Qty PC':item['Qty PC'],'Qty KG':item['Qty KG'],'Qty SQM':item['Qty SQM'],'Bal Qty PC':item['Bal Qty PC'],'Bal Qty KG':item['Bal Qty KG'],'Bal Qty SQM':item['Bal Qty SQM']}))
+                PopulateTableForPrint(response);
+            } else {
+                clearFooterPrint();
             }
         }
         else {
@@ -217,6 +231,7 @@ function CloseModal() {
 function updateFooter(data) {
     const calculateTotalAmount = "Total Amount";
     if (calculateTotalAmount === "Total Amount") {
+        let totalNoOFPallets = 0;
         let totalQtyBalWeight = 0;
         let totalQtyMTWeight = 0;
         let totalQtyMTRSWeight = 0;
@@ -225,6 +240,7 @@ function updateFooter(data) {
         let totalQtyBalMTWeight = 0;
         let totalQtyBalMTRSWeight = 0;
 
+        let totalNoOFPalletsTotal = 0;
         let totalQtyBalWeightTotal = 0;
         let totalQtyMTWeightTotal = 0;
         let totalQtyMTRSWeightTotal = 0;
@@ -234,15 +250,16 @@ function updateFooter(data) {
         let totalQtyBalMTRSWeightTotal = 0;
         $('#ActualDispatch tbody tr:visible').each(function () {
             const row = $(this);
-
-            totalQtyBalWeightTotal += parseFloat(row.find("td:nth-child(6)").text()) || 0;
-            totalQtyMTWeightTotal += parseFloat(row.find("td:nth-child(7)").text()) || 0;
-            totalQtyMTRSWeightTotal += parseFloat(row.find("td:nth-child(8)").text()) || 0;
-            totalQtyBalPCWeightTotal += parseFloat(row.find("td:nth-child(9)").text()) || 0;
-            totalQtyBalMTWeightTotal += parseFloat(row.find("td:nth-child(10)").text()) || 0;
-            totalQtyBalMTRSWeightTotal += parseFloat(row.find("td:nth-child(11)").text()) || 0;
+            totalNoOFPalletsTotal += parseFloat(row.find("td:nth-child(8)").text()) || 0;
+            totalQtyBalWeightTotal += parseFloat(row.find("td:nth-child(9)").text()) || 0;
+            totalQtyMTWeightTotal += parseFloat(row.find("td:nth-child(10)").text()) || 0;
+            totalQtyMTRSWeightTotal += parseFloat(row.find("td:nth-child(11)").text()) || 0;
+            totalQtyBalPCWeightTotal += parseFloat(row.find("td:nth-child(12)").text()) || 0;
+            totalQtyBalMTWeightTotal += parseFloat(row.find("td:nth-child(13)").text()) || 0;
+            totalQtyBalMTRSWeightTotal += parseFloat(row.find("td:nth-child(14)").text()) || 0;
         });
         data.forEach(row => {
+            totalNoOFPallets += parseFloat(row["No of Pallet"]);
             totalQtyBalWeight += parseFloat(row["Qty PC"]);
             totalQtyMTWeight += parseFloat(row["Qty KG"]);
             totalQtyMTRSWeight += parseFloat(row["Qty SQM"]);
@@ -265,8 +282,9 @@ function updateFooter(data) {
 
         const tfootContent = `
         <tr id="trTotal">
-        <td colspan="2"></td>
+        <td colspan="4"></td>
         <td style="text-align: center;">Total</td>
+        <td style="text-align: right;">${totalNoOFPalletsTotal}</td>
         <td style="text-align: right;">${totalQtyBalWeightTotal}</td>
         <td style="text-align: right;">${totalQtyMTWeightTotal}</td>
         <td style="text-align: right;">${totalQtyMTRSWeightTotal}</td>
@@ -276,8 +294,9 @@ function updateFooter(data) {
         <td></td>
         </tr>
         <tr id="trGrandTotal">
-        <td colspan="2"></td>
+        <td colspan="4"></td>
         <td style="text-align: center;">Grand Total</td>
+        <td style="text-align: right;">${totalNoOFPallets}</td>
         <td style="text-align: right;">${totalQtyBalWeight}</td>
         <td style="text-align: right;">${totalQtyMTWeight}</td>
         <td style="text-align: right;">${totalQtyMTRSWeight}</td>
@@ -314,6 +333,7 @@ function clearFooter() {
 function calculateTotal() {
 
     let Data = $('#ActualDispatch tbody tr:visible');
+    let totalNoOFPalletsTotal = 0;
     let totalQtyBalWeightTotal = 0;
     let totalQtyMTWeightTotal = 0;
     let totalQtyMTRSWeightTotal = 0;
@@ -325,21 +345,22 @@ function calculateTotal() {
         
         for (let i = 0; i < Data.length; i++) {
             let ItemRow = Data[i];
-
-            totalQtyBalWeightTotal += parseFloat(ItemRow.children[5].innerHTML);
-            totalQtyMTWeightTotal += parseFloat(ItemRow.children[6].innerHTML);
-            totalQtyMTRSWeightTotal += parseFloat(ItemRow.children[7].innerHTML) ;
-            totalQtyBalPCWeightTotal += parseFloat(ItemRow.children[8].innerHTML) ;
-            totalQtyBalMTWeightTotal += parseFloat(ItemRow.children[9].innerHTML) ;
-            totalQtyBalMTRSWeightTotal += parseFloat(ItemRow.children[10].innerHTML);
+            totalNoOFPalletsTotal += parseFloat(ItemRow.children[7].innerHTML);
+            totalQtyBalWeightTotal += parseFloat(ItemRow.children[8].innerHTML);
+            totalQtyMTWeightTotal += parseFloat(ItemRow.children[9].innerHTML);
+            totalQtyMTRSWeightTotal += parseFloat(ItemRow.children[10].innerHTML) ;
+            totalQtyBalPCWeightTotal += parseFloat(ItemRow.children[11].innerHTML) ;
+            totalQtyBalMTWeightTotal += parseFloat(ItemRow.children[12].innerHTML) ;
+            totalQtyBalMTRSWeightTotal += parseFloat(ItemRow.children[13].innerHTML);
 
         }
-        $('#trTotal')[0].children[2].innerHTML = totalQtyBalWeightTotal;
-        $('#trTotal')[0].children[3].innerHTML = parseFloat(totalQtyMTWeightTotal).toFixed(3);
-        $('#trTotal')[0].children[4].innerHTML = parseFloat(totalQtyMTRSWeightTotal).toFixed(3);
-        $('#trTotal')[0].children[5].innerHTML = totalQtyBalPCWeightTotal;
-        $('#trTotal')[0].children[6].innerHTML = parseFloat(totalQtyBalMTWeightTotal).toFixed(3);
-        $('#trTotal')[0].children[7].innerHTML = parseFloat(totalQtyBalMTRSWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[2].innerHTML = totalNoOFPalletsTotal;
+        $('#trTotal')[0].children[3].innerHTML = totalQtyBalWeightTotal;
+        $('#trTotal')[0].children[4].innerHTML = parseFloat(totalQtyMTWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[5].innerHTML = parseFloat(totalQtyMTRSWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[6].innerHTML = totalQtyBalPCWeightTotal;
+        $('#trTotal')[0].children[7].innerHTML = parseFloat(totalQtyBalMTWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[8].innerHTML = parseFloat(totalQtyBalMTRSWeightTotal).toFixed(3);
 
     }
 
@@ -355,9 +376,126 @@ function BindSelectList(element, list) {
     });
     element.innerHTML = option;
 }
+function updateFooterPrint(data){
+    const calculateTotalAmount = "Total Amount";
+    if (calculateTotalAmount === "Total Amount") {
+        let totalNoOFPallets = 0;
+        let totalQtyBalWeight = 0;
+        let totalQtyMTWeight = 0;
+        let totalQtyMTRSWeight = 0;
+
+        let totalQtyBalPCWeight = 0;
+        let totalQtyBalMTWeight = 0;
+        let totalQtyBalMTRSWeight = 0;
+
+        data.forEach(row => {
+            totalNoOFPallets += parseFloat(row["No of Pallet"]);
+            totalQtyBalWeight += parseFloat(row["Qty PC"]);
+            totalQtyMTWeight += parseFloat(row["Qty KG"]);
+            totalQtyMTRSWeight += parseFloat(row["Qty SQM"]);
+
+            totalQtyBalPCWeight += parseFloat(row["Bal Qty PC"]);
+            totalQtyBalMTWeight += parseFloat(row["Bal Qty KG"]);
+            totalQtyBalMTRSWeight += parseFloat(row["Bal Qty SQM"]);
+        });
+        totalQtyMTWeight = totalQtyMTWeight.toFixed(3);
+        totalQtyMTRSWeight = totalQtyMTRSWeight.toFixed(3);
+        totalQtyBalMTWeight = totalQtyBalMTWeight.toFixed(3);
+        totalQtyBalMTRSWeight = totalQtyBalMTRSWeight.toFixed(3);
+
+        const tfootContent = `
+        
+        <tr id="trGrandTotal">
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td style="text-align: center;">Total</td>
+        <td style="text-align: right;">${totalNoOFPallets}</td>
+        <td style="text-align: right;">${totalQtyBalWeight}</td>
+        <td style="text-align: right;">${totalQtyMTWeight}</td>
+        <td style="text-align: right;">${totalQtyMTRSWeight}</td>
+        <td style="text-align: right;">${totalQtyBalPCWeight}</td>
+        <td style="text-align: right;">${totalQtyBalMTWeight}</td>
+        <td style="text-align: right;">${totalQtyBalMTRSWeight}</td>
+        <td></td>
+        </tr>
+        `;
+
+        const tfoot = document.querySelector("#tblReport tfoot");
+
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#tblReport");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+        }
+    }
+}
+function clearFooterPrint() {
+    const tfoot = document.querySelector("#tblReport tfoot");
+    if (tfoot) {
+        tfoot.innerHTML = "";
+    }
+}
+function PopulateTableForPrint(data) {
+    const tableBody = document.querySelector('#tblReport tbody');
+    const tableHeader = document.querySelector('#tblReport thead tr');
+
+    //tableBody.empty();
+    $('#tblReport  thead tr').empty();
+    $('#tblReport tbody').empty();
+
+    // Get the keys from the first object to generate the header dynamically
+    const headers = Object.keys(data[0]);
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header.charAt(0).toUpperCase() + header.slice(1); // Capitalize the first letter
+        tableHeader.appendChild(th);
+    });
+
+    $('#tblReport th').css('font-weight', 'bold');
+    // Generate the rows for the table
+    data.forEach(item => {
+        const row = document.createElement('tr');
+
+        headers.forEach(header => {
+            const td = document.createElement('td');
+            td.textContent = item[header];
+            row.appendChild(td);
+        });
+
+        tableBody.appendChild(row);
+    });
+
+}
+function Export() {
+    var ReportType ="ActualDispatch";// $("#txtReportType").val().replace(" ", "").replace(".", "");
+    var currentDate = new Date();
+    var dateString = currentDate.getFullYear() + "-" +
+        (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
+        currentDate.getDate().toString().padStart(2, "0") + "_" +
+        currentDate.getHours().toString().padStart(2, "0") + "-" +
+        currentDate.getMinutes().toString().padStart(2, "0") + "-" +
+        currentDate.getSeconds().toString().padStart(2, "0");
+
+    $("#tblReport").table2excel({
+        filename: ReportType + "_" + dateString,
+        fileext: ".xlsx"
+    });
+}
+
 window.getPartyNamePendingPackingListActualDespatch = getPartyNamePendingPackingListActualDespatch;
 window.onPartyNameSelectGrid = onPartyNameSelectGrid;
 window.updateAll = updateAll;
 window.openModal = openModal;
 window.CloseModal = CloseModal;
 window.toggleSelection = toggleSelection;
+window.Export=Export;
