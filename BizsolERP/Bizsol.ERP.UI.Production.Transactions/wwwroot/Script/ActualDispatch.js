@@ -105,6 +105,7 @@ function onPartyNameSelectGrid() {
                 "Qty PC": 'right',
                 "Qty KG": 'right',
                 "Qty SQM": 'right',
+                "Bal No of Pallet": 'right',
                 "Bal Qty PC": 'right',
                 "Bal Qty KG": 'right',
                 "Bal Qty SQM": 'right',
@@ -128,8 +129,10 @@ function onPartyNameSelectGrid() {
             
             if (response.length>0) {
                 updateFooterPrint(response);
-                response=response.map((item)=>({'Packing List No':item['Packing List No'],Warehouse:item.Warehouse,Date:item.Date,'Order No':item['Order No'],'Invoice No':item['Invoice No'],'Party Name':item['Party Name'],
-                'No of Pallet':item['No of Pallet'],'Qty PC':item['Qty PC'],'Qty KG':item['Qty KG'],'Qty SQM':item['Qty SQM'],'Bal Qty PC':item['Bal Qty PC'],'Bal Qty KG':item['Bal Qty KG'],'Bal Qty SQM':item['Bal Qty SQM']}))
+                response = response.map((item) => ({
+                    'Packing List No': item['Packing List No'], Warehouse: item.Warehouse, Date: item.Date, 'Order No': item['Order No'], 'Invoice No': item['Invoice No'], 'Party Name': item['Party Name'],
+                    'No of Pallet': item['No of Pallet'], 'Qty PC': item['Qty PC'], 'Qty KG': item['Qty KG'], 'Qty SQM': item['Qty SQM'], 'Bal No of Pallet': item['Bal No of Pallet'], 'Bal Qty PC': item['Bal Qty PC'], 'Bal Qty KG': item['Bal Qty KG'], 'Bal Qty SQM': item['Bal Qty SQM']
+                }))
                 PopulateTableForPrint(response);
             } else {
                 clearFooterPrint();
@@ -180,7 +183,8 @@ function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, Pack
                 "Qty SQM": 'right',
             };
             const updatedResponse = response.map(item => {
-                let Action = `<input type="checkbox" onchange="toggleSelection(${item["Pallet No"]})">`;
+                let PalletNo = item["Pallet No"] || item["Identification No"];
+                let Action = `<input type="checkbox" onchange="toggleSelection('${PalletNo}')">`;
                 return {
                     ...item,
                     Action
@@ -196,7 +200,6 @@ function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, Pack
         }
         else {
             CloseModal();
-            toastr.error('No Data Found');
         }
     }).catch(error => {
         toastr.error(error.Msg);
@@ -205,14 +208,15 @@ function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, Pack
 function toggleSelection(PalletNo) {
     let ReveivedTable = document.getElementById("table-body-NoOfDispatch");
     let PartyName = $('#ddlPartyName').val();
-    StockTransferReceiveService.PackingActualPalletIDDispatch(PalletNo, PartyName).then(function (response) {
-        var PackingListMaster_Code = $('#txtPackingListMaster_Code').val();
-        GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, PackingListNo);
-        toastr.success(response.Msg);
-    })
-        .catch(function (error) {
-            toastr.error(error.Msg);
-        });
+    var PackingListMaster_Code = $('#txtPackingListMaster_Code').val();
+    
+        StockTransferReceiveService.PackingActualPalletIDDispatch(PalletNo, PartyName).then(function (response) {
+            toastr.success(response.Msg);
+            GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, PackingListNo);
+        })
+            .catch(function (error) {
+                toastr.error(error.Msg);
+            });
 }
 function CloseModal() {
     onPartyNameSelectGrid();
@@ -225,6 +229,7 @@ function updateFooter(data) {
         let totalQtyBalWeight = 0;
         let totalQtyMTWeight = 0;
         let totalQtyMTRSWeight = 0;
+        let totalBalNoOfPallet = 0;
 
         let totalQtyBalPCWeight = 0;
         let totalQtyBalMTWeight = 0;
@@ -234,6 +239,7 @@ function updateFooter(data) {
         let totalQtyBalWeightTotal = 0;
         let totalQtyMTWeightTotal = 0;
         let totalQtyMTRSWeightTotal = 0;
+        let totalBalNoOfPalletTotal = 0; 
 
         let totalQtyBalPCWeightTotal = 0;
         let totalQtyBalMTWeightTotal = 0;
@@ -244,9 +250,10 @@ function updateFooter(data) {
             totalQtyBalWeightTotal += parseFloat(row.find("td:nth-child(9)").text()) || 0;
             totalQtyMTWeightTotal += parseFloat(row.find("td:nth-child(10)").text()) || 0;
             totalQtyMTRSWeightTotal += parseFloat(row.find("td:nth-child(11)").text()) || 0;
-            totalQtyBalPCWeightTotal += parseFloat(row.find("td:nth-child(12)").text()) || 0;
-            totalQtyBalMTWeightTotal += parseFloat(row.find("td:nth-child(13)").text()) || 0;
-            totalQtyBalMTRSWeightTotal += parseFloat(row.find("td:nth-child(14)").text()) || 0;
+            totalBalNoOfPalletTotal += parseFloat(row.find("td:nth-child(12)").text()) || 0;
+            totalQtyBalPCWeightTotal += parseFloat(row.find("td:nth-child(13)").text()) || 0;
+            totalQtyBalMTWeightTotal += parseFloat(row.find("td:nth-child(14)").text()) || 0;
+            totalQtyBalMTRSWeightTotal += parseFloat(row.find("td:nth-child(15)").text()) || 0;
         });
         data.forEach(row => {
             totalNoOFPallets += parseFloat(row["No of Pallet"]);
@@ -254,6 +261,7 @@ function updateFooter(data) {
             totalQtyMTWeight += parseFloat(row["Qty KG"]);
             totalQtyMTRSWeight += parseFloat(row["Qty SQM"]);
 
+            totalBalNoOfPallet += parseFloat(row["Bal No of Pallet"]);
             totalQtyBalPCWeight += parseFloat(row["Bal Qty PC"]);
             totalQtyBalMTWeight += parseFloat(row["Bal Qty KG"]);
             totalQtyBalMTRSWeight += parseFloat(row["Bal Qty SQM"]);
@@ -278,6 +286,7 @@ function updateFooter(data) {
         <td style="text-align: right;">${totalQtyBalWeightTotal}</td>
         <td style="text-align: right;">${totalQtyMTWeightTotal}</td>
         <td style="text-align: right;">${totalQtyMTRSWeightTotal}</td>
+        <td style="text-align: right;">${totalBalNoOfPalletTotal}</td>
         <td style="text-align: right;">${totalQtyBalPCWeightTotal}</td>
         <td style="text-align: right;">${totalQtyBalMTWeightTotal}</td>
         <td style="text-align: right;">${totalQtyBalMTRSWeightTotal}</td>
@@ -290,6 +299,7 @@ function updateFooter(data) {
         <td style="text-align: right;">${totalQtyBalWeight}</td>
         <td style="text-align: right;">${totalQtyMTWeight}</td>
         <td style="text-align: right;">${totalQtyMTRSWeight}</td>
+        <td style="text-align: right;">${totalBalNoOfPallet}</td>
         <td style="text-align: right;">${totalQtyBalPCWeight}</td>
         <td style="text-align: right;">${totalQtyBalMTWeight}</td>
         <td style="text-align: right;">${totalQtyBalMTRSWeight}</td>
@@ -328,6 +338,7 @@ function calculateTotal() {
     let totalQtyMTWeightTotal = 0;
     let totalQtyMTRSWeightTotal = 0;
 
+    let totalBalNoOfPalletTotal = 0;
     let totalQtyBalPCWeightTotal = 0;
     let totalQtyBalMTWeightTotal = 0;
     let totalQtyBalMTRSWeightTotal = 0;
@@ -338,19 +349,21 @@ function calculateTotal() {
             totalNoOFPalletsTotal += parseFloat(ItemRow.children[7].innerHTML);
             totalQtyBalWeightTotal += parseFloat(ItemRow.children[8].innerHTML);
             totalQtyMTWeightTotal += parseFloat(ItemRow.children[9].innerHTML);
-            totalQtyMTRSWeightTotal += parseFloat(ItemRow.children[10].innerHTML) ;
-            totalQtyBalPCWeightTotal += parseFloat(ItemRow.children[11].innerHTML) ;
-            totalQtyBalMTWeightTotal += parseFloat(ItemRow.children[12].innerHTML) ;
-            totalQtyBalMTRSWeightTotal += parseFloat(ItemRow.children[13].innerHTML);
+            totalQtyMTRSWeightTotal += parseFloat(ItemRow.children[10].innerHTML);
+            totalBalNoOfPalletTotal += parseFloat(ItemRow.children[11].innerHTML);
+            totalQtyBalPCWeightTotal += parseFloat(ItemRow.children[12].innerHTML);
+            totalQtyBalMTWeightTotal += parseFloat(ItemRow.children[13].innerHTML);
+            totalQtyBalMTRSWeightTotal += parseFloat(ItemRow.children[14].innerHTML);
 
         }
         $('#trTotal')[0].children[2].innerHTML = totalNoOFPalletsTotal;
         $('#trTotal')[0].children[3].innerHTML = totalQtyBalWeightTotal;
         $('#trTotal')[0].children[4].innerHTML = parseFloat(totalQtyMTWeightTotal).toFixed(3);
         $('#trTotal')[0].children[5].innerHTML = parseFloat(totalQtyMTRSWeightTotal).toFixed(3);
-        $('#trTotal')[0].children[6].innerHTML = totalQtyBalPCWeightTotal;
-        $('#trTotal')[0].children[7].innerHTML = parseFloat(totalQtyBalMTWeightTotal).toFixed(3);
-        $('#trTotal')[0].children[8].innerHTML = parseFloat(totalQtyBalMTRSWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[6].innerHTML = totalBalNoOfPalletTotal;
+        $('#trTotal')[0].children[7].innerHTML = totalQtyBalPCWeightTotal;
+        $('#trTotal')[0].children[8].innerHTML = parseFloat(totalQtyBalMTWeightTotal).toFixed(3);
+        $('#trTotal')[0].children[9].innerHTML = parseFloat(totalQtyBalMTRSWeightTotal).toFixed(3);
 
     }
 
@@ -373,7 +386,7 @@ function updateFooterPrint(data){
         let totalQtyBalWeight = 0;
         let totalQtyMTWeight = 0;
         let totalQtyMTRSWeight = 0;
-
+        let totalBalNoOfPallet = 0;
         let totalQtyBalPCWeight = 0;
         let totalQtyBalMTWeight = 0;
         let totalQtyBalMTRSWeight = 0;
@@ -383,7 +396,7 @@ function updateFooterPrint(data){
             totalQtyBalWeight += parseFloat(row["Qty PC"]);
             totalQtyMTWeight += parseFloat(row["Qty KG"]);
             totalQtyMTRSWeight += parseFloat(row["Qty SQM"]);
-
+            totalBalNoOfPallet += parseFloat(row["Bal No of Pallet"]);
             totalQtyBalPCWeight += parseFloat(row["Bal Qty PC"]);
             totalQtyBalMTWeight += parseFloat(row["Bal Qty KG"]);
             totalQtyBalMTRSWeight += parseFloat(row["Bal Qty SQM"]);
@@ -406,6 +419,7 @@ function updateFooterPrint(data){
         <td style="text-align: right;">${totalQtyBalWeight}</td>
         <td style="text-align: right;">${totalQtyMTWeight}</td>
         <td style="text-align: right;">${totalQtyMTRSWeight}</td>
+        <td style="text-align: right;">${totalBalNoOfPallet}</td>
         <td style="text-align: right;">${totalQtyBalPCWeight}</td>
         <td style="text-align: right;">${totalQtyBalMTWeight}</td>
         <td style="text-align: right;">${totalQtyBalMTRSWeight}</td>
