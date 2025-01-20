@@ -239,17 +239,17 @@ body[data-bs-theme=dark] .layout-mode-light {
     padding: 3px
 }
 
-    .header-profile-user:hover {
-        background-color: #b1b3bc;
-        border: 2px solid #c9cee4;
-    }
+.header-profile-user:hover {
+    background-color: #b1b3bc;
+    border: 2px solid #c9cee4;
+}
 
 .navbar-header .userIcon {
-    padding: 6px;
+    padding: 4px;
     border-radius: 50%;
     color: #ffffff;
     background: #607d8b;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .navbar-header h4 {
