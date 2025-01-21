@@ -13,7 +13,7 @@ function bindMenu() {
         .then(function (res) {
             sessionStorage.setItem('UserDetails', JSON.stringify(res));
             let UserDetailsobj = JSON.parse(sessionStorage.getItem('UserDetails'));
-
+            GetWebNotificationList();
             $('#ERPUserName')[0].innerHTML = UserDetailsobj[0].UserID;
             $('#ERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})`;
 
