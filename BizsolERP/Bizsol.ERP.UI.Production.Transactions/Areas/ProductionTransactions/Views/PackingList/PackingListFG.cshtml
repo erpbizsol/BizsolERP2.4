@@ -11,13 +11,13 @@
 
 <style>
    
-    #tbPackingListFGView tfoot {
+    #tbPackingListFGView tfoot, #tbPackingListTransaction tfoot {
         position: sticky;
         bottom: 0;
-        z-index: 2; 
+        z-index: 0; 
     }
 
-        #tbPackingListFGView tfoot td, #tbPackingListFGView tfoot th {
+        #tbPackingListFGView tfoot td, #tbPackingListFGView tfoot th, #tbPackingListFGView tfoot, #tbPackingListTransaction tfoot {
         background-color: #d5dde5; 
     }
 </style>
@@ -68,7 +68,7 @@
                     </div>
                     <div class="col-md-2 col-6">
                         <label for="txtDistance" class="col-form-label-sm fw-bold"> Distance:</label>
-                        <input id="txtDistance" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="6" autocomplete="off">
+                        <input id="txtDistance" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="6" autocomplete="off" value="0">
                     </div>
                     <div class="col-md-2 col-6">
                         <label for="txtGRNo" class="col-form-label-sm fw-bold"> GR No:</label>
@@ -85,7 +85,7 @@
                     <select id="ddlReqNo" class="form-control form-control-sm box_border">
                     </select>
 
-                    <a class="btn btn-primary icon-height" onclick="PackingListFG_ShowDetailsModals('ReqDetails')">
+                    <a class="btn btn-primary icon-height" onclick="PackingListFG_ShowDetailsModals('GetReqDetails')">
                         ...
                     </a>
                 </div>
@@ -108,24 +108,29 @@
                 
 
                 <div class="col-md-1 col-3 without-label-field">
-                    <label for="chkOtherStock" class="col-form-label-sm fw-bold">Show List</label>
-                    <input type="checkbox" id="chkOtherStock" />
+                    <label for="chkShowIdDataList" class="col-form-label-sm fw-bold">Show List</label>
+                    <input type="checkbox" id="chkShowIdDataList" onclick="PackingListFG_ScanIdDataList()" />
                 </div>
                 <div class="col-md-1 col-3 without-label-field">
-                    <button type="button" class="btn btn-success icon-height" onclick="PackingListFG_Back()">Start Scan</button>
+                    <button type="button" class="btn btn-success icon-height" id="btnStart" onclick="PackingListFG_StartLoading()">Start Scan</button>
                 </div>
                 <div class="col-md-3 col-6">
                     <label for="txtScanIdentification" class="col-form-label-sm fw-bold">Scan Batch No / ID:</label>
                     <input type="text" id="txtScanIdentification" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" autocomplete="off"  />
+                    <ul id="txtScanIdentification_List" class="AutoSuggestion-list"></ul>
+                </div>
+                <div class="col-md-1 col-3 without-label-field">
+                    <label for="chkOtherStock" class="col-form-label-sm fw-bold">Check In other stock</label>
+                    <input type="checkbox" id="chkOtherStock"  />
                 </div>
                 <div class="col-md-1 col-6 without-label-field">
-                    <button type="button" class="btn btn-danger icon-height" onclick="PackingListFG_Back()" disabled>Loading End</button>
+                    <button type="button" class="btn btn-danger icon-height" id="btnLoadingEnd" disabled>Loading End</button>
                 </div>
             </div>
             
             <div class="row">
                 <div class="col-md-6">
-                    <a id="btnScanNoPallet" class="btn btn-primary icon-height" onclick="FillPendingOrderForPallet()">
+                    <a id="btnScanNoPallet" class="btn btn-primary icon-height" onclick="PackingListFG_ShowDetailsModals('ScanNoPallet')">
                         Scan NO Of Pallet
                     </a>
                 </div>
@@ -138,10 +143,10 @@
 
         </fieldset>
     </div>
-    <div class="row">
+    <div class="row" id="DivBtnAdd">
         <div class="col-md-6 ">
 
-            <a class="btn btn-primary icon-height" onclick="ShowScanPackingListDetails()">
+            <a class="btn btn-primary icon-height" onclick="PackingListFG_ShowDetailsModals('AvailableStockDetail')">
                 AVAILABLE ORDER STOCK
             </a>
 

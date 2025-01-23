@@ -52,9 +52,9 @@ const PackingListFGService = {
             }
         );
     },
-    GetReqDetails: function GetReqDetails(RMRequisitionMaster_Code) {
+    GetDetails: function GetDetails(Mode,Code) {
 
-        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetReqDetails?Code=" + RMRequisitionMaster_Code;
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetDetails?Mode=" + Mode + "&Code=" + Code;
         //alert(url);
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
@@ -62,16 +62,76 @@ const PackingListFGService = {
             }
         );
     },
-    GetPendingOrderList: function GetPendingOrderList(mode, Name) {
+    GetPendingOrderList: function GetPendingOrderList(mode, Name, BuyerPOMaster_Code) {
 
-        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetPendingOrderList?Mode=" + mode + "&Name=" + encodeURI(Name);
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetPendingOrderList?Mode=" + mode + "&Name=" + encodeURIComponent(Name) + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code;
         //alert(url);
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
                 return value;
             }
         );
-    }
+    },
+    ValidatePackingList: function ValidatePackingList(packingListMaster_Code,  onlyEntry, payload) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/ValidatePackingList?PackingListMaster_Code=" + packingListMaster_Code + "&OnlyEntry=" + onlyEntry;
+        //alert(url);
+        return promiseAjaxCallApi.CallAPI('POST', url, payload).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SavePackingList: function SavePackingList(packingListMaster_Code, onlyEntry,  payload) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/SavePackingList?PackingListMaster_Code=" + packingListMaster_Code + "&OnlyEntry=" + onlyEntry;
+        //alert(url);
+        return promiseAjaxCallApi.CallAPI('POST', url, payload).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetShowPackingListData: function GetShowPackingListData(packingListMaster_Code) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetShowPackingListData?PackingListMaster_Code=" + packingListMaster_Code;
+        //alert(url);
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    LoadingEndPackingListBatchNo: function LoadingEndPackingListBatchNo(PackingListMaster_Code) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/LoadingEndPackingListBatchNo?PackingListMaster_Code=" + PackingListMaster_Code;
+        //alert(url);
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    ScanIdDataList: function ScanIdDataList(RMRequisitionMasterCode, FromGodownCode, BuyerPOMaster_Code) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetScanIdDataList?RMRequisitionMasterCode=" + RMRequisitionMasterCode + "&FromGodownCode=" + FromGodownCode + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code;
+        //alert(url);
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    ScanPendingId: function ScanPendingId(BundleOrId, GodownMaster_Code, BuyerPOMaster_Code, DespatchAdvicemaster_Code, EntryDate, ShowAllStockasPerSize, PackingListMaster_Code) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/ScanPendingId?BundleOrId=" + encodeURIComponent(BundleOrId) + "&GodownMaster_Code=" + GodownMaster_Code + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&DespatchAdvicemaster_Code=" + DespatchAdvicemaster_Code + "&EntryDate=" + EntryDate + "&ShowAllStockasPerSize=" + ShowAllStockasPerSize + "&PackingListMaster_Code=" + PackingListMaster_Code;
+        //alert(url);
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     
 }
 
