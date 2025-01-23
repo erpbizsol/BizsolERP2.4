@@ -47,6 +47,10 @@
     .without-label-field {
         margin-top: 0.2rem;
     }
+
+    .fixed-height-table {
+        height: 500px;
+    }
 }
 
 @media (min-width: 1025px) and (max-width: 1280px) {

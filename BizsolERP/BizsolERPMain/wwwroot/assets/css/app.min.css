@@ -239,17 +239,17 @@ body[data-bs-theme=dark] .layout-mode-light {
     padding: 3px
 }
 
-    .header-profile-user:hover {
-        background-color: #b1b3bc;
-        border: 2px solid #c9cee4;
-    }
+.header-profile-user:hover {
+    background-color: #b1b3bc;
+    border: 2px solid #c9cee4;
+}
 
 .navbar-header .userIcon {
-    padding: 6px;
+    padding: 4px;
     border-radius: 50%;
     color: #ffffff;
     background: #607d8b;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .navbar-header h4 {
@@ -1008,7 +1008,9 @@ body[data-sidebar-size=sm] {
             body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a {
                 /*padding: 15px 20px;*/
                 -webkit-transition: none;
-                transition: none
+                transition: none;
+                padding: .4rem;
+                border-radius: 5px;
             }
 
                 body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:active,
@@ -1029,7 +1031,7 @@ body[data-sidebar-size=sm] {
             }
 
             body[data-sidebar-size=sm] .vertical-menu #sidebar-menu ul li:hover .iconBg {
-                padding: 5px 5px;
+                padding: 3px 5px;
             }
 
         body[data-sidebar-size=sm] .vertical-menu #sidebar-menu ul li a .iconBg .side-menu-icon {
@@ -1043,14 +1045,14 @@ body[data-sidebar-size=sm] {
  
         body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a span {
             display: none;
-            padding-left: 25px;
+            /*padding-left: 25px;*/
         }
 
         body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a .iconBg {
             display: block;
             padding: 3px 5px;
             border-radius: 5px;
-            margin-right: 10px;
+            margin-right: 15px;
         }
 
         body[data-sidebar-size=sm] .vertical-menu #sidebar-menu .side-menu-search {
@@ -1070,7 +1072,8 @@ body[data-sidebar-size=sm] {
             /*background-color: var(--bs-sidebar-bg);*/
              background-color: #607d8b;
             -webkit-transition: none;
-            transition: none
+            transition: none;
+            
         }
 
          /*body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:hover  {
@@ -1087,7 +1090,8 @@ body[data-sidebar-size=sm] {
             }
 
             body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li:hover > a span {
-                display: inline
+                /*display: inline;*/
+                display: inline-block;
             }
 
         body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li:hover > ul {
