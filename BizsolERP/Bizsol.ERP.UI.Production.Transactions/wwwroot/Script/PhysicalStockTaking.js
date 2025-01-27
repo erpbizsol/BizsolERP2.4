@@ -3,6 +3,9 @@
 $(document).ready(function () {
     $("#ERPHeading").text("Physical Stock Taking");
     highlightSelectedDates();
+    GetWarehouse();
+    GetItemName();
+    ScanIdDataListStockTacing();
     let todayDate = convertDateFormat($('#txtdate').val());
     $('#remarks').on('focus', function (e) {
         $("#remarks").val("");
@@ -38,7 +41,7 @@ $(document).ready(function () {
     });
     $('#txtScanIdentificationNo').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtScanIdentificationNo").focus();
+            OpenModal();
         }
     });
 });
@@ -148,8 +151,18 @@ function DeletePhysicalStock() {
     });
 }
 function ScanIdDataListStockTacing() {
-    PhysicalStockTakingItemService.ScanIdDataListStockTacing(ItemMaster_Code, Type).then(function (response) {
+    PhysicalStockTakingItemService.ScanIdDataListStockTacing().then(function (response) {
+        if (response && response.length > 0) {
+            BindSelectList($('#ddlPhysicalWarehouse')[0], response.map((item) => ({ Code: item.Code, Desp: item['Identification No'] })));
 
+            $('#ddlPhysicalWarehouse').select2({
+                width: '-webkit-fill-available'
+            });
+        } else {
+            toastr.error('No data received or empty response');
+        }
+    }).catch(function (error) {
+        toastr.error('Error fetching warehouse data:', error);
     });
 }
 function ShowPhysicalStockAsOnDate() {
@@ -157,4 +170,52 @@ function ShowPhysicalStockAsOnDate() {
 
     });
 }
+function GetWarehouse() {
+    PhysicalStockTakingItemService.GetWarehouse().then(function (response) {
+        if (response && response.length > 0) {
+            BindSelectList($('#ddlPhysicalWarehouse')[0], response.map((item) => ({ Code: item.Code, Desp: item.GodownName })));
+
+            $('#ddlPhysicalWarehouse').select2({
+                width: '-webkit-fill-available'
+            });
+        } else {
+            toastr.error('No data received or empty response');
+        }
+    }).catch(function (error) {
+        toastr.error('Error fetching warehouse data:', error);
+    });
+}
+function GetItemName() {
+    PhysicalStockTakingItemService.GetItemName().then(function (response) {
+        if (response && response.length > 0) {
+            BindSelectList($('#ddlItmeName')[0], response.map((item) => ({ Code: item.Code, Desp: item.ItemName })));
+
+            $('#ddlItemName').select2({
+                width: '-webkit-fill-available'
+            });
+        } else {
+            toastr.error('No data received or empty response');
+        }
+    }).catch(function (error) {
+        toastr.error('Error fetching warehouse data:', error);
+    });
+}
+function BindSelectList(element, list) {
+    let option = '<option value="0"></option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
+function OpenModal() {
+    $('#myModal').modal({
+        backdrop: 'static',
+    });
+    $('#myModal').modal('show');
+}
+function CloseModal() {
+    $('#myModal').modal('hide');
+}
+
 window.ScanCoilDetails = ScanCoilDetails;
+window.CloseModal = CloseModal;
