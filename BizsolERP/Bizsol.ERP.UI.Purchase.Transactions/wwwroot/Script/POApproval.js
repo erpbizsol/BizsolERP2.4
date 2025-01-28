@@ -1,7 +1,7 @@
 ﻿import { POApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/POApprovalService.js';
 $(document).ready(function () {
     var urlParams = getUrlVars();
-    var menuValue = urlParams['menu'];
+    var menuValue = decodeURI(urlParams['menu']);
     if (menuValue) {
         $("#ERPHeading").text(menuValue);
     }
@@ -21,7 +21,7 @@ function unApprovedPO() {
             const showButtons = [];
             const hiddenColumns = ["Code"];
             const ColumnAlignment = {
-                "PO Amount": 'right',
+                "Total PO Amount": 'right',
                 "PO Date": 'center',
                 "PO No": 'center',
             };

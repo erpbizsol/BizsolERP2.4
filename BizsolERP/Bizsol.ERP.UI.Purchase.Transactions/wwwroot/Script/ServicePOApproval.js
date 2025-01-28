@@ -2,7 +2,7 @@
 
 $(document).ready(function () {
     var urlParams = getUrlVars();
-    var menuValue = urlParams['menu'];
+    var menuValue = decodeURI(urlParams['menu']);
     if (menuValue) {
         $("#ERPHeading").text(menuValue);
     }
