@@ -1,7 +1,26 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+
+<style>
+    .without-label-field {
+        margin-top: 2.3rem;
+    }
+</style>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+
+<style>
+   
+    #tbPackingListFGView tfoot, #tbPackingListTransaction tfoot {
+        position: sticky;
+        bottom: 0;
+        z-index: 0; 
+    }
+
+        #tbPackingListFGView tfoot td, #tbPackingListFGView tfoot th, #tbPackingListFGView tfoot, #tbPackingListTransaction tfoot {
+        background-color: #d5dde5; 
+    }
+</style>
 
 <div class="row mb-2" id="DivPackingListFGForm">
     <div class="col-md-12">
@@ -9,64 +28,229 @@
             <legend class="float-none w-auto px-2">Packing List Entry</legend>
 
             <div class="row">
-                <div class="col-md-3 form-group">
-                    <label for="txtUserName" class="col-form-label-sm fw-bold">User Name</label>
-                    <input type="text" id="txtUserName" class="box_border form-control form-control-sm" autocomplete="off" value="">
+                <div class="col-md-2 col-6">
+                    <label for="txtPackingListNo" class="col-form-label-sm fw-bold">Packing List No:</label>
+                    <input type="text" id="txtPackingListNo" class="box_border form-control form-control-sm" autocomplete="off" value="0" readonly="readonly">
                 </div>
-                <div class="col-md-3 col-sm-6 col-6">
-                    <label for="txtdate" class="col-form-label-sm fw-bold">Date</label>
-                    <input ID="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
+                <div class="col-md-2 col-6">
+                    <label for="txtPackingListDate" class="col-form-label-sm fw-bold">Packing Date:</label>
+                    <input type="date" id="txtPackingListDate" name="txtPackingListDate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" />
                 </div>
-                <div class="col-md-3 col-sm-6 col-6">
-                    <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Check In Time</label>
-                    <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" readonly="readonly" />
+                <div class="col-md-2 col-6">
+                    <label for="ddlPackingType" class="col-form-label-sm fw-bold">Packing Type:</label>
+                    <select id="ddlPackingType" class="form-control form-control-sm box_border" onchange="PackingListFG_OnChangeddlPackingType()">
+                    </select>
+                    
                 </div>
-                <div class="col-md-3">
-                    <label for="txtLocation" class="col-form-label-sm fw-bold">Location</label>
-                    <input type="text" id="txtAddLocation" name="txtAddLocation" class="box_border form-control form-control-sm" hidden required />
-                    <input type="text" id="txtCurrentLocation" name="txtCurrentLocation" class="box_border form-control form-control-sm" value="" required />
-                    <input type="text" id="txtCheckOutLocation" name="txtCheckOutLocation" class="box_border form-control form-control-sm" hidden required />
-                    <input type="hidden" id="hflatlong" name="hflatlong" value="" />
+                <div class="col-md-3 col-12">
+                    <label for="ddlClientName" class="col-form-label-sm fw-bold">Buyer Name:</label>
+                    <select id="ddlClientName" class="form-control form-control-sm box_border" onchange="PackingListFG_OnChangeddlClientNameORddlConsignee(this)">
+                    </select>
+                </div>
+                <div class="col-md-3 col-12">
+                    <label for="ddlConsignee" class="col-form-label-sm fw-bold">Consignee:</label>
+                    <select id="ddlConsignee" class="form-control form-control-sm box_border" onchange="PackingListFG_OnChangeddlClientNameORddlConsignee(this)">
+                    </select>
+                </div>
+                <div class="row" id="divRowTransporter" style="display:none">
+                    <div class="col-md-2 col-6">
+                        <label for="ddlTransporterName" class="col-form-label-sm fw-bold">Transporter:</label>
+                        <select id="ddlTransporterName" class="form-control form-control-sm box_border">
+                        </select>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label for="txtDriverNo" class="col-form-label-sm fw-bold">Driver No:</label>
+                        <input id="txtDriverNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="12" autocomplete="off">
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label for="txtVehicleNo" class="col-form-label-sm fw-bold"> Vehicle No:</label>
+                        <input id="txtVehicleNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="10" autocomplete="off">
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label for="txtDistance" class="col-form-label-sm fw-bold"> Distance:</label>
+                        <input id="txtDistance" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="6" autocomplete="off" value="0">
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label for="txtGRNo" class="col-form-label-sm fw-bold"> GR No:</label>
+                        <input id="txtGRNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="10" autocomplete="off">
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label for="txtGRDate" class="col-form-label-sm fw-bold"> GR Date:</label>
+                        <input id="txtGRDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="col-md-2 col-6" id="divReqNo">
+                    <label for="ddlReqNo" class="col-form-label-sm fw-bold"> Req No:</label>
+                    <select id="ddlReqNo" class="form-control form-control-sm box_border">
+                    </select>
+
+                    <a class="btn btn-primary icon-height" onclick="PackingListFG_ShowDetailsModals('GetReqDetails')">
+                        ...
+                    </a>
+                </div>
+
+                <div class="col-md-2 col-6" id="divOrderNo">
+                    <label for="ddlOrderNo" id="lblddlOrderNo" class="col-form-label-sm fw-bold">Order No:</label>
+                    <select id="ddlOrderNo" class="form-control form-control-sm box_border" >
+                    </select>
+                </div>
+                <div class="col-md-2 col-6">
+                    <label for="ddlGodownFrom" class="col-form-label-sm fw-bold">Warehouse:</label>
+                    <select id="ddlGodownFrom" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+                <div class="col-md-2 col-6" id="divGodownTo">
+                    <label for="ddlGodownTo" class="col-form-label-sm fw-bold">Warehouse To:</label>
+                    <select id="ddlGodownTo" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+                
+
+                <div class="col-md-1 col-3 without-label-field">
+                    <label for="chkShowIdDataList" class="col-form-label-sm fw-bold">Show List</label>
+                    <input type="checkbox" id="chkShowIdDataList" onclick="PackingListFG_ScanIdDataList()" />
+                </div>
+                <div class="col-md-1 col-3 without-label-field">
+                    <button type="button" class="btn btn-success icon-height" id="btnStart" onclick="PackingListFG_StartLoading()">Start Scan</button>
+                </div>
+                <div class="col-md-3 col-6">
+                    <label for="txtScanIdentification" class="col-form-label-sm fw-bold">Scan Batch No / ID:</label>
+                    <input type="text" id="txtScanIdentification" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" autocomplete="off"  />
+                    <ul id="txtScanIdentification_List" class="AutoSuggestion-list"></ul>
+                </div>
+                <div class="col-md-1 col-3 without-label-field">
+                    <label for="chkOtherStock" class="col-form-label-sm fw-bold">Check In other stock</label>
+                    <input type="checkbox" id="chkOtherStock"  />
+                </div>
+                <div class="col-md-1 col-6 without-label-field">
+                    <button type="button" class="btn btn-danger icon-height" id="btnLoadingEnd" disabled>Loading End</button>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <a id="btnScanNoPallet" class="btn btn-primary icon-height" onclick="PackingListFG_ShowDetailsModals('ScanNoPallet')">
+                        Scan NO Of Pallet
+                    </a>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_Back()">Back</button>
                 </div>
             </div>
            
+           
+
         </fieldset>
     </div>
+    <div class="row" id="DivBtnAdd">
+        <div class="col-md-6 ">
+
+            <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="PackingListFG_ShowDetailsModals('AvailableStockDetail')">
+                AVAILABLE ORDER STOCK
+            </a>
+
+        </div>
+        <div id="DivBtnAdd" class="col-md-6 text-end">
+
+            <a class="btn btn-primary icon-height" onclick="AddNewScanManualItem()" style="display:none">
+                Add
+            </a>
+
+        </div>
+
+        <input type="hidden" value="" id="hfCoilIds" name="hfCoilIds" />
+        
+    </div>
+    <div class="table-wrapper mt-2 fixed-height-table">
+        <table id="tbPackingListTransaction" class="table fixed-width-table">
+            <thead id="tbPackingListTransactionHeader">
+            </thead>
+            <tbody id="tbPackingListTransactionBody">
+            </tbody>
+            <tfoot>
+            </tfoot>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-tbPackingListTransaction">
+    </div>
+
+    
+
+    
 </div>
 
 
 <div id="DivPackingListFGViewGrid">
     <div class="row">
-        <div class="col-sm-3">
+        <div class="col-sm-3 col-6">
             <label for="from-date">From Date</label>
-            <input type="date" class="form-control form-control-sm" id="txtFromDate" onchange="PackingListFGViewGirdByDates()">
+            <input type="date" class="form-control form-control-sm" id="txtFromDate" >
         </div>
-        <div class="col-sm-3">
+        <div class="col-sm-3 col-6">
             <label for="to-date">To Date</label>
-            <input type="date" class="form-control form-control-sm" id="txtToDate" onchange="PackingListFGViewGirdByDates()">
+            <input type="date" class="form-control form-control-sm" id="txtToDate" >
         </div>
-        
-        <div class="col-sm-3 without-label-field text-end">
+        <div class="col-sm-1 col-3 without-label-field text-end">
             <label></label>
-            <button type="button" class="btn btn-primary icon-height" onclick="GateEntyMode_PackingListFGView('form','EmptyInNew')">CREATE NEW</button>
+            <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_ShowViewGrid()">Show</button>
+
+        </div>
+        <div class="col-sm-2 col-3 without-label-field text-end">
+            <label></label>
+            <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_CreateNew()">CREATE NEW</button>
             
         </div>
     </div>
-    <div class="table-wrapper mt-2">
-        <table id="tbGateEntyView" class="table fixed-width-table">
-            <thead id="tbGateEntyViewHeader">
+    <div class="table-wrapper mt-2 fixed-height-table">
+        <table id="tbPackingListFGView" class="table fixed-width-table">
+            <thead id="tbPackingListFGViewHeader">
             </thead>
-            <tbody id="tbGateEntyViewBody">
+            <tbody id="tbPackingListFGViewBody">
             </tbody>
+            <tfoot>
+
+            </tfoot>
         </table>
     </div>
-    <div class="paginator" id="paginator-tbGateEntyView">
+    <div class="paginator" id="paginator-tbPackingListFGView">
     </div>
 </div>
 
 
+<div class="modal fade bs-example-modal-center" id="DetailsModal" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:484px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ModalTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="tbDetails" class="fixed-width-table table">
+                        <thead id="tbDetailsHeader">
+                        </thead>
+                        <tbody id="tbDetailsbody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-tbDetails">
+                </div>
 
-
+                <div class="text-end mt-1">
+                    <a class="btn btn-success icon-height" id="btnLoadNoOfPallet" onclick="PackingListFG_LoadNoOfPallet()">
+                        Load
+                    </a>
+                    &nbsp;
+                    &nbsp;
+                    <a class="btn btn-danger icon-height" data-bs-dismiss="modal">
+                        Close
+                    </a>
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
 
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
