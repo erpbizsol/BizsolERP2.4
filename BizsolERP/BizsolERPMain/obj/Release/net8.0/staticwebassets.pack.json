@@ -1,247 +1,1243 @@
 {
   "Files": [
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\obj\\Release\\net8.0\\scopedcss\\projectbundle\\BizsolERPMain.bundle.scp.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\obj\\Release\\net8.0\\scopedcss\\projectbundle\\BizsolERPMain.bundle.scp.css",
       "PackagePath": "staticwebassets\\BizsolERPMain.bundle.scp.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\css\\site.css",
-      "PackagePath": "staticwebassets\\css\\site.css"
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\Script\\EmployeeMaster.js",
+      "PackagePath": "staticwebassets\\assets\\Script\\EmployeeMaster.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\favicon.ico",
-      "PackagePath": "staticwebassets\\favicon.ico"
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\Script\\Logout.js",
+      "PackagePath": "staticwebassets\\assets\\Script\\Logout.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\js\\site.js",
-      "PackagePath": "staticwebassets\\js\\site.js"
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\Script\\Menu.js",
+      "PackagePath": "staticwebassets\\assets\\Script\\Menu.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\LICENSE",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\Script\\WebNotification.js",
+      "PackagePath": "staticwebassets\\assets\\Script\\WebNotification.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-grid.css",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-grid.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-grid.css.map",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-grid.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-grid.min.css",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-grid.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-grid.min.css.map",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-grid.min.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-reboot.css",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-reboot.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-reboot.css.map",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-reboot.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-reboot.min.css",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-reboot.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-reboot.min.css.map",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap-reboot.min.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap.css",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap.css.map",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap.min.css",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap.min.css.map",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\css\\bootstrap.min.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.bundle.js",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.bundle.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.bundle.js.map",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.bundle.js.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.bundle.min.js",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.bundle.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.bundle.min.js.map",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.bundle.min.js.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.js",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.js.map",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.js.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.min.js",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.min.js.map",
+      "PackagePath": "staticwebassets\\assets\\bootstrap-4.5.3-dist\\js\\bootstrap.min.js.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\css\\app.min.css",
+      "PackagePath": "staticwebassets\\assets\\css\\app.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\css\\bootstrap-datepicker.min.css",
+      "PackagePath": "staticwebassets\\assets\\css\\bootstrap-datepicker.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\css\\bootstrap.min.css",
+      "PackagePath": "staticwebassets\\assets\\css\\bootstrap.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\css\\icons.min.css",
+      "PackagePath": "staticwebassets\\assets\\css\\icons.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\css\\preloader.min.css",
+      "PackagePath": "staticwebassets\\assets\\css\\preloader.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\css\\responsive.css",
+      "PackagePath": "staticwebassets\\assets\\css\\responsive.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\css\\toastr.min.css",
+      "PackagePath": "staticwebassets\\assets\\css\\toastr.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\boxicons.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\boxicons.eot"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\boxicons.svg",
+      "PackagePath": "staticwebassets\\assets\\fonts\\boxicons.svg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\boxicons.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\boxicons.ttf"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\boxicons.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\boxicons.woff"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\boxicons.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\boxicons.woff2"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\dripicons-v2-1.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\dripicons-v2-1.eot"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\dripicons-v2.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\dripicons-v2.eot"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\dripicons-v2.svg",
+      "PackagePath": "staticwebassets\\assets\\fonts\\dripicons-v2.svg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\dripicons-v2.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\dripicons-v2.ttf"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\dripicons-v2.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\dripicons-v2.woff"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-brands-400-1.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-brands-400-1.eot"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-brands-400.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-brands-400.eot"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-brands-400.svg",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-brands-400.svg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-brands-400.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-brands-400.ttf"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-brands-400.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-brands-400.woff"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-brands-400.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-brands-400.woff2"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-regular-400-1.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-regular-400-1.eot"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-regular-400.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-regular-400.eot"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-regular-400.svg",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-regular-400.svg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-regular-400.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-regular-400.ttf"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-regular-400.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-regular-400.woff"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-regular-400.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-regular-400.woff2"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-solid-900-1.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-solid-900-1.eot"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-solid-900.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-solid-900.eot"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-solid-900.svg",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-solid-900.svg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-solid-900.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-solid-900.ttf"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-solid-900.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-solid-900.woff"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\fa-solid-900.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-solid-900.woff2"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\materialdesignicons-webfont-1.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\materialdesignicons-webfont-1.eot"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\materialdesignicons-webfont.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\materialdesignicons-webfont.eot"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\materialdesignicons-webfont.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\materialdesignicons-webfont.ttf"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\materialdesignicons-webfont.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\materialdesignicons-webfont.woff"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\fonts\\materialdesignicons-webfont.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\materialdesignicons-webfont.woff2"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\Circle-Logo.gif",
+      "PackagePath": "staticwebassets\\assets\\images\\Circle-Logo.gif"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\auth-bg.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\auth-bg.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\bg-1.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\bg-1.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\bg-2.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\bg-2.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\bg-3.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\bg-3.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\brands\\bitbucket.png",
+      "PackagePath": "staticwebassets\\assets\\images\\brands\\bitbucket.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\brands\\dribbble.png",
+      "PackagePath": "staticwebassets\\assets\\images\\brands\\dribbble.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\brands\\dropbox.png",
+      "PackagePath": "staticwebassets\\assets\\images\\brands\\dropbox.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\brands\\github.png",
+      "PackagePath": "staticwebassets\\assets\\images\\brands\\github.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\brands\\mail_chimp.png",
+      "PackagePath": "staticwebassets\\assets\\images\\brands\\mail_chimp.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\brands\\slack.png",
+      "PackagePath": "staticwebassets\\assets\\images\\brands\\slack.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\error-img.png",
+      "PackagePath": "staticwebassets\\assets\\images\\error-img.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\favicon.ico",
+      "PackagePath": "staticwebassets\\assets\\images\\favicon.ico"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\flags\\germany.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\flags\\germany.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\flags\\italy.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\flags\\italy.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\flags\\russia.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\flags\\russia.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\flags\\spain.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\flags\\spain.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\flags\\us.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\flags\\us.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\giftbox.png",
+      "PackagePath": "staticwebassets\\assets\\images\\giftbox.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\loader.gif",
+      "PackagePath": "staticwebassets\\assets\\images\\loader.gif"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\logo-a1.gif",
+      "PackagePath": "staticwebassets\\assets\\images\\logo-a1.gif"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\logo-a4.gif",
+      "PackagePath": "staticwebassets\\assets\\images\\logo-a4.gif"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\logo-af2.gif",
+      "PackagePath": "staticwebassets\\assets\\images\\logo-af2.gif"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\logo-af5.gif",
+      "PackagePath": "staticwebassets\\assets\\images\\logo-af5.gif"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\logo-full.jpeg",
+      "PackagePath": "staticwebassets\\assets\\images\\logo-full.jpeg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\logo-gifC.gif",
+      "PackagePath": "staticwebassets\\assets\\images\\logo-gifC.gif"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\logo-gifR.gif",
+      "PackagePath": "staticwebassets\\assets\\images\\logo-gifR.gif"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\logo-gifR2.gif",
+      "PackagePath": "staticwebassets\\assets\\images\\logo-gifR2.gif"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\logo-sm.svg",
+      "PackagePath": "staticwebassets\\assets\\images\\logo-sm.svg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\small\\img-1.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\small\\img-1.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\small\\img-2.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\small\\img-2.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\small\\img-3.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\small\\img-3.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\small\\img-4.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\small\\img-4.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\small\\img-5.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\small\\img-5.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\small\\img-6.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\small\\img-6.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\small\\img-7.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\small\\img-7.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\undraw-calendar.svg",
+      "PackagePath": "staticwebassets\\assets\\images\\undraw-calendar.svg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\avatar-1.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\avatar-1.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\avatar-10.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\avatar-10.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\avatar-2.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\avatar-2.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\avatar-3.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\avatar-3.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\avatar-4.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\avatar-4.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\avatar-5.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\avatar-5.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\avatar-6.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\avatar-6.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\avatar-8.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\avatar-8.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\avatar-9.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\avatar-9.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\download.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\download.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\erp-banner-copy.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\erp-banner-copy.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\erp-banner-copy1.png",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\erp-banner-copy1.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\erp-banner1.png",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\erp-banner1.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\erp-ipad-2.png",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\erp-ipad-2.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\erp-ipad3.png",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\erp-ipad3.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\erp1.png",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\erp1.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\erpBanner.png",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\erpBanner.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\images\\users\\user.jpg",
+      "PackagePath": "staticwebassets\\assets\\images\\users\\user.jpg"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\app.js",
+      "PackagePath": "staticwebassets\\assets\\js\\app.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\bootstrap-datepicker.js",
+      "PackagePath": "staticwebassets\\assets\\js\\bootstrap-datepicker.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\jquery-3.6.0.min.js",
+      "PackagePath": "staticwebassets\\assets\\js\\jquery-3.6.0.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\alert.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\alert.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\apexcharts.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\apexcharts.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\bootstrap-toasts.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\bootstrap-toasts.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\calendar.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\calendar.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\chartjs.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\chartjs.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\coming-soon.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\coming-soon.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\dashboard.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\dashboard.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\datatable-pages.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\datatable-pages.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\datatables.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\datatables.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\echarts.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\echarts.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\email-editor.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\email-editor.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\fontawesome.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\fontawesome.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\form-advanced.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\form-advanced.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\form-editor.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\form-editor.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\form-mask.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\form-mask.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\form-validation.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\form-validation.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\form-wizard.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\form-wizard.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\gmaps.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\gmaps.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\invoices-list.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\invoices-list.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\jquery-knob.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\jquery-knob.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\leaflet-map.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\leaflet-map.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\leaflet-us-states.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\leaflet-us-states.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\lightbox.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\lightbox.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\materialdesign.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\materialdesign.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\modal.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\modal.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\notification.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\notification.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\pass-addon.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\pass-addon.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\rangeslider.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\rangeslider.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\rating.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\rating.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\session-timeout.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\session-timeout.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\sparklines.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\sparklines.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\sweetalert.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\sweetalert.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\table-editable.int.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\table-editable.int.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\table-responsive.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\table-responsive.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\two-step-verification.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\two-step-verification.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\validation.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\validation.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\js\\pages\\vector-maps.init.js",
+      "PackagePath": "staticwebassets\\assets\\js\\pages\\vector-maps.init.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@ckeditor\\ckeditor5-build-classic\\build\\ckeditor.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\@ckeditor\\ckeditor5-build-classic\\build\\ckeditor.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@curiosityx\\bootstrap-session-timeout\\index.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\@curiosityx\\bootstrap-session-timeout\\index.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@fullcalendar\\bootstrap\\main.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\@fullcalendar\\bootstrap\\main.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@fullcalendar\\bootstrap\\main.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\@fullcalendar\\bootstrap\\main.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@fullcalendar\\core\\main.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\@fullcalendar\\core\\main.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@fullcalendar\\core\\main.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\@fullcalendar\\core\\main.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@fullcalendar\\daygrid\\main.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\@fullcalendar\\daygrid\\main.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@fullcalendar\\daygrid\\main.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\@fullcalendar\\daygrid\\main.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@fullcalendar\\interaction\\main.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\@fullcalendar\\interaction\\main.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@fullcalendar\\timegrid\\main.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\@fullcalendar\\timegrid\\main.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@fullcalendar\\timegrid\\main.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\@fullcalendar\\timegrid\\main.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@simonwep\\pickr\\pickr.es5.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\@simonwep\\pickr\\pickr.es5.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@simonwep\\pickr\\pickr.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\@simonwep\\pickr\\pickr.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@simonwep\\pickr\\themes\\classic.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\@simonwep\\pickr\\themes\\classic.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@simonwep\\pickr\\themes\\monolith.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\@simonwep\\pickr\\themes\\monolith.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\@simonwep\\pickr\\themes\\nano.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\@simonwep\\pickr\\themes\\nano.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\admin-resources\\jquery.vectormap\\jquery-jvectormap-1.2.2.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\admin-resources\\jquery.vectormap\\jquery-jvectormap-1.2.2.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\admin-resources\\jquery.vectormap\\jquery-jvectormap-1.2.2.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\admin-resources\\jquery.vectormap\\jquery-jvectormap-1.2.2.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-au-mill-en.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-au-mill-en.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-ca-lcc-en.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-ca-lcc-en.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-in-mill-en.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-in-mill-en.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-uk-mill-en.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-uk-mill-en.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-us-il-chicago-mill-en.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-us-il-chicago-mill-en.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-us-merc-en.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-us-merc-en.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-world-mill-en.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\admin-resources\\jquery.vectormap\\maps\\jquery-jvectormap-world-mill-en.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\admin-resources\\rwd-table\\rwd-table.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\admin-resources\\rwd-table\\rwd-table.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\admin-resources\\rwd-table\\rwd-table.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\admin-resources\\rwd-table\\rwd-table.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\alertifyjs\\build\\alertify.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\alertifyjs\\build\\alertify.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\alertifyjs\\build\\css\\alertify.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\alertifyjs\\build\\css\\alertify.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\alertifyjs\\build\\css\\themes\\default.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\alertifyjs\\build\\css\\themes\\default.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\apexcharts\\apexcharts.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\apexcharts\\apexcharts.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\bootstrap\\js\\bootstrap.bundle.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\bootstrap\\js\\bootstrap.bundle.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\chart.js\\chart.umd.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\chart.js\\chart.umd.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\choices.js\\public\\assets\\scripts\\choices.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\choices.js\\public\\assets\\scripts\\choices.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\choices.js\\public\\assets\\styles\\choices.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\choices.js\\public\\assets\\styles\\choices.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\datatables.net-bs4\\css\\dataTables.bootstrap4.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\datatables.net-bs4\\css\\dataTables.bootstrap4.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\datatables.net-bs4\\js\\dataTables.bootstrap4.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\datatables.net-bs4\\js\\dataTables.bootstrap4.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\datatables.net-buttons-bs4\\css\\buttons.bootstrap4.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\datatables.net-buttons-bs4\\css\\buttons.bootstrap4.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\datatables.net-buttons-bs4\\js\\buttons.bootstrap4.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\datatables.net-buttons-bs4\\js\\buttons.bootstrap4.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\datatables.net-buttons\\js\\buttons.colVis.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\datatables.net-buttons\\js\\buttons.colVis.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\datatables.net-buttons\\js\\buttons.html5.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\datatables.net-buttons\\js\\buttons.html5.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\datatables.net-buttons\\js\\buttons.print.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\datatables.net-buttons\\js\\buttons.print.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\datatables.net-buttons\\js\\dataTables.buttons.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\datatables.net-buttons\\js\\dataTables.buttons.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\datatables.net-responsive-bs4\\css\\responsive.bootstrap4.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\datatables.net-responsive-bs4\\css\\responsive.bootstrap4.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\datatables.net-responsive-bs4\\js\\responsive.bootstrap4.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\datatables.net-responsive-bs4\\js\\responsive.bootstrap4.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\datatables.net-responsive\\js\\dataTables.responsive.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\datatables.net-responsive\\js\\dataTables.responsive.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\datatables.net\\js\\jquery.dataTables.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\datatables.net\\js\\jquery.dataTables.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\dropzone\\min\\dropzone.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\dropzone\\min\\dropzone.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\dropzone\\min\\dropzone.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\dropzone\\min\\dropzone.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\echarts\\echarts.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\echarts\\echarts.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\feather-icons\\feather.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\feather-icons\\feather.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\flatpickr\\flatpickr.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\flatpickr\\flatpickr.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\flatpickr\\flatpickr.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\flatpickr\\flatpickr.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\glightbox\\css\\glightbox.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\glightbox\\css\\glightbox.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\glightbox\\js\\glightbox.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\glightbox\\js\\glightbox.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\gmaps\\gmaps.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\gmaps\\gmaps.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\imask\\imask.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\imask\\imask.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\jquery-countdown\\jquery.countdown.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\jquery-countdown\\jquery.countdown.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\jquery-knob\\jquery.knob.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\jquery-knob\\jquery.knob.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\jquery-sparkline\\jquery.sparkline.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\jquery-sparkline\\jquery.sparkline.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\jquery\\jquery.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\jquery\\jquery.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\jszip\\jszip.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\jszip\\jszip.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\leaflet\\images\\layers-2x.png",
+      "PackagePath": "staticwebassets\\assets\\libs\\leaflet\\images\\layers-2x.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\leaflet\\images\\layers.png",
+      "PackagePath": "staticwebassets\\assets\\libs\\leaflet\\images\\layers.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\leaflet\\images\\marker-icon.png",
+      "PackagePath": "staticwebassets\\assets\\libs\\leaflet\\images\\marker-icon.png"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\leaflet\\leaflet.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\leaflet\\leaflet.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\leaflet\\leaflet.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\leaflet\\leaflet.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\masonry-layout\\masonry.pkgd.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\masonry-layout\\masonry.pkgd.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\metismenu\\metisMenu.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\metismenu\\metisMenu.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\node-waves\\waves.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\node-waves\\waves.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\nouislider\\nouislider.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\nouislider\\nouislider.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\nouislider\\nouislider.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\nouislider\\nouislider.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\pace-js\\pace.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\pace-js\\pace.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\pdfmake\\build\\pdfmake.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\pdfmake\\build\\pdfmake.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\pdfmake\\build\\vfs_fonts.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\pdfmake\\build\\vfs_fonts.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\pristinejs\\pristine.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\pristinejs\\pristine.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\rater-js\\index.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\rater-js\\index.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\select2-4.1.0-rc.0\\dist\\css\\select2.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\select2-4.1.0-rc.0\\dist\\css\\select2.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\select2-4.1.0-rc.0\\dist\\css\\select2.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\select2-4.1.0-rc.0\\dist\\css\\select2.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\select2-4.1.0-rc.0\\dist\\js\\select2.full.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\select2-4.1.0-rc.0\\dist\\js\\select2.full.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\select2-4.1.0-rc.0\\dist\\js\\select2.full.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\select2-4.1.0-rc.0\\dist\\js\\select2.full.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\select2-4.1.0-rc.0\\dist\\js\\select2.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\select2-4.1.0-rc.0\\dist\\js\\select2.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\select2-4.1.0-rc.0\\dist\\js\\select2.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\select2-4.1.0-rc.0\\dist\\js\\select2.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\simplebar\\simplebar.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\simplebar\\simplebar.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\sweetalert2\\sweetalert2.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\sweetalert2\\sweetalert2.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\sweetalert2\\sweetalert2.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\sweetalert2\\sweetalert2.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\swiper\\swiper-bundle.min.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\swiper\\swiper-bundle.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\swiper\\swiper-bundle.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\swiper\\swiper-bundle.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\table-edits\\build\\table-edits.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\table-edits\\build\\table-edits.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\twitter-bootstrap-wizard\\jquery.bootstrap.wizard.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\twitter-bootstrap-wizard\\jquery.bootstrap.wizard.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\twitter-bootstrap-wizard\\prettify.css",
+      "PackagePath": "staticwebassets\\assets\\libs\\twitter-bootstrap-wizard\\prettify.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\twitter-bootstrap-wizard\\prettify.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\twitter-bootstrap-wizard\\prettify.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\assets\\libs\\wnumb\\wNumb.min.js",
+      "PackagePath": "staticwebassets\\assets\\libs\\wnumb\\wNumb.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\LICENSE",
       "PackagePath": "staticwebassets\\lib\\bootstrap"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.min.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.min.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.min.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.min.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.min.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.min.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.min.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.min.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.min.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.min.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.min.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.min.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.min.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.min.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.min.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.min.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.min.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.min.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.min.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.min.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.min.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.min.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.min.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.min.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.min.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.min.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.min.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.min.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.min.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.min.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.min.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.min.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.min.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.min.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.min.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.min.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.min.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.min.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.min.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.min.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.min.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.min.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.min.css",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.min.css",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.min.css"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.min.css.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.min.css.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.min.css.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.js",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.js.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.js.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.js.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.min.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.min.js",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.min.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.min.js.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.min.js.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.min.js.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.esm.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.esm.js",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.esm.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.esm.js.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.esm.js.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.esm.js.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.esm.min.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.esm.min.js",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.esm.min.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.esm.min.js.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.esm.min.js.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.esm.min.js.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.js",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.js.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.js.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.js.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.min.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.min.js",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.min.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.min.js.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.min.js.map",
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.min.js.map"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\jquery-validation-unobtrusive\\LICENSE.txt",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\jquery-validation-unobtrusive\\LICENSE.txt",
       "PackagePath": "staticwebassets\\lib\\jquery-validation-unobtrusive\\LICENSE.txt"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\jquery-validation-unobtrusive\\jquery.validate.unobtrusive.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\jquery-validation-unobtrusive\\jquery.validate.unobtrusive.js",
       "PackagePath": "staticwebassets\\lib\\jquery-validation-unobtrusive\\jquery.validate.unobtrusive.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\jquery-validation-unobtrusive\\jquery.validate.unobtrusive.min.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\jquery-validation-unobtrusive\\jquery.validate.unobtrusive.min.js",
       "PackagePath": "staticwebassets\\lib\\jquery-validation-unobtrusive\\jquery.validate.unobtrusive.min.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\jquery-validation\\LICENSE.md",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\jquery-validation\\LICENSE.md",
       "PackagePath": "staticwebassets\\lib\\jquery-validation\\LICENSE.md"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\jquery-validation\\dist\\additional-methods.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\jquery-validation\\dist\\additional-methods.js",
       "PackagePath": "staticwebassets\\lib\\jquery-validation\\dist\\additional-methods.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\jquery-validation\\dist\\additional-methods.min.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\jquery-validation\\dist\\additional-methods.min.js",
       "PackagePath": "staticwebassets\\lib\\jquery-validation\\dist\\additional-methods.min.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\jquery-validation\\dist\\jquery.validate.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\jquery-validation\\dist\\jquery.validate.js",
       "PackagePath": "staticwebassets\\lib\\jquery-validation\\dist\\jquery.validate.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\jquery-validation\\dist\\jquery.validate.min.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\jquery-validation\\dist\\jquery.validate.min.js",
       "PackagePath": "staticwebassets\\lib\\jquery-validation\\dist\\jquery.validate.min.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\jquery\\LICENSE.txt",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\jquery\\LICENSE.txt",
       "PackagePath": "staticwebassets\\lib\\jquery\\LICENSE.txt"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\jquery\\dist\\jquery.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\jquery\\dist\\jquery.js",
       "PackagePath": "staticwebassets\\lib\\jquery\\dist\\jquery.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\jquery\\dist\\jquery.min.js",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\jquery\\dist\\jquery.min.js",
       "PackagePath": "staticwebassets\\lib\\jquery\\dist\\jquery.min.js"
     },
     {
-      "Id": "D:\\Ruchi Data\\BizSolWebProjects\\BizsolERPMain\\BizsolERPMain\\wwwroot\\lib\\jquery\\dist\\jquery.min.map",
+      "Id": "D:\\ERP2.4\\BizsolERP\\BizsolERPMain\\wwwroot\\lib\\jquery\\dist\\jquery.min.map",
       "PackagePath": "staticwebassets\\lib\\jquery\\dist\\jquery.min.map"
     },
     {

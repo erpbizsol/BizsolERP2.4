@@ -25,6 +25,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
+                <input type="hidden" id="hfCodeForBack" value="0"/>
                 <h5 class="modal-title">View Details</h5>
                 <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">x</span></button>
             </div>
@@ -67,6 +68,7 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-height" onclick="BackButton()">Back</button>
                 <button type="button" class="btn btn-danger btn-height" onclick="CloseHistoryModal()">Cancel</button>
             </div>
         </div>
