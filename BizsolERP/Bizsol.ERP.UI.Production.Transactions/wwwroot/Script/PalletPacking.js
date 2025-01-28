@@ -107,7 +107,6 @@ function GetPackedPalletDate() {
             highlightSelectedDates();
         }
         else {
-            toastr.error('No Data Found')
             highlightSelectedDates();
         }
     });
