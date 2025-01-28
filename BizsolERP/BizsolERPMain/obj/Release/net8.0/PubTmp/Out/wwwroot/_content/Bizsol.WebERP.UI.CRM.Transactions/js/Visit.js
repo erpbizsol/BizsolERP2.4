@@ -377,11 +377,14 @@ function IsCheckIn(RoutePlanMaster_Code, date) {
     const checkInTime = GetCurrentTime();
     VisitOrderEntryService.CheckInVisit(RoutePlanMaster_Code, checkInTime, location, checkedInAddress).then(function (response) {
         if (response.Status === 'Y') {
-            toastr.success(response.Msg);
+            //toastr.success(response.Msg);
             const encodedRoutePlanCode = window.btoa(RoutePlanMaster_Code);
             const encodedVisitMasterCode = window.btoa(response.Code);
             toastr.success("Check-In successful! You can view and edit the selected plan details.");
-            window.location = `${baseUrl}/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&VisitMaster_Code=${encodedVisitMasterCode}&VisitMode=Edit`;
+            setTimeout(function () {
+                window.location = `${baseUrl}/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&VisitMaster_Code=${encodedVisitMasterCode}&VisitMode=Edit`;
+            }, 2000); // 2 seconds delay before redirect
+            
         } else {
             toastr.error(response.Msg);
         }

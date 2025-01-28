@@ -48,6 +48,7 @@ function ViewData(Code) {
             $('#myModal').modal({
                 backdrop: 'static',
             });
+            $('#hfCodeForBack').val(Code);
             $('#myModal').modal('show');
             const stringFilterColumn = [];
             const numericFilterColumn = [];
@@ -62,7 +63,11 @@ function ViewData(Code) {
                 "Dis. (%)":'right',
                 "Rate After Discount":'right',
                 "Amount":'right',
-                "Indent No":'right',
+                "Indent No": 'right',
+                "Last Purchased Qty":'right',
+                "Last PO Rate":'right',
+                "Last Po Date":'center',
+                "Amount":'right',
             };
             const updatedResponse = response.map(item => {
                 const showPOWithOutIndentButton = item.AllowPOWithOutIndent_RawMaterial_Code === 'N';
@@ -126,9 +131,10 @@ function ViewHistory(ItemMaster_Code, itemsizemaster_Code) {
             const showButtons = [];
             const hiddenColumns = [];
             const ColumnAlignment = {
-                "PODate": "center",
-                "PONo": "center",
+                "PO Date": "center",
+                "PO No": "center",
                 "QtyMT": "right",
+                "Rate": "right",
             };
             BizsolCustomFilterGrid.CreateDataTable("table-header-PoaprrovalHistory", "table-body-PoaprrovalHistory", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
         } else {
@@ -185,6 +191,11 @@ function getUrlVars() {
     return vars;
 }
 
+function BackButton() {
+    var Code = $('#hfCodeForBack').val();
+    $('#myHistoryModal').modal('hide');
+    ViewData(Code);
+}
 window.ViewData = ViewData;
 window.CloseModal = CloseModal;
 window.Approval = Approval;
@@ -192,3 +203,4 @@ window.ViewHistory = ViewHistory;
 window.CloseHistoryModal = CloseHistoryModal;
 window.POWithOutIndent = POWithOutIndent;
 window.AttchmentFile = AttchmentFile;
+window.BackButton = BackButton;

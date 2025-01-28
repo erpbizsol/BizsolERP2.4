@@ -7,6 +7,7 @@ let ThreeLevelVerification = '';
 let DiscountLimit = '';
 let indx_DiscountCol =16;
 let AskOtherCharges = '';
+let DistributorDealerApplicableInOrder = 'N';
 $(document).ready(function () {
     $("#ERPHeading").text("Verify Order/Visit");
     GetNestedMarketingManList();
@@ -289,7 +290,7 @@ function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
 
 
                 if (item.OrderVisitType == "O") {
-                    if (item[QtyMTHeader] > 0) {
+                    //if (item[QtyMTHeader] > 0) {
                         if (ThreeLevelVerification == "Y") {
                             if (item.VerifiedLv1 == "Verify") {
                                 if (item['Over Due Amount'] > 0) {
@@ -339,7 +340,7 @@ function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
                             }
                         }
 
-                    }
+                    //}
                 }
                 else {
                     if (ThreeLevelVerification == "Y") {
@@ -430,6 +431,7 @@ function GetFixedParameterConfiguration() {
             ThreeLevelVerification = response[0].ThreeLevelVerificationApplicable;
             DiscountLimit = response[0].LimitForVerifyDiscount;
             AskOtherCharges = response[0].AskOtherCharges;
+            DistributorDealerApplicableInOrder = response[0].DistributorDealerApplicableInOrder
            }
         else {
             toastr.error('No Data Found')
@@ -437,6 +439,7 @@ function GetFixedParameterConfiguration() {
     });
 }
 function ViewOrder(Code) {
+
     VisitOrderEntryService.GetUnVerifiedVisitDetailsReport(Code).then(function (response) {
         if (response.length > 0) {
             $('#ShowOrderDetailModal').modal('show');
@@ -457,6 +460,9 @@ function ViewOrder(Code) {
                 "Order Qty": "right",
                 "Final Amount": "right",
             };
+            if (DistributorDealerApplicableInOrder == 'N') {
+                hiddenColumns.push("Dealer Name");
+            }
             BizsolCustomFilterGrid.CreateDataTable("OrderTable-header", "OrderTable-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
         }
         else {
@@ -474,10 +480,10 @@ function updateFooter(data) {
             TotalOrderQty += parseFloat(row[QtyMTHeader]) || 0;
         }
         if (QtyPCHeader != '') {
-            TotalOrderQty += parseFloat(row[QtyPCHeader]) || 0;
+            TotalOrderQtyPC += parseFloat(row[QtyPCHeader]) || 0;
         }
         if (QtyMTRHeader != '') {
-            TotalOrderQty += parseFloat(row[QtyMTRHeader]) || 0;
+            TotalOrderQtyMR += parseFloat(row[QtyMTRHeader]) || 0;
         }
         TotalFinalAmount += parseFloat(row["Total Final Amount"]) || 0;
     });

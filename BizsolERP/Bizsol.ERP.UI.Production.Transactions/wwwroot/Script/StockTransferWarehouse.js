@@ -11,22 +11,22 @@ let imageBase64Data = [];
 let PartyName = '';
 $(document).ready(function () {
     $("#ERPHeading").text("Warehouse Receive");
-
-        $('#myTab').on('shown.bs.tab', function (e) {
-            const targetTab = $(e.target).attr('id');  
-            if (targetTab === 'home-tab') {
-                getWarehouse();
-                $('#tblActualDispatch').hide();
-            } else if (targetTab === 'profile-tab') {
-                getPartyNamePendingPackingListActualDespatch();
-                $('#tblStockReceive').hide();
-                $('#tblActualDispatch').show();
-            }
-        });
-        if ($('#home-tab').hasClass('active')) {
             getWarehouse();
+
+    //    $('#myTab').on('shown.bs.tab', function (e) {
+    //        const targetTab = $(e.target).attr('id');  
+    //        if (targetTab === 'home-tab') {
+    //            getWarehouse();
+    //            $('#tblActualDispatch').hide();
+    //        } else if (targetTab === 'profile-tab') {
+    //            getPartyNamePendingPackingListActualDespatch();
+    //            $('#tblStockReceive').hide();
+    //            $('#tblActualDispatch').show();
+    //        }
+    //    });
+    //    if ($('#home-tab').hasClass('active')) {
             
-    }
+    //}
     $('#ddlWarehouse').on('focus', function (e) {
         $("#ddlWarehouse").val("");
     });
@@ -113,7 +113,7 @@ function FileUploadChange(event) {
     }
 }
 function StockTransferWherehouseReceive() {
-    $('#StockTransferReceive').show();
+    //$('#tblStockReceive').show();
     let obj = [{
         godownMaster_Code: Godownmaster_Code,
         rollIdNo: $("#ddlRollIdNo").val(),
@@ -128,7 +128,7 @@ function StockTransferWherehouseReceive() {
             
             StockTransferReceiveService.GetPendingRoll(Godownmaster_Code, obj[0].rollIdNo).then(function (res) {
                 if (res && Array.isArray(res) && res.length > 0) {
-                    $('#StockTransferReceive').hide();
+                    $('#tblStockReceive').hide();
                     $('#myModal').modal({
                         backdrop: 'static',
                     });
@@ -173,6 +173,7 @@ function StockTransferWherehouseReceive() {
         if ($('#fileInput').val() !== '') {
             StockTransferReceiveService.StockTransferWherehouseReceive(JSON.stringify(obj)).then(function (response) {
                 if (response && response.length > 0) {
+                    $('#tblStockReceive').show();
                     const stringFilterColumn = [];
                     const numericFilterColumn = [];
                     const dateFilterColumn = [];
@@ -209,7 +210,7 @@ function ChangeBackgroundColor() {
                 cell.style.backgroundColor = 'red';
                 cell.style.color = 'white';
             }
-            else if (cell.textContent.trim() === 'Entry is valid'){
+            else if (cell.textContent.trim() === 'Entry is Accepted'){
                 cell.style.backgroundColor = 'green';
                 cell.style.color = 'white';
             }
@@ -217,7 +218,6 @@ function ChangeBackgroundColor() {
     });
 }
 function SaveReceivedData() {
-    
     let ReveivedTable = document.getElementById("table-body-NoOfVerify");
     let selectedRows = [];
     for (let i = 0; i < ReveivedTable.rows.length; i++) {
@@ -244,9 +244,10 @@ function SaveReceivedData() {
     if (selectedRows.length > 0) {
         let isValid = true;
         let Data = selectedRows.map(row => {
-            const receviedQty = row.ReceviedQty;
-            const inputField = $(`#receviedQTYPC[data-packing-list-no="${row.PackingListMaster_Code}"]`); 
-            if (!receviedQty || receviedQty < 1 || receviedQty > inputField.attr('max')) {
+            const receviedQty = parseInt(row.ReceviedQty);
+            const inputField = $(`#receviedQTYPC[data-packing-list-no="${row.PackingListMaster_Code}"]`);
+            const maxQty = parseInt(inputField.attr('max'));
+            if (receviedQty < 1 || receviedQty > maxQty) {
                 toastr.error('Received quantity must be between 1 and the available balance.');
                 isValid = false;
                 return null; 
@@ -267,6 +268,7 @@ function SaveReceivedData() {
             StockTransferReceiveService.ItemWaiseVerifyRollIdInPackingList(JSON.stringify(Data)).then(function (response) {
                 if (response.Status === 'Y') {
                     toastr.success(response.Msg);
+                    $("#ddlRollIdNo").val('');
                     CloseModal();
                     ClearForm();
                 }
@@ -287,102 +289,102 @@ function ClearForm() {
     getPendingRoll(Godownmaster_Code);
 }
 
-function getPartyNamePendingPackingListActualDespatch() {
-    $('#ddlPalletNo').on('focus', function (e) {
-        $("#ddlPalletNo ").val("");
-    });
-    $('#ddlPartyName').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#ddlPalletNo").focus();
-        }
-    });
-    $('#ddlPalletNo').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            PackingActualPalletIDDispatch();
-        }
-    });
-    Showloader();
-    StockTransferReceiveService.GetPartyNamePendingPackingListActualDespatch().then(function (response) {
-        if (response && response.length > 0) {
-            HideLoader();
-            $('#ddlPartyNameList option').remove();
-            var option = '';
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].AccountDesp + '" >' + response[i].AccountDesp + '</option>';
-            }
-            $('#ddlPartyNameList')[0].innerHTML = option;
-        } else {
-            toastr.error('No data received or empty response');
-        }
-        const inputElement = document.getElementById("ddlPartyName");
-        const dataList = document.getElementById("ddlPartyNameList");
-        inputElement.addEventListener("input", () => {
-            const inputValue = inputElement.value;
-            const selectedOption = Array.from(dataList.options).find(
-                option => option.value === inputValue
-            );
-            if (selectedOption) {
-                PartyName = $("#ddlPartyName").val();
-                getPendingPackingListPalletsActualDespatch(PartyName);
-            }
-        });
-    }).catch(function (error) {
-        toastr.error('Error fetching warehouse data:', error);
-    });
-}
-function getPendingPackingListPalletsActualDespatch(PartyName) {
-    StockTransferReceiveService.GetPendingPackingListPalletsActualDespatch(PartyName).then(function (response) {
-        const datalist = $('#ddlPalletNoList');
-        datalist.empty();
-        if (response && response.length > 0) {
-            response.forEach(function (item) {
-                const option = $('<option>').val(item.PalletNo).text(item.PalletNo);
-                datalist.append(option);
-            });
-        } else {
-            toastr.error('No data received or empty response');
-        }
-    }).catch(function (error) {
-        toastr.error('Error fetching user list:', error);
-    });
-}
-function PackingActualPalletIDDispatch() {
-    let PalletNo = $("#ddlPalletNo").val();
-    PartyName = $("#ddlPartyName").val();
-    if (PalletNo == "") {
-        return;
-    }
-    StockTransferReceiveService.PackingActualPalletIDDispatch(PalletNo, PartyName).then(function (response) {
-            $("#ddlPalletNo ").val("");
-            toastr.success(response.Msg);
-            StockTransferReceiveService.GetPalletActualDespatchDetails(PalletNo, PartyName).then(function (results) {
-                if (results && Array.isArray(results) && results.length > 0) {
-                    const stringFilterColumn = [];
-                    const numericFilterColumn = [];
-                    const dateFilterColumn = [];
-                    const button = false;
-                    const stringDoubleFilterColumn = [];
-                    const showButtons = [];
-                    const hiddenColumns = [];
-                    const ColumnAlignment = {};
-                    BizsolCustomFilterGrid.CreateDataTable("table-header-ActualDispatch", "table-body-ActualDispatch", results, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
-                }
-                else {
-                    toastr.error('No Data Found');
-                }
-            }).catch(error => {
-                toastr.error(error.Msg);
-            });
+//function getPartyNamePendingPackingListActualDespatch() {
+//    $('#ddlPalletNo').on('focus', function (e) {
+//        $("#ddlPalletNo ").val("");
+//    });
+//    $('#ddlPartyName').on('keydown', function (e) {
+//        if (e.key === "Enter") {
+//            $("#ddlPalletNo").focus();
+//        }
+//    });
+//    $('#ddlPalletNo').on('keydown', function (e) {
+//        if (e.key === "Enter") {
+//            PackingActualPalletIDDispatch();
+//        }
+//    });
+//    Showloader();
+//    StockTransferReceiveService.GetPartyNamePendingPackingListActualDespatch().then(function (response) {
+//        if (response && response.length > 0) {
+//            HideLoader();
+//            $('#ddlPartyNameList option').remove();
+//            var option = '';
+//            for (var i = 0; i < response.length; i++) {
+//                option += '<option text="' + response[i].Code + '" value="' + response[i].AccountDesp + '" >' + response[i].AccountDesp + '</option>';
+//            }
+//            $('#ddlPartyNameList')[0].innerHTML = option;
+//        } else {
+//            toastr.error('No data received or empty response');
+//        }
+//        const inputElement = document.getElementById("ddlPartyName");
+//        const dataList = document.getElementById("ddlPartyNameList");
+//        inputElement.addEventListener("input", () => {
+//            const inputValue = inputElement.value;
+//            const selectedOption = Array.from(dataList.options).find(
+//                option => option.value === inputValue
+//            );
+//            if (selectedOption) {
+//                PartyName = $("#ddlPartyName").val();
+//                getPendingPackingListPalletsActualDespatch(PartyName);
+//            }
+//        });
+//    }).catch(function (error) {
+//        toastr.error('Error fetching warehouse data:', error);
+//    });
+//}
+//function getPendingPackingListPalletsActualDespatch(PartyName) {
+//    StockTransferReceiveService.GetPendingPackingListPalletsActualDespatch(PartyName).then(function (response) {
+//        const datalist = $('#ddlPalletNoList');
+//        datalist.empty();
+//        if (response && response.length > 0) {
+//            response.forEach(function (item) {
+//                const option = $('<option>').val(item.PalletNo).text(item.PalletNo);
+//                datalist.append(option);
+//            });
+//        } else {
+//            toastr.error('No data received or empty response');
+//        }
+//    }).catch(function (error) {
+//        toastr.error('Error fetching user list:', error);
+//    });
+//}
+//function PackingActualPalletIDDispatch() {
+//    let PalletNo = $("#ddlPalletNo").val();
+//    PartyName = $("#ddlPartyName").val();
+//    if (PalletNo == "") {
+//        return;
+//    }
+//    StockTransferReceiveService.PackingActualPalletIDDispatch(PalletNo, PartyName).then(function (response) {
+//            $("#ddlPalletNo ").val("");
+//            toastr.success(response.Msg);
+//            StockTransferReceiveService.GetPalletActualDespatchDetails(PalletNo, PartyName).then(function (results) {
+//                if (results && Array.isArray(results) && results.length > 0) {
+//                    const stringFilterColumn = [];
+//                    const numericFilterColumn = [];
+//                    const dateFilterColumn = [];
+//                    const button = false;
+//                    const stringDoubleFilterColumn = [];
+//                    const showButtons = [];
+//                    const hiddenColumns = [];
+//                    const ColumnAlignment = {};
+//                    BizsolCustomFilterGrid.CreateDataTable("table-header-ActualDispatch", "table-body-ActualDispatch", results, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+//                }
+//                else {
+//                    toastr.error('No Data Found');
+//                }
+//            }).catch(error => {
+//                toastr.error(error.Msg);
+//            });
 
         
-    });
-}
+//    });
+//}
 
 window.getWarehouse = getWarehouse;
 window.getPendingRoll = getPendingRoll;
 window.FileUploadChange = FileUploadChange;
-window.getPendingPackingListPalletsActualDespatch = getPendingPackingListPalletsActualDespatch;
-window.getPartyNamePendingPackingListActualDespatch = getPartyNamePendingPackingListActualDespatch;
+//window.getPendingPackingListPalletsActualDespatch = getPendingPackingListPalletsActualDespatch;
+//window.getPartyNamePendingPackingListActualDespatch = getPartyNamePendingPackingListActualDespatch;
 window.CloseModal = CloseModal;
 window.SaveReceivedData = SaveReceivedData;
 window.triggerFileInputClick = triggerFileInputClick;

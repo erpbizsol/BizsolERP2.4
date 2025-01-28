@@ -323,3 +323,33 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\r
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\System.Xml.XPath.XDocument.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\WindowsBase.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Masters.MvcApplicationPartsAssemblyInfo.cs
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.deps.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.runtimeconfig.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\ErrorMessages.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.staticwebassets.runtime.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.exe
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\System.Formats.Asn1.dll
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Masters.csproj.AssemblyReference.cache
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Masters.GeneratedMSBuildEditorConfig.editorconfig
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Masters.AssemblyInfoInputs.cache
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Masters.AssemblyInfo.cs
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Masters.csproj.CoreCompileInputs.cache
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Masters.MvcApplicationPartsAssemblyInfo.cs
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Masters.MvcApplicationPartsAssemblyInfo.cache
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Masters.sourcelink.json
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\staticwebassets.build.json
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\staticwebassets.development.json
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Finance.Masters.Microsoft.AspNetCore.StaticWebAssets.props
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Finance.Masters.props
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\staticwebassets\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.Finance.Masters.props
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\staticwebassets\msbuild.buildTransitive.Bizsol.WebERP.UI.Finance.Masters.props
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\staticwebassets.pack.json
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\scopedcss\bundle\Bizsol.WebERP.UI.Finance.Masters.styles.css
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.W.B8D06437.Up2Date
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Masters.dll
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\refint\Bizsol.WebERP.UI.Finance.Masters.dll
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Masters.pdb
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Masters.genruntimeconfig.cache
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Masters\obj\Release\net8.0\ref\Bizsol.WebERP.UI.Finance.Masters.dll
