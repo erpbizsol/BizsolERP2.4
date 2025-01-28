@@ -42,12 +42,12 @@
                     </select>
                     
                 </div>
-                <div class="col-md-3 col-6">
+                <div class="col-md-3 col-12">
                     <label for="ddlClientName" class="col-form-label-sm fw-bold">Buyer Name:</label>
                     <select id="ddlClientName" class="form-control form-control-sm box_border" onchange="PackingListFG_OnChangeddlClientNameORddlConsignee(this)">
                     </select>
                 </div>
-                <div class="col-md-3 col-6">
+                <div class="col-md-3 col-12">
                     <label for="ddlConsignee" class="col-form-label-sm fw-bold">Consignee:</label>
                     <select id="ddlConsignee" class="form-control form-control-sm box_border" onchange="PackingListFG_OnChangeddlClientNameORddlConsignee(this)">
                     </select>
@@ -146,14 +146,14 @@
     <div class="row" id="DivBtnAdd">
         <div class="col-md-6 ">
 
-            <a class="btn btn-primary icon-height" onclick="PackingListFG_ShowDetailsModals('AvailableStockDetail')">
+            <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="PackingListFG_ShowDetailsModals('AvailableStockDetail')">
                 AVAILABLE ORDER STOCK
             </a>
 
         </div>
         <div id="DivBtnAdd" class="col-md-6 text-end">
 
-            <a class="btn btn-primary icon-height" onclick="AddNewScanManualItem()">
+            <a class="btn btn-primary icon-height" onclick="AddNewScanManualItem()" style="display:none">
                 Add
             </a>
 
@@ -185,14 +185,18 @@
     <div class="row">
         <div class="col-sm-3 col-6">
             <label for="from-date">From Date</label>
-            <input type="date" class="form-control form-control-sm" id="txtFromDate" onchange="PackingListFG_ShowViewGrid()">
+            <input type="date" class="form-control form-control-sm" id="txtFromDate" >
         </div>
         <div class="col-sm-3 col-6">
             <label for="to-date">To Date</label>
-            <input type="date" class="form-control form-control-sm" id="txtToDate" onchange="PackingListFG_ShowViewGrid()">
+            <input type="date" class="form-control form-control-sm" id="txtToDate" >
         </div>
-        
-        <div class="col-sm-3 col-12 without-label-field text-end">
+        <div class="col-sm-1 col-3 without-label-field text-end">
+            <label></label>
+            <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_ShowViewGrid()">Show</button>
+
+        </div>
+        <div class="col-sm-2 col-3 without-label-field text-end">
             <label></label>
             <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_CreateNew()">CREATE NEW</button>
             
@@ -234,6 +238,11 @@
                 </div>
 
                 <div class="text-end mt-1">
+                    <a class="btn btn-success icon-height" id="btnLoadNoOfPallet" onclick="PackingListFG_LoadNoOfPallet()">
+                        Load
+                    </a>
+                    &nbsp;
+                    &nbsp;
                     <a class="btn btn-danger icon-height" data-bs-dismiss="modal">
                         Close
                     </a>

@@ -132,6 +132,26 @@ const PackingListFGService = {
             }
         );
     },
+    RemovePackingListTransaction: function RemovePackingListTransaction(packingListMaster_Code, packingListTransaction_Code, palletNo) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/RemovePackingListTransaction?PackingListMaster_Code=" + packingListMaster_Code + "&PackingListTransaction_Code=" + packingListTransaction_Code + "&PalletNo=" + palletNo; 
+        //alert(url);
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    LoadNoofPalletInPackingList: function LoadNoofPalletInPackingList(payload) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/LoadNoofPalletInPackingList";
+        //alert(url);
+        return promiseAjaxCallApi.CallAPI('POST', url, payload).then(
+            function (value) {
+                return value;
+            }
+        );
+    }
     
 }
 
