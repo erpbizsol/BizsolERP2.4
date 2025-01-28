@@ -5,7 +5,7 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/StockReport.js"></script>
-
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 
 <style>
     .form-group {
@@ -104,6 +104,10 @@
                     <div class="col-md-3">
                         <button type="button" id="fetchReportButton" class="btn btn-primary btn-height waves-effect">Show</button>
                     </div>
+                    <div class="col-md-1 text-end" style="margin-top: 30px !important;">
+
+                        <button type="button" id="btnDownload" class="btn btn-primary btn-height btn-width">Download</button>
+                    </div>
                 </div>
             </fieldset>
         </div>
@@ -124,5 +128,14 @@
     </div>
 </div>
 
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
+</div>
 
 

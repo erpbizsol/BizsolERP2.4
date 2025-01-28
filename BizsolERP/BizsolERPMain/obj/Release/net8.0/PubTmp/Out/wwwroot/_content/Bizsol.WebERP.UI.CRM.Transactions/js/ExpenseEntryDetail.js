@@ -14,6 +14,7 @@ const Indx_Tbl = {
     ExpenseEntryDetail_Code: 9,
     ExpenseHeadMaster_Code: 10
 }
+
 $(document).ready(function () {
     $("#ERPHeading").text("Expense Entry Details");
 
@@ -63,6 +64,16 @@ function DisableControls() {
         $("#btnBack").prop("disabled", false);
 
     }
+    if (param_ExpenseEntryMaster_Code > 0) {
+        $("#ExpenseEntryDetails thead tr th:nth-child(" + (Indx_Tbl.Attachment + 1) + ")").css('display', '');
+        $("#ExpenseEntryDetails tbody tr td:nth-child(" + (Indx_Tbl.Attachment + 1) + ")").css('display', '');
+        $("#ExpenseEntryDetails tfoot tr td:nth-child(" + (Indx_Tbl.Attachment + 1) + ")").css('display', '');
+    } else {
+
+        $("#ExpenseEntryDetails thead tr th:nth-child(" + (Indx_Tbl.Attachment + 1) + ")").css('display', 'none');
+        $("#ExpenseEntryDetails tbody tr td:nth-child(" + (Indx_Tbl.Attachment + 1) + ")").css('display', 'none');
+        $("#ExpenseEntryDetails tfoot tr td:nth-child(" + (Indx_Tbl.Attachment + 1) + ")").css('display', 'none');
+    }
 }
 function PopulateExpenseHeadDetails(Code) {
     var MarketingPersonName = param_MarketingMan_Name;
@@ -75,7 +86,7 @@ function PopulateExpenseHeadDetails(Code) {
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Designation Name", "Per Day Limit", "VerifyStatus", "ExpenseEntryDetail_Code", "ExpenseHeadMaster_Code"];
+            const hiddenColumns = ["Designation Name", "Per Day Limit", "VerifyStatus", "ExpenseEntryDetail_Code", "ExpenseHeadMaster_Code","Attachment"];
             const ColumnAlignment = {
                 "Allowed Amount": "right",
                 "Approved Amount": "right",
@@ -88,7 +99,7 @@ function PopulateExpenseHeadDetails(Code) {
                 item["Expense Amount"] = `<input type="number" id="txtExpendedAmount" data-index="${index}" value="${item["Expense Amount"] || 0}" class="bal-mt-input" onfocusout="CalculateApprovedAmount(this);" autocomplete="off">`;
                 item["Approved Amount"] = `<input type="number" id="txtApprovedAmount" data-index="${index}" value="${item["Approved Amount"] || 0}" class="bal-pc-input" autocomplete="off">`;
                 item["Remarks"] = `<input type="text" id="txtRemarks" data-index="${index}" value="${item["Remarks"]}" class="bal-mtrs-input" autocomplete="off">`;
-                item["Attachment"] = `<a id="btnAttachment" class="btn btn-success icon-height mb-1" title="Attachment" onclick="ViewAttachment(1)"><i class="fa fa-paperclip" aria-hidden="true"></i></a>`;
+                item["Attachment"] = `<a id="btnAttachment" class="btn btn-success icon-height mb-1" title="Attachment" onclick="ViewAttachment(this)"><i class="fa fa-paperclip" aria-hidden="true"></i></a>`;
             });
             BizsolCustomFilterGrid.CreateDataTable("ExpenseEntryDetails-header", "ExpenseEntryDetails-body", response.ExpenseEntryDetail, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
         }
@@ -110,8 +121,10 @@ function PopulateExpenseHeadDetails(Code) {
 
 }
 
-function ViewAttachment(ExpenseEntryDetail_Code) {
-    InitAttachmentControl('ExpenseEntryDetail', ExpenseEntryDetail_Code, '', 0, 0, '', "all");
+function ViewAttachment(x) {
+    var ObjCurrRow = $(x).closest('tr');
+    var ExpenseEntryDetail_Code = ObjCurrRow.find('td:eq(' + Indx_Tbl.ExpenseEntryDetail_Code + ')')[0].innerHTML.trim();
+    InitAttachmentControl('ExpenseEntryMaster',param_ExpenseEntryMaster_Code , 'ExpenseEntryDetail', ExpenseEntryDetail_Code, 0, '', "all");
 }
 
 function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode) {
@@ -364,7 +377,9 @@ function VerifyExpenseEntryMaster() {
                 } else {
 
                     toastr.success(response.Msg);
-                    window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
+                    setTimeout(function () {
+                        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
+                    }, 2000); // 2 seconds delay before redirect
                 }
 
             }
@@ -473,9 +488,16 @@ function SaveData() {
                     if (response.Status == 'N') {
                         toastr.error(response.Msg);
                     } else {
-
+                        var Code = response.Code == undefined || response.Code=='' ? 0 : response.Code;
                         toastr.success(response.Msg);
-                        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
+                        setTimeout(function () {
+                            //window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
+                            const codes = window.btoa(Code);
+                            var MarketingPersonName = window.btoa(param_MarketingMan_Name);
+                            var Mode = window.btoa("Edit");
+                            window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryDetail?Code=" + codes + "&Mode=" + Mode + "&MarketingMan_Name=" + MarketingPersonName;
+                        }, 2000); // 2 seconds delay before redirect
+                       
                     }
 
                 }

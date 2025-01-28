@@ -232,7 +232,54 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
             } else {
                 hiddenColumns.push("Total Order Qty PC");
             }
-
+            if (QtyMTRHeader !== '') {
+                response = response.map(item => {
+                    if (item.hasOwnProperty('Dispatched Qty MTRS')) {
+                        const reorderedItem = {};
+                        for (const key in item) {
+                           reorderedItem[key] = item[key];
+                        }
+                        return reorderedItem;
+                    }
+                    return item;
+                });
+                numericFilterColumn.push("Dispatched Qty MTRS");
+                ColumnAlignment["Dispatched Qty MTRS"] = 'right';
+            } else {
+                hiddenColumns.push("Dispatched Qty MTRS");
+            }
+            if (QtyMTHeader !== '') {
+                response = response.map(item => {
+                    if (item.hasOwnProperty('Dispatched Qty')) {
+                        const reorderedItem = {};
+                        for (const key in item) {
+                            reorderedItem[key] = item[key];
+                        }
+                        return reorderedItem;
+                    }
+                    return item;
+                });
+                numericFilterColumn.push("Dispatched Qty");
+                ColumnAlignment["Dispatched Qty"] = 'right';
+            } else {
+                hiddenColumns.push("Dispatched Qty");
+            }
+            if (QtyPCHeader !== '') {
+                response = response.map(item => {
+                    if (item.hasOwnProperty('Dispatched Qty PC')) {
+                        const reorderedItem = {};
+                        for (const key in item) {
+                            reorderedItem[key] = item[key];
+                        }
+                        return reorderedItem;
+                    }
+                    return item;
+                });
+                numericFilterColumn.push("Dispatched Qty PC");
+                ColumnAlignment["Dispatched Qty PC"] = 'right';
+            } else {
+                hiddenColumns.push("Dispatched Qty PC");
+            }
             const updatedResponse = response.map(item => {
                 let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${item.ButtonStatus !== 'UnVerified' ? 'disabled' : ''} onclick="openEditVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa fa-pencil"></i></button>
                 <button class="btn btn-info icon-height mb-1" title="View" onclick="openViewVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa fa-eye"></i></button>
@@ -387,27 +434,49 @@ function updateFooter(data) {
         const rowCount = data.length;
         let totalQuantity = 0;
         let totalBasicRate = 0;
-        let totalDiscount = 0;
-        let totalExtraCharges = 0;
+        let totalFinalAmount = 0;
+        let totalFinalRate = 0;
+        let totalDispatchQtyMTRS = 0;
+        let totalDispatchQtyMT = 0;
+        let totalDispatchQtyPC = 0;
 
         data.forEach(row => {
             totalQuantity += parseFloat(row[QtyMTHeader] || row[QtyMTRHeader] || row[QtyPCHeader] || 0);
             totalBasicRate += parseFloat(row["Basic Rate"] || 0);
-            totalDiscount += parseFloat(row["Final Amount"] || 0);
-            totalExtraCharges += parseFloat(row["Final Rate"] || 0);
+            totalFinalAmount += parseFloat(row["Final Amount"] || 0);
+            totalFinalRate += parseFloat(row["Final Rate"] || 0);
+            totalDispatchQtyMTRS += parseFloat(row["Dispatched Qty MTRS"] || 0);
+            totalDispatchQtyMT += parseFloat(row["Dispatched Qty"] || 0);
+            totalDispatchQtyPC += parseFloat(row["Dispatched Qty PC"] || 0);
         });
 
-        const tfootContent = `
+        var tfootContent1 = ``;
+        var tfootContent2= ``;
+        var tfootContent3= ``;
+        var tfootContent4= ``;
+        var tfootContent = ``;
+
+        tfootContent1 = `
         <tr>
             <td colspan="5"><b>Row Count :</b> ${rowCount}</td>
             <td><b>Total</b></td>
             <td style="text-align: right;">${totalQuantity.toFixed(2)}</td>
-            <td style="text-align: right;">${totalBasicRate.toFixed(2)}</td>
-            <td style="text-align: right;">${totalDiscount.toFixed(2)}</td>
-            <td style="text-align: right;">${totalExtraCharges.toFixed(2)}</td>   
-        </tr>
-        `;
+            <td style="text-align: right;"></td>
+            <td style="text-align: right;">${totalFinalAmount.toFixed(2)}</td>
+            <td style="text-align: right;"></td>   
+            <td ></td>
+            <td ></td>`;
+        if (QtyMTRHeader !== '') {
+            tfootContent2 = `<td style="text-align: right;">${totalDispatchQtyMTRS.toFixed(2)}</td>`;
+        }
+        if (QtyMTHeader !== '') {
+            tfootContent3 = `<td style="text-align: right;">${totalDispatchQtyMT.toFixed(2)}</td>`;
+        }
+        if (QtyPCHeader !== '') {
+            tfootContent4 = `<td style="text-align: right;">${totalDispatchQtyPC.toFixed(2)}</td>`;
+        }
 
+        tfootContent = `${tfootContent1}${tfootContent2}${tfootContent3}${tfootContent4}<td ></td><td ></td><td></td></tr>`;
         const tfoot = document.querySelector("#OrderList tfoot");
 
         if (tfoot) {

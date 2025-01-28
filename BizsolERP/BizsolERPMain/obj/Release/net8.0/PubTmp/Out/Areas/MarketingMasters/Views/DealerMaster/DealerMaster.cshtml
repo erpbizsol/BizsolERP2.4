@@ -1,0 +1,85 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Masters/js/DealerMaster.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<script>
+    var param_DealerMaster_Code = '@ViewBag.DealerMaster_Code';
+    var param_Mode = '@ViewBag.Mode';
+    var param_Distributor_Name = '@ViewBag.Distributor_Name';
+    var param_Distributor_Code = '@ViewBag.Distributor_Code';
+</script>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            
+            <div class="col-md-3">
+                <label for="txtDistributor" class="form-label">Distributor <span class="text-danger">*</span></label>
+                <input disabled id="txtDistributor" name="txtDistributor" class="form-control form-control-sm box_border" placeholder="" autocomplete="off" required>
+                <input type="hidden" id="hfAccountMaster_Code" name="hfAccountMaster_Code" value="" />
+            </div>
+
+
+        </div>
+    </div>
+</div>
+<div class="row mb-2">
+    <div class="col-md-6">
+        <fieldset class="rounded-1 p-3">
+
+
+            <div class="row">
+                <div class="col-md-6 form-group">
+                    <label for="txtName" class="col-form-label-sm fw-bold">Dealer Name</label>
+                    <input type="text" id="txtName" class="box_border form-control form-control-sm" autocomplete="off" value="">
+                   
+                </div>
+                <div class="col-md-6 ">
+                    <label for="txtAddress" class="col-form-label-sm fw-bold">Address</label>
+                    <textarea ID="txtAddress" name="txtAddress" rows="3" class="box_border form-control form-control-sm" autocomplete="off" placeholder="" value="" required></textarea>
+                </div>
+                </div>
+                <div class="row">
+                <div class="col-md-6">
+                    <label for="txtCity" class="col-form-label-sm fw-bold">City</label>
+                    <input type="text" id="txtCity" name="txtCity" list="listCity" class="box_border form-control form-control-sm" value="" onclick="this.value=''" />
+                    <datalist id="listCity"></datalist>
+                    <input type="hidden" id="hdntxtCity" name="hdntxtCity">
+                </div>
+                <div class="col-md-6">
+                    <label for="txtState" class="col-form-label-sm fw-bold">State</label>
+                    <input type="text" id="txtState" name="txtState" class="box_border form-control form-control-sm" value="" disabled/>
+                    <input type="hidden" id="hdntxtState" name="hdntxtState">
+
+                    <input type="hidden" id="hfCode" name="hfCode" value="" />
+                    
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="txtMobileNo" class="col-form-label-sm fw-bold">Mobile No</label>
+                    <input type="text" id="txtMobileNo" name="txtMobileNo" class="box_border form-control form-control-sm" maxlength="15" value="" onchange="BizSolInputControl.OnChangeNumericTextBox(this)" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" />
+                </div>
+                <div class="col-md-6">
+                    <label for="txtEmail" class="col-form-label-sm fw-bold">Email Id</label>
+                    <input type="text" id="txtEmail" name="txtEmail" class="box_border form-control form-control-sm" value="" maxlength="50" onchange="BizSolInputControl.OnChangeEmailTextBox(this)" onkeypress="BizSolhandleEnterKey(event)" />
+                </div>
+            </div>
+
+
+        </fieldset>
+    </div>
+</div>
+<div class="row mt-4">
+    <div class="col-md-12">
+        <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-height btn-width" />
+       <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-height btn-width" />
+    </div>
+</div>
