@@ -92,9 +92,9 @@ const PackingListFGService = {
             }
         );
     },
-    GetShowPackingListData: function GetShowPackingListData(packingListMaster_Code) {
+    GetShowPackingListData: function GetShowPackingListData(packingListMaster_Code, OnlyEntry="T") {
 
-        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetShowPackingListData?PackingListMaster_Code=" + packingListMaster_Code;
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetShowPackingListData?PackingListMaster_Code=" + packingListMaster_Code + "&OnlyEntry=" + OnlyEntry;
         //alert(url);
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
