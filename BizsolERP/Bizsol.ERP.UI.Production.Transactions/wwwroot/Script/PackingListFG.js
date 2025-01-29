@@ -952,6 +952,10 @@ function PackingListFG_EndLoading() {
 }
 
 function PackingListFG_Remove(packingListMaster_Code, packingListTransaction_Code, palletNo) {
+    if (G_OnlyEntry == "S" && palletNo=="") {
+        toastr.warning('This entry not Remove in summary. please uncheck summary option to delete this entry!');
+        return;
+    }
 
     if (confirm(`Are you sure you want to Remove ${palletNo}?`) == true) {
         Showloader();
@@ -1173,7 +1177,7 @@ function ScanId() {
 }
  
 function LoadFrm() {
-    $('#DivchkSummary').hide();
+    
 
     if (PackingListFGFixedParaMeters.length > 0 && PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'InvoiceByOrder').PeramaterValue === 'Y') {
         $('#lblddlOrderNo')[0].innerHTML = 'Order No:';
@@ -1212,7 +1216,9 @@ function LoadFrm() {
     }
     
     if (ShowPalletTypeAndNoInPackingList==='Y') {
-        $('#DivchkSummary').show();
+        let chkSummary = document.getElementById("chkSummary");
+        chkSummary.checked = true;
+        G_OnlyEntry = "S";
     }
      
     

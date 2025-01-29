@@ -10,6 +10,7 @@ let PalletNo = 0;
 let todayDate = '';
 let todayDate1 = '';
 let selectedDates = [];
+let PalletNosToPrint = "";
 $(document).ready(function () {
     $("#ERPHeading").text("Pallet Packing");
     var today = new Date();
@@ -218,7 +219,7 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
                 let buttonsCheckBox = `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`;
                 let buttonsHTML = '';
                 if (item?.['Allow Edit'] === 'Y') {
-                    buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditPallet(${item?.['Pallet No']})"><i class="fa-solid fa-pencil"></i></button>`;
+                    buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditPallet(${item?.['Pallet No']})"><i class="fa-solid fa-pencil"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>`;
                 } else if (item?.['Allow Edit'] === 'V') {
                     buttonsHTML = `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetPalletDetail(${item?.['Pallet No']},"V")"><i class="fa-regular fa-eye"></i></button>`;
                 }
@@ -670,8 +671,55 @@ function Delete(ColForWhere, ColValue) {
     }
 }
 
-function Print() {
+function PalletPacking_Print(Mode) {
+    if (Mode === 'Grid') {
 
+        let tbPackingList = document.getElementById("PalletPacking");
+
+
+        for (let i = 1; i < tbPackingList.rows.length; i++) {
+                let tbPackingListUpdateRow = tbPackingList.rows[i];
+                let chkId = tbPackingListUpdateRow.cells[11].getElementsByTagName('input')[0];
+                let PalletNo = tbPackingListUpdateRow.cells[0].innerHTML.trim();
+
+
+                if (chkId.checked == true) {
+                    PalletNosToPrint += PalletNo + ',';
+                }
+        }
+
+    } else {
+        PalletNosToPrint = $('#palletNo').val();
+    }
+
+    if (PalletNosToPrint === "") {
+        return;
+    }
+    PalletPackingService.Print(PalletNosToPrint).then(function (response) {
+        let url = response.Url;
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.target = '_blank';
+        a.href = url;
+        document.body.appendChild(a);
+        a.click();
+    });
+}
+function PalletPacking_DeletePallet(palletNo) {
+    if (confirm(`Are you sure you want to Remove ${palletNo}?`) == true) {
+        Showloader();
+        PalletPackingService.RemovePallet(palletNo).then(function (response) {
+
+            if (response.Status == 'Y') {
+                toastr.success(response.Msg);
+                GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code);
+                HideLoader();
+            } else {
+                toastr.error(response.Msg);
+                HideLoader();
+            }
+        });
+    }
 }
 
 window.GetPackedPalletDateAndOrderWise = GetPackedPalletDateAndOrderWise;
@@ -684,3 +732,5 @@ window.toggleSelection = toggleSelection;
 window.EditPallet = EditPallet;
 window.GetPalletDetail = GetPalletDetail;
 window.Delete = Delete;
+window.PalletPacking_Print = PalletPacking_Print;
+window.PalletPacking_DeletePallet = PalletPacking_DeletePallet;
