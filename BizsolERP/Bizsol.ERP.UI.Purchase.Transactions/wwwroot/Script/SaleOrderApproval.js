@@ -2,7 +2,7 @@
 $(document).ready(function () {
     var urlParams = getUrlVars();
     var menuValue = decodeURI(urlParams['menu']);
-    if (menuValue) {
+    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
         $("#ERPHeading").text(menuValue);
     }
     else {
@@ -99,8 +99,13 @@ function getUrlVars() {
     }
     return vars;
 }
-
+function SaleOrderApproval_OTPModal() {
+    $('#OTPModalDisplay').modal({
+        backdrop: 'static',
+    });
+    $('#OTPModalDisplay').modal('show');
+}
 window.ViewData = ViewData;
 window.CloseModal = CloseModal;
 window.SaleOrderApprovedlist = SaleOrderApprovedlist;
-
+window.SaleOrderApproval_OTPModal = SaleOrderApproval_OTPModal;

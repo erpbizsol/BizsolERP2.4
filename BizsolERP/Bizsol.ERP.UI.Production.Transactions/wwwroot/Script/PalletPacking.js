@@ -453,6 +453,8 @@ function ScanID() {
             scanIdCheck = [...scanIdCheck, ...updatedResponse];
             console.log(scanIdCheck);
             BizsolCustomFilterGrid.CreateDataTable("table-header-ScanIdentification", "table-body-ScanIdentification", scanIdCheck, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+            $('#newCreateForm input').prop('disabled', true);
+            $('#txtScanIdentificationNo').val('').prop('disabled', false);
             if (updatedResponse?.length > 0) {
                 ColForWhere = updatedResponse[0]?.ColForWhere;
                 ColValue = updatedResponse[0]?.['Identification No'];
@@ -619,8 +621,8 @@ function updateFooter(data) {
 
         const tfootContent = `
         <tr>
-        <td>Total</td>
         <td colspan="3"></td>
+        <td ><b>Total:</b></td>
         <td style="text-align: right;">${totalQtyBalWeight}</td>
         <td></td>
         </tr>

@@ -2,7 +2,7 @@
 $(document).ready(function () {
     var urlParams = getUrlVars();
     var menuValue = decodeURI(urlParams['menu']);
-    if (menuValue) {
+    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
         $("#ERPHeading").text(menuValue);
     }
     else {
