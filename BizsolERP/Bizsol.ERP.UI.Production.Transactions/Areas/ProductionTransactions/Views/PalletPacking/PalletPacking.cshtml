@@ -80,7 +80,7 @@
                 </div>
                 <div class="col-md-2 without-label-field ">
                     <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" /> &nbsp;
-                     <input type="button" onclick="Print()" class="btn btn-primary btn-height" value="Print" />
+                        <input type="button" onclick="PalletPacking_Print('Grid')" class="btn btn-primary btn-height" value="Print" />
 
                 </div>
             </div>
@@ -89,10 +89,10 @@
                     <label for="txtorderNo" class="col-form-label-sm fw-bold">Order No:<span class="text-danger">*</span></label>
                     <datalist id="txtOrderNoList"></datalist>
                     <input list="txtOrderNoList" id="txtOrderNo" type="text" name="txtOrderNo" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Order No" required />
-                    </div>                    
+                </div>                    
                     <div class="col-md-2 without-label-field">
                         <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" /> &nbsp;
-                        <input type="button" onclick="Print()" class="btn btn-primary btn-height" value="Print" />
+                        <input type="button" onclick="PalletPacking_Print('Grid')" class="btn btn-primary btn-height" value="Print" />
 
                     </div>
             </div>
@@ -188,7 +188,7 @@
 
                 <div class="row">
                     <div class="col-md-12 mb-2 text-end">
-                        <button type="button" title="Print" onclick="Print()" class="btn btn-primary btn-height">Print</button>
+                        <button type="button" title="Print" onclick="PalletPacking_Print('Single')" class="btn btn-primary btn-height">Print</button>
                         <button type="button" onclick="CreateNew()" title="Create New" class="btn btn-primary btn-height">Create New</button>
                         <button type="button" class="btn btn-primary btn-height" title="Back" onclick="Close()">BACK</button>
                     </div>
