@@ -2,9 +2,9 @@
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const AttachmentControlService = {
-    GetAttachmentUploadFiles: function GetAttachmentUploadFiles(MasterTableName, MasterTableCode) {
+    GetAttachmentUploadFiles: function GetAttachmentUploadFiles(MasterTableName, MasterTableCode, DetailTableName, DetailTableCode) {
 
-        let url = UrlService.API_DOCUMENT_ATTECHMENT + `/GetAllDocumentAttachment?MasterTableName=${MasterTableName}&MasterTableCode=${MasterTableCode}`
+        let url = UrlService.API_DOCUMENT_ATTECHMENT + `/GetAllDocumentAttachment?MasterTableName=${MasterTableName}&MasterTableCode=${MasterTableCode}&MasterTableCode=${MasterTableCode}&DetailTableName=${DetailTableName}&DetailTableCode=${DetailTableCode}`
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
                 return value;
@@ -21,9 +21,9 @@ const AttachmentControlService = {
             }
         );
     },
-    DownloadAllAttachment: function DownloadAllAttachment(MasterTableName, MasterTableCode) {
+    DownloadAllAttachment: function DownloadAllAttachment(MasterTableName, MasterTableCode, DetailTableName, DetailTableCode) {
         //let url = UrlService.API_DOCUMENT_ATTECHMENT + `/DownloadAllAttachment?MasterTableName=${MasterTableName}&MasterTableCode=${MasterTableCode}&DetailTableName=${''}&DetailTableCode=${0}`
-        let url = UrlService.API_DOCUMENT_ATTECHMENT + `/DownloadAllAttachment?MasterTableName=${MasterTableName}&MasterTableCode=${MasterTableCode}`
+        let url = UrlService.API_DOCUMENT_ATTECHMENT + `/DownloadAllAttachment?MasterTableName=${MasterTableName}&MasterTableCode=${MasterTableCode}&DetailTableName=${DetailTableName}&DetailTableCode=${DetailTableCode}`
         return promiseAjaxCallApi.CallAPIasBlobObj('GET', url, "").then(
             function (value) {
                 return value;

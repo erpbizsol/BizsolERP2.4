@@ -1,7 +1,7 @@
 ﻿import { SaleOrderApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SaleOrderApprovalService.js';
 $(document).ready(function () {
     var urlParams = getUrlVars();
-    var menuValue = urlParams['menu'];
+    var menuValue = decodeURI(urlParams['menu']);
     if (menuValue) {
         $("#ERPHeading").text(menuValue);
     }
@@ -26,7 +26,7 @@ function GetSaleOrderApproval() {
                 "Qty PC":"right",
                 "Qty SQM":"right",
                 "Amount":"right",
-                "TotalOrderAmount":"right",
+                "Total Order Amount":"right",
             };
             const updatedResponse = response.map(item => ({
                 ...item, Action: item.Action ? `<button class="btn btn-success icon-height mb-1" title="Approve" onclick="SaleOrderApprovedlist('${item.BuyerPOMaster_Code}')"><i class="fa fa-check-circle"></i></button>

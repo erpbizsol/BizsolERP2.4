@@ -17,11 +17,31 @@ build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = Bizsol.WebERP.UI.Production.Transactions
 build_property.RootNamespace = Bizsol.WebERP.UI.Production.Transactions
-build_property.ProjectDir = D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.ERP.UI.Production.Transactions\
+build_property.ProjectDir = D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Production.Transactions\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
-build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.ERP.UI.Production.Transactions
+build_property.GenerateRazorMetadataSourceChecksumAttributes = true
+build_property.MSBuildProjectDirectory = D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Production.Transactions
 build_property._RazorSourceGeneratorDebug = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/PackingList/PackingListFG.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xQYWNraW5nTGlzdFxQYWNraW5nTGlzdEZHLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/PalletPacking/PalletPacking.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xQYWxsZXRQYWNraW5nXFBhbGxldFBhY2tpbmcuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/StockTransferWarehouse/ActualDispatch.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xTdG9ja1RyYW5zZmVyV2FyZWhvdXNlXEFjdHVhbERpc3BhdGNoLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/StockTransferWarehouse/GetWarehouse.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xTdG9ja1RyYW5zZmVyV2FyZWhvdXNlXEdldFdhcmVob3VzZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/StockTransferWarehouse/PhysicalStockTaking.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xTdG9ja1RyYW5zZmVyV2FyZWhvdXNlXFBoeXNpY2FsU3RvY2tUYWtpbmcuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 

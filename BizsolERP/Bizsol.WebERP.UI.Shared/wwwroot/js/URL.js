@@ -76,6 +76,7 @@ let UrlService = {
     API_ENDPOINT_ITEM: `${environment.BASE_URL}/Item`,
     API_ENDPOINT_EXPENSE_ENTRY: `${environment.BASE_URL}/ExpenseEntryMaster`,
     API_ENDPOINT_DEALER_MASTER: `${environment.BASE_URL}/DealerMaster`,
+    API_ENDPOINT_PackingListFG: `${environment.BASE_URL}/PackingListFG`,
 }
 
 export { UrlService  }

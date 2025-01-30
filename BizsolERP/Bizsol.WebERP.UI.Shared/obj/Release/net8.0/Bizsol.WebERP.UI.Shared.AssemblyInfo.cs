@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Bizsol.WebERP.UI.Shared")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b72909ac52e99c033746744f4b784e9264631bde")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+24cdec779b1d43a53bf6efddee7b197d9fef2009")]
 [assembly: System.Reflection.AssemblyProductAttribute("Bizsol.WebERP.UI.Shared")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Bizsol.WebERP.UI.Shared")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

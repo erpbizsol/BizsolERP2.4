@@ -96,11 +96,30 @@ EditPallet: function EditPallet(PalletNo, GodownMaster_Code) {
     },
     GetPackedPalletDate: function GetPackedPalletDate() {
         var URL = UrlService.API_ENDPOINT_PalletPacking + "/GetPackedPalletDate";
-    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
-        function (value) {
-            return value;
-        }
-    );
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    Print: function Print(PalletNosToPrint) {
+        let CompanyCode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
+        let url = `${UrlService.API_ENDPOINT_CRYSTAL}/Printpallet?PalletNo=${PalletNosToPrint}`;
+
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    RemovePallet: function RemovePallet(palletNo) {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/RemovePallet?PalletNo=" + palletNo;
+
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
     },
 }
 

@@ -63,6 +63,10 @@ $(document).ready(function () {
     $('#fetchReportButton').click(function () {
         GetDailyVistList();
     });
+    $('#btnDownload').click(function () {
+        Export();
+    });
+    
 });
 function GetSalespersonLists() {
     CRMReportsServices.GetSalespersonList().then(function (response) {
@@ -255,6 +259,12 @@ function GetDailyVistList() {
             } else {
                 clearFooter();
             }
+            PopulateTableForPrint(response);
+            if (reportType == 'Visit Report With Size and Thk' || reportType == 'Visit Report' || reportType == 'Visit Report 1.0' || reportType == "Route Plan Report") {
+                updateFooterPrint(response, reportType);
+            } else {
+                clearFooterPrint();
+            }
         } else {
             toastr.error("Record not found...!");
         }
@@ -400,8 +410,189 @@ function updateFooter(data, reportType) {
         }
     }
 }
+
+function updateFooterPrint(data, reportType) {
+    if (reportType === "Visit Report With Size and Thk") {
+        const rowCount = data.length;
+        let totalQuantity = 0;
+        let totalBasicRate = 0;
+        let totalDiscount = 0;
+        let totalExtraCharges = 0;
+        let paymentAmount = 0;
+        data.forEach(row => {
+            totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
+            totalBasicRate += parseFloat(row["Basic Rate"] || 0);
+            totalDiscount += parseFloat(row["Discount"] || 0);
+            totalExtraCharges += parseFloat(row["Extra Charges"] || 0);
+            paymentAmount += parseFloat(row["Payment Amount"] || 0);
+        });
+        const tfootContent = `
+        <tr>
+            <td ></td>
+            <td ><b>Row Count :</b>  ${rowCount}</td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td style="text-align:right"><b>Total</b></td>
+            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${totalBasicRate.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${totalDiscount.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${totalExtraCharges.toFixed(2)}</b></td>
+            <td colspan="1"></td>
+            <td style="text-align:right"><b>${paymentAmount.toFixed(2)}</b></td>
+        </tr>
+        `;
+        const tfoot = document.querySelector("#tblReport tfoot");
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#tblReport");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+        }
+    }
+    if (reportType === "Visit Report") {
+        let totalQuantity = 0;
+        let totalBasicRate = 0;
+        let TotalOrderAmount = 0;
+        let totalDiscount = 0;
+        let FinalRate = 0;
+        let FinalOrderAmount = 0;
+        let paymentAmount = 0;
+        data.forEach(row => {
+            totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
+            totalBasicRate += parseFloat(row["Basic Rate"] || 0);
+            TotalOrderAmount += parseFloat(row["Total Order Amount"] || 0);
+            totalDiscount += parseFloat(row["Discount"] || 0);
+            FinalRate += parseFloat(row["Final Rate"] || 0);
+            FinalOrderAmount += parseFloat(row["Final Order Amount"] || 0);
+            paymentAmount += parseFloat(row["Payment Amount"] || 0);
+        });
+        const tfootContent = `
+        <tr>
+            <td ><b>Total :</b></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${totalBasicRate.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${TotalOrderAmount.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${totalDiscount.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${FinalRate.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${FinalOrderAmount.toFixed(2)}</b></td>
+            <td colspan="1"></td>
+            <td style="text-align:right"><b>${paymentAmount.toFixed(2)}</b></td>
+        </tr>
+        `;
+        const tfoot = document.querySelector("#tblReport tfoot");
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#tblReport");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+        }
+    }
+    if (reportType === "Visit Report 1.0") {
+        let totalQuantity = 0;
+        let TotalOrderAmount = 0;
+        data.forEach(row => {
+            totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
+            TotalOrderAmount += parseFloat(row["Total Order Amount"] || 0);
+        });
+        const tfootContent = `
+        <tr>
+            <td ><b>Total :</b></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
+            <td style="text-align:right"><b>${TotalOrderAmount.toFixed(2)}</b></td>
+        </tr>
+        `;
+        const tfoot = document.querySelector("#tblReport tfoot");
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#tblReport");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+        }
+    }
+    if (reportType === "Route Plan Report") {
+        let totalQuantity = 0;
+        data.forEach(row => {
+            totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
+        });
+        const tfootContent = `
+        <tr>
+            <td ><b>Total :</b></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
+        </tr>
+        `;
+        const tfoot = document.querySelector("#tblReport tfoot");
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#tblReport");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+        }
+    }
+}
+
 function clearFooter() {
     const tfoot = document.querySelector("#table tfoot");
+    if (tfoot) {
+        tfoot.innerHTML = "";
+    }
+}
+function clearFooterPrint() {
+    const tfoot = document.querySelector("#tblReport tfoot");
     if (tfoot) {
         tfoot.innerHTML = "";
     }
@@ -508,4 +699,50 @@ function DatePicker() {
     });
 }
 
+function PopulateTableForPrint(data) {
+    const tableBody = document.querySelector('#tblReport tbody');
+    const tableHeader = document.querySelector('#tblReport thead tr');
 
+    //tableBody.empty();
+    $('#tblReport  thead tr').empty();
+    $('#tblReport tbody').empty();
+
+    // Get the keys from the first object to generate the header dynamically
+    const headers = Object.keys(data[0]);
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header.charAt(0).toUpperCase() + header.slice(1); // Capitalize the first letter
+        tableHeader.appendChild(th);
+    });
+
+    $('#tblReport th').css('font-weight', 'bold');
+    // Generate the rows for the table
+    data.forEach(item => {
+        const row = document.createElement('tr');
+
+        headers.forEach(header => {
+            const td = document.createElement('td');
+            td.textContent = item[header];
+            row.appendChild(td);
+        });
+
+        tableBody.appendChild(row);
+    });
+
+}
+function Export() {
+    var ReportType = $("#txtReportType").val().replace(" ", "").replace(".", "");
+    var currentDate = new Date();
+    var dateString = currentDate.getFullYear() + "-" +
+        (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
+        currentDate.getDate().toString().padStart(2, "0") + "_" +
+        currentDate.getHours().toString().padStart(2, "0") + "-" +
+        currentDate.getMinutes().toString().padStart(2, "0") + "-" +
+        currentDate.getSeconds().toString().padStart(2, "0");
+
+    $("#tblReport").table2excel({
+        filename: ReportType + "_" + dateString,
+        fileext: ".xlsx"
+    });
+}
+window.Export = Export;
