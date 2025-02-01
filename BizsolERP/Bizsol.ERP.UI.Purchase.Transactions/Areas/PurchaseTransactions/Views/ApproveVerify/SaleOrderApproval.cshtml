@@ -10,7 +10,9 @@
         max-width: 1100px;
     }
 </style>
-
+<div class="col-2">
+    <button type="button" id="txtOTP" class="btn btn-primary btn-height mb-1" onclick="SaleOrderApproval_OTPModal()">OTP</button>
+</div>
 <div class="table-wrapper fixed-height-table">
     <table id="SaleOrderApproval" class="fixed-width-table table">
         <thead id="table-header-SaleOrderApproval">
@@ -42,6 +44,37 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="OTPModalDisplay" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">OTP Configuration</h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="OTPApprovalTable" class="fixed-width-table table">
+                        <thead id="table-header-OTPApprovalTable">
+                        </thead>
+                        <tbody id="table-body-OTPApprovalTable">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-OTPApprovalTable">
+                </div>
+                <div class="col-3">
+                    <label for="txtOTP" class="col-form-label-sm fw-bold">Enter Authorization Code:</label>
+                    <input type="text" id="txtOTP" placeholder="Enter The OTP" autocomplete="off"/>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-height">OK</button>
                 <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

@@ -1,9 +1,13 @@
 ﻿import { QuotationApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/QuotationApprovalService.js';
-
+let FrmType = '';
+let FrmAction = '';
 $(document).ready(function () {
     var urlParams = getUrlVars();
-    var menuValue = decodeURI(urlParams['menu']);  
-    if (menuValue) {
+    var menuValue = decodeURI(urlParams['menu']);
+    FrmType = decodeURI(urlParams['FrmType']);
+    FrmAction = decodeURI(urlParams['FrmAction']);
+
+    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
         $("#ERPHeading").text(menuValue);
     }
     else {
