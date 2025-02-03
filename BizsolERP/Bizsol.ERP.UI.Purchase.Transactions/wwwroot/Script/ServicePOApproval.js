@@ -17,7 +17,7 @@ $(document).ready(function () {
 
 });
 function unApprovedServicePO() {
-    ServicePOApprovalService.GetUnApprovedServicePO().then(function (response) {
+    ServicePOApprovalService.GetUnApprovedServicePO(FrmAction).then(function (response) {
         if (response && response.length > 0) {
             const stringFilterColumn = ["Party"];
             const numericFilterColumn = ["PO No."];
@@ -46,7 +46,7 @@ function unApprovedServicePO() {
 }
 
 function Approval(Code) {
-    ServicePOApprovalService.ServicePOApproved(Code).then(function (approve) {
+    ServicePOApprovalService.ServicePOApproved(Code, FrmAction, FrmType).then(function (approve) {
         if (approve.Status === "Y") {
             toastr.success(approve.Msg);
             unApprovedServicePO();

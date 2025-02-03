@@ -3,8 +3,8 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 
 const POApprovalService = {
-    GetUnApprovedPO: function GetUnApprovedPO() {
-        var URL = UrlService.API_ENDPOINT_POApproval + "/GetUnApprovedPO";
+    GetUnApprovedPO: function GetUnApprovedPO(QueryCondition, FrmType) {
+        var URL = UrlService.API_ENDPOINT_POApproval + "/GetUnApprovedPO?QueryCondition=" + QueryCondition + "&FrmType=" + FrmType;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -28,9 +28,9 @@ const POApprovalService = {
             }
         );
     },
-POApproved: function POApproved(PurchaseOrderMaster_Code) {
+    POApproved: function POApproved(PurchaseOrderMaster_Code, QueryCondition, FrmType) {
     let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-    var URL = UrlService.API_ENDPOINT_POApproval + "/POApproved?PurchaseOrderMaster_Code=" + PurchaseOrderMaster_Code + "&UserMaster_Code=" + userCode;
+        var URL = UrlService.API_ENDPOINT_POApproval + "/POApproved?PurchaseOrderMaster_Code=" + PurchaseOrderMaster_Code + "&UserMaster_Code=" + userCode + "&QueryCondition=" + QueryCondition + "&FrmType=" + FrmType;
     return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
         function (value) {
             return value;

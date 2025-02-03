@@ -23,7 +23,7 @@ function GetWebNotificationList() {
             //        </span>
             //    </div>`;
             notificationList += `
-                <div class="dropdown-item" onclick="window.location.href='${baseUrl}/${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
+                <div class="dropdown-item" onclick="window.location.href='${baseUrl}/${notification.ScreenURL}?menu=${notification.NotificationDescription}&FrmType=${notification.DotNetMainMenuName}&FrmAction=${notification.ForAction}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
                     <span>${notification.NotificationDescription}</span>
                     <span>
                         ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}

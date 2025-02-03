@@ -25,6 +25,7 @@ let BuyerPOMaster_Code = 0;
 let ArryPackingListTransaction = [];
 let AddPackingListTransaction = [];
 let G_OnlyEntry = "T";
+let G_isView = "N";
 function ChangeMode(Mode) {
     $('#DivPackingListFGForm').hide();
     $('#DivPackingListFGViewGrid').hide();
@@ -360,7 +361,7 @@ function BindSelectList(element, list) {
 }
 
 function EditMode(isView) {
-
+    G_isView = isView;
     //alert('Mode:' + isView + PackingListMaster_Code);
     if (Number(PackingListMaster_Code) > 0) {
         PackingListFGService.GetShowPackingListData(PackingListMaster_Code, G_OnlyEntry).then(function (response) {
@@ -1281,7 +1282,7 @@ $('#chkSummary').on('change', function () {
     Showloader();
     PackingListFGService.GetShowPackingListData(PackingListMaster_Code, G_OnlyEntry).then(function (response) {
         ArryPackingListTransaction = response[1];
-        Bind_PackingListTransactionGrid('N');
+        Bind_PackingListTransactionGrid(G_isView);
         $('#DetailsModal').modal('hide');
         HideLoader();
     });

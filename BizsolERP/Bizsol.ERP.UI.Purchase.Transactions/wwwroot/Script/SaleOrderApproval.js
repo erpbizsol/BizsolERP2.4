@@ -16,7 +16,7 @@ $(document).ready(function () {
     GetSaleOrderApproval();
 });
 function GetSaleOrderApproval() {
-    SaleOrderApprovalService.GetUnApprovedSaleOrders().then(function (response) {
+    SaleOrderApprovalService.GetUnApprovedSaleOrders(FrmAction).then(function (response) {
         if (response.length > 0) {
             const StringFilterColumn = ["Order No", "PartyName"];
             const NumericFilterColumn = [];
@@ -81,7 +81,7 @@ function CloseModal() {
     $('#myModal').modal('hide');
 }
 function SaleOrderApprovedlist(BCode) {
-    SaleOrderApprovalService.SaleOrderApproved(BCode).then(function (resdata) {
+    SaleOrderApprovalService.SaleOrderApproved(BCode, FrmAction, FrmType).then(function (resdata) {
         if (resdata.Status === "Y") {
             toastr.success(resdata.Msg);
             SaleOrderApprovedlist(BCode);

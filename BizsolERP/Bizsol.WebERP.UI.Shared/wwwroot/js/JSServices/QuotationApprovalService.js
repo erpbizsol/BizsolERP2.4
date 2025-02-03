@@ -3,8 +3,8 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 
 const QuotationApprovalService = {
-    GetUnApprovedQuotation: function GetUnApprovedQuotation() {
-        var url = UrlService.API_ENDPOINT_QuotationApproval + "/GetUnApprovedQuotation";
+    GetUnApprovedQuotation: function GetUnApprovedQuotation(QueryCondition) {
+        var url = UrlService.API_ENDPOINT_QuotationApproval + "/GetUnApprovedQuotation?QueryCondition=" + QueryCondition;
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
                 return value;
@@ -19,9 +19,9 @@ const QuotationApprovalService = {
             }
         );
     },
-    QuotationApproved: function QuotationApproved(QuotationMaster_Code) {
+    QuotationApproved: function QuotationApproved(QuotationMaster_Code, QueryCondition, FrmType) {
         let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-        var url = UrlService.API_ENDPOINT_QuotationApproval + "/QuotationApproved?QuotationMaster_Code=" + QuotationMaster_Code + "&UserMaster_Code=" + userCode;
+        var url = UrlService.API_ENDPOINT_QuotationApproval + "/QuotationApproved?QuotationMaster_Code=" + QuotationMaster_Code + "&UserMaster_Code=" + userCode + "&QueryCondition=" + QueryCondition + "&FrmType=" + FrmType;
         return promiseAjaxCallApi.CallAPI('POST', url, "").then(
             function (value) {
                 return value;
