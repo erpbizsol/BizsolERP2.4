@@ -1,6 +1,7 @@
 ﻿import { QuotationApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/QuotationApprovalService.js';
 let FrmType = '';
 let FrmAction = '';
+
 $(document).ready(function () {
     var urlParams = getUrlVars();
     var menuValue = decodeURI(urlParams['menu']);
@@ -16,7 +17,7 @@ $(document).ready(function () {
     GetApprovedQuotationList();
 });
 function GetApprovedQuotationList() {
-    QuotationApprovalService.GetUnApprovedQuotation().then(function (resData) {
+    QuotationApprovalService.GetUnApprovedQuotation(FrmAction).then(function (resData) {
         if (resData && resData.length > 0) {
             const StringFilterColumn = ["Quotation No", "Party"];
         const NumericFilterColumn = [];
@@ -72,7 +73,7 @@ function CloseModal() {
     $('#myModal').modal('hide');
 }
 function QuotationApprovedlist(code) {
-    QuotationApprovalService.QuotationApproved(code).then(function (resdata) {
+    QuotationApprovalService.QuotationApproved(code, FrmAction, FrmType).then(function (resdata) {
         if (resdata.Status === "Y"){
             toastr.success(resdata.Msg);
             
