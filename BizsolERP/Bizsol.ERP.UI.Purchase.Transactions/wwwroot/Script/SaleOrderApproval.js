@@ -86,10 +86,33 @@ function SaleOrderApprovedlist(BCode) {
             toastr.success(resdata.Msg);
             SaleOrderApprovedlist(BCode);
             GetWebNotificationList();
-          
-
-        } else {
-            toastr.error(resdata.Msg)
+        } else if (resdata.Status === "N") {
+            toastr.error(resdata.Msg);
+            $('#OTPModalDisplay').modal({
+                backdrop: 'static',
+            });
+            $('#OTPModalDisplay').modal('show');
+            SaleOrderApprovalService.SaleOrdersCreditLimitReports(BCode).then(function (response) {
+                if (response && response.length > 0) {
+                    $('#OTPModalDisplay').modal({
+                        backdrop: 'static',
+                    });
+                    $('#OTPModalDisplay').modal('show');
+                    const StringFilterColumn = [];
+                    const NumericFilterColumn = [];
+                    const DateFilterColumn = [];
+                    const Button = false;
+                    const showButtons = [];
+                    const StringdoubleFilterColumn = [];
+                    const hiddenColumns = [];
+                    const ColumnAlignment = {};
+                    BizsolCustomFilterGrid.CreateDataTable("table-header-OTPApprovalTable", "table-body-OTPApprovalTable", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+                } else {
+                    toastr.error("No valid data found:", response);
+                }
+            }).catch(error => {
+                toastr.error("Error in fetching data:", error);
+            });
         }
     }).catch(function (error) {
         toastr.error("Error in Sale Order Approval: ", error);
@@ -104,13 +127,23 @@ function getUrlVars() {
     }
     return vars;
 }
-function SaleOrderApproval_OTPModal() {
-    $('#OTPModalDisplay').modal({
-        backdrop: 'static',
+function SaleOrder_Authentication() {
+    SaleOrderApprovalService.SendVerifyOrApproveNotificationToSenior(BCode).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+        }
     });
-    $('#OTPModalDisplay').modal('show');
 }
+function SaleOrder_OTPReceive() {
+    SaleOrderApprovalService.SaleOrder_OTPReceive(Bcode, OTP).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+        }
+    });
+}
+
 window.ViewData = ViewData;
 window.CloseModal = CloseModal;
 window.SaleOrderApprovedlist = SaleOrderApprovedlist;
-window.SaleOrderApproval_OTPModal = SaleOrderApproval_OTPModal;
+window.SaleOrder_Authentication = SaleOrder_Authentication;
+window.SaleOrder_OTPReceive = SaleOrder_OTPReceive;

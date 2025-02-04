@@ -28,5 +28,29 @@ const SaleOrderApprovalService = {
             }
         );
     },
+    SaleOrdersApprovedBYOTP: function SaleOrdersApprovedBYOTP(BuyerPOMaster_Code,OTP) {
+        var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/SaleOrdersApprovedBYOTP?BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&OTP=" + OTP;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SaleOrdersCreditLimitReports: function SaleOrdersCreditLimitReports(BuyerPOMaster_Code) {
+        var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/SaleOrdersCreditLimitReports?BuyerPOMaster_Code=" + BuyerPOMaster_Code ;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SendVerifyOrApproveNotificationToSenior: function SendVerifyOrApproveNotificationToSenior(BuyerPOMaster_Code) {
+        var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/SendVerifyOrApproveNotificationToSenior?BuyerPOMaster_Code=" + BuyerPOMaster_Code ;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 export { SaleOrderApprovalService }
