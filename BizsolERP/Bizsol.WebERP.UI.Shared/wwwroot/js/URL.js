@@ -76,6 +76,7 @@ let UrlService = {
     API_ENDPOINT_ITEM: `${environment.BASE_URL}/Item`,
     API_ENDPOINT_EXPENSE_ENTRY: `${environment.BASE_URL}/ExpenseEntryMaster`,
     API_ENDPOINT_DEALER_MASTER: `${environment.BASE_URL}/DealerMaster`,
+    API_ENDPOINT_PackingListFG: `${environment.BASE_URL}/PackingListFG`,
     API_ENDPOINT_QTY_CONFIG: `${environment.BASE_URL}/FixedParameterQtyConfig`,
     API_ENDPOINT_CRM_ORDERENTRY_CONFIG: `${environment.BASE_URL}/ConfigCRMOrderEntry`,
 }

@@ -4,22 +4,17 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/StockTransferWarehouse.js"></script>
-<style>
-    .custom-modal-width {
-        width: 650px;
-    }
-</style>
 
 <div class="tab-section">
-      <ul class="nav nav-tabs" id="myTab" role="tablist">
-         <li class="nav-item" role="presentation">
-             <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true">Warehouse Receive</button>
-         </li>
-        @*  <li class="nav-item" role="presentation">
-             <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="false"> Actual Dispatch</button>
-         </li> *@
+       @* <ul class="nav nav-tabs" id="myTab" role="tablist">
+          <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true">Stock Transfer Receive</button>
+          </li>
+           <li class="nav-item" role="presentation">
+              <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="false"> Actual Dispatch</button>
+          </li> 
        
-     </ul> 
+      </ul>  *@
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
             <form asp-action="YourAction" asp-controller="YourController" method="post" enctype="multipart/form-data">
@@ -53,7 +48,7 @@
                 </div>
             </form>
         </div>
-        <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+        @* <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
             <div class="row">
                 <div class="col-md-4 form-group">
                     <label for="partyName" class="form-label">Party Name <span class="text-danger">*</span></label>
@@ -66,7 +61,7 @@
                     <datalist id="ddlPalletNoList"></datalist>
                 </div>
             </div>
-        </div>
+        </div> *@
     </div>
 </div>
 <div id="tblStockReceive">
@@ -83,8 +78,8 @@
 </div>
 
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content custom-modal-width">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">No. of Verify</h5>
                 <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">x</span></button>
@@ -108,7 +103,7 @@
         </div>
     </div>
 </div>
-<div id="tblActualDispatch">
+@* <div id="tblActualDispatch">
 <div class="modal-body">
     <div class="table-wrapper fixed-height-table">
         <table id="ActualDispatch" class="fixed-width-table table">
@@ -121,4 +116,4 @@
     <div class="paginator" id="paginator-ActualDispatch">
     </div>
     </div>
-</div>
+</div> *@

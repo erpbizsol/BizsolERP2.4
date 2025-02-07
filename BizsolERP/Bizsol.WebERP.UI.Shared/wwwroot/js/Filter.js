@@ -220,7 +220,7 @@ window.populateDateFilter = function (columnName, bodyId) {
         $(this).toggleClass('fa-plus fa-minus');
     });
 }
-window.updatePageInfo = function applyFilters(bodyId) {
+window.applyFilters = function applyFilters(bodyId) {
     $(`#${bodyId} tr`).each(function () {
         var row = $(this);
         var isVisible = true;

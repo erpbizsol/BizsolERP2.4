@@ -4,32 +4,33 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/ActualDispatch.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 <style>
     .modal-dialog {
         max-width: 1050px;
     }
-
     #ActualDispatch tfoot {
         position: sticky;
         bottom: 0;
-        z-index: 2; 
+        z-index: 0; 
     }
-
     #ActualDispatch tfoot td, #ActualDispatch tfoot th {
         background-color: #d5dde5; 
     }
-
-
     .mt-4 {
         margin-top: 1.6rem !important;
     }
+
+    .fixed-height-table{
+        height:470px;
+    }
 </style>
 <div class="tab-section">
-    <ul class="nav nav-tabs" id="myTab" role="tablist">
+   @*  <ul class="nav nav-tabs" id="myTab" role="tablist">
          <li class="nav-item" role="presentation">
             <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="true"> Actual Dispatch</button>
         </li> 
-    </ul>
+    </ul> *@
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
             <div class="row">
@@ -40,8 +41,9 @@
                     </select>
                     @* <datalist id="ddlPartyNameList"></datalist> *@
                 </div>
-                    <div class="col-md-1 align-items-end mt-4">
+                    <div class="col-md-2 align-items-end mt-4">
                     <button type="button" id="btnShow" class="btn btn-primary btn-height" onclick="onPartyNameSelectGrid()">Show</button>
+                    <button type="button" id="btnExport" class="btn btn-primary btn-height" onclick="">Export</button>
                     </div>
             </div>
         </div>
@@ -80,8 +82,18 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button type="button" id="btnDownload" class="btn btn-primary btn-height" onclick="Download()">Export</button>
                 <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()">Cancel</button>
             </div>
         </div>
     </div>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+<table id="tblReport" hidden="hidden">
+    <thead id="table-headerPrint">
+        <tr></tr>
+    </thead>
+    <tbody id="table-bodyPrint">
+    </tbody>
+</table>
 </div>

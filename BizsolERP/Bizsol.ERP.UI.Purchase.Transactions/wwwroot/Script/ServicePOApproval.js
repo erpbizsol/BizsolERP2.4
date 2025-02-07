@@ -1,29 +1,40 @@
 ﻿import { ServicePOApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ServicePOApprovalService.js';
-
+let FrmType = '';
+let FrmAction = '';
 $(document).ready(function () {
-    $("#ERPHeading").text("Service PO Approval");
+    var urlParams = getUrlVars();
+    var menuValue = decodeURI(urlParams['menu']);
+    FrmType = decodeURI(urlParams['FrmType']);
+    FrmAction = decodeURI(urlParams['FrmAction']);
+
+    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
+        $("#ERPHeading").text(menuValue);
+    }
+    else {
+        $("#ERPHeading").text("Service PO Approval");
+    }
     unApprovedServicePO();
 
 });
 function unApprovedServicePO() {
-    ServicePOApprovalService.GetUnApprovedServicePO().then(function (response) {
+    ServicePOApprovalService.GetUnApprovedServicePO(FrmAction).then(function (response) {
         if (response && response.length > 0) {
-            const stringFilterColumn = ["Party", "Description", "Payment Terms"];
-            const numericFilterColumn = ["Code", "PO No.", "Amount"];
+            const stringFilterColumn = ["Party"];
+            const numericFilterColumn = ["PO No."];
             const dateFilterColumn = ["PO Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = [];
+            const hiddenColumns = ["Code"];
             const ColumnAlignment = {
-                "PO Amount": 'right',
+                "Amount": 'right',
                 "PO Date": 'center',
-                "PO No": 'center',
+                "PO No.": 'center',
                 "Code": 'center',
             };
             const updatedResponse = response.map(item => ({
                 ...item, Action: `<button class="btn btn-success icon-height mb-1" title="Approve" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
-        <button class="btn btn-info icon-height mb-1" title="View Details" onclick="ViewData('${item.Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>`
+        <button class="btn btn-primary icon-height mb-1" title="View Details" onclick="ViewData('${item.Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>`
             }));
             BizsolCustomFilterGrid.CreateDataTable("table-header-ServicePOApproval", "table-body-ServicePOApproval", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
         } else {
@@ -35,16 +46,17 @@ function unApprovedServicePO() {
 }
 
 function Approval(Code) {
-    ServicePOApprovalService.ServicePOApproved(Code).then(function (approve) {
+    ServicePOApprovalService.ServicePOApproved(Code, FrmAction, FrmType).then(function (approve) {
         if (approve.Status === "Y") {
+            toastr.success(approve.Msg);
             unApprovedServicePO();
             GetWebNotificationList();
-            toastr.success(approve.Msg);
         }
         else {
             toastr.error(approve.Msg);
-            
         }
+    }).catch(function (error) {
+        toastr.error("Error in Service PO Approval: ", error);
     });
 }
 
@@ -55,22 +67,21 @@ function ViewData(Code) {
                 backdrop: 'static',
             });
             $('#myModal').modal('show');
-            const stringFilterColumn = ["Description"];
-            const numericFilterColumn = ["Qty", "Rate", "Amount"];
+            const stringFilterColumn = [];
+            const numericFilterColumn = [];
             const dateFilterColumn = [];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = [];
             const ColumnAlignment = {
-                "PO Amount": 'right',
-                "PO Date": 'center',
-                "PO No": 'center',
-                "Code": 'center',
+                "Amount": 'right',
+                "Qty": 'right',
             };
             BizsolCustomFilterGrid.CreateDataTable("table-header-PoapprovalModalTable", "table-body-PoapprovalModalTable", data, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
         } else {
-            toastr.error("No valid data found:", data);
+            toastr.error("No data found:", data);
+            $("#ServicePOApproval").hide();
         }
     }).catch(error => {
         toastr.error("Error in fetching data:", error);
@@ -78,6 +89,15 @@ function ViewData(Code) {
 }
 function CloseModal(Code) {
     $('#myModal').modal('hide');
+}
+function getUrlVars() {
+    var vars = {};
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for (var i = 0; i < hashes.length; i++) {
+        var hash = hashes[i].split('=');
+        vars[hash[0]] = hash[1];
+    }
+    return vars;
 }
 
 window.ViewData = ViewData;

@@ -1,23 +1,34 @@
 ﻿import { POApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/POApprovalService.js';
+let FrmType = '';
+let FrmAction = '';
 $(document).ready(function () {
-    $("#ERPHeading").text("PO Approval");
+    var urlParams = getUrlVars();
+    var menuValue = decodeURI(urlParams['menu']);
+     FrmType = decodeURI(urlParams['FrmType']);
+     FrmAction = decodeURI(urlParams['FrmAction']);
+    
+    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
+        $("#ERPHeading").text(menuValue);
+    }
+    else {
+        $("#ERPHeading").text("PO Approval");
+    }
     unApprovedPO();
 });
 function unApprovedPO() {
-    POApprovalService.GetUnApprovedPO().then(function (response) {
+    POApprovalService.GetUnApprovedPO(FrmAction, FrmType).then(function (response) {
         if (response && response.length > 0) {
             const stringFilterColumn = ["Party Name"];
-            const numericFilterColumn = ["Code", "PO No", "PO Amount"];
-            const dateFilterColumn = [];
+            const numericFilterColumn = ["PO No"];
+            const dateFilterColumn = ["PO Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = [];
+            const hiddenColumns = ["Code"];
             const ColumnAlignment = {
-                "PO Amount": 'right',
+                "Total PO Amount": 'right',
                 "PO Date": 'center',
                 "PO No": 'center',
-                "Code": 'center',
             };
             const updatedResponse = response.map(item => ({
                 ...item,
@@ -29,7 +40,8 @@ function unApprovedPO() {
 
             BizsolCustomFilterGrid.CreateDataTable("table-header-POApproval", "table-body-POApproval", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment); 
         } else {
-            toastr.error("No valid data found:", response);
+            toastr.error("No data found:", response);
+            $("#POApproval").hide();
         }
     }).catch(error => {
         toastr.error("Error in fetching data:", error);
@@ -41,15 +53,27 @@ function ViewData(Code) {
             $('#myModal').modal({
                 backdrop: 'static',
             });
+            $('#hfCodeForBack').val(Code);
             $('#myModal').modal('show');
             const stringFilterColumn = [];
-            const numericFilterColumn = ["Amount"];
+            const numericFilterColumn = [];
             const dateFilterColumn = [];
             const button = false;
             const stringDoubleFilterColumn = ["Product"];
             const showButtons = [];
             const hiddenColumns = ["AllowPOWithOutIndent_RawMaterial_Code", "Size Description", "Specification", "itemsizemaster_Code", "ItemMaster_Code","IndentMaster_Code"];
-            const ColumnAlignment = {};
+            const ColumnAlignment = {
+                "PO Qty":'right',
+                "Tolerance %":'right',
+                "Dis. (%)":'right',
+                "Rate After Discount":'right',
+                "Amount":'right',
+                "Indent No": 'right',
+                "Last Purchased Qty":'right',
+                "Last PO Rate":'right',
+                "Last Po Date":'center',
+                "Amount":'right',
+            };
             const updatedResponse = response.map(item => {
                 const showPOWithOutIndentButton = item.AllowPOWithOutIndent_RawMaterial_Code === 'N';
 
@@ -82,16 +106,17 @@ function CloseModal() {
 }
 
 function Approval(Code) {
-    POApprovalService.POApproved(Code).then(function (approvedata) {
-        if (approvedata.status === 'Y') {
+    POApprovalService.POApproved(Code, FrmAction, FrmType).then(function (approvedata) {
+        if (approvedata.Status === "Y") {
+            toastr.success(approvedata.Msg);
             unApprovedPO();
             GetWebNotificationList();
-            alert(approve.Msg);
-            toastr.success(approvedata.Msg);
         }
         else {
-            toastr.error("Error in fetching Data", error);
+            toastr.error(approvedata.Msg);
         }
+    }).catch(function (error) {
+        toastr.error("Error in PO Approval: ", error);
     });
 }
 function ViewHistory(ItemMaster_Code, itemsizemaster_Code) {   
@@ -111,9 +136,10 @@ function ViewHistory(ItemMaster_Code, itemsizemaster_Code) {
             const showButtons = [];
             const hiddenColumns = [];
             const ColumnAlignment = {
-                "PODate": "center",
-                "PONo": "center",
+                "PO Date": "center",
+                "PO No": "center",
                 "QtyMT": "right",
+                "Rate": "right",
             };
             BizsolCustomFilterGrid.CreateDataTable("table-header-PoaprrovalHistory", "table-body-PoaprrovalHistory", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
         } else {
@@ -160,7 +186,21 @@ function InitAttachmentControl(masterTableName, masterTableCode, detailTableName
     $('#POApproval_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode });
 }
 
+function getUrlVars() {
+    var vars = {};
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for (var i = 0; i < hashes.length; i++) {
+        var hash = hashes[i].split('=');
+        vars[hash[0]] = hash[1];
+    }
+    return vars;
+}
 
+function BackButton() {
+    var Code = $('#hfCodeForBack').val();
+    $('#myHistoryModal').modal('hide');
+    ViewData(Code);
+}
 window.ViewData = ViewData;
 window.CloseModal = CloseModal;
 window.Approval = Approval;
@@ -168,3 +208,4 @@ window.ViewHistory = ViewHistory;
 window.CloseHistoryModal = CloseHistoryModal;
 window.POWithOutIndent = POWithOutIndent;
 window.AttchmentFile = AttchmentFile;
+window.BackButton = BackButton;

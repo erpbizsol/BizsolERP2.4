@@ -45,8 +45,9 @@ const PhysicalStockTakingItemService = {
             }
         );
     },
-    ScanIdDataListStockTacing: function ScanIdDataListStockTacing(ItemMaster_Code, Type) {
-        var URL = UrlService.API_ENDPOINT_PhysicalStockTaking + "/ScanIdDeataListStockTacing?ItemMaster_Code=" + ItemMaster_Code + "&Type=" + Type + "";
+    ScanIdDataListStockTacing: function ScanIdDataListStockTacing() {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_PhysicalStockTaking + "/ScanIdDeataListStockTacing?UserMaster_Code=" + userCode;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -55,6 +56,24 @@ const PhysicalStockTakingItemService = {
     },
     ShowPhysicalStockAsOnDate: function ShowPhysicalStockAsOnDate(AsOnDate) {
         var URL = UrlService.API_ENDPOINT_PhysicalStockTaking + "/ShowPhysicalStockAsOnDate?AsOnDate=" + AsOnDate + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetWarehouse: function GetWarehouse() {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_PhysicalStockTaking + "/GetWarehouse?UserMaster_Code=" + userCode;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetItemName: function GetItemName() {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_PhysicalStockTaking + "/GetDDl?Mode=GetddlItemName&UserMaster_Code=" + userCode;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
