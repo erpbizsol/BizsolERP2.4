@@ -28,8 +28,9 @@ const SaleOrderApprovalService = {
             }
         );
     },
-    SaleOrdersApprovedBYOTP: function SaleOrdersApprovedBYOTP(BuyerPOMaster_Code,OTP) {
-        var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/SaleOrdersApprovedBYOTP?BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&OTP=" + OTP;
+    SaleOrdersApprovedBYOTP: function SaleOrdersApprovedBYOTP(BuyerPOMaster_Code, QueryCondition, FrmType, OTP, ReasonFor) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/SaleOrdersApproveBYOTP?BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&UserMaster_Code=" + userCode + "&QueryCondition=" + QueryCondition + "&FrmType=" + FrmType + "&OTP=" + decodeURIComponent(OTP) + "&ReasonFor=" + ReasonFor;
         return promiseAjaxCallApi.CallAPI('POST', url, "").then(
             function (value) {
                 return value;
