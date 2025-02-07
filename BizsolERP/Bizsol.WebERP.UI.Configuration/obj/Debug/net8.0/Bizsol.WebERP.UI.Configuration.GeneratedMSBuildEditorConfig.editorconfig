@@ -1,0 +1,31 @@
+is_global = true
+build_property.TargetFramework = net8.0
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = Bizsol.WebERP.UI.Configuration
+build_property.RootNamespace = Bizsol.WebERP.UI.Configuration
+build_property.ProjectDir = D:\Ruchi Data\BizSolWebProjects\BizsolERP2.4\BizsolERP\Bizsol.WebERP.UI.Configuration\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = true
+build_property.MSBuildProjectDirectory = D:\Ruchi Data\BizSolWebProjects\BizsolERP2.4\BizsolERP\Bizsol.WebERP.UI.Configuration
+build_property._RazorSourceGeneratorDebug = 
+
+[D:/Ruchi Data/BizSolWebProjects/BizsolERP2.4/BizsolERP/Bizsol.WebERP.UI.Configuration/Areas/Configuration/Views/FixedParameterQtyConfig/FixedParameterQtyConfig.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29uZmlndXJhdGlvblxWaWV3c1xGaXhlZFBhcmFtZXRlclF0eUNvbmZpZ1xGaXhlZFBhcmFtZXRlclF0eUNvbmZpZy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 

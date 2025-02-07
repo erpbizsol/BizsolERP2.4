@@ -5,19 +5,19 @@ let arraySizeControlDllID = [];
 let SizeControl_NewSizeMaster_Code = 0;
 let SizeControl_NewSizeDesp = '';
 
-function getAllSize() {
-    SizeControlService.GetItemSizeListByItemCode($('#hfItemMaster_Code').val()).then(function (respone) {
-        BindSelectList($('#ddlItemSizeMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.SizeDesp })));
+//function getAllSize() {
+//    SizeControlService.GetItemSizeListByItemCode($('#hfItemMaster_Code').val()).then(function (respone) {
+//        BindSelectList($('#ddlItemSizeMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.SizeDesp })));
 
-        $('#ddlItemSizeMaster').val($('#hfItemSizeMaster_Code').val());
-        $('#ddlItemSizeMaster').select2({
-            dropdownParent: $('#SizeControlmodal')
-        });
+//        $('#ddlItemSizeMaster').val($('#hfItemSizeMaster_Code').val());
+//        $('#ddlItemSizeMaster').select2({
+//            dropdownParent: $('#SizeControlmodal')
+//        });
 
-        getItemParameterList();
-    })
+//        getItemParameterList();
+//    })
     
-}
+//}
 
 function getItemParameterList() {
     SizeControlService.GetItemParameterMasterList($('#hfItemMaster_Code').val(), $('#hfItemSizeMaster_Code').val()).then(function (respone) {
@@ -91,7 +91,7 @@ function CreateSize() {
     
 
 }
-
+getAllSize();
 window.getAllSize = getAllSize;
 window.onSizeControl_CreateSize = CreateSize;
 window.onSizeControl_ddlItemSizeMasterChange = onSizeControl_ddlItemSizeMasterChange;

@@ -1,0 +1,57 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Configuration/js/FixedParameterQtyConfig.js"></script>
+<style>
+    /* Hide the spinner arrows in most modern browsers */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* Hide the spinner arrows in Firefox */
+    input[type="number"] {
+        -moz-appearance: textfield;
+    }
+
+</style>
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+
+            <div id="divFixedParameterList" class="col-md-4">
+                <table id="tblFixedParameterList" class="fixed-width-table table">
+                    <thead id="FixedParameter-header">
+                        <tr>
+                            <th>Configuration</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="FixedParameter-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-height btn-width" />
+                <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-height btn-width" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<datalist id="listYesNo">
+    <option>Y</option>
+    <option>N</option>
+</datalist>
+<datalist id="listUnit">
+    <option>As Per Master</option>
+    <option>NA</option>
+</datalist>
+
