@@ -656,34 +656,34 @@ body[data-layout=horizontal] .footer {
     margin: 0
 }
 
-    .metismenu li {
-        display: block;
-        width: 100%
-    }
+.metismenu li {
+    display: block;
+    width: 100%
+}
 
-    .metismenu .mm-collapse {
-        display: none
-    }
+.metismenu .mm-collapse {
+    display: none
+}
 
-        .metismenu .mm-collapse:not(.mm-show) {
-            display: none
-        }
+.metismenu .mm-collapse:not(.mm-show) {
+    display: none
+}
 
-        .metismenu .mm-collapse.mm-show {
-            display: block
-        }
+.metismenu .mm-collapse.mm-show {
+    display: block
+}
 
-    .metismenu .mm-collapsing {
-        position: relative;
-        height: 0;
-        overflow: hidden;
-        -webkit-transition-timing-function: ease;
-        transition-timing-function: ease;
-        -webkit-transition-duration: .35s;
-        transition-duration: .35s;
-        -webkit-transition-property: height, visibility;
-        transition-property: height, visibility
-    }
+.metismenu .mm-collapsing {
+    position: relative;
+    height: 0;
+    overflow: hidden;
+    -webkit-transition-timing-function: ease;
+    transition-timing-function: ease;
+    -webkit-transition-duration: .35s;
+    transition-duration: .35s;
+    -webkit-transition-property: height, visibility;
+    transition-property: height, visibility
+}
 
 .vertical-menu {
     width: 250px;
@@ -758,38 +758,38 @@ body[data-layout=horizontal] .footer {
         font-weight: 500
     }
 
-        #sidebar-menu ul li a i {
-            display: inline-block;
-            min-width: 1.75rem;
-            padding-bottom: .125em;
-            font-size: 1.25rem;
-            line-height: 1.40625rem;
-            vertical-align: middle;
-            color: var(--bs-sidebar-menu-item-icon-color);
-            -webkit-transition: all .4s;
-            transition: all .4s
-        }
+    #sidebar-menu ul li a i {
+        display: inline-block;
+        min-width: 1.75rem;
+        padding-bottom: .125em;
+        font-size: 1.25rem;
+        line-height: 1.40625rem;
+        vertical-align: middle;
+        color: var(--bs-sidebar-menu-item-icon-color);
+        -webkit-transition: all .4s;
+        transition: all .4s
+    }
 
-        #sidebar-menu ul li a .side-menu-icon {
-            height: 15px;
-            width: 13px;
-            color: var(--bs-sidebar-menu-item-icon-color);
-            fill: var(--bs-sidebar-menu-item-icon-effact-color);
-            margin-top: -3px;
-        }
+    #sidebar-menu ul li a .side-menu-icon {
+        height: 15px;
+        width: 13px;
+        color: var(--bs-sidebar-menu-item-icon-color);
+        fill: var(--bs-sidebar-menu-item-icon-effact-color);
+        margin-top: -3px;
+    }
 
-        #sidebar-menu ul li a:hover {
-            color: var(--bs-sidebar-menu-item-hover-color);
-        }
+    #sidebar-menu ul li a:hover {
+        color: var(--bs-sidebar-menu-item-hover-color);
+    }
 
-            #sidebar-menu ul li a:hover i {
-                color: var(--bs-sidebar-menu-item-hover-color)
-            }
+    #sidebar-menu ul li a:hover i {
+        color: var(--bs-sidebar-menu-item-hover-color)
+    }
 
-            #sidebar-menu ul li a:hover svg {
-                color: var(--bs-sidebar-menu-item-hover-color);
-                fill: var(--bs-sidebar-menu-item-hover-effact-color)
-            }
+    #sidebar-menu ul li a:hover svg {
+        color: var(--bs-sidebar-menu-item-hover-color);
+        fill: var(--bs-sidebar-menu-item-hover-effact-color)
+    }
 
     #sidebar-menu ul li .badge {
         margin-top: 4px
@@ -835,20 +835,20 @@ body[data-layout=horizontal] .footer {
             color: #607d8b !important;
         }
 
-    #sidebar-menu ul li:hover a {
-        color: #607d8b;
-    }
+#sidebar-menu ul li:hover a {
+    color: #607d8b;
+}
 
-    #sidebar-menu .side-menu-icon {
-        color: #fff !important;
-    }
+#sidebar-menu .side-menu-icon {
+    color: #fff !important;
+}
 
-    /* #sidebar-menu .sub-menu .mm-active {
-        background-color: #e2eaee;
-        border: 1px solid;
-        border-radius: 10px;
-        margin-bottom: 4px;
-    } */
+/* #sidebar-menu .sub-menu .mm-active {
+    background-color: #e2eaee;
+    border: 1px solid;
+    border-radius: 10px;
+    margin-bottom: 4px;
+} */
 
 #side-menu .active {
     border-radius: 4px;
@@ -1009,16 +1009,16 @@ body[data-sidebar-size=sm] {
                 border-radius: 5px;
             }
 
-                body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:active,
-                body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:focus,
-                body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:hover {
-                    color: var(--bs-sidebar-menu-item-hover-color)
-                }
+            body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:active,
+            body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:focus,
+            body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:hover {
+                color: var(--bs-sidebar-menu-item-hover-color)
+            }
 
-                body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a i {
-                    font-size: 1.45rem;
-                    margin-left: 4px
-                }
+            body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a i {
+                font-size: 1.45rem;
+                margin-left: 4px
+            }
 
             body[data-sidebar-size=sm] .vertical-menu #sidebar-menu ul li:hover .iconBg .side-menu-icon {
                 height: 15px;
@@ -6322,3 +6322,26 @@ a.icon-height {
 }
 
 /*------ Loader End ---------*/
+
+
+
+/* Overlay styles */
+
+
+/* When sidebar is active */
+.vertical-menu.active {
+    left: 0; /* Bring sidebar into view */
+}
+
+/* Overlay styles */
+
+#sidebar-overlay {
+    background-color: rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 99;
+    display: none; /* Initially hidden */
+}
