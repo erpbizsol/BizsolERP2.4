@@ -1,9 +1,13 @@
 ﻿import { ServicePOApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ServicePOApprovalService.js';
-
+let FrmType = '';
+let FrmAction = '';
 $(document).ready(function () {
     var urlParams = getUrlVars();
     var menuValue = decodeURI(urlParams['menu']);
-    if (menuValue) {
+    FrmType = decodeURI(urlParams['FrmType']);
+    FrmAction = decodeURI(urlParams['FrmAction']);
+
+    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
         $("#ERPHeading").text(menuValue);
     }
     else {
@@ -13,7 +17,7 @@ $(document).ready(function () {
 
 });
 function unApprovedServicePO() {
-    ServicePOApprovalService.GetUnApprovedServicePO().then(function (response) {
+    ServicePOApprovalService.GetUnApprovedServicePO(FrmAction).then(function (response) {
         if (response && response.length > 0) {
             const stringFilterColumn = ["Party"];
             const numericFilterColumn = ["PO No."];
@@ -42,7 +46,7 @@ function unApprovedServicePO() {
 }
 
 function Approval(Code) {
-    ServicePOApprovalService.ServicePOApproved(Code).then(function (approve) {
+    ServicePOApprovalService.ServicePOApproved(Code, FrmAction, FrmType).then(function (approve) {
         if (approve.Status === "Y") {
             toastr.success(approve.Msg);
             unApprovedServicePO();

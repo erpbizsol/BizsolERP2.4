@@ -548,7 +548,7 @@ function AddNewRow() {
     var PickSizeParameterasPerChart = CRM_Config.PickSizeParameterasPerChart;
     Consignee.innerHTML = '<input type="text" id="txtConsignee' + tbItemConsumeRowNo + '" class="BizSolFormControl box_border form-control form-control-sm" name="txtConsignee" placeholder="" onclick="$(this).val(\'\')" autocomplete="off"   required>';
     DeliveryAddress.innerHTML = '<input type="text" id="txtDeliveryAddress' + tbItemConsumeRowNo + '" class="BizSolFormControl box_border form-control form-control-sm" name="txtDeliveryAddress" placeholder="" onclick="$(this).val(\'\')" autocomplete="off"  required>';
-    ItemName.innerHTML = '<input type="text"  id="txtItemName' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtItemName" placeholder="" list="listItem" autocomplete="off" onclick="$(this).val(\'\')"  onchange="GetItemSizeList(this,' + tbItemConsumeRowNo + ');GetLatestPriceListByItemName(this,' + tbItemConsumeRowNo + ');GetUOM(' + tbItemConsumeRowNo + ');GetBasicRateFromPriceList(this,' + tbItemConsumeRowNo + ');" required>';
+    ItemName.innerHTML = '<input type="text"  id="txtItemName' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtItemName" placeholder="" list="listItem" autocomplete="off" onclick="$(this).val(\'\')"  onchange="GetItemSizeList(this,' + tbItemConsumeRowNo + ');GetLatestPriceListByItemName(this,' + tbItemConsumeRowNo + ');GetUOM(' + tbItemConsumeRowNo + ');GetBasicRateFromPriceList(this,' + tbItemConsumeRowNo + ');GetDealerFromPreRow(this,' + tbItemConsumeRowNo + ');" required>';
     Size.innerHTML = '<datalist id="listItemSize_' + tbItemConsumeRowNo + '"></datalist> <input type="text"  id="txtSize' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtSize" placeholder="" list="listItemSize_' + tbItemConsumeRowNo + '" autocomplete="off" onclick="$(this).val(\'\')"  onchange="GetItemThicknessList(this,' + tbItemConsumeRowNo + ')" required>';
     Thickness.innerHTML = '<datalist id="listItemThickness_' + tbItemConsumeRowNo + '"></datalist><input type="text"  id="txtThickness' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtThickness" placeholder="" list="listItemThickness_' + tbItemConsumeRowNo + '" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
     SizeDesp.innerHTML = '<input type="text"  id="txtSizeDesp' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtSizeDesp" placeholder="" list="listItemName" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
@@ -581,7 +581,23 @@ function AddNewRow() {
     $('#txtDeliveryDate' + tbItemConsumeRowNo).val(new Date().toISOString().split("T")[0]);
 }
 
+function GetDealerFromPreRow(x, RowNo) {
 
+    if (RowNo > 1) {
+        var ObjCurrRow = $(x).closest('tr');
+        var tblorderbooking = $('#tblorderbooking')[0];
+        var PreRowNo = RowNo - 1;
+
+        var PreRow = tblorderbooking.rows[PreRowNo];
+        var PreDealerCode = PreRow.cells[Indx_TblOrder.DealerName].getElementsByTagName('input')[0].value;
+        var PreDealerName = PreRow.cells[Indx_TblOrder.DealerName].getElementsByTagName('input')[1].value;
+        if (PreDealerName != undefined && PreDealerName != '') {
+            ObjCurrRow.find('td:eq(' + Indx_TblOrder.DealerName + ')')[0].getElementsByTagName('input')[0].value = PreDealerCode;
+            ObjCurrRow.find('td:eq(' + Indx_TblOrder.DealerName + ')')[0].getElementsByTagName('input')[1].value = PreDealerName;
+        }
+
+    }
+}
 function CalculateAmount(x) {
     var ObjCurrRow = $(x).closest('tr');
     var QtyMT = ObjCurrRow.find('td:eq(' + Indx_TblOrder.OrderQtyMT + ')')[0].getElementsByTagName('input')[0].value;
@@ -2228,3 +2244,4 @@ window.GetPaymentTerms = GetPaymentTerms;
 window.GetBasicRateFromPriceList = GetBasicRateFromPriceList;
 window.GetDistributorDealerList = GetDistributorDealerList;
 window.GetDistributorDealerCode = GetDistributorDealerCode;
+window.GetDealerFromPreRow = GetDealerFromPreRow;

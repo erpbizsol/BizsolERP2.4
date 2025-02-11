@@ -1,8 +1,13 @@
 ﻿import { POApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/POApprovalService.js';
+let FrmType = '';
+let FrmAction = '';
 $(document).ready(function () {
     var urlParams = getUrlVars();
     var menuValue = decodeURI(urlParams['menu']);
-    if (menuValue) {
+     FrmType = decodeURI(urlParams['FrmType']);
+     FrmAction = decodeURI(urlParams['FrmAction']);
+    
+    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
         $("#ERPHeading").text(menuValue);
     }
     else {
@@ -11,7 +16,7 @@ $(document).ready(function () {
     unApprovedPO();
 });
 function unApprovedPO() {
-    POApprovalService.GetUnApprovedPO().then(function (response) {
+    POApprovalService.GetUnApprovedPO(FrmAction, FrmType).then(function (response) {
         if (response && response.length > 0) {
             const stringFilterColumn = ["Party Name"];
             const numericFilterColumn = ["PO No"];
@@ -101,7 +106,7 @@ function CloseModal() {
 }
 
 function Approval(Code) {
-    POApprovalService.POApproved(Code).then(function (approvedata) {
+    POApprovalService.POApproved(Code, FrmAction, FrmType).then(function (approvedata) {
         if (approvedata.Status === "Y") {
             toastr.success(approvedata.Msg);
             unApprovedPO();

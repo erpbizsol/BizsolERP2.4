@@ -336,6 +336,97 @@ const VisitOrderEntryService = {
             }
         );
     },
+    GetFixedParameterQtyConfig: function GetFixedParameterQtyConfig() {
+      
+        var URL = UrlService.API_ENDPOINT_QTY_CONFIG + `/GetFixedParameterQtyConfig`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetCRMOrderEntryConfig: function GetCRMOrderEntryConfig() {
+
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_CRM_ORDERENTRY_CONFIG + `/GetCRMFixedParameterConfig`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetUOMMasterList: function GetUOMMasterList() {
+        let url = UrlService.API_ENDPOINT_UOM + `/GetUOMMasterList`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetFixedParameterDetails: function GetFixedParameterDetails() {
+        let url = UrlService.API_ENDPOINT_FIXED_PARAMETER + `/GetFixedParameterDetails`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetFixedparameterMarketing: function GetFixedparameterMarketing() {
+        let url = UrlService.API_ENDPOINT_FIXED_PARAMETER + `/GetFixedparameterMarketing`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    
+    GetItemSizeDropdownList: function GetItemSizeDropdownList() {
+        let url = UrlService.API_ENDPOINT_ItemSize + `/GetItemSizeDropdownList`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetItemParameterMasterList: function GetItemParameterMasterList() {
+        let url = UrlService.API_ENDPOINT_ItemSize + `/GetItemParameterMasterList`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetBasicRateExtraCharges: function GetBasicRateExtraCharges(ItemName,Size, Thickness,DealerName,ItemSizeMaster_code) {
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetBasicRateExtraCharges?ItemName=${ItemName}&Size=${Size}&Thickness=${Thickness}&DealerName=${DealerName}&ItemSizeMaster_code=${ItemSizeMaster_code}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetItemSizeMasterList: function GetItemSizeMasterList(ItemName) {
+        let url = UrlService.API_ENDPOINT_ItemSize + `/GetItemSizeMasterList?ItemName=${ItemName}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    
+    CheckModuleOptionRight: function CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var UserMaster_Code = authKeyData.UserMaster_Code;
+        let url = UrlService.ERP_SIDE_MENU + `/CheckModuleOptionRight?ModuleName=${ModuleName}&OptionName=${OptionName}&ShowMsg=${ShowMsg}&FinYear=${FinYear}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+
+
+    },
+    
 }
 
 export { VisitOrderEntryService }

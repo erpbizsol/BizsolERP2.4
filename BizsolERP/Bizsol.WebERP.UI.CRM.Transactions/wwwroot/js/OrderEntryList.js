@@ -19,6 +19,7 @@ $(document).ready(function () {
     };
     manageEditButton(order);
     $('#editButton').on('click', function () {
+
         openEditVisitMaster(order.VisitMaster_Code, order.Code);
     });
 
@@ -72,6 +73,18 @@ $(document).ready(function () {
     $('#btnAddDirectOrder').click(function (e) {
         
             window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry";
+
+    });
+    
+    $('#btnCRMConfig').click(function (e) {
+
+        window.location = baseUrl + "/CRMTransactions/FixedParameterConfiguration/FixedParameterConfiguration";
+
+    });
+
+    $('#btnDirectOrder').click(function (e) {
+
+        window.location = baseUrl + "/CRMTransactions/Visit/DirectOrderEntry";
 
     });
 });
@@ -363,14 +376,32 @@ function GetUserNameList() {
 }
 
 function openEditVisitMaster(VisitMaster_Code, Code) {
-        const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-        const RoutePlanCode = window.btoa(0);
-    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode="+RoutePlanCode+"&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
+
+    var ModuleName = "Direct Order Entry",
+        OptionName = "EDIT",
+        ShowMsg = "Y",
+        FinYear = "2024-2025";
+    OrderEntryListService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+
+        if (response.CheckModuleOptionRight =='N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            const VisitMaster_Codes = window.btoa(VisitMaster_Code);
+            const RoutePlanCode = window.btoa(0);
+            //window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + RoutePlanCode + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
+            window.location = baseUrl + "/CRMTransactions/Visit/DirectOrderEntry?RoutePlanCode=" + RoutePlanCode + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
+        }
+
+    });
+
+   
 }
 function openViewVisitMaster(VisitMaster_Code, Code) {
     const VisitMaster_Codes = window.btoa(VisitMaster_Code);
     const RoutePlanCode = window.btoa(0);
-    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode="+RoutePlanCode +"&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
+    // window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode="+RoutePlanCode +"&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
+    window.location = baseUrl + "/CRMTransactions/Visit/DirectOrderEntry?RoutePlanCode=" + RoutePlanCode + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
 }
 function encodeHash(value) {
     return btoa(value); 
@@ -420,11 +451,17 @@ function isViewButtonEnabled(order) {
     return order.ButtonStatus !== 'Verified';
 }
 function GetFixedParameterConfiguration() {
-    OrderEntryListService.GetFixedParameterConfiguration().then(function (res) {
+    //OrderEntryListService.GetFixedParameterConfiguration().then(function (res) {
+    OrderEntryListService.GetFixedParameterQtyConfig().then(function (res) {
+    
         fixedParaMeterConfigurationList = res;
-        QtyMTHeader = fixedParaMeterConfigurationList[0].QtyMTHeader;
-        QtyPCHeader = fixedParaMeterConfigurationList[0].QtyPCHeader;
-        QtyMTRHeader = fixedParaMeterConfigurationList[0].QtyMTRHeader;
+        //QtyMTHeader = fixedParaMeterConfigurationList[0].QtyMTHeader;
+        //QtyPCHeader = fixedParaMeterConfigurationList[0].QtyPCHeader;
+        //QtyMTRHeader = fixedParaMeterConfigurationList[0].QtyMTRHeader;
+        QtyMTHeader = fixedParaMeterConfigurationList[0].QtyMT;
+        QtyPCHeader = fixedParaMeterConfigurationList[0].QtyPC;
+        QtyMTRHeader = fixedParaMeterConfigurationList[0].QtyMR;
+
     });
 }
 function updateFooter(data) {
