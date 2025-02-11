@@ -427,6 +427,18 @@ const VisitOrderEntryService = {
 
     },
     
+    GetLogicalStock: function GetLogicalStock(VisitMaster_Code, DealerName, ItemName) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var UserMaster_Code = authKeyData.UserMaster_Code;
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetLogicalStock?VisitMaster_Code=${VisitMaster_Code}&DealerName=${DealerName}&ItemName=${ItemName}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+
+
+    }
 }
 
 export { VisitOrderEntryService }

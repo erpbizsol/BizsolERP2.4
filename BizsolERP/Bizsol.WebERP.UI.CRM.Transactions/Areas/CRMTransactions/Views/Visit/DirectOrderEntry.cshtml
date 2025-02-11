@@ -358,7 +358,7 @@
                     <div class="row">
                         <div class="col-md-1">
                             <div class="form-group">
-                                <input type="button" name="btnShow" id="btnShow" class="btn btn-primary btn-sm waves-effect waves-light" value="Show Stock" onclick="return GetAllOrderBookingData();" />
+                                <input type="button" name="btnShow" id="btnShow" class="btn btn-primary btn-sm waves-effect waves-light" value="Show Stock"/>
 
                                 <button type="button" class="btn btn-primary  btn-sm waves-effect waves-light" id="btnLoading" hidden="true">
                                     <i class="bx bx-loader bx-spin font-size-16 align-middle me-2"></i> Loading
@@ -676,5 +676,55 @@
     </div>
 </div>
 <div id="DivSizeControlmodal"></div>
+
+<div class="row">
+    <div class="modal fade" id="LogicalStockModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog  modal-lg">
+            <div class="modal-content modal-content-width-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title">Stock</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" onclick="CloseLogicalStockModal()" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="row">
+                    <div class="col-md-3" id="divItemName">
+                        <label for="txtItemName" class="col-form-label-sm fw-bold">Item Name </label>
+                        <div class="form-group">
+                            <input type="text" list="listItem" class="box_border form-control form-control-sm" id="txtItemName" name="txtItemName" onclick="this.value=''" value="" placeholder="" autocomplete="off" maxlength="250" required>
+                            <input type="hidden" id="hiddentxtItemName" name="hiddentxtItemName">
+                        </div>
+                    </div>
+                    <div class="col-md-3 without-label-field">
+                        <button type="button" id="btnSearchStock" class="btn btn-primary btn-height btn-width" title="Search Stock">Search</button>
+                        <button type="button" class="btn btn-primary btn-height" id="btnLoadingStock" hidden="true">
+                            <i class="bx bx-loader bx-spin font-size-16 align-middle me-2"></i> Loading
+                        </button>
+                    </div>
+                </div>
+
+                <div class="modal-body">
+                    <div id="tblLogicalStock">
+                        <div class="table-wrapper fixed-height-table">
+                            <table id="LogicalStock" class="fixed-width-table table">
+                                <thead id="LogicalStock-header">
+                                </thead>
+                                <tbody id="LogicalStock-body">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="paginator" id="paginator-LogicalStock">
+                        </div>
+                    </div>
+                   
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary btn-height" onclick="SelectStockRows()">Done</button>
+                    <button type="button" class="btn btn-secondary btn-height" onclick="CloseLogicalStockModal()" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js?v1"></script>

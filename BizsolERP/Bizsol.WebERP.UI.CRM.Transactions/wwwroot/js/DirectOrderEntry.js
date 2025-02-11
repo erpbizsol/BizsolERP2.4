@@ -97,20 +97,27 @@ function PageLoad() {
     GetFixedParameter();
     GetFixedParameterMarketing();
 
-    $('#btnShow').hide();/// For Hariom
+    var FixedParaMarketing_Config = JSON.parse(sessionStorage.getItem('FixedParameterMarketing'));
+    var BuyerPOOpenMasterApplicable = FixedParaMarketing_Config.BuyerPOOpenMasterApplicable;
+    if (BuyerPOOpenMasterApplicable == 'Y') {
+        $('#btnShow').hide();/// For Hariom
+    } else {
+
+    }
+    
     // Show Stock Button Click
     $('#btnShow').click(function () {
         // Change the button text to "Loading..."
         $(this).prop('hidden', true); // Disable the button to prevent multiple clicks
         $('#btnLoading').prop('hidden', false);
-
+        ShowLogicalStockModal();
         // Simulate a delay (e.g., waiting for an API call)
-        setTimeout(function () {
-            // Restore the button to its original state
-            $('#btnShow').prop('hidden', false);
-            $('#btnLoading').prop('hidden', true);
+        //setTimeout(function () {
+        //    // Restore the button to its original state
+        //    $('#btnShow').prop('hidden', false);
+        //    $('#btnLoading').prop('hidden', true);
 
-        }, 3000); // Replace with your actual logic for completion
+        //}, 3000); // Replace with your actual logic for completion
     });
 
     // Add New Row Button Click
@@ -255,7 +262,7 @@ function GetUserDetails() {
 
     VisitOrderEntryService.GetUserDetails().then(function (response) {
 
-        if (response != null) {
+        if (response != null && param_VisitMode == 'New') {
             var UserName = response[0].UserName;
             $('#txtUserName').val(UserName);
 
@@ -490,7 +497,7 @@ function AddNewRow() {
     var CRM_Config = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
     var Qty_Config = JSON.parse(sessionStorage.getItem('QtyConfig'));
     var QtyPCHeader = Qty_Config.QtyPC;
-    var QtyMTRHeader = Qty_Config.QtyMTR;
+    var QtyMTRHeader = Qty_Config.QtyMR;
     var QtyMTHeader_MT = Qty_Config.QtyMT;
 
     var DistributorDealerApplicableInOrder = CRM_Config.ShowDealerColumn;
@@ -760,7 +767,7 @@ function ValidateData() {
     var CRM_Config = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
     var Qty_Config = JSON.parse(sessionStorage.getItem('QtyConfig'));
     var QtyPCHeader = Qty_Config.QtyPC;
-    var QtyMTRHeader = Qty_Config.QtyMTR;
+    var QtyMTRHeader = Qty_Config.QtyMR;
     var QtyMTHeader = Qty_Config.QtyMT;
 
     var DistributorDealerApplicableInOrder = CRM_Config.ShowDealerColumn;
@@ -1434,12 +1441,14 @@ function GetDealerDetailsByDealerName() {
 
     var CRM_Config = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
     var Qty_Config = JSON.parse(sessionStorage.getItem('QtyConfig'));
+    var FixedParaMarketing_Config = JSON.parse(sessionStorage.getItem('FixedParameterMarketing'));
     var QtyPCHeader = Qty_Config.QtyPC;
-    var QtyMTRHeader = Qty_Config.QtyMTR;
+    var QtyMTRHeader = Qty_Config.QtyMR;
     var QtyMTHeader = Qty_Config.QtyMT;
 
     var DistributorDealerApplicableInOrder = CRM_Config.ShowDealerColumn;
     var SizeApplicableInOrder = CRM_Config.ShowSizeThicknessColumns;
+    var BuyerPOOpenMasterApplicable = FixedParaMarketing_Config.BuyerPOOpenMasterApplicable;
 
     var AccountDesp = $('#txtDealer').val();
     AccountDesp = normalizeText(AccountDesp);
@@ -1498,30 +1507,67 @@ function GetDealerDetailsByDealerName() {
             $('#divtblPendingOrder').prop('hidden', false);
             $('#paginator-tblPendingOrder').prop('hidden', false);
 
-            const StringFilterColumn = ["OrderNo", "ItemName"];
+            const StringFilterColumn = ["Booking No.", "Item Desp"];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["AccountDesp"];
-            const ColumnAlignment = {
-                "BalQtyPC": 'right',
-                "BalQtyMT": 'right',
-                "BalQtyMTRS": 'right'
-            };
-            if (QtyPCHeader == '') {
-                hiddenColumns.push("BalQtyPC");
+            const hiddenColumns = ["Party Name"];
+            var ColumnAlignment = {};
+
+            if (BuyerPOOpenMasterApplicable == 'Y') {
+               
+                 ColumnAlignment = {
+                    "Booked Qty": 'right',
+                    "Rate": 'right',
+                    "Buyer PO Order Qty": 'right',
+                    "Dispatch Qty": 'right',
+                    "Cancel Qty": 'right',
+                    "Bal Dispatch Qty": 'right',
+                    "Bal Order Qty": 'right'
+                };
+                
+            } else {
+                
+                 ColumnAlignment = {
+                    "BalQtyPC": 'right',
+                    "BookedQtyPc": 'right',
+                     "DispatchQtyPC": 'right',
+                     "CancelQtyPC": 'right',
+                     "BalQtyMTRS": 'right',
+                     "BookedQtyMTRS": 'right',
+                     "CancelQtyMTRS": 'right',
+                     "DispatchQtyMTRS": 'right',
+                     "BalQtyMT": 'right',
+                     "BookedQtyMT": 'right',
+                     "DispatchQtyMT": 'right',
+                     "CancelQtyMT": 'right'
+                };
+                if (QtyPCHeader == '') {
+                    hiddenColumns.push("BalQtyPC");
+                    hiddenColumns.push("BookedQtyPc");
+                    hiddenColumns.push("DispatchQtyPC");
+                    hiddenColumns.push("CancelQtyPC");
+                    
+                }
+                if (QtyMTRHeader == '') {
+                    hiddenColumns.push("BalQtyMTRS");
+                    hiddenColumns.push("BookedQtyMTRS");
+                    hiddenColumns.push("CancelQtyMTRS");
+                    hiddenColumns.push("DispatchQtyMTRS");
+                }
+                if (QtyMTHeader == '') {
+                    hiddenColumns.push("BalQtyMT");
+                    hiddenColumns.push("BookedQtyMT");
+                    hiddenColumns.push("DispatchQtyMT");
+                    hiddenColumns.push("CancelQtyMT");
+                }
+                if (SizeApplicableInOrder == 'N') {
+                    hiddenColumns.push("Size");
+                }
             }
-            if (QtyMTRHeader == '') {
-                hiddenColumns.push("BalQtyMTRS");
-            }
-            if (QtyMTHeader == '') {
-                hiddenColumns.push("BalQtyMT");
-            }
-            if (SizeApplicableInOrder == 'N') {
-                hiddenColumns.push("SizeDesp");
-            }
+            
             BizsolCustomFilterGrid.CreateDataTable("thPendingOrder", "PendingOrderdata", response.GetPendingData, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
         }
         else {
@@ -2485,7 +2531,7 @@ function SetFieldsAsPerConfig() {
     var CRM_Config = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
     var Qty_Config = JSON.parse(sessionStorage.getItem('QtyConfig'));
     var QtyPCHeader = Qty_Config.QtyPC;
-    var QtyMTRHeader = Qty_Config.QtyMTR;
+    var QtyMTRHeader = Qty_Config.QtyMR;
     var QtyMTHeader_MT = Qty_Config.QtyMT;
 
     var DistributorDealerApplicableInOrder = CRM_Config.ShowDealerColumn;
@@ -2585,6 +2631,68 @@ function ShowImageModal(strSrc) {
 
     $(".modal-backdrop").remove();
 }
+
+function ShowLogicalStockModal() {
+   
+    
+   
+
+    var AccountDesp = $('#txtDealer').val();
+    var ItemName = 'GP PIPE';
+    VisitOrderEntryService.GetLogicalStock(param_VisitMaster_Code,AccountDesp,ItemName).then(function (response) {
+
+
+        if (response.length > 0) {
+            $('#LogicalStockModal').modal('show');
+            //$('input[name="record"][value="' + Code + '"]').prop('checked', true);
+            $(".modal-backdrop").remove();
+
+            $('#tblLogicalStock').prop('hidden', false);
+            $('#paginator-LogicalStock').prop('hidden', false);
+            $('#btnShow').prop('hidden', false);
+            $('#btnLoading').prop('hidden', true);
+
+            const StringFilterColumn = [];
+            const NumericFilterColumn = [];
+            const DateFilterColumn = [];
+            const Button = false;
+            const showButtons = [];
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = [];
+            const ColumnAlignment = {
+            };
+
+            response.forEach((item, index) => {
+                item["DefaultItemSizeMaster_code"] = `<input type="checkbox" name="record"  data-index="${index}" value="${item["DefaultItemSizeMaster_code"] || 0}" class="select-record">`;
+            });
+
+            BizsolCustomFilterGrid.CreateDataTable("LogicalStock-header", "LogicalStock-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+
+           
+        }
+
+        
+    });
+}
+function CloseLogicalStockModal() {
+    
+    $('#LogicalStockModal').modal('hide');
+}
+
+function SelectStockRows() {
+    var selectedRecord = $('input[name="record"]:checked');
+    //var RowNo = $('#hdnRowNo').val();
+    //// Check if a record is selected
+    if (selectedRecord.length > 0) {
+        var recordID = selectedRecord.val();  // Get the value of the selected radio button
+        var recordRow = selectedRecord.closest('tr');  // Get the closest row for the selected radio button
+        var name = recordRow.find('td:nth-child(2)').text(); // Get the name from the 3rd column
+        //    $('#txtDeliveryAddress' + RowNo).val(name);
+        //    $('#hdnAddressCode' + RowNo).val(recordID);
+    }
+    $('#LogicalStockModal').modal('hide');
+}
+
 function CheckOutVisit() {
     var visitMasterData = [];
     var visitMasterRow = {};
@@ -3141,3 +3249,6 @@ window.GetSelectedSizeCode = GetSelectedSizeCode;
 window.GetSelectedThkCode = GetSelectedThkCode;
 window.GetItemSizeMasterList = GetItemSizeMasterList;
 window.GetSelectedItemSizeMasterCode = GetSelectedItemSizeMasterCode;
+window.ShowLogicalStockModal = ShowLogicalStockModal;
+window.CloseLogicalStockModal = CloseLogicalStockModal;
+window.SelectStockRows = SelectStockRows;
