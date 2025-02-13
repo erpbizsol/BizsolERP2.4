@@ -1,0 +1,226 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .without-label-field {
+        margin-top: 2.3rem;
+    }
+</style>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+
+<style>
+   
+    #tbProductionGPView tfoot {
+        position: sticky;
+        bottom: 0;
+        z-index: 0; 
+    }
+
+        #tbProductionGPView tfoot td, #tbProductionGPView tfoot th, #tbProductionGPView tfoot {
+        background-color: #d5dde5; 
+    }
+</style>
+
+<div class="row mb-2" id="DivProductionGPForm">
+    <div class="col-md-12">
+        <fieldset class="rounded-1 p-3">
+            <legend class="float-none w-auto px-2">Production Entry</legend>
+
+            <div class="row">
+                <div class="col-md-2 col-6">
+                    <label for="txtSlittingDate" class="col-form-label-sm fw-bold">Date:</label>
+                    <input type="date" id="txtSlittingDate" name="txtSlittingDate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" />
+                </div>
+                <div class="col-md-2 col-6">
+                    <label for="ddlShift" class="col-form-label-sm fw-bold">Shift:</label>
+                    <select id="ddlShift" class="form-control form-control-sm box_border" >
+                    </select>
+                    
+                </div>
+                <div class="col-md-2 col-6">
+                    <label for="ddlProcess" class="col-form-label-sm fw-bold">Process:</label>
+                    <select id="ddlProcess" class="form-control form-control-sm box_border" onchange="SlittingProductionEntry_OnChangeddlProcess()">
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-6">
+                    <label for="ddlPlanNo" class="col-form-label-sm fw-bold">Plan No:</label>
+                    <select id="ddlPlanNo" class="form-control form-control-sm box_border" onchange="SlittingProductionEntry_OnChangeddlPlanOrIds(this)">
+                    </select>
+                </div>
+                <div class="col-md-2 col-6" >
+                    <label for="ddlIdNo" class="col-form-label-sm fw-bold">Id No:</label>
+                    <select id="ddlIdNo" class="form-control form-control-sm box_border" onchange="SlittingProductionEntry_OnChangeddlPlanOrIds(this)">
+                    </select>
+                </div>
+                
+                <div class="col-md-2 col-6" >
+                    <label for="ddlMachineNo" class="col-form-label-sm fw-bold">Machine No:</label>
+                    <select id="ddlMachineNo" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+                <div class="col-md-2 col-6">
+                    <label for="txtScrapWeight" class="col-form-label-sm fw-bold">Scrap Weight</label>
+                    <input id="txtScrapWeight" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" onchange="SlittingProductionEntry_CalScrapPerWeight()" maxlength="6" autocomplete="off">
+                    
+                </div>
+                <div class="col-md-2 col-6">
+                    <label for="ddlScrapItem" class="col-form-label-sm fw-bold">Scrap Item:</label>
+                    <select id="ddlScrapItem" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+                
+            </div>
+            
+            <div class="row">
+               
+                <div class="col-md-6 text-end">
+                    <button type="button" class="btn btn-primary icon-height" onclick="SlittingProductionEntry_Back()">Back</button>
+                </div>
+            </div>
+           
+           
+
+        </fieldset>
+    </div>
+    <div class="row" id="DivBtnAdd">
+        <div class="col-md-6 ">
+
+            <a class="btn btn-warning icon-height" id="btnAvailableOrderStock" onclick="">
+                SCALE WEIGHT
+            </a>
+            &nbsp;
+            &nbsp;
+            <a class="btn btn-primary icon-height" onclick="SlittingProductionEntry_CalScrapPerWeight()">
+               WEIGHT/SCRAP
+            </a>
+            &nbsp;
+            &nbsp;
+            <a class="btn btn-primary icon-height" id="btnBrkDownStart" onclick="">
+                BREAK DOWN START
+            </a>
+
+        </div>
+       
+    </div>
+
+    <div class="col-md-12">
+    <fieldset class="rounded-1 p-3 mt-2">
+        <legend class="float-none w-auto px-2">Issue Details</legend>
+
+    <div class="table-wrapper mt-2">
+        <table id="tbSlittingIssueDetails" class="table fixed-width-table">
+            <thead id="tbSlittingIssueDetailsHeader">
+            </thead>
+            <tbody id="tbSlittingIssueDetailsBody">
+            </tbody>
+            <tfoot>
+            </tfoot>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-tbSlittingIssueDetails">
+    </div>
+    
+    </fieldset>
+    </div>
+
+    <div class="col-md-12">
+        <fieldset class="rounded-1 p-3 mt-2">
+        <legend class="float-none w-auto px-2">Received Details</legend>
+
+    <div class="table-wrapper mt-2 ">
+        <table id="tbSlittingReceivedDetails" class="table fixed-width-table">
+            <thead id="tbSlittingReceivedDetailsHeader">
+            </thead>
+            <tbody id="tbSlittingReceivedDetailsBody">
+            </tbody>
+            <tfoot>
+            </tfoot>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-tbSlittingReceivedDetails">
+    </div>
+    </fieldset>
+    </div>
+
+    
+    <div class="row" >
+        <div class="col-md-1 col-2">
+
+            <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="">
+                Add
+            </a>
+            
+
+        </div>
+        <div class="col-md-2 col-6">
+            <input id="txtTotalReceivedWeight" class="BizSolFormControl form-control form-control-sm" placeholder="Total Received Weight" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="6" autocomplete="off">
+        </div>
+
+        <div class="col-md-9 text-end">
+            <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="">
+                Create Entry
+            </a>
+            &nbsp;
+            &nbsp;
+
+            <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="">
+                Print ID
+            </a>
+
+        </div>
+
+    </div>
+    
+</div>
+
+
+<div id="DivProductionGPViewGrid">
+    <div class="row">
+        <div class="col-sm-3 col-6">
+            <label for="from-date">From Date</label>
+            <input type="date" class="form-control form-control-sm" id="txtFromDate" >
+        </div>
+        <div class="col-sm-3 col-6">
+            <label for="to-date">To Date</label>
+            <input type="date" class="form-control form-control-sm" id="txtToDate" >
+
+        </div>
+        <div class="col-sm-2 col-6 without-label-field">
+            <span class="radioSection">
+                <input type="radio" name="filterType" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="Plan" checked> Plan
+                <input type="radio" name="filterType" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="Entry"> Entry
+            </span>
+        </div>
+        <div class="col-sm-1 col-3 without-label-field text-end">
+            <label></label>
+            <button type="button" class="btn btn-primary icon-height" onclick="SlittingProductionEntry_ShowPlanGrid()">Show</button>
+
+        </div>
+        <div class="col-sm-2 col-3 without-label-field text-end">
+            <label></label>
+            <button type="button" class="btn btn-primary icon-height" onclick="SlittingProductionEntry_CreateNew()">CREATE NEW</button>
+            
+        </div>
+    </div>
+    <div class="table-wrapper mt-2 fixed-height-table">
+        <table id="tbProductionGPView" class="table fixed-width-table">
+            <thead id="tbProductionGPViewHeader">
+            </thead>
+            <tbody id="tbProductionGPViewBody">
+            </tbody>
+            <tfoot>
+
+            </tfoot>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-tbProductionGPView">
+    </div>
+</div>
+
+
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Masters/Script/SlittingProductionEntry.js"></script>
+
