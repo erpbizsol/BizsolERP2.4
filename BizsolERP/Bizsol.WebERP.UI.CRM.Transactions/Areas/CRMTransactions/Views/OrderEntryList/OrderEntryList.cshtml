@@ -38,7 +38,7 @@
 
 <div class="card">
     <div class="card-body">
-        <div class="row">
+       <div class="row">
             <div class="col-md-2 col-sm-6 col-6">
                 <label for="fromDate" class="form-label">From Date <span class="text-danger">*</span></label>
                 <input type="text" id="txtFromDate" name="FromDate" class="form-control form-control-sm box_border" autocomplete="off" required/>
@@ -60,10 +60,13 @@
 
 
             <div class="col-md-3 without-label-field">
-                <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+                <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width" title="Show Orders">Show</button>
                 &nbsp;
-                <button type="button" id="btnAddDirectOrder" class="btn btn-primary btn-height">Create New</button>
-
+                <button type="button" id="btnAddDirectOrder" class="btn btn-primary btn-height" title="Create New Order">Create New</button>
+                &nbsp;
+                <button type="button" id="btnCRMConfig" class="btn btn-primary btn-height" title="CRM Configuration Settings"> <i class="fa fa-gear"></i></button>
+                &nbsp;
+                <button type="button" id="btnDirectOrder" class="btn btn-primary btn-height" title="New Order "> <i class="fa fa-plus-square"></i></button>
             </div>
             
         </div>
