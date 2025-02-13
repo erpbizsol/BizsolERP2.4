@@ -1,0 +1,9 @@
+{
+  "Values": {
+    "RecordAdded_Success": "Record Added Successfully.",
+    "RecordUpdated_Success": "Record Updated Successfully.",
+    "RecordDeleted_Success": "Record Deleted Successfully.",
+    "RecordDeleted_Confirm": "Do you want to delete this record?",
+    "DealerMandatory_Error": "Please select dealer name before proceed!"
+  }
+}

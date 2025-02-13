@@ -115,3 +115,16 @@
     }
 
 }
+
+ 
+@media (max-width: 991.98px) {
+     .sidebar-overlay-b {
+        display: block !important;
+     }
+
+    .sidebar-overlay-n {
+        display: none;
+    }
+
+    
+}

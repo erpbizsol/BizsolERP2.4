@@ -423,18 +423,35 @@ function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
     });
 }
 function GetFixedParameterConfiguration() {
-    VisitOrderEntryService.GetFixedParameterConfiguration().then(function (response) {
+    //VisitOrderEntryService.GetFixedParameterConfiguration().then(function (response) {
+    //    if (response.length > 0) {
+    //        QtyMTHeader = response[0].QtyMTHeader;
+    //        QtyPCHeader = response[0].QtyPCHeader;
+    //        QtyMTRHeader = response[0].QtyMTRHeader;
+    //        ThreeLevelVerification = response[0].ThreeLevelVerificationApplicable;
+    //        DiscountLimit = response[0].LimitForVerifyDiscount;
+    //        AskOtherCharges = response[0].AskOtherCharges;
+    //        DistributorDealerApplicableInOrder = response[0].DistributorDealerApplicableInOrder
+    //       }
+    //    else {
+    //        toastr.error('No Data Found')
+    //    }
+    //});
+
+    VisitOrderEntryService.GetCRMOrderEntryConfig().then(function (response) {
+
         if (response.length > 0) {
-            QtyMTHeader = response[0].QtyMTHeader;
-            QtyPCHeader = response[0].QtyPCHeader;
-            QtyMTRHeader = response[0].QtyMTRHeader;
             ThreeLevelVerification = response[0].ThreeLevelVerificationApplicable;
             DiscountLimit = response[0].LimitForVerifyDiscount;
-            AskOtherCharges = response[0].AskOtherCharges;
-            DistributorDealerApplicableInOrder = response[0].DistributorDealerApplicableInOrder
-           }
-        else {
-            toastr.error('No Data Found')
+            AskOtherCharges = response[0].AskDiscountOnOrder;
+            DistributorDealerApplicableInOrder = response[0].ShowDealerColumn;
+            VisitOrderEntryService.GetFixedParameterQtyConfig().then(function (response) {
+                if (response.length > 0) {
+                    QtyMTHeader = response[0].QtyMT;
+                    QtyPCHeader = response[0].QtyPC;
+                    QtyMTRHeader = response[0].QtyMR;
+                }
+            });
         }
     });
 }
