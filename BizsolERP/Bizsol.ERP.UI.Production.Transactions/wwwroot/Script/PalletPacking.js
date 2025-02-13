@@ -217,12 +217,10 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
             };
             const updatedResponse = response.map(item => {
                 let buttonsCheckBox = `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`;
-                let buttonsHTML = '';
-                if (item?.['Allow Edit'] === 'Y') {
-                    buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditPallet(${item?.['Pallet No']})"><i class="fa-solid fa-pencil"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>`;
-                } else if (item?.['Allow Edit'] === 'V') {
-                    buttonsHTML = `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetPalletDetail(${item?.['Pallet No']},"V")"><i class="fa-regular fa-eye"></i></button>`;
-                }
+                let buttonsHTML = item?.['Allow Edit'] === 'Y'
+                    ? `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditPallet(${item?.['Pallet No']})"><i class="fa-solid fa-pencil"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>`
+                    : `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetPalletDetail(${item?.['Pallet No']}, 'V')"><i class="fa-regular fa-eye"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>`;
+
                 return {
                     ...item,
                     Action: buttonsHTML,
