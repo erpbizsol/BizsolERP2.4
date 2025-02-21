@@ -40,7 +40,7 @@
                 </div>
                 <div class="col-md-2 col-6">
                     <label for="ddlProcess" class="col-form-label-sm fw-bold">Process:</label>
-                    <select id="ddlProcess" class="form-control form-control-sm box_border" onchange="SlittingProductionEntry_OnChangeddlProcess()">
+                    <select id="ddlProcess" class="form-control form-control-sm box_border" onchange="SlittingProductionEntry_OnChangeddlProcess('Process')">
                     </select>
                 </div>
 
@@ -148,7 +148,7 @@
     <div class="row" >
         <div class="col-md-1 col-2">
 
-            <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="">
+            <a class="btn btn-primary icon-height" onclick="SlittingProductionEntry_AddReceivedItem('Addnew')">
                 Add
             </a>
             
@@ -159,13 +159,13 @@
         </div>
 
         <div class="col-md-9 text-end">
-            <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="">
+            <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="SlittingProductionEntry_CreatNewEntry()">
                 Create Entry
             </a>
             &nbsp;
             &nbsp;
 
-            <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="">
+            <a class="btn btn-primary icon-height" id="btnPrint">
                 Print ID
             </a>
 
@@ -218,6 +218,42 @@
     <div class="paginator" id="paginator-tbProductionGPView">
     </div>
 </div>
+
+<div class="modal fade" id="PintIDModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="max-width:627px">
+            <div class="modal-header">
+                <h5 class="modal-title">Print ID</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                <div class="col-md-4 col-6">
+                        <label for="ddlParantID" class="col-form-label-sm fw-bold">Parant ID:</label>
+                        <select id="ddlParantID" class="form-control form-control-sm box_border" onchange="SlittingProductionEntry_OnChangeddlParantID()">
+                        </select>
+                </div>
+                </div>
+                <div class="table-wrapper">
+                    <table id="tbPrintID" class="fixed-width-table table">
+                        <thead id="table-header-tbPrintID">
+                        </thead>
+                        <tbody id="table-body-tbPrintID">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-tbPrintID">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-height" id="btnModalPrint" >Print</button>
+                <button type="button" class="btn btn-danger btn-height" aria-label="Close" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="DivSizeControlmodal"></div>
 
 
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
