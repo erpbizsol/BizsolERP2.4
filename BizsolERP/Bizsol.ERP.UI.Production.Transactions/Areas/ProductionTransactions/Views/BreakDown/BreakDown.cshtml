@@ -1,0 +1,63 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/BreakDown.js"></script>
+<style>
+    .modal-dialog {
+        max-width: 400px;
+    }
+
+    #hidetexbox {
+        display: none;
+    }
+
+    .btn:not(:disabled):not(.disabled) {
+        cursor: pointer !important;
+    }
+
+    .without-label-field {
+        margin-top: 2.1rem;
+    }
+</style>
+   
+    <div id="tblBreakDownStartOrEnd" >
+        <div class="table-wrapper fixed-height-table">
+            <table id="BreakDownStartOrEnd" class="fixed-width-table table">
+                <thead id="table-header-tblBreakDownStartOrEnd">
+                </thead>
+                <tbody id="table-body-tblBreakDownStartOrEnd">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-BreakDownStartOrEnd">
+        </div>
+    </div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">End Break Down</h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="BreakDownModal_Close()">
+                    <span aria-hidden="true">x</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <input type="time" id="txtTimer" name="txtTimer" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Timer" required/>
+                            <input type="text" id="txtEnterCause" name="txtEnterCause" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Enter Cause" required maxlength="200"/>
+                            <input type="text" id="txtEnterActionPlan" name="txtEnterActionPlan" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Enter Action Plan" required maxlength="20"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-height" onclick="BreakDown_Save()">Done</button>
+                <button type="button" class="btn btn-danger btn-height" onclick="BreakDownModal_Close()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
