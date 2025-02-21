@@ -1,9 +1,10 @@
 ﻿import { PalletPackingService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PalletPackingService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 let BuyerPOMaster_Code = 0;
 let Godownmaster_Code = 0;
 let IdentificationNo = '';
-let ColForWhere ='';
+let ColForWhere = '';
 let ColValue = '';
 let scanIdCheck = [];
 let PalletNo = 0;
@@ -25,10 +26,11 @@ $(document).ready(function () {
     todayDate1 = $('#txtdate').val();
 
     $('input[name="filterType"]').on('change', function () {
-        const selectedValue = $(this).val();  
+        const selectedValue = $(this).val();
         if (selectedValue === 'dateWise') {
             $('#dateWiseSection').show();
             $("#tblDateOrderPallet").hide();
+            $("#txtOrderNo").empty();
             BuyerPOMaster_Code = 0;
             todayDate = convertDateFormat($('#txtdate').val());
             GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code);
@@ -50,7 +52,7 @@ $(document).ready(function () {
     });
     if ($('#dateWise').is(':checked')) {
         GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code);
-    } 
+    }
     $('#txtWarehouse').on('focus', function (e) {
         $("#txtWarehouse").val("");
     });
@@ -206,14 +208,14 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Allow Edit","Print"];
+            const hiddenColumns = ["Allow Edit", "Print"];
             const columnAlignment = {
-                "Pallet Weight":'right',
-                "Pallet Remark":'right',
-                "Qty PC":'right',
-                "Qty MT":'right',
+                "Pallet Weight": 'right',
+                "Pallet Remark": 'right',
+                "Qty PC": 'right',
+                "Qty MT": 'right',
                 "Pallet Date": 'center',
-                "Qty KG":'right',
+                "Qty KG": 'right',
             };
             const updatedResponse = response.map(item => {
                 let buttonsCheckBox = `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`;
@@ -228,6 +230,9 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
                 };
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header-PalletPacking", "table-body-PalletPacking", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+            if (updatedResponse?.length > 0) {
+                updateFooterOrderWise(updatedResponse);
+            }
         } else {
             HideLoader();
             toastr.error('No Data Found');
@@ -253,29 +258,27 @@ function toggleAllSelection(masterCheckbox) {
 function FillPendingOrder() {
     PalletPackingService.FillPendingOrder().then(function (response) {
         if (response && response.length > 0) {
-            $('#txtOrderNoList option').remove();
-            var option = '';
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].Desp + '" >' + response[i].Desp + '</option>';
-            }
-            $('#txtOrderNoList')[0].innerHTML = option;
+            BindSelectList($('#txtOrderNo')[0], response.map((item) => ({ Code: item.Code, Desp: item.Desp })));
+
+            $('#txtOrderNo').select2({
+                width: '-webkit-fill-available'
+            });
+            const inputElement = document.getElementById("txtOrderNo");
+            $('#txtOrderNo').on("input", () => {
+                const inputValue = inputElement.value;
+                const selectedOption = Array.from(inputElement.options).find(
+                    option => option.value === inputValue
+                );
+                if (selectedOption) {
+                    BuyerPOMaster_Code = selectedOption.getAttribute("value");
+                    if (BuyerPOMaster_Code !== undefined && BuyerPOMaster_Code !== 0) {
+                        onSelectRoll(BuyerPOMaster_Code, Godownmaster_Code);
+                    }
+                }
+            });
         } else {
             toastr.error('No data received or empty response');
         }
-        const inputElement = document.getElementById("txtOrderNo");
-        const dataList = document.getElementById("txtOrderNoList");
-        inputElement.addEventListener("input", () => {
-            const inputValue = inputElement.value;
-            const selectedOption = Array.from(dataList.options).find(
-                option => option.value === inputValue
-            );
-            if (selectedOption) {
-                BuyerPOMaster_Code = selectedOption.getAttribute("text");
-                if (BuyerPOMaster_Code !== undefined && BuyerPOMaster_Code !== 0) {
-                    onSelectRoll(BuyerPOMaster_Code, Godownmaster_Code);
-                }
-            }
-        });
     }).catch(function (error) {
         toastr.error('Error fetching user list:', error);
     });
@@ -283,45 +286,46 @@ function FillPendingOrder() {
 function FillPendingOrderModal() {
     PalletPackingService.FillPendingOrder().then(function (response) {
         if (response && response.length > 0) {
-            $('#txtOrderNoList1 option').remove();
-            var option = '';
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].Desp + '" >' + response[i].Desp + '</option>';
-            }
-            $('#txtOrderNoList1')[0].innerHTML = option;
+            BindSelectList($('#txtOrderNo1')[0], response.map(item => ({ Code: item.Code, Desp: item.Desp })));
+            $('#txtOrderNo1').select2({
+                width: '-webkit-fill-available'
+            });
+            const inputElement = document.getElementById("txtOrderNo1");
+            $('#txtOrderNo1').on("change", () => {
+                const inputValue = inputElement.value;
+                const selectedOption = Array.from(inputElement.options).find(option => option.value === inputValue);
+                if (selectedOption) {
+                    const BuyerPOMaster_Code = selectedOption.getAttribute("value");
+                    if (BuyerPOMaster_Code !== undefined && BuyerPOMaster_Code !== 0) {
+                        onSelectRoll(BuyerPOMaster_Code, Godownmaster_Code);
+                    }
+                }
+            });
         } else {
             toastr.error('No data received or empty response');
         }
-        const inputElement = document.getElementById("txtOrderNo1");
-        const dataList = document.getElementById("txtOrderNoList1");
-        inputElement.addEventListener("input", () => {
-            const inputValue = inputElement.value;
-            const selectedOption = Array.from(dataList.options).find(
-                option => option.value === inputValue
-            );
-            if (selectedOption) {
-                BuyerPOMaster_Code = selectedOption.getAttribute("text");
-                if (BuyerPOMaster_Code !== undefined && BuyerPOMaster_Code !== 0) {
-                    onSelectRoll(BuyerPOMaster_Code, Godownmaster_Code);
-                }
-            }
-        });
     }).catch(function (error) {
-        toastr.error('Error fetching user list:', error);
+        toastr.error('Error fetching order data:', error);
     });
 }
 function CreateNew() {
     if ($("#palletNo").val() !== '') {
-        let NewWarehouseNo = $("#txtWarehouse").val();
+        let NewWarehouseNo = $("#txtWarehouse option:selected").text();
         let NewPackingWtNo = $("#packingWt").val();
-        let NewOrderNo = $("#txtOrderNo1").val();
-        let NewReferenceNo = parseInt($("#referenceNo").val(),10);
+        //let NewOrderNo = $("#txtOrderNo1").val();
+        let NewOrderNo = $("#txtOrderNo1 option:selected").text();
+        let referenceNoValue = $("#referenceNo").val();
+        let NewReferenceNo = referenceNoValue.trim() === "" ? 0 : parseInt(referenceNoValue, 10);
+        if (isNaN(NewReferenceNo)) {
+            NewReferenceNo = 0;
+        }
         if (confirm("Previous Pallet are logging...! Are you sure you want to Create New Pallet!")) {
             proceedWithNewPallet();
             $("#referenceNo").val(NewReferenceNo + 1);
-            $("#txtWarehouse").val(NewWarehouseNo);
+            BizSolHelperFunction.SelectOptionByText('txtWarehouse', NewWarehouseNo);
             $("#packingWt").val(NewPackingWtNo);
-            $("#txtOrderNo1").val(NewOrderNo);
+            BizSolHelperFunction.SelectOptionByText('txtOrderNo1', NewOrderNo);
+            $("#txtScanIdentificationNoList").empty();
         } else {
             return;
         }
@@ -342,7 +346,10 @@ function proceedWithNewPallet() {
     $("#txtPalletType").val('');
     $("#txtOrderNo1").val($("#txtOrderNo").val());
     $("#txtScanIdentificationNo").val('');
+    $("#txtScanIdentificationNoList").empty();
     $('#newCreateForm input').prop('disabled', false);
+    $('#newCreateForm select').prop('disabled', false);
+
     FillWarehouse();
     FillPendingOrderModal();
     FillPalletType();
@@ -357,48 +364,54 @@ function Close() {
     var formattedSelectedDate = new Date(parts[2], parts[1] - 1, parts[0]);
     formattedSelectedDate = convertDateFormat($('#txtdate').val());
     BuyerPOMaster_Code = 0;
-    GetPackedPalletDateAndOrderWise(formattedSelectedDate, BuyerPOMaster_Code);
+    BuyerPOMaster_Code = $('#txtOrderNo').val();
+    if (BuyerPOMaster_Code > 0) {
+        GetPackedPalletDateAndOrderWise(formattedSelectedDate, BuyerPOMaster_Code);
+    }
+    else {
+    BuyerPOMaster_Code = 0;
+        GetPackedPalletDateAndOrderWise(formattedSelectedDate, BuyerPOMaster_Code);
+    }
     $('#palletNo').val('');
+    $('#txtScanIdentificationNoList').empty();
+    scanIdCheck = [];
 }
 
 function FillWarehouse() {
     PalletPackingService.FillWarehouse().then(function (response) {
         if (response && response.length > 0) {
-            $('#txtWarehouseList option').remove();
-            var option = '';
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" >' + response[i].GodownName + '</option>';
-            }
-            $('#txtWarehouseList')[0].innerHTML = option;
+            BindSelectList($('#txtWarehouse')[0], response.map((item) => ({ Code: item.Code, Desp: item.GodownName })));
+
+            $('#txtWarehouse').select2({
+                width: '-webkit-fill-available'
+            });
+            const inputElement = document.getElementById("txtWarehouse");
+            $('#txtWarehouse').on("change", () => {
+                const inputValue = inputElement.value;
+                const selectedOption = Array.from(inputElement.options).find(
+                    option => option.value === inputValue
+                );
+                if (selectedOption) {
+                    Godownmaster_Code = selectedOption.getAttribute("value");
+                    if (Godownmaster_Code !== undefined && Godownmaster_Code !== 0) {
+                        onSelectRoll(BuyerPOMaster_Code, Godownmaster_Code);
+                    }
+                }
+            });
         } else {
             toastr.error('No data received or empty response');
         }
-        const inputElement = document.getElementById("txtWarehouse");
-        const dataList = document.getElementById("txtWarehouseList");
-        inputElement.addEventListener("input", () => {
-            const inputValue = inputElement.value;
-            const selectedOption = Array.from(dataList.options).find(
-                option => option.value === inputValue
-            );
-            if (selectedOption) {
-                Godownmaster_Code = selectedOption.getAttribute("text");
-                if (Godownmaster_Code !== undefined && Godownmaster_Code !== 0) {
-                    onSelectRoll(BuyerPOMaster_Code, Godownmaster_Code);
-                }
-            }
-        });
     }).catch(function (error) {
         toastr.error('Error fetching warehouse data:', error);
     });
 }
 function FillPalletType() {
     PalletPackingService.FillPalletType().then(function (response) {
-        const datalist = $('#txtPalletTypeList');
-        datalist.empty();
         if (response && response.length > 0) {
-            response.forEach(function (item) {
-                const option = $('<option>').val(item.PalletType).text(item.PalletType);
-                datalist.append(option);
+            BindSelectList($('#txtPalletType')[0], response.map((item) => ({ Code: item.PalletType, Desp: item.PalletType })));
+
+            $('#txtPalletType').select2({
+                width: '-webkit-fill-available'
             });
         } else {
             toastr.error('No data received or empty response');
@@ -409,100 +422,112 @@ function FillPalletType() {
 }
 function onSelectRoll(BuyerPOMaster_Code, GodownMaster_Code) {
     if (BuyerPOMaster_Code !== 0 && GodownMaster_Code !== 0) {
-        GetPendingIDOrderWise(BuyerPOMaster_Code, GodownMaster_Code);
+        F_GetPendingIDOrderWise(BuyerPOMaster_Code, GodownMaster_Code);
     } else {
         //toastr.error("API is Not Called");
     }
 }
-function GetPendingIDOrderWise(BuyerPOMaster_Code, GodownMaster_Code) {
+function F_GetPendingIDOrderWise(BuyerPOMaster_Code, GodownMaster_Code) {
     PalletPackingService.GetPendingIDOrderWise(BuyerPOMaster_Code, GodownMaster_Code).then(function (response) {
-            const datalist = $('#txtScanIdentificationNoList');
-            datalist.empty();
-            if (response && response.length > 0) {
-                response.forEach(function (item) {
-                    const option = $('<option>').val(item.IdentificationNo).text(item.IdentificationNo);
-                    datalist.append(option);
-                });
-            } else {
-                toastr.error('No data received or empty response');
-            }
-        }).catch(function (error) {
-            toastr.error('Error fetching user list:', error);
-        });
-    }
-function onScanIdSelect(event) {   
+        const datalist = $('#txtScanIdentificationNoList');
+        datalist.empty();
+        if (response && response.length > 0) {
+            response.forEach(function (item) {
+                const option = $('<option>').val(item.IdentificationNo).text(item.IdentificationNo);
+                datalist.append(option);
+            });
+        } else {
+            toastr.error('No data received or empty response');
+        }
+    }).catch(function (error) {
+        toastr.error('Error fetching user list:', error);
+    });
+}
+function onScanIdSelect(event) {
     IdentificationNo = $("#txtScanIdentificationNo").val();
     var packingWt = $("#packingWt").val();
     if (packingWt === "" || packingWt === "0") {
         toastr.warning("Please enter a valid Packing Wt, it cannot be empty or zero.");
-        return; 
+        return;
     }
 
     var referenceNo = $("#referenceNo").val();
     if (referenceNo === "" || referenceNo === "0") {
         toastr.warning("Please enter a valid Reference No, it cannot be empty or zero.");
-        return; 
+        return;
     }
-        ScanID();
+    var palletType = $("#txtPalletType").val();
+    if (palletType === "" || palletType === "0") {
+        toastr.warning("Please enter a Pallet Type, it cannot be empty or zero.");
+        return;
+    }
+    ScanID();
 }
 function ScanID() {
     Showloader();
     PalletPackingService.ScanID(IdentificationNo, Godownmaster_Code).then(function (response) {
         if (response.length > 0) {
             HideLoader();
-            const newData = response.map((item, index) => ({
-                SN: scanIdCheck.length + index + 1, 
-                ...item
-            }));
-            const existingIds = scanIdCheck.map(item => item?.['Identification No']);
-            const uniqueData = newData.filter(item => !existingIds.includes(item?.['Identification No']));
-            if (uniqueData.length === 0) {
-                toastr.warning('Identification number already exists in the grid.');
-                return;
-            }
-            $("#tdlScanIdentification").show();
-            
-            const stringFilterColumn = [];
-            const numericFilterColumn = [];
-            const dateFilterColumn = [];
-            const button = false;
-            const stringDoubleFilterColumn = [];
-            const showButtons = [];
-            const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight","Pallet No"];
-            const columnAlignment = {
-                "Qty MT": 'right',
-                "Qty PC": 'right',
-                "Qty": 'right',
-            };
-            const updatedResponse = uniqueData.map(item => {
-                let ColValue = item?.['Identification No'];
-                let buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${item.ColForWhere}','${ColValue}')"><i class="fa-regular fa-circle-xmark"></i></button>`;
-                return {
-                    ...item,
-                    Action: buttonsHTML,
+             ColForWhere = response[0]?.ColForWhere;
+             ColValue = response[0]?.['Identification No'];
+
+                const newData = response.map((item, index) => ({
+                    SN: scanIdCheck.length + index + 1,
+                    ...item
+                }));
+                var PalletNo = $("#palletNo").val();
+                if (PalletNo === '') {
+                    PalletNo = 0;
+                }
+                const existingIds = scanIdCheck.map(item => item?.['Identification No']);
+                const uniqueData = newData.filter(item => !existingIds.includes(item?.['Identification No']));
+                CheckDuplicateIDPallet(IdentificationNo, ColForWhere, ColValue, PalletNo).then(function (isDuplicate) {
+                if (isDuplicate) {
+                    return;
+                }
+                $("#tdlScanIdentification").show();
+
+                const stringFilterColumn = [];
+                const numericFilterColumn = [];
+                const dateFilterColumn = [];
+                const button = false;
+                const stringDoubleFilterColumn = [];
+                const showButtons = [];
+                const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight", "Pallet No"];
+                const columnAlignment = {
+                    "Qty MT": 'right',
+                    "Qty PC": 'right',
+                    "Qty": 'right',
                 };
+                const updatedResponse = uniqueData.map(item => {
+                    const ColValue = item?.['Identification No'];
+                    let buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${item.ColForWhere}','${ColValue}')"><i class="fa-regular fa-circle-xmark"></i></button>`;
+                    return {
+                        ...item,
+                        Action: buttonsHTML,
+                    };
+                });
+                scanIdCheck = [...scanIdCheck, ...updatedResponse];
+                BizsolCustomFilterGrid.CreateDataTable("table-header-ScanIdentification", "table-body-ScanIdentification", scanIdCheck, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+                $('#newCreateForm input').prop('disabled', true);
+                $('#newCreateForm select').prop('disabled', true);
+                $('#txtScanIdentificationNo').val('').prop('disabled', false);
+                if (scanIdCheck?.length > 0) {
+                    updateFooter(scanIdCheck);
+                }
+                BuyerPOMaster_Code = $('#txtOrderNo1').val();
+                F_GetPendingIDOrderWise(BuyerPOMaster_Code, Godownmaster_Code);
             });
-            scanIdCheck = [...scanIdCheck, ...updatedResponse];
-            BizsolCustomFilterGrid.CreateDataTable("table-header-ScanIdentification", "table-body-ScanIdentification", scanIdCheck, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
-            $('#newCreateForm input').prop('disabled', true);
-            $('#txtScanIdentificationNo').val('').prop('disabled', false);
-            if (updatedResponse?.length > 0) {
-                ColForWhere = updatedResponse[0]?.ColForWhere;
-                ColValue = updatedResponse[0]?.['Identification No'];
-                AddIDInPallet();
-                updateFooter(scanIdCheck);
-            }
-            GetPendingIDOrderWise(BuyerPOMaster_Code, Godownmaster_Code);
-        } else {
+        }
+        else {
             HideLoader();
             toastr.error('No Data Found');
         }
-    })
-        .catch(function (error) {
-            toastr.error(error.Msg || 'Error during Pallet ');
-        });
+    }).catch(function (error) {
+        toastr.error(error?.Msg || 'Error during Pallet ');
+    });
 }
-function AddIDInPallet() {
+function AddIDInPallet(ColForWhere, ColValue) {
     var PalletNo = $("#palletNo").val();
     var PalletType = $("#txtPalletType").val();
     var PalletWeight = $("#packingWt").val();
@@ -511,42 +536,57 @@ function AddIDInPallet() {
     if (PalletNo === '') {
         PalletNo = 0;
     }
+    
     PalletPackingService.AddIDInPallet(ColForWhere, ColValue, PalletNo, PalletRemark, PalletWeight, PalletDate, PalletType).then(function (response) {
         if (response?.Msg) {
             $("#palletNo").val(response?.Msg);
-                toastr.success("Pallet No is Saved Successfully");
-            $("#Code").val(0);
-            $("#txtScanIdentificationNo").val('');
+            toastr.success("Pallet No is Saved Successfully");
         }
-        error: (err) => {
-            toastr.error(err.error);
+    }).catch(function (error) {
+        toastr.error('Error adding ID in pallet');
+    });
+}
+function CheckDuplicateIDPallet(IdentificationNo, ColForWhere, ColValue, PalletNo) {
+    return PalletPackingService.CheckDuplicateIDPallet(IdentificationNo, ColForWhere, ColValue, PalletNo).then(function (response) {
+        if (response.Status === 'N') {
+            toastr.warning(response.Msg);
+            return true;
         }
+        AddIDInPallet(ColForWhere, ColValue);
+        return false;
     });
 }
 function EditPallet(PalletNo1) {
+    FillWarehouse();
+    FillPendingOrderModal();
+    FillPalletType();
     Showloader();
     PalletNo = PalletNo1;
     PalletPackingService.GetPalletDetail(PalletNo).then(function (response) {
         if (response.length > 0) {
             HideLoader();
-        let EditPalletPackingList = response.map((item, index) => ({ SN: index + 1, ...item }));
+            let EditPalletPackingList = response.map((item, index) => ({ SN: index + 1, ...item }));
             $('#txtPalletdate').val(response[0]?.['Pallet Date']);
             $('#palletNo').val(response[0]?.PalletNo);
-            $('#txtWarehouse').val(response[0]?.WareHouse);
+            BizSolHelperFunction.SelectOptionByText('txtWarehouse', response[0]?.['WareHouse']);
             $('#packingWt').val(response[0]?.PalletWeight);
             $('#referenceNo').val(response[0]?.['Pallet Remark']);
             $('#txtPalletType').val(response[0]?.['Pallet Type']);
-            $('#txtOrderNo1').val(response[0]?.['Order No']);
+            $('#txtPalletType').select2({
+                width: '-webkit-fill-available'
+            });
+            BizSolHelperFunction.SelectOptionByText('txtOrderNo1', response[0]?.['Order No']);
             $('#newCreateForm input').prop('disabled', true);
+            $('#newCreateForm select').prop('disabled', true);
             $('#txtScanIdentificationNo').val('').prop('disabled', false);
             $('#newCreateForm').show();
             $('#dateAndOrderByPallet').hide();
             $('#tdlScanIdentification').show();
-            
+
             BuyerPOMaster_Code = response[0].BuyerPOMaster_Code;
             Godownmaster_Code = response[0].GodownMaster_Code;
             editPalletTable(PalletNo, Godownmaster_Code);
-            GetPendingIDOrderWise(BuyerPOMaster_Code, Godownmaster_Code);
+            F_GetPendingIDOrderWise(BuyerPOMaster_Code, Godownmaster_Code);
         } else {
             HideLoader();
             toastr.error('No Data Found');
@@ -554,23 +594,24 @@ function EditPallet(PalletNo1) {
     })
         .catch(function (error) {
             toastr.error(error.Msg || 'Error during stock transfer');
-        });  
+        });
 }
 function editPalletTable(PalletNo, Godownmaster_Code) {
     Showloader();
+    $('#table-header-ScanIdentification').empty();
+    $('#table-body-ScanIdentification').empty();
+    scanIdCheck = [];
     PalletPackingService.EditPallet(PalletNo, Godownmaster_Code).then(function (response) {
         if (response.length > 0) {
             HideLoader();
+           
             const newEditData = response.map((item, index) => ({
                 SN: scanIdCheck.length + index + 1,
                 ...item
             }));
             const existingEditIds = scanIdCheck.map(item => item?.['Identification No']);
             const uniqueEditData = newEditData.filter(item => !existingEditIds.includes(item?.['Identification No']));
-            //if (uniqueEditData.length === 0) {
-            //    toastr.warning('Identification number already exists in the grid.');
-            //    return;
-            //}
+            
             $("#tdlScanIdentification").show();
 
             const stringFilterColumn = [];
@@ -584,7 +625,7 @@ function editPalletTable(PalletNo, Godownmaster_Code) {
                 "Qty MT": 'right',
                 "Qty PC": 'right',
                 "Qty": 'right',
-};
+            };
             const updatedResponse = uniqueEditData.map(item => {
                 let ColValue = item?.['Identification No'];
                 let buttonsHTML = `<button class="btn btn-danger icon-height mb-1 btndelete" title="Delete" onclick="Delete('${item.ColForWhere}','${ColValue}')"><i class="fa-regular fa-circle-xmark"></i></button>`;
@@ -595,7 +636,8 @@ function editPalletTable(PalletNo, Godownmaster_Code) {
             });
             scanIdCheck = [...scanIdCheck, ...updatedResponse];
             BizsolCustomFilterGrid.CreateDataTable("table-header-ScanIdentification", "table-body-ScanIdentification", scanIdCheck, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
-            updateFooter(response);
+                updateFooter(response);
+            
         } else {
             HideLoader();
             $('#tdlScanIdentification').hide();
@@ -607,29 +649,37 @@ function editPalletTable(PalletNo, Godownmaster_Code) {
         });
 }
 function GetPalletDetail(PalletNo) {
+    FillWarehouse();
+    FillPendingOrderModal();
+    FillPalletType();
     Showloader();
     PalletPackingService.GetPalletDetail(PalletNo).then(function (response) {
         if (response.length > 0) {
             HideLoader();
             $('#txtPalletdate').val(response[0]?.['Pallet Date']);
             $('#palletNo').val(response[0]?.PalletNo);
-            $('#txtWarehouse').val(response[0]?.WareHouse);
+            BizSolHelperFunction.SelectOptionByText('txtWarehouse', response[0]?.['WareHouse']);
             $('#packingWt').val(response[0]?.PalletWeight);
             $('#referenceNo').val(response[0]?.['Pallet Remark']);
             $('#txtPalletType').val(response[0]?.['Pallet Type']);
-            $('#txtOrderNo1').val(response[0]?.['Order No']);
+            $('#txtPalletType').select2({
+                width: '-webkit-fill-available'
+            });
+            BizSolHelperFunction.SelectOptionByText('txtOrderNo1', response[0]?.['Order No']);
             $('#txtScanIdentificationNo').val('');
             $('#newCreateForm').show();
             $('#dateAndOrderByPallet').hide();
             $('#tdlScanIdentification').show();
             $('#newCreateForm input').prop('disabled', true);
+            $('#newCreateForm select').prop('disabled', true);
+
             const stringFilterColumn = [];
             const numericFilterColumn = [];
             const dateFilterColumn = [];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Stock Type", "ColForWhere"];
+            const hiddenColumns = ["Stock Type", "ColForWhere", "GodownMaster_Code", "BuyerPOMaster_Code", "PalletWeight", "Pallet CreateDate"];
             const columnAlignment = {
                 "Qty MT": 'right',
                 "Qty PC": 'right',
@@ -637,14 +687,14 @@ function GetPalletDetail(PalletNo) {
             };
             const updatedResponse = response.map(item => {
                 let ColValue = item?.['Identification No'];
-                let buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${item.ColForWhere}','${ColValue}')"><i class="fa-regular fa-circle-xmark"></i></button>`;
+                let buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${item.ColForWhere}','${ColValue}')" disabled><i class="fa-regular fa-circle-xmark"></i></button>`;
                 return {
                     ...item,
                     Action: buttonsHTML,
                 };
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header-ScanIdentification", "table-body-ScanIdentification", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
-            updateFooter(response); 
+            updateFooter(response);
         } else {
             HideLoader();
             toastr.error('No Data Found');
@@ -694,7 +744,7 @@ function clearFooter() {
     }
 }
 function Delete(ColForWhere, ColValue) {
-    var button = $(event.target); 
+    var button = $(event.target);
     var row = button.closest('tr');
     var rowIndex = row.index();
     const userConfirmed = confirm(`Are you sure you want to delete this Pallet ID ${ColValue}?`);
@@ -702,13 +752,15 @@ function Delete(ColForWhere, ColValue) {
         PalletPackingService.RemoveIDFromPallet(ColForWhere, ColValue).then(function (response) {
             if (response) {
                 scanIdCheck = [];
+                PalletNo = $('#palletNo').val();
                 editPalletTable(PalletNo, Godownmaster_Code);
-                toastr.success("Pallet No is Deleted Successfully");
+                toastr.success("Pallet ID is Deleted Successfully");
+                F_GetPendingIDOrderWise(BuyerPOMaster_Code, Godownmaster_Code);
             } else {
                 toastr.error('Error deleting pallet');
             }
         }).catch(function (error) {
-            toastr.error('Error during delete action');
+            //toastr.error('Error during delete action');
         });
     } else {
         toastr.info('Delete action cancelled');
@@ -720,17 +772,16 @@ function PalletPacking_Print(Mode) {
     if (Mode === 'Grid') {
 
         let tbPackingList = document.getElementById("PalletPacking");
+        let rows = tbPackingList.querySelectorAll("tr");
 
+        for (let i = 1; i < rows.length; i++) {
+            let tbPackingListUpdateRow = rows[i];
+            let chkId = tbPackingListUpdateRow.cells[11]?.getElementsByTagName('input')[0];
+            let PalletNo = tbPackingListUpdateRow.cells[0]?.innerHTML.trim();
 
-        for (let i = 1; i < tbPackingList.rows.length; i++) {
-                let tbPackingListUpdateRow = tbPackingList.rows[i];
-                let chkId = tbPackingListUpdateRow.cells[11].getElementsByTagName('input')[0];
-                let PalletNo = tbPackingListUpdateRow.cells[0].innerHTML.trim();
-
-
-                if (chkId.checked == true) {
-                    PalletNosToPrint += PalletNo + ',';
-                }
+            if (chkId && chkId.checked == true) {
+                PalletNosToPrint += PalletNo + ',';
+            }
         }
 
     } else {
@@ -766,6 +817,111 @@ function PalletPacking_DeletePallet(palletNo) {
             }
         });
     }
+}
+function updateFooterOrderWise(data) {
+    const calculateTotalOrderWise = "Total Amount";
+    if (calculateTotalOrderWise === "Total Amount") {
+        let totalPalletWeight = 0;
+        let totalQtyKG = 0;
+        let totalQtyPC = 0;
+
+        let grandTotalPalletWeight = 0;
+        let grandTotalQtyKG = 0;
+        let grandTotalQtyPC = 0;
+        
+        $('#PalletPacking tbody tr:visible').each(function () {
+            const row = $(this);
+            grandTotalPalletWeight += parseFloat(row.find("td:nth-child(4)").text()) || 0;
+            grandTotalQtyKG += parseFloat(row.find("td:nth-child(5)").text()) || 0;
+            grandTotalQtyPC += parseFloat(row.find("td:nth-child(6)").text()) || 0;
+        });
+        data.forEach(row => {
+            totalPalletWeight += parseFloat(row["Pallet Weight"]);
+            totalQtyKG += parseFloat(row["Qty PC"]);
+            totalQtyPC += parseFloat(row["Qty KG"]);
+        });
+        totalQtyKG = totalQtyKG.toFixed(3);
+
+        grandTotalQtyKG = grandTotalQtyKG.toFixed(3);
+
+        const tfootContent = `
+        <tr id="trTotal">
+        <td colspan="1"></td>
+        <td style="text-align: center;">Total</td>
+        <td style="text-align: right;">${grandTotalPalletWeight}</td>
+        <td></td>
+        <td></td>
+        <td style="text-align: right;">${grandTotalQtyKG}</td>
+        <td style="text-align: right;">${Math.round(grandTotalQtyPC)}</td>
+        <td colspan="3"></td>
+        </tr>
+        <tr id="trGrandTotal">
+        <td colspan="1"></td>
+        <td style="text-align: center;">Grand Total</td>
+        <td style="text-align: right;">${totalPalletWeight}</td>
+        <td></td>
+        <td></td>
+        <td style="text-align: right;">${totalQtyKG}</td>
+        <td style="text-align: right;">${Math.round(totalQtyPC)}</td>
+        <td colspan="3"></td>
+        </tr>
+        `;
+
+        const tfoot = document.querySelector("#PalletPacking tfoot");
+
+        if (tfoot) {
+            tfoot.innerHTML = tfootContent;
+        } else {
+            const table = document.querySelector("#PalletPacking");
+            if (table) {
+                const newTfoot = document.createElement("tfoot");
+                newTfoot.innerHTML = tfootContent;
+                table.appendChild(newTfoot);
+            } else {
+                console.error("Table element with id 'table' not found.");
+            }
+        }
+    }
+}
+function clearFooterOrderWise() {
+    const tfoot = document.querySelector("#PalletPacking tfoot");
+    if (tfoot) {
+        tfoot.innerHTML = "";
+    }
+}
+
+function calculateTotal() {
+
+    let Data = $('#PalletPacking tbody tr:visible');
+    let grandTotalPalletWeight = 0;
+    let grandTotalQtyKG = 0;
+    let grandTotalQtyPC = 0;
+    
+    if (Data.length > 0) {
+
+        for (let i = 0; i < Data.length; i++) {
+            let ItemRow = Data[i];
+            grandTotalPalletWeight += parseFloat(ItemRow.children[2].innerHTML);
+            grandTotalQtyKG += parseFloat(ItemRow.children[6].innerHTML);
+            grandTotalQtyPC += parseFloat(ItemRow.children[7].innerHTML);
+
+        }
+        $('#trTotal')[0].children[2].innerHTML = grandTotalPalletWeight;
+        $('#trTotal')[0].children[6].innerHTML = grandTotalQtyPC;
+        $('#trTotal')[0].children[5].innerHTML = parseFloat(grandTotalQtyKG).toFixed(3);
+
+    }
+
+}
+setInterval(function () {
+    calculateTotal();
+}, 1000);
+function BindSelectList(element, list) {
+    let option = '<option value="0"></option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
 }
 
 window.GetPackedPalletDateAndOrderWise = GetPackedPalletDateAndOrderWise;

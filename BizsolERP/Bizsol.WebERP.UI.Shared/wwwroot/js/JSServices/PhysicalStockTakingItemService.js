@@ -11,8 +11,9 @@ const PhysicalStockTakingItemService = {
             }
         );
     },
-    AddPhysicalStock: function AddPhysicalStock(AsOnDate, Remark, IdentificationNo, StockType, ItemMaster_Code, ItemSizeMaster_Code, QtyPC, QtyMT, QtyMTRS, Status, GodownMaster_Code, PhysicalStockTackingMaster_Code) {
-        var URL = UrlService.API_ENDPOINT_PhysicalStockTaking + "/AddPhysicalStock?AsOnDate=" + AsOnDate + "" + "&Remark=" + Remark + "" + "&IdentificationNo=" + IdentificationNo + "" + "&StockType=" + StockType + "" + "&ItemMaster_Code=" + ItemMaster_Code + "&ItemSizeMaster_Code=" + ItemSizeMaster_Code + "&QtyPC=" + QtyPC + "&QtyMT=" + QtyMT + "&QtyMTRS=" + QtyMTRS + "&Status=" + Status + "" + "&GodownMaster_Code=" + GodownMaster_Code + "&PhysicalStockTackingMaster_Code=" + PhysicalStockTackingMaster_Code;
+    AddPhysicalStock: function AddPhysicalStock(AsOnDate, Remark, IdentificationNo, StockType, ItemMaster_Code, ItemSizeMaster_Code, QtyPC, QtyMT, QtyMTRS, GodownMaster_Code, PhysicalStockTackingMaster_Code) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_PhysicalStockTaking + "/AddPhysicalStock?AsOnDate=" + AsOnDate + "" + "&Remark=" + Remark + "" + "&IdentificationNo=" + IdentificationNo + "" + "&StockType=" + StockType + "" + "&ItemMaster_Code=" + ItemMaster_Code + "&ItemSizeMaster_Code=" + ItemSizeMaster_Code + "&QtyPC=" + QtyPC + "&QtyMT=" + QtyMT + "&QtyMTRS=" + QtyMTRS + "&UserMaster_Code=" + userCode + "" + "&GodownMaster_Code=" + GodownMaster_Code + "&PhysicalStockTackingMaster_Code=" + PhysicalStockTackingMaster_Code;
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
@@ -37,6 +38,14 @@ const PhysicalStockTakingItemService = {
     },
     DeletePhysicalStock: function DeletePhysicalStock(PhysicalStockTackingMaster_Code) {
         var URL = UrlService.API_ENDPOINT_PhysicalStockTaking + "/DeletePhysicalStock?PhysicalStockTackingMaster_Code=" + PhysicalStockTackingMaster_Code;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    CheckDuplicateStockID: function CheckDuplicateStockID(IdentificationNo, AsOnDate) {
+        var URL = UrlService.API_ENDPOINT_PhysicalStockTaking + "/CheckDuplicateStockID?IdentificationNo=" + IdentificationNo + "" + "&AsOnDate=" + AsOnDate +"";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
