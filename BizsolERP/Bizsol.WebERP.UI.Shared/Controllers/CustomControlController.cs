@@ -32,6 +32,17 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             return PartialView("_AttachmentControl");
 
         }
+        public ActionResult BreakDownControl(string EntryDate, int ProcessMaster_Code, int MachineMaster_Code, int ShiftMaster_Code, int GodownMaster_Code = 0)
+        {
+
+            ViewBag.EntryDate = EntryDate;
+            ViewBag.ProcessMaster_Code = ProcessMaster_Code;
+            ViewBag.MachineMaster_Code = MachineMaster_Code;
+            ViewBag.ShiftMaster_Code = ShiftMaster_Code;
+            ViewBag.GodownMaster_Code = GodownMaster_Code;
+            return PartialView("_BreakDownControl");
+
+        }
 
     }
 }

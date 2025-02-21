@@ -19,5 +19,14 @@ const BreakDownService = {
             }
         );
     },
+    GetDDlBreakDown: function GetDDlBreakDown(Mode) {
+        var URL = UrlService.API_ENDPOINT_BreakDown + "/GetDDlBreakDown?Mode="+Mode;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    
 }
 export { BreakDownService }

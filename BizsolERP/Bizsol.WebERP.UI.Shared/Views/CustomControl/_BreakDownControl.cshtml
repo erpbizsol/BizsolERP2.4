@@ -1,0 +1,142 @@
+﻿
+<div class="modal fade bs-example-modal-center" id="BreakDownControlModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Break Down Details:</h5>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-3 p-4">
+                        <input type="time" id="txtStartTimer" name="txtStartTimer" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Timer" required />
+                    </div>
+                    <div class="col-md-3 p-4">
+                        <select id="ddlReasonMaster" class="form-control form-control-sm box_border"></select>
+                    </div>
+                    <div class="col-md-3 p-4">
+                        <select id="ddlDepartMentMaster" class="form-control form-control-sm box_border"></select>
+                    </div>
+                    <div class="col-md-3 p-4">
+                        <select id="ddlOperatorNameMaster" class="form-control form-control-sm box_border"></select>
+                    </div>
+                    <div class="col-md-3 p-4">
+                        <input type="text" id="txtRemark" name="txtRemark" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Remark" required />
+                    </div>
+                </div>
+
+                <div class="text-end mt-1">
+                    <a class="btn btn-primary" onclick="onBreakDownControl_StartBreakDown();">
+                        Save
+                    </a>
+                    &nbsp;
+                    <a class="btn btn-danger" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                    <input type="hidden" value="@ViewBag.EntryDate" id="hfEntryDate" />
+                    <input type="hidden" value="@ViewBag.ProcessMaster_Code" id="hfProcessMaster_Code" />
+                    <input type="hidden" value="@ViewBag.MachineMaster_Code" id="hfMachineMaster_Code" />
+                    <input type="hidden" value="@ViewBag.ShiftMaster_Code" id="hfShiftMaster_Code" />
+                    <input type="hidden" value="@ViewBag.GodownMaster_Code" id="hfGodownMaster_Code" />
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
+@* <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_SizeControlpage.js"></script> *@
+<script type="module">
+
+        import { BreakDownService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BreakDownService.js';
+
+    function setStartCurrentTime() {
+        const currentTime = new Date();
+        const hours = currentTime.getHours().toString().padStart(2, '0'); 
+        const minutes = currentTime.getMinutes().toString().padStart(2, '0'); 
+        const time = `${hours}:${minutes}`; 
+        document.getElementById('txtStartTimer').value = time;
+    }
+
+    function getReasonDropDownList() {
+       BreakDownService.GetDDlBreakDown('ddlReason').then(function (respone) {
+           BindSelectList($('#ddlReasonMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.SizeDesp })));
+
+           // $('#ddlReasonMaster').val($('#hfItemSizeMaster_Code').val());
+           $('#ddlReasonMaster').select2({
+               dropdownParent: $('#BreakDownControlModal')
+           });
+
+           getDepartmentDropDownList();
+       })
+
+    }
+
+    function getDepartmentDropDownList() {
+        BreakDownService.GetDDlBreakDown('ddlDepartment').then(function (respone) {
+            BindSelectList($('#ddlDepartMentMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.SizeDesp })));
+
+           // $('#ddlDepartMentMaster').val($('#hfItemSizeMaster_Code').val());
+           $('#ddlDepartMentMaster').select2({
+               dropdownParent: $('#BreakDownControlModal')
+           });
+           getOperatorDropDownList();
+        })
+    }
+
+    function getOperatorDropDownList() {
+        BreakDownService.GetDDlBreakDown('ddlOperatorName').then(function (respone) {
+          BindSelectList($('#ddlOperatorNameMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.SizeDesp })));
+
+           // $('#ddlOperatorNameMaster').val($('#hfItemSizeMaster_Code').val());
+           $('#ddlOperatorNameMaster').select2({
+               dropdownParent: $('#BreakDownControlModal')
+           });
+        })
+    }
+    function BindSelectList(element,list) {
+        let option = '<option value="0"></option>';
+        $.each(list, function (key, val) {
+            option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+        });
+        element.innerHTML = option;
+    }
+    
+    function StartBreakDown() {
+
+        // var validFrom = true;
+        // var ItemSizeParameterCodes = '';
+
+        // arraySizeControlDllID.forEach((value) => {
+        //     let ItemParameterValue_Code = $('#' + value.SizeControlDllID).val();
+        //     if (ItemParameterValue_Code == 0) {
+        //         alert('inval' + value.SizeControlDllID);
+        //         validFrom = false;
+        //         return;
+        //     }
+        //     ItemSizeParameterCodes += value.ParameterCode + ',' + ItemParameterValue_Code + '#'
+        // })
+
+
+        // if (validFrom==true) {
+        //    alert(ItemSizeParameterCodes);
+        //     SizeControlService.CreateItemSize($('#hfItemMaster_Code').val(), ItemSizeParameterCodes, 0).then(function (respone) {
+        //         console.log(respone);
+        //         alert(respone[0].Code + 'SizeDesp:' + respone[0].SizeDesp);
+        //         SizeControl_NewSizeMaster_Code = respone[0].Code;
+        //         SizeControl_NewSizeDesp = respone[0].SizeDesp;
+        //         window.SizeControl_NewSizeMaster_Code = SizeControl_NewSizeMaster_Code;
+        //         window.SizeControl_NewSizeDesp = SizeControl_NewSizeDesp;
+        //         window[$('#hfCallBackFunctionName_btnDone').val()]();
+        //         $("#SizeControlmodal").modal('hide');
+        //     })
+        // }
+
+    }
+    window.onBreakDownControl_StartBreakDown = StartBreakDown;
+
+</script>
+<script>
+    $(document).ready(function () {
+        $("#SizeControlmodal").modal({
+            backdrop: 'static',
+        });
+        $("#SizeControlmodal").modal('show');
+        setStartCurrentTime();
+    });
+</script>
