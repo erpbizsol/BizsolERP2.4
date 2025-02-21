@@ -1218,7 +1218,8 @@ function SlittingProductionEntry_CreatNewEntry() {
 
     $.each(ReceivedDetailsArry, function (index, value) {
         let HideColObj = JSON.parse(value.cells[indxHiddenCol_tbSlittingReceivedDetails].innerHTML.trim());
-        let Weight= parseFloat(value.cells[indxWeightCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value)
+        let Weight = parseFloat(value.cells[indxWeightCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value);
+        let ManualID = parseInt(value.cells[indxManualIDCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value);
         
         SlittingEntryDataPayload.push({
             Sno: HideColObj.SNo,
@@ -1227,6 +1228,7 @@ function SlittingProductionEntry_CreatNewEntry() {
             Weight: Weight,
             NoOfPass: HideColObj.NoOfPass,
             NoofSlits: HideColObj.NoofSlits,
+            ManualIDNo: ManualID,
             InTime: "",
             OutTime: "",
             Speed: "",
@@ -1237,7 +1239,9 @@ function SlittingProductionEntry_CreatNewEntry() {
             txtscrapWT: $("#txtScrapWeight").val(),
             txtProDate: $("#txtSlittingDate").val(),
             ScrapItemMaster_Code: $("#ddlScrapItem").val(),
-            txtActualZincWeight: $("#txtActualZincWeight").val()
+            txtActualZincWeight: $("#txtActualZincWeight").val(),
+            MachineMaster_Code: $("#ddlMachineNo").val(),
+            IssuePC: $("#txtIssuePC").val()
         });
 
     });
