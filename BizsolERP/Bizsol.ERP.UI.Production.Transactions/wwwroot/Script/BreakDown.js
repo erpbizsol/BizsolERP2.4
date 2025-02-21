@@ -69,6 +69,17 @@ function BreakDown_Save() {
 function BreakDownModal_Close() {
     $('#myModal').modal('hide');
 }
+function startBreakDownModal() {
+    InitBreakDownControl(EntryDate, ProcessMaster_Code, MachineMaster_Code, ShiftMaster_Code, GodownMaster_Code);
+}
+function InitBreakDownControl(EntryDate, ProcessMaster_Code, MachineMaster_Code, ShiftMaster_Code, GodownMaster_Code) {
+    var url = baseUrl + '/CustomControl/BreakDownControl';
+
+    $('#BreakDownControlModal').load(url, { EntryDate: EntryDate, ProcessMaster_Code: ProcessMaster_Code, MachineMaster_Code: MachineMaster_Code, ShiftMaster_Code: ShiftMaster_Code, GodownMaster_Code: GodownMaster_Code });
+
+}
+
 window.EndBreakDownOpen_Modal = EndBreakDownOpen_Modal;
 window.BreakDown_Save = BreakDown_Save;
 window.BreakDownModal_Close = BreakDownModal_Close;
+window.startBreakDownModal = startBreakDownModal;

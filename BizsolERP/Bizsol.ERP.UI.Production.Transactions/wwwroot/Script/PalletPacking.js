@@ -437,7 +437,7 @@ function F_GetPendingIDOrderWise(BuyerPOMaster_Code, GodownMaster_Code) {
                 datalist.append(option);
             });
         } else {
-            toastr.error('No data received or empty response');
+            //toastr.error('No data received or empty response');
         }
     }).catch(function (error) {
         toastr.error('Error fetching user list:', error);
