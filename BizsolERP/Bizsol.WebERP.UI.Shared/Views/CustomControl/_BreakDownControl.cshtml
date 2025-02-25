@@ -7,25 +7,30 @@
             </div>
             <div class="modal-body">
                 <div class="row">
-                    <div class="col-md-3 p-4">
+                    <div class="col-md-12 ">
+                        <label for="txtStartTimer" class="col-form-label-sm fw-bold">Time:</label>
                         <input type="time" id="txtStartTimer" name="txtStartTimer" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Timer" required />
                     </div>
-                    <div class="col-md-3 p-4">
+                    <div class="col-md-12 ">
+                        <label for="ddlReasonMaster" class="col-form-label-sm fw-bold">Reason:</label>
                         <select id="ddlReasonMaster" class="form-control form-control-sm box_border"></select>
                     </div>
-                    <div class="col-md-3 p-4">
+                    <div class="col-md-12 ">
+                        <label for="ddlDepartMentMaster" class="col-form-label-sm fw-bold">Department:</label>
                         <select id="ddlDepartMentMaster" class="form-control form-control-sm box_border"></select>
                     </div>
-                    <div class="col-md-3 p-4">
+                    <div class="col-md-12 ">
+                        <label for="ddlOperatorNameMaster" class="col-form-label-sm fw-bold">Operator Name:</label>
                         <select id="ddlOperatorNameMaster" class="form-control form-control-sm box_border"></select>
                     </div>
-                    <div class="col-md-3 p-4">
+                    <div class="col-md-12 ">
+                        <label for="txtRemark" class="col-form-label-sm fw-bold">Remark:</label>
                         <input type="text" id="txtRemark" name="txtRemark" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Remark" required />
                     </div>
                 </div>
 
                 <div class="text-end mt-1">
-                    <a class="btn btn-primary" onclick="onBreakDownControl_StartBreakDown();">
+                    <a class="btn btn-primary" onclick="BreakDownControl_onStartBreakDown();">
                         Save
                     </a>
                     &nbsp;
@@ -40,10 +45,10 @@
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div>
-@* <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_SizeControlpage.js"></script> *@
+
 <script type="module">
 
-        import { BreakDownService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BreakDownService.js';
+    import { BreakDownService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/_BreakDownService.js';
 
     function setStartCurrentTime() {
         const currentTime = new Date();
@@ -55,37 +60,40 @@
 
     function getReasonDropDownList() {
        BreakDownService.GetDDlBreakDown('ddlReason').then(function (respone) {
-           BindSelectList($('#ddlReasonMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.SizeDesp })));
+           BindSelectList($('#ddlReasonMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.ReasonDesp })));
 
-           // $('#ddlReasonMaster').val($('#hfItemSizeMaster_Code').val());
+           
            $('#ddlReasonMaster').select2({
-               dropdownParent: $('#BreakDownControlModal')
+               dropdownParent: $('#BreakDownControlModal'),
+                width: '-webkit-fill-available'
            });
 
-           getDepartmentDropDownList();
+           
        })
 
     }
 
     function getDepartmentDropDownList() {
         BreakDownService.GetDDlBreakDown('ddlDepartment').then(function (respone) {
-            BindSelectList($('#ddlDepartMentMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.SizeDesp })));
+            BindSelectList($('#ddlDepartMentMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.DepartmentName })));
 
-           // $('#ddlDepartMentMaster').val($('#hfItemSizeMaster_Code').val());
+           
            $('#ddlDepartMentMaster').select2({
-               dropdownParent: $('#BreakDownControlModal')
+               dropdownParent: $('#BreakDownControlModal'),
+                width: '-webkit-fill-available'
            });
-           getOperatorDropDownList();
+          
         })
     }
 
     function getOperatorDropDownList() {
         BreakDownService.GetDDlBreakDown('ddlOperatorName').then(function (respone) {
-          BindSelectList($('#ddlOperatorNameMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.SizeDesp })));
+          BindSelectList($('#ddlOperatorNameMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.OperatorName })));
 
-           // $('#ddlOperatorNameMaster').val($('#hfItemSizeMaster_Code').val());
+          
            $('#ddlOperatorNameMaster').select2({
-               dropdownParent: $('#BreakDownControlModal')
+               dropdownParent: $('#BreakDownControlModal'),
+                width: '-webkit-fill-available'
            });
         })
     }
@@ -97,46 +105,83 @@
         element.innerHTML = option;
     }
     
-    function StartBreakDown() {
+    function BreakDownControl_onStartBreakDown() {
+       
+       let  txtBrkStartTime = $('#txtStartTimer').val();
+       let  ReasonMasterCode = $('#ddlReasonMaster').val();
+       let  DepartmentMasterCode = $('#ddlDepartMentMaster').val();
+       let  OperatorName_Code = $('#ddlOperatorNameMaster').val();
+       let  txtBrkRemark = $('#txtRemark').val();
 
-        // var validFrom = true;
-        // var ItemSizeParameterCodes = '';
+       if (typeof txtBrkStartTime === 'undefined' || txtBrkStartTime === '' || txtBrkStartTime === null) {
 
-        // arraySizeControlDllID.forEach((value) => {
-        //     let ItemParameterValue_Code = $('#' + value.SizeControlDllID).val();
-        //     if (ItemParameterValue_Code == 0) {
-        //         alert('inval' + value.SizeControlDllID);
-        //         validFrom = false;
-        //         return;
-        //     }
-        //     ItemSizeParameterCodes += value.ParameterCode + ',' + ItemParameterValue_Code + '#'
-        // })
+            toastr.error('Start Time can not be Blank!');
 
+            return false;
+        }
+        if (typeof ReasonMasterCode === 'undefined' || ReasonMasterCode === '' || ReasonMasterCode === null || ReasonMasterCode === "0") {
+             toastr.error('Reason can not be Blank!');
+            return false;
+        }
+        if (typeof DepartmentMasterCode === 'undefined' || DepartmentMasterCode === '' || DepartmentMasterCode === null || DepartmentMasterCode === "0") {
 
-        // if (validFrom==true) {
-        //    alert(ItemSizeParameterCodes);
-        //     SizeControlService.CreateItemSize($('#hfItemMaster_Code').val(), ItemSizeParameterCodes, 0).then(function (respone) {
-        //         console.log(respone);
-        //         alert(respone[0].Code + 'SizeDesp:' + respone[0].SizeDesp);
-        //         SizeControl_NewSizeMaster_Code = respone[0].Code;
-        //         SizeControl_NewSizeDesp = respone[0].SizeDesp;
-        //         window.SizeControl_NewSizeMaster_Code = SizeControl_NewSizeMaster_Code;
-        //         window.SizeControl_NewSizeDesp = SizeControl_NewSizeDesp;
-        //         window[$('#hfCallBackFunctionName_btnDone').val()]();
-        //         $("#SizeControlmodal").modal('hide');
-        //     })
-        // }
+            toastr.error('Department can not be Blank!');
+          
+            return false;
+        }  
+         if (typeof OperatorName_Code === 'undefined' || OperatorName_Code === '' || OperatorName_Code === null || OperatorName_Code === '0') {
+            toastr.error('Operator Name can not be Blank!');
+            return false;
+        }
+         
+        if (typeof txtBrkRemark === 'undefined' || txtBrkRemark === '' || txtBrkRemark === null) {
+            toastr.error('Remark can not be Blank!');
+            return false;
+        }
+         
+        BreakDownService.IsBreakDownRunning($('#hfProcessMaster_Code').val(),$('#hfMachineMaster_Code').val(),$('#hfGodownMaster_Code').val()).then(function (respone) {
+
+            if(respone.Status === 'N'){
+               BreakDownService.StartBreakDown($('#hfEntryDate').val(),$('#hfProcessMaster_Code').val(),$('#hfMachineMaster_Code').val(),$('#hfShiftMaster_Code').val(),ReasonMasterCode,txtBrkStartTime,txtBrkRemark,DepartmentMasterCode,OperatorName_Code,$('#hfShiftMaster_Code').val()).then(function (respone1) {
+
+                    if(respone1.Status === 'Y'){
+                        toastr.success(respone1.Msg);
+                         $("#BreakDownControlModal").modal('hide');
+                    }else{
+                        toastr.error(respone1.Msg);
+                    }
+
+                })
+            }else{
+                toastr.error(respone.Msg);
+            }
+
+        })
+       
+
 
     }
-    window.onBreakDownControl_StartBreakDown = StartBreakDown;
+    window.BreakDownControl_onStartBreakDown = BreakDownControl_onStartBreakDown;
+
+        getReasonDropDownList();
+        getDepartmentDropDownList();
+        getOperatorDropDownList();
+        setStartCurrentTime();
+
+        BreakDownService.IsBreakDownRunning($('#hfProcessMaster_Code').val(),$('#hfMachineMaster_Code').val(),$('#hfGodownMaster_Code').val()).then(function (respone) {
+
+            if(respone.Status === 'N'){
+                $(document).ready(function () {
+                $("#BreakDownControlModal").modal({
+                    backdrop: 'static',
+                });
+                $("#BreakDownControlModal").modal('show');
+                });
+            }else{
+                toastr.error(respone.Msg);
+            }
+
+        })
 
 </script>
-<script>
-    $(document).ready(function () {
-        $("#SizeControlmodal").modal({
-            backdrop: 'static',
-        });
-        $("#SizeControlmodal").modal('show');
-        setStartCurrentTime();
-    });
-</script>
+
