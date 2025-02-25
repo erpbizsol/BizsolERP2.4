@@ -2,6 +2,7 @@
 import { SlittingProductionEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SlittingProductionEntryService.js';
 import { SizeControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_SizeControlService.js';
 import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
+import { BreakDownService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_BreakDownService.js';
 $("#ERPHeading").text("Production Entry GP");
 $('#txtFromDate').val(new Date().toISOString().slice(0, 10));
 $('#txtToDate').val(new Date().toISOString().slice(0, 10));
@@ -327,8 +328,8 @@ function Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code) {
             "Size Desp": item["Size Desp"],
             "Actual Width": item["Actual Width"],
             "Weight": item.Weight,
-            "Actual Weight": '<input id="txtActualWeight" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="6" autocomplete="off" value="' + item["Actual Weight"] +'" style="text-align: right;" onchange="SlittingProductionEntry_CalActualZincWeight()">',
-            "Actual Zinc Weight": '<input id="txtActualZincWeight" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="6" autocomplete="off" value="' + item.ZincWeight +'" style="text-align: right;" onchange="SlittingProductionEntry_CalRecevieZincWeight()">',
+            "Actual Weight": '<input id="txtActualWeight" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);" maxlength="6" autocomplete="off" value="' + item["Actual Weight"] +'" style="text-align: right;" onchange="SlittingProductionEntry_CalActualZincWeight()">',
+            "Actual Zinc Weight": '<input id="txtActualZincWeight" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);" maxlength="6" autocomplete="off" value="' + item.ZincWeight +'" style="text-align: right;" onchange="SlittingProductionEntry_CalRecevieZincWeight()">',
             "PC": '<input id="txtIssuePC" class="form-control form-control-sm" type="text" maxlength="6" autocomplete="off" value="' + item.PC + '" readonly style="text-align: right;">',
             MachineNo: item.MachineNo
         }))
@@ -384,9 +385,9 @@ function Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code) {
                 "Size Desp": `${item.SizeDesp} &nbsp;&nbsp;<a class="btn btn-secondary icon-height" onclick="SlittingProductionEntry_OnClick_NewSize(this)"><i class="fa fa-plus"></i></a>`,
                 "Thickness": item.itemThick,
                 "PCs": eleText.toLowerCase() == 'slitting' && item.NoofSlits > 1 ? `${item.NoofSlits} &nbsp;&nbsp;<a class="btn btn-primary icon-height" onclick="SlittingProductionEntry_AddReceivedItem(this)">Split PC</a>` : item.NoofSlits,
-                "Weight": '<input  class="form-control form-control-sm itemWeight" type="text" maxlength="6" autocomplete="off" value="' + parseFloat(item.Weight).toFixed(3) + '" style="text-align: right;" onchange="SlittingProductionEntry_CalScrapWeight()">',
-                "No Of Pass": '<input  class="form-control form-control-sm" type="text" maxlength="6" autocomplete="off" value="' + item.NoOfPass + '" style="text-align: right;">',
-                "Manual ID": '<input  class="form-control form-control-sm" type="text" maxlength="6" autocomplete="off" value="' + item.ManualIDNo + '" style="text-align: right;">',
+                "Weight": '<input  class="form-control form-control-sm itemWeight" type="text" maxlength="6" autocomplete="off" value="' + parseFloat(item.Weight).toFixed(3) + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);SlittingProductionEntry_CalScrapWeight();" >',
+                "No Of Pass": '<input  class="form-control form-control-sm" type="text" maxlength="6" autocomplete="off" value="' + item.NoOfPass + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);">',
+                "Manual ID": '<input  class="form-control form-control-sm" type="text" maxlength="6" autocomplete="off" value="' + item.ManualIDNo + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);">',
                 "HiddenCol": JSON.stringify(item)
                 }
             ))
@@ -598,116 +599,7 @@ function CalSlitWeightByReceivedWeight() {
     }
 
 }
-function EditMode(isView) {
-    G_isView = isView;
-    //alert('Mode:' + isView + SlittingPlanMaster_Code);
-    if (Number(SlittingPlanMaster_Code) > 0) {
-        SlittingProductionEntryService.GetShowPackingListData(SlittingPlanMaster_Code, G_OnlyEntry).then(function (response) {
 
-           
-            console.log(response);
-            if (response.length > 0) {
-                BuyerPOMaster_Code = response[0][0].BuyerPoMaster_Code;
-                ArryPackingListTransaction = response[1];
-                Bind_PackingListTransactionGrid(isView);
-                SelectOptionByText('ddlShift', response[0][0].PackingType);
-                SlittingProductionEntry_OnChangeddlShift();
-
-                $('#txtScanIdentification').removeAttr("readonly");
-
-                $('#txtScrapWeight').val(response[0][0].PackingListNo);
-               
-                //$('#txtSlittingDate').val(new Date(response[0].PackingListDate).toISOString().slice(0, 10));
-                $('#txtSlittingDate').val(response[0][0].PackingListDate.slice(0, 10));
-
-                
-
-                $('#ddlShift').attr("disabled", "disabled");
-                $('#ddlScrapItem').attr("disabled", "disabled");
-                $('#ddlIdNo').attr("disabled", "disabled");
-                $('#ddlReqNo').attr("disabled", "disabled");
-                $('#ddlMachineNo').attr("disabled", "disabled");
-       
-                $('#ddlProcess').attr("disabled", "disabled");
-                $('#ddlPlanNo').attr("disabled", "disabled");
-
-                SelectOptionByText('ddlScrapItem', response[0][0].GodownName);
-                SelectOptionByText('ddlIdNo', response[0][0].GodownNameTo);
-                
-                SelectOptionByText('ddlReqNo', response[0][0].RMRequisitionNo);
-        
-                SelectOptionByText('ddlProcess', response[0][0].ClienName);
-                SelectOptionByText('ddlPlanNo', response[0][0].ConsigneeName);
-                
-
-                if (response[0].PackingType !== 'Stock Transfer') {
-                    //BindOrderNOForBatchPackingList(PackingListCode);
-
-                }
-
-
-                if (InvoiceByOrder === 'Y') {
-                    Bind_ddlMachineNo("GetPendingOrderListByPartyName", response[0][0].ConsigneeName);
-                    //$('#ddlMachineNo').val(BuyerPOMaster_Code)
-                    
-
-                    //$('#ddlMachineNo').select2({
-                    //    width: '-webkit-fill-available'
-                    //});
-
-                }
-
-                else {
-                    //BindOrderNOForBatchPackingList(PackingListCode);
-                    //$('#ddlMachineNo').val('@ViewBag.DespatchAdviceMaster_Code');
-                    //$('#hfddlMachineNo').val('@ViewBag.DespatchAdviceMaster_Code');
-                }
-                
-                $('#txtSlittingDate').attr("readonly", true);
-                $('#ddlTransporterName').attr("readonly", true);
-                $('#DriverNo').attr("readonly", true);
-                $('#VehicleNo').attr("readonly", true);
-                $('#Distance').attr("readonly", true);
-                $('#txtGRNo').attr("readonly", true);
-                $('#txtGRDate').attr("readonly", true);
-                
-
-                //if ('@ViewBag.ddlShift' === 'Stock Transfer') { changeddlShift(); }
-
-                
-
-                if ('@ViewBag.LoadingStatus' === 'C') { $('#btnLoadingEnd')[0].innerHTML = "Loaded"; $('#btnScanNoPallet').hide(); } else {
-                    $('#btnLoadingEnd').removeAttr("disabled");
-                    $('#btnLoadingEnd').attr("onclick", "return SlittingProductionEntry_EndLoading()");
-                }
-                
-                if (isView === 'Y') {
-                   
-                    $('#txtScanIdentification').attr("readonly", true);
-                    $('#btnLoadingEnd').removeAttr("onclick");
-                    $('#btnLoadingEnd').attr("disabled", "disabled(");
-                    $('#btnLoadingEnd')[0].innerHTML = "Loaded";
-                    $('#btnScanNoPallet').hide();
-                    $('#btnStart')[0].innerHTML = 'Scan Started';
-                    $('#btnStart').attr("disabled", "disabled");
-                    $('#btnStart').removeAttr("onclick");
-
-                }
-                else {
-                    $('#btnStart')[0].innerHTML = 'Scan Started';
-                    $('#btnStart').attr("disabled", "disabled");
-                    $('#btnStart').removeAttr("onclick");
-                }
-                
-            }
-            
-
-        });
-
-        
-
-    }
-}
 
 function SlittingProductionEntry_CreateNew() {
   
@@ -722,34 +614,21 @@ function SlittingProductionEntry_Back() {
     ChangeMode('');
 }
 function SlittingProductionEntry_EditOrView(isEdit, slittingPlanMaster_Code) {
+    G_SlittingPlanMaster_Code = slittingPlanMaster_Code;
+    Bind_ddlIdNo('dllAllPlansOrId', G_UserMaster_Code);
+    $('#ddlPlanNo').val(slittingPlanMaster_Code);
 
-    $('#tbPackingListTransaction tr').empty();
-    $('#paginator-tbPackingListTransaction').empty();
-
+    let elem = document.getElementById('ddlPlanNo');
+    $('#ddlPlanNo').select2({
+        width: '-webkit-fill-available'
+    });
+    SlittingProductionEntry_OnChangeddlPlanOrIds(elem)
     ChangeMode('Edit');
-  
-
-    if (isEdit === 'Y') {
-        SlittingProductionEntryService.EditValidatePackingListBatchNo(slittingPlanMaster_Code).then(function (response) {
-            if (response.Status == 'Y') {
-
-                //$('#paginator-tbPackingListTransaction').show();
-                SlittingPlanMaster_Code = slittingPlanMaster_Code;
-                //EditMode('N');
-                ChangeMode('Edit');
-            } else {
-                toastr.error(response.Msg);
-            }
-
-        });
-    } else {
-        $('#paginator-tbPackingListTransaction').show();
-        SlittingPlanMaster_Code = slittingPlanMaster_Code;
-        //EditMode('Y');
-        ChangeMode('View');
-    }
 
 
+    $('#ddlProcess').attr('disabled', 'disabled')
+    $('#ddlPlanNo').attr('disabled', 'disabled')
+    $('#ddlIdNo').attr('disabled', 'disabled')
 }
 
 
@@ -867,6 +746,13 @@ function InitSizeControl(itemMaster_Code, itemSizeMaster_Code, callBackFunctionN
 
 }
 
+function InitBrakDownControl( entryDate,  processMaster_Code,  machineMaster_Code,  shiftMaster_Code,  godownMaster_Code) {
+    let url = baseUrl + '/CustomControl/BreakDownControl';
+
+    $('#DivBrakDownStartControlModal').load(url, { EntryDate: entryDate, ProcessMaster_Code: processMaster_Code, MachineMaster_Code: machineMaster_Code, ShiftMaster_Code: shiftMaster_Code, GodownMaster_Code: godownMaster_Code });
+
+}
+
 function SlittingProductionEntry_SizeCallBack() {
     //alert(SizeControl_NewSizeMaster_Code + 'SizeDesp:' + SizeControl_NewSizeDesp);
 
@@ -970,7 +856,7 @@ function SlittingProductionEntry_OnChangeddlParantID() {
 }
 
 function SlittingProductionEntry_CreatNewEntry() {
-
+    let GodownMaster_Code = 0;
     let ddlProcess = document.getElementById("ddlProcess");
    
     let ProcessMaster_Code = $('#ddlProcess').val();
@@ -1003,11 +889,11 @@ function SlittingProductionEntry_CreatNewEntry() {
     if (isNaN(scrapWeight)) {
         scrapWeight = 0;
     }
-    if (ProcessMaster_Code === 0 || typeof ProcessMaster_Code === 'undefined' || ProcessMaster_Code === '' || ProcessMaster_Code === null) {
+    if (ProcessMaster_Code === "0" ||ProcessMaster_Code === 0 || typeof ProcessMaster_Code === 'undefined' || ProcessMaster_Code === '' || ProcessMaster_Code === null) {
         toastr.error('Invalid Process Name please Check!');
          return false;
     }  
-    else if (ProcessMaster_Code === 0 || typeof MachineMaster_Code === 'undefined' || MachineMaster_Code === '' || MachineMaster_Code === null) {
+    else if (MachineMaster_Code === "0" || MachineMaster_Code === 0 || typeof MachineMaster_Code === 'undefined' || MachineMaster_Code === '' || MachineMaster_Code === null) {
         toastr.error('Invalid Machine No please Check!')
         return false;
     }
@@ -1196,7 +1082,7 @@ function SlittingProductionEntry_CreatNewEntry() {
 
     let CheckStockPayLoad = {
         EntryType: "O",
-        EntryDate: $('txtSlittingDate').val(),//12-feb-24// Production Date
+        EntryDate: $('#txtSlittingDate').val(),//12-feb-24// Production Date
         ItemMaster_Code: G_IssueItemMaster_Code,//need
         ItemSizeMaster_Code: G_IssueItemSizeMaster_Code,//need
         GodownMaster_Code: G_IssueGodownMaster_Code,//need
@@ -1246,34 +1132,52 @@ function SlittingProductionEntry_CreatNewEntry() {
 
     });
 
-    SlittingProductionEntryService.CheckEntryAllowed('CheckEntryAllowed', G_issueIdentificationNo).then(function (response) {
-        if (response.Status === 'Y') {
-            SlittingProductionEntryService.CheckStockValidate(JSON.stringify(CheckStockPayLoad)).then(function (response1) {
-                if (response1.Status === 'Y') {
+    Showloader();
+    BreakDownService.IsBreakDownRunning(ProcessMaster_Code, MachineMaster_Code, GodownMaster_Code).then(function (breakDownrespone) {
 
-                    SlittingProductionEntryService.SaveSlittingEntry(JSON.stringify(SlittingEntryDataPayload)).then(function (response2) {
-                        if (response2.Status === 'Y') {
+        if (breakDownrespone.Status === 'N') {
+            SlittingProductionEntryService.CheckEntryAllowed(G_issueIdentificationNo).then(function (response) {
+                if (response.Status === 'Y') {
+                    SlittingProductionEntryService.CheckStockValidate(JSON.stringify(CheckStockPayLoad)).then(function (response1) {
+                        if (response1.Status === 'Y') {
 
-                            toastr.success(response2.Msg);
+                            SlittingProductionEntryService.SaveSlittingEntry(JSON.stringify(SlittingEntryDataPayload)).then(function (response2) {
+                                if (response2.Status === 'Y') {
+                                    HideLoader();
+                                    toastr.success(response2.Msg);
+                                    SlittingProductionEntry_ShowPlanGrid()
+                                    ClrFrm();
+                                    Bind_ddlIdNo('dllAllPlansOrId', G_UserMaster_Code);
+                                    ChangeMode('');
+
+                                } else {
+                                    toastr.error(response2.Msg);
+                                    HideLoader();
+                                }
+
+                            });
 
                         } else {
-                            toastr.error(response2.Msg);
+                            toastr.error(response1.Msg);
+                            HideLoader();
                         }
 
                     });
-                   
+
                 } else {
-                    toastr.error(response1.Msg);
+                    toastr.error(response.Msg);
+                    HideLoader();
                 }
 
-            });
 
+            });
         } else {
-            toastr.error(response.Msg);
+            toastr.error('Can not Save Entry! ' + breakDownrespone.Msg + ' on selected Machine No..')
+            HideLoader();
         }
 
-
-    });
+    })
+    
     
 
 
@@ -1309,7 +1213,12 @@ function ClrFrm() {
     $('#ddlPlanNo').select2({
         width: '-webkit-fill-available'
     });
-   
+    
+
+    $('#ddlProcess').removeAttr('disabled')
+    $('#ddlPlanNo').removeAttr('disabled')
+    $('#ddlIdNo').removeAttr('disabled')
+
     $('#tbPackingListTransaction tr').empty();
     $('#paginator-tbPackingListTransaction').empty();
     Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code);
@@ -1381,9 +1290,38 @@ $('#btnModalPrint').on('click', function () {
         a.click();
     });
 });
+
+$('#btnBrkDownStart').on('click', function () {
+    let entryDate = $('#txtSlittingDate').val(); 
+    let processMaster_Code = $('#ddlProcess').val();
+    let machineMaster_Code = $('#ddlMachineNo').val();
+    let shiftMaster_Code = $('#ddlShift').val();
+    let godownMaster_Code = 0;
+    if (entryDate == "") {
+        toastr.error('Invalid Entry Date please Check!');
+        return false
+    }
+    if (processMaster_Code === "0" ||processMaster_Code === 0 || typeof processMaster_Code === 'undefined' || processMaster_Code === '' || processMaster_Code === null) {
+        toastr.error('Invalid Process please Check!');
+        return false
+    }
+    if (machineMaster_Code === "0" ||machineMaster_Code === 0 || typeof machineMaster_Code === 'undefined' || machineMaster_Code === '' || machineMaster_Code === null) {
+        toastr.error('Invalid Machine No please Check!');
+        return false
+    }
+    if (shiftMaster_Code === "0"||shiftMaster_Code === 0 || typeof shiftMaster_Code === 'undefined' || shiftMaster_Code === '' || shiftMaster_Code === null) {
+        toastr.error('Invalid shift please Check!');
+        return false
+    }
+
+    InitBrakDownControl(entryDate, processMaster_Code, machineMaster_Code, shiftMaster_Code, godownMaster_Code);
+});
+
+
 SlittingProductionEntry_ShowPlanGrid();
 getPackingListFGFixedParaMeters();
 Bind_AllDLL();
+Bind_ddlIdNo('dllAllPlansOrId', G_UserMaster_Code);
 //LoadFrm();
 
 

@@ -21,7 +21,7 @@
         margin-top: 2.1rem;
     }
 </style>
-<button onclick="startBreakDownModal()" class="btn btn-primary btn-height">Start</button>
+
     <div id="tblBreakDownStartOrEnd" >
         <div class="table-wrapper fixed-height-table">
             <table id="BreakDownStartOrEnd" class="fixed-width-table table">
@@ -39,13 +39,13 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">End Break Down</h5>
-                <button type="button" class="close modal-close" aria-label="Close" onclick="BreakDownModal_Close()">
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal">
                     <span aria-hidden="true">x</span>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="row">
-                    <div class="col-md-9">
+                    <div class="col-md-12">
                         <div class="form-group">
                             <input type="time" id="txtTimer" name="txtTimer" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Timer" required/>
                             <input type="text" id="txtEnterCause" name="txtEnterCause" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Enter Cause" required maxlength="200"/>
@@ -56,7 +56,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary btn-height" onclick="BreakDown_Save()">Done</button>
-                <button type="button" class="btn btn-danger btn-height" onclick="BreakDownModal_Close()">Cancel</button>
+                <button type="button" class="btn btn-danger btn-height" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>
     </div>

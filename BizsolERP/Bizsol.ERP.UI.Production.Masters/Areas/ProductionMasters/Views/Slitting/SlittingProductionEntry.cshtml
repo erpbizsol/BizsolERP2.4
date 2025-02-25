@@ -62,7 +62,7 @@
                 </div>
                 <div class="col-md-2 col-6">
                     <label for="txtScrapWeight" class="col-form-label-sm fw-bold">Scrap Weight</label>
-                    <input id="txtScrapWeight" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" onchange="SlittingProductionEntry_CalScrapPerWeight()" maxlength="6" autocomplete="off">
+                    <input id="txtScrapWeight" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);SlittingProductionEntry_CalScrapPerWeight()" value="0" maxlength="6" autocomplete="off">
                     
                 </div>
                 <div class="col-md-2 col-6">
@@ -87,7 +87,7 @@
     <div class="row" id="DivBtnAdd">
         <div class="col-md-6 ">
 
-            <a class="btn btn-warning icon-height" id="btnAvailableOrderStock" onclick="">
+            <a class="btn btn-warning icon-height" id="btnAvailableOrderStock">
                 SCALE WEIGHT
             </a>
             &nbsp;
@@ -97,7 +97,7 @@
             </a>
             &nbsp;
             &nbsp;
-            <a class="btn btn-primary icon-height" id="btnBrkDownStart" onclick="">
+            <a class="btn btn-primary icon-height" id="btnBrkDownStart" >
                 BREAK DOWN START
             </a>
 
@@ -155,7 +155,7 @@
 
         </div>
         <div class="col-md-2 col-6">
-            <input id="txtTotalReceivedWeight" class="BizSolFormControl form-control form-control-sm" placeholder="Total Received Weight" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="6" autocomplete="off">
+            <input id="txtTotalReceivedWeight" class="BizSolFormControl form-control form-control-sm" placeholder="Total Received Weight" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);" maxlength="6" autocomplete="off">
         </div>
 
         <div class="col-md-9 text-end">
@@ -254,6 +254,7 @@
 </div>
 
 <div id="DivSizeControlmodal"></div>
+<div id="DivBrakDownStartControlModal"></div>
 
 
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
