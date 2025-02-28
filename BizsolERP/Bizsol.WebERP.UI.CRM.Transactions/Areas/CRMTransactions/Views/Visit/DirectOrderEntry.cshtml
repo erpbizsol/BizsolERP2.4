@@ -107,20 +107,20 @@
             <div class="row">
                 <div class="col-md-3 form-group">
                     <label for="txtUserName" class="col-form-label-sm fw-bold">User Name</label>
-                    <input type="text" id="txtUserName" class="box_border form-control form-control-sm" autocomplete="off" value="">
+                    <input type="text" id="txtUserName" class="box_border form-control form-control-sm disabled" autocomplete="off" readonly="readonly" value="">
                 </div>
                 <div class="col-md-3 col-sm-6 col-6">
                     <label for="txtdate" class="col-form-label-sm fw-bold">Date</label>
-                    <input ID="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
+                    <input ID="txtdate" name="txtdate" class="box_border form-control form-control-sm disabled" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
                 </div>
                 <div class="col-md-3 col-sm-6 col-6">
                     <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Check In Time</label>
                     <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" readonly="readonly" />
                 </div>
                 <div class="col-md-3">
-                    <label for="txtLocation" class="col-form-label-sm fw-bold">Location</label>
+                    <label for="txtLocation" class="col-form-label-sm fw-bold ">Location</label>
                     <input type="text" id="txtAddLocation" name="txtAddLocation" class="box_border form-control form-control-sm" hidden required />
-                    <input type="text" id="txtCurrentLocation" name="txtCurrentLocation" class="box_border form-control form-control-sm" value="" required />
+                    <input type="text" id="txtCurrentLocation" name="txtCurrentLocation" class="box_border form-control form-control-sm disabled" value="" readonly="readonly" required />
                     <input type="text" id="txtCheckOutLocation" name="txtCheckOutLocation" class="box_border form-control form-control-sm" hidden required />
                     <input type="hidden" id="hflatlong" name="hflatlong" value="" />
                 </div>
@@ -137,7 +137,7 @@
                 </div>
                 <div class="col-md-3">
                     <label for="txtAddress" class="col-form-label-sm fw-bold">Address</label>
-                    <textarea type="text" id="txtAddress" name="txtAddress" class="box_border form-control form-control-sm" value="" readonly="readonly" rows="2"></textarea>
+                    <textarea type="text" id="txtAddress" name="txtAddress" class="box_border form-control form-control-sm disabled" value="" readonly="readonly" rows="2"></textarea>
                 </div>
                 <div class="col-md-2 col-sm-8 col-8">
                     <label for="txtAttachment" class="col-form-label-sm fw-bold">Attachment</label>
@@ -356,17 +356,7 @@
                 <div class="accordion-body-sec">
                     <div class="row">&nbsp;</div>
                     <div class="row">
-                        <div class="col-md-1">
-                            <div class="form-group">
-                                <input type="button" name="btnShow" id="btnShow" class="btn btn-primary btn-sm waves-effect waves-light" value="Show Stock"/>
-
-                                <button type="button" class="btn btn-primary  btn-sm waves-effect waves-light" id="btnLoading" hidden="true">
-                                    <i class="bx bx-loader bx-spin font-size-16 align-middle me-2"></i> Loading
-                                </button>
-                                <label id="lblStockDate"></label>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="form-group " id="divShowSizeButton">
                                 <div class="d-flex flex-wrap gap-xxl-2 ">
                                     <input type="checkbox"
@@ -377,6 +367,17 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <input type="button" name="btnShow" id="btnShow" class="btn btn-primary btn-height btn-width" value="Show Stock" />
+
+                                <button type="button" class="btn btn-primary btn-height btn-width" id="btnLoading" hidden="true">
+                                    <i class="bx bx-loader bx-spin font-size-14 align-middle me-2"></i>Loading
+                                </button>
+                                <label id="lblStockDate"></label>
+                            </div>
+                        </div>
+                       
 
                     </div>
                     <div class="row">
@@ -396,6 +397,7 @@
                                             <th class="lead-text width_cust" role="columnheader">Order Qty PC</th>
                                             <th class="lead-text width_cust" role="columnheader">Order Qty MT</th>
                                             <th class="lead-text width_cust" role="columnheader">Order Qty MTR</th>
+                                            <th class="lead-text width_cust" role="columnheader">Rate Unit</th>
                                             <th class="lead-text width_cust" role="columnheader">Order UOM</th>
                                             <th class="lead-text width_cust" role="columnheader">Order QTY</th>
                                             <th class="lead-text width_cust" role="columnheader">Tolerance</th>
@@ -404,7 +406,7 @@
                                             <th class="lead-text width_cust" role="columnheader">Discount Type</th>
                                             <th class="lead-text width_cust" role="columnheader">Discount</th>
                                             <th class="lead-text width_cust" role="columnheader">Order Rate</th>
-                                            <th class="lead-text width_cust" role="columnheader">Rate Unit</th>
+                                            
                                             <th class="lead-text width_cust" role="columnheader">Discount Type(After Rate)</th>
                                             <th class="lead-text width_cust" role="columnheader">Discount(After Rate)</th>
                                             <th class="lead-text width_cust" role="columnheader">Amount</th>
@@ -433,6 +435,7 @@
                                             <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyMTTotal"></td>
                                             <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyMTRTotal"></td>
                                             <td style="text-align: right;"></td>
+                                            <td style="text-align: right;"></td>
                                             <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyTotal"></td>
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: right;"></td>
@@ -441,7 +444,7 @@
                                             <td style="text-align: right;" class="font-weight-bold" id="txtDiscountTotal"></td>
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
+                                            
                                             <td style="text-align: right;" class="font-weight-bold" id="txtDiscountTotal_AfterRate"></td>
                                             <td style="text-align: right;" class="font-weight-bold" id="txtAmountTotal"></td>
                                             <td style="text-align: right;"></td>
@@ -617,7 +620,7 @@
 <datalist id="listOrderUOM"></datalist>
 <datalist id="listOrderUOMDecimalDigits"></datalist>
 <datalist id="ItemParameterMasterList"></datalist>
-
+<datalist id="listRateUnit"></datalist>
 
 
 <div class="row">
@@ -687,23 +690,10 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="row">
-                    <div class="col-md-3" id="divItemName">
-                        <label for="txtItemName" class="col-form-label-sm fw-bold">Item Name </label>
-                        <div class="form-group">
-                            <input type="text" list="listItem" class="box_border form-control form-control-sm" id="txtItemName" name="txtItemName" onclick="this.value=''" value="" placeholder="" autocomplete="off" maxlength="250" required>
-                            <input type="hidden" id="hiddentxtItemName" name="hiddentxtItemName">
-                        </div>
-                    </div>
-                    <div class="col-md-3 without-label-field">
-                        <button type="button" id="btnSearchStock" class="btn btn-primary btn-height btn-width" title="Search Stock">Search</button>
-                        <button type="button" class="btn btn-primary btn-height" id="btnLoadingStock" hidden="true">
-                            <i class="bx bx-loader bx-spin font-size-16 align-middle me-2"></i> Loading
-                        </button>
-                    </div>
-                </div>
+                
 
                 <div class="modal-body">
+                   
                     <div id="tblLogicalStock">
                         <div class="table-wrapper fixed-height-table">
                             <table id="LogicalStock" class="fixed-width-table table">
@@ -716,7 +706,12 @@
                         <div class="paginator" id="paginator-LogicalStock">
                         </div>
                     </div>
-                   
+                    <table id="LogicalStock1" class="fixed-width-table table">
+                        <thead id="LogicalStock-header1">
+                        </thead>
+                        <tbody id="LogicalStock-body1">
+                        </tbody>
+                    </table>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary btn-height" onclick="SelectStockRows()">Done</button>
