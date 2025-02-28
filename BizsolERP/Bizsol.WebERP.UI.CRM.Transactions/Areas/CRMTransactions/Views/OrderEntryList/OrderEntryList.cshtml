@@ -7,6 +7,7 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/OrderEntryList.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 <style>
     .highlighted-date {
         background-color: #3926B6;
@@ -47,7 +48,7 @@
                 <label for="toDate" class="form-label">To Date <span class="text-danger">*</span></label>
                 <input type="text" id="txtToDate" name="ToDate" class="form-control form-control-sm box_border" autocomplete="off" required/>
             </div>
-            <div class="col-md-3">
+            <div class="col-12 col-md-3 col-lg-2 col-xl-3">
                 <label for="userName" class="form-label">User Name <span class="text-danger">*</span></label>
                 <input list="ddlUserNameList" id="ddlUserName" name="ddlUserName" class="form-control form-control-sm box_border" placeholder="User Name" autocomplete="off" required>
                 <datalist id="ddlUserNameList"></datalist>
@@ -59,14 +60,14 @@
             </div>
 
 
-            <div class="col-md-3 without-label-field">
-                <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width" title="Show Orders">Show</button>
-                &nbsp;
-                <button type="button" id="btnAddDirectOrder" class="btn btn-primary btn-height" title="Create New Order">Create New</button>
-                &nbsp;
-                <button type="button" id="btnCRMConfig" class="btn btn-primary btn-height" title="CRM Configuration Settings"> <i class="fa fa-gear"></i></button>
-                &nbsp;
-                <button type="button" id="btnDirectOrder" class="btn btn-primary btn-height" title="New Order "> <i class="fa fa-plus-square"></i></button>
+            <div class="col-12 col-md-5 col-lg-4 col-xl-3 without-label-field">
+                <button type="button" id="btnShow" class="btn btn-primary btn-height" title="Show Orders">Show</button>
+               @*  <button type="button" id="btnAddDirectOrder" class="btn btn-primary btn-height" title="Create New Order">Create New</button> *@
+                <button type="button" id="btnDirectOrder" class="btn btn-primary btn-height" title="Create New Order ">Create New</button>
+                <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download List"><i class="fa fa-download" aria-hidden="true"></i></button>
+               @*  <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download">Download</button> *@
+                <button type="button" id="btnCRMConfig" class="btn btn-warning btn-height" title="CRM Configuration Settings"> <i class="fa fa-gear"></i></button>
+               
             </div>
             
         </div>
@@ -102,3 +103,12 @@
         </div>
     </div>
 </div> 
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
+</div>

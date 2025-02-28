@@ -231,7 +231,7 @@ function GetUserDetails() {
 
     VisitOrderEntryService.GetUserDetails().then(function (response) {
 
-        if (response != null) {
+        if (response != null && param_VisitMode == 'New') {
             var UserName = response[0].UserName;
             $('#txtUserName').val(UserName);
 

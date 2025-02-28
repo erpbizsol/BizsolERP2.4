@@ -308,7 +308,8 @@ function showLocation(position) {
 function EditData(code, VisitMaster_Code) {
     const codes = window.btoa(code);
     const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
+    //window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
+    window.location = baseUrl + "/CRMTransactions/Visit/DirectOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
 }
 function ViewData(code, VisitMaster_Code) {
     if (typeof VisitMaster_Code === 'undefined') {
@@ -317,7 +318,8 @@ function ViewData(code, VisitMaster_Code) {
     }
     const codes = window.btoa(code);
     const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
+    //window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
+    window.location = baseUrl + "/CRMTransactions/Visit/DirectOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
 }
 function IsNotVisited(code) {
     const alertCls = confirm("Are you sure you want to close this?");
@@ -382,7 +384,8 @@ function IsCheckIn(RoutePlanMaster_Code, date) {
             const encodedVisitMasterCode = window.btoa(response.Code);
             toastr.success("Check-In successful! You can view and edit the selected plan details.");
             setTimeout(function () {
-                window.location = `${baseUrl}/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&VisitMaster_Code=${encodedVisitMasterCode}&VisitMode=Edit`;
+                //window.location = `${baseUrl}/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&VisitMaster_Code=${encodedVisitMasterCode}&VisitMode=Edit`;
+                window.location = `${baseUrl}/CRMTransactions/Visit/DirectOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&VisitMaster_Code=${encodedVisitMasterCode}&VisitMode=Edit`;
             }, 2000); // 2 seconds delay before redirect
             
         } else {
