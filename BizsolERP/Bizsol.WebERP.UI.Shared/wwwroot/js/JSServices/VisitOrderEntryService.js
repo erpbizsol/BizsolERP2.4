@@ -122,10 +122,10 @@ const VisitOrderEntryService = {
             }
         );
     },
-    GetVerifyOrderList: function GetVerifyOrderList(SalesPerson, DealerName, OrderType, ChkWithOrder) {
+    GetVerifyOrderList: function GetVerifyOrderList(SalesPerson, DealerName, Mode) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetVerifyOrderList?DealerName=${DealerName} &SalesPerson=${SalesPerson}&OrderType=${OrderType}&ChkWithOrder=${ChkWithOrder}&UserMaster_Code=${userMasterCode}`;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetVerifyOrderList?DealerName=${DealerName} &SalesPerson=${SalesPerson}&UserMaster_Code=${userMasterCode}&Mode=${Mode}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -427,6 +427,62 @@ const VisitOrderEntryService = {
 
     },
     
+    GetLogicalStock: function GetLogicalStock(Date,ItemMaster_Codes,Size,Thicknessdesp,AccountDesp,Mode,GodownMaster_Codes,StockDependOnParameters,OtherParameters,ItemSizeMaster_Code) {
+
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var UserMaster_Code = authKeyData.UserMaster_Code;
+
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetRPTPendingBuyerPoLogicalStock?Date=${Date}&ItemMaster_Codes=${ItemMaster_Codes}&Size=${Size}
+                            &Thicknessdesp=${Thicknessdesp}&AccountDesp=${AccountDesp}&Mode=${Mode}&GodownMaster_Codes=${GodownMaster_Codes}
+                            &StockDependOnParameters=${StockDependOnParameters}&OtherParameters=${OtherParameters}&ItemSizeMaster_Code=${ItemSizeMaster_Code}`;
+
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+
+
+    },
+    
+    GetVisitVerificationDetailsReport: function GetVisitVerificationDetailsReport(VisitMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetVisitVerificationDetailsReport?VisitMaster_Code=${VisitMaster_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetVisitDiscountDetailsReport: function GetVisitDiscountDetailsReport(VisitOrderDetails_Code) {
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetVisitDiscountDetailsReport?VisitOrderDetails_Code=${VisitOrderDetails_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    UpdateVisitOrderDetails_Discount: function UpdateVisitOrderDetails_Discount(Data,VisitMaster_Code,Mode) {
+        var json_data = JSON.stringify(Data, null, 2);
+        var UserMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/UpdateVisitOrderDetails_Discount?UserMaster_Code=${encodeURIComponent(UserMaster_Code)}&VisitMaster_Code=${encodeURIComponent(VisitMaster_Code)}&Mode=${encodeURIComponent(Mode)}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, json_data).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    CheckModuleOptionRight: function CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var UserMaster_Code = authKeyData.UserMaster_Code;
+        let url = UrlService.ERP_SIDE_MENU + `/CheckModuleOptionRight?ModuleName=${ModuleName}&OptionName=${OptionName}&ShowMsg=${ShowMsg}&FinYear=${FinYear}&UserMaster_Code=${UserMaster_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+
+
+    },
 }
 
 export { VisitOrderEntryService }

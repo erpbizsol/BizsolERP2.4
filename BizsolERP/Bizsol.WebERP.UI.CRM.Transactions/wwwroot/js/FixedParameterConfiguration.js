@@ -7,9 +7,8 @@ const Indx_Tbl = {
 }
 $(document).ready(function () {
     $("#ERPHeading").text("Order Entry Configuration");
-    GetStockOptionList();
-    GetCRMFixedParameterConfigFields();
    
+    GetRateUnitListFromQtyConfig();
     $('#btnBack').click(function (e) {
         window.location = baseUrl + "/CRMTransactions/OrderEntryList/OrderEntryList";
     });
@@ -18,6 +17,31 @@ $(document).ready(function () {
     });
    
 });
+function GetRateUnitListFromQtyConfig() {
+    FixedParameterConfigurationService.GetFixedParameterQtyConfig().then(function (response) {
+
+        if (response.length > 0) {
+            var inputString = response[0].RateUnit;
+
+            // Split the string by "/" and store it in an array
+            var response1 = inputString.split('/');
+
+            $('#listUOMVerify option').empty();
+            $('#listUOMVerify').empty();
+            $.each(response1, function (index, value) {
+                // Create a new <option> element for each item
+
+                $("#listUOMVerify").append($('<option>', {
+                    value: value
+                }));
+            });
+
+            GetStockOptionList();
+            GetCRMFixedParameterConfigFields();
+        }
+    });
+}
+
 function GetCRMFixedParameterConfigFields() {
 
     FixedParameterConfigurationService.GetCRMFixedParameterConfigFields().then(function (response) {
@@ -56,6 +80,9 @@ function GetCRMFixedParameterConfigFields() {
 
                         } else if (item.FixedParameterFieldName == 'AskDiscountItemWise') {
                             var td_ParameterValue = `<input type="text" id="txtParameterValue_` + tbItemConsumeRowNo + `" list="listDiscount"  value="${item.AttributeValue}" name="${item.FixedParameterFieldName}" maxlength="${item.FieldMaxLen}" onchange="SetParameters();" class="BizSolFormControl box_border form-control form-control-sm"  placeholder=""  autocomplete="off"  required  onclick="$(this).val(\'\')" >`;
+
+                        } else if (item.FixedParameterFieldName == 'UOMForVerifyDiscount') {
+                            var td_ParameterValue = `<input type="text" id="txtParameterValue_` + tbItemConsumeRowNo + `" list="listUOMVerify"  value="${item.AttributeValue}" name="${item.FixedParameterFieldName}" maxlength="${item.FieldMaxLen}" onchange="SetParameters();" class="BizSolFormControl box_border form-control form-control-sm"  placeholder=""  autocomplete="off"  required  onclick="$(this).val(\'\')" >`;
 
                         } else {
                             var td_ParameterValue = `<input type="text" id="txtParameterValue_` + tbItemConsumeRowNo + `"  value="${item.AttributeValue}" name="${item.FixedParameterFieldName}" maxlength="${item.FieldMaxLen}" onchange="SetParameters();"  class="BizSolFormControl box_border form-control form-control-sm"  placeholder=""  autocomplete="off"  required>`;
@@ -246,6 +273,8 @@ function GetStockOptionList() {
     });
 
 }
+
+
 window.SaveData = SaveData;
 window.SetParameters = SetParameters;
 window.GetStockOptionList = GetStockOptionList;

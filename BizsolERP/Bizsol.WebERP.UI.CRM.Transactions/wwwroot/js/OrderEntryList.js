@@ -5,17 +5,19 @@ let fixedParaMeterConfigurationList = [];
 let QtyMTHeader = '';
 let QtyPCHeader = '';
 let QtyMTRHeader = '';
+let selectedDates = [];
 $(document).ready(function () {
     $("#ERPHeading").text("Order Entry List");
     GetOrderStatusList();
     GetUserNameList();
-    highlightSelectedDates();
+    //highlightSelectedDates();
+    GetOrderListForDate();
     GetFixedParameterConfiguration();
 
     const order = {
         VisitMaster_Code: '',
         Code: '',
-        ButtonStatus: 'UnVerified'
+        Status: 'UnVerified'
     };
     manageEditButton(order);
     $('#editButton').on('click', function () {
@@ -83,13 +85,27 @@ $(document).ready(function () {
     });
 
     $('#btnDirectOrder').click(function (e) {
+        var ModuleName = "Direct Order Entry",
+            OptionName = "NEW",
+            ShowMsg = "Y",
+            FinYear = getFinancialYear();
+        OrderEntryListService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
 
-        window.location = baseUrl + "/CRMTransactions/Visit/DirectOrderEntry";
+            if (response.CheckModuleOptionRight == 'N') {
+                toastr.error(response.Msg);
+                return false;
+            } else {
+                    window.location = baseUrl + "/CRMTransactions/Visit/DirectOrderEntry";
+            }
 
+        });
+    });
+    $('#btnDownload').click(function () {
+        Export();
     });
 });
 function manageEditButton(order) {
-    const isEnabled = order.ButtonStatus === 'UnVerified';
+    const isEnabled = order.Status === 'UnVerified';
     $('#editButton').prop('disabled', !isEnabled);
 
 }
@@ -135,9 +151,27 @@ function validateDate(value) {
 
     }
 }
+
+function GetOrderListForDate() {
+    OrderEntryListService.GetOrderListDates().then(function (response) {
+        if (response && response.length > 0) {
+            response.forEach(item => {
+                if (item.Date) {
+                    selectedDates.push(item.Date);
+                }
+            });
+            highlightSelectedDates();
+        }
+        else {
+            toastr.error('No Data Found')
+            highlightSelectedDates();
+        }
+    });
+
+}
 function highlightSelectedDates() {
     var highlightedDates = {};
-    var selectedDates = ['01/10/2024', '05/10/2024', '11/11/2024'];
+    //var selectedDates = ['01/10/2024', '05/10/2024', '11/11/2024'];
     selectedDates.forEach(date => {
         var parts = date.split('/');
         var formattedDate = new Date(parts[2], parts[1] - 1, parts[0]).toDateString();
@@ -172,16 +206,16 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
     OrderEntryListService.GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus).then(function (response) {
         if (response && Array.isArray(response) && response.length > 0) {
             $("#tblOrderList").show();
-            const stringFilterColumn = [ "Visit Type", "City Name","Time", "State Name", "Remarks", "Dealer Name", "IsVerify"];
-            const numericFilterColumn = ["Basic Rate", "Final Amount", "Final Rate", "Credit Days"];
+            const stringFilterColumn = [ "City Name","Time", "Remarks", "Customer Name", "IsVerify","Sales Person"];
+            const numericFilterColumn = [ "Amount",  "Credit Days"];
             const dateFilterColumn = ["Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Code", "VisitMaster_Code", "Verified On", "UserName","Verified By", "Verified", "Closed", "OtherCharges", "EditAllow", "DeleteAllow", "RejectedBy", "RejectedOn", "Reason", "VerifiedOn", "Order Type", "Total Amount"];
+            const hiddenColumns = ["Code", "VisitMaster_Code", "Verified On", "Verified By", "Verified", "Closed", "OtherCharges", "EditAllow", "DeleteAllow", "RejectedBy", "RejectedOn", "Reason", "VerifiedOn", "Order Type", "Total Amount"];
             const ColumnAlignment = {
                 "Basic Rate": 'right',
-                "Final Amount": 'right',
+                "Amount": 'right',
                 "Final Rate": 'right',
                 "Date": 'center',
                 "Verified": 'center',
@@ -194,7 +228,7 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
                         const reorderedItem = {};
                         for (const key in item) {
                             if (key === 'Total Order Qty MR') {
-                                reorderedItem[QtyMTRHeader] = item[key];
+                                reorderedItem['Qty '+QtyMTRHeader] = item[key];
                             } else {
                                 reorderedItem[key] = item[key];
                             }
@@ -213,7 +247,7 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
                         const reorderedItem = {};
                         for (const key in item) {
                             if (key === 'Total Order Qty') {
-                                reorderedItem[QtyMTHeader] = item[key];
+                                reorderedItem['Qty ' + QtyMTHeader] = item[key];
                             } else {
                                 reorderedItem[key] = item[key];
                             }
@@ -232,7 +266,7 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
                         const reorderedItem = {};
                         for (const key in item) {
                             if (key === 'Total Order Qty PC') {
-                                reorderedItem[QtyPCHeader] = item[key];
+                                reorderedItem['Qty ' + QtyPCHeader] = item[key];
                             } else {
                                 reorderedItem[key] = item[key];
                             }
@@ -245,68 +279,68 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
             } else {
                 hiddenColumns.push("Total Order Qty PC");
             }
-            if (QtyMTRHeader !== '') {
-                response = response.map(item => {
-                    if (item.hasOwnProperty('Dispatched Qty MTRS')) {
-                        const reorderedItem = {};
-                        for (const key in item) {
-                           reorderedItem[key] = item[key];
-                        }
-                        return reorderedItem;
-                    }
-                    return item;
-                });
-                numericFilterColumn.push("Dispatched Qty MTRS");
-                ColumnAlignment["Dispatched Qty MTRS"] = 'right';
-            } else {
-                hiddenColumns.push("Dispatched Qty MTRS");
-            }
-            if (QtyMTHeader !== '') {
-                response = response.map(item => {
-                    if (item.hasOwnProperty('Dispatched Qty')) {
-                        const reorderedItem = {};
-                        for (const key in item) {
-                            reorderedItem[key] = item[key];
-                        }
-                        return reorderedItem;
-                    }
-                    return item;
-                });
-                numericFilterColumn.push("Dispatched Qty");
-                ColumnAlignment["Dispatched Qty"] = 'right';
-            } else {
-                hiddenColumns.push("Dispatched Qty");
-            }
-            if (QtyPCHeader !== '') {
-                response = response.map(item => {
-                    if (item.hasOwnProperty('Dispatched Qty PC')) {
-                        const reorderedItem = {};
-                        for (const key in item) {
-                            reorderedItem[key] = item[key];
-                        }
-                        return reorderedItem;
-                    }
-                    return item;
-                });
-                numericFilterColumn.push("Dispatched Qty PC");
-                ColumnAlignment["Dispatched Qty PC"] = 'right';
-            } else {
-                hiddenColumns.push("Dispatched Qty PC");
-            }
+            //if (QtyMTRHeader !== '') {
+            //    response = response.map(item => {
+            //        if (item.hasOwnProperty('Dispatched Qty MTRS')) {
+            //            const reorderedItem = {};
+            //            for (const key in item) {
+            //               reorderedItem[key] = item[key];
+            //            }
+            //            return reorderedItem;
+            //        }
+            //        return item;
+            //    });
+            //    numericFilterColumn.push("Dispatched Qty MTRS");
+            //    ColumnAlignment["Dispatched Qty MTRS"] = 'right';
+            //} else {
+            //    hiddenColumns.push("Dispatched Qty MTRS");
+            //}
+            //if (QtyMTHeader !== '') {
+            //    response = response.map(item => {
+            //        if (item.hasOwnProperty('Dispatched Qty')) {
+            //            const reorderedItem = {};
+            //            for (const key in item) {
+            //                reorderedItem[key] = item[key];
+            //            }
+            //            return reorderedItem;
+            //        }
+            //        return item;
+            //    });
+            //    numericFilterColumn.push("Dispatched Qty");
+            //    ColumnAlignment["Dispatched Qty"] = 'right';
+            //} else {
+            //    hiddenColumns.push("Dispatched Qty");
+            //}
+            //if (QtyPCHeader !== '') {
+            //    response = response.map(item => {
+            //        if (item.hasOwnProperty('Dispatched Qty PC')) {
+            //            const reorderedItem = {};
+            //            for (const key in item) {
+            //                reorderedItem[key] = item[key];
+            //            }
+            //            return reorderedItem;
+            //        }
+            //        return item;
+            //    });
+            //    numericFilterColumn.push("Dispatched Qty PC");
+            //    ColumnAlignment["Dispatched Qty PC"] = 'right';
+            //} else {
+            //    hiddenColumns.push("Dispatched Qty PC");
+            //}
             const updatedResponse = response.map(item => {
-                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${item.ButtonStatus !== 'UnVerified' ? 'disabled' : ''} onclick="openEditVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa fa-pencil"></i></button>
+                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${item.Status !== 'UnVerified' ? 'disabled' : ''} onclick="openEditVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa fa-pencil"></i></button>
                 <button class="btn btn-info icon-height mb-1" title="View" onclick="openViewVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa fa-eye"></i></button>
-                <button class="btn btn-danger icon-height mb-1" title="Delete" ${item.ButtonStatus !== 'UnVerified' ? 'disabled' : ''} onclick="Delete('${item.Code}')"><i class="fa fa-times"></i></button>`;
+                <button class="btn btn-danger icon-height mb-1" title="Delete" ${item.Status !== 'UnVerified' ? 'disabled' : ''} onclick="Delete('${item.Code}')"><i class="fa fa-times"></i></button>`;
 
                 var td_StatusBtn = '';
-                if (item.ButtonStatus == 'Un-Verified') {
-                    td_StatusBtn = `<button type="button" class="btn btn-success btn-rounded waves-effect waves-light btn-height " style="cursor: not-allowed">${item.ButtonStatus}</button>`;
-                } else if (item.ButtonStatus == 'Verified') {
-                    td_StatusBtn = `<button type="button" class="btn btn-success btn-rounded waves-effect waves-light btn-height " style="cursor: not-allowed">${item.ButtonStatus}</button>`;
-                } else if (item.ButtonStatus == 'Rejected') {
-                    td_StatusBtn = `<button type="button" class="btn btn-danger  btn-rounded waves-effect waves-light btn-height " style="cursor: not-allowed">${item.ButtonStatus}</button>`;
+                if (item.Status == 'UnVerified') {
+                    td_StatusBtn = `<button type="button" class="btn btn-secondary btn-rounded waves-effect waves-light btn-height " style="cursor: not-allowed">${item.Status}</button>`;
+                } else if (item.Status == 'Verified') {
+                    td_StatusBtn = `<button type="button" class="btn btn-success btn-rounded waves-effect waves-light btn-height " style="cursor: not-allowed">${item.Status}</button>`;
+                } else if (item.Status == 'Rejected') {
+                    td_StatusBtn = `<button type="button" class="btn btn-danger  btn-rounded waves-effect waves-light btn-height " style="cursor: not-allowed">${item.Status}</button>`;
                 } else {
-                    td_StatusBtn = `<button type="button" class="btn btn-success  btn-rounded waves-effect waves-light btn-height " style="cursor: not-allowed">${item.ButtonStatus}</button>`;
+                    td_StatusBtn = `<button type="button" class="btn btn-success  btn-rounded waves-effect waves-light btn-height " style="cursor: not-allowed">${item.Status}</button>`;
                 }
 
                 let remarksContent = item.Remarks;
@@ -316,17 +350,25 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
                 return {
                     ...item,
                     Action: buttonsHTML,
-                    ButtonStatus: td_StatusBtn,
+                    Status: td_StatusBtn,
                     Remarks: remarksWithTooltip, 
                 };
             });
 
-            ColumnAlignment[QtyMTHeader] = 'right';
-            ColumnAlignment[QtyMTRHeader] = 'right';
-            ColumnAlignment[QtyPCHeader] = 'right';
+            ColumnAlignment['Qty ' + QtyMTHeader] = 'right';
+            ColumnAlignment['Qty ' + QtyMTRHeader] = 'right';
+            ColumnAlignment['Qty ' + QtyPCHeader] = 'right';
 
             BizsolCustomFilterGrid.CreateDataTable("table-header","table-body",updatedResponse,button,showButtons,stringFilterColumn,numericFilterColumn,dateFilterColumn,stringDoubleFilterColumn,hiddenColumns,ColumnAlignment);
             updateFooter(response); 
+
+            var columnsToRemoveForPrint = ["Code", "VisitMaster_Code", "EditAllow", "DeleteAllow", "RejectedBy", "RejectedOn", "Reason", "Verified By", "Verified On", "Order Type", "Action", "Verified", "Closed", "Total Amount", "Total Order Qty PC", "Total Order Qty MR","Total Order Qty","OtherCharges"];
+            response.forEach(function (row) {
+                columnsToRemoveForPrint.forEach(function (column) {
+                    delete row[column];
+                });
+            });
+            PopulateTableForPrint(response);
         }
         else {
             toastr.error('No Data Found');
@@ -380,7 +422,7 @@ function openEditVisitMaster(VisitMaster_Code, Code) {
     var ModuleName = "Direct Order Entry",
         OptionName = "EDIT",
         ShowMsg = "Y",
-        FinYear = "2024-2025";
+        FinYear = getFinancialYear();
     OrderEntryListService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
 
         if (response.CheckModuleOptionRight =='N') {
@@ -398,20 +440,47 @@ function openEditVisitMaster(VisitMaster_Code, Code) {
    
 }
 function openViewVisitMaster(VisitMaster_Code, Code) {
-    const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-    const RoutePlanCode = window.btoa(0);
-    // window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode="+RoutePlanCode +"&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
-    window.location = baseUrl + "/CRMTransactions/Visit/DirectOrderEntry?RoutePlanCode=" + RoutePlanCode + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
+    var ModuleName = "Direct Order Entry",
+        OptionName = "VIEW",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    OrderEntryListService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            const VisitMaster_Codes = window.btoa(VisitMaster_Code);
+            const RoutePlanCode = window.btoa(0);
+            // window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode="+RoutePlanCode +"&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
+                    window.location = baseUrl + "/CRMTransactions/Visit/DirectOrderEntry?RoutePlanCode=" + RoutePlanCode + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
+        }
+
+    });
+
 }
 function encodeHash(value) {
     return btoa(value); 
 }
 function Delete(Code) {
-    $('#myModal').modal('show');
-    $('#myModal').modal({
-        backdrop: 'static', 
+    var ModuleName = "Direct Order Entry",
+        OptionName = "DELETE",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    OrderEntryListService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+                    $('#myModal').modal('show');
+                    $('#myModal').modal({
+                        backdrop: 'static', 
+                    });
+                    $("#txtcode").val(Code);
+        }
+
     });
-    $("#txtcode").val(Code);
 }
 function DeleteModal() {
     var reason = $("#deleteReason").val();
@@ -448,7 +517,7 @@ function CloseModal() {
     $('#myModal').modal('hide');
 }
 function isViewButtonEnabled(order) {
-    return order.ButtonStatus !== 'Verified';
+    return order.Status !== 'Verified';
 }
 function GetFixedParameterConfiguration() {
     //OrderEntryListService.GetFixedParameterConfiguration().then(function (res) {
@@ -470,21 +539,33 @@ function updateFooter(data) {
     if (calculateTotalAmount === "Total Amount") {
         const rowCount = data.length;
         let totalQuantity = 0;
-        let totalBasicRate = 0;
+        //let totalBasicRate = 0;
         let totalFinalAmount = 0;
-        let totalFinalRate = 0;
-        let totalDispatchQtyMTRS = 0;
-        let totalDispatchQtyMT = 0;
-        let totalDispatchQtyPC = 0;
+        //let totalFinalRate = 0;
+        //let totalDispatchQtyMTRS = 0;
+        //let totalDispatchQtyMT = 0;
+        //let totalDispatchQtyPC = 0;
+        let TotalOrderQty = 0;
+        let TotalOrderQtyPC = 0;
+        let TotalOrderQtyMR = 0;
 
         data.forEach(row => {
-            totalQuantity += parseFloat(row[QtyMTHeader] || row[QtyMTRHeader] || row[QtyPCHeader] || 0);
-            totalBasicRate += parseFloat(row["Basic Rate"] || 0);
-            totalFinalAmount += parseFloat(row["Final Amount"] || 0);
-            totalFinalRate += parseFloat(row["Final Rate"] || 0);
-            totalDispatchQtyMTRS += parseFloat(row["Dispatched Qty MTRS"] || 0);
-            totalDispatchQtyMT += parseFloat(row["Dispatched Qty"] || 0);
-            totalDispatchQtyPC += parseFloat(row["Dispatched Qty PC"] || 0);
+            totalQuantity += parseFloat(row['Qty ' + QtyMTHeader] || row['Qty ' + QtyMTRHeader] || row['Qty ' + QtyPCHeader] || 0);
+            //totalBasicRate += parseFloat(row["Basic Rate"] || 0);
+            totalFinalAmount += parseFloat(row["Amount"] || 0);
+            //totalFinalRate += parseFloat(row["Final Rate"] || 0);
+            //totalDispatchQtyMTRS += parseFloat(row["Dispatched Qty MTRS"] || 0);
+            //totalDispatchQtyMT += parseFloat(row["Dispatched Qty"] || 0);
+            //totalDispatchQtyPC += parseFloat(row["Dispatched Qty PC"] || 0);
+            if (QtyMTHeader != '') {
+                TotalOrderQty += parseFloat(row['Qty ' + QtyMTHeader]) || 0;
+            }
+            if (QtyPCHeader != '') {
+                TotalOrderQtyPC += parseFloat(row['Qty ' + QtyPCHeader]) || 0;
+            }
+            if (QtyMTRHeader != '') {
+                TotalOrderQtyMR += parseFloat(row['Qty ' + QtyMTRHeader]) || 0;
+            }
         });
 
         var tfootContent1 = ``;
@@ -495,23 +576,24 @@ function updateFooter(data) {
 
         tfootContent1 = `
         <tr>
-            <td colspan="5"><b>Row Count :</b> ${rowCount}</td>
+            <td colspan="3"><b>Row Count :</b> ${rowCount}</td>
             <td><b>Total</b></td>
-            <td style="text-align: right;">${totalQuantity.toFixed(2)}</td>
-            <td style="text-align: right;"></td>
-            <td style="text-align: right;">${totalFinalAmount.toFixed(2)}</td>
+            ${QtyMTHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQty.toFixed(2)}</b></td>` : ''}
+             ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyPC.toFixed(2)}</b></td>` : ''}
+             ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyMR.toFixed(2)}</b></td>` : ''}
+            <td style="text-align: right;"><b>${totalFinalAmount.toFixed(2)}</b></td>
             <td style="text-align: right;"></td>   
-            <td ></td>
+            
             <td ></td>`;
-        if (QtyMTRHeader !== '') {
-            tfootContent2 = `<td style="text-align: right;">${totalDispatchQtyMTRS.toFixed(2)}</td>`;
-        }
-        if (QtyMTHeader !== '') {
-            tfootContent3 = `<td style="text-align: right;">${totalDispatchQtyMT.toFixed(2)}</td>`;
-        }
-        if (QtyPCHeader !== '') {
-            tfootContent4 = `<td style="text-align: right;">${totalDispatchQtyPC.toFixed(2)}</td>`;
-        }
+        //if (QtyMTRHeader !== '') {
+        //    tfootContent2 = `<td style="text-align: right;">${totalDispatchQtyMTRS.toFixed(2)}</td>`;
+        //}
+        //if (QtyMTHeader !== '') {
+        //    tfootContent3 = `<td style="text-align: right;">${totalDispatchQtyMT.toFixed(2)}</td>`;
+        //}
+        //if (QtyPCHeader !== '') {
+        //    tfootContent4 = `<td style="text-align: right;">${totalDispatchQtyPC.toFixed(2)}</td>`;
+        //}
 
         tfootContent = `${tfootContent1}${tfootContent2}${tfootContent3}${tfootContent4}<td ></td><td ></td><td></td></tr>`;
         const tfoot = document.querySelector("#OrderList tfoot");
@@ -539,6 +621,66 @@ function clearFooter() {
     }
 }
 
+function getFinancialYear() {
+    var currentDate = new Date();
+    var currentMonth = currentDate.getMonth(); // 0 is January, 11 is December
+
+    var startYear = currentDate.getFullYear();
+
+    // If the current month is before April (i.e., January, February, March), 
+    // the financial year will belong to the previous year.
+    if (currentMonth < 3) {
+        startYear = startYear - 1; // Subtract one year for FY before April
+    }
+
+    // The fiscal year starts from April, so we return the year range.
+    return startYear + "-" + (startYear + 1);
+}
+function PopulateTableForPrint(data) {
+    const tableBody = document.querySelector('#tblReport tbody');
+    const tableHeader = document.querySelector('#tblReport thead tr');
+
+    //tableBody.empty();
+
+    // Get the keys from the first object to generate the header dynamically
+    const headers = Object.keys(data[0]);
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header.charAt(0).toUpperCase() + header.slice(1); // Capitalize the first letter
+        tableHeader.appendChild(th);
+    });
+
+    $('#tblReport th').css('font-weight', 'bold');
+    // Generate the rows for the table
+    data.forEach(item => {
+        const row = document.createElement('tr');
+
+        headers.forEach(header => {
+            const td = document.createElement('td');
+            td.textContent = item[header];
+            row.appendChild(td);
+        });
+
+        tableBody.appendChild(row);
+    });
+
+}
+function Export() {
+    var ReportType = "OrderReport";
+    var currentDate = new Date();
+    var dateString = currentDate.getFullYear() + "-" +
+        (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
+        currentDate.getDate().toString().padStart(2, "0") + "_" +
+        currentDate.getHours().toString().padStart(2, "0") + "-" +
+        currentDate.getMinutes().toString().padStart(2, "0") + "-" +
+        currentDate.getSeconds().toString().padStart(2, "0");
+
+    $("#tblReport").table2excel({
+        filename: ReportType + "_" + dateString,
+        fileext: ".xlsx"
+    });
+}
+window.Export = Export;
 window.validateDate = validateDate;
 window.highlightSelectedDates = highlightSelectedDates;
 window.GetRouteDataFromOrderEntry = GetRouteDataFromOrderEntry;

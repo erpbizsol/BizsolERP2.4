@@ -76,7 +76,16 @@ const OrderEntryListService = {
         );
 
 
-    }
+    },
+    GetOrderListDates: function GetOrderListDates() {
+        var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + "/GetOrderListDates?UserMaster_Code=" + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { OrderEntryListService }
