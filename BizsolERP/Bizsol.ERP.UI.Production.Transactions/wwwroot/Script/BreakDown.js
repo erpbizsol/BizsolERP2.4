@@ -1,5 +1,7 @@
-﻿import { BreakDownService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BreakDownService.js';
+﻿import { BreakDownService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_BreakDownService.js';
 
+let G_PVCProductionBreakDownDetails_Code = 0;
+let G_PvcProductionMaster_Code = 0;
 $(document).ready(function () {
     $("#ERPHeading").text("Break Down");
     StartOrEndSummary();
@@ -28,7 +30,7 @@ function StartOrEndSummary() {
             const hiddenColumns = ["Code","PvcProductionMaster_Code"];
             const columnAlignment = {};
             const updatedResponse = response.map(item => {
-                let buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="End BreakDown" onclick="EndBreakDownOpen_Modal('${item.PvcProductionMaster_Code}')"><i class="fa-solid fa-hourglass-end"></i></button>`;
+                let buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="End BreakDown" onclick="EndBreakDownOpen_Modal('${item.Code}','${item.PvcProductionMaster_Code}')"><i class="fa-solid fa-hourglass-end"></i></button>`;
                 return {
                     ...item,
                     Action: buttonsHTML,
@@ -45,41 +47,76 @@ function StartOrEndSummary() {
         });
 }
 
-function EndBreakDownOpen_Modal(productionCode) {
+function EndBreakDownOpen_Modal(PVCProductionBreakDownDetails_Code,productionCode) {
     $('#myModal').modal({
         backdrop: 'static',
     });
     $('#myModal').modal('show');
     setCurrentTime();
+
+    $('#txtEnterCause').val('')
+    $('#txtEnterActionPlan').val('')
+    
+     G_PVCProductionBreakDownDetails_Code = PVCProductionBreakDownDetails_Code;
+     G_PvcProductionMaster_Code = productionCode;
 }
-function BreakDown_Save() {
+function BreakDown_Save(mode = "Update") {
     let EndTimeBreakDown = $('#txtTimer').val();
     let EnterCause = $('#txtEnterCause').val();
     let EnterActionPlan = $('#txtEnterActionPlan').val();
-    BreakDownService.EndBreakDown(EndTimeBreakDown, EnterCause, EnterActionPlan).then(function (response) {
-        if (response.Status === 'Y') {
+    let BreakDownMode = mode;
+
+
+    if (typeof EndTimeBreakDown === 'undefined' || EndTimeBreakDown === '' || EndTimeBreakDown === null) {
+
+        toastr.error('End Time can not be Blank!');
+       
+        return false;
+    }
+    if (typeof EnterCause === 'undefined' || EnterCause === '' || EnterCause === null) {
+        toastr.error('Cause can not be Blank!');
+        return false;
+    }
+
+    if (typeof EnterActionPlan === 'undefined' || EnterActionPlan === '' || EnterActionPlan === null) {
+        toastr.error('Action Plan can not be Blank!');
+        return false;
+    }
+
+    if (typeof G_PVCProductionBreakDownDetails_Code === 'undefined' || G_PVCProductionBreakDownDetails_Code === '' || G_PVCProductionBreakDownDetails_Code === null || G_PVCProductionBreakDownDetails_Code === '0') {
+        toastr.error('PVCProductionBreakDownDetailsCode can not be Blank!');
+        return false;
+    }
+
+    if (typeof G_PvcProductionMaster_Code === 'undefined' || G_PvcProductionMaster_Code === '' || G_PvcProductionMaster_Code === null || G_PvcProductionMaster_Code === '0') {
+        toastr.error('hfPvcProductionMaster_Code can not be Blank!');
+        return false;
+    }
+
+
+    BreakDownService.EndBreakDown(G_PVCProductionBreakDownDetails_Code, G_PvcProductionMaster_Code, EndTimeBreakDown, EnterCause, EnterActionPlan, BreakDownMode).then(function (response) {
+        if (response.Status === 'Y' && response.Msg.toLowerCase().includes("successfully") == true) {
             toastr.success(response.Msg);
-            BreakDownModal_Close();
+            StartOrEndSummary();
+            $('#myModal').modal('hide');
+
+        } else if (response.Status === 'Y' && response.Msg.toLowerCase().includes("shift") == true) {
+            if (confirm(response.Msg) == true) {
+                BreakDown_Save('endbrkdownnextshift');
+
+            }
+        }
+        else if (response.Status === 'N') {
+            toastr.error(response.Msg);
         }
     })
         .catch(function (error) {
             toastr.error(error.Msg || 'Error during EndBreakDown');
         });
 }
-function BreakDownModal_Close() {
-    $('#myModal').modal('hide');
-}
-function startBreakDownModal() {
-    InitBreakDownControl(EntryDate, ProcessMaster_Code, MachineMaster_Code, ShiftMaster_Code, GodownMaster_Code);
-}
-function InitBreakDownControl(EntryDate, ProcessMaster_Code, MachineMaster_Code, ShiftMaster_Code, GodownMaster_Code) {
-    var url = baseUrl + '/CustomControl/BreakDownControl';
 
-    $('#BreakDownControlModal').load(url, { EntryDate: EntryDate, ProcessMaster_Code: ProcessMaster_Code, MachineMaster_Code: MachineMaster_Code, ShiftMaster_Code: ShiftMaster_Code, GodownMaster_Code: GodownMaster_Code });
 
-}
 
 window.EndBreakDownOpen_Modal = EndBreakDownOpen_Modal;
 window.BreakDown_Save = BreakDown_Save;
-window.BreakDownModal_Close = BreakDownModal_Close;
-window.startBreakDownModal = startBreakDownModal;
+
