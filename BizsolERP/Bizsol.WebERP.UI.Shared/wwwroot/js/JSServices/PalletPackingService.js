@@ -86,8 +86,8 @@ const PalletPackingService = {
             }
         );
         },
-    EditPallet: function EditPallet(PalletNo, GodownMaster_Code) {
-    var URL = UrlService.API_ENDPOINT_PalletPacking + "/EditPallet?PalletNo=" + PalletNo + "" + "&GodownMaster_Code=" + GodownMaster_Code;
+    EditPallet: function EditPallet(PalletNo, GodownMaster_Code, isAction) {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/EditPallet?PalletNo=" + PalletNo + "" + "&GodownMaster_Code=" + GodownMaster_Code + "&isAction=" + isAction;
     return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
         function (value) {
             return value;
@@ -116,6 +116,14 @@ const PalletPackingService = {
         var URL = UrlService.API_ENDPOINT_PalletPacking + "/RemovePallet?PalletNo=" + palletNo;
 
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    ExportInExcelPackedPalletDateAndOrderWise: function ExportInExcelPackedPalletDateAndOrderWise(Date, BuyerPOMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/ExportInExcelPackedPalletDateAndOrderWise?Date=" + Date + "" + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
             }

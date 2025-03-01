@@ -35,5 +35,14 @@ const FixedParameterConfigurationService = {
             }
         );
     },
+    GetFixedParameterQtyConfig: function GetFixedParameterQtyConfig() {
+
+        var URL = UrlService.API_ENDPOINT_QTY_CONFIG + `/GetFixedParameterQtyConfig`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 export { FixedParameterConfigurationService }
