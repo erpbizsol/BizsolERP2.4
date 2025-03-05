@@ -19,8 +19,8 @@ const PalletPackingService = {
             }
         );
     },
-    AddIDInPallet: function AddIDInPallet(ColForWhere, ColValue, PalletNo, PalletRemark, PalletWeight, Date, PalletType) {
-        var URL = UrlService.API_ENDPOINT_PalletPacking + "/AddIDInPallet?ColForWhere=" + ColForWhere + "" + "&ColValue=" + ColValue + "" + "&PalletNo=" + PalletNo + "" + "&PalletRemark=" + PalletRemark + "" + "&PalletWeight=" + PalletWeight + "" + "&Date=" + Date + "" + "&PalletType=" + PalletType + "";
+    AddIDInPallet: function AddIDInPallet(ColForWhere, ColValue, PalletNo, PalletRemark, PalletWeight, Date, PalletType, BuyerPOMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/AddIDInPallet?ColForWhere=" + ColForWhere + "" + "&ColValue=" + ColValue + "" + "&PalletNo=" + PalletNo + "" + "&PalletRemark=" + PalletRemark + "" + "&PalletWeight=" + PalletWeight + "" + "&Date=" + Date + "" + "&PalletType=" + PalletType + "" + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code +"";
     
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {

@@ -10,9 +10,9 @@ $(document).ready(function () {
     $("#ERPHeading").text("Warehouse Receive");
             getWarehouse();
 
-    $('#ddlRollIdNo').on('focus', function (e) {
-        $("#ddlRollIdNo ").val("");
-    });
+    //$('#ddlRollIdNo').on('focus', function (e) {
+    //    $("#ddlRollIdNo ").val("");
+    //});
     $('#fileInput').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#ddlRollIdNo").focus();
