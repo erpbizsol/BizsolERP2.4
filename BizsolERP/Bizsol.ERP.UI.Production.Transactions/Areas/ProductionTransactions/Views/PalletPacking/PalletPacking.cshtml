@@ -1,11 +1,16 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/PalletPacking.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 <style>
+    .modal-dialog {
+        max-width: 350px;
+    }
     .highlighted-date {
         background-color: #3926B6;
         color: white;
@@ -78,10 +83,10 @@
                     <label for="txtdate" class="col-form-label-sm fw-bold">Pallet Date:<span class="text-danger">*</span></label>
                     <input id="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" required />
                 </div>
-                <div class="col-md-2 without-label-field ">
+                <div class="col-md-3 without-label-field ">
                     <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" /> &nbsp;
-                        <input type="button" onclick="PalletPacking_Print('Grid')" class="btn btn-primary btn-height" value="Print" />
-
+                        <input type="button" onclick="PalletPacking_Print('Grid')" class="btn btn-primary btn-height" value="Print" />&nbsp;
+                    <input type="button" id="btnExport" class="btn btn-primary btn-height" value="Export">
                 </div>
             </div>
             <div class="row" id="orderWiseSection" style="display:none;">
@@ -89,10 +94,10 @@
                     <label for="txtorderNo" class="col-form-label-sm fw-bold">Order No:<span class="text-danger">*</span></label>
                         <select id="txtOrderNo" class="form-control form-control-sm box_border"></select>
                 </div>                    
-                    <div class="col-md-2 without-label-field">
+                    <div class="col-md-3 without-label-field">
                         <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" /> &nbsp;
-                        <input type="button" onclick="PalletPacking_Print('Grid')" class="btn btn-primary btn-height" value="Print" />
-
+                        <input type="button" onclick="PalletPacking_Print('Grid')" class="btn btn-primary btn-height" value="Print" />&nbsp;
+                        <input type="button" id="btnExport" class="btn btn-primary btn-height" value="Export" onclick="Export()">
                     </div>
             </div>
 
@@ -176,9 +181,8 @@
             <div class="col-md-3">
                 <div class="form-group">
                     <label class="col-form-label-sm fw-bold required"><b>Scan Identification No:</b><span class="text-danger">*</span></label>
-                    <input list="txtScanIdentificationNoList" id="txtScanIdentificationNo" type="text" name="txtScanIdentificationNo" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Scan Identification No" required />
-                    <datalist id="txtScanIdentificationNoList"></datalist>
-
+                    <input type="text" id="txtScanIdentificationNo" name="txtCheckInTime" class="box_border BizSolFormControl form-control form-control-sm" value="" autocomplete="off" />
+                    <ul id="txtScanIdentificationNoList" class="AutoSuggestion-list"></ul>
                 </div>
 
                 <div class="row">
@@ -202,5 +206,41 @@
         </table>
     </div>
     <div class="paginator" id="paginator-ScanIdentification">
+    </div>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="ExportDetailsTable" class="fixed-width-table table" hidden="hidden">
+        <thead id="table-header-ExportDetailsTable">
+        </thead>
+        <tbody id="table-body-ExportDetailsTable">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-ExportDetailsTable">
+</div>
+<div class="modal fade" id="ExportModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Please Choose Button</h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="Close_ExportModal()"<span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <button type="button" id="btnDownload" class="btn btn-primary btn-height" onclick="ExportSummary()">Export Summary</button>
+                <button type="button" id="btnDownloadDetails" class="btn btn-primary btn-height" onclick="DownloadPalletPacking()">Export Details</button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger btn-height" onclick="Close_ExportModal()">Cancel</button>
+            </div>
+        </div>
     </div>
 </div>
