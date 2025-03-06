@@ -6354,3 +6354,9 @@ a.icon-height {
     display: none;
     /* Initially hidden */
 }
+
+.SizeDespTd {
+    display: grid;
+    grid-template-columns: 60% 40%;
+    grid-gap: 2px;
+}
