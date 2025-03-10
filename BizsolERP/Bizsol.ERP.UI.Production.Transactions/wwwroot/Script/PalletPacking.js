@@ -790,7 +790,7 @@ function Delete(ColForWhere, ColValue) {
     }
 }
 
-function PalletPacking_Print(Mode) {
+function PalletPacking_Print(Mode,isDownload) {
     let PalletNosToPrint = "";
     if (Mode === 'Grid') {
 
@@ -815,7 +815,7 @@ function PalletPacking_Print(Mode) {
         toastr.error("Please select at least one row to print.");
         return;
     }
-    PalletPackingService.Print(PalletNosToPrint).then(function (response) {
+    PalletPackingService.Print(PalletNosToPrint, isDownload).then(function (response) {
         let url = response.Url;
         const a = document.createElement('a');
         a.style.display = 'none';
@@ -906,7 +906,8 @@ function updateFooterOrderWise(data) {
         }
     }
 }
-function clearFooterOrderWise() {
+
+{
     const tfoot = document.querySelector("#PalletPacking tfoot");
     if (tfoot) {
         tfoot.innerHTML = "";

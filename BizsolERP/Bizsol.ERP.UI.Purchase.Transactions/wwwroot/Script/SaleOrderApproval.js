@@ -1,4 +1,5 @@
 ﻿import { SaleOrderApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SaleOrderApprovalService.js';
+
 let FrmType = '';
 let FrmAction = '';
 let G_BCode = 0;
@@ -52,6 +53,7 @@ function GetSaleOrderApproval() {
     });
 }
 function ViewData(Code) {
+    SaleOrderDeliveryTerms(Code);
     SaleOrderApprovalService.GetSaleOrderDetail(Code).then(function (response) {
         if (response && response.length > 0) {
             $('#myModal').modal({
@@ -74,6 +76,37 @@ function ViewData(Code) {
                 "Amount": "right",
                 };
             BizsolCustomFilterGrid.CreateDataTable("table-header-SaleOrderApprovalTable", "table-body-SaleOrderApprovalTable", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        } else {
+            toastr.error("No valid data found:", response);
+        }
+    }).catch(error => {
+        toastr.error("Error in fetching data:", error);
+    });
+}
+function SaleOrderDeliveryTerms(Code) {
+    SaleOrderApprovalService.GetSaleOrderDeliveryTermsDetail(Code).then(function (response) {
+        if (response && response.length > 0) {
+            $('#myModal').modal({
+                backdrop: 'static',
+            });
+            $('#myModal').modal('show');
+            const StringFilterColumn = [];
+            const NumericFilterColumn = [];
+            const DateFilterColumn = [];
+            const Button = false;
+            const showButtons = [];
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = ["Code", "BuyerPOMaster_Code"];
+            const ColumnAlignment = {
+                "Order Date": "center",
+                "BuyerPOMaster_Code": "center",
+                "Qty KG": "right",
+                "Qty PC": "right",
+                "Qty SQM": "right",
+                "Amount": "right",
+            };
+            BizsolCustomFilterGrid.CreateDataTable("table-header-SaleOrderDeliveryTermsTable", "table-body-SaleOrderDeliveryTermsTable", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            $('#paginator-SaleOrderDeliveryTermsTable').hide();
         } else {
             toastr.error("No valid data found:", response);
         }

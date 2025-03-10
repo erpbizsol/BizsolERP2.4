@@ -1,4 +1,5 @@
 ﻿import { PhysicalStockTakingItemService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PhysicalStockTakingItemService.js';
+import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
 
 let ItemMaster_Code = 0;
 let itemSizeMaster_Code = 0;
@@ -30,9 +31,6 @@ $(document).ready(function () {
     $('#itemName').on('focus', function (e) {
         $("#itemName ").val("");
     });
-    $('#txtScanIdentificationNo').on('focus', function (e) {
-        $("#txtScanIdentificationNo ").val("");
-    });
     $('#txtdate').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#remarks").focus();
@@ -53,13 +51,17 @@ $(document).ready(function () {
             $("#txtScanIdentificationNo").focus();
         }
     });
-    $('#txtScanIdentificationNo').on('keydown', function (e) {
-        if (e.key === "Enter") {
+    $('#txtScanIdentificationNo').on('keyup keypress', function (e) {
+        var keyCode = e.keyCode || e.which;
+        if (keyCode === 13) {
+            e.preventDefault();
             IdentificationNo = $('#txtScanIdentificationNo').val();
             if (IdentificationNo === '') {
                 return;
             }
             ScanCoilDetails(IdentificationNo, ItemMaster_Code);
+            $('#txtScanIdentificationNo').focus()
+            return false;
         }
     });
 });
@@ -213,7 +215,7 @@ function PhysicalStockTackingSummaryByAsOnDateCreate(todayDate) {
             PhysicalStockTackingTransactionDetails(G_PhysicalStockTackingMaster_Code);
         }
         else {
-            toastr.error("Please Create A New Stock Audit");
+            toastr.info("Please Create A New Stock Audit");
             HideLoader();
             G_PhysicalStockTackingMaster_Code = 0;
         }
@@ -469,32 +471,21 @@ function ScanIdDataListStockTacing(ItemMaster_Code) {
     PhysicalStockTakingItemService.ScanIdDataListStockTacing(ItemMaster_Code)
         .then(function (response) {
             HideLoader();
-
-            const datalist = $('#txtScanIdentificationNoList');
-            datalist.empty();
-
-            if (response && Array.isArray(response) && response.length > 0) {
-                response.forEach(function (item) {
-                    if (item.StockIDCombo) { 
-                        const option = $('<option>').val(item.StockID).text(item.StockID);
-                        datalist.append(option);
-                    
-                    }
-                });
-
-                $('#txtScanIdentificationNo').off('keydown').on('keydown', function (e) {
-                    if (e.key === "Enter") {
-                        let IdentificationNo = $("#txtScanIdentificationNo").val();
-                        ScanCoilDetails(IdentificationNo, ItemMaster_Code);
-                    }
-                });
+                //$('#txtScanIdentificationNo').off('keydown').on('keydown', function (e) {
+                //    if (e.key === "Enter") {
+                //        let IdentificationNo = $("#txtScanIdentificationNo").val();
+                //        ScanCoilDetails(IdentificationNo, ItemMaster_Code);
+                //    }
+                //});
+            
+            if (response && response.length > 0) {
+                AutoSuggestionControl.SetUpAutoSuggestion($('#txtScanIdentificationNo'), $('#txtScanIdentificationNoList'), response.map((item) => ({ Desp: item.StockID })), 'StartWith');
             } else {
-                //toastr.error('No data received or empty response');
-                HideLoader();
+                $('#txtScanIdentificationNoList').empty();
             }
         })
         .catch(function (error) {
-            toastr.error('Error fetching user list:', error);
+            console.error("Error fetching pending IDs:", error);
         });
 }
 function GetddlSizeDesp() {

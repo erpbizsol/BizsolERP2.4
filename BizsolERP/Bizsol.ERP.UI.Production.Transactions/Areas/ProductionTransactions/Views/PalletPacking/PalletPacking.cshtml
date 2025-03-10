@@ -83,9 +83,10 @@
                     <label for="txtdate" class="col-form-label-sm fw-bold">Pallet Date:<span class="text-danger">*</span></label>
                     <input id="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" required />
                 </div>
-                <div class="col-md-3 without-label-field ">
+                <div class="col-md-4 without-label-field ">
                     <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" /> &nbsp;
-                        <input type="button" onclick="PalletPacking_Print('Grid')" class="btn btn-primary btn-height" value="Print" />&nbsp;
+                    <input type="button" onclick="PalletPacking_Print('Grid','N')" class="btn btn-primary btn-height" value="Print" />&nbsp;
+                    <input type="button" onclick="PalletPacking_Print('Grid','Y')" class="btn btn-primary btn-height" value="Print Download" />&nbsp;
                     <input type="button" id="btnExport" class="btn btn-primary btn-height" value="Export">
                 </div>
             </div>
@@ -94,9 +95,10 @@
                     <label for="txtorderNo" class="col-form-label-sm fw-bold">Order No:<span class="text-danger">*</span></label>
                         <select id="txtOrderNo" class="form-control form-control-sm box_border"></select>
                 </div>                    
-                    <div class="col-md-3 without-label-field">
+                    <div class="col-md-4 without-label-field">
                         <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" /> &nbsp;
-                        <input type="button" onclick="PalletPacking_Print('Grid')" class="btn btn-primary btn-height" value="Print" />&nbsp;
+                        <input type="button" onclick="PalletPacking_Print('Grid','N')" class="btn btn-primary btn-height" value="Print" />&nbsp;
+                        <input type="button" onclick="PalletPacking_Print('Grid','Y')" class="btn btn-primary btn-height" value="Print Download" />&nbsp;
                         <input type="button" id="btnExport" class="btn btn-primary btn-height" value="Export" onclick="Export()">
                     </div>
             </div>
@@ -187,7 +189,7 @@
 
                 <div class="row">
                     <div class="col-md-12 mb-2 text-end">
-                        <button type="button" title="Print" onclick="PalletPacking_Print('Single')" class="btn btn-primary btn-height">Print</button>
+                        <button type="button" title="Print" onclick="PalletPacking_Print('Single','N')" class="btn btn-primary btn-height">Print</button>
                         <button type="button" onclick="CreateNew()" title="Create New" class="btn btn-primary btn-height">Create New</button>
                         <button type="button" class="btn btn-primary btn-height" title="Back" onclick="Close()">BACK</button>
                     </div>

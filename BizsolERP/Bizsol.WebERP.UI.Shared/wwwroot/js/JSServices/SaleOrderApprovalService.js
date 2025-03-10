@@ -53,5 +53,13 @@ const SaleOrderApprovalService = {
             }
         );
     },
+    GetSaleOrderDeliveryTermsDetail: function GetSaleOrderDeliveryTermsDetail(BuyerPOMaster_Code) {
+        var url = UrlService.API_ENDPOINT_SaleOrderApproval + "/GetSaleOrderDeliveryTermsDetail?BuyerPOMaster_Code=" + BuyerPOMaster_Code;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 export { SaleOrderApprovalService }
