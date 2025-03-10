@@ -400,7 +400,7 @@ function EditMode(isView) {
             console.log(response);
             if (response.length > 0) {
                
-                BuyerPOMaster_Code = response[0][0].BuyerPoMaster_Code;
+                BuyerPOMaster_Code = response[0][0].MRNMaster_Code > 0 ? response[0][0].MRNMaster_Code :  response[0][0].BuyerPoMaster_Code;
                 ArryPackingListTransaction = response[1];
                 Bind_PackingListTransactionGrid(isView);
                 SelectOptionByText('ddlPackingType', response[0][0].PackingType);
@@ -900,13 +900,14 @@ function PackingListFG_StartLoading(G_LoadNoOfPalletData=[]) {
         driverMobileNo: $('#txtDriverNo')[0].value,
         driverName: "",
         distanceKM: parseInt($('#txtDistance')[0].value),
-        despatchAdviceMaster_Code: InvoiceByOrder == "Y" ? 0 : parseInt(ddlOrderNo_Code),
+        despatchAdviceMaster_Code: InvoiceByOrder == "Y" || G_PackingTypeDesp.toUpperCase().trim() === ('PURCHASE RETURN').trim() ? 0 : parseInt(ddlOrderNo_Code),
         removalTime: "",
         requisitionNo: $('#ddlReqNo')[0].value == "0" ? "" : $('#ddlReqNo')[0].value,
-        buyerPoMaster_Code: InvoiceByOrder == "Y" ? parseInt(ddlOrderNo_Code) : 0,
+        buyerPoMaster_Code: G_PackingTypeDesp.toUpperCase().trim() === ('PURCHASE RETURN').trim() ? 0 : InvoiceByOrder == "Y" ? parseInt(ddlOrderNo_Code) : 0,
         printPC: "",
         printMT: "",
-        printMTRS: ""
+        printMTRS: "",
+        mrnMaster_Code: G_PackingTypeDesp.toUpperCase().trim() === ('PURCHASE RETURN').trim() ? parseInt(ddlOrderNo_Code) : 0
     }];
 
     let packingListPayLoad = {
@@ -1223,7 +1224,8 @@ function ScanId() {
                 erpItemMaster_code: item.ERPItemMaster_code,
                 palletType: "",
                 palletWeight: 0,
-                qtyRMTR: 0 
+                qtyRMTR: 0,
+                mrnMaster_Code: item.MRNMaster_Code
             }));
 
             console.log(AddPackingListTransaction);
