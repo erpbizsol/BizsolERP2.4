@@ -102,9 +102,9 @@ const PalletPackingService = {
             }
         );
     },
-    Print: function Print(PalletNosToPrint) {
+    Print: function Print(PalletNosToPrint,IsDownload) {
         let CompanyCode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
-        let url = `${UrlService.API_ENDPOINT_CRYSTAL}/Printpallet?PalletNo=${PalletNosToPrint}`;
+        let url = `${UrlService.API_ENDPOINT_CRYSTAL}/Printpallet?PalletNo=${PalletNosToPrint}&IsDownload=${IsDownload}`;
 
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {

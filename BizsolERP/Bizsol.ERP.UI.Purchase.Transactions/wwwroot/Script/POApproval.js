@@ -48,6 +48,7 @@ function unApprovedPO() {
     });
 }
 function ViewData(Code) {
+    PODeliveryTermsDetails(Code);
     POApprovalService.GetPODetail(Code).then(function (response) {
         if (response && response.length > 0) {
             $('#myModal').modal({
@@ -100,7 +101,31 @@ function ViewData(Code) {
         toastr.error("Error in fetching data:", error);
     });
 }
-
+function PODeliveryTermsDetails(Code) {
+    POApprovalService.GetPODeliveryTermsDetail(Code).then(function (response) {
+        if (response && response.length > 0) {
+            $('#myModal').modal({
+                backdrop: 'static',
+            });
+            $('#hfCodeForBack').val(Code);
+            $('#myModal').modal('show');
+            const stringFilterColumn = [];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+            const ColumnAlignment = {};
+            BizsolCustomFilterGrid.CreateDataTable("table-header-PoapprovalModal", "table-body-PoapprovalModal", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            $('#paginator-PoapprovalDeliveryTerms').hide();
+        } else {
+            toastr.error("No valid data found:", response);
+        }
+    }).catch(error => {
+        toastr.error("Error in fetching data:", error);
+    });
+}
 function CloseModal() {
     $('#myModal').modal('hide');
 }
