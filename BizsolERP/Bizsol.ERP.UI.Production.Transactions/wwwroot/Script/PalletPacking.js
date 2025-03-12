@@ -412,19 +412,7 @@ function FillWarehouse() {
             $('#txtWarehouse').select2({
                 width: '-webkit-fill-available'
             });
-            const inputElement = document.getElementById("txtWarehouse");
-            $('#txtWarehouse').on("change", () => {
-                const inputValue = inputElement.value;
-                const selectedOption = Array.from(inputElement.options).find(
-                    option => option.value === inputValue
-                );
-                if (selectedOption) {
-                    Godownmaster_Code = selectedOption.getAttribute("value");
-                    if (Godownmaster_Code !== undefined && Godownmaster_Code !== 0) {
-                        onSelectRoll(BuyerPOMaster_Code, Godownmaster_Code);
-                    }
-                }
-            });
+            
         } else {
             toastr.error('No data received or empty response');
         }
@@ -790,7 +778,7 @@ function Delete(ColForWhere, ColValue) {
     }
 }
 
-function PalletPacking_Print(Mode) {
+function PalletPacking_Print(Mode,isDownload) {
     let PalletNosToPrint = "";
     if (Mode === 'Grid') {
 
@@ -815,7 +803,7 @@ function PalletPacking_Print(Mode) {
         toastr.error("Please select at least one row to print.");
         return;
     }
-    PalletPackingService.Print(PalletNosToPrint).then(function (response) {
+    PalletPackingService.Print(PalletNosToPrint, isDownload).then(function (response) {
         let url = response.Url;
         const a = document.createElement('a');
         a.style.display = 'none';
@@ -906,7 +894,8 @@ function updateFooterOrderWise(data) {
         }
     }
 }
-function clearFooterOrderWise() {
+
+{
     const tfoot = document.querySelector("#PalletPacking tfoot");
     if (tfoot) {
         tfoot.innerHTML = "";
@@ -1193,6 +1182,20 @@ function DownloadPalletPacking() {
         });
 }
 
+const inputWarehouseElement = document.getElementById("txtWarehouse");
+$('#txtWarehouse').on("change", () => {
+    const inputValue = inputWarehouseElement.value;
+    const selectedOption = Array.from(inputWarehouseElement.options).find(
+        option => option.value === inputValue
+    );
+    if (selectedOption) {
+        Godownmaster_Code = selectedOption.getAttribute("value");
+        if (Godownmaster_Code !== undefined && Godownmaster_Code !== 0) {
+            let buyerPOMaster_Code = $('#txtOrderNo1').val();
+            onSelectRoll(buyerPOMaster_Code, Godownmaster_Code);
+        }
+    }
+});
 window.GetPackedPalletDateAndOrderWise = GetPackedPalletDateAndOrderWise;
 window.FillPendingOrder = FillPendingOrder;
 window.CreateNew = CreateNew;
