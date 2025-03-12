@@ -412,19 +412,7 @@ function FillWarehouse() {
             $('#txtWarehouse').select2({
                 width: '-webkit-fill-available'
             });
-            const inputElement = document.getElementById("txtWarehouse");
-            $('#txtWarehouse').on("change", () => {
-                const inputValue = inputElement.value;
-                const selectedOption = Array.from(inputElement.options).find(
-                    option => option.value === inputValue
-                );
-                if (selectedOption) {
-                    Godownmaster_Code = selectedOption.getAttribute("value");
-                    if (Godownmaster_Code !== undefined && Godownmaster_Code !== 0) {
-                        onSelectRoll(BuyerPOMaster_Code, Godownmaster_Code);
-                    }
-                }
-            });
+            
         } else {
             toastr.error('No data received or empty response');
         }
@@ -1194,6 +1182,20 @@ function DownloadPalletPacking() {
         });
 }
 
+const inputWarehouseElement = document.getElementById("txtWarehouse");
+$('#txtWarehouse').on("change", () => {
+    const inputValue = inputWarehouseElement.value;
+    const selectedOption = Array.from(inputWarehouseElement.options).find(
+        option => option.value === inputValue
+    );
+    if (selectedOption) {
+        Godownmaster_Code = selectedOption.getAttribute("value");
+        if (Godownmaster_Code !== undefined && Godownmaster_Code !== 0) {
+            let buyerPOMaster_Code = $('#txtOrderNo1').val();
+            onSelectRoll(buyerPOMaster_Code, Godownmaster_Code);
+        }
+    }
+});
 window.GetPackedPalletDateAndOrderWise = GetPackedPalletDateAndOrderWise;
 window.FillPendingOrder = FillPendingOrder;
 window.CreateNew = CreateNew;
