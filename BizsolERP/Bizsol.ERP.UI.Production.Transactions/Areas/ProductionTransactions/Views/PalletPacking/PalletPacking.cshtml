@@ -44,25 +44,32 @@
         height: 20px;
         border: 2px solid #ccc;
         border-radius: 4px;
-        position: relative;
+        position: relative !important;
+        top: 0 !important;
         cursor: pointer;
     }
 
-        /* When checkbox is checked, make the background green */
-        input[type="checkbox"]:checked {
-            background-color: green;
-            border-color: green;
-        }
+    /* When checkbox is checked, make the background green */
+    input[type="checkbox"]:checked {
+        background-color: green;
+        border-color: green;
+    }
 
-            /* Adding a checkmark when checked */
-            input[type="checkbox"]:checked::after {
-                content: '✔';
-                color: white;
-                font-size: 15px;
-                position: absolute;
-                top: 0;
-                left: 2px;
-            }
+    th input[type="checkbox"]:checked {
+        position: relative !important;
+        top: 5px !important;
+        left: 5px;
+    }
+
+    /* Adding a checkmark when checked */
+    input[type="checkbox"]:checked::after {
+        content: '✔';
+        color: white;
+        font-size: 12px;
+        position: absolute;
+        top: 0px;
+        left: 3px;
+    }
 </style>
 <div id="dateAndOrderByPallet">
 <div class="card">

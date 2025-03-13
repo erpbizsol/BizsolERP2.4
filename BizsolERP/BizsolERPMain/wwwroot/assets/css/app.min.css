@@ -1,6 +1,5 @@
-
-
 @import url(../../../../css);
+
 /*@import url(css/styles.css);*/
 /**/
 body {
@@ -60,7 +59,8 @@ body {
     margin: 0 auto;
     height: 51px;
     /*    padding: 0 1.5rem 0 0;
-*/ background-color: #275481;
+*/
+    background-color: #275481;
 }
 
     .navbar-header .notificationCount {
@@ -88,7 +88,9 @@ body {
     color: #fff;
 }
 
-.navbar-headerimg, img, svg {
+.navbar-headerimg,
+img,
+svg {
     border-radius: 20px;
 }
 
@@ -146,7 +148,8 @@ body:not([data-sidebar-size=sm]) #vertical-menu-btn {
         /* padding-left: 17px;
     padding-right: 50px;*/
         /*    background-color: var(--bs-topbar-search-bg);
-*/ background-color: #fafdf4;
+*/
+        background-color: #fafdf4;
         -webkit-box-shadow: none;
         box-shadow: none
     }
@@ -235,10 +238,10 @@ body[data-bs-theme=dark] .layout-mode-light {
     padding: 3px
 }
 
-.header-profile-user:hover {
-    background-color: #b1b3bc;
-    border: 2px solid #c9cee4;
-}
+    .header-profile-user:hover {
+        background-color: #b1b3bc;
+        border: 2px solid #c9cee4;
+    }
 
 .navbar-header .userIcon {
     padding: 4px;
@@ -261,6 +264,7 @@ body[data-bs-theme=dark] .layout-mode-light {
     /*    right: -22px !important;
 */
 }
+
 /*
 .navbar-header .dropdown-menu-end .dropdown-item:hover {
     background-color: #e6e9f7;
@@ -271,7 +275,7 @@ body[data-bs-theme=dark] .layout-mode-light {
     right: 0;
     background-color: #ffffff;
     /* box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); */
-    box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
     z-index: 1;
     border-radius: 5px;
     width: 200px;
@@ -656,34 +660,34 @@ body[data-layout=horizontal] .footer {
     margin: 0
 }
 
-.metismenu li {
-    display: block;
-    width: 100%
-}
+    .metismenu li {
+        display: block;
+        width: 100%
+    }
 
-.metismenu .mm-collapse {
-    display: none
-}
+    .metismenu .mm-collapse {
+        display: none
+    }
 
-.metismenu .mm-collapse:not(.mm-show) {
-    display: none
-}
+        .metismenu .mm-collapse:not(.mm-show) {
+            display: none
+        }
 
-.metismenu .mm-collapse.mm-show {
-    display: block
-}
+        .metismenu .mm-collapse.mm-show {
+            display: block
+        }
 
-.metismenu .mm-collapsing {
-    position: relative;
-    height: 0;
-    overflow: hidden;
-    -webkit-transition-timing-function: ease;
-    transition-timing-function: ease;
-    -webkit-transition-duration: .35s;
-    transition-duration: .35s;
-    -webkit-transition-property: height, visibility;
-    transition-property: height, visibility
-}
+    .metismenu .mm-collapsing {
+        position: relative;
+        height: 0;
+        overflow: hidden;
+        -webkit-transition-timing-function: ease;
+        transition-timing-function: ease;
+        -webkit-transition-duration: .35s;
+        transition-duration: .35s;
+        -webkit-transition-property: height, visibility;
+        transition-property: height, visibility
+    }
 
 .vertical-menu {
     width: 250px;
@@ -699,29 +703,27 @@ body[data-layout=horizontal] .footer {
 
 .main-content {
     margin-left: 250px;
-        overflow: hidden;
-        min-height: 175.667px;
-        /*min-height: 511.667px;*/
-
-   /* position: relative;
+    overflow: hidden;
+    min-height: 175.667px;
+    /*min-height: 511.667px;*/
+    /* position: relative;
     z-index: 1;
     display: block;
     height: 100%;
     overflow: auto;
     overflow-y: hidden;*/
-
 }
 
-/*.PAGE {
+    /*.PAGE {
     flex: 1;
     overflow-y: auto;
     height: calc(100vh - 77px);
 }*/
 
-.main-content .content {
-    padding: 0 15px 10px 15px;
-    margin-top: 70px
-}
+    .main-content .content {
+        padding: 0 15px 10px 15px;
+        margin-top: 70px
+    }
 
 #sidebar-menu {
     padding: 10px 9px;
@@ -758,38 +760,38 @@ body[data-layout=horizontal] .footer {
         font-weight: 500
     }
 
-    #sidebar-menu ul li a i {
-        display: inline-block;
-        min-width: 1.75rem;
-        padding-bottom: .125em;
-        font-size: 1.25rem;
-        line-height: 1.40625rem;
-        vertical-align: middle;
-        color: var(--bs-sidebar-menu-item-icon-color);
-        -webkit-transition: all .4s;
-        transition: all .4s
-    }
+        #sidebar-menu ul li a i {
+            display: inline-block;
+            min-width: 1.75rem;
+            padding-bottom: .125em;
+            font-size: 1.25rem;
+            line-height: 1.40625rem;
+            vertical-align: middle;
+            color: var(--bs-sidebar-menu-item-icon-color);
+            -webkit-transition: all .4s;
+            transition: all .4s
+        }
 
-    #sidebar-menu ul li a .side-menu-icon {
-        height: 15px;
-        width: 13px;
-        color: var(--bs-sidebar-menu-item-icon-color);
-        fill: var(--bs-sidebar-menu-item-icon-effact-color);
-        margin-top: -3px;
-    }
+        #sidebar-menu ul li a .side-menu-icon {
+            height: 15px;
+            width: 13px;
+            color: var(--bs-sidebar-menu-item-icon-color);
+            fill: var(--bs-sidebar-menu-item-icon-effact-color);
+            margin-top: -3px;
+        }
 
-    #sidebar-menu ul li a:hover {
-        color: var(--bs-sidebar-menu-item-hover-color);
-    }
+        #sidebar-menu ul li a:hover {
+            color: var(--bs-sidebar-menu-item-hover-color);
+        }
 
-    #sidebar-menu ul li a:hover i {
-        color: var(--bs-sidebar-menu-item-hover-color)
-    }
+            #sidebar-menu ul li a:hover i {
+                color: var(--bs-sidebar-menu-item-hover-color)
+            }
 
-    #sidebar-menu ul li a:hover svg {
-        color: var(--bs-sidebar-menu-item-hover-color);
-        fill: var(--bs-sidebar-menu-item-hover-effact-color)
-    }
+            #sidebar-menu ul li a:hover svg {
+                color: var(--bs-sidebar-menu-item-hover-color);
+                fill: var(--bs-sidebar-menu-item-hover-effact-color)
+            }
 
     #sidebar-menu ul li .badge {
         margin-top: 4px
@@ -805,18 +807,18 @@ body[data-layout=horizontal] .footer {
             color: var(--bs-sidebar-menu-sub-item-color);
         }
 
-        #sidebar-menu ul li ul.sub-menu li a:hover {
-            color: #545a6d;
-        }
+            #sidebar-menu ul li ul.sub-menu li a:hover {
+                color: #545a6d;
+            }
 
         #sidebar-menu ul li ul.sub-menu li ul.sub-menu {
             padding: 0
         }
 
-        #sidebar-menu ul li ul.sub-menu li ul.sub-menu li a {
-            padding: .4rem 1.5rem .4rem 3.5rem;
-            font-size: 12px;
-        }
+            #sidebar-menu ul li ul.sub-menu li ul.sub-menu li a {
+                padding: .4rem 1.5rem .4rem 3.5rem;
+                font-size: 12px;
+            }
 
     #sidebar-menu .iconBg {
         background-color: #607d8b;
@@ -835,13 +837,13 @@ body[data-layout=horizontal] .footer {
             color: #607d8b !important;
         }
 
-#sidebar-menu ul li:hover a {
-    color: #607d8b;
-}
+    #sidebar-menu ul li:hover a {
+        color: #607d8b;
+    }
 
-#sidebar-menu .side-menu-icon {
-    color: #fff !important;
-}
+    #sidebar-menu .side-menu-icon {
+        color: #fff !important;
+    }
 
 /* #sidebar-menu .sub-menu .mm-active {
     background-color: #e2eaee;
@@ -860,10 +862,6 @@ body[data-layout=horizontal] .footer {
 #side-menu .mm-active > a {
     color: #0d6efd;
 }
-
-/*#side-menu .mm-active > .sub-menu {
-    display: block !important;
-}*/
 
 #sidebar-menu .sub-menu .mm-active > a {
     background-color: #d2d5ea;
@@ -898,14 +896,14 @@ body[data-layout=horizontal] .footer {
     color: var(--bs-sidebar-menu-item-active-color) !important
 }
 
-.mm-active > a i {
-    color: var(--bs-sidebar-menu-item-active-color) !important
-}
+    .mm-active > a i {
+        color: var(--bs-sidebar-menu-item-active-color) !important
+    }
 
-.mm-active > a svg {
-    color: var(--bs-sidebar-menu-item-active-color) !important;
-    fill: var(--bs-sidebar-menu-item-active-effact-color)
-}
+    .mm-active > a svg {
+        color: var(--bs-sidebar-menu-item-active-color) !important;
+        fill: var(--bs-sidebar-menu-item-active-effact-color)
+    }
 
 .mm-active .active {
     color: var(--bs-sidebar-menu-item-active-color) !important
@@ -1009,26 +1007,26 @@ body[data-sidebar-size=sm] {
                 border-radius: 5px;
             }
 
-            body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:active,
-            body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:focus,
-            body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:hover {
-                color: var(--bs-sidebar-menu-item-hover-color)
-            }
+                body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:active,
+                body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:focus,
+                body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:hover {
+                    color: var(--bs-sidebar-menu-item-hover-color)
+                }
 
-            body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a i {
-                font-size: 1.45rem;
-                margin-left: 4px
-            }
+                body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a i {
+                    font-size: 1.45rem;
+                    margin-left: 4px
+                }
 
-            body[data-sidebar-size=sm] .vertical-menu #sidebar-menu ul li:hover .iconBg .side-menu-icon {
-                height: 15px;
-                width: 13px;
-                position: relative;
-            }
+        body[data-sidebar-size=sm] .vertical-menu #sidebar-menu ul li:hover .iconBg .side-menu-icon {
+            height: 15px;
+            width: 13px;
+            position: relative;
+        }
 
-            body[data-sidebar-size=sm] .vertical-menu #sidebar-menu ul li:hover .iconBg {
-                padding: 3px 5px;
-            }
+        body[data-sidebar-size=sm] .vertical-menu #sidebar-menu ul li:hover .iconBg {
+            padding: 3px 5px;
+        }
 
         body[data-sidebar-size=sm] .vertical-menu #sidebar-menu ul li a .iconBg .side-menu-icon {
             /* margin-top: 0px;*/
@@ -1038,7 +1036,6 @@ body[data-sidebar-size=sm] {
             top: 0.5px;
         }
 
- 
         body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a span {
             display: none;
             /*padding-left: 25px;*/
@@ -1059,20 +1056,17 @@ body[data-sidebar-size=sm] {
             display: none
         }
 
-
-
         body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li:hover > a {
             position: relative;
             width: calc(190px + 70px);
             color: #fff !important;
             /*background-color: var(--bs-sidebar-bg);*/
-             background-color: #607d8b;
+            background-color: #607d8b;
             -webkit-transition: none;
             transition: none;
-            
         }
 
-         /*body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:hover  {
+            /*body[data-sidebar-size=sm] .vertical-menu #sidebar-menu > ul > li > a:hover  {
               background-color: #607d8b;
          }*/
 
@@ -2173,16 +2167,17 @@ body[data-layout=horizontal][data-layout-size=boxed] .navbar-header {
 }
 
 .accordion-button {
-    background-color: #d5d6e0 ;
+    background-color: #d5d6e0;
 }
 
-.accordion-button:not(.collapsed) {
-    background-color: #bdbede;
-}
+    .accordion-button:not(.collapsed) {
+        background-color: #bdbede;
+    }
 
-.accordion-button:focus {
-    box-shadow: none;
-}
+    .accordion-button:focus {
+        box-shadow: none;
+    }
+
 .avatar-xs {
     height: 1rem;
     width: 1rem
@@ -5880,13 +5875,13 @@ body[data-layout=horizontal] .chat-conversation {
         padding: 16px 20px
     }
 
-    .pricing-tab-box .nav-link.active i {
-        color: #5156be !important
-    }
+        .pricing-tab-box .nav-link.active i {
+            color: #5156be !important
+        }
 
-    .pricing-tab-box .nav-link.active h1 {
-        color: #5156be !important
-    }
+        .pricing-tab-box .nav-link.active h1 {
+            color: #5156be !important
+        }
 
 [data-bs-theme=dark] .pricing-tab-box .nav-link {
     border-color: var(--bs-border-color)
@@ -5907,14 +5902,18 @@ table {
     /*    height: calc(90vh - 208px);*/
 }
 
-table > thead, th {
+table > thead,
+th {
     position: sticky;
     top: -1px;
     border-collapse: collapse;
     z-index: 1;
 }
 
-table, th, td, tr {
+table,
+th,
+td,
+tr {
     padding: 5px 5px !important;
     border: 1px solid #ddd;
     height: 16px !important;
@@ -5977,7 +5976,8 @@ table, th, td, tr {
     width: 100px;
 }
 
-button, .icon-height {
+button,
+.icon-height {
     border-radius: 6px;
     height: 25px;
     font-size: 7pt;
@@ -5999,10 +5999,10 @@ button, .icon-height {
     background-color: #275481;
 }
 
-.btn-primary:hover {
-    background-image: linear-gradient(#26557d, #3878af, #175489);
-    border-radius: 7px !important;
-}
+    .btn-primary:hover {
+        background-image: linear-gradient(#26557d, #3878af, #175489);
+        border-radius: 7px !important;
+    }
 
 .btn-danger {
     box-shadow: 0 2px 6px 0 rgb(99 97 97 / 50%);
@@ -6010,14 +6010,14 @@ button, .icon-height {
     border: none;
 }
 
-.btn-danger:disabled {
-    background-color: #d4282c;
-    border: none !important;
-}
+    .btn-danger:disabled {
+        background-color: #d4282c;
+        border: none !important;
+    }
 
-.btn-danger:hover {
-    background-image: linear-gradient(#af1f2c, #e55d6ad9, #af1f2c);
-}
+    .btn-danger:hover {
+        background-image: linear-gradient(#af1f2c, #e55d6ad9, #af1f2c);
+    }
 
 .btn-success {
     box-shadow: 0 2px 6px 0 rgb(94 96 95);
@@ -6025,9 +6025,9 @@ button, .icon-height {
     border: none;
 }
 
-.btn-success:hover {
-    background-image: linear-gradient(#216c4a, #469974, #216c4a);
-}
+    .btn-success:hover {
+        background-image: linear-gradient(#216c4a, #469974, #216c4a);
+    }
 
 .table > tbody > tr:nth-of-type(odd) > * {
     --bs-table-color-type: var(--bs-table-striped-color);
@@ -6152,20 +6152,22 @@ label {
         border-bottom: 3px solid #607d8b;
     }
 
-    .tab-section .nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
+    .tab-section .nav-tabs .nav-link.active,
+    .nav-tabs .nav-item.show .nav-link {
         color: #fffbff;
         background-color: #1c4e80;
         border-bottom: 3px solid #1c4e80;
         /*box-shadow: 0 5px 3px rgba(0, 0, 0, .2);*/
     }
-        .tab-section .nav-tabs .nav-item.active .nav-link,
-        .tab-section .nav-tabs .nav-item .nav-link:hover,
-        .tab-section .nav-tabs .nav-item.active .nav-link:hover {
-            color: #fffbff;
-            background: #728994;
-            border: none;
-            box-shadow: 0 -3px 7px rgba(0,0,0,0.15);
-        }
+
+    .tab-section .nav-tabs .nav-item.active .nav-link,
+    .tab-section .nav-tabs .nav-item .nav-link:hover,
+    .tab-section .nav-tabs .nav-item.active .nav-link:hover {
+        color: #fffbff;
+        background: #728994;
+        border: none;
+        box-shadow: 0 -3px 7px rgba(0, 0, 0, 0.15);
+    }
 
     .tab-section .nav-tabs .nav-item .nav-link:before {
         content: "";
@@ -6180,12 +6182,12 @@ label {
         transition: all 0.3s ease-out 0s;
     }
 
-        .tab-section .nav-tabs .nav-item.active .nav-link:before,
-        .tab-section .nav-tabs .nav-item .nav-link:hover:before {
-            top: 0;
-        }
+    .tab-section .nav-tabs .nav-item.active .nav-link:before,
+    .tab-section .nav-tabs .nav-item .nav-link:hover:before {
+        top: 0;
+    }
 
-    
+
 
 /*======== Tab Section End ========*/
 
@@ -6251,33 +6253,33 @@ a.icon-height {
 }
 
 .AutoSuggestion-list {
-    display: none; /*Initially hidden   position: relative;*/
+    display: none;
+    /*Initially hidden   position: relative;*/
     position: absolute;
     background-color: white;
     border: 1px solid #ccc;
-    /*width: 251px;*/
+    width: -webkit-fill-available;
     font-size: 10pt;
-    max-height: 200px;
+    max-height: 300px;
     overflow-y: auto;
     padding: 0;
     margin-top: 5px;
     list-style-type: none;
-    z-index: 1000; /*Ensure it appears above other content */
+    z-index: 1000;
+    /*Ensure it appears above other content */
 }
 
-.AutoSuggestion-list li {
+    .AutoSuggestion-list li {
         padding: 8px;
         cursor: pointer;
-}
+    }
 
-.AutoSuggestion-list li:hover {
+        .AutoSuggestion-list li:hover {
             background-color: #f0f0f0;
-           
-}
+        }
 
 .AutoSuggestion-list-highlighted {
     background-color: #9aa0a5;
-   
 }
 
 
@@ -6285,7 +6287,8 @@ a.icon-height {
 
 /* Fullscreen overlay for the loader */
 .loader-overlay {
-    position: fixed; /* Make it fixed to cover the entire page */
+    position: fixed;
+    /* Make it fixed to cover the entire page */
     top: 0;
     left: 0;
     width: 100%;
@@ -6294,7 +6297,8 @@ a.icon-height {
     justify-content: center;
     align-items: center;
     background-color: rgb(17 17 17 / 50%);
-    z-index: 9999; /* Ensure it sits on top of everything else */
+    z-index: 9999;
+    /* Ensure it sits on top of everything else */
 }
 
 /* Style for the loader image */
@@ -6309,7 +6313,8 @@ a.icon-height {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transition: opacity 0.5s ease; /* Transition for opacity */
+    transition: opacity 0.5s ease;
+    /* Transition for opacity */
 }
 
 .content-hidden {
@@ -6317,8 +6322,10 @@ a.icon-height {
     visibility: visible;
     /*  opacity: 0;
                     visibility: hidden;  */
-    pointer-events: none; /* Prevents the user from clicking on the content */
-    transition: opacity 0.5s ease, visibility 0s linear 0.5s; /* Smooth transition for opacity */
+    pointer-events: none;
+    /* Prevents the user from clicking on the content */
+    transition: opacity 0.5s ease, visibility 0s linear 0.5s;
+    /* Smooth transition for opacity */
 }
 
 /*------ Loader End ---------*/
@@ -6330,7 +6337,8 @@ a.icon-height {
 
 /* When sidebar is active */
 .vertical-menu.active {
-    left: 0; /* Bring sidebar into view */
+    left: 0;
+    /* Bring sidebar into view */
 }
 
 /* Overlay styles */
@@ -6343,5 +6351,12 @@ a.icon-height {
     right: 0;
     bottom: 0;
     z-index: 99;
-    display: none; /* Initially hidden */
+    display: none;
+    /* Initially hidden */
+}
+
+.SizeDespTd {
+    display: grid;
+    grid-template-columns: 60% 40%;
+    grid-gap: 2px;
 }
