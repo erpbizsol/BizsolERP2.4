@@ -44,25 +44,32 @@
         height: 20px;
         border: 2px solid #ccc;
         border-radius: 4px;
-        position: relative;
+        position: relative !important;
+        top: 0 !important;
         cursor: pointer;
     }
 
-        /* When checkbox is checked, make the background green */
-        input[type="checkbox"]:checked {
-            background-color: green;
-            border-color: green;
-        }
+    /* When checkbox is checked, make the background green */
+    input[type="checkbox"]:checked {
+        background-color: green;
+        border-color: green;
+    }
 
-            /* Adding a checkmark when checked */
-            input[type="checkbox"]:checked::after {
-                content: '✔';
-                color: white;
-                font-size: 15px;
-                position: absolute;
-                top: 0;
-                left: 2px;
-            }
+    th input[type="checkbox"]:checked {
+        position: relative !important;
+        top: 5px !important;
+        left: 5px;
+    }
+
+    /* Adding a checkmark when checked */
+    input[type="checkbox"]:checked::after {
+        content: '✔';
+        color: white;
+        font-size: 12px;
+        position: absolute;
+        top: 0px;
+        left: 3px;
+    }
 </style>
 <div id="dateAndOrderByPallet">
 <div class="card">
@@ -242,6 +249,31 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger btn-height" onclick="Close_ExportModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="ViewInIDPallet" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Pallet No </h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="Close_ViewIdInPalletModal()"<span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="ViewInIdPalletTable" class="fixed-width-table table">
+                        <thead id="table-header-ViewInIdPalletTable">
+                        </thead>
+                        <tbody id="table-body-ViewInIdPalletTable">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-ViewInIdPalletTable">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger btn-height" onclick="Close_ViewIdInPalletModal()">Cancel</button>
             </div>
         </div>
     </div>
