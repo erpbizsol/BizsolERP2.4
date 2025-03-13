@@ -129,6 +129,14 @@ const PalletPackingService = {
             }
         );
     },
+    ViewInIDPallet: function ViewInIDPallet(PalletNo) {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/ViewInIDPallet?PalletNo=" + PalletNo + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { PalletPackingService }
