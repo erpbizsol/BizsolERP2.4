@@ -220,8 +220,8 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
             const updatedResponse = response.map(item => {
                 let buttonsCheckBox = `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`;
                 let buttonsHTML = item?.['Allow Edit'] === 'Y'
-                    ? `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditPallet(${item?.['Pallet No']},'Y')"><i class="fa-solid fa-pencil"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>`
-                    : `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetPalletViewDetail(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>`;
+                    ? `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditPallet(${item?.['Pallet No']},'Y')"><i class="fa-solid fa-pencil"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>&nbsp;<button class="btn btn-secondary icon-height mb-1" title="View In ID" onclick="ViewPalletId(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>`
+                    : `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetPalletViewDetail(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>&nbsp;<button class="btn btn-secondary icon-height mb-1" title="View In ID" onclick="ViewPalletId(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>`;
 
                 return {
                     ...item,
@@ -390,6 +390,7 @@ function Close() {
     var parts = selectedDate.split('/');
     var formattedSelectedDate = new Date(parts[2], parts[1] - 1, parts[0]);
     formattedSelectedDate = convertDateFormat($('#txtdate').val());
+    Godownmaster_Code = 0;
     BuyerPOMaster_Code = 0;
     BuyerPOMaster_Code = $('#txtOrderNo').val();
     if (BuyerPOMaster_Code > 0) {
@@ -1193,6 +1194,40 @@ function DownloadPalletPacking() {
             toastr.error(error.Msg || 'Error during stock transfer');
         });
 }
+function ViewPalletId(PalletNo) {
+    Showloader();
+    PalletPackingService.ViewInIDPallet(PalletNo).then(function (response) {
+        if (response && response.length > 0) {
+            HideLoader();
+            $('#ViewInIDPallet').modal({
+                backdrop: 'static',
+            });
+            $('#ViewInIDPallet').modal('show');
+
+            const stringFilterColumn = [];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+            const columnAlignment = {};
+
+            BizsolCustomFilterGrid.CreateDataTable("table-header-ViewInIdPalletTable", "table-body-ViewInIdPalletTable", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+        } else {
+            HideLoader();
+            toastr.error('No Data Found');
+            Close_ViewIdInPalletModal();
+        }
+    })
+        .catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || 'Error during Pallet ');
+        });
+}
+function Close_ViewIdInPalletModal() {
+    $('#ViewInIDPallet').modal('hide');
+}
 
 window.GetPackedPalletDateAndOrderWise = GetPackedPalletDateAndOrderWise;
 window.FillPendingOrder = FillPendingOrder;
@@ -1210,3 +1245,5 @@ window.DownloadPalletPacking = DownloadPalletPacking;
 window.Export = Export;
 window.ExportSummary = ExportSummary;
 window.Close_ExportModal = Close_ExportModal;
+window.ViewPalletId = ViewPalletId;
+window.Close_ViewIdInPalletModal = Close_ViewIdInPalletModal;

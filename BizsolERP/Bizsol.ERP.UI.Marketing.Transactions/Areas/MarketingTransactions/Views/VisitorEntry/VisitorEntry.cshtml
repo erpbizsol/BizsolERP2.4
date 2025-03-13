@@ -1,0 +1,152 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/VisitorEntry.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<style>
+    .modal-dialog {
+        max-width: 350px;
+    }
+
+    .highlighted-date {
+        background-color: #3926B6;
+        color: white;
+        border-radius: 30px;
+    }
+
+    .datepicker td, .datepicker th {
+        border-radius: 20px !important;
+    }
+
+    .datepicker table tr td, .datepicker table tr td {
+        padding: 8px 9px !important;
+        height: 16px !important;
+    }
+
+    .datepicker table tfoot {
+        display: none;
+    }
+</style>
+<div class="card">
+    <div class="row">
+        <div class="tab-section">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="checkInTab" data-bs-toggle="tab" data-bs-target="#checkIn"
+                            type="button" role="tab" aria-controls="checkIn" aria-selected="true" onclick="checkIn()">
+                        CHECK IN
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="checkOutTab" data-bs-toggle="tab" data-bs-target="#checkOut"
+                            type="button" role="tab" aria-controls="checkOut" aria-selected="false" onclick="checkOut()">
+                        CHECK OUT
+                    </button>
+                </li>
+            </ul>
+            <div class="tab-content" id="myTabContent">
+                <!-- 1. Check-In Tab -->
+                <div class="tab-pane fade show active" id="checkIn" role="tabpanel" aria-labelledby="checkInTab">
+                    <div id="checkInSection">
+                        <div class="row">
+                            <div class="col-md-3 pe-0">
+                                <label for="checkInDate" class="col-form-label-sm fw-bold">Date:</label>
+                                <input id="checkInDate" name="checkInDate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" required />
+                            </div>
+                            <div class="col-md-3 pe-0">
+                                <label for="checkInTime" class="col-form-label-sm fw-bold">Time:</label>
+                                <input id="checkInTime" name="checkInTime" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Time" required />
+                            </div>
+                            <div class="col-md-3 pe-0">
+                                <label for="checkInMobileNo" class="col-form-label-sm fw-bold">Mobile No.:</label>
+                                <input id="checkInMobileNo" name="checkInMobileNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Mobile No" required />
+                            </div>
+                            <div class="col-md-3 pe-0">
+                                <label for="checkInVisitorName" class="col-form-label-sm fw-bold">Visitor Name:</label>
+                                <input id="checkInVisitorName" name="checkInVisitorName" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Visitor Name" required />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 pe-0">
+                                <label for="checkInAddress" class="col-form-label-sm fw-bold">Address:</label>
+                                <textarea id="checkInAddress" name="checkInAddress" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Address" required></textarea>
+                            </div>
+                            <div class="col-md-3 pe-0">
+                                <label for="checkInPurpose" class="col-form-label-sm fw-bold">Purpose:</label>
+                                <input id="checkInPurpose" name="checkInPurpose" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Purpose" required />
+                            </div>
+                            <div class="col-md-3 pe-0">
+                                <label for="checkInPersonToMeet" class="col-form-label-sm fw-bold">Person To Meet:</label>
+                                <input id="checkInPersonToMeet" name="checkInPersonToMeet" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Person To Meet" required />
+                            </div>
+                            <div class="col-md-3 pe-0">
+                                <label for="checkInVehicleNo" class="col-form-label-sm fw-bold">Vehicle No.:</label>
+                                <input id="checkInVehicleNo" name="checkInVehicleNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Vehicle No" required />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 pe-0">
+                                <label for="checkInRemarks" class="col-form-label-sm fw-bold">Remarks:</label>
+                                <textarea id="checkInRemarks" name="checkInRemarks" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Remarks" required></textarea>
+                            </div>
+                            <div class="col-md-3 pe-0">
+                                <label for="checkInVisitingCardPhoto" class="col-form-label-sm fw-bold">Visiting Card Photo:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text" style="cursor: pointer; height:28px">
+                                        <i class="fa fa-camera"></i>
+                                    </span>
+                                    <input type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm box_border" id="checkInVisitingCardPhoto" />
+                                </div>
+                            </div>
+                            <div class="col-md-3 pe-0">
+                                <label for="checkInPersonPhoto" class="col-form-label-sm fw-bold">Person Photo:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text" style="cursor: pointer; height:28px">
+                                        <i class="fa fa-camera"></i>
+                                    </span>
+                                    <input type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm box_border" id="checkInPersonPhoto" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 text-end">
+                                <button type="button" onclick="Submit()" title="Submit" class="btn btn-primary btn-height">Submit</button>
+                                <button type="button" class="btn btn-primary btn-height" title="Back" onclick="Close()">BACK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Check-Out Tab -->
+                <div class="tab-pane fade" id="checkOut" role="tabpanel" aria-labelledby="checkOutTab">
+                    <div id="checkOutSection" style="display:none;">
+                        <div class="row">
+                            <div class="col-md-1 pe-0">
+                                <label for="checkOutDate" class="col-form-label-sm fw-bold">Date:</label>
+                            </div>
+                            <div class="col-md-2">
+                                <input id="checkOutDate" name="checkOutDate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" required />
+                            </div>
+                            <div class="col-md-1 pe-0">
+                                <button id="checkOutShow" name="checkOutShow" class="btn btn-primary btn-height" autocomplete="off">Show</button>
+                            </div>
+                            <div class="form-group col-md-3">
+                                <span class="radioSection">
+                                    <input type="radio" id="pendingWise" name="filterType" class="col-form-label-sm fw-bold" value="pendingWise" checked> Pending
+                                    <input type="radio" id="allWise" name="filterType" class="col-form-label-sm fw-bold" value="allWise"> All
+                                </span>
+                            </div>
+                            <div class="col-md-5 text-end">
+                                <button type="button" class="btn btn-primary btn-height" title="Back" onclick="Close()">BACK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
