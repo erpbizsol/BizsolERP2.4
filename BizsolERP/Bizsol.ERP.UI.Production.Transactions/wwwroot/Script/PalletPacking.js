@@ -376,7 +376,7 @@ function proceedWithNewPallet() {
     $("#txtScanIdentificationNoList").empty();
     $('#newCreateForm input').prop('disabled', false);
     $('#newCreateForm select').prop('disabled', false);
-
+    Godownmaster_Code = 0;
     FillWarehouse();
     FillPendingOrderModal();
     FillPalletType();

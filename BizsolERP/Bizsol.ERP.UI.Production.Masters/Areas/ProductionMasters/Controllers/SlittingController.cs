@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace Bizsol.WebERP.UI.Production.Transactions.Areas.ProductionTransactions.Controllers
+namespace Bizsol.WebERP.UI.Production.Masters.Areas.ProductionMasters.Controllers
 {
     [Area("ProductionMasters")]
     public class SlittingController : Controller

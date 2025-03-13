@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace Bizsol.WebERP.UI.Production.Transactions.Areas.ProductionTransactions.Controllers
+namespace Bizsol.WebERP.UI.Production.Masters.Areas.ProductionMasters.Controllers
 {
     [Area("ProductionMasters")]
     public class RollingController : Controller
@@ -10,6 +10,10 @@ namespace Bizsol.WebERP.UI.Production.Transactions.Areas.ProductionTransactions.
             return View();
         }
         public IActionResult RollingProductionSummary()
+        {
+            return View();
+        }
+        public IActionResult CoilProductionPlan()
         {
             return View();
         }
