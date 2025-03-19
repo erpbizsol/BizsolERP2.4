@@ -82,6 +82,8 @@ let UrlService = {
 
     API_ENDPOINT_BreakDown: `${environment.BASE_URL}/BreakDownStartOrEnd`,
     API_ENDPOINT_SlittingEntry: `${environment.BASE_URL}/SlittingEntry`,
+    API_ENDPOINT_VisitorMaster: `${environment.BASE_URL}/VisitorMaster`,
+    API_ENDPOINT_CoilProductionPlan: `${environment.BASE_URL}/CoilProductionPlan`,
 }
 
 export { UrlService  }

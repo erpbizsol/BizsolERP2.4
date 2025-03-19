@@ -13,6 +13,7 @@ let todayDate = '';
 let todayDate1 = '';
 let selectedDates = [];
 let PalletNosToPrint = "";
+let G_PrintOrDownloadAllPallet = [];
 $(document).ready(function () {
     $("#ERPHeading").text("Pallet Packing");
     var today = new Date();
@@ -200,6 +201,7 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
     Showloader();
     PalletPackingService.GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code).then(function (response) {
         if (response && response.length > 0) {
+            G_PrintOrDownloadAllPallet = response;
             HideLoader();
             $("#tblDateOrderPallet").show();
             const stringFilterColumn = [];
@@ -213,15 +215,15 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
                 "Pallet Weight": 'right',
                 "Pallet Remark": 'right',
                 "Qty PC": 'right',
-                "Qty MT": 'right',
+                "Qty KG": 'right',
                 "Pallet Date": 'center',
                 "Qty KG": 'right',
             };
             const updatedResponse = response.map(item => {
                 let buttonsCheckBox = `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`;
                 let buttonsHTML = item?.['Allow Edit'] === 'Y'
-                    ? `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditPallet(${item?.['Pallet No']},'Y')"><i class="fa-solid fa-pencil"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>`
-                    : `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetPalletViewDetail(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>`;
+                    ? `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditPallet(${item?.['Pallet No']},'Y')"><i class="fa-solid fa-pencil"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>&nbsp;<button class="btn btn-secondary icon-height mb-1" title="View In ID" onclick="ViewPalletId(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>`
+                    : `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetPalletViewDetail(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>&nbsp;<button class="btn btn-secondary icon-height mb-1" title="View In ID" onclick="ViewPalletId(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>`;
 
                 return {
                     ...item,
@@ -376,7 +378,7 @@ function proceedWithNewPallet() {
     $("#txtScanIdentificationNoList").empty();
     $('#newCreateForm input').prop('disabled', false);
     $('#newCreateForm select').prop('disabled', false);
-
+    Godownmaster_Code = 0;
     FillWarehouse();
     FillPendingOrderModal();
     FillPalletType();
@@ -390,6 +392,7 @@ function Close() {
     var parts = selectedDate.split('/');
     var formattedSelectedDate = new Date(parts[2], parts[1] - 1, parts[0]);
     formattedSelectedDate = convertDateFormat($('#txtdate').val());
+    Godownmaster_Code = 0;
     BuyerPOMaster_Code = 0;
     BuyerPOMaster_Code = $('#txtOrderNo').val();
     if (BuyerPOMaster_Code > 0) {
@@ -539,7 +542,7 @@ function AddIDInPallet(ColForWhere, ColValue, responseGrid) {
             const showButtons = [];
             const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight", "Pallet No"];
             const columnAlignment = {
-                "Qty MT": 'right',
+                "Qty KG": 'right',
                 "Qty PC": 'right',
                 "Qty": 'right',
             };
@@ -644,7 +647,7 @@ function editPalletTable(PalletNo, Godownmaster_Code, isAction) {
             const showButtons = [];
             const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight", "Pallet No"];
             const columnAlignment = {
-                "Qty MT": 'right',
+                "Qty KG": 'right',
                 "Qty PC": 'right',
                 "Qty": 'right',
             };
@@ -720,7 +723,7 @@ function updateFooter(data) {
     if (calculateTotalAmount === "Total Amount") {
         let totalQtyBalWeight = 0;
         data.forEach(row => {
-            totalQtyBalWeight += parseFloat(row["Qty MT"]);
+            totalQtyBalWeight += parseFloat(row["Qty KG"]);
         });
 
         const tfootContent = `
@@ -784,16 +787,31 @@ function PalletPacking_Print(Mode,isDownload) {
 
         let tbPackingList = document.getElementById("PalletPacking");
         let rows = tbPackingList.querySelectorAll("tr");
+        let checkAllPrint = document.getElementById("checkAllPrint");
+        if (checkAllPrint.checked == true) {
 
-        for (let i = 1; i < rows.length; i++) {
-            let tbPackingListUpdateRow = rows[i];
-            let chkId = tbPackingListUpdateRow.cells[11]?.getElementsByTagName('input')[0];
-            let PalletNo = tbPackingListUpdateRow.cells[0]?.innerHTML.trim();
+            if (G_PrintOrDownloadAllPallet.length > 0) {
+                G_PrintOrDownloadAllPallet.forEach(function (item) {
 
-            if (chkId && chkId.checked == true) {
-                PalletNosToPrint += PalletNo + ',';
+                    PalletNosToPrint += item["Pallet No"] + ','
+
+                })
+            }
+
+            
+        } else {
+            
+            for (let i = 1; i < rows.length; i++) {
+                let tbPackingListUpdateRow = rows[i];
+                let chkId = tbPackingListUpdateRow.cells[11]?.getElementsByTagName('input')[0];
+                let PalletNo = tbPackingListUpdateRow.cells[0]?.innerHTML.trim();
+
+                if (chkId && chkId.checked == true) {
+                    PalletNosToPrint += PalletNo + ',';
+                }
             }
         }
+
 
     } else {
         PalletNosToPrint = $('#palletNo').val();
@@ -1028,58 +1046,22 @@ function Close_ExportModal() {
 }
 function ExportSummary() {
     todayDate = convertDateFormat($('#txtdate').val());
-    //let dateString = todayDate.getFullYear() + "-" +
-    //    (todayDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
-    //    todayDate.getDate().toString().padStart(2, "0") + "_" +
-    //    todayDate.getHours().toString().padStart(2, "0") + "-" +
-    //    todayDate.getMinutes().toString().padStart(2, "0") + "-" +
-    //    todayDate.getSeconds().toString().padStart(2, "0");
+    
     PalletPackingService.GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code).then(function (response) {
         if (response && response.length > 0) {
             HideLoader();
-            $("#tblDateOrderPallet").show();
-            const stringFilterColumn = [];
-            const numericFilterColumn = [];
-            const dateFilterColumn = [];
-            const button = false;
-            const stringDoubleFilterColumn = [];
-            const showButtons = [];
-            const hiddenColumns = ["Allow Edit", "Print"];
-            const columnAlignment = {
-                "Pallet Weight": 'right',
-                "Pallet Remark": 'right',
-                "Qty PC": 'right',
-                "Qty MT": 'right',
-                "Pallet Date": 'center',
-                "Qty KG": 'right',
-            };
-            const updatedResponse = response.map(item => {
-                let buttonsCheckBox = `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`;
-                let buttonsHTML = item?.['Allow Edit'] === 'Y'
-                    ? `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditPallet(${item?.['Pallet No']})"><i class="fa-solid fa-pencil"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>`
-                    : `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetPalletViewDetail(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>`;
-
-                return {
-                    ...item,
-                    Action: buttonsHTML,
-                    'Print <input type="checkbox" id="checkAllPrint" onchange="toggleAllSelection(this)" checked>': buttonsCheckBox,
-                };
-            });
-            BizsolCustomFilterGrid.CreateDataTable("table-header-PalletPacking", "table-body-PalletPacking", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
-            if (updatedResponse?.length > 0) {
-                updateFooterOrderWise(updatedResponse);
-            }
+            
             if (response.length > 0) {
-                updateFooterPrint(response);
+                
                 response = response.map((item) => ({
                     'Pallet No': item['Pallet No'], 'Order No': item['Order No'], 'Pallet Weight': item['Pallet Weight'], 'Warehouse': item['Warehouse'],
                     'Pallet Date': item['Pallet Date'], 'Qty KG': item['Qty KG'], 'Qty PC': item['Qty PC'], 'Pallet Remark': item['Pallet Remark']
                 }))
                 PopulateTableForPrintPalletPacking(response);
-                let ReportType = "PalletPacking";
+                
 
                 $("#tblReport").table2excel({
-                    filename: ReportType + "_" + todayDate,
+                    filename: "PalletPacking_" + todayDate,
                     fileext: ".xlsx"
                 });
                 Close_ExportModal();
@@ -1131,25 +1113,6 @@ function DownloadPalletPacking() {
     todayDate = convertDateFormat($('#txtdate').val());
     PalletPackingService.ExportInExcelPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code).then(function (response) {
         if (response && response.length > 0) {
-            const stringFilterColumn = [];
-            const numericFilterColumn = [];
-            const dateFilterColumn = [];
-            const button = false;
-            const stringDoubleFilterColumn = [];
-            const showButtons = [];
-            const hiddenColumns = [];
-            const columnAlignment = {
-                "Pallet Weight": 'right',
-                "Pallet Remark": 'right',
-                "Qty PC": 'right',
-                "Qty MT": 'right',
-                "Pallet Date": 'center',
-                "Qty KG": 'right',
-            };
-            BizsolCustomFilterGrid.CreateDataTable("table-header-ExportDetailsTable", "table-body-ExportDetailsTable", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
-            if (response?.length > 0) {
-                updateFooterOrderWise(response);
-            }
             if (response.length > 0) {
                 updateFooterPrint(response);
                 response = response.map((item) => ({
@@ -1157,16 +1120,10 @@ function DownloadPalletPacking() {
                     'Pallet Date': item['Pallet Date'], 'Qty KG': item['Qty KG'], 'Qty PC': item['Qty PC'], 'Pallet Remark': item['Pallet Remark'], 'Pallet Type': item['PalletType'], 'Identification No': item['IdentificationNo']
                 }))
                 PopulateTableForDownloadPalletPacking(response);
-                let ReportType = "PalletPackingDetails";
-                //let dateString = todayDate.getFullYear() + "-" +
-                //    (todayDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
-                //    todayDate.getDate().toString().padStart(2, "0") + "_" +
-                //    todayDate.getHours().toString().padStart(2, "0") + "-" +
-                //    todayDate.getMinutes().toString().padStart(2, "0") + "-" +
-                //    todayDate.getSeconds().toString().padStart(2, "0");
-
+                
+               
                 $("#tblReport").table2excel({
-                    filename: ReportType + "_" + todayDate,
+                    filename: "PalletPackingDetails_" + todayDate,
                     fileext: ".xlsx"
                 });
                 Close_ExportModal();
@@ -1180,6 +1137,40 @@ function DownloadPalletPacking() {
         .catch(function (error) {
             toastr.error(error.Msg || 'Error during stock transfer');
         });
+}
+function ViewPalletId(PalletNo) {
+    Showloader();
+    PalletPackingService.ViewInIDPallet(PalletNo).then(function (response) {
+        if (response && response.length > 0) {
+            HideLoader();
+            $('#ViewInIDPallet').modal({
+                backdrop: 'static',
+            });
+            $('#ViewInIDPallet').modal('show');
+
+            const stringFilterColumn = [];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+            const columnAlignment = {};
+
+            BizsolCustomFilterGrid.CreateDataTable("table-header-ViewInIdPalletTable", "table-body-ViewInIdPalletTable", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+        } else {
+            HideLoader();
+            toastr.error('No Data Found');
+            Close_ViewIdInPalletModal();
+        }
+    })
+        .catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || 'Error during Pallet ');
+        });
+}
+function Close_ViewIdInPalletModal() {
+    $('#ViewInIDPallet').modal('hide');
 }
 
 const inputWarehouseElement = document.getElementById("txtWarehouse");
@@ -1212,3 +1203,5 @@ window.DownloadPalletPacking = DownloadPalletPacking;
 window.Export = Export;
 window.ExportSummary = ExportSummary;
 window.Close_ExportModal = Close_ExportModal;
+window.ViewPalletId = ViewPalletId;
+window.Close_ViewIdInPalletModal = Close_ViewIdInPalletModal;

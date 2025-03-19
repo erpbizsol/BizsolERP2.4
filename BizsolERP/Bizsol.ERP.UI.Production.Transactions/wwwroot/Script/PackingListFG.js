@@ -29,6 +29,8 @@ let G_isView = "N";
 let G_PackingTypeDesp = "";
 let G_dllClientName = "";
 let G_dllConsigneeName = "";
+let G_DefaultAccountCodeStockTransfar = 0;
+
 function ChangeMode(Mode) {
     $('#DivPackingListFGForm').hide();
     $('#DivPackingListFGViewGrid').hide();
@@ -54,10 +56,10 @@ function PackingListFG_ShowViewGrid() {
         //    item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
         //});
        
-       // console.log(response);
+        console.log(response);
         response = response.map((item) => ({
             "PackingList No": item.PackingListNo, Date: item.PackingListDate, Warehouse: item.GodownName, "Packing Type": item.PackingType, "Requisition No / Order No": item["Requisition No"], "Party Name": item.ClienName, "Qty KG": item.QtyMT, "Qty PC": item.QtyPC, "Qty SQM": item.QtyMTRS, Status: item.PKStatus,
-            Action: item.Verify === 'N' && item.AllowVerify == 'Y' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-success icon-height" title="Verify" onclick="PackingListFG_Verify(\'' + item.Code + '\')"><i class="fa fa-check"></i></a>': item.Verify === 'N' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>' : '<a class="btn btn-dark icon-height" title="View" onclick="PackingListFG_EditOrView(\'N\',\'' + item.Code + '\')"> <i class="fa fa-eye"></i></a>', 
+            Action: item.LoadingStatus !== 'C' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Loading end" onclick="PackingListFG_EndLoadingOnGrid(\'' + item.Code + '\')"> <i class="fa fa-ban"></i></a>' : item.Verify === 'N' && item.AllowVerify == 'Y' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-success icon-height" title="Verify" onclick="PackingListFG_Verify(\'' + item.Code + '\')"><i class="fa fa-check"></i></a>': item.Verify === 'N' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>' : '<a class="btn btn-dark icon-height" title="View" onclick="PackingListFG_EditOrView(\'N\',\'' + item.Code + '\')"> <i class="fa fa-eye"></i></a>', 
             QtyMT: item.QtyMT, QtyPC: item.QtyPC, QtyMTRS: item.QtyMTRS
         }))
         //console.log(response);
@@ -239,7 +241,18 @@ function Bind_ddlClientNameORddlConsignee() {
             SelectOptionByText('ddlClientName', G_dllClientName);
             SelectOptionByText('ddlConsignee', G_dllConsigneeName);
         }
-        
+        if (Number(G_DefaultAccountCodeStockTransfar) > 0) {
+            $('#ddlClientName').val(G_DefaultAccountCodeStockTransfar);
+            $('#ddlConsignee').val(G_DefaultAccountCodeStockTransfar);
+            $('#ddlClientName').select2({
+                width: '-webkit-fill-available'
+            })
+            $('#ddlConsignee').select2({
+                width: '-webkit-fill-available'
+            })
+            //$('#ddlClientName').attr("disabled", "disabled");
+            //$('#ddlConsignee').attr("disabled", "disabled");
+        }
         
         
     });
@@ -706,7 +719,7 @@ function PackingListFG_OnChangeddlPackingType() {
     PackingType = "D";
     var ddlPackingType = document.getElementById("ddlPackingType");
     PackingType = ddlPackingType.options[ddlPackingType.selectedIndex].attributes["packingtype"].value;
-
+    G_DefaultAccountCodeStockTransfar = 0;
     Bind_ddlClientNameORddlConsignee();
 
     if (PackingType === "S") {
@@ -723,6 +736,7 @@ function PackingListFG_OnChangeddlPackingType() {
         var EwayBillApplicable = ddlPackingType.options[ddlPackingType.selectedIndex].attributes["EwayBillApplicable"].value;
         G_EwayBillApplicable = EwayBillApplicable;
         if (Number(DefaultAccountCode) > 0) {
+            G_DefaultAccountCodeStockTransfar = DefaultAccountCode;
             $('#ddlClientName').val(DefaultAccountCode);
             $('#ddlConsignee').val(DefaultAccountCode);
             $('#ddlClientName').select2({
@@ -1012,6 +1026,22 @@ function PackingListFG_EndLoading() {
     });
 }
 
+function PackingListFG_EndLoadingOnGrid(packingListMaster_Code) {
+    if (confirm("Vehicle are Loading...Do you want to Loading end of this Packing List ?!") == true) {
+        PackingListFGService.LoadingEndPackingListBatchNo(packingListMaster_Code).then(function (response) {
+            if (response.Status == 'Y') {
+                toastr.success(response.Msg);
+                PackingListFG_ShowViewGrid();
+            } else {
+                toastr.error(response.Msg);
+            }
+        });
+    } 
+
+
+    
+}
+
 function PackingListFG_Remove(packingListMaster_Code, packingListTransaction_Code, palletNo) {
     if (G_OnlyEntry == "S" && palletNo=="") {
         toastr.warning('This entry not Remove in summary. please uncheck summary option to delete this entry!');
@@ -1079,7 +1109,7 @@ function ClrFrm() {
     G_dllClientName = '';
     G_dllConsigneeName = '';
     G_PackingTypeDesp = '';
-
+    G_DefaultAccountCodeStockTransfar = 0;
 
     $('#txtPackingListNo').val('0');
     $('#txtScanIdentification').val('');
@@ -1372,4 +1402,5 @@ window.PackingListFG_EndLoading = PackingListFG_EndLoading;
 window.PackingListFG_ScanIdDataList = PackingListFG_ScanIdDataList;
 window.PackingListFG_Remove = PackingListFG_Remove;
 window.PackingListFG_LoadNoOfPallet = PackingListFG_LoadNoOfPallet;
+window.PackingListFG_EndLoadingOnGrid = PackingListFG_EndLoadingOnGrid;
 
