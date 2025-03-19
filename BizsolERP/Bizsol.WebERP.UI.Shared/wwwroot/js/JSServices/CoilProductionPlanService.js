@@ -13,6 +13,7 @@ const CoilProductionPlanService = {
             }
         );
     },
+
     GetFixedParaMeter: function GetFixedParaMeter() {
 
         let url = UrlService.API_ENDPOINT_CoilProductionPlan + "/GetFixedParaMeter";
@@ -22,8 +23,19 @@ const CoilProductionPlanService = {
                 return value;
             }
         );
-    }
-    
+    },
+
+    Getddl: function Getddl( mode,  code, itemSizeMaster_Code) {
+
+        // let url = UrlService.API_ENDPOINT_CoilProductionPlan + "/GetPackingListWebLocate?Date=" + date + "&ToDate=" + dateTo;
+        let url = UrlService.API_ENDPOINT_CoilProductionPlan + "/Getddl?Mode=" + mode + "&Code=" + code + "&ItemSizeMaster_Code=" + itemSizeMaster_Code;
+
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     
 }
 
