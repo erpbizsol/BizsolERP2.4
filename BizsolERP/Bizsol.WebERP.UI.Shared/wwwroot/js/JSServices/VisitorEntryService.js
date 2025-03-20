@@ -59,6 +59,14 @@ const VisitorEntryService = {
             }
         );
     },
+    SaveVisitorEntry: function SaveVisitorEntry(Data) {
+        var URL = UrlService.API_ENDPOINT_VisitorMaster + "/SaveVisitorEntry";
+        return promiseAjaxCallApi.CallAPI('POST', URL, Data).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VisitorEntryService }

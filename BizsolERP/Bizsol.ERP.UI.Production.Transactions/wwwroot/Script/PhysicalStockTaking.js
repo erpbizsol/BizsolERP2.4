@@ -150,8 +150,14 @@ function CreateNew(todayDate) {
     $("#newCreateForm").show();
     GetWarehouse();
     GetItemName();
+    if (todayDate =='0') { $('#txtdate').prop('disabled', false); }
+    else {
+        $('#txtdate').prop('disabled', true);
+    }
     todayDate = todayDate == '0' ? $('#txtdate').val() : todayDate;
     PhysicalStockTackingSummaryByAsOnDateCreate(convertDateFormat(todayDate));
+    
+    
 }
 function PhysicalStockTackingSummary() {
     Showloader();
@@ -231,6 +237,7 @@ function ScanCoilDetails(IdentificationNo, ItemMaster_Code) {
             todayDate = convertDateFormat($('#txtdate').val());
             let Remark = $("#remarks").val();
             let StockType = response[0].StockType;
+            ItemMaster_Code = response[0].ItemMaster_Code;
             let ItemSizeMaster_Code = response[0].ItemSizeMaster_Code;
             let QtyPC = response[0]?.QtyPC;
             let QtyMT = response[0]?.QtyMT;
@@ -288,7 +295,7 @@ function DeletePhysicalStock(PhysicalStockTackingMaster_Code) {
 }
 function ViewModal_OpenReport(todayDate) {
     Showloader();
-    PhysicalStockTakingItemService.PhysicalStockTackingReportAsOnDate(todayDate).then(function (response) {
+    PhysicalStockTakingItemService.PhysicalStockTackingReportAsOnDate(convertDateFormat(todayDate)).then(function (response) {
         if (response && response.length > 0) {
             $('#ViewModal_Open').modal({
                 backdrop: 'static',
@@ -387,6 +394,10 @@ function UpdateQtyInPhysicalStock(PhysicalStockTackingMaster_Code, TransactionCo
     let updateQtyMTRS = 0;
     let updateStatus = row.find('select[id="tblStatus"]').val();
     let updateRemark = row.find('input[id="tblRemark"]').val();
+    if (updateQtyPC.trim() === '' || updateQtyMT.trim() === '' || updateRemark.trim() === '') {
+        toastr.warning("Please fill in the Quantity and Remark fields. They cannot be blank.");
+        return; 
+    }
     PhysicalStockTakingItemService.UpdateQtyInPhysicalStock(PhysicalStockTackingMaster_Code, TransactionCode, updateQtyPC, updateQtyMT, updateQtyMTRS, updateStatus, updateRemark).then(function (response) {
         if (response.Status === 'Y') {
             toastr.success(response.Msg);
@@ -533,6 +544,7 @@ function OpenModal() {
         backdrop: 'static',
     });
     $('#myModal').modal('show');
+    $('#ddlItemSize1').text('');
     GetddlSizeDesp();
 }
 function NewAddSizePhysical_Stock() {
@@ -614,6 +626,7 @@ function PhysicalStock_Back() {
     $("#tblAddPhysicalStock").hide();
     $("#ddlItemName").val('');
     $("#txtScanIdentificationNo").val('');
+    $("#ddlPhysicalType").val('A');
     $("#remarks").val('');
     $("#txtEntryNo").val('');
     $("#txtScanIdentificationNoList").empty();

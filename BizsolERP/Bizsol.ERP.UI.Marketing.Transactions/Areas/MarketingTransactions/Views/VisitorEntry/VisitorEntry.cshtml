@@ -54,37 +54,39 @@
                         <div class="row">
                             <div class="col-md-3 pe-0">
                                 <label for="checkInDate" class="col-form-label-sm fw-bold">Date:</label>
-                                <input id="checkInDate" name="checkInDate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" required />
+                                <input id="checkInDate" name="checkInDate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" required readonly/>
                             </div>
                             <div class="col-md-3 pe-0">
                                 <label for="checkInTime" class="col-form-label-sm fw-bold">Time:</label>
-                                <input id="checkInTime" name="checkInTime" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Time" required />
+                                <input id="checkInTime" type="time" name="checkInTime" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Time" required readonly/>
                             </div>
                             <div class="col-md-3 pe-0">
                                 <label for="checkInMobileNo" class="col-form-label-sm fw-bold">Mobile No.:</label>
-                                <input id="checkInMobileNo" name="checkInMobileNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Mobile No" required />
+                                <input id="checkInMobileNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="12" autocomplete="off">
                             </div>
                             <div class="col-md-3 pe-0">
                                 <label for="checkInVisitorName" class="col-form-label-sm fw-bold">Visitor Name:</label>
-                                <input id="checkInVisitorName" name="checkInVisitorName" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Visitor Name" required />
+                                <input id="checkInVisitorName" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" autocomplete="off">
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-3 pe-0">
                                 <label for="checkInAddress" class="col-form-label-sm fw-bold">Address:</label>
-                                <textarea id="checkInAddress" name="checkInAddress" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Address" required></textarea>
+                                <textarea id="checkInAddress" name="checkInAddress" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Address" maxlength="200" required></textarea>
                             </div>
                             <div class="col-md-3 pe-0">
                                 <label for="checkInPurpose" class="col-form-label-sm fw-bold">Purpose:</label>
                                 <input id="checkInPurpose" name="checkInPurpose" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Purpose" required />
                             </div>
                             <div class="col-md-3 pe-0">
-                                <label for="checkInPersonToMeet" class="col-form-label-sm fw-bold">Person To Meet:</label>
-                                <input id="checkInPersonToMeet" name="checkInPersonToMeet" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Person To Meet" required />
+                                <label for="checkInPersonToMeet" class="col-form-label-sm fw-bold required">Person To Meet:</label>
+                                <input type="text" id="checkInPersonToMeet" name="checkInPersonToMeet" class="box_border BizSolFormControl form-control form-control-sm" value="" autocomplete="off" />
+                                <ul id="checkInPersonToMeetList" class="AutoSuggestion-list"></ul>
+                                @* <select id="checkInPersonToMeet" class="form-control form-control-sm box_border"></select> *@
                             </div>
                             <div class="col-md-3 pe-0">
                                 <label for="checkInVehicleNo" class="col-form-label-sm fw-bold">Vehicle No.:</label>
-                                <input id="checkInVehicleNo" name="checkInVehicleNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Vehicle No" required />
+                                <input id="checkInVehicleNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="10" autocomplete="off">
                             </div>
                         </div>
                         <div class="row">
@@ -95,26 +97,26 @@
                             <div class="col-md-3 pe-0">
                                 <label for="checkInVisitingCardPhoto" class="col-form-label-sm fw-bold">Visiting Card Photo:</label>
                                 <div class="input-group">
-                                    <span class="input-group-text" style="cursor: pointer; height:28px">
+                                    <span class="input-group-text" onclick="triggerFileInputVisitingCardPhotoClick()" style="cursor: pointer; height:28px">
                                         <i class="fa fa-camera"></i>
                                     </span>
-                                    <input type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm box_border" id="checkInVisitingCardPhoto" />
+                                    <input type="file" accept=".jpg, .png, .jpeg" onchange="FileUploadChangeVisitor(event)" class="form-control form-control-sm box_border" id="checkInVisitingCardPhoto" />
                                 </div>
                             </div>
                             <div class="col-md-3 pe-0">
                                 <label for="checkInPersonPhoto" class="col-form-label-sm fw-bold">Person Photo:</label>
                                 <div class="input-group">
-                                    <span class="input-group-text" style="cursor: pointer; height:28px">
+                                    <span class="input-group-text" onclick="triggerFileInputPersonPhotoClick()" style="cursor: pointer; height:28px">
                                         <i class="fa fa-camera"></i>
                                     </span>
-                                    <input type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm box_border" id="checkInPersonPhoto" />
+                                    <input type="file" accept=".jpg, .png, .jpeg" onchange="FileUploadChangeVisitor(event)" class="form-control form-control-sm box_border" id="checkInPersonPhoto" />
                                 </div>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-12 text-end">
-                                <button type="button" onclick="Submit()" title="Submit" class="btn btn-primary btn-height">Submit</button>
-                                <button type="button" class="btn btn-primary btn-height" title="Back" onclick="Close()">BACK</button>
+                                <button type="button" onclick="submit_VisitorEntry()" title="Submit" class="btn btn-primary btn-height">Submit</button>
+                                @* <button type="button" class="btn btn-primary btn-height" title="Back" onclick="Close()">BACK</button> *@
                             </div>
                         </div>
                     </div>
@@ -124,14 +126,14 @@
                 <div class="tab-pane fade" id="checkOut" role="tabpanel" aria-labelledby="checkOutTab">
                     <div id="checkOutSection" style="display:none;">
                         <div class="row">
-                            <div class="col-md-1 pe-0">
+                            <div class="col-md-1 pe-0 col-Date-1">
                                 <label for="checkOutDate" class="col-form-label-sm fw-bold">Date:</label>
                             </div>
                             <div class="col-md-2">
                                 <input id="checkOutDate" name="checkOutDate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" required />
                             </div>
                             <div class="col-md-1 pe-0">
-                                <button id="checkOutShow" name="checkOutShow" class="btn btn-primary btn-height" autocomplete="off">Show</button>
+                                <button id="checkOutShow" name="checkOutShow" class="btn btn-primary btn-height" onclick="VisitorMasterShowDataButton()" autocomplete="off">Show</button>
                             </div>
                             <div class="form-group col-md-3">
                                 <span class="radioSection">
@@ -140,7 +142,7 @@
                                 </span>
                             </div>
                             <div class="col-md-5 text-end">
-                                <button type="button" class="btn btn-primary btn-height" title="Back" onclick="Close()">BACK</button>
+                                @* <button type="button" class="btn btn-primary btn-height" title="Back" onclick="Close_BackButton()">BACK</button> *@
                             </div>
                         </div>
                     </div>
@@ -149,4 +151,15 @@
         </div>
     </div>
 </div>
-
+<div id="tblVisitorMaster">
+    <div class="table-wrapper fixed-height-table">
+        <table id="VisitorMaster" class="fixed-width-table table">
+            <thead id="table-header-VisitorMaster">
+            </thead>
+            <tbody id="table-body-VisitorMaster">
+            </tbody>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-VisitorMaster">
+    </div>
+</div>
