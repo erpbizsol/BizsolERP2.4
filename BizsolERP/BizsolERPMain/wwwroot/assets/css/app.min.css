@@ -25,8 +25,12 @@ body {
 [data-bs-theme=dark] .bg-dark {
     background-color: var(--bs-sidebar-dark-bg) !important
 }
+/*
+.fa, .fa-brands, .fa-classic, .fa-regular, .fa-sharp-solid, .fa-solid, .fab, .far, .fas {
+    line-height: 0.7 !important;
+}*/
 
-#page-topbar {
+    #page-topbar {
     position: fixed;
     top: 0;
     right: 0;
@@ -5982,7 +5986,7 @@ button,
     height: 25px;
     font-size: 7pt;
     line-height: 0.6;
-    padding: 4px 10px;
+    padding: 4px 8px;
 }
 
 .svg-icon {
@@ -6249,7 +6253,7 @@ a.icon-height {
     height: 25px;
     font-size: 7pt;
     line-height: 0.6;
-    padding: 9px 10px;
+    padding: 7px 10px;
 }
 
 .AutoSuggestion-list {
@@ -6274,9 +6278,9 @@ a.icon-height {
         cursor: pointer;
     }
 
-        .AutoSuggestion-list li:hover {
-            background-color: #f0f0f0;
-        }
+    .AutoSuggestion-list li:hover {
+        background-color: #f0f0f0;
+    }
 
 .AutoSuggestion-list-highlighted {
     background-color: #9aa0a5;
