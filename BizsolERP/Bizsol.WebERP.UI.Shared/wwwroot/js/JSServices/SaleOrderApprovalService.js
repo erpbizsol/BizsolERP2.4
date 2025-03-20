@@ -61,5 +61,15 @@ const SaleOrderApprovalService = {
             }
         );
     },
+    GetFixedParaMeter: function GetFixedParaMeter() {
+
+        let url = UrlService.API_ENDPOINT_SaleOrderApproval + "/GetFixedParaMeter";
+
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 export { SaleOrderApprovalService }

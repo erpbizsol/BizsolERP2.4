@@ -22,13 +22,13 @@ function GetWebNotificationList() {
             //            ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}
             //        </span>
             //    </div>`;
-            notificationList += `
+            notificationList += notification.NotificationCount > 0 ? `
                 <div class="dropdown-item" onclick="window.location.href='${baseUrl}/${notification.ScreenURL}?menu=${notification.NotificationDescription}&FrmType=${notification.DotNetMainMenuName}&FrmAction=${notification.ForAction}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
                     <span>${notification.NotificationDescription}</span>
                     <span>
                         ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}
                     </span>
-                </div>`;
+                </div>`:'';
         });
         if (totalNotificationCount > 0) {
             $("#notificationCount").text(totalNotificationCount).show();
