@@ -282,11 +282,11 @@ const VisitOrderEntryService = {
             }
         );
     },
-    DeleteVisitOrderDetails: function DeleteVisitOrderDetails(Code, DealerName, ReasonForDelete) {
+    DeleteVisitOrderDetails: function DeleteVisitOrderDetails(Code, ReasonForDelete) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/DeleteVisitOrderDetails?Code=${DealerName} &UserMaster_Code=${userMasterCode}&ReasonForDelete=${ReasonForDelete}`;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/DeleteVisitOrderDetails?Code=${Code} &UserMaster_Code=${userMasterCode}&ReasonForDelete=${ReasonForDelete}`;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
             }
@@ -413,7 +413,18 @@ const VisitOrderEntryService = {
             }
         );
     },
-    
+    GetItemSizeMasterListWithRequestNo: function GetItemSizeMasterListWithRequestNo(ItemName, count = 0) {
+        let url = UrlService.API_ENDPOINT_ItemSize + `/GetItemSizeMasterList?ItemName=${ItemName}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                let resobj = {
+                    resvalue: value,
+                    Count: count
+                }
+                return resobj;
+            }
+        );
+    },
     CheckModuleOptionRight: function CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var UserMaster_Code = authKeyData.UserMaster_Code;
