@@ -137,7 +137,27 @@ const CRMReportsServices = {
                 return value;
             }
         );
-    }
+    },
+    GetCRMOrderEntryConfig: function GetCRMOrderEntryConfig() {
+
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_CRM_ORDERENTRY_CONFIG + `/GetCRMFixedParameterConfig`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetFixedParameterQtyConfig: function GetFixedParameterQtyConfig() {
+
+        var URL = UrlService.API_ENDPOINT_QTY_CONFIG + `/GetFixedParameterQtyConfig`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 
 }
 

@@ -21,42 +21,11 @@
             box-shadow: 0px 35px 50px rgba( 0, 0, 0, 0.2 );
         }
      */
-    .fl-table {
-        border-radius: 5px;
-        font-size: 11px;
-        font-weight: normal;
-        border: none;
-        border-collapse: collapse;
-        width: 100%;
-        max-width: 100%;
-        white-space: nowrap;
-        background-color: white;
+
+    #tblorderbooking {
+        width: 125%;
     }
-
-        .fl-table td, .fl-table th {
-            text-align: center;
-            padding: 8px;
-        }
-
-        .fl-table td {
-            border-right: 1px solid #f8f8f8;
-            font-size: 10px;
-        }
-
-        .fl-table thead th {
-            color: #ffffff;
-            background: #6699cc;
-        }
-
-
-            .fl-table thead th:nth-child(odd) {
-                color: #ffffff;
-                background: #6699cc;
-            }
-
-        .fl-table tr:nth-child(even) {
-            background: #F8F8F8;
-        }
+   
 
     /*  .modal-dialog {
             width: 100%;
@@ -95,7 +64,22 @@
         -moz-appearance: textfield;
     }
 
+    .sizeDes {
+        display: flex;
+        gap: 3px;
+    }
 
+    .sizeDesInput {
+        width: 240px;
+    }
+
+    .digit10 {
+        width: 100px;
+    }
+
+    .digit8 {
+        width: 68px;
+    }
 
 </style>
 
@@ -129,7 +113,10 @@
             <div class="row">
                 <div class="col-md-3 form-group">
                     <label for="txtDealer" class="col-form-label-sm fw-bold">Customer</label>
-                    <input type="text" class="box_border form-control form-control-sm" id="txtDealer" list="listdealer" name="txtDealer" value="" onclick="$(this).val('');" placeholder="" autocomplete="off" required onfocusout="GetAccountMasterDetails();" />
+                    @* <input type="text" class="box_border form-control form-control-sm" id="txtDealer" list="listdealer" name="txtDealer" value="" onclick="$(this).val('');" placeholder="" autocomplete="off" required onfocusout="GetAccountMasterDetails();" /> *@
+                    <input type="text" class="box_border form-control form-control-sm" id="txtDealer" name="txtDealer" value=""  placeholder="" autocomplete="off" required hidden />
+                    <select id="ddlCustomerName" class="form-control form-control-sm box_border" onchange="GetAccountMasterDetails();">
+                    </select>
                 </div>
                 <div class="col-md-3">
                     <label for="txtGSTNo" class="col-form-label-sm fw-bold">GST No</label>
@@ -477,21 +464,23 @@
 
                         <div class="col-md-2">
                             <label for="txtlistFreight" class="col-form-label-sm fw-bold">Freight </label>
-                            <div class="form-group">
+                          @*   <div class="form-group">
                                 <input type="text" list="listFreight" class="box_border form-control form-control-sm" id="txtlistFreight" onclick="this.value=''" name="txtlistFreight" value="" placeholder="" autocomplete="off" maxlength="250" required>
-                            </div>
-
+                            </div> *@
+                            <select id="ddlFreight" class="form-control form-control-sm box_border" autocomplete="off">
+                            </select>
                         </div>
                         <div class="col-md-2" id="divShowFreight">
                             <label for="txtFreightType" class="col-form-label-sm fw-bold">Freight Type </label>
-                            <div class="form-group">
+                          @*   <div class="form-group">
                                 <input type="text" list="listFreightType" class="box_border form-control form-control-sm" onclick="this.value=''" id="txtFreightType" name="txtFreightType" value="" placeholder="" autocomplete="off" number maxlength="250" required />
 
-                            </div>
-
+                            </div> *@
+                            <select id="ddlFreightType" class="form-control form-control-sm box_border" autocomplete="off">
+                            </select>
                         </div>
                          <div class="col-md-3" id="divBuyerPONo">
-                            <label for="txtBuyerPONo" class="col-form-label-sm fw-bold">Buyer PO No <span class="universal">*</span></label>
+                            <label for="txtBuyerPONo" class="col-form-label-sm fw-bold">Buyer PO No </label>
                             <div class="form-group">
                                 <input type="text"  class="box_border form-control form-control-sm" id="txtBuyerPONo" name="txtBuyerPONo" value="" placeholder="" autocomplete="off" number maxlength="50" required>
 
@@ -560,10 +549,12 @@
                         </div>
                         <div class="col-md-3" id="divPaymentTerms">
                             <label for="txtPaymentTerm" class="col-form-label-sm fw-bold">Payment Term </label>
-                            <div class="form-group">
+                            @* <div class="form-group">
                                 <input type="text" list="listPaymentTerms" class="box_border form-control form-control-sm" id="txtPaymentTerms" name="txtPaymentTerms" onclick="this.value=''" value="" placeholder="" autocomplete="off" maxlength="250" required>
                                 <input type="hidden" id="hiddentxtPaymentTerm" name="hiddentxtPaymentTerm">
-                            </div>
+                            </div> *@
+                            <select id="ddlPaymentTerms" class="form-control form-control-sm box_border" autocomplete="off">
+                            </select>
                         </div>
                     </div>
 
@@ -621,7 +612,6 @@
 <datalist id="listOrderUOMDecimalDigits"></datalist>
 <datalist id="ItemParameterMasterList"></datalist>
 <datalist id="listRateUnit"></datalist>
-
 
 <div class="row">
     <div class="modal fade" id="ImageModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -693,7 +683,17 @@
                 
 
                 <div class="modal-body">
-                   
+
+                    <div class="form-group " id="divMoreCols">
+                                <div class="d-flex flex-wrap gap-xxl-2 ">
+                                    <input type="checkbox"
+                                           id="toggleMoreCols"
+                                           switch="success">
+                            <label data-on-label="Yes" data-off-label="No" for="toggleMoreCols"></label>
+                                    <label class="">Show More Columns</label>
+                                </div>
+                     </div>
+
                     <div id="tblLogicalStock">
                         <div class="table-wrapper fixed-height-table">
                             <table id="LogicalStock" class="fixed-width-table table">

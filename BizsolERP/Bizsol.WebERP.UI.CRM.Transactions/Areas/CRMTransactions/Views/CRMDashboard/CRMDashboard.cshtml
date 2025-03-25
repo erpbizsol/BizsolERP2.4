@@ -168,8 +168,9 @@
         <div class="row">
             <div class="col-md-3" style="padding-bottom:10px">
                 <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Sales Person</label>
-                <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" class="form-control form-control-sm box_border" autocomplete="off" onclick="$(this).val('')" placeholder="Sales Person" value="All" maxlength="500" required onfocusout="DataListValidation('txtSalesPersonlist', this.value, 'Invalid Sales Person !', 'txtSalesPerson');">
+                <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" hidden class="form-control form-control-sm box_border" autocomplete="off" onclick="$(this).val('')" placeholder="Sales Person" value="All" maxlength="500" required onfocusout="DataListValidation('txtSalesPersonlist', this.value, 'Invalid Sales Person !', 'txtSalesPerson');">
                 <datalist id="txtSalesPersonlist"></datalist>
+                <select id="ddlSalesPersonlist" class="form-control form-control-sm box_border"></select>
             </div>
             <div class="col-md-2 without-label-field">
                @*  <label for="txtSalesPerson" class="col-form-label-sm fw-bold"></label> *@
@@ -187,6 +188,9 @@
             <div class="col-md-2 without-label-field">
                
                 <input type="button" name="btnShow" id="btnShow" class=" btn btn-primary btn-height btn-width " value="Show" onclick="ShowDashboard();" />
+                  <button type="button" class="btn btn-primary btn-height btn-width" id="btnLoading" hidden="true">
+                    <i class="bx bx-loader bx-spin font-size-14 align-middle me-2"></i>Loading
+                </button>
             </div>
             <div class="col-md-2 without-label-field">
                 <div class="form-group" id="txtshowDataAsOn">

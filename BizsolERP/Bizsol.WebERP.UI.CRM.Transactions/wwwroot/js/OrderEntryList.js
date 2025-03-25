@@ -8,6 +8,14 @@ let QtyMTRHeader = '';
 let selectedDates = [];
 $(document).ready(function () {
     $("#ERPHeading").text("Order Entry List");
+    var ObjUserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
+    if (ObjUserDetails !== undefined && ObjUserDetails[0].UserType == 'A') {
+        $('#btnCRMConfig').prop('hidden', false);
+    } else {
+        $('#btnCRMConfig').prop('hidden', true);
+    }
+
+
     GetOrderStatusList();
     GetUserNameList();
     //highlightSelectedDates();
@@ -28,19 +36,21 @@ $(document).ready(function () {
     $('#btnShow').on('click', function () {
         let FromDate = convertDateFormat($('#txtFromDate').val());
         let ToDate = convertDateFormat($('#txtToDate').val());
-        let UserName = $('#ddlUserName').val();
-        let OrderStatus = $('#ddlOrderStatus').val();
-        if ($('#ddlOrderStatus').val() === 'All') {
+        //let UserName = $('#ddlUserName').val();
+        //let OrderStatus = $('#ddlOrderStatus').val();
+        let UserName = $('#ddlUserNameList option:selected').val();
+        let OrderStatus = $('#ddlOrderStatusList option:selected').val();
+        if (OrderStatus === 'All') {
             OrderStatus = '';
         }
         if (typeof $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null) {
             $('#txtFromDate').focus();
         }else if (typeof $('#txtToDate').val() === 'undefined' || $('#txtToDate').val() === '' || $('#txtToDate').val() === null) {
             $('#txtToDate').focus();
-        }else if ($('#ddlUserName').val() === '') {
-            $('#ddlUserName').focus();
-        }else if ($('#ddlOrderStatus').val() === '') {
-            $('#ddlOrderStatus').focus();
+        //}else if ($('#ddlUserName').val() === '') {
+        //    $('#ddlUserName').focus();
+        //}else if ($('#ddlOrderStatus').val() === '') {
+        //    $('#ddlOrderStatus').focus();
         }else {
             GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus);
         }
@@ -200,7 +210,7 @@ function convertDateFormat(dateString) {
     const [day, month, year] = dateString.split('/');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthAbbreviation = monthNames[parseInt(month, 10) - 1];
-    return `${day} - ${monthAbbreviation} - ${year}`;
+    return `${day}-${monthAbbreviation}-${year}`;
 }
 function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
     OrderEntryListService.GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus).then(function (response) {
@@ -382,15 +392,35 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
 function GetOrderStatusList() {
     OrderEntryListService.GetOrderStatusList().then(function (response) {
         if (response.length > 0) {
-            $('#ddlOrderStatusList option').remove();
+            //$('#ddlOrderStatusList option').remove();
 
-            var option = '<option text="0" value="All" selected >All</option>';
+            //var option = '<option text="0" value="All" selected >All</option>';
 
-            for (var i = 0; i < response.length; i++) {
-                option += '<option value="' + response[i].VerifyStatus + '" >' + response[i].VerifyStatus + '</option>';
-            }
+            //for (var i = 0; i < response.length; i++) {
+            //    option += '<option value="' + response[i].VerifyStatus + '" >' + response[i].VerifyStatus + '</option>';
+            //}
 
-            $('#ddlOrderStatusList')[0].innerHTML = option;
+            //$('#ddlOrderStatusList')[0].innerHTML = option;
+
+            BindSelectList($('#ddlOrderStatusList')[0], response.map((item) => ({ Code: item.VerifyStatus, Desp: item.VerifyStatus })), 'FirstItemAll');
+            $('#ddlOrderStatusList').select2({
+                allowClear: true,
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
+            });
+
         } else {
             return false;
         }
@@ -401,14 +431,40 @@ function GetOrderStatusList() {
 function GetUserNameList() {
     var userName = JSON.parse(sessionStorage.getItem('UserDetails'))[0].UserName;
     OrderEntryListService.GetUserNameList().then(function (result) {
-        $("#ddlUserName").val(userName);
+        //$("#ddlUserName").val(userName);
         if (result && result.length > 0) {
-            const datalist = $('#ddlUserNameList');
-            datalist.empty();
-            result.forEach(function (item) {
-                const option = $('<option>').val(item.UserName).text(item.UserName);
-                datalist.append(option);
-            });
+        //    const datalist = $('#ddlUserNameList');
+        //    datalist.empty();
+        //    result.forEach(function (item) {
+        //        const option = $('<option>').val(item.UserName).text(item.UserName);
+        //        datalist.append(option);
+        //    });
+
+        BindSelectList($('#ddlUserNameList')[0], result.map((item) => ({ Code: item.UserName, Desp: item.UserName })), 'FirstItemSelected');
+        $('#ddlUserNameList').select2({
+            allowClear: true,
+           
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
+        });
+            $('#ddlUserNameList option').filter(function () {
+                return $(this).text() === userName;
+            }).prop('selected', true);
+            $('#ddlUserNameList').trigger('change');
+
+
         } else {
             toastr.error('No data received or empty response');
         }
@@ -498,9 +554,12 @@ function DeleteModal() {
                 $('#myModal').modal('hide');
                let FromDate = convertDateFormat($('#txtFromDate').val());
                let ToDate = convertDateFormat($('#txtToDate').val());
-               let UserName = $('#ddlUserName').val();
-               let OrderStatus = $('#ddlOrderStatus').val();
-                if ($('#ddlOrderStatus').val() === 'All') {
+               //let UserName = $('#ddlUserName').val();
+                // let OrderStatus = $('#ddlOrderStatus').val();
+                let UserName = $('#ddlUserNameList option:selected').val();
+                let OrderStatus = $('#ddlOrderStatusList option:selected').val();
+                
+                if (OrderStatus === 'All') {
                     OrderStatus = '';
                 }
                 GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus);
@@ -533,6 +592,24 @@ function GetFixedParameterConfiguration() {
 
     });
 }
+
+function BindSelectList(element, list, FirstItem) {
+    let option = '';
+
+    if (FirstItem == 'FirstItemAll') {
+        option = '<option value="All">All</option>';
+    } else if (FirstItem == 'FirstItemSelected') {
+        option = '';
+    } else {
+        option = '<option value="0"></option>';
+    }
+
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
+
 function updateFooter(data) {
     const calculateTotalAmount = "Total Amount";
 

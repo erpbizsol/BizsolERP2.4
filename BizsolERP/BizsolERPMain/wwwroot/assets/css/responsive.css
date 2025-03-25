@@ -60,8 +60,10 @@
 }
 
 @media (min-width: 768px) and (max-width: 1024px) {
-
-    /* CSS */
+    #tblorderbooking {
+        width: 150% !important;
+        table-layout: auto;
+    }
 
 }
 
@@ -73,16 +75,15 @@
 
 @media (min-width: 481px) and (max-width: 767px) {
 
-    /* CSS */
+    #tblorderbooking {
+        width: 450% !important;
+        table-layout: auto;
+    }
 
 }
 
 @media (min-width: 320px) and (max-width: 480px) {
-    #tblorderbooking {
-        width: 240%;
-        overflow-x: auto;
-        table-layout: fixed;
-    }
+   
     
     /*input field*/
 
@@ -112,6 +113,11 @@
 
     .priceList {
         width: 139px;
+    }
+
+    #tblorderbooking {
+        width: 500% !important;
+        table-layout: auto;
     }
 
 }
