@@ -19,8 +19,8 @@ const PalletPackingService = {
             }
         );
     },
-    AddIDInPallet: function AddIDInPallet(ColForWhere, ColValue, PalletNo, PalletRemark, PalletWeight, Date, PalletType) {
-        var URL = UrlService.API_ENDPOINT_PalletPacking + "/AddIDInPallet?ColForWhere=" + ColForWhere + "" + "&ColValue=" + ColValue + "" + "&PalletNo=" + PalletNo + "" + "&PalletRemark=" + PalletRemark + "" + "&PalletWeight=" + PalletWeight + "" + "&Date=" + Date + "" + "&PalletType=" + PalletType + "";
+    AddIDInPallet: function AddIDInPallet(ColForWhere, ColValue, PalletNo, PalletRemark, PalletWeight, Date, PalletType, BuyerPOMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/AddIDInPallet?ColForWhere=" + ColForWhere + "" + "&ColValue=" + ColValue + "" + "&PalletNo=" + PalletNo + "" + "&PalletRemark=" + PalletRemark + "" + "&PalletWeight=" + PalletWeight + "" + "&Date=" + Date + "" + "&PalletType=" + PalletType + "" + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code +"";
     
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
@@ -86,8 +86,8 @@ const PalletPackingService = {
             }
         );
         },
-    EditPallet: function EditPallet(PalletNo, GodownMaster_Code) {
-    var URL = UrlService.API_ENDPOINT_PalletPacking + "/EditPallet?PalletNo=" + PalletNo + "" + "&GodownMaster_Code=" + GodownMaster_Code;
+    EditPallet: function EditPallet(PalletNo, GodownMaster_Code, isAction) {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/EditPallet?PalletNo=" + PalletNo + "" + "&GodownMaster_Code=" + GodownMaster_Code + "&isAction=" + isAction;
     return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
         function (value) {
             return value;
@@ -102,9 +102,9 @@ const PalletPackingService = {
             }
         );
     },
-    Print: function Print(PalletNosToPrint) {
+    Print: function Print(PalletNosToPrint,IsDownload) {
         let CompanyCode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
-        let url = `${UrlService.API_ENDPOINT_CRYSTAL}/Printpallet?PalletNo=${PalletNosToPrint}`;
+        let url = `${UrlService.API_ENDPOINT_CRYSTAL}/Printpallet?PalletNo=${PalletNosToPrint}&IsDownload=${IsDownload}`;
 
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
@@ -116,6 +116,22 @@ const PalletPackingService = {
         var URL = UrlService.API_ENDPOINT_PalletPacking + "/RemovePallet?PalletNo=" + palletNo;
 
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    ExportInExcelPackedPalletDateAndOrderWise: function ExportInExcelPackedPalletDateAndOrderWise(Date, BuyerPOMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/ExportInExcelPackedPalletDateAndOrderWise?Date=" + Date + "" + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    ViewInIDPallet: function ViewInIDPallet(PalletNo) {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/ViewInIDPallet?PalletNo=" + PalletNo + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
             }

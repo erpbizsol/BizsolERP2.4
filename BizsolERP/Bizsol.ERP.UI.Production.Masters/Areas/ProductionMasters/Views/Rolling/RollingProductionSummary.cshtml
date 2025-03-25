@@ -1,0 +1,97 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .without-label-field {
+        margin-top: 2.3rem;
+    }
+</style>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+
+<style>
+   
+    #tbProductionSummaryView tfoot {
+        position: sticky;
+        bottom: 0;
+        z-index: 0; 
+    }
+
+        #tbProductionSummaryView tfoot td, #tbProductionSummaryView tfoot th, #tbProductionSummaryView tfoot {
+        background-color: #d5dde5; 
+    }
+</style>
+
+
+<div class="tab-section" >
+    <ul class="nav nav-tabs" id="RollingProductionTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#PendingPlansTab" role="tab" aria-controls="PendingPlans" aria-selected="true" onclick="GateEntyMode_GateEntry('form','EmptyInNew')">
+                Pending plans
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ProductionsTab" role="tab" aria-controls="Productions" aria-selected="false" onclick="GateEntyMode_GateEntry('form','LoadedInNew')">
+                Prodctions
+            </button>
+        </li>
+    </ul>
+
+
+    <div class="tab-content" id="RollingProductionTabContent">
+
+        @* Pending Plans Tabs *@
+
+        <div class="tab-pane fade show active" id="PendingPlansTab" role="tabpanel" aria-labelledby="PendingPlans">
+            <div class="table-wrapper mt-2 fixed-height-table">
+                <table id="tbPendingPlansSummaryView" class="table fixed-width-table">
+                    <thead id="tbPendingPlansSummaryViewHeader">
+                    </thead>
+                    <tbody id="tbPendingPlansSummaryViewBody">
+                    </tbody>
+                    <tfoot>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-tbPendingPlansSummaryView">
+            </div>
+        </div>
+
+    @* Production Tabls *@
+        <div class="tab-pane fade" id="ProductionsTab" role="tabpanel" aria-labelledby="Productions">
+            <div class="row">
+                <div class="col-sm-3 col-6">
+                    <label for="from-date">From Date</label>
+                    <input type="date" class="form-control form-control-sm" id="txtFromDate">
+                </div>
+                <div class="col-sm-3 col-6">
+                    <label for="to-date">To Date</label>
+                    <input type="date" class="form-control form-control-sm" id="txtToDate">
+
+                </div>
+                <div class="col-sm-1 col-3 without-label-field text-end">
+                    <label></label>
+                    <button type="button" class="btn btn-primary icon-height" onclick="SlittingProductionEntry_ShowPlanGrid()">Show</button>
+
+                </div>
+            </div>
+            <div class="table-wrapper mt-2 fixed-height-table">
+                <table id="tbProductionSummaryView" class="table fixed-width-table">
+                    <thead id="tbProductionSummaryViewHeader">
+                    </thead>
+                    <tbody id="tbProductionSummaryViewBody">
+                    </tbody>
+                    <tfoot>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-tbProductionSummaryView">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Masters/Script/RollingProductionSummary.js"></script>
+
+

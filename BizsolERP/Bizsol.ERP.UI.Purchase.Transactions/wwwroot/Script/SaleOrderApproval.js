@@ -1,9 +1,12 @@
 ﻿import { SaleOrderApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SaleOrderApprovalService.js';
+
 let FrmType = '';
 let FrmAction = '';
 let G_BCode = 0;
 let G_CheckCreditLimitAmountBase = 'Y';
 let G_CheckCreditLimitDaysBase = 'Y';
+let CreditLimitCheck_BuyerPO = 'Y';
+let SaleOrderApprovalFixedParaMeters = [];
 
 $(document).ready(function () {
     var urlParams = getUrlVars();
@@ -28,7 +31,7 @@ function GetSaleOrderApproval() {
             const Button = false;
             const StringdoubleFilterColumn = ["PartyName"];
             const showButtons = [];
-            const hiddenColumns = ["Code", "BuyerPOMaster_Code","Qty KG"];
+            const hiddenColumns = ["Code", "BuyerPOMaster_Code"];
             const ColumnAlignment = {
                 "Order Date": "center",
                 "Qty KG":"right",
@@ -38,7 +41,7 @@ function GetSaleOrderApproval() {
                 "Total Order Amount":"right",
             };
             const updatedResponse = response.map(item => ({
-                ...item, Action: item.Action ? `<button class="btn btn-success icon-height mb-1" title="Approve" onclick="SaleOrderApprovedlist('${item.BuyerPOMaster_Code}')"><i class="fa fa-check-circle"></i></button>
+                ...item, Action: item.Action ? `<button class="btn btn-success icon-height mb-1" title="${FrmAction}" onclick="SaleOrderApprovedlist('${item.BuyerPOMaster_Code}')"><i class="fa fa-check-circle"></i></button>
                 <button class="btn btn-primary icon-height mb-1" title="View Details" onclick="ViewData('${item.BuyerPOMaster_Code}')"><i class="fa-solid fa-folder-open"></i></button>` : ""
             }));
             BizsolCustomFilterGrid.CreateDataTable("table-header-SaleOrderApproval", "table-body-SaleOrderApproval", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);  
@@ -52,6 +55,7 @@ function GetSaleOrderApproval() {
     });
 }
 function ViewData(Code) {
+    SaleOrderDeliveryTerms(Code);
     SaleOrderApprovalService.GetSaleOrderDetail(Code).then(function (response) {
         if (response && response.length > 0) {
             $('#myModal').modal({
@@ -81,6 +85,37 @@ function ViewData(Code) {
         toastr.error("Error in fetching data:", error);
     });
 }
+function SaleOrderDeliveryTerms(Code) {
+    SaleOrderApprovalService.GetSaleOrderDeliveryTermsDetail(Code).then(function (response) {
+        if (response && response.length > 0) {
+            $('#myModal').modal({
+                backdrop: 'static',
+            });
+            $('#myModal').modal('show');
+            const StringFilterColumn = [];
+            const NumericFilterColumn = [];
+            const DateFilterColumn = [];
+            const Button = false;
+            const showButtons = [];
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = ["Code", "BuyerPOMaster_Code"];
+            const ColumnAlignment = {
+                "Order Date": "center",
+                "BuyerPOMaster_Code": "center",
+                "Qty KG": "right",
+                "Qty PC": "right",
+                "Qty SQM": "right",
+                "Amount": "right",
+            };
+            BizsolCustomFilterGrid.CreateDataTable("table-header-SaleOrderDeliveryTermsTable", "table-body-SaleOrderDeliveryTermsTable", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            $('#paginator-SaleOrderDeliveryTermsTable').hide();
+        } else {
+            toastr.error("No valid data found:", response);
+        }
+    }).catch(error => {
+        toastr.error("Error in fetching data:", error);
+    });
+}
 function CloseModal() {
     $('#myModal').modal('hide');
 }
@@ -89,6 +124,7 @@ function SaleOrderApprovedlist(BCode) {
     G_BCode = BCode;
     SaleOrderApprovalService.SaleOrdersCreditLimitReports(BCode).then(function (response) {
         let CheckCreditLimit = 'Y';
+        let DoCreditLimtCheck = 'N';
         let CreditLimitAmountBase = [];
         let CreditLimitDayBase = [];
         let PartyName = '';
@@ -106,7 +142,15 @@ function SaleOrderApprovedlist(BCode) {
         //CreditLimitAmountBase = response.CreditLimitAmountBase;
         //CreditLimitDayBase = response.CreditLimitDayBase;
         //PartyName = response.CreditLimitAmountBase[0].AccountName;
-        if (CheckCreditLimit === 'N') {
+
+        if (CreditLimitCheck_BuyerPO == 'V' && FrmAction == 'Verify') {
+            DoCreditLimtCheck = 'Y';
+        }
+        if (CreditLimitCheck_BuyerPO == 'C' && FrmAction == 'Check') {
+            DoCreditLimtCheck = 'Y';
+        }
+
+        if (CheckCreditLimit === 'N' && DoCreditLimtCheck=='Y') {
             $('#OTPModalDisplay').modal({
                 backdrop: 'static',
             });
@@ -225,6 +269,20 @@ function SaleOrder_OTPReceive() {
     });
 }
 
+function getSaleOrderApprovalFixedParaMeters() {
+    SaleOrderApprovalService.GetFixedParaMeter().then(function (response) {
+        SaleOrderApprovalFixedParaMeters = response;
+        LoadFrm();
+    });
+}
+
+function LoadFrm() {
+    if (SaleOrderApprovalFixedParaMeters.length > 0 && SaleOrderApprovalFixedParaMeters.find(x => x.PeramaterName === 'CreditLimitCheck_BuyerPO').PeramaterValue != '') {
+        CreditLimitCheck_BuyerPO = SaleOrderApprovalFixedParaMeters.find(x => x.PeramaterName === 'CreditLimitCheck_BuyerPO').PeramaterValue;
+    }
+}
+
+getSaleOrderApprovalFixedParaMeters();
 window.ViewData = ViewData;
 window.CloseModal = CloseModal;
 window.SaleOrderApprovedlist = SaleOrderApprovedlist;

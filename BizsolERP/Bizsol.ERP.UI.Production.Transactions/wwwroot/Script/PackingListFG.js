@@ -26,6 +26,11 @@ let ArryPackingListTransaction = [];
 let AddPackingListTransaction = [];
 let G_OnlyEntry = "T";
 let G_isView = "N";
+let G_PackingTypeDesp = "";
+let G_dllClientName = "";
+let G_dllConsigneeName = "";
+let G_DefaultAccountCodeStockTransfar = 0;
+
 function ChangeMode(Mode) {
     $('#DivPackingListFGForm').hide();
     $('#DivPackingListFGViewGrid').hide();
@@ -51,10 +56,10 @@ function PackingListFG_ShowViewGrid() {
         //    item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
         //});
        
-       // console.log(response);
+        console.log(response);
         response = response.map((item) => ({
             "PackingList No": item.PackingListNo, Date: item.PackingListDate, Warehouse: item.GodownName, "Packing Type": item.PackingType, "Requisition No / Order No": item["Requisition No"], "Party Name": item.ClienName, "Qty KG": item.QtyMT, "Qty PC": item.QtyPC, "Qty SQM": item.QtyMTRS, Status: item.PKStatus,
-            Action: item.Verify === 'N' && item.AllowVerify == 'Y' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-success icon-height" title="Verify" onclick="PackingListFG_Verify(\'' + item.Code + '\')"><i class="fa fa-check"></i></a>': item.Verify === 'N' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>' : '<a class="btn btn-dark icon-height" title="View" onclick="PackingListFG_EditOrView(\'N\',\'' + item.Code + '\')"> <i class="fa fa-eye"></i></a>', 
+            Action: item.LoadingStatus !== 'C' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Loading end" onclick="PackingListFG_EndLoadingOnGrid(\'' + item.Code + '\')"> <i class="fa fa-ban"></i></a>' : item.Verify === 'N' && item.AllowVerify == 'Y' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-success icon-height" title="Verify" onclick="PackingListFG_Verify(\'' + item.Code + '\')"><i class="fa fa-check"></i></a>': item.Verify === 'N' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>' : '<a class="btn btn-dark icon-height" title="View" onclick="PackingListFG_EditOrView(\'N\',\'' + item.Code + '\')"> <i class="fa fa-eye"></i></a>', 
             QtyMT: item.QtyMT, QtyPC: item.QtyPC, QtyMTRS: item.QtyMTRS
         }))
         //console.log(response);
@@ -231,10 +236,43 @@ function Bind_ddlClientNameORddlConsignee() {
         $('#ddlConsignee').select2({
             width: '-webkit-fill-available'
         });
-        //$('#ddlConsignee').on('select2:open', function () {
-        //    $('.select2-search__field')[1].focus();
-        //});
+
+        if (G_dllClientName !== '') {
+            SelectOptionByText('ddlClientName', G_dllClientName);
+            SelectOptionByText('ddlConsignee', G_dllConsigneeName);
+        }
+        if (Number(G_DefaultAccountCodeStockTransfar) > 0) {
+            $('#ddlClientName').val(G_DefaultAccountCodeStockTransfar);
+            $('#ddlConsignee').val(G_DefaultAccountCodeStockTransfar);
+            $('#ddlClientName').select2({
+                width: '-webkit-fill-available'
+            })
+            $('#ddlConsignee').select2({
+                width: '-webkit-fill-available'
+            })
+            //$('#ddlClientName').attr("disabled", "disabled");
+            //$('#ddlConsignee').attr("disabled", "disabled");
+        }
         
+        
+    });
+}
+function Bind_ddlVendorNameORddlConsignee() {
+    $('#lblddlClientName')[0].innerHTML = "Vendor Name:";
+    PackingListFGService.GetPackingListDDl('GetddlVendorName').then(function (response) {
+        BindSelectList($('#ddlClientName')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })));
+        $('#ddlClientName').select2({
+            width: '-webkit-fill-available'
+        });
+        BindSelectList($('#ddlConsignee')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })));
+        $('#ddlConsignee').select2({
+            width: '-webkit-fill-available'
+        });
+        if (G_dllClientName !== '') {
+            SelectOptionByText('ddlClientName', G_dllClientName);
+            SelectOptionByText('ddlConsignee', G_dllConsigneeName);
+        }
+
     });
 }
 function Bind_ddlReqNo() {
@@ -291,9 +329,10 @@ function Bind_ddlOrderNo(Mode, Name) {
     PackingListFGService.GetPendingOrderList(Mode, Name,0).then(function (response) {
 
         if (response.length == 0) {
-            let bName = Mode == "GetPendingOrderListByBuyerName" ? "Buyer Name: " : "Consignee Name: ";
+            let bName = Mode === "GetPendingOrderListByBuyerName" ? "Buyer Name: " : Mode === "GetPendingMRNListByPartyName" ? "Vendor Name:" : "Consignee Name: ";
             Name = bName + Name;
-            toastr.warning('Order No Not Found for ' + Name);
+            let OrderOrMRN = Mode === "GetPendingMRNListByPartyName" ? "MRN No" : "Order No ";
+            toastr.warning(OrderOrMRN+' Not Found for ' + Name);
         }
         let option = '<option value="0" partyname="0"></option>';
         $.each(response, function (key, val) {
@@ -314,11 +353,15 @@ function Bind_ddlOrderNo(Mode, Name) {
 
 function Bind_PackingListTransactionGrid(isView) {
     if (ArryPackingListTransaction.length > 0) {
-        ArryPackingListTransaction = ArryPackingListTransaction.map((item) => ({
-            "Pallet No": item.PalletNo, "Batch No/ID": item.IdentificationNo, "Item Name": item.ItemName, "Size": item.SizeDesp, "Qty KG": item.QtyMT, "Qty PC": item.QtyPc, "Qty SQM": item.QtyMTRS, "Qty RMTR": parseFloat(item.QtyRMTR).toFixed(3),
-            Action: G_OnlyEntry == "S" ? '<a class="btn btn-warning icon-height" title="Remove Pallet" onclick="PackingListFG_Remove(' + PackingListMaster_Code + ',\'' + item.Code + '\',\'' + item.PalletNo + '\')"> <i class="fa fa-remove"></i></a>': item.PalletNo != "" ? '<a class="btn btn-danger icon-height" title="remove" onclick="PackingListFG_Remove(' + PackingListMaster_Code + ',\'' + item.Code + '\',\'\')"> <i class="fa fa-trash"></i></a>&nbsp;<a class="btn btn-warning icon-height" title="Remove Pallet" onclick="PackingListFG_Remove(' + PackingListMaster_Code + ',\'' + item.Code + '\',\'' + item.PalletNo + '\')"> <i class="fa fa-remove"></i></a>' : '<a class="btn btn-danger icon-height" title="remove" onclick="PackingListFG_Remove(' + PackingListMaster_Code + ',\'' + item.Code + '\',\'\')"> <i class="fa fa-trash"></i></a>',
-            QtyMT: item.QtyMT, QtyPC: item.QtyPc, QtyMTRS: item.QtyMTRS, QtyRMTR: item.QtyRMTR
-        }))
+
+        if (typeof ArryPackingListTransaction[0].PalletNo !== "undefined") {
+            ArryPackingListTransaction = ArryPackingListTransaction.map((item) => ({
+                "Pallet No": item.PalletNo, "Batch No/ID": item.IdentificationNo, "Item Name": item.ItemName, "Size": item.SizeDesp, "Qty KG": item.QtyMT, "Qty PC": item.QtyPc, "Qty SQM": item.QtyMTRS, "Qty RMTR": parseFloat(item.QtyRMTR).toFixed(3),
+                Action: G_OnlyEntry == "S" ? '<a class="btn btn-warning icon-height" title="Remove Pallet" onclick="PackingListFG_Remove(' + PackingListMaster_Code + ',\'' + item.Code + '\',\'' + item.PalletNo + '\')"> <i class="fa fa-remove"></i></a>' : item.PalletNo != "" ? '<a class="btn btn-danger icon-height" title="remove" onclick="PackingListFG_Remove(' + PackingListMaster_Code + ',\'' + item.Code + '\',\'\')"> <i class="fa fa-trash"></i></a>&nbsp;<a class="btn btn-warning icon-height" title="Remove Pallet" onclick="PackingListFG_Remove(' + PackingListMaster_Code + ',\'' + item.Code + '\',\'' + item.PalletNo + '\')"> <i class="fa fa-remove"></i></a>' : '<a class="btn btn-danger icon-height" title="remove" onclick="PackingListFG_Remove(' + PackingListMaster_Code + ',\'' + item.Code + '\',\'\')"> <i class="fa fa-trash"></i></a>',
+                QtyMT: item.QtyMT, QtyPC: item.QtyPc, QtyMTRS: item.QtyMTRS, QtyRMTR: item.QtyRMTR
+            }))
+        }
+        
 
         const StringFilterColumn = [];
         const NumericFilterColumn = [];
@@ -369,11 +412,15 @@ function EditMode(isView) {
            
             console.log(response);
             if (response.length > 0) {
-                BuyerPOMaster_Code = response[0][0].BuyerPoMaster_Code;
+               
+                BuyerPOMaster_Code = response[0][0].MRNMaster_Code > 0 ? response[0][0].MRNMaster_Code :  response[0][0].BuyerPoMaster_Code;
                 ArryPackingListTransaction = response[1];
                 Bind_PackingListTransactionGrid(isView);
                 SelectOptionByText('ddlPackingType', response[0][0].PackingType);
                 PackingListFG_OnChangeddlPackingType();
+                G_dllClientName = response[0][0].ClienName;
+                G_dllConsigneeName = response[0][0].ConsigneeName;
+
 
                 $('#txtScanIdentification').removeAttr("readonly");
 
@@ -402,21 +449,16 @@ function EditMode(isView) {
                 SelectOptionByText('ddlConsignee', response[0][0].ConsigneeName);
                 
 
-                if (response[0].PackingType !== 'Stock Transfer') {
-                    //BindOrderNOForBatchPackingList(PackingListCode);
-
-                }
-
-
                 if (InvoiceByOrder === 'Y') {
-                    Bind_ddlOrderNo("GetPendingOrderListByPartyName", response[0][0].ConsigneeName);
-                    //$('#ddlOrderNo').val(BuyerPOMaster_Code)
+                    if (response[0][0].PackingType !== 'Stock Transfer') {
+                        if (response[0][0].PackingType === 'Purchase Return') {
+                            Bind_ddlOrderNo("GetPendingMRNListByPartyName", response[0][0].ConsigneeName);
+                        }
+                        else {
+                            Bind_ddlOrderNo("GetPendingOrderListByPartyName", response[0][0].ConsigneeName);
+                        }
+                    }
                     
-
-                    //$('#ddlOrderNo').select2({
-                    //    width: '-webkit-fill-available'
-                    //});
-
                 }
 
                 else {
@@ -437,10 +479,16 @@ function EditMode(isView) {
                 //if ('@ViewBag.ddlPackingType' === 'Stock Transfer') { changeddlPackingType(); }
 
                 
-
-                if ('@ViewBag.LoadingStatus' === 'C') { $('#btnLoadingEnd')[0].innerHTML = "Loaded"; $('#btnScanNoPallet').hide(); } else {
+                $('#btnLoadingEnd')[0].innerHTML = "End Loading"
+                if (response[0][0].LoadingStatus === 'C') {
+                    $('#btnLoadingEnd')[0].innerHTML = "Loaded"; $('#btnScanNoPallet').hide();
+                    $('#txtScanIdentification').attr("readonly", true);
+                    $('#btnLoadingEnd').removeAttr("onclick");
+                    $('#btnLoadingEnd').attr("disabled", "disabled(");
+                } else {
                     $('#btnLoadingEnd').removeAttr("disabled");
                     $('#btnLoadingEnd').attr("onclick", "return PackingListFG_EndLoading()");
+                    $('#btnScanNoPallet').show();
                 }
                 
                 if (isView === 'Y') {
@@ -459,6 +507,7 @@ function EditMode(isView) {
                     $('#btnStart')[0].innerHTML = 'Scan Started';
                     $('#btnStart').attr("disabled", "disabled");
                     $('#btnStart').removeAttr("onclick");
+                    
                 }
                 
             }
@@ -476,6 +525,9 @@ function PackingListFG_CreateNew() {
     if (PackingListFGFixedParaMeters.length > 0 && PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'VerifyApplicableInPackingList').PeramaterValue === 'Y') {
         ClrFrm();
         ChangeMode('New');
+        PackingListFG_OnChangeddlPackingType();
+        $('#btnScanNoPallet').show();
+
     } else {
         toastr.error('Please Check! Verification enable Mandatory for web packing list.');
     }
@@ -527,8 +579,8 @@ function PackingListFG_Verify(PackingListMaster_Code) {
 function PackingListFG_ShowDetailsModals(For) {
     $('#btnLoadNoOfPallet').hide();
     if (For === 'GetReqDetails') {
-        var ddlReqNo = document.getElementById("ddlReqNo");
-        var RMRequisitionMaster_Code = ddlReqNo.options[ddlReqNo.selectedIndex].attributes["code"].value;
+        let ddlReqNo = document.getElementById("ddlReqNo");
+        let RMRequisitionMaster_Code = ddlReqNo.options[ddlReqNo.selectedIndex].attributes["code"].value;
 
 
 
@@ -599,18 +651,22 @@ function PackingListFG_ShowDetailsModals(For) {
         });
     }
     else if (For === 'ScanNoPallet') {
-
+        let Code = BuyerPOMaster_Code;
         if (PackingType == 'S') {
             For = "ScanNoPalletForStockTransfer";
-
+            let ddlReqNo = document.getElementById("ddlReqNo");
+            Code = ddlReqNo.options[ddlReqNo.selectedIndex].attributes["code"].value;
         } else {
             For = "ScanNoPalletForDispatch";
         }
         let ddlConsignee = document.getElementById("ddlConsignee");
         let ConsigneeName = ddlConsignee.options[ddlConsignee.selectedIndex].text;
         $('#btnLoadNoOfPallet').show();
+        if (ConsigneeName === '') {
+            return;
+        }
 
-        PackingListFGService.GetPendingOrderList(For, ConsigneeName ,BuyerPOMaster_Code).then(function (response) {
+        PackingListFGService.GetPendingOrderList(For, ConsigneeName, Code).then(function (response) {
 
 
             console.log(response);
@@ -655,11 +711,16 @@ function PackingListFG_OnChangeddlPackingType() {
     $('#divOrderNo').show();
     $('#ddlClientName').removeAttr("disabled");
     $('#ddlConsignee').removeAttr("disabled");
-
+    $('#lblddlClientName')[0].innerHTML ="Buyer Name:";
+    $('#lblddlOrderNo')[0].innerHTML = "Order No:";
+    G_dllClientName = '';
+    G_dllConsigneeName=''
     G_EwayBillApplicable = "N";
     PackingType = "D";
     var ddlPackingType = document.getElementById("ddlPackingType");
     PackingType = ddlPackingType.options[ddlPackingType.selectedIndex].attributes["packingtype"].value;
+    G_DefaultAccountCodeStockTransfar = 0;
+    Bind_ddlClientNameORddlConsignee();
 
     if (PackingType === "S") {
         $('#btnAvailableOrderStock').hide();
@@ -675,6 +736,7 @@ function PackingListFG_OnChangeddlPackingType() {
         var EwayBillApplicable = ddlPackingType.options[ddlPackingType.selectedIndex].attributes["EwayBillApplicable"].value;
         G_EwayBillApplicable = EwayBillApplicable;
         if (Number(DefaultAccountCode) > 0) {
+            G_DefaultAccountCodeStockTransfar = DefaultAccountCode;
             $('#ddlClientName').val(DefaultAccountCode);
             $('#ddlConsignee').val(DefaultAccountCode);
             $('#ddlClientName').select2({
@@ -732,14 +794,22 @@ function PackingListFG_OnChangeddlPackingType() {
 
 
 
-        var ddlPackingType = document.getElementById("ddlPackingType");
-        var TextPackingType = ddlPackingType.options[ddlPackingType.selectedIndex].text;
+        let ddlPackingType = document.getElementById("ddlPackingType");
+        let TextPackingType = ddlPackingType.options[ddlPackingType.selectedIndex].text;
         if (PackingType === 'D' && TextPackingType.toUpperCase().trim() === ('JOBWORK RECEIVE SENT').trim()) {
             //GodownDataList('');
         }
         else {
             //GodownDataList('Dispatch');
         }
+
+        if (PackingType === 'D' && TextPackingType.toUpperCase().trim() === ('PURCHASE RETURN').trim()) {
+            Bind_ddlVendorNameORddlConsignee();
+            G_PackingTypeDesp = TextPackingType;
+            $('#lblddlOrderNo')[0].innerHTML = "MRN No.";
+        }
+        
+
     }
 
 }
@@ -749,15 +819,18 @@ function PackingListFG_OnChangeddlClientNameORddlConsignee(element) {
     let ele = element;
     let eleText = ele.options[ele.selectedIndex].text;
     let eleValue = ele.value;
+    let ddlClientNameMode = G_PackingTypeDesp.toUpperCase().trim() === ('PURCHASE RETURN').trim() ? "GetPendingMRNListByPartyName" : '';
     if (eleId === 'ddlClientName') {
         $('#ddlConsignee').val(eleValue);
         $('#ddlConsignee').select2({
             width: '-webkit-fill-available'
         });
-        Bind_ddlOrderNo("GetPendingOrderListByBuyerName", eleText);
+        ddlClientNameMode = ddlClientNameMode === '' ? "GetPendingOrderListByBuyerName" : ddlClientNameMode;
+        Bind_ddlOrderNo(ddlClientNameMode, eleText);
     }
     else {
-        Bind_ddlOrderNo("GetPendingOrderListByPartyName", eleText);
+        ddlClientNameMode = ddlClientNameMode === '' ? "GetPendingOrderListByPartyName" : ddlClientNameMode;
+        Bind_ddlOrderNo(ddlClientNameMode, eleText);
     }
 }
 
@@ -841,13 +914,14 @@ function PackingListFG_StartLoading(G_LoadNoOfPalletData=[]) {
         driverMobileNo: $('#txtDriverNo')[0].value,
         driverName: "",
         distanceKM: parseInt($('#txtDistance')[0].value),
-        despatchAdviceMaster_Code: InvoiceByOrder == "Y" ? 0 : parseInt(ddlOrderNo_Code),
+        despatchAdviceMaster_Code: InvoiceByOrder == "Y" || G_PackingTypeDesp.toUpperCase().trim() === ('PURCHASE RETURN').trim() ? 0 : parseInt(ddlOrderNo_Code),
         removalTime: "",
         requisitionNo: $('#ddlReqNo')[0].value == "0" ? "" : $('#ddlReqNo')[0].value,
-        buyerPoMaster_Code: InvoiceByOrder == "Y" ? parseInt(ddlOrderNo_Code) : 0,
+        buyerPoMaster_Code: G_PackingTypeDesp.toUpperCase().trim() === ('PURCHASE RETURN').trim() ? 0 : InvoiceByOrder == "Y" ? parseInt(ddlOrderNo_Code) : 0,
         printPC: "",
         printMT: "",
-        printMTRS: ""
+        printMTRS: "",
+        mrnMaster_Code: G_PackingTypeDesp.toUpperCase().trim() === ('PURCHASE RETURN').trim() ? parseInt(ddlOrderNo_Code) : 0
     }];
 
     let packingListPayLoad = {
@@ -952,6 +1026,22 @@ function PackingListFG_EndLoading() {
     });
 }
 
+function PackingListFG_EndLoadingOnGrid(packingListMaster_Code) {
+    if (confirm("Vehicle are Loading...Do you want to Loading end of this Packing List ?!") == true) {
+        PackingListFGService.LoadingEndPackingListBatchNo(packingListMaster_Code).then(function (response) {
+            if (response.Status == 'Y') {
+                toastr.success(response.Msg);
+                PackingListFG_ShowViewGrid();
+            } else {
+                toastr.error(response.Msg);
+            }
+        });
+    } 
+
+
+    
+}
+
 function PackingListFG_Remove(packingListMaster_Code, packingListTransaction_Code, palletNo) {
     if (G_OnlyEntry == "S" && palletNo=="") {
         toastr.warning('This entry not Remove in summary. please uncheck summary option to delete this entry!');
@@ -1016,6 +1106,10 @@ function ClrFrm() {
     BuyerPOMaster_Code = 0;
     ArryPackingListTransaction = [];
     AddPackingListTransaction = [];
+    G_dllClientName = '';
+    G_dllConsigneeName = '';
+    G_PackingTypeDesp = '';
+    G_DefaultAccountCodeStockTransfar = 0;
 
     $('#txtPackingListNo').val('0');
     $('#txtScanIdentification').val('');
@@ -1160,7 +1254,8 @@ function ScanId() {
                 erpItemMaster_code: item.ERPItemMaster_code,
                 palletType: "",
                 palletWeight: 0,
-                qtyRMTR: 0 
+                qtyRMTR: 0,
+                mrnMaster_Code: item.MRNMaster_Code
             }));
 
             console.log(AddPackingListTransaction);
@@ -1307,4 +1402,5 @@ window.PackingListFG_EndLoading = PackingListFG_EndLoading;
 window.PackingListFG_ScanIdDataList = PackingListFG_ScanIdDataList;
 window.PackingListFG_Remove = PackingListFG_Remove;
 window.PackingListFG_LoadNoOfPallet = PackingListFG_LoadNoOfPallet;
+window.PackingListFG_EndLoadingOnGrid = PackingListFG_EndLoadingOnGrid;
 

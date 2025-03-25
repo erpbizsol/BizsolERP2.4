@@ -6,26 +6,16 @@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/StockTransferWarehouse.js"></script>
 
 <div class="tab-section">
-       @* <ul class="nav nav-tabs" id="myTab" role="tablist">
-          <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true">Stock Transfer Receive</button>
-          </li>
-           <li class="nav-item" role="presentation">
-              <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="false"> Actual Dispatch</button>
-          </li> 
-       
-      </ul>  *@
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
-            <form asp-action="YourAction" asp-controller="YourController" method="post" enctype="multipart/form-data">
+            
                 <input type="hidden" asp-for="Code" value="0" />
 
                 <div class="row">
                     <!-- Warehouse Field -->
                     <div class="col-md-4 form-group">
                         <label for="ddlWarehouse" class="form-label">Warehouse <span class="text-danger">*</span></label>
-                        <input list="ddlWarehouseList" id="ddlWarehouse" name="ddlWarehouse" class="form-control form-control-sm box_border" placeholder="Warehouse" autocomplete="off" required>
-                        <datalist id="ddlWarehouseList"></datalist>
+                        <select id="ddlWarehouse" class="form-control form-control-sm box_border"></select>
                     </div>
 
                     <!-- Attachment Field -->
@@ -42,34 +32,19 @@
                     <!-- Roll Id No Field -->
                     <div class="col-md-4 form-group">
                         <label for="ddlRollIdNo" class="form-label">Roll Id No <span class="text-danger">*</span></label>
-                        <input list="ddlRollIdNoList" id="ddlRollIdNo" name="ddlRollIdNo" class="form-control form-control-sm box_border" placeholder="Roll Id No" autocomplete="off" required>
-                        <datalist id="ddlRollIdNoList"></datalist>
+                        <input type="text" id="ddlRollIdNo" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" autocomplete="off" />
+                        <ul id="ddlRollIdNoList" class="AutoSuggestion-list"></ul>
                     </div>
                 </div>
-            </form>
         </div>
-        @* <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
-            <div class="row">
-                <div class="col-md-4 form-group">
-                    <label for="partyName" class="form-label">Party Name <span class="text-danger">*</span></label>
-                    <input list="ddlPartyNameList" id="ddlPartyName" name="ddlPartyName" class="form-control form-control-sm box_border" placeholder="Party Name" autocomplete="off" required>
-                    <datalist id="ddlPartyNameList"></datalist>
-                </div>
-                <div class="col-md-4 form-group">
-                    <label for="ddlPalletNo" class="form-label">Pallet No.<span class="text-danger">*</span></label>
-                    <input list="ddlPalletNoList" id="ddlPalletNo" name="ddlPalletNo" class="form-control form-control-sm box_border" placeholder="Pallet No" autocomplete="off" required>
-                    <datalist id="ddlPalletNoList"></datalist>
-                </div>
-            </div>
-        </div> *@
     </div>
 </div>
-<div id="tblStockReceive">
+<div id="tblStockReceive" style="display: none;">
 <div class="table-wrapper fixed-height-table">
     <table id="StockTransferReceive" class="fixed-width-table table">
-        <thead id="table-header">
+            <thead id="table-header-StockTransferReceive">
         </thead>
-        <tbody id="table-body">
+            <tbody id="table-body-StockTransferReceive">
         </tbody>
     </table>
 </div>
@@ -103,17 +78,3 @@
         </div>
     </div>
 </div>
-@* <div id="tblActualDispatch">
-<div class="modal-body">
-    <div class="table-wrapper fixed-height-table">
-        <table id="ActualDispatch" class="fixed-width-table table">
-            <thead id="table-header-ActualDispatch">
-            </thead>
-            <tbody id="table-body-ActualDispatch">
-            </tbody>
-        </table>
-    </div>
-    <div class="paginator" id="paginator-ActualDispatch">
-    </div>
-    </div>
-</div> *@

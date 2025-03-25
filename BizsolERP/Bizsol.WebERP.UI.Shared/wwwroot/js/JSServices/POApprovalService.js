@@ -54,5 +54,13 @@ GetPOIndentPriceComparisonDetails: function GetPOIndentPriceComparisonDetails(In
         }
         );
     },
+    GetPODeliveryTermsDetail: function GetPODeliveryTermsDetail(PurchaseOrderMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_POApproval + "/GetPODeliveryTermsDetail?PurchaseOrderMaster_Code=" + PurchaseOrderMaster_Code;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 export { POApprovalService }
