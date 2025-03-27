@@ -57,7 +57,7 @@ function GetSalespersonList() {
 
             BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })), 'FirstItemAll');
             $('#ddlSalesPersonlist').select2({
-                allowClear: true,
+                // allowClear: true,
                 matcher: function (params, data) {
                     // If there's no search term, return all data
                     if ($.trim(params.term) === '') {

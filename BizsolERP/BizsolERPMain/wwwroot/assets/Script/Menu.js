@@ -115,6 +115,7 @@ function getChildMenu(value, masterCode, baseUrl) {
 
 function setActiveMenu() {
     var currentUrl = window.location.pathname;
+    var LastChar = currentUrl.slice(-1);
 
     $('#side-menu ul.sub-menu').hide();
 
@@ -123,7 +124,7 @@ function setActiveMenu() {
 
     $('#side-menu a').each(function () {
         var menuLink = $(this).attr('href');
-        if (menuLink && (currentUrl === new URL(menuLink, window.location.origin).pathname) && currentUrl !=="/") {
+        if (menuLink && (currentUrl === new URL(menuLink, window.location.origin).pathname) && currentUrl !== "/" && LastChar != '/') {
             $(this).addClass('active');
             $(this).parents('li').last().addClass('last-active');
             $(this).parents('ul.sub-menu').show();

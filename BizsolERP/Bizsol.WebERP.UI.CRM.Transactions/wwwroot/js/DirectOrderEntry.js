@@ -94,7 +94,7 @@ function PageLoad() {
         PopulateData();
         $('input, textarea,select').prop('disabled', true);
         $("#btnBack").prop("disabled", false);
-
+        $('select').prop('disabled', true);
         //GetEditVisitDetails();
         
     }
@@ -120,6 +120,7 @@ function PageLoad() {
         $('#btnCheckOut').prop('hidden', false);
         $('#divtxtNextVistDate').prop('hidden', false);
         //$('#toggleSwitch').prop("disabled", false);
+        $('#ddlCustomerName').prop('disabled', true);
 
     } else {
         $('#btnCheckOut').prop('hidden', true);
@@ -427,7 +428,8 @@ function GetEditVisitDetails() {
             $('#txtUserName').val(response.VisitORroutePlanMaster[0].PlanUserName);
             $('#txtdate').val(response.VisitORroutePlanMaster[0].Date);
             if (response.VisitORroutePlanMaster[0].OrderEntryType == 'V') {
-                $('#txtDealer').val(response.VisitORroutePlanMaster[0].OrderDealerName);
+                // $('#txtDealer').val(response.VisitORroutePlanMaster[0].OrderDealerName);
+                BizSolHelperFunction.SelectOptionByText('ddlCustomerName', response.VisitORroutePlanMaster[0].OrderDealerName);
             } else {
                 //$('#ddlCustomerName option').filter(function () {
                 //    return $(this).text() === response.VisitORroutePlanMaster[0].OrderDealerName;
@@ -512,7 +514,7 @@ function BindSelect2FromDataList(element, arrayList, FirstItem,ddlwidth) {
    // element.trigger('change');
 
     element.select2({
-        //allowClear: true,
+        //// allowClear: true,
         width: ddlwidth,
         matcher: function (params, data) {
             // If there's no search term, return all data
@@ -2927,6 +2929,9 @@ function SetOrderBookingTableHeaderAsPerConfig() {
     //$("#tblorderbooking tfoot tr:first-child td:nth-child(" + (Indx_TblOrder.Amount + 1) + ")").css('display', 'none');
     $("#tblorderbooking tfoot tr:first-child td:nth-child(" + (Indx_TblOrder.Delete + 1) + ")").css('display', 'none');
    
+    }
+    if (param_VisitMode == 'View') {
+        $('select').prop('disabled', true);
     }
 }
 function ShowSizeDespButton(x) {

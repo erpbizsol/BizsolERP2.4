@@ -404,7 +404,7 @@ function GetOrderStatusList() {
 
             BindSelectList($('#ddlOrderStatusList')[0], response.map((item) => ({ Code: item.VerifyStatus, Desp: item.VerifyStatus })), 'FirstItemAll');
             $('#ddlOrderStatusList').select2({
-                allowClear: true,
+                // allowClear: true,
                 matcher: function (params, data) {
                     // If there's no search term, return all data
                     if ($.trim(params.term) === '') {
@@ -442,7 +442,7 @@ function GetUserNameList() {
 
         BindSelectList($('#ddlUserNameList')[0], result.map((item) => ({ Code: item.UserName, Desp: item.UserName })), 'FirstItemSelected');
         $('#ddlUserNameList').select2({
-            allowClear: true,
+            // allowClear: true,
            
                 matcher: function (params, data) {
                     // If there's no search term, return all data
