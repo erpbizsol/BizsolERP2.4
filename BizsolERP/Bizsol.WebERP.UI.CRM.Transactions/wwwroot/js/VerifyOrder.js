@@ -34,9 +34,11 @@ $(document).ready(function () {
    
 });
 function GetOrderVerifyData() {
-    var SalesPerson = $('#ddlSalesPerson').val();
-    var DealerName = $('#ddlDealerName').val();
-   
+    //var SalesPerson = $('#ddlSalesPerson').val();
+    //var DealerName = $('#ddlDealerName').val();
+    var SalesPerson = $('#ddlSalesPersonlist option:selected').text();
+    var DealerName = $('#ddlDealerNameList option:selected').text()
+
     let SalePerson = '';
     let Dealer = '';
     
@@ -52,11 +54,11 @@ function GetOrderVerifyData() {
     }
     
     if (SalesPerson === '') {
-        toastr.error('Please select sales person !')
-        $('#ddlSalesPerson').focus();
+        //toastr.error('Please select sales person !')
+        //$('#ddlSalesPerson').focus();
     } else if (DealerName === '') {
-        toastr.error('Please select Dealer Name !')
-        $('#ddlDealerName').focus();
+        //toastr.error('Please select Dealer Name !')
+       // $('#ddlDealerName').focus();
     } else {
        
             GetVerifyOrderList(SalePerson.trim(), Dealer.trim());
@@ -67,15 +69,34 @@ function GetOrderVerifyData() {
 function GetNestedMarketingManList() {
     VisitOrderEntryService.GetNestedMarketingManList().then(function (response) {
         if (response.length > 0) {
-            $('#ddlSalesPersonList option').remove();
+            //$('#ddlSalesPersonList option').remove();
 
-            var option = '<option text="0" value="All" selected >All</option>';
+            //var option = '<option text="0" value="All" selected >All</option>';
 
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].PersonName + '" >' + response[i].PersonName + '</option>';
-            }
+            //for (var i = 0; i < response.length; i++) {
+            //    option += '<option text="' + response[i].Code + '" value="' + response[i].PersonName + '" >' + response[i].PersonName + '</option>';
+            //}
 
-            $('#ddlSalesPersonList')[0].innerHTML = option;
+            //$('#ddlSalesPersonList')[0].innerHTML = option;
+
+            BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })), 'FirstItemAll');
+            $('#ddlSalesPersonlist').select2({
+                allowClear: true,
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
+            });
         } else {
             toastr.error('No Data Found')
             return false;
@@ -85,15 +106,33 @@ function GetNestedMarketingManList() {
 function GetNestedDealerList() {
     VisitOrderEntryService.GetNestedDealerList().then(function (response) {
         if (response.length > 0) {
-            $('#ddlDealerNameList option').remove();
+            //$('#ddlDealerNameList option').remove();
 
-            var option = '<option text="0" value="All" selected >All</option>';
+            //var option = '<option text="0" value="All" selected >All</option>';
 
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].AccountDesp + '" >' + response[i].AccountDesp + '</option>';
-            }
+            //for (var i = 0; i < response.length; i++) {
+            //    option += '<option text="' + response[i].Code + '" value="' + response[i].AccountDesp + '" >' + response[i].AccountDesp + '</option>';
+            //}
 
-            $('#ddlDealerNameList')[0].innerHTML = option;
+            //$('#ddlDealerNameList')[0].innerHTML = option;
+            BindSelectList($('#ddlDealerNameList')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })), 'FirstItemAll');
+            $('#ddlDealerNameList').select2({
+                allowClear: true,
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
+            });
         } else {
            toastr.error('No Data Found')
             return false;
@@ -234,7 +273,7 @@ function GetNestedDealerList() {
     //            let EditOtherCharges = '';
     //            const updatedResponse = response.map(item => {
     //                var EditOtherCharges = '';
-                
+
 
     //                    var basicAmount = item['Basic Rate'];
     //                    var Amount = item['Discount'];
@@ -398,6 +437,23 @@ function GetNestedDealerList() {
 //    });
 //}
 
+
+function BindSelectList(element, list, FirstItem) {
+    let option = '';
+
+    if (FirstItem == 'FirstItemAll') {
+        option = '<option value="All">All</option>';
+    } else if (FirstItem == 'FirstItemSelected') {
+        option = '';
+    } else {
+        option = '<option value="0"></option>';
+    }
+
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
 function GetVerifyOrderList(SalesPerson, DealerName) {
     var Qty_Config = JSON.parse(sessionStorage.getItem('QtyConfig'));
     var CRM_Config = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
@@ -411,12 +467,12 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
             if (response.length > 0) {
                 $("#txtTable").show();
                 const StringFilterColumn = ["Order Id", "Sale Person"];
-                const NumericFilterColumn = ["Order Amount", "Order Qty"];
+                const NumericFilterColumn = ["Order Amount"];
                 const DateFilterColumn = ["Visit Date"];
                 const Button = false;
                 const showButtons = [];
                 const StringdoubleFilterColumn = ["Dealer Name", "City"];
-                const hiddenColumns = ["Code", "Visit Type", "OrderVisitType", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "State","Verify"];
+                const hiddenColumns = ["Code", "Visit Type", "OrderVisitType", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "State", "Verify","Order Qty"];
                 if (ThreeLevelVerification === 'N') {
                     hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                     response.forEach(item => {
@@ -519,12 +575,12 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
             if (response.length > 0) {
                 $("#txtTable").show();
                 const StringFilterColumn = ["Order Id", "Sale Person"];
-                const NumericFilterColumn = ["Order Amount", "Order Qty", "Outstanding","Overdue Amount"];
+                const NumericFilterColumn = ["Order Amount",  "Outstanding","Overdue Amount"];
                 const DateFilterColumn = ["Visit Date"];
                 const Button = false;
                 const showButtons = [];
                 const StringdoubleFilterColumn = ["Dealer Name", "City"];
-                const hiddenColumns = ["Code", "Visit Type", "OrderVisitType", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "State", "Verify"];
+                const hiddenColumns = ["Code", "Visit Type", "OrderVisitType", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "State", "Verify", "Order Qty"];
                 if (ThreeLevelVerification === 'N') {
                     hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                     response.forEach(item => {
@@ -1195,7 +1251,7 @@ function updateFooter(data) {
     <tr>
         <td><b>Total</b></td>
         <td colspan="5"></td>
-        <td style="text-align:right"><b>${TotalOrderQty.toFixed(2)}</b></td>
+        <td style="text-align:right"></td>
         <td style="text-align:right"><b>${TotalFinalAmount.toFixed(2)}</b></td>
          <td colspan="2"></td>
     </tr>
@@ -1209,7 +1265,7 @@ function updateFooter(data) {
     <tr>
         <td><b>Total</b></td>
         <td colspan="9"></td>
-        <td style="text-align:right"><b>${TotalOrderQty.toFixed(2)}</b></td>
+        <td style="text-align:right"></td>
         <td style="text-align:right"><b>${TotalFinalAmount.toFixed(2)}</b></td>
          <td colspan="2"></td>
     </tr>
@@ -1300,10 +1356,22 @@ function calFinalAmt(code) {
 
 }
 function Reject(code) {
-    const alertCls = confirm("Are you sure you want to Reject this Visit?");
-    if (alertCls) {
-        RejectVisit(code);
-    }
+    var ModuleName = "Verify Order/Visit",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    var OptionName = 'Reject';
+    VisitOrderEntryService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            const alertCls = confirm("Are you sure you want to Reject this Visit?");
+            if (alertCls) {
+                RejectVisit(code);
+            }
+        }
+    });
 }
 function RejectVisit(Code) {
     $('#ReasonModal').modal('show');
@@ -1465,8 +1533,9 @@ function AdminVerifyLv2(Code, element) {
                 }
                 if (parseFloat(DiscountLimit) != 0 && parseFloat(DiscountValToCompare) != 0) {
                     if (parseFloat(DiscountValToCompare) > parseFloat(DiscountLimit)) {
-                        alert("The Discount Limit is : " + DiscountLimit + " Rs. \nThis record has exceeded discount Limit; So it can be verified only by the Management!");
-                        return;
+                        //alert("The Discount Limit is : " + DiscountLimit + " Rs. \nThis record has exceeded discount Limit; So it can be verified only by the Management!");
+                        //return;
+                        alert("The Discount Limit is : " + DiscountLimit + " Rs. This record has exceeded discount Limit!");
                     }
                 }
             }
@@ -1629,18 +1698,29 @@ function UpdateDiscountValue() {
     }
     
   
-   
+    var ModuleName = "Verify Order/Visit",
+        OptionName = "",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+
     var ApplicableToAll = $('#chkApplicableForWholeOrder')[0].checked;
     var Mode = '';
     if (DisLevel == 'LVL2' && ApplicableToAll == false) {
         Mode = "UPDATE_DISCOUNT_LV2";
+        OptionName = "VerifyL2";
     } else if (DisLevel == 'LVL3' && ApplicableToAll == false) {
         Mode = "UPDATE_DISCOUNT_LV3";
+        OptionName = "VerifyL3";
     } else if (DisLevel == 'LVL2' && ApplicableToAll == true) {
         Mode = "UPDATE_DISCOUNT_LV2_ALL";
+        OptionName = "VerifyL2";
     } else if (DisLevel == 'LVL3' && ApplicableToAll == true) {
         Mode = "UPDATE_DISCOUNT_LV3_ALL";
+        OptionName = "VerifyL3";
     }
+
+  
+
     var visitOrderDetailsData = [];
 
     if (NewDiscount > 0) {
@@ -1695,28 +1775,40 @@ function UpdateDiscountValue() {
 
         visitOrderDetailsData.push(rowdata);
 
-        VisitOrderEntryService.UpdateVisitOrderDetails_Discount(visitOrderDetailsData, VisitMaster_Code, Mode).then(function (response) {
+       
 
-            if (response != '') {
-                if (response.Status == 'N') {
-                    toastr.error(response.Msg);
-                } else {
+        VisitOrderEntryService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
 
-                    toastr.success(response.Msg);
-                    setTimeout(function () {
-                        $('#txtModalBasicRate').val(0);
+            if (response.CheckModuleOptionRight == 'N') {
+                toastr.error(response.Msg);
+                return false;
+            } else {
 
-                        $('#txtOldDiscount').val(0);
-                        $('#txtDiscount').val(0);
-                        $('#txtDiscountLevel').val('');
-                        $('#txtDiscountUnit').val('');
-                        $('#ShowDiscountModal').modal('hide');
-                        GetOrderVerifyData();
-                    }, 2000); // 2 seconds delay before redirect
-                }
 
+                VisitOrderEntryService.UpdateVisitOrderDetails_Discount(visitOrderDetailsData, VisitMaster_Code, Mode).then(function (response) {
+
+                    if (response != '') {
+                        if (response.Status == 'N') {
+                            toastr.error(response.Msg);
+                        } else {
+
+                            toastr.success(response.Msg);
+                            setTimeout(function () {
+                                $('#txtModalBasicRate').val(0);
+
+                                $('#txtOldDiscount').val(0);
+                                $('#txtDiscount').val(0);
+                                $('#txtDiscountLevel').val('');
+                                $('#txtDiscountUnit').val('');
+                                $('#ShowDiscountModal').modal('hide');
+                                GetOrderVerifyData();
+                            }, 2000); // 2 seconds delay before redirect
+                        }
+
+                    }
+
+                });
             }
-
         });
     }
 }
