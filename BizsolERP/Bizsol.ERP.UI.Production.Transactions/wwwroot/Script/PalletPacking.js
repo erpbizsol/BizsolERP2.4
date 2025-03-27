@@ -1157,7 +1157,7 @@ function ViewPalletId(PalletNo) {
             const hiddenColumns = [];
             const columnAlignment = {};
 
-            BizsolCustomFilterGrid.CreateDataTable("table-header-ViewInIdPalletTable", "table-body-ViewInIdPalletTable", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+            BizsolCustomFilterGrid.CreateDataTable("table-header-ViewInIdPalletTable", "table-body-ViewInIdPalletTable", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment,false);
         } else {
             HideLoader();
             toastr.error('No Data Found');
