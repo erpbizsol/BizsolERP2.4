@@ -7,7 +7,7 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
     public class CustomControlController : Controller
     {
         // GET: CustomControlController
-        public ActionResult SizeControl(int ItemMaster_Code, int ItemSizeMaster_Code, string CallBackFunctionName_btnDone, string EditParameterList, string CallBackFunctionName_btnClose,int RowNo)
+        public ActionResult SizeControl(int ItemMaster_Code, int ItemSizeMaster_Code, string CallBackFunctionName_btnDone, string EditParameterList, string CallBackFunctionName_btnClose,int RowNo,int ProcessMaster_Code=0)
         {
             
             ViewBag.ItemMaster_Code = ItemMaster_Code;
@@ -16,6 +16,7 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             ViewBag.CallBackFunctionName_btnClose = CallBackFunctionName_btnClose;
             ViewBag.EditParameterList = EditParameterList;
             ViewBag.SizeControlRowNo = RowNo;
+            ViewBag.ProcessMaster_Code = ProcessMaster_Code;
             return PartialView("_SizeControl");
             
         }
