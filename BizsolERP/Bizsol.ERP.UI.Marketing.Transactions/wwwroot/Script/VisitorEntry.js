@@ -8,6 +8,7 @@ let selectedDates = [];
 let files = [];
 let fileName = '';
 let imageBase64Data = [];
+let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
 
 $(document).ready(function () {
     $("#ERPHeading").text("Visitor Entry");
@@ -23,11 +24,53 @@ $(document).ready(function () {
     G_CheckInDate = convertDateFormat($('#checkInDate').val());
     setCurrentTimeVisitorCheckIn();
     GetPersonToMeetDropDown();
+
+    $('#checkInMobileNo').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#checkInVisitorName").focus();
+        }
+    });
+    $('#checkInVisitorName').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#checkInAddress").focus();
+        }
+    });
+    $('#checkInAddress').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#checkInPurpose").focus();
+        }
+    });
+    $('#checkInPurpose').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#checkInPersonToMeet").focus();
+        }
+    });
+    $('#checkInPersonToMeet').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#checkInVehicleNo").focus();
+        }
+    });
+    $('#checkInVehicleNo').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#checkInRemarks").focus();
+        }
+    });
+    $('#checkInRemarks').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#checkInVisitingCardPhoto").focus();
+        }
+    });
+    $('#checkInVisitingCardPhoto').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#checkInPersonPhoto").focus();
+        }
+    });
 });
 function checkIn() {
     $('#checkInSection').show();
     $('#checkOutSection').hide();
     GetPersonToMeetDropDown();
+    $("#tblVisitorMaster").hide();
 }
 function checkOut() {
     $('#checkInSection').hide();
@@ -115,12 +158,11 @@ function convertDateFormat(dateString) {
     const monthAbbreviation = monthNames[parseInt(month, 10) - 1];
     return `${day}-${monthAbbreviation}-${year}`;
 }
-
 function submit_VisitorEntry() {
     let DriverMobile = $('#checkInMobileNo').val();
     let valid = true;
     //let CheckInPersonToMeet = $('#checkInPersonToMeet').val();
-    let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+    //let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
 
     let CheckVisitorEntryPayLoad = [{
         
@@ -128,7 +170,8 @@ function submit_VisitorEntry() {
         inDate: convertDateFormat($('#checkInDate').val()),
         inTime: $('#checkInTime').val(),
         outDate: convertDateFormat($('#checkOutDate').val()),
-        outTime: $('#checkInTime').val(),
+        //outDate: "",
+        outTime: "",
         visitorName: $('#checkInVisitorName').val(),
         mobileNo: $('#checkInMobileNo').val(),
         address: $('#checkInAddress').val(),
@@ -138,18 +181,13 @@ function submit_VisitorEntry() {
         remarks: $('#checkInRemarks').val(),
         checkInDatetime: convertDateFormat($('#checkInDate').val()),
         checkInby: userCode,
-        checkOutDatetime: convertDateFormat($('#checkOutDate').val()),
-        checkOutby: userCode,
+        checkOutDatetime: convertDateFormat($('#checkInDate').val()),
+        checkOutby: 0,
         imgPerson: imageBase64Data,
         imgVisitingCard: imageBase64Data
     
     }];
-    //if (typeof DriverMobile === 'undefined' || DriverMobile === '' || DriverMobile === null) {
-    //    valid = false;
-    //    toastr.error('Please Check! Driver No. can not be blank');
-    //    $('#checkInMobileNo').focus();
-    //    return;
-    //}
+    
     if (BizSolInputControl.IsMobileNumber(DriverMobile) == false) {
         valid = false;
         toastr.warning('Please enter valid mobile number.');
@@ -168,7 +206,6 @@ function submit_VisitorEntry() {
     });
 }
 function ClearFormData() {
-    //let checkInTimeInputValue = $('#checkInTime').val('');
     let MobileInputValue = $('#checkInMobileNo').val('');
     let VisitorNameInputValue = $('#checkInVisitorName').val('');
     let AddressInputValue = $('#checkInAddress').val('');
@@ -178,6 +215,7 @@ function ClearFormData() {
     let RemarksInputValue = $('#checkInRemarks').val('');
     let VisitingCardPhotoInputValue = $('#checkInVisitingCardPhoto').val('');
     let PersonPhotoInputValue = $('#checkInPersonPhoto').val('');
+    setCurrentTimeVisitorCheckIn();
 }
 function setCurrentTimeVisitorCheckIn() {
     const currentTime = new Date();
@@ -223,10 +261,10 @@ function FileUploadChangeVisitor(event) {
 }
 function VisitorMasterShowDataButton() {
     const selectedValue = $('input[name="filterType"]:checked').val();
-
+    let CheckOutDate = convertDateFormat($('#checkOutDate').val());
     if (selectedValue === 'pendingWise') {
         Showloader();
-        VisitorEntryService.VisitorMasterShowData().then(function (response) {
+        VisitorEntryService.VisitorMasterShowCheckOut(CheckOutDate).then(function (response) {
             if (response && response.length > 0) {
                 HideLoader();
                 $("#tblVisitorMaster").show();
@@ -236,12 +274,22 @@ function VisitorMasterShowDataButton() {
                 const button = false;
                 const stringDoubleFilterColumn = [];
                 const showButtons = [];
-                const hiddenColumns = [];
+                const hiddenColumns = ["Code","Status"];
                 const columnAlignment = {};
+                const updatedResponse = response.map(item => {
+                    let inputCheckOutTime = `<input type="date" id="tblCheckOutDate" class="box_border form-control form-control-sm" style="width:100px;text-align:right" autocomplete="off"/> <input type="time" id="tblCheckOutTime" class="box_border form-control form-control-sm" style="width:100px;text-align:right" autocomplete="off" />`;
+                    let buttonsHTMLRemove = `<button class="btn btn-primary icon-height mb-1" onclick="CheckOutButton('${item.Code}')" title="Check Out">CHECK OUT</button> &nbsp;<button class="btn btn-primary icon-height mb-1" onclick="VisitorEntry_Print('${item.Code}')" title="Print">PRINT</button>`
+                    return {
+                        ...item,
+                        OutTime: inputCheckOutTime,
+                        Action: buttonsHTMLRemove,
 
-                BizsolCustomFilterGrid.CreateDataTable("table-header-VisitorMaster", "table-body-VisitorMaster", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+                    };
+                });
+                BizsolCustomFilterGrid.CreateDataTable("table-header-VisitorMaster", "table-body-VisitorMaster", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
             } else {
                 HideLoader();
+                toastr.error("Data Not Found");
                 $("#tblVisitorMaster").hide();
             }
         }).catch(function (error) {
@@ -250,8 +298,9 @@ function VisitorMasterShowDataButton() {
         });
     } else if (selectedValue === 'allWise') {
         Showloader();
-        VisitorEntryService.VisitorMasterShowAll().then(function (response) {
+        VisitorEntryService.VisitorMasterShowAll(CheckOutDate).then(function (response) {
             if (response && response.length > 0) {
+                console.log(response);
                 HideLoader();
                 $("#tblVisitorMaster").show();
                 const stringFilterColumn = [];
@@ -260,12 +309,31 @@ function VisitorMasterShowDataButton() {
                 const button = false;
                 const stringDoubleFilterColumn = [];
                 const showButtons = [];
-                const hiddenColumns = [];
+                const hiddenColumns = ["Code","Status"];
                 const columnAlignment = {};
+                
+                const updatedResponse = response.map(item => {
+                    let inputCheckOutTime = '';
+                    let buttonsHTML = '';
 
-                BizsolCustomFilterGrid.CreateDataTable("table-header-tblVisitorMaster", "table-body-tblVisitorMaster", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+                    if (item.Status === 'P') {
+                        inputCheckOutTime = `<input type="date" id="tblCheckOutDate" class="box_border form-control form-control-sm" style="width:100px;text-align:right" autocomplete="off"/> <input type="time" id="tblCheckOutTime" class="box_border form-control form-control-sm" style="width:100px;text-align:right" autocomplete="off" />`;
+                        buttonsHTML = `<button class="btn btn-primary icon-height mb-1" onclick="CheckOutButton('${item.Code}')" title="Check Out">CHECK OUT</button> &nbsp;<button class="btn btn-primary icon-height mb-1" onclick="VisitorEntry_Print('${item.Code}')" title="Print">PRINT</button>`;
+                    } else if (item.Status === 'C') {
+                        inputCheckOutTime = item.OutTime;
+                        buttonsHTML = `<button class="btn btn-primary icon-height mb-1" onclick="VisitorEntry_Print('${item.Code}')" title="Print">PRINT</button>`;
+                    }
+
+                    return {
+                        ...item,
+                        OutTime: inputCheckOutTime,
+                        Action: buttonsHTML,
+                    };
+                });
+                BizsolCustomFilterGrid.CreateDataTable("table-header-VisitorMaster", "table-body-VisitorMaster", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
             } else {
                 HideLoader();
+                toastr.error("Data Not Found");
                 $("#tblVisitorMaster").hide();
             }
         }).catch(function (error) {
@@ -274,18 +342,53 @@ function VisitorMasterShowDataButton() {
         });
     }
 }
+function CheckOutButton(Code) {
+    let CheckOutDateInput = $('#tblCheckOutDate').val();
+    let CheckOutTimeInput = $('#tblCheckOutTime').val();
+    if (!CheckOutDateInput || CheckOutDateInput === '0' || CheckOutDateInput === undefined) {
+        toastr.warning("Please Fill the CheckOut Date.");
+        return; 
+    }
 
-//function Close_BackButton() {
-//    $('#checkInSection').show();
-//    $('#checkOutSection').hide();
-//}
-function BindSelectList(element, list) {
-    let option = '<option value="0"></option>';
-    $.each(list, function (key, val) {
-        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    if (!CheckOutTimeInput || CheckOutTimeInput === '0' || CheckOutTimeInput === undefined) {
+        toastr.warning("Please Fill the CheckOut Time.");
+        return;  
+    }
+    let CheckOutVisitorEntryPayLoad = [{
+        Code: Code,
+        outDate: CheckOutDateInput,
+        outTime: CheckOutTimeInput,
+        checkInDatetime: convertDateFormat($('#checkInDate').val()),
+        checkInby: userCode,
+        checkOutDatetime: convertDateFormat($('#checkOutDate').val()),
+        checkOutby: userCode,
+
+    }];
+    
+    VisitorEntryService.SaveVisitorEntry(JSON.stringify(CheckOutVisitorEntryPayLoad)).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+            VisitorMasterShowDataButton();
+        }
+        else if (response.Status === 'N') {
+            toastr.warning(response.Msg);
+        }
     });
-    element.innerHTML = option;
 }
+function VisitorEntry_Print(Code) {
+    VisitorEntryService.PrintRPT(Code).then(function (response) {
+            let url = response.Url;
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.target = '_blank';
+            a.href = url;
+            document.body.appendChild(a);
+            a.click();
+        }).catch(function (error) {
+            console.error("Error in printing report:", error);
+        });
+}
+
 window.checkIn = checkIn;
 window.checkOut = checkOut;
 window.VisitorMasterShowDataButton = VisitorMasterShowDataButton;
@@ -293,3 +396,5 @@ window.triggerFileInputVisitingCardPhotoClick = triggerFileInputVisitingCardPhot
 window.triggerFileInputPersonPhotoClick = triggerFileInputPersonPhotoClick;
 window.FileUploadChangeVisitor = FileUploadChangeVisitor;
 window.submit_VisitorEntry = submit_VisitorEntry;
+window.CheckOutButton = CheckOutButton;
+window.VisitorEntry_Print = VisitorEntry_Print;
