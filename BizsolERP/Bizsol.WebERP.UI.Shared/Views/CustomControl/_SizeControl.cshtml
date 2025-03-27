@@ -58,6 +58,7 @@
                     <input type="hidden" value="@ViewBag.ItemSizeMaster_Code" id="hfItemSizeMaster_Code" />
                     <input type="hidden" value="@ViewBag.CallBackFunctionName_btnDone" id="hfCallBackFunctionName_btnDone" />
                     <input type="hidden" value="@ViewBag.SizeControlRowNo" id="hfRow_Id" />
+                    <input type="hidden" value="@ViewBag.ProcessMaster_Code" id="hfProcessMaster_Code" />
                 </div>
             </div>
         </div><!-- /.modal-content -->
@@ -88,12 +89,13 @@ function getAllSize() {
 }
 
 function getItemParameterList() {
-    SizeControlService.GetItemParameterMasterList($('#hfItemMaster_Code').val(), $('#hfItemSizeMaster_Code').val()).then(function (respone) {
+        SizeControlService.GetItemParameterMasterList($('#hfItemMaster_Code').val(), $('#hfItemSizeMaster_Code').val(),$('#hfProcessMaster_Code').val()).then(function (respone) {
         console.log(respone);
         arraySizeControlDllID = respone.map((item) => ({ ParameterCode: item.ParameterCode, ParameterName: item.ParameterName, ParameterValue: item.ParameterValue, ValueCode: item.ValueCode, SizeControlDllID: item.ParameterName.split(' ').join('') }))
         let tbRow = '';
         $.each(respone, function (key, val) {
-            let PValue = '<select id="' + val.ParameterName.split(' ').join('') +'" ></select>'
+                let IsLocked=val.Locked==='Y' && val.ValueCode>0 ? 'disabled':''
+            let PValue = '<select id="' + val.ParameterName.split(' ').join('') +'"  '+IsLocked+'></select>'
             tbRow += '<tr><td>' + val.ParameterName + '</td><td>' + PValue + '</td></tr>';
             GetSizeDll(val.ParameterName.split(' ').join(''), val.ParameterCode, val.ValueCode);
             
