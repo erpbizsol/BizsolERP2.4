@@ -19,8 +19,8 @@ const VisitorEntryService = {
             }
         );
     },
-    VisitorMasterShowAll: function VisitorMasterShowAll() {
-        var URL = UrlService.API_ENDPOINT_VisitorMaster + "/VisitorMasterShowAll";
+    VisitorMasterShowAll: function VisitorMasterShowAll(CheckOutDate) {
+        var URL = UrlService.API_ENDPOINT_VisitorMaster + "/VisitorMasterShowAll?CheckOutDate=" + CheckOutDate + "";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -35,8 +35,8 @@ const VisitorEntryService = {
             }
         );
     },
-    PrintRPT: function PrintRPT() {
-        var URL = UrlService.API_ENDPOINT_VisitorMaster + "/PrintRPT";
+    PrintRPT: function PrintRPT(Code) {
+        var URL = `${UrlService.API_ENDPOINT_CRYSTAL}/PrintVisitorEntryRPT?Code=${Code}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
