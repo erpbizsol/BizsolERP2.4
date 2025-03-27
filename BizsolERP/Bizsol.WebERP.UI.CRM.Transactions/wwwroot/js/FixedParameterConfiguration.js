@@ -57,6 +57,7 @@ function GetCRMFixedParameterConfigFields() {
                 var tbItemConsumeRowNo = index + 1;
 
                 var td_ParameterName = item.FieldDescription;
+                var td_ParameterDetails = item.FieldDetails;
 
                 if (item.DataType == 'S') {
                     if (item.Update_Y_N_Applicaple == 'Y') {
@@ -105,6 +106,7 @@ function GetCRMFixedParameterConfigFields() {
                           <tr>
                             <td>${td_ParameterName}   </td>
                             <td>${td_ParameterValue}   </td>
+                            <td>${td_ParameterDetails}   </td>
                           </tr>
                         `;
                 tbody.append(row);
