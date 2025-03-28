@@ -473,7 +473,9 @@
        if (authKey !== '') {
               sessionStorage.setItem('authKey', authKey);
               sessionStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
-              window.AppBaseURL='@Html.Raw(ViewBag.AppBaseURL)';
+             //   if (window.location.href.toLowerCase().includes('localhost') == false) {
+             //     window.location.href = '@Html.Raw(ViewBag.AppBaseURL)';
+             // }
         }
         // });
 

@@ -128,7 +128,7 @@ function BindSelect2FromDataList(element, arrayList, FirstItem) {
     element.trigger('change');
 
     element.select2({
-        allowClear: true,
+        // allowClear: true,
         width: '200px',
         matcher: function (params, data) {
             // If there's no search term, return all data
