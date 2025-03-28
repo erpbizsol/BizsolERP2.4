@@ -160,9 +160,8 @@ function convertDateFormat(dateString) {
 }
 function submit_VisitorEntry() {
     let DriverMobile = $('#checkInMobileNo').val();
+    let PersonPhoto = $('#checkInPersonPhoto').val();
     let valid = true;
-    //let CheckInPersonToMeet = $('#checkInPersonToMeet').val();
-    //let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
 
     let CheckVisitorEntryPayLoad = [{
         
@@ -170,7 +169,6 @@ function submit_VisitorEntry() {
         inDate: convertDateFormat($('#checkInDate').val()),
         inTime: $('#checkInTime').val(),
         outDate: convertDateFormat($('#checkOutDate').val()),
-        //outDate: "",
         outTime: "",
         visitorName: $('#checkInVisitorName').val(),
         mobileNo: $('#checkInMobileNo').val(),
@@ -194,6 +192,10 @@ function submit_VisitorEntry() {
         $('#checkInMobileNo').focus();
         return;
 
+    }
+    if (!PersonPhoto || PersonPhoto === '0' || PersonPhoto === undefined) {
+        toastr.warning("Please Fill The Person Photo.");
+        return;
     }
     VisitorEntryService.SaveVisitorEntry(JSON.stringify(CheckVisitorEntryPayLoad)).then(function (response) {
         if (response.Status === 'Y') {
@@ -278,7 +280,7 @@ function VisitorMasterShowDataButton() {
                 const columnAlignment = {};
                 const updatedResponse = response.map(item => {
                     let inputCheckOutTime = `<input type="date" id="tblCheckOutDate" class="box_border form-control form-control-sm" style="width:100px;text-align:right" autocomplete="off"/> <input type="time" id="tblCheckOutTime" class="box_border form-control form-control-sm" style="width:100px;text-align:right" autocomplete="off" />`;
-                    let buttonsHTMLRemove = `<button class="btn btn-primary icon-height mb-1" onclick="CheckOutButton('${item.Code}')" title="Check Out">CHECK OUT</button> &nbsp;<button class="btn btn-primary icon-height mb-1" onclick="VisitorEntry_Print('${item.Code}')" title="Print">PRINT</button>`
+                    let buttonsHTMLRemove = `<button class="btn btn-primary icon-height mb-1" onclick="CheckOutButton('${item.Code}',this)" title="Check Out">CHECK OUT</button> &nbsp;<button class="btn btn-primary icon-height mb-1" onclick="VisitorEntry_Print('${item.Code}',this)" title="Print">PRINT</button>`
                     return {
                         ...item,
                         OutTime: inputCheckOutTime,
@@ -300,7 +302,7 @@ function VisitorMasterShowDataButton() {
         Showloader();
         VisitorEntryService.VisitorMasterShowAll(CheckOutDate).then(function (response) {
             if (response && response.length > 0) {
-                console.log(response);
+                //console.log(response);
                 HideLoader();
                 $("#tblVisitorMaster").show();
                 const stringFilterColumn = [];
@@ -318,10 +320,10 @@ function VisitorMasterShowDataButton() {
 
                     if (item.Status === 'P') {
                         inputCheckOutTime = `<input type="date" id="tblCheckOutDate" class="box_border form-control form-control-sm" style="width:100px;text-align:right" autocomplete="off"/> <input type="time" id="tblCheckOutTime" class="box_border form-control form-control-sm" style="width:100px;text-align:right" autocomplete="off" />`;
-                        buttonsHTML = `<button class="btn btn-primary icon-height mb-1" onclick="CheckOutButton('${item.Code}')" title="Check Out">CHECK OUT</button> &nbsp;<button class="btn btn-primary icon-height mb-1" onclick="VisitorEntry_Print('${item.Code}')" title="Print">PRINT</button>`;
+                        buttonsHTML = `<button class="btn btn-primary icon-height mb-1" data-item='${JSON.stringify(item)}' onclick="CheckOutButton('${item.Code}',this)" title="Check Out">CHECK OUT</button> &nbsp;<button class="btn btn-primary icon-height mb-1" data-item='${JSON.stringify(item)}' onclick="VisitorEntry_Print('${item.Code}',this)" title="Print">PRINT</button>`;
                     } else if (item.Status === 'C') {
                         inputCheckOutTime = item.OutTime;
-                        buttonsHTML = `<button class="btn btn-primary icon-height mb-1" onclick="VisitorEntry_Print('${item.Code}')" title="Print">PRINT</button>`;
+                        buttonsHTML = `<button class="btn btn-primary icon-height mb-1" data-item='${JSON.stringify(item)}' onclick="VisitorEntry_Print('${item.Code}',this)" title="Print">PRINT</button>`;
                     }
 
                     return {
@@ -342,9 +344,12 @@ function VisitorMasterShowDataButton() {
         });
     }
 }
-function CheckOutButton(Code) {
-    let CheckOutDateInput = $('#tblCheckOutDate').val();
-    let CheckOutTimeInput = $('#tblCheckOutTime').val();
+function CheckOutButton(Code, buttonElement) {
+    const item = JSON.parse(buttonElement.getAttribute('data-item'));
+    const row = $(buttonElement).closest('tr'); 
+    let CheckOutDateInput = row.find('#tblCheckOutDate').val(); 
+    let CheckOutTimeInput = row.find('#tblCheckOutTime').val();
+
     if (!CheckOutDateInput || CheckOutDateInput === '0' || CheckOutDateInput === undefined) {
         toastr.warning("Please Fill the CheckOut Date.");
         return; 
@@ -375,7 +380,7 @@ function CheckOutButton(Code) {
         }
     });
 }
-function VisitorEntry_Print(Code) {
+function VisitorEntry_Print(Code, buttonElement) {
     VisitorEntryService.PrintRPT(Code).then(function (response) {
             let url = response.Url;
             const a = document.createElement('a');
