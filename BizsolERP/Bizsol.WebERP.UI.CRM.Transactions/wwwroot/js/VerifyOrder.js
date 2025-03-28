@@ -81,7 +81,7 @@ function GetNestedMarketingManList() {
 
             BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })), 'FirstItemAll');
             $('#ddlSalesPersonlist').select2({
-                allowClear: true,
+                // allowClear: true,
                 matcher: function (params, data) {
                     // If there's no search term, return all data
                     if ($.trim(params.term) === '') {
@@ -117,7 +117,7 @@ function GetNestedDealerList() {
             //$('#ddlDealerNameList')[0].innerHTML = option;
             BindSelectList($('#ddlDealerNameList')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })), 'FirstItemAll');
             $('#ddlDealerNameList').select2({
-                allowClear: true,
+                // allowClear: true,
                 matcher: function (params, data) {
                     // If there's no search term, return all data
                     if ($.trim(params.term) === '') {

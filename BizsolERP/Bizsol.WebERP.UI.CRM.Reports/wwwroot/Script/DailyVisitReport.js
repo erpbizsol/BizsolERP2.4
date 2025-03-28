@@ -102,7 +102,7 @@ function GetSalespersonLists() {
 
             BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })), 'FirstItemAll');
             $('#ddlSalesPersonlist').select2({
-                allowClear: true,
+                // allowClear: true,
                 matcher: function (params, data) {
                     // If there's no search term, return all data
                     if ($.trim(params.term) === '') {
@@ -140,7 +140,7 @@ function GetDealerLists() {
 
             BindSelectList($('#ddlDealerNamelist')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })), 'FirstItemAll');
             $('#ddlDealerNamelist').select2({
-                allowClear: true,
+                // allowClear: true,
                 matcher: function (params, data) {
                     // If there's no search term, return all data
                     if ($.trim(params.term) === '') {
@@ -176,7 +176,7 @@ function GetOrderTypeLists() {
 
             BindSelectList($('#ddlOrderTypelist')[0], response.map((item) => ({ Code: item.Code, Desp: item.Field })), 'FirstItemAll');
             $('#ddlOrderTypelist').select2({
-                allowClear: true,
+                // allowClear: true,
                 matcher: function (params, data) {
                     // If there's no search term, return all data
                     if ($.trim(params.term) === '') {
@@ -222,7 +222,7 @@ function GetOrderStatusLists(VerificationCheck) {
 
             BindSelectList($('#ddlOrderStatuslist')[0], response.map((item) => ({ Code: item.Code, Desp: item.VerifyStatus })), 'FirstItemAll');
             $('#ddlOrderStatuslist').select2({
-                allowClear: true,
+                // allowClear: true,
                 matcher: function (params, data) {
                     // If there's no search term, return all data
                     if ($.trim(params.term) === '') {
@@ -303,7 +303,7 @@ function GetDisplayNameForReportTypes() {
 
             BindSelectList($('#ddlReportTypelist')[0], response.map((item) => ({ Code: item.DisplayName, Desp: item.DisplayName })), 'FirstItemSelected');
             $('#ddlReportTypelist').select2({
-                allowClear: true,
+                // allowClear: true,
                 matcher: function (params, data) {
                     // If there's no search term, return all data
                     if ($.trim(params.term) === '') {

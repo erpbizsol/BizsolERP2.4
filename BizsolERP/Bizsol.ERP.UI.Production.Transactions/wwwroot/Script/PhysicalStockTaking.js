@@ -303,7 +303,7 @@ function ViewModal_OpenReport(todayDate) {
             });
             $('#ViewModal_Open').modal('show');
             HideLoader();
-            const stringFilterColumn = [];
+            const stringFilterColumn = ["Physical Godown Name", "ERP Godown Name","Status"];
             const numericFilterColumn = [];
             const dateFilterColumn = [];
             const button = false;
