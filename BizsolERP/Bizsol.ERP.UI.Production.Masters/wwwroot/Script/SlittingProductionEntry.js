@@ -25,6 +25,9 @@ let G_IssueItemSizeMaster_Code = 0;
 let G_IssueGodownMaster_Code = 0;
 let G_IssueWeight = 0;
 let G_FormType = "Production";
+let G_ShowProcessStartEndTime = "N";
+let G_ShowGrossWeight = "N";
+
 let LockDateAndShiftInWeb = "N";
 let IsGetWeightByScale = false;
 let indxSnoCol_tbSlittingReceivedDetails = 0;
@@ -33,15 +36,17 @@ let indxSizeDespCol_tbSlittingReceivedDetails = 2;
 let indxPCsCol_tbSlittingReceivedDetails = 4;
 let indxWeightCol_tbSlittingReceivedDetails = 5;
 let indxManualIDCol_tbSlittingReceivedDetails = 7;
-let indxHiddenCol_tbSlittingReceivedDetails = 8;
+let indxInTimeCol_tbSlittingReceivedDetails = 8;
+let indxOutTimeCol_tbSlittingReceivedDetails = 9;
+let indxGrossWeightCol_tbSlittingReceivedDetails = 10;
+let indxRemarksCol_tbSlittingReceivedDetails = 11;
+let indxHiddenCol_tbSlittingReceivedDetails = 12;
 
 let G_SlittingPlanMaster_Code = 0;
 let G_Row = ''
 
 let G_UserMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
 
-
-let G_isView = "N";
 function ChangeMode(Mode) {
     $('#DivProductionGPForm').hide();
     $('#DivProductionGPViewGrid').hide();
@@ -103,67 +108,21 @@ function SlittingProductionEntry_ShowPlanGrid() {
     ChangeMode('');
 }
 
-function WebLocatePackingSumDispatch(response) {
-    let DispatchRows = response.filter(item => item["Packing Type"] ==='Dispatch');
-    let StockRows = response.filter(item => item["Packing Type"] === 'Stock Transfer');
 
-    let DispatchTotalMT = 0;
-    let DispatchTotalPC = 0;
-    let DispatchTotalMTRS = 0;
-    let StockTotalMT = 0;
-    let StockTotalPC = 0;
-    let StockTotalMTRS = 0;
-
-    if (StockRows.length > 0)
-    {
-        StockTotalMT = StockRows.reduce((partialSum, item) => partialSum + item.QtyMT, 0)
-        StockTotalPC = StockRows.reduce((partialSum, item) => partialSum + item.QtyPC, 0)
-        StockTotalMTRS = StockRows.reduce((partialSum, item) => partialSum + item.QtyMTRS, 0)
-    }
-
-    if (DispatchRows.length > 0) {
-        DispatchTotalMT = DispatchRows.reduce((partialSum, item) => partialSum + item.QtyMT, 0)
-        DispatchTotalPC = DispatchRows.reduce((partialSum, item) => partialSum + item.QtyPC, 0)
-        DispatchTotalMTRS = DispatchRows.reduce((partialSum, item) => partialSum + item.QtyMTRS, 0)
-    }
-    let tfootContent = `
-        <tr id="trDispatchTotal">
-        <td colspan="5"></td>
-        <td >DISPATCH TOTAL:</td>
-        <td style="text-align: right;">${ parseFloat(DispatchTotalMT).toFixed(2)}</td >
-        <td style="text-align: right;">${DispatchTotalPC}</td>
-        <td style="text-align: right;">${parseFloat(DispatchTotalMTRS).toFixed(2)}</td>
-        <td colspan="2"></td>
-        </tr>
-        <tr id="trStockTotal">
-        <td colspan="5"></td>
-        <td >STOCK TRANSFER TOTAL :</td>
-        <td style="text-align: right;">${parseFloat(StockTotalMT).toFixed(2)}</td>
-        <td style="text-align: right;">${StockTotalPC}</td>
-        <td style="text-align: right;">${parseFloat(StockTotalMTRS).toFixed(2)}</td>
-        <td colspan="2"></td>
-        </tr>
-        <tr id="trTotal">
-        <td colspan="5"></td>
-        <td >TOTAL:</td>
-        <td style="text-align: right;">${parseFloat((DispatchTotalMT + StockTotalMT)).toFixed(2)}</td>
-        <td style="text-align: right;">${(DispatchTotalPC + StockTotalPC)}</td>
-        <td style="text-align: right;">${parseFloat((DispatchTotalMTRS + StockTotalMTRS)).toFixed(2)}</td>
-        <td colspan="2"></td>
-        </tr>
-        `;
-
-   
-
-    $('#tbProductionGPView tfoot')[0].innerHTML = tfootContent;
-
-
-
-}
 function getPackingListFGFixedParaMeters() {
     SlittingProductionEntryService.GetFixedParaMeter().then(function (response) {
         PackingListFGFixedParaMeters = response;
         LoadFrm();
+    });
+}
+function GetProcessMasterCustomizedValue(ProcessMaster_Code) {
+    SlittingProductionEntryService.GetSlittingProductionEntryDDl('GetProcessMasterCustomizedValue', ProcessMaster_Code).then(function (response) {
+
+        if (response.length > 0) {
+            G_ShowProcessStartEndTime = response[0].ShowProcessStartEndTime;
+            G_ShowGrossWeight = response[0].ShowGrossWeight;
+        }
+
     });
 }
 function SelectOptionByText(Id, FindText) {
@@ -388,6 +347,10 @@ function Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code) {
                 "Weight": '<input  class="form-control form-control-sm itemWeight" type="text" maxlength="6" autocomplete="off" value="' + parseFloat(item.Weight).toFixed(3) + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);SlittingProductionEntry_CalScrapWeight();" >',
                 "No Of Pass": '<input  class="form-control form-control-sm" type="text" maxlength="6" autocomplete="off" value="' + item.NoOfPass + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);">',
                 "Manual ID": '<input  class="form-control form-control-sm" type="text" maxlength="6" autocomplete="off" value="' + item.ManualIDNo + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);">',
+                "In Time": '<input  class="form-control form-control-sm " type="time" maxlength="6" autocomplete="off" value="' + item.InTime + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);"  >',
+                "Out Time": '<input  class="form-control form-control-sm " type="time" maxlength="6" autocomplete="off" value="' + item.OutTime + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" >',
+                "Gross Weight": '<input  class="form-control form-control-sm " type="text" maxlength="6" autocomplete="off" value="' + parseFloat(item.GrossWeight).toFixed(3) + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);">',
+                "Remarks": '<input  class="form-control form-control-sm " type="text" maxlength="150" autocomplete="off" value="' + item.Remarks + '" style="text-align: right;" >',
                 "HiddenCol": JSON.stringify(item)
                 }
             ))
@@ -413,6 +376,15 @@ function Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code) {
             if (AskNoOfPassInSlitting === 'N') {
                 hiddenColumns.push("No Of Pass");
             }
+            if (G_ShowProcessStartEndTime === 'N') {
+                hiddenColumns.push("In Time");
+                hiddenColumns.push("Out Time");
+            }
+            if (G_ShowGrossWeight === 'N') {
+                hiddenColumns.push("Gross Weight");
+                }
+
+                
             
 
             
@@ -656,7 +628,7 @@ function SlittingProductionEntry_OnChangeddlProcess(CallBy) {
 
     Bind_ddlScrapItem(ProcessMaster_Code);
     Bind_ddlItemReceived(ProcessMaster_Code);
-    
+    GetProcessMasterCustomizedValue(ProcessMaster_Code);
 }
 function SlittingProductionEntry_OnChangeddlPlanOrIds(element) {
 
@@ -701,10 +673,11 @@ function SlittingProductionEntry_OnChangeddlPlanOrIds(element) {
 
 function SlittingProductionEntry_OnClick_NewSize(Row) {
     G_Row = Row;
+    let processMaster_Code = $('#ddlProcess').val();
     let UpdateRow = $(Row).closest("tr")[0];
 
     let HideColObj = JSON.parse(UpdateRow.cells[indxHiddenCol_tbSlittingReceivedDetails].innerHTML.trim());
-    InitSizeControl(HideColObj.ItemMaster_Code, HideColObj.ItemSizeMaster_Code, "SlittingProductionEntry_SizeCallBack", 0)
+    InitSizeControl(HideColObj.ItemMaster_Code, HideColObj.ItemSizeMaster_Code, "SlittingProductionEntry_SizeCallBack", processMaster_Code)
 
 }
 function SlittingProductionEntry_OnChange_ddlItemReceived(Row) {
@@ -739,10 +712,10 @@ function SlittingProductionEntry_OnChange_ddlItemReceived(Row) {
 
 }
 
-function InitSizeControl(itemMaster_Code, itemSizeMaster_Code, callBackFunctionName_btnDone, rowNo) {
+function InitSizeControl(itemMaster_Code, itemSizeMaster_Code, callBackFunctionName_btnDone, processMaster_Code) {
     let url = baseUrl + '/CustomControl/SizeControl';
 
-    $('#DivSizeControlmodal').load(url, { ItemMaster_Code: itemMaster_Code, ItemSizeMaster_Code: itemSizeMaster_Code, CallBackFunctionName_btnDone: callBackFunctionName_btnDone, RowNo: rowNo });
+    $('#DivSizeControlmodal').load(url, { ItemMaster_Code: itemMaster_Code, ItemSizeMaster_Code: itemSizeMaster_Code, CallBackFunctionName_btnDone: callBackFunctionName_btnDone, RowNo: 0, ProcessMaster_Code: processMaster_Code });
 
 }
 
@@ -1102,11 +1075,47 @@ function SlittingProductionEntry_CreatNewEntry() {
 
     let SlittingEntryDataPayload = [];
 
+    let rowno = 0;
+    let validateProcessStartEndTime = true;
     $.each(ReceivedDetailsArry, function (index, value) {
         let HideColObj = JSON.parse(value.cells[indxHiddenCol_tbSlittingReceivedDetails].innerHTML.trim());
         let Weight = parseFloat(value.cells[indxWeightCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value);
         let ManualID = parseInt(value.cells[indxManualIDCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value);
+        let InTime = value.cells[indxInTimeCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value;
+        let OutTime = value.cells[indxOutTimeCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value;
+        let GrossWeight = parseFloat(value.cells[indxGrossWeightCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value);
+        let Remarks = value.cells[indxRemarksCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value;
+        rowno++;
+        if (G_ShowProcessStartEndTime == "Y") {
+
+            if (typeof InTime === 'undefined' || InTime === '' || InTime === null || InTime === '0') {
+
+                toastr.error('In Time Can not Be Blank RowNo ' + rowno);
+                validateProcessStartEndTime = false;
+                return;
+            }
+
+            if (typeof OutTime === 'undefined' || OutTime === '' || OutTime === null || OutTime === '0') {
+
+                toastr.error('Out Time Can not Be Blank RowNo ' + rowno);
+                validateProcessStartEndTime = false;
+                return;
+            }
+
+        }
+
+        if (G_ShowGrossWeight == "Y") {
+
+            if (GrossWeight > 0 && GrossWeight < Weight) {
+
+                toastr.error('Gross Weight should be greater than equal to ' + Weight+' in RowNo ' + rowno);
+                validateProcessStartEndTime = false;
+                return;
+            }
+
+        }
         
+
         SlittingEntryDataPayload.push({
             Sno: HideColObj.SNo,
             ItemMaster_Code: HideColObj.ItemMaster_Code,
@@ -1115,9 +1124,11 @@ function SlittingProductionEntry_CreatNewEntry() {
             NoOfPass: HideColObj.NoOfPass,
             NoofSlits: HideColObj.NoofSlits,
             ManualIDNo: ManualID,
-            InTime: "",
-            OutTime: "",
+            InTime: InTime,
+            OutTime: OutTime,
             Speed: "",
+            GrossWeight: GrossWeight,
+            Remarks: Remarks,
             SlittingPlanMaster_Code: G_SlittingPlanMaster_Code,
             ShiftMaster_Code: $("#ddlShift").val(),
             FormType: G_FormType,
@@ -1131,6 +1142,13 @@ function SlittingProductionEntry_CreatNewEntry() {
         });
 
     });
+
+    if (G_ShowProcessStartEndTime == "Y" && validateProcessStartEndTime == false) {
+        return;
+    }
+    if (G_ShowGrossWeight == "Y" && validateProcessStartEndTime == false) {
+        return;
+    }
 
     Showloader();
     BreakDownService.IsBreakDownRunning(ProcessMaster_Code, MachineMaster_Code, GodownMaster_Code).then(function (breakDownrespone) {
@@ -1183,9 +1201,12 @@ function SlittingProductionEntry_CreatNewEntry() {
 
    
 }
+
 function ClrFrm() {
     G_SlittingPlanMaster_Code = 0;
-   
+    G_ShowProcessStartEndTime = "N";
+    G_ShowGrossWeight = "N";
+
     $('#txtScrapWeight').val('0');
     $('#txtSlittingDate').val(new Date().toISOString().slice(0, 10));
   

@@ -267,6 +267,7 @@ function AddPhysicalStock(todayDate, Remark, IdentificationNo, StockType, ItemMa
             G_PhysicalStockTackingMaster_Code = response.Code;
             PhysicalStockTackingTransactionDetails(G_PhysicalStockTackingMaster_Code);
             $("#txtScanIdentificationNo").val('');
+            $('#txtScanIdentificationNoList').empty();
             ScanIdDataListStockTacing(ItemMaster_Code);
         } else {
             toastr.error("Error adding physical stock: " + response.Msg);
@@ -302,7 +303,7 @@ function ViewModal_OpenReport(todayDate) {
             });
             $('#ViewModal_Open').modal('show');
             HideLoader();
-            const stringFilterColumn = [];
+            const stringFilterColumn = ["Physical Godown Name", "ERP Godown Name","Status"];
             const numericFilterColumn = [];
             const dateFilterColumn = [];
             const button = false;
@@ -394,7 +395,7 @@ function UpdateQtyInPhysicalStock(PhysicalStockTackingMaster_Code, TransactionCo
     let updateQtyMTRS = 0;
     let updateStatus = row.find('select[id="tblStatus"]').val();
     let updateRemark = row.find('input[id="tblRemark"]').val();
-    if (updateQtyPC.trim() === '' || updateQtyMT.trim() === '' || updateRemark.trim() === '') {
+    if (updateQtyPC.trim() === '' || updateQtyMT.trim() === '' ) {
         toastr.warning("Please fill in the Quantity and Remark fields. They cannot be blank.");
         return; 
     }
@@ -482,13 +483,6 @@ function ScanIdDataListStockTacing(ItemMaster_Code) {
     PhysicalStockTakingItemService.ScanIdDataListStockTacing(ItemMaster_Code)
         .then(function (response) {
             HideLoader();
-                //$('#txtScanIdentificationNo').off('keydown').on('keydown', function (e) {
-                //    if (e.key === "Enter") {
-                //        let IdentificationNo = $("#txtScanIdentificationNo").val();
-                //        ScanCoilDetails(IdentificationNo, ItemMaster_Code);
-                //    }
-                //});
-            
             if (response && response.length > 0) {
                 AutoSuggestionControl.SetUpAutoSuggestion($('#txtScanIdentificationNo'), $('#txtScanIdentificationNoList'), response.map((item) => ({ Desp: item.StockID })), 'StartWith');
             } else {
@@ -609,6 +603,7 @@ function CloseModal() {
     $('#SizeControlQtyPC').val('');
     $('#SizeControlQtyMT').val('');
     $('#ddlItemSize1').val('');
+    itemSizeMaster_Code = 0;
 }
 function CloseModalView_Physical() {
     $('#ViewModal_Open').modal('hide');
