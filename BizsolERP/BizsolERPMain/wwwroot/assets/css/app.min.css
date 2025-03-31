@@ -30,7 +30,7 @@ body {
     line-height: 0.7 !important;
 }*/
 
-    #page-topbar {
+#page-topbar {
     position: fixed;
     top: 0;
     right: 0;
@@ -217,7 +217,20 @@ body[data-bs-theme=dark] .layout-mode-light {
     /*    display: flex;
     flex-direction: column;
     height: 90vh;*/
+
+
+    
 }
+
+html, body {
+    height: 100%;
+}
+
+/*.container-fluid {
+    height: calc(100vh - 100px);
+    overflow: auto;
+}*/
+
 
 .header-item {
     height: 51px;
@@ -6264,12 +6277,12 @@ a.icon-height {
     border: 1px solid #ccc;
     width: -webkit-fill-available;
     font-size: 10pt;
-    max-height: 300px;
+    max-height: 280px;
     overflow-y: auto;
     padding: 0;
-    margin-top: 5px;
+    margin-top: -7px;
     list-style-type: none;
-    z-index: 1000;
+    z-index: 1060;
     /*Ensure it appears above other content */
 }
 
@@ -6279,11 +6292,12 @@ a.icon-height {
     }
 
     .AutoSuggestion-list li:hover {
-        background-color: #f0f0f0;
+        background-color: #5897fb;
+        color: #fff;
     }
 
 .AutoSuggestion-list-highlighted {
-    background-color: #9aa0a5;
+    background-color: #dddddd;
 }
 
 
@@ -6364,3 +6378,18 @@ a.icon-height {
     grid-template-columns: 60% 40%;
     grid-gap: 2px;
 }
+
+/*.select2-container--open .select2-dropdown--above {
+    width: 100px !important;
+}
+*/
+/*td .select2-container--default .select2-selection--single {
+    width: 90px !important;
+}
+*/
+
+table .form-control-sm {
+    margin-bottom: 0 !important;
+}
+
+
