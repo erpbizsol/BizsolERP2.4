@@ -326,7 +326,7 @@ function Bind_AllDLL() {
     Bind_ddlTransporterName();
 }
 function Bind_ddlOrderNo(Mode, Name) {
-    PackingListFGService.GetPendingOrderList(Mode, Name,0).then(function (response) {
+    PackingListFGService.GetPendingOrderList(Mode, Name,0,0).then(function (response) {
 
         if (response.length == 0) {
             let bName = Mode === "GetPendingOrderListByBuyerName" ? "Buyer Name: " : Mode === "GetPendingMRNListByPartyName" ? "Vendor Name:" : "Consignee Name: ";
@@ -668,7 +668,7 @@ function PackingListFG_ShowDetailsModals(For) {
             return;
         }
 
-        PackingListFGService.GetPendingOrderList(For, ConsigneeName, Code).then(function (response) {
+        PackingListFGService.GetPendingOrderList(For, ConsigneeName, Code, $('#ddlGodownFrom').val()).then(function (response) {
 
 
             console.log(response);
