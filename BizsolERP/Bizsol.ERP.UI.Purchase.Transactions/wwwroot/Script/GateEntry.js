@@ -1173,127 +1173,202 @@ function GateEntry_frmLoadedIn_ddlPurchaseOrder_Change() {
 
 $('#frmEmptyIn_fileVehiclePhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmEmptyIn_fileVehiclePhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail = [{
-            imgVehicle: ByteArray,
-            imgMaterial: [],
-            imgDoc: [],
-            ImgOther: []
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmEmptyIn_fileVehiclePhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+       
+        //ConvertFileToByteArry($('#frmEmptyIn_fileVehiclePhoto')[0].files[0]).then(function (ByteArray) {
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail = [{
+                imgVehicle: ByteArray,
+                imgMaterial: [],
+                imgDoc: [],
+                ImgOther: []
 
-        }];
-    })
-    
+            }];
+        })
+
+        
+    });
+
+   
 });
 
 $('#frmLoadedOut_fileVehiclePhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmLoadedOut_fileVehiclePhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail.push({
-            imgVehicle: ByteArray,
-            imgMaterial: [],
-            imgDoc: [],
-            ImgOther: []
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmLoadedOut_fileVehiclePhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail.push({
+                imgVehicle: ByteArray,
+                imgMaterial: [],
+                imgDoc: [],
+                ImgOther: []
+            });
         });
+
+
     });
+
+   
 
 });
 $('#frmLoadedOut_fileGoodsPhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmLoadedOut_fileGoodsPhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail.push({
-            imgVehicle: [],
-            imgMaterial: ByteArray,
-            imgDoc: [],
-            ImgOther: []
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmLoadedOut_fileGoodsPhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+        
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail.push({
+                imgVehicle: [],
+                imgMaterial: ByteArray,
+                imgDoc: [],
+                ImgOther: []
+            });
         });
+
     });
+
+    
 
 });
 $('#frmLoadedOut_fileInvoicePhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmLoadedOut_fileInvoicePhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail.push({
-            imgVehicle: [],
-            imgMaterial: [],
-            imgDoc: ByteArray,
-            ImgOther: []
-        });
-    });
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmLoadedOut_fileInvoicePhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
 
-});
-$('#frmLoadedOut_fileOtherPhoto').bind('change', function () {
-    $.each($('#frmLoadedOut_fileOtherPhoto')[0].files, function (key, file) {
-        ConvertFileToByteArry(file).then(function (ByteArray) {
+
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
             GateEntryImageDetail.push({
                 imgVehicle: [],
                 imgMaterial: [],
-                imgDoc: [],
-                ImgOther: ByteArray
+                imgDoc: ByteArray,
+                ImgOther: []
             });
         });
+
+    });
+
+    
+
+});
+$('#frmLoadedOut_fileOtherPhoto').bind('change', function () {
+
+    $.each($('#frmLoadedOut_fileOtherPhoto')[0].files, function (key, file) {
+
+        // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+        OptimizeImage.reduceFileSize(file, 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+            ConvertFileToByteArry(blob).then(function (ByteArray) {
+                GateEntryImageDetail.push({
+                    imgVehicle: [],
+                    imgMaterial: [],
+                    imgDoc: [],
+                    ImgOther: ByteArray
+                });
+            });
+
+        });
+       
     });
 });
 
 $('#frmLoadedIn_fileVehiclePhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmLoadedIn_fileVehiclePhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail.push({
-            imgVehicle: ByteArray,
-            imgMaterial: [],
-            imgDoc: [],
-            ImgOther: []
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmLoadedIn_fileVehiclePhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail.push({
+                imgVehicle: ByteArray,
+                imgMaterial: [],
+                imgDoc: [],
+                ImgOther: []
+            });
         });
+
     });
+
+    
 
 });
-$('#frmLoadedIn_fileGoodsPhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmLoadedIn_fileGoodsPhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail.push({
-            imgVehicle: [],
-            imgMaterial: ByteArray,
-            imgDoc: [],
-            ImgOther: []
+$('#frmLoadedIn_fileGoodsPhoto').bind('change', function () {
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmLoadedIn_fileGoodsPhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail.push({
+                imgVehicle: [],
+                imgMaterial: ByteArray,
+                imgDoc: [],
+                ImgOther: []
+            });
         });
+
     });
+
+    
 
 });
 $('#frmLoadedIn_fileInvoicePhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmLoadedIn_fileInvoicePhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail.push({
-            imgVehicle: [],
-            imgMaterial: [],
-            imgDoc: ByteArray,
-            ImgOther: []
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmLoadedIn_fileInvoicePhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail.push({
+                imgVehicle: [],
+                imgMaterial: [],
+                imgDoc: ByteArray,
+                ImgOther: []
+            });
         });
+
     });
+
+    
 
 });
 $('#frmLoadedIn_fileOtherPhoto').bind('change', function () {
     $.each($('#frmLoadedIn_fileOtherPhoto')[0].files, function (key, file) {
-        ConvertFileToByteArry(file).then(function (ByteArray) {
-            GateEntryImageDetail.push({
-                imgVehicle: [],
-                imgMaterial: [],
-                imgDoc: [],
-                ImgOther: ByteArray
+        // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+        OptimizeImage.reduceFileSize(file, 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+            ConvertFileToByteArry(blob).then(function (ByteArray) {
+                GateEntryImageDetail.push({
+                    imgVehicle: [],
+                    imgMaterial: [],
+                    imgDoc: [],
+                    ImgOther: ByteArray
+                });
             });
+
         });
+
+        
     });
 });
 
 $('#frmEmptyOut_fileVehiclePhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmEmptyOut_fileVehiclePhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail = [{
-            imgVehicle: ByteArray,
-            imgMaterial: [],
-            imgDoc: [],
-            ImgOther: []
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmEmptyOut_fileVehiclePhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
 
-        }];
-    })
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail = [{
+                imgVehicle: ByteArray,
+                imgMaterial: [],
+                imgDoc: [],
+                ImgOther: []
+
+            }];
+        })
+
+    });
+
+    
 
 });
 function ClearAllFrm() {
