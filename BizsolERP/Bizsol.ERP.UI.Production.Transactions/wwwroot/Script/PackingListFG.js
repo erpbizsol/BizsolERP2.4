@@ -326,7 +326,7 @@ function Bind_AllDLL() {
     Bind_ddlTransporterName();
 }
 function Bind_ddlOrderNo(Mode, Name) {
-    PackingListFGService.GetPendingOrderList(Mode, Name,0).then(function (response) {
+    PackingListFGService.GetPendingOrderList(Mode, Name,0,0).then(function (response) {
 
         if (response.length == 0) {
             let bName = Mode === "GetPendingOrderListByBuyerName" ? "Buyer Name: " : Mode === "GetPendingMRNListByPartyName" ? "Vendor Name:" : "Consignee Name: ";
@@ -523,6 +523,7 @@ function EditMode(isView) {
 function PackingListFG_CreateNew() {
 
     if (PackingListFGFixedParaMeters.length > 0 && PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'VerifyApplicableInPackingList').PeramaterValue === 'Y') {
+        Bind_ddlReqNo();
         ClrFrm();
         ChangeMode('New');
         PackingListFG_OnChangeddlPackingType();
@@ -536,6 +537,7 @@ function PackingListFG_CreateNew() {
 function PackingListFG_Back() {
     PackingListFG_ShowViewGrid()
     ChangeMode('');
+    ClrFrm();
 }
 function PackingListFG_EditOrView(isEdit, packingListMaster_Code) {
 
@@ -666,7 +668,7 @@ function PackingListFG_ShowDetailsModals(For) {
             return;
         }
 
-        PackingListFGService.GetPendingOrderList(For, ConsigneeName, Code).then(function (response) {
+        PackingListFGService.GetPendingOrderList(For, ConsigneeName, Code, $('#ddlGodownFrom').val()).then(function (response) {
 
 
             console.log(response);
@@ -996,11 +998,11 @@ function PackingListFG_StartLoading(G_LoadNoOfPalletData=[]) {
     //toastr.error('Loading Start...');
 }
 function PackingListFG_ScanIdDataList() {
-    var chkShowDataList = $('#chkShowIdDataList');
+    let chkShowDataList = $('#chkShowIdDataList');
     if (chkShowDataList[0].checked) {
-        var ddlReqNo = document.getElementById("ddlReqNo");
-        var RMRequisitionMasterCode = ddlReqNo.options[ddlReqNo.selectedIndex].attributes["code"].value;
-        var FromGodownCode = $('#ddlGodownFrom').val();
+        let ddlReqNo = document.getElementById("ddlReqNo");
+        let RMRequisitionMasterCode = ddlReqNo.options[ddlReqNo.selectedIndex].attributes["code"].value;
+        let FromGodownCode = $('#ddlGodownFrom').val();
 
         if (FromGodownCode == "0" || FromGodownCode == "") {
             return;
@@ -1187,6 +1189,11 @@ function ClrFrm() {
 
     $('#tbPackingListTransaction tr').empty();
     $('#paginator-tbPackingListTransaction').empty();
+
+    $('#txtScanIdentification_List').empty();
+
+    let chkShowDataList = $('#chkShowIdDataList');
+    chkShowDataList[0].checked = false;
 }
 function ScanId() {
    

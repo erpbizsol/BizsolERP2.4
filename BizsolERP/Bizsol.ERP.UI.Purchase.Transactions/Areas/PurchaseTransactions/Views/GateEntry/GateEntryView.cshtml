@@ -301,7 +301,14 @@
                             <input id="frmLoadedOut_txtEWayBillDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
                         </div>
                     </div>
-
+                    <div class="row">
+                        <div class="col-4">
+                            Remarks
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtRemarks" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-sm-12 text-end">
                             <button type="button" id="frmLoadedOut_btnSave" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('UpdateEmptyInSave')">Save</button> &nbsp;
@@ -630,7 +637,14 @@
 
                         </div>
                     </div>
-
+                    <div class="row">
+                        <div class="col-4">
+                            Remarks
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyOut_txtRemarks" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-sm-12 text-end">
                             <button type="button" id="frmEmptyOut_btnSave" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('UpdateLoadedInSave')">Save</button> &nbsp;
@@ -713,5 +727,6 @@
 
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/OptimizeImage.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GateEntry.js"></script>
 
