@@ -2681,7 +2681,8 @@ body[data-layout=horizontal][data-layout-size=boxed] .navbar-header {
     }
 
 .input-group-text {
-    margin-bottom: 0
+    margin-bottom: 0;
+    border: 1px solid;
 }
 
 .custom-control-label::before {
@@ -3815,7 +3816,7 @@ input[switch] {
     input[switch] + label {
         font-size: 1em;
         line-height: 1;
-        width: 56px;
+        width: 65px;
         height: 24px;
         background-color: #ced4da;
         background-image: none;
@@ -3839,9 +3840,9 @@ input[switch] {
             font-size: 12px;
             line-height: 21px;
             position: absolute;
-            right: 1px;
+            right: 8px;
             margin: 3px;
-            top: -2px;
+            bottom: -1.2px;
             text-align: center;
             min-width: 1.66667rem;
             overflow: hidden;
@@ -3857,9 +3858,9 @@ input[switch] {
             -webkit-box-shadow: none;
             box-shadow: none;
             border-radius: 2rem;
-            height: 20px;
-            width: 20px;
-            top: 2px;
+            height: 18px;
+            width: 18px;
+            top: 2.7px;
             -webkit-transition: all .1s ease-in-out;
             transition: all .1s ease-in-out
         }
@@ -3880,7 +3881,7 @@ input[switch] {
         }
 
         input[switch]:checked + label:after {
-            left: 33px;
+            left: 45px;
             background-color: #e9e9ef
         }
 
@@ -5910,6 +5911,12 @@ table {
     border-collapse: collapse;
 }
 
+.table-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    display: block;
+}
+
 .fixed-height-table {
     height: 355px;
     overflow-x: auto;
@@ -6127,8 +6134,12 @@ label {
     margin-top: 1.7rem;
 }
 
-/*----- form design ---------*/
 
+.without-label-field-1-7rem {
+    margin-top: 1.7rem;
+}
+
+/*----- form design ---------*/
 /*======== Tab-Section Start ========*/
 .tab-section .tab-content {
     color: #000;
@@ -6392,4 +6403,14 @@ table .form-control-sm {
     margin-bottom: 0 !important;
 }
 
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin-left: 2.7px;
+}
 
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    border-radius: 0 !important;
+    top: -2px !important;
+    color: #313533;
+}
+
+ 

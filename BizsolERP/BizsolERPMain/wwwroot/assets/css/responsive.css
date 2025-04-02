@@ -44,9 +44,9 @@
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
     }
 
-    .without-label-field {
-        margin-top: 0.2rem;
-    }
+    /*.without-label-field {
+        margin-top: 0.2rem !important;
+    }*/
 
     .fixed-height-table {
         height: 500px;
@@ -96,6 +96,10 @@
     .select2-container .select2-selection--single .select2-selection__rendered {
         width: 100px;
     }
+
+    .without-label-field {
+        margin-top: 0.2rem !important;
+    }
 }
 
 @media (min-width: 320px) and (max-width: 480px) {
@@ -139,6 +143,9 @@
         table-layout: auto;
     }
 
+    .without-label-field {
+        margin-top: 0.2rem !important;
+    }
 }
 
  

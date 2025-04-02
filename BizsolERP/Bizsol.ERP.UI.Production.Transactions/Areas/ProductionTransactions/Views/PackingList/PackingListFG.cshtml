@@ -36,7 +36,7 @@
                     <label for="txtPackingListDate" class="col-form-label-sm fw-bold">Packing Date:</label>
                     <input type="date" id="txtPackingListDate" name="txtPackingListDate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" />
                 </div>
-                <div class="col-md-2 col-6">
+                <div class="col-md-2 col-12">
                     <label for="ddlPackingType" class="col-form-label-sm fw-bold">Packing Type:</label>
                     <select id="ddlPackingType" class="form-control form-control-sm box_border" onchange="PackingListFG_OnChangeddlPackingType()">
                     </select>
@@ -85,7 +85,7 @@
                     <select id="ddlReqNo" class="form-control form-control-sm box_border">
                     </select>
 
-                    <a class="btn btn-primary icon-height" onclick="PackingListFG_ShowDetailsModals('GetReqDetails')">
+                    <a class="btn btn-primary icon-height mt-1" onclick="PackingListFG_ShowDetailsModals('GetReqDetails')">
                         ...
                     </a>
                 </div>
@@ -106,57 +106,67 @@
                     </select>
                 </div>
                 
-                <div class="col-md-1 col-3 ">
-                    <label class="col-form-label-sm fw-bold">Scan type:</label>
-                    @* <label for="chkShowIdDataList" class="col-form-label-sm fw-bold">Show List</label> *@
-                    <input type="checkbox" id="chkShowIdDataList" switch="success" onclick="PackingListFG_ScanIdDataList()" />
-                    <label data-on-label="Man." data-off-label="Scan" for="chkShowIdDataList"></label>
+                <div class="col-md-4" style="display:flex;">
+                    <div class="col-4">
+                        <label class="col-form-label-sm fw-bold">Scan type:</label>
+                        @* <label for="chkShowIdDataList" class="col-form-label-sm fw-bold">Show List</label> *@
+                        <input type="checkbox" id="chkShowIdDataList" switch="success" onclick="PackingListFG_ScanIdDataList()" />
+                        <label data-on-label="Man." data-off-label="Scan" for="chkShowIdDataList"></label>
+                    </div> 
+                    <div class="col-4">
+                        <label class="col-form-label-sm fw-bold">Chk. Stock:</label>
+                        <input type="checkbox" id="chkOtherStock" switch="danger" />
+                        <label data-on-label="Oth." data-off-label="Stock" for="chkOtherStock"></label>
+                        @* <label for="chkOtherStock" class="col-form-label-sm fw-bold">Check In other stock</label> *@
+                    </div> 
+                    <div class="col-4 without-label-field" id="DivchkSummary" style="margin-top: 2.1rem !important;">
+                        <input type="checkbox" id="chkSummary" switch="primary" />
+                        <label data-on-label="Summ." data-off-label="Deta." for="chkSummary"></label>
+                        @* <label for="chkSummary" class="col-form-label-sm fw-bold">Summary</label> *@
+                    </div>
+                </div>
+                @* <div class="col-md-1 col-3 ">
+                    
                 </div>
                 <div class="col-md-1 col-3 ">
-                    <label class="col-form-label-sm fw-bold">Chk. Stock:</label>
-                    <input type="checkbox" id="chkOtherStock" switch="danger" />
-                    <label data-on-label="Oth." data-off-label="Stock" for="chkOtherStock"></label>
-                    @* <label for="chkOtherStock" class="col-form-label-sm fw-bold">Check In other stock</label> *@
+                    
                 </div>
                 <div class="col-md-1 col-4 without-label-field" id="DivchkSummary">
-                    <input type="checkbox" id="chkSummary" switch="primary" />
-                    <label data-on-label="Summ." data-off-label="Deta." for="chkSummary"></label>
-                    @* <label for="chkSummary" class="col-form-label-sm fw-bold">Summary</label> *@
-                </div>
+                   
+                </div> *@
                
               
-                <div class="col-md-1 col-3 without-label-field">
-                    <button type="button" class="btn btn-success icon-height" id="btnStart" onclick="PackingListFG_StartLoading()">Start Scan</button>
-                </div>
-                <div class="col-md-1 col-4 without-label-field">
+                <div class="col-md-3 col-12 without-label-field">
+                    <button type="button" class="btn btn-success icon-height" id="btnStart" onclick="PackingListFG_StartLoading()">Start Scan</button> &nbsp;&nbsp;&nbsp;
                     <button type="button" class="btn btn-danger icon-height" id="btnLoadingEnd" disabled>Loading End</button>
                 </div>
-                <div class="col-md-3 col-5">
-                    <label for="txtScanIdentification" class="col-form-label-sm fw-bold">Scan Batch No / ID:</label>
-                    <input type="text" id="txtScanIdentification" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" autocomplete="off"  />
-                    <ul id="txtScanIdentification_List" class="AutoSuggestion-list"></ul>
-                </div>
-               
+                @* <div class="col-md-1 col-4 without-label-field">
+                    <button type="button" class="btn btn-danger icon-height" id="btnLoadingEnd" disabled>Loading End</button>
+                </div> *@
                 
                
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6 col-6">
+                <div class="col-md-3 col-12">
+                    <label for="txtScanIdentification" class="col-form-label-sm fw-bold">Scan Batch No / ID:</label>
+                    <input type="text" id="txtScanIdentification" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" autocomplete="off" />
+                    <ul id="txtScanIdentification_List" class="AutoSuggestion-list"></ul>
+                </div>
+
+                <div class="col-md-6 col-6 without-label-field">
                     <a id="btnScanNoPallet" class="btn btn-primary icon-height" onclick="PackingListFG_ShowDetailsModals('ScanNoPallet')">
                         Scan NO Of Pallet
                     </a>
                 </div>
-                <div class="col-md-6 col-6 text-end">
+
+                <div class="col-md-12 col-6 text-end">
                     <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_Back()">Back</button>
                 </div>
+               
             </div>
+            
            
-           
-
         </fieldset>
     </div>
-    <div class="row" id="DivBtnAdd">
+    <div class="row mt-1" id="DivBtnAdd">
         <div class="col-md-6 ">
 
             <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="PackingListFG_ShowDetailsModals('AvailableStockDetail')">
@@ -204,16 +214,11 @@
             <label for="to-date">To Date</label>
             <input type="date" class="form-control form-control-sm" id="txtToDate" >
         </div>
-        <div class="col-sm-1 col-6 without-label-field text-end">
-            <label></label>
-            <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_ShowViewGrid()">Show</button>
-
-        </div>
-        <div class="col-sm-2 col-6 without-label-field text-end">
-            <label></label>
+        <div class="col-sm-4 col-12 without-label-field-1-7rem">
+            <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_ShowViewGrid()">Show</button>&nbsp;
             <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_CreateNew()">CREATE NEW</button>
-            
         </div>
+        
     </div>
     <div class="table-wrapper mt-2 fixed-height-table">
         <table id="tbPackingListFGView" class="table fixed-width-table">
