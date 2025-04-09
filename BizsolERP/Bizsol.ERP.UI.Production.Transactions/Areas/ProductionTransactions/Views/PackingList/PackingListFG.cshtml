@@ -6,6 +6,23 @@
     .without-label-field {
         margin-top: 2.3rem;
     }
+
+    .text-width-7 {
+        width: 80px !important;
+    }
+
+    input[switch]:checked + .text-width-7:after {
+        left: 60px;
+    }
+
+    .text-width-6 {
+        width: 68px !important;
+    }
+
+    input[switch]:checked + .text-width-6:after {
+        left: 47px;
+    }
+
 </style>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
 
@@ -111,17 +128,17 @@
                         <label class="col-form-label-sm fw-bold">Scan type:</label>
                         @* <label for="chkShowIdDataList" class="col-form-label-sm fw-bold">Show List</label> *@
                         <input type="checkbox" id="chkShowIdDataList" switch="success" onclick="PackingListFG_ScanIdDataList()" />
-                        <label data-on-label="Man." data-off-label="Scan" for="chkShowIdDataList"></label>
+                        <label data-on-label="Manual" data-off-label="Scan" for="chkShowIdDataList" class="text-width-6"></label>
                     </div> 
                     <div class="col-4">
                         <label class="col-form-label-sm fw-bold">Chk. Stock:</label>
                         <input type="checkbox" id="chkOtherStock" switch="danger" />
-                        <label data-on-label="Oth." data-off-label="Stock" for="chkOtherStock"></label>
+                        <label data-on-label="Other" data-off-label="Stock" for="chkOtherStock"></label>
                         @* <label for="chkOtherStock" class="col-form-label-sm fw-bold">Check In other stock</label> *@
                     </div> 
                     <div class="col-4 without-label-field" id="DivchkSummary" style="margin-top: 2.1rem !important;">
                         <input type="checkbox" id="chkSummary" switch="primary" />
-                        <label data-on-label="Summ." data-off-label="Deta." for="chkSummary"></label>
+                        <label data-on-label="Summary" data-off-label="Detail" for="chkSummary" class="text-width-7"></label>
                         @* <label for="chkSummary" class="col-form-label-sm fw-bold">Summary</label> *@
                     </div>
                 </div>
