@@ -818,11 +818,11 @@ body[data-layout=horizontal] .footer {
         padding: 0
     }
 
-        #sidebar-menu ul li ul.sub-menu li a {
-            padding: .4rem 1.5rem .4rem 3rem;
-            font-size: 12px;
-            color: var(--bs-sidebar-menu-sub-item-color);
-        }
+    #sidebar-menu ul li ul.sub-menu li a {
+        padding: .4rem 1.5rem .4rem 3rem;
+        font-size: 12px;
+        color: var(--bs-sidebar-menu-sub-item-color);
+    }
 
             #sidebar-menu ul li ul.sub-menu li a:hover {
                 color: #545a6d;
