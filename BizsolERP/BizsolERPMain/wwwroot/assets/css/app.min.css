@@ -722,14 +722,13 @@ body[data-layout=horizontal] .footer {
     margin-left: 250px;
     overflow: hidden;
     /*min-height: 175.667px;*/
-    /*min-height: 511.667px;*/
     /* position: relative;
     z-index: 1;
     display: block;
     height: 100%;
     overflow: auto;
     overflow-y: hidden;*/
-    min-height: 90vh;
+    min-height: 100vh;
 }
 
     /*.PAGE {
