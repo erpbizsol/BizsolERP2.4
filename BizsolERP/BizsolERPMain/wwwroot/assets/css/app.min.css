@@ -6059,6 +6059,10 @@ button,
     --bs-table-bg-type: var(--bs-table-striped-bg);
 }
 
+.table .form-control-sm {
+    margin-bottom: 8px;
+}
+
 /*----- form design ---------*/
 
 .form-control-sm {

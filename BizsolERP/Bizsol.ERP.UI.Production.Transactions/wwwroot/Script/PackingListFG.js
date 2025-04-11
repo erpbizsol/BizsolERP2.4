@@ -149,12 +149,13 @@ function WebLocatePackingSumDispatch(response) {
 function PackingListTransactionSum(response) {
     let DispatchRows = response
 
-    let ColSpan = 3;
+    let ColSpan = 0;
     let tdQtyRMTR = '';
     let DispatchTotalMT = 0;
     let DispatchTotalPC = 0;
     let DispatchTotalMTRS = 0;
     let DispatchTotalRMTR = 0;
+    let NoPalletDispatchTotal = 0;
     
 
     
@@ -164,19 +165,33 @@ function PackingListTransactionSum(response) {
         DispatchTotalPC = DispatchRows.reduce((partialSum, item) => partialSum + item.QtyPC, 0)
         DispatchTotalMTRS = DispatchRows.reduce((partialSum, item) => partialSum + item.QtyMTRS, 0)
         DispatchTotalRMTR = DispatchRows.reduce((partialSum, item) => partialSum + item.QtyRMTR, 0)
+        let DispatchRowsGroupedbyPalletNo = DispatchRows.reduce((acc, item) => {
+            // Use the category as the key
+            const key = item["Pallet No"];
+            if (!acc.includes(key)) {
+                acc.push(key) ;
+            }
+           // acc[key].push(item);
+            return acc;
+        }, [])
+
+        NoPalletDispatchTotal=DispatchRowsGroupedbyPalletNo.length;
     }
 
-    if (G_OnlyEntry == "S") {
+    if (G_OnlyEntry == "T") {
         ColSpan = 2;
+        
     }
     if (FourthOrderUnitApplicable === "Y") {
         tdQtyRMTR = `<td style="text-align: right;">${parseFloat((DispatchTotalRMTR)).toFixed(2)}</td>`
     }
 
+   // <td colspan="${ColSpan}"></td>
     let tfootContent = `
         <tr id="trTotalPackingListTransaction">
-        <td colspan="${ColSpan}"></td>
+        <td style="text-align: right;">${(NoPalletDispatchTotal)}</td>
         <td >TOTAL:</td>
+        <td colspan="${ColSpan}"></td>
         <td style="text-align: right;">${parseFloat((DispatchTotalMT)).toFixed(2)}</td>
         <td style="text-align: right;">${(DispatchTotalPC)}</td>
         <td style="text-align: right;">${parseFloat((DispatchTotalMTRS)).toFixed(2)}</td>
@@ -189,7 +204,12 @@ function PackingListTransactionSum(response) {
 
     $('#tbPackingListTransaction tfoot')[0].innerHTML = tfootContent;
 
+    $('#spPLT')[0].innerHTML = `PLT : ${NoPalletDispatchTotal}`;
+    $('#spPC')[0].innerHTML = `PC : ${DispatchTotalPC}`;
+    $('#spWT')[0].innerHTML = `WT : ${DispatchTotalMT}`;
 
+
+    
 
 }
 function getPackingListFGFixedParaMeters() {
