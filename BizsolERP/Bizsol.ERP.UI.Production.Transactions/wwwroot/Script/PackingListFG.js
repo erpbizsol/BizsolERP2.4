@@ -940,9 +940,15 @@ function PackingListFG_StartLoading(G_LoadNoOfPalletData=[]) {
             packingListMaster: PackingListMaster,
             noofPallet: G_LoadNoOfPalletData
         }
+        let ShowAllStockasPerSize = "N";
+
+
+        if ($('#chkOtherStock')[0].checked == true) {
+            ShowAllStockasPerSize = "Y";
+        }
         console.log(packingListPayLoad);
         Showloader()
-        PackingListFGService.LoadNoofPalletInPackingList(JSON.stringify(loadNoofPalletInPackingListPayLoad)).then(function (response1) {
+        PackingListFGService.LoadNoofPalletInPackingList(JSON.stringify(loadNoofPalletInPackingListPayLoad), ShowAllStockasPerSize).then(function (response1) {
             if (response1.Status === 'Y') {
                 PackingListFGService.GetShowPackingListData(PackingListMaster_Code, G_OnlyEntry).then(function (response) {
                         toastr.success(response1.Msg);
