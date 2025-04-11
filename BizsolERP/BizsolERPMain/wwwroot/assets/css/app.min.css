@@ -721,7 +721,7 @@ body[data-layout=horizontal] .footer {
 .main-content {
     margin-left: 250px;
     overflow: hidden;
-    min-height: 175.667px;
+    /*min-height: 175.667px;*/
     /*min-height: 511.667px;*/
     /* position: relative;
     z-index: 1;
@@ -729,6 +729,7 @@ body[data-layout=horizontal] .footer {
     height: 100%;
     overflow: auto;
     overflow-y: hidden;*/
+    min-height: 90vh;
 }
 
     /*.PAGE {
@@ -818,11 +819,11 @@ body[data-layout=horizontal] .footer {
         padding: 0
     }
 
-        #sidebar-menu ul li ul.sub-menu li a {
-            padding: .4rem 1.5rem .4rem 3rem;
-            font-size: 12px;
-            color: var(--bs-sidebar-menu-sub-item-color);
-        }
+    #sidebar-menu ul li ul.sub-menu li a {
+        padding: .4rem 1.5rem .4rem 3rem;
+        font-size: 12px;
+        color: var(--bs-sidebar-menu-sub-item-color);
+    }
 
             #sidebar-menu ul li ul.sub-menu li a:hover {
                 color: #545a6d;

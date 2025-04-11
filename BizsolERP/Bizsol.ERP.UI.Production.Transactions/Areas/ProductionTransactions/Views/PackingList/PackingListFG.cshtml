@@ -6,6 +6,23 @@
     .without-label-field {
         margin-top: 2.3rem;
     }
+
+    .text-width-7 {
+        width: 80px !important;
+    }
+
+    input[switch]:checked + .text-width-7:after {
+        left: 60px;
+    }
+
+    .text-width-6 {
+        width: 68px !important;
+    }
+
+    input[switch]:checked + .text-width-6:after {
+        left: 47px;
+    }
+
 </style>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
 
@@ -111,17 +128,17 @@
                         <label class="col-form-label-sm fw-bold">Scan type:</label>
                         @* <label for="chkShowIdDataList" class="col-form-label-sm fw-bold">Show List</label> *@
                         <input type="checkbox" id="chkShowIdDataList" switch="success" onclick="PackingListFG_ScanIdDataList()" />
-                        <label data-on-label="Man." data-off-label="Scan" for="chkShowIdDataList"></label>
+                        <label data-on-label="Manual" data-off-label="Scan" for="chkShowIdDataList" class="text-width-6"></label>
                     </div> 
                     <div class="col-4">
                         <label class="col-form-label-sm fw-bold">Chk. Stock:</label>
                         <input type="checkbox" id="chkOtherStock" switch="danger" />
-                        <label data-on-label="Oth." data-off-label="Stock" for="chkOtherStock"></label>
+                        <label data-on-label="Other" data-off-label="Stock" for="chkOtherStock"></label>
                         @* <label for="chkOtherStock" class="col-form-label-sm fw-bold">Check In other stock</label> *@
                     </div> 
                     <div class="col-4 without-label-field" id="DivchkSummary" style="margin-top: 2.1rem !important;">
                         <input type="checkbox" id="chkSummary" switch="primary" />
-                        <label data-on-label="Summ." data-off-label="Deta." for="chkSummary"></label>
+                        <label data-on-label="Summary" data-off-label="Detail" for="chkSummary" class="text-width-7"></label>
                         @* <label for="chkSummary" class="col-form-label-sm fw-bold">Summary</label> *@
                     </div>
                 </div>
@@ -137,11 +154,11 @@
                
               
                 <div class="col-md-3 col-12 without-label-field">
-                    <button type="button" class="btn btn-success icon-height" id="btnStart" onclick="PackingListFG_StartLoading()">Start Scan</button> &nbsp;&nbsp;&nbsp;
-                    <button type="button" class="btn btn-danger icon-height" id="btnLoadingEnd" disabled>Loading End</button>
+                    <button type="button" class="btn btn-success btn-height" id="btnStart" onclick="PackingListFG_StartLoading()">Start Scan</button> &nbsp;&nbsp;&nbsp;
+                    <button type="button" class="btn btn-danger btn-height" id="btnLoadingEnd" disabled>Loading End</button>
                 </div>
                 @* <div class="col-md-1 col-4 without-label-field">
-                    <button type="button" class="btn btn-danger icon-height" id="btnLoadingEnd" disabled>Loading End</button>
+                    <button type="button" class="btn btn-danger btn-height" id="btnLoadingEnd" disabled>Loading End</button>
                 </div> *@
                 
                
@@ -152,13 +169,13 @@
                 </div>
 
                 <div class="col-md-6 col-6 without-label-field">
-                    <a id="btnScanNoPallet" class="btn btn-primary icon-height" onclick="PackingListFG_ShowDetailsModals('ScanNoPallet')">
+                    <a id="btnScanNoPallet" class="btn btn-primary btn-height" onclick="PackingListFG_ShowDetailsModals('ScanNoPallet')">
                         Scan NO Of Pallet
                     </a>
                 </div>
 
                 <div class="col-md-12 col-6 text-end">
-                    <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_Back()">Back</button>
+                    <button type="button" class="btn btn-primary btn-height" onclick="PackingListFG_Back()">Back</button>
                 </div>
                
             </div>
@@ -169,14 +186,14 @@
     <div class="row mt-1" id="DivBtnAdd">
         <div class="col-md-6 ">
 
-            <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="PackingListFG_ShowDetailsModals('AvailableStockDetail')">
+            <a class="btn btn-primary btn-height" id="btnAvailableOrderStock" onclick="PackingListFG_ShowDetailsModals('AvailableStockDetail')">
                 AVAILABLE ORDER STOCK
             </a>
 
         </div>
         <div id="DivBtnAdd" class="col-md-6 text-end">
 
-            <a class="btn btn-primary icon-height" onclick="AddNewScanManualItem()" style="display:none">
+            <a class="btn btn-primary btn-height" onclick="AddNewScanManualItem()" style="display:none">
                 Add
             </a>
 
@@ -215,8 +232,8 @@
             <input type="date" class="form-control form-control-sm" id="txtToDate" >
         </div>
         <div class="col-sm-4 col-12 without-label-field-1-7rem">
-            <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_ShowViewGrid()">Show</button>&nbsp;
-            <button type="button" class="btn btn-primary icon-height" onclick="PackingListFG_CreateNew()">CREATE NEW</button>
+            <button type="button" class="btn btn-primary btn-height" onclick="PackingListFG_ShowViewGrid()">Show</button>&nbsp;
+            <button type="button" class="btn btn-primary btn-height" onclick="PackingListFG_CreateNew()">CREATE NEW</button>
         </div>
         
     </div>
@@ -256,12 +273,12 @@
                 </div>
 
                 <div class="text-end mt-1">
-                    <a class="btn btn-success icon-height" id="btnLoadNoOfPallet" onclick="PackingListFG_LoadNoOfPallet()">
+                    <a class="btn btn-success btn-height" id="btnLoadNoOfPallet" onclick="PackingListFG_LoadNoOfPallet()">
                         Load
                     </a>
                     &nbsp;
                     &nbsp;
-                    <a class="btn btn-danger icon-height" data-bs-dismiss="modal">
+                    <a class="btn btn-danger btn-height" data-bs-dismiss="modal">
                         Close
                     </a>
                 </div>
