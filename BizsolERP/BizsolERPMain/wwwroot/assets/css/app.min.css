@@ -722,14 +722,13 @@ body[data-layout=horizontal] .footer {
     margin-left: 250px;
     overflow: hidden;
     /*min-height: 175.667px;*/
-    /*min-height: 511.667px;*/
     /* position: relative;
     z-index: 1;
     display: block;
     height: 100%;
     overflow: auto;
     overflow-y: hidden;*/
-    min-height: 90vh;
+    min-height: 100vh;
 }
 
     /*.PAGE {
@@ -5954,6 +5953,7 @@ tr {
     /*background-color: #5c95ce;*/
     background-image: linear-gradient(#5c95ce, #4a7aaa);
     color: #fff;
+    white-space: nowrap;
 }
 
 .fa-solid {
@@ -6057,6 +6057,10 @@ button,
 .table > tbody > tr:nth-of-type(odd) > * {
     --bs-table-color-type: var(--bs-table-striped-color);
     --bs-table-bg-type: var(--bs-table-striped-bg);
+}
+
+.table .form-control-sm {
+    margin-bottom: 0 !important;
 }
 
 /*----- form design ---------*/
@@ -6164,8 +6168,8 @@ label {
 
     .tab-section .nav-tabs .nav-item .nav-link {
         /*background: linear-gradient(#e95e38,#e95e38);*/
-        color: #275481;
-        background: #fffbff;
+        color: #ffffff;
+        background: #1c4e80;
         font-size: 12px;
         font-weight: 600;
         text-align: center;
@@ -6178,13 +6182,13 @@ label {
         position: relative;
         z-index: 1;
         transition: all 0.3s ease 0.15s;
-        border-bottom: 3px solid #607d8b;
+        border-bottom: 3px solid #1c4e80;
     }
 
     .tab-section .nav-tabs .nav-link.active,
     .nav-tabs .nav-item.show .nav-link {
-        color: #fffbff;
-        background-color: #1c4e80;
+        color: #1c4e80;
+        background-color: #fffbff;
         border-bottom: 3px solid #1c4e80;
         /*box-shadow: 0 5px 3px rgba(0, 0, 0, .2);*/
     }
@@ -6413,5 +6417,3 @@ table .form-control-sm {
     top: -2px !important;
     color: #313533;
 }
-
- 
