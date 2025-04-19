@@ -353,11 +353,11 @@ function PopulateTable(data) {
       }
 
       if (item.RoutePlanStatus == 'Verified') {
-          td_StatusBtn = `<button type="button" class="btn btn-success btn-rounded waves-effect waves-light btn-sm btn-width" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
+          td_StatusBtn = `<button type="button" class="btn btn-success btn-rounded waves-effect waves-light btn-height" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
       } else if (item.RoutePlanStatus == 'Rejected') {
-          td_StatusBtn = `<button type="button" class="btn btn-danger  btn-rounded waves-effect waves-light btn-sm btn-width" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
+          td_StatusBtn = `<button type="button" class="btn btn-danger  btn-rounded waves-effect waves-light btn-height" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
       } else {
-          td_StatusBtn = `<button type="button" class="btn btn-secondary  btn-rounded waves-effect waves-light btn-sm " style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
+          td_StatusBtn = `<button type="button" class="btn btn-secondary  btn-rounded waves-effect waves-light btn-height" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
       }
       
     var row = `
