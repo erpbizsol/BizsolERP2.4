@@ -6068,6 +6068,7 @@ button,
 .form-control-sm {
     margin-bottom: 8px;
     padding: .25rem .4rem !important;
+    font-size: 12px;
 }
 
 fieldset {
@@ -6416,4 +6417,12 @@ table .form-control-sm {
     border-radius: 0 !important;
     top: -2px !important;
     color: #313533;
+}
+
+.select2-container .select2-selection--single .select2-selection__rendered {
+    font-size: 12px;
+}
+
+.select2-results__option--selectable {
+    font-size: 12px;
 }
