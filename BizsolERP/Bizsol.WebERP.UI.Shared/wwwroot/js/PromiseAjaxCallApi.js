@@ -27,8 +27,9 @@
                     //}
                 },
                 error: function (xhr, status, error) {
-                    var errorMessage = status + ': ' + error;
+                    const errorMessage = `${status}: ${error}`;
                     alert('Data Error: ' + errorMessage);
+                    reject(errorMessage); // Important to reject the Promise
                     HideLoader();
                 }
             });
