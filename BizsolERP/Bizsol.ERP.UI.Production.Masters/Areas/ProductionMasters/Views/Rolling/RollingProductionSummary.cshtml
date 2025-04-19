@@ -26,12 +26,12 @@
 <div class="tab-section" >
     <ul class="nav nav-tabs" id="RollingProductionTab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#PendingPlansTab" role="tab" aria-controls="PendingPlans" aria-selected="true" onclick="GateEntyMode_GateEntry('form','EmptyInNew')">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#PendingPlansTab" role="tab" aria-controls="PendingPlans" aria-selected="true" onclick="RollingProductionSummary_ShowPendingPlanGrid()">
                 Pending plans
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ProductionsTab" role="tab" aria-controls="Productions" aria-selected="false" onclick="GateEntyMode_GateEntry('form','LoadedInNew')">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ProductionsTab" role="tab" aria-controls="Productions" aria-selected="false" onclick="RollingProductionSummary_ShowPlanGrid()">
                 Prodctions
             </button>
         </li>
@@ -71,7 +71,7 @@
                 </div>
                 <div class="col-sm-1 col-3 without-label-field text-end">
                     <label></label>
-                    <button type="button" class="btn btn-primary icon-height" onclick="SlittingProductionEntry_ShowPlanGrid()">Show</button>
+                    <button type="button" class="btn btn-primary icon-height" onclick="RollingProductionSummary_ShowPlanGrid()">Show</button>
 
                 </div>
             </div>

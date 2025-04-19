@@ -142,9 +142,9 @@ const PackingListFGService = {
             }
         );
     },
-    LoadNoofPalletInPackingList: function LoadNoofPalletInPackingList(payload) {
+    LoadNoofPalletInPackingList: function LoadNoofPalletInPackingList(payload, showAllStockasPerSize) {
 
-        let url = UrlService.API_ENDPOINT_PackingListFG + "/LoadNoofPalletInPackingList";
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/LoadNoofPalletInPackingList?ShowAllStockasPerSize=" + showAllStockasPerSize;
         //alert(url);
         return promiseAjaxCallApi.CallAPI('POST', url, payload).then(
             function (value) {

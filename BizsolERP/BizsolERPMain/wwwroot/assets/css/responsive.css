@@ -61,7 +61,10 @@
         white-space: nowrap;
        
     }
-   
+
+    .total-PL {
+        display: block !important;
+    }
 }
 
 
