@@ -6396,6 +6396,10 @@ a.icon-height {
     grid-gap: 2px;
 }
 
+.select2-container {
+    width: 100px !important;
+}
+
 /*.select2-container--open .select2-dropdown--above {
     width: 100px !important;
 }
@@ -6404,7 +6408,6 @@ a.icon-height {
     width: 90px !important;
 }
 */
-
 table .form-control-sm {
     margin-bottom: 0 !important;
 }
