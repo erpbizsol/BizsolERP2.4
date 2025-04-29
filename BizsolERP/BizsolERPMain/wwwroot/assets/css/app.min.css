@@ -8,10 +8,10 @@ body {
 }
 
 /* width */
-::-webkit-scrollbar {
+/*::-webkit-scrollbar {
     width: 4px;
 }
-
+*/
 /* Track */
 ::-webkit-scrollbar-track {
     background: #f1f1f1;
@@ -5898,7 +5898,7 @@ table {
 }
 
 .fixed-height-table {
-    height: 355px;
+    height: 450px;
     overflow-x: auto;
     overflow-y: auto;
     display: block;
@@ -5933,6 +5933,7 @@ tr {
     /*background-color: #5c95ce;*/
     background-image: linear-gradient(#5c95ce, #4a7aaa);
     color: #fff;
+    white-space: nowrap;
 }
 
 .fa-solid {
