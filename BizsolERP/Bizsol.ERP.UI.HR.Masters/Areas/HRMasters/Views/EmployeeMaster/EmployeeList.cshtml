@@ -1,0 +1,88 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.HR.Masters/js/EmployeeList.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            
+            <div class="col-12 col-md-3 col-lg-2 col-xl-3">
+                <label for="ddlEmpStatus" class="form-label">Employee Status<span class="text-danger">*</span></label>
+
+                <select id="ddlEmpStatus" class="form-control form-control-sm box_border">
+                    <option value="All">All</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="ShowCardDesp" class="form-label">Show Card Desp</label>
+
+                <div class="d-flex flex-wrap gap-xxl-2 ">
+                    <input type="checkbox"
+                           id="ShowCardDesp"
+                           switch="success">
+                    <label data-on-label="Yes" data-off-label="No" for="ShowCardDesp"></label>
+
+                </div>
+            </div>
+
+
+            <div class="col-12 col-md-5 col-lg-4 col-xl-3 without-label-field">
+                <button type="button" id="btnShow" class="btn btn-primary btn-height" title="Show Employees">Show</button>
+                <button type="button" id="btnNewEmployee" class="btn btn-primary btn-height" title="Create New Employee">Create New</button>
+                <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download List"><i class="fa fa-download" aria-hidden="true"></i></button>
+                <button type="button" id="btnEmpConfig" class="btn btn-warning btn-height" title="Employee Configuration Settings"> <i class="fa fa-gear"></i></button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+<div id="DivtblEmployeeList">
+    <div class="table-wrapper fixed-height-table">
+        <table id="tblEmployeeList" class="fixed-width-table table">
+            <thead id="table-header">
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-tblEmployeeList">
+    </div>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="deleteReason" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="DeleteModal()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
+</div>

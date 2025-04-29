@@ -158,6 +158,14 @@ const CRMReportsServices = {
             }
         );
     },
+    GetUserList: function GetUserList() {
+        let url = UrlService.API_UserMODULE + `/GetUserList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 
 }
 
