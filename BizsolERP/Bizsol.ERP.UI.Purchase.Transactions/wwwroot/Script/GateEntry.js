@@ -51,9 +51,9 @@ function GateEntryGirdByDates() {
         //response.forEach(item => {
         //    item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
         //});
-
+        console.log(response);
         response.forEach(item => {
-            item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
+            item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] +' '+ item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] +' '+ item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] +' '+ item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') +'\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
         });
         //console.log(response);
         const StringFilterColumn = ["Type In", "Party name", "Vehicle No"];
@@ -78,15 +78,16 @@ GateEntryService.GetMinPending().then(function (response) {
     $('#txtToDate').val(new Date().toISOString().slice(0, 10));
     GateEntryGirdByDates();
     GetConfigGateEntry();
+    LockDocumntFutureDate();
 });
 
-function ViewAttachment_GateEntry(GateEntryMaster_Code) {
-    InitAttachmentControl('GateEntryMaster', GateEntryMaster_Code, '', 0, 0, '', "View");
-   // InitAttachmentControl('GateEntryMaster', GateEntryMaster_Code, '', 0, 0, '', "all");
+function ViewAttachment_GateEntry(GateEntryMaster_Code, sourceDownloadFileName) {
+    InitAttachmentControl('GateEntryMaster', GateEntryMaster_Code, '', 0, 0, '', "View", sourceDownloadFileName);
+   
 }
-function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode) {
+function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode, sourceDownloadFileName) {
     var url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
-    $('#GateEntry_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode });
+    $('#GateEntry_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode, SourceDownloadFileName: sourceDownloadFileName });
 }
 function GateEntyMode_GateEntry(Mode,EntryType) {
     ChangeMode(Mode);
@@ -586,6 +587,7 @@ function GateEntry_SaveData(Mode) {
     let EwaybillDate = null;
     let ReportingDatetime = null;
     let POItemsData = "";
+    let OutRemarks = "";
 
     
 
@@ -693,6 +695,7 @@ function GateEntry_SaveData(Mode) {
         InvoiceDate = $('#frmLoadedOut_txtDocumentDate').val();
         EwaybillNo = $('#frmLoadedOut_txtEWayBillNo').val();
         EwaybillDate = $('#frmLoadedOut_txtEWayBillDate').val();
+        OutRemarks = $('#frmLoadedOut_txtRemarks').val();
         let VehiclePhotoLenth = $('#frmLoadedOut_fileVehiclePhoto')[0].files.length;
         let GoodsPhotoLenth = $('#frmLoadedOut_fileGoodsPhoto')[0].files.length;
         let InvoicePhotoLenth = $('#frmLoadedOut_fileInvoicePhoto')[0].files.length;
@@ -1000,6 +1003,7 @@ function GateEntry_SaveData(Mode) {
 
         GateEntryOutDate = $('#frmEmptyOut_txtDateOut').val();
         VehicleOutTime = $('#frmEmptyOut_txtOutTime').val();
+        OutRemarks = $('#frmEmptyOut_txtRemarks').val();
 
         let VehiclePhotoLenth = $('#frmEmptyOut_fileVehiclePhoto')[0].files.length;
 
@@ -1087,7 +1091,8 @@ function GateEntry_SaveData(Mode) {
                     documentType: Documenttype,
                     ewaybillNo: EwaybillNo,
                     ewaybillDate: EwaybillDate,
-                    reportingDatetime: ReportingDatetime
+                    reportingDatetime: ReportingDatetime,
+                    outRemarks: OutRemarks
 
 
                 }
@@ -1100,9 +1105,10 @@ function GateEntry_SaveData(Mode) {
 
         //alert('Save Alert!' + Mode + ' Post Data: ' + JSON.stringify(GateEntryPostdata));
 
-
+        Showloader();
         GateEntryService.SaveGateEntryMaster(JSON.stringify(GateEntryPostdata), POItemsData).then(function (response) {
             if (response.Status === 'Y') {
+                HideLoader();
                 toastr.success(`Entry save success`);
                 // window.location.href = sessionStorage.getItem('AppBaseURL') +'PurchaseTransactions/GateEntry/GateEntryView';
                 GateEntyMode_GateEntry('grid', '');
@@ -1167,127 +1173,202 @@ function GateEntry_frmLoadedIn_ddlPurchaseOrder_Change() {
 
 $('#frmEmptyIn_fileVehiclePhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmEmptyIn_fileVehiclePhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail = [{
-            imgVehicle: ByteArray,
-            imgMaterial: [],
-            imgDoc: [],
-            ImgOther: []
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmEmptyIn_fileVehiclePhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+       
+        //ConvertFileToByteArry($('#frmEmptyIn_fileVehiclePhoto')[0].files[0]).then(function (ByteArray) {
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail = [{
+                imgVehicle: ByteArray,
+                imgMaterial: [],
+                imgDoc: [],
+                ImgOther: []
 
-        }];
-    })
-    
+            }];
+        })
+
+        
+    });
+
+   
 });
 
 $('#frmLoadedOut_fileVehiclePhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmLoadedOut_fileVehiclePhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail.push({
-            imgVehicle: ByteArray,
-            imgMaterial: [],
-            imgDoc: [],
-            ImgOther: []
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmLoadedOut_fileVehiclePhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail.push({
+                imgVehicle: ByteArray,
+                imgMaterial: [],
+                imgDoc: [],
+                ImgOther: []
+            });
         });
+
+
     });
+
+   
 
 });
 $('#frmLoadedOut_fileGoodsPhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmLoadedOut_fileGoodsPhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail.push({
-            imgVehicle: [],
-            imgMaterial: ByteArray,
-            imgDoc: [],
-            ImgOther: []
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmLoadedOut_fileGoodsPhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+        
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail.push({
+                imgVehicle: [],
+                imgMaterial: ByteArray,
+                imgDoc: [],
+                ImgOther: []
+            });
         });
+
     });
+
+    
 
 });
 $('#frmLoadedOut_fileInvoicePhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmLoadedOut_fileInvoicePhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail.push({
-            imgVehicle: [],
-            imgMaterial: [],
-            imgDoc: ByteArray,
-            ImgOther: []
-        });
-    });
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmLoadedOut_fileInvoicePhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
 
-});
-$('#frmLoadedOut_fileOtherPhoto').bind('change', function () {
-    $.each($('#frmLoadedOut_fileOtherPhoto')[0].files, function (key, file) {
-        ConvertFileToByteArry(file).then(function (ByteArray) {
+
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
             GateEntryImageDetail.push({
                 imgVehicle: [],
                 imgMaterial: [],
-                imgDoc: [],
-                ImgOther: ByteArray
+                imgDoc: ByteArray,
+                ImgOther: []
             });
         });
+
+    });
+
+    
+
+});
+$('#frmLoadedOut_fileOtherPhoto').bind('change', function () {
+
+    $.each($('#frmLoadedOut_fileOtherPhoto')[0].files, function (key, file) {
+
+        // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+        OptimizeImage.reduceFileSize(file, 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+            ConvertFileToByteArry(blob).then(function (ByteArray) {
+                GateEntryImageDetail.push({
+                    imgVehicle: [],
+                    imgMaterial: [],
+                    imgDoc: [],
+                    ImgOther: ByteArray
+                });
+            });
+
+        });
+       
     });
 });
 
 $('#frmLoadedIn_fileVehiclePhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmLoadedIn_fileVehiclePhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail.push({
-            imgVehicle: ByteArray,
-            imgMaterial: [],
-            imgDoc: [],
-            ImgOther: []
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmLoadedIn_fileVehiclePhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail.push({
+                imgVehicle: ByteArray,
+                imgMaterial: [],
+                imgDoc: [],
+                ImgOther: []
+            });
         });
+
     });
+
+    
 
 });
-$('#frmLoadedIn_fileGoodsPhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmLoadedIn_fileGoodsPhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail.push({
-            imgVehicle: [],
-            imgMaterial: ByteArray,
-            imgDoc: [],
-            ImgOther: []
+$('#frmLoadedIn_fileGoodsPhoto').bind('change', function () {
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmLoadedIn_fileGoodsPhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail.push({
+                imgVehicle: [],
+                imgMaterial: ByteArray,
+                imgDoc: [],
+                ImgOther: []
+            });
         });
+
     });
+
+    
 
 });
 $('#frmLoadedIn_fileInvoicePhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmLoadedIn_fileInvoicePhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail.push({
-            imgVehicle: [],
-            imgMaterial: [],
-            imgDoc: ByteArray,
-            ImgOther: []
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmLoadedIn_fileInvoicePhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail.push({
+                imgVehicle: [],
+                imgMaterial: [],
+                imgDoc: ByteArray,
+                ImgOther: []
+            });
         });
+
     });
+
+    
 
 });
 $('#frmLoadedIn_fileOtherPhoto').bind('change', function () {
     $.each($('#frmLoadedIn_fileOtherPhoto')[0].files, function (key, file) {
-        ConvertFileToByteArry(file).then(function (ByteArray) {
-            GateEntryImageDetail.push({
-                imgVehicle: [],
-                imgMaterial: [],
-                imgDoc: [],
-                ImgOther: ByteArray
+        // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+        OptimizeImage.reduceFileSize(file, 500 * 1024, 1000, Infinity, 0.9, blob => {
+
+            ConvertFileToByteArry(blob).then(function (ByteArray) {
+                GateEntryImageDetail.push({
+                    imgVehicle: [],
+                    imgMaterial: [],
+                    imgDoc: [],
+                    ImgOther: ByteArray
+                });
             });
+
         });
+
+        
     });
 });
 
 $('#frmEmptyOut_fileVehiclePhoto').bind('change', function () {
 
-    ConvertFileToByteArry($('#frmEmptyOut_fileVehiclePhoto')[0].files[0]).then(function (ByteArray) {
-        GateEntryImageDetail = [{
-            imgVehicle: ByteArray,
-            imgMaterial: [],
-            imgDoc: [],
-            ImgOther: []
+    // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+    OptimizeImage.reduceFileSize($('#frmEmptyOut_fileVehiclePhoto')[0].files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
 
-        }];
-    })
+        ConvertFileToByteArry(blob).then(function (ByteArray) {
+            GateEntryImageDetail = [{
+                imgVehicle: ByteArray,
+                imgMaterial: [],
+                imgDoc: [],
+                ImgOther: []
+
+            }];
+        })
+
+    });
+
+    
 
 });
 function ClearAllFrm() {
@@ -1323,6 +1404,7 @@ function ClearAllFrm() {
     $('#frmLoadedOut_txtDocumentDate').val('');
     $('#frmLoadedOut_txtEWayBillNo').val('');
     $('#frmLoadedOut_txtEWayBillDate').val();
+    $('#frmLoadedOut_txtRemarks').val();
 
     $('#frmEmptyIn_txtVehicleNo').removeAttr('readonly')
     $('#frmEmptyIn_txtDriverName').removeAttr('readonly')
@@ -1346,6 +1428,7 @@ function ClearAllFrm() {
     $('#frmLoadedOut_txtDocumentDate').removeAttr('readonly');
     $('#frmLoadedOut_txtEWayBillNo').removeAttr('readonly');
     $('#frmLoadedOut_txtEWayBillDate').removeAttr('readonly');
+    $('#frmLoadedOut_txtRemarks').removeAttr('readonly');
     //Loaded-in
 
     $('#frmLoadedIn_txtDateIn').val('');
@@ -1390,6 +1473,7 @@ function ClearAllFrm() {
     $('#frmLoadedIn_txtRemarks').removeAttr('readonly');
     $('#frmEmptyOut_txtVehicleEmptyWeight').removeAttr('readonly');
     $('#frmEmptyOut_txtWeightmentSlipNoLoaded').removeAttr('readonly');
+    $('#frmEmptyOut_txtRemarks').removeAttr('readonly');
 
     $('#DivfrmLoadedIn_fileVehiclePhoto').show();
     $('#DivfrmLoadedIn_fileGoodsPhoto').show();
@@ -1440,6 +1524,7 @@ function ClearEmptyOutOrLoadedOutFrm() {
     $('#frmLoadedOut_txtDocumentDate').val('');
     $('#frmLoadedOut_txtEWayBillNo').val('');
     $('#frmLoadedOut_txtEWayBillDate').val('');
+    $('#frmLoadedOut_txtRemarks').val('');
 
     //EmptyOut
 
@@ -1449,6 +1534,7 @@ function ClearEmptyOutOrLoadedOutFrm() {
 
     $('#frmEmptyOut_txtVehicleEmptyWeight').val('');
     $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val('');
+    $('#frmEmptyOut_txtRemarks').val('');
 }
 function ViewGateEntry(gateEntryData, EntryType) {
     
@@ -1461,9 +1547,11 @@ function ViewGateEntry(gateEntryData, EntryType) {
 
         $('#frmEmptyOut_txtVehicleEmptyWeight').val(gateEntryData[0].EmptyWeight);
         $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val(gateEntryData[0].WeightmentSlipNumberOut);
+        $('#frmEmptyOut_txtRemarks').val(gateEntryData[0].OutRemarks);
 
         $('#frmEmptyOut_txtVehicleEmptyWeight').attr('readonly', 'readonly');
         $('#frmEmptyOut_txtWeightmentSlipNoLoaded').attr('readonly', 'readonly');
+        $('#frmEmptyOut_txtRemarks').attr('readonly', 'readonly');
         $('#frmEmptyOut_btnSave').attr('disabled', 'disabled')
         
     } else if (mode.toLowerCase() === 'emptyinview') {
@@ -1487,6 +1575,7 @@ function ViewGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_txtDocumentDate').val(new Date(gateEntryData[0].InvoiceDate).toISOString().slice(0, 10));
         $('#frmLoadedOut_txtEWayBillNo').val(gateEntryData[0].EwaybillNo);
         $('#frmLoadedOut_txtEWayBillDate').val(gateEntryData[0].EwaybillDate);
+        $('#frmLoadedOut_txtRemarks').val(gateEntryData[0].OutRemarks);
 
         $('#frmLoadedOut_txtVehicleLoadedWeight').attr('readonly', 'readonly');
         $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').attr('readonly', 'readonly');
@@ -1500,11 +1589,34 @@ function ViewGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_txtDocumentDate').attr('readonly', 'readonly');
         $('#frmLoadedOut_txtEWayBillNo').attr('readonly', 'readonly');
         $('#frmLoadedOut_txtEWayBillDate').attr('readonly', 'readonly');
+        $('#frmLoadedOut_txtRemarks').attr('readonly', 'readonly');
 
         $('#frmLoadedOut_btnSave').attr('disabled', 'disabled')
     }
 
 }
+
+function LockDocumntFutureDate() {
+    let maxDate = new Date().toISOString().slice(0, 10);
+    let MinDate = new Date()///.toISOString().slice(0, 10);
+    MinDate.setDate(MinDate.getDate() - 30);
+    MinDate=MinDate.toISOString().slice(0, 10);
+
+    $('#frmLoadedOut_txtDocumentDate').attr('max', maxDate);
+    $('#frmLoadedIn_txtDocumentDate').attr('max', maxDate);
+    $('#frmLoadedIn_txtEWayBillDate').attr('max', maxDate);
+    $('#frmLoadedOut_txtEWayBillDate').attr('max', maxDate);
+    $('#frmLoadedIn_txtReportingDatetime').attr('max', maxDate);
+    $('#frmEmptyIn_txtReportingDatetime').attr('max', maxDate);
+    $('#txtFromDate').attr('max', maxDate);
+    $('#txtToDate').attr('max', maxDate);
+
+    $('#frmLoadedOut_txtDocumentDate').attr('min', MinDate);
+    $('#frmLoadedIn_txtDocumentDate').attr('min', MinDate);
+    $('#frmLoadedIn_txtEWayBillDate').attr('min', MinDate);
+    $('#frmLoadedOut_txtEWayBillDate').attr('min', MinDate);
+}
+
 
 window.GateEntyMode_GateEntry = GateEntyMode_GateEntry
 window.GateEntryGirdByDates = GateEntryGirdByDates

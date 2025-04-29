@@ -149,12 +149,13 @@ function WebLocatePackingSumDispatch(response) {
 function PackingListTransactionSum(response) {
     let DispatchRows = response
 
-    let ColSpan = 3;
+    let ColSpan = 0;
     let tdQtyRMTR = '';
     let DispatchTotalMT = 0;
     let DispatchTotalPC = 0;
     let DispatchTotalMTRS = 0;
     let DispatchTotalRMTR = 0;
+    let NoPalletDispatchTotal = 0;
     
 
     
@@ -164,19 +165,33 @@ function PackingListTransactionSum(response) {
         DispatchTotalPC = DispatchRows.reduce((partialSum, item) => partialSum + item.QtyPC, 0)
         DispatchTotalMTRS = DispatchRows.reduce((partialSum, item) => partialSum + item.QtyMTRS, 0)
         DispatchTotalRMTR = DispatchRows.reduce((partialSum, item) => partialSum + item.QtyRMTR, 0)
+        let DispatchRowsGroupedbyPalletNo = DispatchRows.reduce((acc, item) => {
+            // Use the category as the key
+            const key = item["Pallet No"];
+            if (!acc.includes(key)) {
+                acc.push(key) ;
+            }
+           // acc[key].push(item);
+            return acc;
+        }, [])
+
+        NoPalletDispatchTotal=DispatchRowsGroupedbyPalletNo.length;
     }
 
-    if (G_OnlyEntry == "S") {
+    if (G_OnlyEntry == "T") {
         ColSpan = 2;
+        
     }
     if (FourthOrderUnitApplicable === "Y") {
         tdQtyRMTR = `<td style="text-align: right;">${parseFloat((DispatchTotalRMTR)).toFixed(2)}</td>`
     }
 
+   // <td colspan="${ColSpan}"></td>
     let tfootContent = `
         <tr id="trTotalPackingListTransaction">
-        <td colspan="${ColSpan}"></td>
+        <td style="text-align: right;">${(NoPalletDispatchTotal)}</td>
         <td >TOTAL:</td>
+        <td colspan="${ColSpan}"></td>
         <td style="text-align: right;">${parseFloat((DispatchTotalMT)).toFixed(2)}</td>
         <td style="text-align: right;">${(DispatchTotalPC)}</td>
         <td style="text-align: right;">${parseFloat((DispatchTotalMTRS)).toFixed(2)}</td>
@@ -189,7 +204,12 @@ function PackingListTransactionSum(response) {
 
     $('#tbPackingListTransaction tfoot')[0].innerHTML = tfootContent;
 
+    $('#spPLT')[0].innerHTML = `PLT : ${NoPalletDispatchTotal}`;
+    $('#spPC')[0].innerHTML = `PC : ${DispatchTotalPC}`;
+    $('#spWT')[0].innerHTML = `WT : ${DispatchTotalMT}`;
 
+
+    
 
 }
 function getPackingListFGFixedParaMeters() {
@@ -326,7 +346,7 @@ function Bind_AllDLL() {
     Bind_ddlTransporterName();
 }
 function Bind_ddlOrderNo(Mode, Name) {
-    PackingListFGService.GetPendingOrderList(Mode, Name,0).then(function (response) {
+    PackingListFGService.GetPendingOrderList(Mode, Name,0,0).then(function (response) {
 
         if (response.length == 0) {
             let bName = Mode === "GetPendingOrderListByBuyerName" ? "Buyer Name: " : Mode === "GetPendingMRNListByPartyName" ? "Vendor Name:" : "Consignee Name: ";
@@ -523,6 +543,7 @@ function EditMode(isView) {
 function PackingListFG_CreateNew() {
 
     if (PackingListFGFixedParaMeters.length > 0 && PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'VerifyApplicableInPackingList').PeramaterValue === 'Y') {
+        Bind_ddlReqNo();
         ClrFrm();
         ChangeMode('New');
         PackingListFG_OnChangeddlPackingType();
@@ -536,6 +557,7 @@ function PackingListFG_CreateNew() {
 function PackingListFG_Back() {
     PackingListFG_ShowViewGrid()
     ChangeMode('');
+    ClrFrm();
 }
 function PackingListFG_EditOrView(isEdit, packingListMaster_Code) {
 
@@ -666,7 +688,7 @@ function PackingListFG_ShowDetailsModals(For) {
             return;
         }
 
-        PackingListFGService.GetPendingOrderList(For, ConsigneeName, Code).then(function (response) {
+        PackingListFGService.GetPendingOrderList(For, ConsigneeName, Code, $('#ddlGodownFrom').val()).then(function (response) {
 
 
             console.log(response);
@@ -938,9 +960,15 @@ function PackingListFG_StartLoading(G_LoadNoOfPalletData=[]) {
             packingListMaster: PackingListMaster,
             noofPallet: G_LoadNoOfPalletData
         }
+        let ShowAllStockasPerSize = "N";
+
+
+        if ($('#chkOtherStock')[0].checked == true) {
+            ShowAllStockasPerSize = "Y";
+        }
         console.log(packingListPayLoad);
         Showloader()
-        PackingListFGService.LoadNoofPalletInPackingList(JSON.stringify(loadNoofPalletInPackingListPayLoad)).then(function (response1) {
+        PackingListFGService.LoadNoofPalletInPackingList(JSON.stringify(loadNoofPalletInPackingListPayLoad), ShowAllStockasPerSize).then(function (response1) {
             if (response1.Status === 'Y') {
                 PackingListFGService.GetShowPackingListData(PackingListMaster_Code, G_OnlyEntry).then(function (response) {
                         toastr.success(response1.Msg);
@@ -996,11 +1024,11 @@ function PackingListFG_StartLoading(G_LoadNoOfPalletData=[]) {
     //toastr.error('Loading Start...');
 }
 function PackingListFG_ScanIdDataList() {
-    var chkShowDataList = $('#chkShowIdDataList');
+    let chkShowDataList = $('#chkShowIdDataList');
     if (chkShowDataList[0].checked) {
-        var ddlReqNo = document.getElementById("ddlReqNo");
-        var RMRequisitionMasterCode = ddlReqNo.options[ddlReqNo.selectedIndex].attributes["code"].value;
-        var FromGodownCode = $('#ddlGodownFrom').val();
+        let ddlReqNo = document.getElementById("ddlReqNo");
+        let RMRequisitionMasterCode = ddlReqNo.options[ddlReqNo.selectedIndex].attributes["code"].value;
+        let FromGodownCode = $('#ddlGodownFrom').val();
 
         if (FromGodownCode == "0" || FromGodownCode == "") {
             return;
@@ -1187,6 +1215,11 @@ function ClrFrm() {
 
     $('#tbPackingListTransaction tr').empty();
     $('#paginator-tbPackingListTransaction').empty();
+
+    $('#txtScanIdentification_List').empty();
+
+    let chkShowDataList = $('#chkShowIdDataList');
+    chkShowDataList[0].checked = false;
 }
 function ScanId() {
    

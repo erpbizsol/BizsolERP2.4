@@ -29,7 +29,7 @@ const PhysicalStockTakingItemService = {
         );
     },
     UpdateQtyInPhysicalStock: function UpdateQtyInPhysicalStock(PhysicalStockTackingMaster_Code, TransactionCode, QtyPC, QtyMT, QtyMTRS, TransactionStatus, Remark) {
-        var URL = UrlService.API_ENDPOINT_PhysicalStockTaking + "/UpdateQtyInPhysicalStock?PhysicalStockTackingMaster_Code=" + PhysicalStockTackingMaster_Code + "&TransactionCode=" + TransactionCode + "&QtyPC=" + QtyPC + "&QtyMT=" + QtyMT + "&QtyMTRS=" + QtyMTRS + "&TransactionStatus=" + TransactionStatus + "" + "&Remark=" + Remark + "";
+        var URL = UrlService.API_ENDPOINT_PhysicalStockTaking + "/UpdateQtyInPhysicalStock?PhysicalStockTackingMaster_Code=" + PhysicalStockTackingMaster_Code + "&TransactionCode=" + TransactionCode + "&QtyPC=" + QtyPC + "&QtyMT=" + QtyMT + "&QtyMTRS=" + QtyMTRS + "&TransactionStatus=" + TransactionStatus + "&Remark='" + Remark + "'";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

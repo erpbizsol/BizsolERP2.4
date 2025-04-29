@@ -30,7 +30,7 @@ body {
     line-height: 0.7 !important;
 }*/
 
-    #page-topbar {
+#page-topbar {
     position: fixed;
     top: 0;
     right: 0;
@@ -217,7 +217,20 @@ body[data-bs-theme=dark] .layout-mode-light {
     /*    display: flex;
     flex-direction: column;
     height: 90vh;*/
+
+
+    
 }
+
+html, body {
+    height: 100%;
+}
+
+/*.container-fluid {
+    height: calc(100vh - 100px);
+    overflow: auto;
+}*/
+
 
 .header-item {
     height: 51px;
@@ -708,14 +721,14 @@ body[data-layout=horizontal] .footer {
 .main-content {
     margin-left: 250px;
     overflow: hidden;
-    min-height: 175.667px;
-    /*min-height: 511.667px;*/
+    /*min-height: 175.667px;*/
     /* position: relative;
     z-index: 1;
     display: block;
     height: 100%;
     overflow: auto;
     overflow-y: hidden;*/
+    min-height: 100vh;
 }
 
     /*.PAGE {
@@ -805,11 +818,11 @@ body[data-layout=horizontal] .footer {
         padding: 0
     }
 
-        #sidebar-menu ul li ul.sub-menu li a {
-            padding: .4rem 1.5rem .4rem 3rem;
-            font-size: 12px;
-            color: var(--bs-sidebar-menu-sub-item-color);
-        }
+    #sidebar-menu ul li ul.sub-menu li a {
+        padding: .4rem 1.5rem .4rem 3rem;
+        font-size: 12px;
+        color: var(--bs-sidebar-menu-sub-item-color);
+    }
 
             #sidebar-menu ul li ul.sub-menu li a:hover {
                 color: #545a6d;
@@ -2668,7 +2681,8 @@ body[data-layout=horizontal][data-layout-size=boxed] .navbar-header {
     }
 
 .input-group-text {
-    margin-bottom: 0
+    margin-bottom: 0;
+    border: 1px solid;
 }
 
 .custom-control-label::before {
@@ -3802,7 +3816,7 @@ input[switch] {
     input[switch] + label {
         font-size: 1em;
         line-height: 1;
-        width: 56px;
+        width: 65px;
         height: 24px;
         background-color: #ced4da;
         background-image: none;
@@ -3826,9 +3840,9 @@ input[switch] {
             font-size: 12px;
             line-height: 21px;
             position: absolute;
-            right: 1px;
+            right: 8px;
             margin: 3px;
-            top: -2px;
+            bottom: -1.2px;
             text-align: center;
             min-width: 1.66667rem;
             overflow: hidden;
@@ -3844,9 +3858,9 @@ input[switch] {
             -webkit-box-shadow: none;
             box-shadow: none;
             border-radius: 2rem;
-            height: 20px;
-            width: 20px;
-            top: 2px;
+            height: 18px;
+            width: 18px;
+            top: 2.7px;
             -webkit-transition: all .1s ease-in-out;
             transition: all .1s ease-in-out
         }
@@ -3867,7 +3881,7 @@ input[switch] {
         }
 
         input[switch]:checked + label:after {
-            left: 33px;
+            left: 45px;
             background-color: #e9e9ef
         }
 
@@ -5897,6 +5911,12 @@ table {
     border-collapse: collapse;
 }
 
+.table-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    display: block;
+}
+
 .fixed-height-table {
     height: 450px;
     overflow-x: auto;
@@ -5970,9 +5990,9 @@ tr {
     border-radius: 6px;
     font-size: 8pt;
     line-height: 0;*/
-
     min-height: calc(1.5em + .5rem + calc(var(--bs-border-width)* 2));
-    padding: .25rem .5rem;
+    /*padding: .25rem .5rem;*/
+    padding: 2px 3px 4px 3px;
     font-size: .765625rem;
     border-radius: 5px;
 }
@@ -6039,11 +6059,16 @@ button,
     --bs-table-bg-type: var(--bs-table-striped-bg);
 }
 
+.table .form-control-sm {
+    margin-bottom: 0 !important;
+}
+
 /*----- form design ---------*/
 
 .form-control-sm {
     margin-bottom: 8px;
     padding: .25rem .4rem !important;
+    font-size: 12px;
 }
 
 fieldset {
@@ -6115,8 +6140,12 @@ label {
     margin-top: 1.7rem;
 }
 
-/*----- form design ---------*/
 
+.without-label-field-1-7rem {
+    margin-top: 1.7rem;
+}
+
+/*----- form design ---------*/
 /*======== Tab-Section Start ========*/
 .tab-section .tab-content {
     color: #000;
@@ -6140,8 +6169,8 @@ label {
 
     .tab-section .nav-tabs .nav-item .nav-link {
         /*background: linear-gradient(#e95e38,#e95e38);*/
-        color: #275481;
-        background: #fffbff;
+        color: #ffffff;
+        background: #1c4e80;
         font-size: 12px;
         font-weight: 600;
         text-align: center;
@@ -6154,13 +6183,13 @@ label {
         position: relative;
         z-index: 1;
         transition: all 0.3s ease 0.15s;
-        border-bottom: 3px solid #607d8b;
+        border-bottom: 3px solid #1c4e80;
     }
 
     .tab-section .nav-tabs .nav-link.active,
     .nav-tabs .nav-item.show .nav-link {
-        color: #fffbff;
-        background-color: #1c4e80;
+        color: #1c4e80;
+        background-color: #fffbff;
         border-bottom: 3px solid #1c4e80;
         /*box-shadow: 0 5px 3px rgba(0, 0, 0, .2);*/
     }
@@ -6265,12 +6294,12 @@ a.icon-height {
     border: 1px solid #ccc;
     width: -webkit-fill-available;
     font-size: 10pt;
-    max-height: 300px;
+    max-height: 280px;
     overflow-y: auto;
     padding: 0;
-    margin-top: 5px;
+    margin-top: -7px;
     list-style-type: none;
-    z-index: 1000;
+    z-index: 1060;
     /*Ensure it appears above other content */
 }
 
@@ -6280,11 +6309,12 @@ a.icon-height {
     }
 
     .AutoSuggestion-list li:hover {
-        background-color: #f0f0f0;
+        background-color: #5897fb;
+        color: #fff;
     }
 
 .AutoSuggestion-list-highlighted {
-    background-color: #9aa0a5;
+    background-color: #dddddd;
 }
 
 
@@ -6364,4 +6394,35 @@ a.icon-height {
     display: grid;
     grid-template-columns: 60% 40%;
     grid-gap: 2px;
+}
+
+/*.select2-container--open .select2-dropdown--above {
+    width: 100px !important;
+}
+*/
+/*td .select2-container--default .select2-selection--single {
+    width: 90px !important;
+}
+*/
+
+table .form-control-sm {
+    margin-bottom: 0 !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin-left: 2.7px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    border-radius: 0 !important;
+    top: -2px !important;
+    color: #313533;
+}
+
+.select2-container .select2-selection--single .select2-selection__rendered {
+    font-size: 12px;
+}
+
+.select2-results__option--selectable {
+    font-size: 12px;
 }
