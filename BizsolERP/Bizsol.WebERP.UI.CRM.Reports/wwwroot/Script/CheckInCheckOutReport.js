@@ -38,12 +38,29 @@ $(document).ready(function () {
     });
 });
 function GetSalespersonList() {
-    CRMReportsServices.GetSalespersonList().then(function (response) {
+    //CRMReportsServices.GetSalespersonList().then(function (response) {
+    //    if (response.length > 0) {
+    //        $('#txtSalesPersonlist').empty();
+    //        var options = '<option value="All" selected>All</option>';
+    //        for (var i = 0; i < response.length; i++) {
+    //            options += '<option value="' + response[i].PersonName + '" text="' + response[i].Code + '"></option>';
+    //        }
+    //        $('#txtSalesPersonlist').html(options);
+
+    //    } else {
+    //        $('#txtSalesPersonlist').empty();
+    //    }
+    //}).catch(function (error) {
+    //    console.error('Error fetching salesperson list:', error);
+    //    $('#txtSalesPersonlist').empty();
+    //});
+
+    CRMReportsServices.GetUserList().then(function (response) {
         if (response.length > 0) {
             $('#txtSalesPersonlist').empty();
             var options = '<option value="All" selected>All</option>';
             for (var i = 0; i < response.length; i++) {
-                options += '<option value="' + response[i].PersonName + '" text="' + response[i].Code + '"></option>';
+                options += '<option value="' + response[i].UserName + '" text="' + response[i].Code + '"></option>';
             }
             $('#txtSalesPersonlist').html(options);
 
@@ -51,7 +68,7 @@ function GetSalespersonList() {
             $('#txtSalesPersonlist').empty();
         }
     }).catch(function (error) {
-        console.error('Error fetching salesperson list:', error);
+        console.error('Error fetching User list:', error);
         $('#txtSalesPersonlist').empty();
     });
 }
@@ -87,10 +104,16 @@ function Getcheckinoutlist() {
 
     CRMReportsServices.Getcheckinoutlist(fromDate,toDate, PersonName, ReportTypeName).then(function (response) {
         if (response.length > 0) {
+            if (ReportTypeName.trim().toUpperCase() === 'Geo Tag Location'.trim().toUpperCase()) {
+                PopulateTable(response);
+            } else {
+
+            
             $("#tblTable").show();
-            const StringFilterColumn = [];
+                $("#divGeoLocation").hide();
+            const StringFilterColumn = ["User Name","Source","Type"];
             const NumericFilterColumn = [];
-            const DateFilterColumn = [];
+            const DateFilterColumn = ["Date"];
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
@@ -100,19 +123,23 @@ function Getcheckinoutlist() {
                 "DurationInHrs": 'right',
                 "Date": 'center',
             };
+  
+
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns,ColumnAlignment);
             PopulateTableForPrint(response);
-            if (ReportTypeName === 'Distance Detail Report') {
+            if (ReportTypeName.trim().toUpperCase() === 'Distance Detail Report'.trim().toUpperCase()) {
                 updateFooter(response)
             } else {
                 clearFooter();
+                }
             }
-           
+            
         } else {
             toastr.error("Record not found...!");
             clearFooter();
             $("#tblTable").hide();
-        }
+            }
+        
     });
 }
 function updateFooter(data) {
@@ -178,6 +205,92 @@ function clearFooter() {
     const tfootPrint = document.querySelector("#tblReport tfoot");
     if (tfootPrint) {
         tfootPrint.innerHTML = "";
+    }
+}
+
+function mergeTableCells(selector) {
+   
+    const $rows = $('#tblGeoLocation tbody tr');
+    let lastValue = null;
+    let rowspanCount = 0;
+    let firstCell = null;
+
+    $rows.each(function (index) {
+        const $cell = $(this).find('td.' + selector);
+        const currentValue = $cell[0].innerText;
+
+        if (currentValue!== undefined && currentValue === lastValue) {
+            rowspanCount++;
+            $cell.remove(); // remove current duplicate
+        } else {
+            if (rowspanCount > 1) {
+                firstCell.attr('rowspan', rowspanCount); // apply rowspan
+            }
+            // reset values
+            lastValue = currentValue;
+            rowspanCount = 1;
+            firstCell = $cell;
+        }
+    });
+
+    // apply rowspan to the last group if needed
+    if (rowspanCount > 1 && firstCell) {
+        firstCell.attr('rowspan', rowspanCount);
+    }
+}
+
+function MergeCells() {
+    const $rows = $('#tblGeoLocation tbody tr');
+    let groupStartIndex = 0;
+
+    while (groupStartIndex < $rows.length) {
+        const $startRow = $rows.eq(groupStartIndex);
+        const empId = $startRow.find('.MergeUser').text();
+        let groupLength = 1;
+
+        // Find how many rows share the same employee_id (group size)
+        for (let i = groupStartIndex + 1; i < $rows.length; i++) {
+            const currentEmpId = $rows.eq(i).find('.MergeUser').text();
+            if (currentEmpId === empId) {
+                groupLength++;
+            } else {
+                break;
+            }
+        }
+
+        // Merge the employee_id column
+        if (groupLength > 1) {
+            const $empCell = $startRow.find('.MergeUser');
+            $empCell.attr('rowspan', groupLength);
+            for (let i = 1; i < groupLength; i++) {
+                $rows.eq(groupStartIndex + i).find('.MergeUser').remove();
+            }
+        }
+
+        // Optionally merge other columns  **only if values are same in group**
+        ['MergeDate'].forEach(className => {
+            let prevText = null;
+            let $prevCell = null;
+            let sameCount = 0;
+
+            for (let i = 0; i < groupLength; i++) {
+                const $cell = $rows.eq(groupStartIndex + i).find('.' + className);
+                const text = $cell.text();
+
+                if (text === prevText) {
+                    sameCount++;
+                    $cell.remove();
+                    if ($prevCell) $prevCell.attr('rowspan', sameCount + 1);
+                } else {
+                    $prevCell = $cell;
+                    prevText = text;
+                    sameCount = 0;
+                }
+            }
+        });
+
+        // Move to the next group
+        groupStartIndex += groupLength;
     }
 }
 function convertDateFormat(dateString) {
@@ -313,6 +426,96 @@ function PopulateTableForPrint(data) {
     });
 
 }
+
+function PopulateTable(data) {
+    $("#divGeoLocation").show();
+
+    $("#tblTable").hide();
+    // Select the table body
+    var tbody = $('#tblGeoLocation tbody');
+
+    // Clear any existing rows
+    tbody.empty();
+
+    // Loop through the data and append rows
+    data.forEach(function (item, index) {
+        const serialNo = index + 1;
+       
+        //if (item.RoutePlanStatus == 'Un-Verified') {
+        //    td_DeleteBtn = '<a id="btnDelete" class="btn btn-danger icon-height mb-1" title="Delete" onclick="DeleteRoutePlan(this);"><i class="fa fa-times" aria-hidden="true"></i></a>';
+        //} else {
+        //    td_DeleteBtn = '<a id="btnDelete" class="btn btn-danger icon-height mb-1 disabled" title="Delete" ><i class="fa fa-times" aria-hidden="true"></i></a>';
+        //}
+
+        //if (item.RoutePlanStatus == 'Verified') {
+        //    td_StatusBtn = `<button type="button" class="btn btn-success btn-rounded waves-effect waves-light btn-sm btn-width" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`;
+        //} else if (item.RoutePlanStatus == 'Rejected') {
+        //    td_StatusBtn = `<button type="button" class="btn btn-danger  btn-rounded waves-effect waves-light btn-sm btn-width" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`;
+        //} else {
+        //    td_StatusBtn = `<button type="button" class="btn btn-secondary  btn-rounded waves-effect waves-light btn-sm " style="cursor: not-allowed">${item.RoutePlanStatus}</button>`;
+        //}
+       
+        var row = `
+      <tr>
+        <td>${item["S.No"]}</td>
+        <td class="MergeUser">${item["User Name"]}</td>
+        <td class="MergeDate">${item["Date"]}</td>
+        <td>${item["Punch Time"]}</td>
+        <td>${item["Source"]}</td>
+        <td>${item["Type"]}</td>
+        <td>${item["Location"]}</td>
+        <td>${item["Duration(Hrs)"]}</td>
+        <td>${item["Distance(KM)"]}</td>
+        <td>${item["Remarks"]}</td>
+      </tr>
+    `;
+        tbody.append(row);
+    });
+
+
+   
+    MergeCells();
+    
+   // mergeTableCells('MergeUser');
+
+}
+function ExportGeoLocation() {
+    //let clone = $("#tblGeoLocation").clone();
+    //$('#tblReport  thead tr').empty();
+    //$('#tblReport tbody').empty();
+
+    //$("#tblReport").append(clone);
+    var ReportType = $("#txtReportType").val().replace(" ", "").replace(".", "");
+    var currentDate = new Date();
+    var dateString = currentDate.getFullYear() + "-" +
+        (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
+        currentDate.getDate().toString().padStart(2, "0") + "_" +
+        currentDate.getHours().toString().padStart(2, "0") + "-" +
+        currentDate.getMinutes().toString().padStart(2, "0") + "-" +
+        currentDate.getSeconds().toString().padStart(2, "0");
+
+    var wb = XLSX.utils.book_new();
+
+    // Convert the table to worksheet
+    var ws = XLSX.utils.table_to_sheet(document.getElementById('tblGeoLocation'), {
+        raw: true,
+    });
+
+    // Define merges manually
+    //ws['!merges'] = [
+    //    // Merge A1:B1 (0-based indices)
+    //    { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },
+    //    // Merge A2:A3
+    //    { s: { r: 1, c: 0 }, e: { r: 2, c: 0 } },
+    //];
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+    // Export
+    XLSX.writeFile(wb, ReportType + "_" + dateString +".xlsx");
+}
+
 function Export() {
     var ReportType = $("#txtReportType").val().replace(" ", "").replace(".", "");
     var currentDate = new Date();
@@ -323,9 +526,15 @@ function Export() {
         currentDate.getMinutes().toString().padStart(2, "0") + "-" +
         currentDate.getSeconds().toString().padStart(2, "0");
 
-    $("#tblReport").table2excel({
-        filename: ReportType + "_" + dateString,
-        fileext: ".xlsx"
-    });
+    if (ReportType.toUpperCase() == 'GeoTag Location'.toUpperCase()) {
+        ExportGeoLocation();
+    }
+    else {
+        $("#tblReport").table2excel({
+            filename: ReportType + "_" + dateString,
+            fileext: ".xlsx"
+        });
+    }
+   
 }
 window.Export = Export;

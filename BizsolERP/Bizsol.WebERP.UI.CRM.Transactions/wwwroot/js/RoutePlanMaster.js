@@ -124,8 +124,16 @@ function BindSelect2FromDataList(element, arrayList, FirstItem) {
         element.append(new Option(item.value, item.key));
     });
 
+    //let option1 = '<option value="0" ></option>';
+    //$.each(arrayList, function (key, val) {
+
+    //    option1 += '<option value="' + val.key + '"  >' + val.value + '</option>';
+    //});
+
+    //element[0].innerHTML = option1;
+
     // Trigger a change event to update Select2 UI
-    element.trigger('change');
+    //element.trigger('change');
 
     element.select2({
         // allowClear: true,
@@ -353,11 +361,11 @@ function PopulateTable(data) {
       }
 
       if (item.RoutePlanStatus == 'Verified') {
-          td_StatusBtn = `<button type="button" class="btn btn-success btn-rounded waves-effect waves-light btn-sm btn-width" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
+          td_StatusBtn = `<button type="button" class="btn btn-success btn-rounded waves-effect waves-light btn-height" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
       } else if (item.RoutePlanStatus == 'Rejected') {
-          td_StatusBtn = `<button type="button" class="btn btn-danger  btn-rounded waves-effect waves-light btn-sm btn-width" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
+          td_StatusBtn = `<button type="button" class="btn btn-danger  btn-rounded waves-effect waves-light btn-height" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
       } else {
-          td_StatusBtn = `<button type="button" class="btn btn-secondary  btn-rounded waves-effect waves-light btn-sm " style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
+          td_StatusBtn = `<button type="button" class="btn btn-secondary  btn-rounded waves-effect waves-light btn-height" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`; 
       }
       
     var row = `
@@ -407,9 +415,9 @@ function AddNewRow() {
         var Code = row.insertCell(TblIndx.Code);
         Code.style["display"] = "none";
 
-        VisitType.innerHTML = '<select id="ddlVisitType' + tbItemConsumeRowNo + '" class="form-control form-control-sm box_border" name="ddlVisitType"  autocomplete="off" onchange="getVisitType(this,' + tbItemConsumeRowNo + ');"></select>';
-        DealerName.innerHTML = '<select id="ddldealerName' + tbItemConsumeRowNo + '" class="form-control form-control-sm box_border" name="ddldealerName"  autocomplete="off" onchange="GetAccountMasterDetails(this,' + tbItemConsumeRowNo + ');"></select><input type="text" value="" autocomplete="off"  id="txtdealer' + tbItemConsumeRowNo + '" name="txtdealer" hidden  class="BizSolFormControl box_border form-control form-control-sm">';
-        CityName.innerHTML = '<select id="ddlCity' + tbItemConsumeRowNo + '" class="form-control form-control-sm box_border" name="ddlCity"  autocomplete="off" onChange="GetCityDetailsByName(this);""></select>';
+        VisitType.innerHTML = '<select id="ddlVisitType' + tbItemConsumeRowNo + '" class="BizSolFormControl form-control form-control-sm box_border" name="ddlVisitType"  autocomplete="off" onchange="getVisitType(this,' + tbItemConsumeRowNo + ');"></select>';
+        DealerName.innerHTML = '<select id="ddldealerName' + tbItemConsumeRowNo + '" class="BizSolFormControl form-control form-control-sm box_border" name="ddldealerName"  autocomplete="off" onchange="GetAccountMasterDetails(this,' + tbItemConsumeRowNo + ');"></select><input type="text" value="" autocomplete="off"  id="txtdealer' + tbItemConsumeRowNo + '" name="txtdealer" hidden  class="BizSolFormControl box_border form-control form-control-sm">';
+        CityName.innerHTML = '<select id="ddlCity' + tbItemConsumeRowNo + '" class="BizSolFormControl form-control form-control-sm box_border" name="ddlCity"  autocomplete="off" onChange="GetCityDetailsByName(this);""></select>';
         StateName.innerHTML = '<input type="text" id="txtState' + tbItemConsumeRowNo + '" class="BizSolFormControl box_border form-control form-control-sm" name="txtState" placeholder="State Name" list="listState" onclick="$(this).val(\'\')" autocomplete="off" disabled  required>';
         Description.innerHTML = '<input type="text" class="BizSolFormControl box_border form-control form-control-sm" id="txtdescription" onkeypress="BizSolhandleEnterKey(event);"  name="txtdescription" placeholder="Description" autocomplete="off" required="">';
         Status.innerHTML = '<input type="hidden" value="0">';
@@ -847,25 +855,25 @@ function getVisitType(x, rowNo) {
         }).prop('selected', true);
         $('#ddldealerName' + rowNo).trigger('change');
 
+        //var standalone = window.navigator.standalone,
+        //    userAgent = window.navigator.userAgent.toLowerCase(),
+        //    safari = /safari/.test(userAgent),
+        //    ios = /iphone|ipod|ipad/.test(userAgent);
 
-        var standalone = window.navigator.standalone,
-            userAgent = window.navigator.userAgent.toLowerCase(),
-            safari = /safari/.test(userAgent),
-            ios = /iphone|ipod|ipad/.test(userAgent);
+        //if (ios) {
+        //    if (!standalone && safari) {
+        //        // Safari
+        //    } else if (!standalone && !safari) {
+        //        // iOS webview
+        //    };
 
-        if (ios) {
-            if (!standalone && safari) {
-                // Safari
-            } else if (!standalone && !safari) {
-                // iOS webview
-            };
-        } else {
-            if (userAgent.includes('wv')) {
+        //} else {
+        //    if (userAgent.includes('wv')) {
                
-                checkWebveiw();
+        //        checkWebveiw();
                 
-            }
-        }
+        //    }
+        //}
 
     }
 }

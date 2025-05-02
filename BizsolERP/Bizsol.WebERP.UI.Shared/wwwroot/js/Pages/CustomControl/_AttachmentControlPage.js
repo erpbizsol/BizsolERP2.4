@@ -23,8 +23,9 @@ function GatAllAttachment() {
 }
 function Download_AttachmentControl(Code,fileName,IsDownload) {
     //  alert('downloadlol' + Code);
+    Showloader();
     AttachmentControlService.DownloadAttachment(Code).then(blob => {
-            
+        HideLoader();  
         console.log(blob);
         let IsOpen = false;
         let extension = fileName.split('.').pop();
@@ -67,18 +68,19 @@ function Download_AttachmentControl(Code,fileName,IsDownload) {
 }
 function DownloadAll_AttachmentControl() {
     //  alert('downloadlol' + Code);
-    var DetailTableName = $('#hfDetailTableName').val() == undefined || $('#hfDetailTableName').val() == "" ? "" : $('#hfDetailTableName').val();
-    var DetailTableCode = $('#hfDetailTableCode').val() == undefined || $('#hfDetailTableCode').val() == "" ? 0 : $('#hfDetailTableCode').val();
-
+    let DetailTableName = $('#hfDetailTableName').val() == undefined || $('#hfDetailTableName').val() == "" ? "" : $('#hfDetailTableName').val();
+    let DetailTableCode = $('#hfDetailTableCode').val() == undefined || $('#hfDetailTableCode').val() == "" ? 0 : $('#hfDetailTableCode').val();
+    let SourceDownloadFileName = $('#hfSourceDownloadFileName').val() == undefined || $('#hfSourceDownloadFileName').val() == "" ? "" : $('#hfSourceDownloadFileName').val();
+    Showloader();
     AttachmentControlService.DownloadAllAttachment($('#hfMasterTableName').val(), $('#hfMasterTableCode').val(), DetailTableName, DetailTableCode).then(blob => {
-
+        HideLoader();
         console.log(blob);
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = url;
             // the filename you want
-            a.download = "AllAttachement.zip";
+            a.download = SourceDownloadFileName == "" ? "AllAttachement.zip" : SourceDownloadFileName +".zip";
             document.body.appendChild(a);
             a.click();
         window.URL.revokeObjectURL(url);

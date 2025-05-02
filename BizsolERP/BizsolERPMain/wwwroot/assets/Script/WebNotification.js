@@ -35,12 +35,11 @@ function GetWebNotificationList() {
         } else {
             $("#notificationCount").hide();
         }
-       
-        //$(document).click(function (event) {
-        //    if (!$(event.target).closest("#bell-icon, #notificationDropdown").length) {
-        //        $("#notificationDropdown").hide();
-        //    }
-        //});
+        if (notificationList === "") {
+            notificationList =`<div class="dropdown-item" style="display: flex; justify-content: space-between; padding: 4px 16px; ">
+               <span>No Notifications</span>
+                </div>`
+        }
     });
 }
 var minutes = 1;

@@ -62,9 +62,9 @@ const PackingListFGService = {
             }
         );
     },
-    GetPendingOrderList: function GetPendingOrderList(mode, Name, BuyerPOMaster_Code) {
+    GetPendingOrderList: function GetPendingOrderList(mode, Name, BuyerPOMaster_Code, FromGodownCode) {
 
-        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetPendingOrderList?Mode=" + mode + "&Name=" + encodeURIComponent(Name) + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code;
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetPendingOrderList?Mode=" + mode + "&Name=" + encodeURIComponent(Name) + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&FromGodownCode=" + FromGodownCode;
         //alert(url);
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
@@ -142,9 +142,9 @@ const PackingListFGService = {
             }
         );
     },
-    LoadNoofPalletInPackingList: function LoadNoofPalletInPackingList(payload) {
+    LoadNoofPalletInPackingList: function LoadNoofPalletInPackingList(payload, showAllStockasPerSize) {
 
-        let url = UrlService.API_ENDPOINT_PackingListFG + "/LoadNoofPalletInPackingList";
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/LoadNoofPalletInPackingList?ShowAllStockasPerSize=" + showAllStockasPerSize;
         //alert(url);
         return promiseAjaxCallApi.CallAPI('POST', url, payload).then(
             function (value) {

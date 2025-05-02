@@ -20,7 +20,7 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             return PartialView("_SizeControl");
             
         }
-        public ActionResult AttachmentControl(string MasterTableName, int MasterTableCode,string DetailTableName,int DetailTableCode,int EntryNo,string EntryDate, string Mode)
+        public ActionResult AttachmentControl(string MasterTableName, int MasterTableCode,string DetailTableName,int DetailTableCode,int EntryNo,string EntryDate, string Mode,string SourceDownloadFileName="")
         {
 
             ViewBag.MasterTableName = MasterTableName;
@@ -30,6 +30,7 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             ViewBag.EntryNo = EntryNo;
             ViewBag.EntryDate = EntryDate;
             ViewBag.Mode = Mode;
+            ViewBag.SourceDownloadFileName = SourceDownloadFileName;
             return PartialView("_AttachmentControl");
 
         }
