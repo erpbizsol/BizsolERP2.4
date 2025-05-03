@@ -11,27 +11,83 @@ $(document).ready(function () {
     Status = $('#txtStatus').val();
     GetDepartmentTable();
 
-    $('#txtDesp').on('keydown', function (e) {
+    $('#txtDepartmentName').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtSortOrder").focus();
+            $("#txtDepartmentCode").focus();
         }
     });
-    $('#txtSortOrder').on('keydown', function (e) {
+    $('#txtDepartmentCode').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtActive").focus();
+            $("#txtDepartmentType").focus();
         }
     });
-    $('#txtActive').on('keydown', function (e) {
+    $('#txtDepartmentType').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtDefaultAmount").focus();
+            $("#txtDepartmentAddress").focus();
         }
     });
-    $('#txtDefaultAmount').on('keydown', function (e) {
+    $('#txtDepartmentAddress').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtPartOfCTC").focus();
+            $("#txtWeeklyOff").focus();
         }
     });
-    $('#txtPartOfCTC').on('keydown', function (e) {
+    $('#txtWeeklyOff').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtDivisionName").focus();
+        }
+    }); $('#txtDivisionName').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtSecondWeeklyOff").focus();
+        }
+    }); $('#txtSecondWeeklyOff').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtFirstSecondWeeklyoffON").focus();
+        }
+    }); $('#txtFirstSecondWeeklyoffON').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtSecondSecondWeeklyoffON").focus();
+        }
+    }); $('#txtSecondSecondWeeklyoffON').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtLunchTimeDeduction").focus();
+        }
+    }); $('#txtLunchTimeDeduction').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtProfessionalTaxApplicable").focus();
+        }
+    }); $('#txtProfessionalTaxApplicable').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtMachineApplicable").focus();
+        }
+    }); $('#txtMachineApplicable').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtLunchTimeDeductionInWeeklyOff").focus();
+        }
+    }); $('#txtLunchTimeDeductionInWeeklyOff').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtDepartmentEmailID").focus();
+        }
+    }); $('#txtDepartmentEmailID').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtPrefix").focus();
+        }
+    }); $('#txtPrefix').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtShiftMaster_CodeForDeductLunchTimeForOT").focus();
+        }
+    }); $('#txtShiftMaster_CodeForDeductLunchTimeForOT').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtShiftMaster_CodeForDeductInWeekOfForOT").focus();
+        }
+    }); $('#txtShiftMaster_CodeForDeductInWeekOfForOT').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtIsActive").focus();
+        }
+    }); $('#txtIsActive').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#saveDepartmentButton").focus();
+        }
+    });$('#txtShiftMaster_CodeForDeductLunchTimeForOT').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#saveDepartmentButton").focus();
         }

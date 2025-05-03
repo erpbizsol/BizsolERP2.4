@@ -61,21 +61,21 @@
             <div class="col-md-3">
                 <div class="form-group">
                     <label for="txtCondition" class="col-form-label-sm fw-bold">Condition:<span class="text-danger">*</span></label>
-                    <select id="txtCondition" class="form-control form-control-sm box_border" required>
+                    <select id="txtCondition" class="form-control form-control-sm box_border" onchange="updateFormFields()" required>
                         <option value="F" selected>Fixed</option>
-                        <option value="P">%</option>
+                        <option value="%">%</option>
                     </select>
                 </div>
             </div>
 
-            <div class="col-md-3">
+            <div class="col-md-3" >
                 <div class="form-group">
-                    <label for="txtPercentage" class="col-form-label-sm fw-bold">Percentage:<span class="text-danger">*</span></label>
+                    <label for="txtPercentage" id="lblPercentage" class="col-form-label-sm fw-bold">Percentage:<span class="text-danger">*</span></label>
                     <input id="txtPercentage" name="txtPercentage" oninput="validateDecimalInput(this)" class="box_border form-control form-control-sm" autocomplete="off" maxlength="40" required />
                 </div>
             </div>
 
-            <div class="col-md-3">
+            <div class="col-md-3" id="divPercentageOf">
                 <div class="form-group">
                     <label for="txtPercentageOf" class="col-form-label-sm fw-bold">
                         Percentage Of:<span class="text-danger">*</span>

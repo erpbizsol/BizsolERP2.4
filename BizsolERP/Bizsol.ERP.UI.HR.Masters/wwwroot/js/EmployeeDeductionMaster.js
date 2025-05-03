@@ -7,36 +7,53 @@ $(document).ready(function () {
     //PBControls();
     $("#ERPHeading").text("Employee Deduction");
 
-    GetDeductionMasterTable()
-    $('#txtDesp').on('keydown', function (e) {
+    GetDeductionMasterTable();
+    updateFormFields();
+    $('#txtDeductionDesp').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtSortOrder").focus();
+            $("#txtCondition").focus();
         }
     });
-    $('#txtSortOrder').on('keydown', function (e) {
+    $('#txtCondition').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtActive").focus();
+            $("#txtPercentage").focus();
         }
     });
-    $('#txtActive').on('keydown', function (e) {
+    $('#txtPercentage').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtDefaultAmount").focus();
+            $("#txtPercentageOf").focus();
         }
     });
-    $('#txtDefaultAmount').on('keydown', function (e) {
+    $('#txtPercentageOf').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtPartOfCTC").focus();
+            $("#saveEmployeeDeductionButton").focus();
         }
     });
-    $('#txtPartOfCTC').on('keydown', function (e) {
+    $('#txtPercentage').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#saveDepartmentButton").focus();
+            $("#saveEmployeeDeductionButton").focus();
         }
     });
     $('#btnDownload').click(function () {
         Export();
     });
 });
+function updateFormFields() {
+    const conditionValue = $("#txtCondition").val(); 
+    const percentageLabel = $("label[for='txtPercentage']");
+    const percentageOfContainer = $("#divPercentageOf");
+    const percentageOfField = $("#txtPercentageOf");
+
+    if (conditionValue === "F") {
+        percentageLabel.html('Amount:<span class="text-danger">*</span>');
+        percentageOfContainer.hide();
+        percentageOfField.prop('required', false);
+    } else {
+        percentageLabel.html('Percentage:<span class="text-danger">*</span>');
+        percentageOfContainer.show();
+        percentageOfField.prop('required', true);
+    }
+}
 function CreateNew_EmployeeDeduction() {
     OrderEntryListService.CheckModuleOptionRight('Deduction Master', 'New', 'Y', CurrentFinYear).then(function (response) {
         if (response.CheckModuleOptionRight === 'N') {
@@ -190,10 +207,10 @@ async function EditEmployeeDeduction(buttonElement, code, IsMode) {
 
             $("#locateEmployeeDeduction").hide();
             $("#newCreateForm").show();
-
             $('#Code').val(code);
-            $('#txtDeductionDesp').val(deptResponse.DeductionDesp);
             $('#txtCondition').val(deptResponse.Condition);
+            updateFormFields();
+            $('#txtDeductionDesp').val(deptResponse.DeductionDesp);
             $('#txtPercentage').val(deptResponse.Percentage);
             $('#txtPercentageOf').val(deptResponse.PercentageOf);
 
@@ -296,6 +313,7 @@ function Export() {
 
 window.Export = Export;
 window.CreateNew_EmployeeDeduction = CreateNew_EmployeeDeduction;
+window.updateFormFields = updateFormFields;
 window.EmployeeDeduction_Back = EmployeeDeduction_Back;
 window.submit_EmployeeDeductionMaster = submit_EmployeeDeductionMaster;
 window.validateDecimalInput = validateDecimalInput;

@@ -14,27 +14,32 @@ $(document).ready(function () {
     Status = $('#txtStatus').val();
     GetSubDepartmentTable()
     DepartmentDropDown();
-    $('#txtDesp').on('keydown', function (e) {
+    $('#txtDepartmentName').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtSortOrder").focus();
+            $("#txtSubDepartmentName").focus();
         }
     });
-    $('#txtSortOrder').on('keydown', function (e) {
+    $('#txtSubDepartmentName').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtActive").focus();
+            $("#txtSubDepartmentCode").focus();
         }
     });
-    $('#txtActive').on('keydown', function (e) {
+    $('#txtSubDepartmentCode').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtDefaultAmount").focus();
+            $("#txtPrefix").focus();
         }
     });
-    $('#txtDefaultAmount').on('keydown', function (e) {
+    $('#txtPrefix').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtPartOfCTC").focus();
+            $("#txtShowInDailyAtt").focus();
         }
     });
-    $('#txtPartOfCTC').on('keydown', function (e) {
+    $('#txtShowInDailyAtt').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtDeptStatus").focus();
+        }
+    });
+    $('#txtDeptStatus').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#saveDepartmentButton").focus();
         }
