@@ -1,0 +1,137 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.HR.Masters/js/DesignationMaster.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/bizsolpbcontrols.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+<style>
+    .modal-dialog {
+        max-width: 350px;
+    }
+
+    /* .fixed-height-table { */
+    /*     height: 450px; */
+    /* } */
+</style>
+
+<div id="locateDesignationMaster">
+    <div class="card col-md-8">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="txtStatus" class="col-form-label-sm fw-bold">Designation Status:<span class="text-danger">*</span></label>
+                    <select id="txtStatus" name="txtStatus" class="box_border form-control form-control-sm" required>
+                        <option value="Y" selected>Active</option>
+                        <option value="N">Inactive</option>
+                        <option value="A">All</option>
+                    </select>
+                </div>
+                <div class="col-md-3" style="margin-top:2.1rem">
+                    <button type="button" onclick="ListStatus_Designation()" title="Show" class="btn btn-primary btn-height">Show</button>
+                    <button type="button" onclick="CreateNew_DesignationMaster()" title="Create New" class="btn btn-primary btn-height">Create New</button>
+                    <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download List"><i class="fa fa-download" aria-hidden="true"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-8">
+    <div id="tblDesignationMaster">
+        <div class="table-wrapper fixed-height-table">
+            <table id="DesignationMaster" class="fixed-width-table table">
+                <thead id="table-header-DesignationMaster">
+                </thead>
+                <tbody id="table-body-DesignationMaster">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-DesignationMaster">
+        </div>
+    </div>
+    </div>
+    </div>
+</div>
+
+<div id="newCreateForm" class="card" style="display:none">
+    <form class="card-body">
+        <div class="row">
+            <input type="hidden" name="Code" id="Code" class="form-control" value="0">
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtDesignationCode" class="col-form-label-sm fw-bold">Designation Code:<span class="text-danger">*</span></label>
+                    <input id="txtDesignationCode" type="text" name="txtDesignationCode" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Designation Code" maxlength="11" required />
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtPrefix" class="col-form-label-sm fw-bold">Prefix:<span class="text-danger">*</span></label>
+                    <input id="txtPrefix" name="txtPrefix" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Prefix" required />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtDesignationName" class="col-form-label-sm fw-bold">Designation Name:<span class="text-danger">*</span></label>
+                    <input id="txtDesignationName" name="txtDesignationName" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Designation Name" required />
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtActive" class="col-form-label-sm fw-bold">Active:<span class="text-danger">*</span></label>
+                    <select id="txtActive" name="txtActive" class="box_border form-control form-control-sm" required>
+                        <option value="Y" selected>Active</option>
+                        <option value="N">Inactive</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtDesignationType" class="col-form-label-sm fw-bold">Designation Type:<span class="text-danger">*</span></label>
+                    <select id="txtDesignationType" class="form-control form-control-sm box_border"></select>
+                </div>
+            </div>
+
+
+            <div class="col-md-9 text-end" style="margin-top:2rem">
+                <button type="button" onclick="submit_DesignationMaster()" id="saveDesignationButton" title="Save" class="btn btn-primary btn-height">Save</button>
+                <button type="button" class="btn btn-primary btn-height" title="Back" onclick="DesignationMaster_Back()">Back</button>
+            </div>
+        </div>
+    </form>
+    @* <div id="PBControls" class="mb-2"></div> *@
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="reasonForDeleteInput" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveModal_DesignationDelete()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal_DesignationDelete()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
+</div>

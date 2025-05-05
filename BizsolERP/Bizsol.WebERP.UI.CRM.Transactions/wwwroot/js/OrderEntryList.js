@@ -34,27 +34,9 @@ $(document).ready(function () {
     });
 
     $('#btnShow').on('click', function () {
-        let FromDate = convertDateFormat($('#txtFromDate').val());
-        let ToDate = convertDateFormat($('#txtToDate').val());
-        //let UserName = $('#ddlUserName').val();
-        //let OrderStatus = $('#ddlOrderStatus').val();
-        let UserName = $('#ddlUserNameList option:selected').val();
-        let OrderStatus = $('#ddlOrderStatusList option:selected').val();
-        if (OrderStatus === 'All') {
-            OrderStatus = '';
-        }
-        if (typeof $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null) {
-            $('#txtFromDate').focus();
-        }else if (typeof $('#txtToDate').val() === 'undefined' || $('#txtToDate').val() === '' || $('#txtToDate').val() === null) {
-            $('#txtToDate').focus();
-        //}else if ($('#ddlUserName').val() === '') {
-        //    $('#ddlUserName').focus();
-        //}else if ($('#ddlOrderStatus').val() === '') {
-        //    $('#ddlOrderStatus').focus();
-        }else {
-            GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus);
-        }
+        ShowOrderList();
     });
+   
     $('#txtFromDate').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#txtToDate").focus();
@@ -113,7 +95,34 @@ $(document).ready(function () {
     $('#btnDownload').click(function () {
         Export();
     });
+
+    
 });
+
+function ShowOrderList() {
+    let FromDate = convertDateFormat($('#txtFromDate').val());
+    let ToDate = convertDateFormat($('#txtToDate').val());
+    //let UserName = $('#ddlUserName').val();
+    //let OrderStatus = $('#ddlOrderStatus').val();
+    let UserName = $('#ddlUserNameList option:selected').val();
+    let OrderStatus = $('#ddlOrderStatusList option:selected').val();
+    if (OrderStatus === 'All') {
+        OrderStatus = '';
+    }
+    if (typeof $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null) {
+        $('#txtFromDate').focus();
+    } else if (typeof $('#txtToDate').val() === 'undefined' || $('#txtToDate').val() === '' || $('#txtToDate').val() === null) {
+        $('#txtToDate').focus();
+        //}else if ($('#ddlUserName').val() === '') {
+        //    $('#ddlUserName').focus();
+        //}else if ($('#ddlOrderStatus').val() === '') {
+        //    $('#ddlOrderStatus').focus();
+    } else {
+        GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus);
+    }
+}
+
+
 function manageEditButton(order) {
     const isEnabled = order.Status === 'UnVerified';
     $('#editButton').prop('disabled', !isEnabled);
@@ -171,6 +180,7 @@ function GetOrderListForDate() {
                 }
             });
             highlightSelectedDates();
+            
         }
         else {
             toastr.error('No Data Found')
@@ -589,7 +599,7 @@ function GetFixedParameterConfiguration() {
         QtyMTHeader = fixedParaMeterConfigurationList[0].QtyMT;
         QtyPCHeader = fixedParaMeterConfigurationList[0].QtyPC;
         QtyMTRHeader = fixedParaMeterConfigurationList[0].QtyMR;
-
+       
     });
 }
 
@@ -769,3 +779,4 @@ window.Delete = Delete;
 window.DeleteModal = DeleteModal;
 window.CloseModal = CloseModal;
 window.GetFixedParameterConfiguration = GetFixedParameterConfiguration;
+window.ShowOrderList = ShowOrderList;
