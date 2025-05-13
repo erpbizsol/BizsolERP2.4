@@ -138,6 +138,14 @@ const PalletPackingService = {
             }
         );
     },
+    FixedParameterQtyConfiguration: function FixedParameterQtyConfiguration() {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/FixedParameterQtyConfiguration";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { PalletPackingService }
