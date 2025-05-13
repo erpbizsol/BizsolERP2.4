@@ -63,7 +63,7 @@ function PackingListFG_ShowViewGrid() {
             QtyMT: item.QtyMT, QtyPC: item.QtyPC, QtyMTRS: item.QtyMTRS
         }))
         //console.log(response);
-        const StringFilterColumn = ["Warehouse", "Packing Type", "Requisition No / Order No", "Party Name","Status"];
+        const StringFilterColumn = ["Warehouse", "Packing Type", "Party Name","Status"];
         const NumericFilterColumn = ["PackingList No"];
         const DateFilterColumn = [];
         const Button = false;
@@ -75,6 +75,13 @@ function PackingListFG_ShowViewGrid() {
             "Qty KG": 'right',
             "Qty SQM": 'right',
         };
+
+        if (RMRequisitionApplicableInPackingList === "N") {
+            hiddenColumns.push("Requisition No / Order No")
+        }
+        if (RMRequisitionApplicableInPackingList === "Y") {
+            StringFilterColumn.push("Requisition No / Order No")
+        }
 
         if (response.length > 0) {
             BizsolCustomFilterGrid.CreateDataTable("tbPackingListFGViewHeader", "tbPackingListFGViewBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
@@ -92,13 +99,17 @@ function PackingListFG_ShowViewGrid() {
 function WebLocatePackingSumDispatch(response) {
     let DispatchRows = response.filter(item => item["Packing Type"] ==='Dispatch');
     let StockRows = response.filter(item => item["Packing Type"] === 'Stock Transfer');
-
+    let ColSpan = 5;
     let DispatchTotalMT = 0;
     let DispatchTotalPC = 0;
     let DispatchTotalMTRS = 0;
     let StockTotalMT = 0;
     let StockTotalPC = 0;
     let StockTotalMTRS = 0;
+
+    if (RMRequisitionApplicableInPackingList === "N") {
+        ColSpan = 4;
+    }
 
     if (StockRows.length > 0)
     {
@@ -114,7 +125,7 @@ function WebLocatePackingSumDispatch(response) {
     }
     let tfootContent = `
         <tr id="trDispatchTotal">
-        <td colspan="5"></td>
+        <td colspan="${ColSpan}"></td>
         <td >DISPATCH TOTAL:</td>
         <td style="text-align: right;">${ parseFloat(DispatchTotalMT).toFixed(2)}</td >
         <td style="text-align: right;">${DispatchTotalPC}</td>
@@ -122,7 +133,7 @@ function WebLocatePackingSumDispatch(response) {
         <td colspan="2"></td>
         </tr>
         <tr id="trStockTotal">
-        <td colspan="5"></td>
+        <td colspan="${ColSpan}"></td>
         <td >STOCK TRANSFER TOTAL :</td>
         <td style="text-align: right;">${parseFloat(StockTotalMT).toFixed(2)}</td>
         <td style="text-align: right;">${StockTotalPC}</td>
@@ -130,7 +141,7 @@ function WebLocatePackingSumDispatch(response) {
         <td colspan="2"></td>
         </tr>
         <tr id="trTotal">
-        <td colspan="5"></td>
+        <td colspan="${ColSpan}"></td>
         <td >TOTAL:</td>
         <td style="text-align: right;">${parseFloat((DispatchTotalMT + StockTotalMT)).toFixed(2)}</td>
         <td style="text-align: right;">${(DispatchTotalPC + StockTotalPC)}</td>
@@ -370,7 +381,31 @@ function Bind_ddlOrderNo(Mode, Name) {
         
     });
 }
+function Bind_ddlOrderNoForEntryView(Mode, Name) {
+    PackingListFGService.GetPendingOrderList(Mode, Name, PackingListMaster_Code, 0).then(function (response) {
 
+        //if (response.length == 0) {
+        //    let bName = Mode === "GetPendingOrderListByBuyerName" ? "Buyer Name: " : Mode === "GetPendingMRNListByPartyName" ? "Vendor Name:" : "Consignee Name: ";
+        //    Name = bName + Name;
+        //    let OrderOrMRN = Mode === "GetPendingMRNListByPartyName" ? "MRN No" : "Order No ";
+        //    toastr.warning(OrderOrMRN + ' Not Found for ' + Name);
+        //}
+        let option = '<option value="0" partyname="0"></option>';
+        $.each(response, function (key, val) {
+
+            option += '<option value="' + val.Code + '" partyname="' + val.PartyName + '" >' + val.Desp + '</option>';
+        });
+
+        $('#ddlOrderNo')[0].innerHTML = option;
+        if (BuyerPOMaster_Code > 0) {
+            $('#ddlOrderNo').val(BuyerPOMaster_Code);
+        }
+        $('#ddlOrderNo').select2({
+            width: '-webkit-fill-available'
+        });
+
+    });
+}
 function Bind_PackingListTransactionGrid(isView) {
     if (ArryPackingListTransaction.length > 0) {
 
@@ -467,7 +502,19 @@ function EditMode(isView) {
         
                 SelectOptionByText('ddlClientName', response[0][0].ClienName);
                 SelectOptionByText('ddlConsignee', response[0][0].ConsigneeName);
-                
+
+
+                if (response[0][0].RMRequisitionNo !== "" && G_isView=='Y') {
+                    let option = '<option value="0" GodownNameTo="0" Code="0" GodownNameFrom="0"></option>';
+                    option += '<option value="' + response[0][0].RMRequisitionNo + '" GodownNameTo="0" Code="0" GodownNameFrom="0" >' + response[0][0].RMRequisitionNo + '</option>';
+                   
+                    $('#ddlReqNo')[0].innerHTML = option;
+                    $('#ddlReqNo').val(response[0][0].RMRequisitionNo);
+                    $('#ddlReqNo').select2({
+                        width: '-webkit-fill-available'
+                    });
+                }
+
 
                 if (InvoiceByOrder === 'Y') {
                     if (response[0][0].PackingType !== 'Stock Transfer') {
@@ -475,7 +522,8 @@ function EditMode(isView) {
                             Bind_ddlOrderNo("GetPendingMRNListByPartyName", response[0][0].ConsigneeName);
                         }
                         else {
-                            Bind_ddlOrderNo("GetPendingOrderListByPartyName", response[0][0].ConsigneeName);
+                           // Bind_ddlOrderNo("GetPendingOrderListByPartyName", response[0][0].ConsigneeName);
+                            Bind_ddlOrderNoForEntryView("GetOrderListByPartyNameForEntryView", response[0][0].ConsigneeName);
                         }
                     }
                     
@@ -567,7 +615,7 @@ function PackingListFG_EditOrView(isEdit, packingListMaster_Code) {
     if (isEdit === 'Y') {
         PackingListFGService.EditValidatePackingListBatchNo(packingListMaster_Code).then(function (response) {
             if (response.Status == 'Y') {
-
+                //Bind_ddlReqNo()
                 //$('#paginator-tbPackingListTransaction').show();
                 PackingListMaster_Code = packingListMaster_Code;
                 EditMode('N');
@@ -1297,8 +1345,32 @@ function ScanId() {
             $('#txtScanIdentification').val('');
             HideLoader();
         } else {
-            toastr.warning(`Batch No / ID : ${BundleOrId} Not Found in Godown.! Check By: USP_WebAPI_WebGetPackingListItemStock`);
-            HideLoader();
+
+            PackingListFGService.GetNotfoundScanInfoInPackingList(BundleOrId).then(function (resOBJ) {
+
+                
+
+                
+
+                if (resOBJ.Status == 'Y') {
+                        toastr.error(`Batch No / ID : ${BundleOrId} Not Found in Godown.! Check By: USP_WebAPI_WebGetPackingListItemStock`);
+                        toastr.info(resOBJ.Msg);
+                    } else {
+                        toastr.error(resOBJ.Msg);
+                        toastr.error(`Batch No / ID : ${BundleOrId} Not Found in Godown.! Check By: USP_WebAPI_WebGetPackingListItemStock`);
+                    }
+                    
+                
+
+
+                    
+                    
+                
+                HideLoader();
+            });
+
+            //toastr.warning(`Batch No / ID : ${BundleOrId} Not Found in Godown.! Check By: USP_WebAPI_WebGetPackingListItemStock`);
+            //HideLoader();
         }
     });
 

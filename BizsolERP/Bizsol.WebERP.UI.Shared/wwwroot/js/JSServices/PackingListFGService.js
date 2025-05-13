@@ -151,8 +151,17 @@ const PackingListFGService = {
                 return value;
             }
         );
-    }
-    
+    },
+    GetNotfoundScanInfoInPackingList: function GetNotfoundScanInfoInPackingList(BundleOrIdOrBatch) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetNotfoundScanInfoInPackingList?BundleOrIdOrBatch="+BundleOrIdOrBatch;
+
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 

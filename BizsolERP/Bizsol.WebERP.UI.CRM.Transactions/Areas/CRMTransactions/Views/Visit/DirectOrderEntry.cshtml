@@ -70,6 +70,10 @@
         width: 68px;
     }
 
+    .digit13 {
+        width: 130px;
+    }
+
 </style>
 
 <div class="row mb-2">
@@ -385,11 +389,11 @@
                                             
                                             <th class="lead-text width_cust" role="columnheader">Discount Type(After Rate)</th>
                                             <th class="lead-text width_cust" role="columnheader">Discount(After Rate)</th>
-                                            <th class="lead-text width_cust" role="columnheader">Amount</th>
+                                            <th class="lead-text width_cust digit10" role="columnheader">Amount</th>
                                             <th class="lead-text width_cust" role="columnheader">Delivery Date</th>
-                                            <th class="lead-text width_cust" role="columnheader">Price List</th>
+                                            <th class="lead-text width_cust digit13" role="columnheader">Price List</th>
                                             <th class="lead-text width_cust" role="columnheader">Dealer</th>
-                                            <th class="lead-text width_cust" role="columnheader">Remarks</th>
+                                            <th class="lead-text width_cust digit10" role="columnheader">Remarks</th>
                                             <th class="lead-text width_cust" role="columnheader">Delete</th>
                                             
                                         </tr>
@@ -451,7 +455,7 @@
                         </div>
 
 
-                        <div class="col-md-2">
+                        <div class="col-md-2" id="divFreight">
                             <label for="txtlistFreight" class="col-form-label-sm fw-bold">Freight </label>
                           @*   <div class="form-group">
                                 <input type="text" list="listFreight" class="box_border form-control form-control-sm" id="txtlistFreight" onclick="this.value=''" name="txtlistFreight" value="" placeholder="" autocomplete="off" maxlength="250" required>
