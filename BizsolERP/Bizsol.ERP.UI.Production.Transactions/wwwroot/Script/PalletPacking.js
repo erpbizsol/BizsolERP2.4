@@ -14,7 +14,20 @@ let todayDate1 = '';
 let selectedDates = [];
 let PalletNosToPrint = "";
 let G_PrintOrDownloadAllPallet = [];
-$(document).ready(function () {
+let G_QtyMT = 'MT';
+let G_QtyPC = 'PC';
+let G_QtyMTR = 'MTRS';
+$(document).ready(async function () {
+
+    let FixedParameterQtyConfiguration = await PalletPackingService.FixedParameterQtyConfiguration();
+
+    if (FixedParameterQtyConfiguration.length>0) {
+        G_QtyMT = FixedParameterQtyConfiguration[0].QtyMT
+        G_QtyPC = FixedParameterQtyConfiguration[0].QtyPC
+        G_QtyMTR = FixedParameterQtyConfiguration[0].QtyMR
+    }
+    
+
     $("#ERPHeading").text("Pallet Packing");
     var today = new Date();
     var day = ('0' + today.getDate()).slice(-2);
@@ -196,7 +209,6 @@ function convertDateFormat(dateString) {
     const monthAbbreviation = monthNames[parseInt(month, 10) - 1];
     return `${day}-${monthAbbreviation}-${year}`;
 }
-
 function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
     Showloader();
     PalletPackingService.GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code).then(function (response) {
@@ -210,15 +222,15 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Allow Edit", "Print"];
+            const hiddenColumns = ["Allow Edit", "Print", "QtyMT", "QtyPC","QtyMTRS"];
             const columnAlignment = {
                 "Pallet Weight": 'right',
                 "Pallet Remark": 'right',
-                "Qty PC": 'right',
-                "Qty KG": 'right',
                 "Pallet Date": 'center',
-                "Qty KG": 'right',
             };
+            columnAlignment["Qty "+G_QtyMT] = "right";
+            columnAlignment["Qty " + G_QtyPC] = "right";
+            columnAlignment["Qty " + G_QtyMTR] = "right";
             const updatedResponse = response.map(item => {
                 let buttonsCheckBox = `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`;
                 let buttonsHTML = item?.['Allow Edit'] === 'Y'
@@ -239,7 +251,7 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
                 updateFooterPrint(response);
                 response = response.map((item) => ({
                     'Pallet No': item['Pallet No'], 'Order No': item['Order No'], 'Pallet Weight': item['Pallet Weight'], 'Warehouse': item['Warehouse'],
-                    'Pallet Date': item['Pallet Date'], 'Qty KG': item['Qty KG'], 'Qty PC': item['Qty PC'], 'Pallet Remark': item['Pallet Remark']
+                    'Pallet Date': item['Pallet Date'], 'Qty KG': item['Qty KG'], 'Qty PC': item['Qty PC'], 'Qty SQM': item['Qty SQM'], 'Pallet Remark': item['Pallet Remark']
                 }))
                 PopulateTableForPrintPalletPacking(response);
             } else {
@@ -252,7 +264,7 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
         }
     })
         .catch(function (error) {
-            toastr.error(error.Msg || 'Error during stock transfer');
+            toastr.error(error.Msg || 'Error during Pallet');
             $("#tblDateOrderPallet").hide();
         });
 }
@@ -266,7 +278,6 @@ function toggleAllSelection(masterCheckbox) {
         checkbox.checked = masterCheckbox.checked;
     });
 }
-
 function FillPendingOrder() {
     PalletPackingService.FillPendingOrder().then(function (response) {
         if (response && response.length > 0) {
@@ -362,7 +373,6 @@ function CreateNew() {
         proceedWithNewPallet();
     }
 }
-
 function proceedWithNewPallet() {
     $('#newCreateForm').show();
     $('#dateAndOrderByPallet').hide();
@@ -383,7 +393,6 @@ function proceedWithNewPallet() {
     FillPendingOrderModal();
     FillPalletType();
 }
-
 function Close() {
     $('#dateAndOrderByPallet').show();
     $('#newCreateForm').hide();
@@ -406,7 +415,6 @@ function Close() {
     $('#txtScanIdentificationNoList').empty();
     scanIdCheck = [];
 }
-
 function FillWarehouse() {
     PalletPackingService.FillWarehouse().then(function (response) {
         if (response && response.length > 0) {
@@ -542,10 +550,13 @@ function AddIDInPallet(ColForWhere, ColValue, responseGrid) {
             const showButtons = [];
             const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight", "Pallet No"];
             const columnAlignment = {
-                "Qty KG": 'right',
-                "Qty PC": 'right',
-                "Qty": 'right',
+                //"Qty KG": 'right',
+                //"Qty PC": 'right',
+                //"Qty": 'right',
             };
+            columnAlignment["Qty " + G_QtyMT] = "right";
+            columnAlignment["Qty " + G_QtyPC] = "right";
+            columnAlignment["Qty " + G_QtyMTR] = "right";
             const updatedResponse = uniqueData.map(item => {
                 const ColValue = item?.['Identification No'];
                 let buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${item.ColForWhere}','${ColValue}')"><i class="fa-regular fa-circle-xmark"></i></button>`;
@@ -645,12 +656,15 @@ function editPalletTable(PalletNo, Godownmaster_Code, isAction) {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight", "Pallet No"];
+            const hiddenColumns = ["Stock Type", "ColForWhere", "Pallet Weight", "Pallet No", "QtyMT", "QtyPC","QtyMTRS"];
             const columnAlignment = {
-                "Qty KG": 'right',
-                "Qty PC": 'right',
-                "Qty": 'right',
+                //"Qty KG": 'right',
+                //"Qty PC": 'right',
+                //"Qty MTRS": 'right',
             };
+            columnAlignment["Qty " + G_QtyMT] = "right";
+            columnAlignment["Qty " + G_QtyPC] = "right";
+            columnAlignment["Qty " + G_QtyMTR] = "right";
             const updatedResponse = uniqueEditData.map(item => {
                 let ColValue = item?.['Identification No'];
                 
@@ -722,16 +736,23 @@ function updateFooter(data) {
     const calculateTotalAmount = "Total Amount";
     if (calculateTotalAmount === "Total Amount") {
         let totalQtyBalWeight = 0;
+        let totalQtyPC = 0;
+        let totalQtyMTRS = 0;
         data.forEach(row => {
-            totalQtyBalWeight += parseFloat(row["Qty KG"]);
+            totalQtyBalWeight += parseFloat(row["QtyMT"]);
+            totalQtyPC += parseFloat(row["QtyPC"]);
+            totalQtyMTRS += parseFloat(row["QtyMTRS"]);
         });
+        totalQtyBalWeight = totalQtyBalWeight.toFixed(3);
+        totalQtyMTRS = totalQtyMTRS.toFixed(3);
 
         const tfootContent = `
         <tr>
         <td colspan="3"></td>
         <td ><b>Total:</b></td>
         <td style="text-align: right;">${totalQtyBalWeight}</td>
-        <td></td>
+        <td style="text-align: right;">${totalQtyPC}</td>
+        <td style="text-align: right;">${totalQtyMTRS}</td>
         </tr>
         `;
 
@@ -853,25 +874,31 @@ function updateFooterOrderWise(data) {
         let totalPalletWeight = 0;
         let totalQtyKG = 0;
         let totalQtyPC = 0;
+        let totalQtyMTRS = 0;
 
         let grandTotalPalletWeight = 0;
         let grandTotalQtyKG = 0;
         let grandTotalQtyPC = 0;
+        let grandTotalQtyMTRS = 0;
         
         $('#PalletPacking tbody tr:visible').each(function () {
             const row = $(this);
             grandTotalPalletWeight += parseFloat(row.find("td:nth-child(4)").text()) || 0;
             grandTotalQtyKG += parseFloat(row.find("td:nth-child(5)").text()) || 0;
             grandTotalQtyPC += parseFloat(row.find("td:nth-child(6)").text()) || 0;
+            grandTotalQtyMTRS += parseFloat(row.find("td:nth-child(7)").text()) || 0;
         });
         data.forEach(row => {
             totalPalletWeight += parseFloat(row["Pallet Weight"]);
-            totalQtyKG += parseFloat(row["Qty KG"]);
-            totalQtyPC += parseFloat(row["Qty PC"]);
+            totalQtyKG += parseFloat(row["QtyMT"]);
+            totalQtyPC += parseFloat(row["QtyPC"]);
+            totalQtyMTRS += parseFloat(row["QtyMTRS"]);
         });
         totalQtyKG = totalQtyKG.toFixed(3);
+        totalQtyMTRS = totalQtyMTRS.toFixed(3);
 
         grandTotalQtyKG = grandTotalQtyKG.toFixed(3);
+        grandTotalQtyMTRS = grandTotalQtyMTRS.toFixed(3);
 
         const tfootContent = `
         <tr id="trTotal">
@@ -882,6 +909,7 @@ function updateFooterOrderWise(data) {
         <td></td>
         <td style="text-align: right;">${grandTotalQtyKG}</td>
         <td style="text-align: right;">${Math.round(grandTotalQtyPC)}</td>
+        <td style="text-align: right;">${grandTotalQtyMTRS}</td>
         <td colspan="3"></td>
         </tr>
         <tr id="trGrandTotal">
@@ -892,6 +920,7 @@ function updateFooterOrderWise(data) {
         <td></td>
         <td style="text-align: right;">${totalQtyKG}</td>
         <td style="text-align: right;">${Math.round(totalQtyPC)}</td>
+        <td style="text-align: right;">${totalQtyMTRS}</td>
         <td colspan="3"></td>
         </tr>
         `;
@@ -926,6 +955,7 @@ function calculateTotal() {
     let grandTotalPalletWeight = 0;
     let grandTotalQtyKG = 0;
     let grandTotalQtyPC = 0;
+    let grandTotalQtyMTRS = 0;
     
     if (Data.length > 0) {
 
@@ -934,11 +964,13 @@ function calculateTotal() {
             grandTotalPalletWeight += parseFloat(ItemRow.children[2].innerHTML);
             grandTotalQtyKG += parseFloat(ItemRow.children[6].innerHTML);
             grandTotalQtyPC += parseFloat(ItemRow.children[7].innerHTML);
+            grandTotalQtyMTRS += parseFloat(ItemRow.children[8].innerHTML);
 
         }
         $('#trTotal')[0].children[2].innerHTML = grandTotalPalletWeight;
         $('#trTotal')[0].children[6].innerHTML = grandTotalQtyPC;
         $('#trTotal')[0].children[5].innerHTML = parseFloat(grandTotalQtyKG).toFixed(3);
+        $('#trTotal')[0].children[7].innerHTML = parseFloat(grandTotalQtyMTRS).toFixed(3);
 
     }
 
@@ -959,11 +991,13 @@ function updateFooterPrint(data) {
         let totalPalletWeight = 0;
         let totalQtyKG = 0;
         let totalQtyPC = 0;
+        let totalQtyMTRS = 0;
 
         data.forEach(row => {
             totalPalletWeight += parseFloat(row["Pallet Weight"]);
             totalQtyKG += parseFloat(row["Qty KG"]);
             totalQtyPC += parseFloat(row["Qty PC"]);
+            totalQtyMTRS += parseFloat(row["Qty SQM"]);
             
         });
         totalQtyKG = totalQtyKG.toFixed(3);
@@ -978,7 +1012,7 @@ function updateFooterPrint(data) {
         <td></td>
         <td style="text-align: right;">${totalQtyKG}</td>
         <td style="text-align: right;">${totalQtyPC}</td>
-        <td></td>
+        <td style="text-align: right;">${totalQtyMTRS}</td>
         <td></td>
         <td></td>
         </tr>
@@ -1055,7 +1089,7 @@ function ExportSummary() {
                 
                 response = response.map((item) => ({
                     'Pallet No': item['Pallet No'], 'Order No': item['Order No'], 'Pallet Weight': item['Pallet Weight'], 'Warehouse': item['Warehouse'],
-                    'Pallet Date': item['Pallet Date'], 'Qty KG': item['Qty KG'], 'Qty PC': item['Qty PC'], 'Pallet Remark': item['Pallet Remark']
+                    'Pallet Date': item['Pallet Date'], 'Qty KG': item['Qty KG'], 'Qty PC': item['Qty PC'], 'Qty SQM': item['Qty SQM'], 'Pallet Remark': item['Pallet Remark']
                 }))
                 PopulateTableForPrintPalletPacking(response);
                 
@@ -1117,7 +1151,7 @@ function DownloadPalletPacking() {
                 updateFooterPrint(response);
                 response = response.map((item) => ({
                     'Pallet No': item['Pallet No'], 'Order No': item['Order No'], 'Pallet Weight': item['Pallet Weight'], 'Warehouse': item['Warehouse'],
-                    'Pallet Date': item['Pallet Date'], 'Qty KG': item['Qty KG'], 'Qty PC': item['Qty PC'], 'Pallet Remark': item['Pallet Remark'], 'Pallet Type': item['PalletType'], 'Identification No': item['IdentificationNo']
+                    'Pallet Date': item['Pallet Date'], 'Qty KG': item['Qty KG'], 'Qty PC': item['Qty PC'], 'Qty SQM': item['Qty SQM'], 'Pallet Remark': item['Pallet Remark'], 'Pallet Type': item['PalletType'], 'Identification No': item['IdentificationNo']
                 }))
                 PopulateTableForDownloadPalletPacking(response);
                 
@@ -1187,6 +1221,7 @@ $('#txtWarehouse').on("change", () => {
         }
     }
 });
+
 window.GetPackedPalletDateAndOrderWise = GetPackedPalletDateAndOrderWise;
 window.FillPendingOrder = FillPendingOrder;
 window.CreateNew = CreateNew;

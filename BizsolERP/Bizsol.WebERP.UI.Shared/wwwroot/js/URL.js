@@ -90,6 +90,7 @@ let UrlService = {
     API_ENDPOINT_SubDepartment: `${environment.BASE_URL}/SubDepartment`,
     API_ENDPOINT_DeductionMaster: `${environment.BASE_URL}/DeductionMaster`,
     API_ENDPOINT_RollingProduction: `${environment.BASE_URL}/RollingProduction`,
+    API_ENDPOINT_LeaveMaster: `${environment.BASE_URL}/LeaveMaster`,
 }
 
 export { UrlService  }
