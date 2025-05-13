@@ -1,6 +1,9 @@
 ﻿
+
 import { RollingProductionService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/RollingProductionService.js';
 import { BreakDownService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_BreakDownService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+
 
 $("#ERPHeading").text("Tube Mill Production");
 $('#txtFromDate').val(new Date().toISOString().slice(0, 10));
@@ -56,6 +59,11 @@ function Bind_ddlMachineNo() {
         if (resObj.length > 0) {
             G_ProcessMaster_Code = resObj[0].ProcessMaster_Code;
             Bind_ReceivedGodown();
+        }
+        if (NavMachineNo !=="") {
+            BizSolHelperFunction.SelectOptionByText('ddlMachineNo', NavMachineNo);
+            BizSolHelperFunction.SelectOptionByText('ddlMachineNoReceive', NavMachineNo);
+            RollingProductionEnty_GatPlanDetail();
         }
     });
 
@@ -1074,10 +1082,40 @@ function RollingProductionEnty_Back() {
 }
 
 
+
 Bind_ddlGodown();
 Bind_ddlMachineNo();
 Bind_ddlShift();
 CurrentProductionDate();
+
+LoadNavPlan()
+function LoadNavPlan() {
+    if (typeof IsRunningPlan === 'undefined') {
+        return;
+    }
+    if (typeof NavPVCProductionMaster_Code === 'undefined') {
+        return;
+    }
+    if (typeof NavPlanDate === 'undefined') {
+        return;
+    }
+    if (typeof NavMachineNo === 'undefined') {
+        return;
+    }
+
+    if (IsRunningPlan === 'N') {
+        //$('#txtIssuePlanDate').val(new Date(NavPlanDate).toISOString().slice(0, 10));
+        $('#txtIssuePlanDate').val(NavPlanDate.slice(0, 10));
+        RollingProductionEnty_GatPlanDetail();
+       // $('#txtReceivePlanDate').val(new Date(NavPlanDate).toISOString().slice(0, 10));
+    }
+    //if (IsRunningPlan === 'Y') {
+    //    // $('#txtReceivePlanDate').val(new Date(NavPlanDate).toISOString().slice(0, 10));
+    //    $('#txtReceiveProductionDate').val(new Date(NavPlanDate).toISOString().slice(0, 10));
+    //}
+
+    
+}
 
 window.RollingProductionEnty_Back = RollingProductionEnty_Back;
 window.RollingProductionEnty_GatPlanDetail = RollingProductionEnty_GatPlanDetail;

@@ -19,7 +19,7 @@ function RollingProductionSummary_ShowPlanGrid() {
         HideLoader();
        
             response.forEach(item => {
-                item.Action = item.Status === 'Running' ? '<a class="btn btn-info icon-height" onclick="RollingProductionSummary_RollingProductionEntryFrm(\'Y\',\'' + item.SlittingPlanMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>':''
+                item.Action = item.Status === 'Running' ? '<a class="btn btn-info icon-height" onclick="RollingProductionSummary_RollingProductionEntryFrm(\'Y\',' + item.PVCProductionMaster_Code +',\'\',\'\')"> <i class="fa fa-pencil"></i></a>':''
             });
         
        
@@ -30,7 +30,7 @@ function RollingProductionSummary_ShowPlanGrid() {
         const Button = false;
         const showButtons = []
         const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["QtyMT", "QtyPC", "QtyMTRS","SlittingPlanMaster_Code"];
+        const hiddenColumns = ["QtyMT", "QtyPC", "QtyMTRS","PVCProductionMaster_Code"];
         const ColumnAlignment = {
             "Qty PC": 'right',
             "Qty KG": 'right',
@@ -62,10 +62,10 @@ function RollingProductionSummary_ShowPendingPlanGrid() {
         HideLoader();
 
         response.forEach(item => {
-            item.Action = '<a class="btn btn-info icon-height" onclick="RollingProductionSummary_RollingProductionEntryFrm(\'Y\',\'' + item.SlittingPlanMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>'
+            item.Action = '<a class="btn btn-info icon-height" onclick="RollingProductionSummary_RollingProductionEntryFrm(\'N\',0,\'' + item.EntryDate + '\',\'' + item["Mill"] + '\')"> <i class="fa fa-pencil"></i></a>'
         });
 
-        // console.log(response);
+         console.log(response);
         //response = response.map((item) => ({
         //    "PackingList No": item.PackingListNo, Date: item.PackingListDate, Warehouse: item.GodownName, "Packing Type": item.PackingType, "Requisition No / Order No": item["Requisition No"], "Party Name": item.ClienName, "Qty KG": item.QtyMT, "Qty PC": item.QtyPC, "Qty SQM": item.QtyMTRS, Status: item.PKStatus,
         //    Action: item.Verify === 'N' && item.AllowVerify == 'Y' ? '<a class="btn btn-info icon-height" title="Edit" onclick="SlittingProductionEntry_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-success icon-height" title="Verify" onclick="SlittingProductionEntry_Verify(\'' + item.Code + '\')"><i class="fa fa-check"></i></a>': item.Verify === 'N' ? '<a class="btn btn-info icon-height" title="Edit" onclick="SlittingProductionEntry_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>' : '<a class="btn btn-dark icon-height" title="View" onclick="SlittingProductionEntry_EditOrView(\'N\',\'' + item.Code + '\')"> <i class="fa fa-eye"></i></a>', 
@@ -78,7 +78,7 @@ function RollingProductionSummary_ShowPendingPlanGrid() {
         const Button = false;
         const showButtons = []
         const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["QtyMT", "QtyPC", "QtyMTRS", "SlittingPlanMaster_Code"];
+        const hiddenColumns = ["QtyMT", "QtyPC", "QtyMTRS", "SlittingPlanMaster_Code", "EntryDate"];
         const ColumnAlignment = {
             "Qty PC": 'right',
             "Qty KG": 'right',
@@ -98,9 +98,9 @@ function RollingProductionSummary_ShowPendingPlanGrid() {
 
 }
 
-function RollingProductionSummary_RollingProductionEntryFrm(Mode) {
+function RollingProductionSummary_RollingProductionEntryFrm(IsRunningPlan, PVCProductionMaster_Code, PlanDate, MachineNo) {
 
-    window.location.href = baseUrl +"/ProductionMasters/Rolling/RollingProductionEntry"
+    window.location.href = baseUrl + `/ProductionMasters/Rolling/RollingProductionEntry?IsRunningPlan=${IsRunningPlan}&PVCProductionMaster_Code=${PVCProductionMaster_Code}&PlanDate=${PlanDate}&MachineNo=${MachineNo}`;
 }
 RollingProductionSummary_ShowPendingPlanGrid();
 
