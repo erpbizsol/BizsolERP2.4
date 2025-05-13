@@ -104,9 +104,10 @@ const PalletPackingService = {
     },
     Print: function Print(PalletNosToPrint,IsDownload) {
         let CompanyCode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
-        let url = `${UrlService.API_ENDPOINT_CRYSTAL}/Printpallet?PalletNo=${PalletNosToPrint}&IsDownload=${IsDownload}`;
+        //let url = `${UrlService.API_ENDPOINT_CRYSTAL}/Printpallet?PalletNo=${PalletNosToPrint}&IsDownload=${IsDownload}`;
+        let url = `${UrlService.API_ENDPOINT_CRYSTAL}/Printpallet?IsDownload=${IsDownload}`;
 
-        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+        return promiseAjaxCallApi.CallAPI('POST', url, PalletNosToPrint).then(
             function (value) {
                 return value;
             }

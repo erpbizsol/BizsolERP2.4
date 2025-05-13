@@ -467,7 +467,19 @@ function EditMode(isView) {
         
                 SelectOptionByText('ddlClientName', response[0][0].ClienName);
                 SelectOptionByText('ddlConsignee', response[0][0].ConsigneeName);
-                
+
+
+                if (response[0][0].RMRequisitionNo !== "" && G_isView=='Y') {
+                    let option = '<option value="0" GodownNameTo="0" Code="0" GodownNameFrom="0"></option>';
+                    option += '<option value="' + response[0][0].RMRequisitionNo + '" GodownNameTo="0" Code="0" GodownNameFrom="0" >' + response[0][0].RMRequisitionNo + '</option>';
+                   
+                    $('#ddlReqNo')[0].innerHTML = option;
+                    $('#ddlReqNo').val(response[0][0].RMRequisitionNo);
+                    $('#ddlReqNo').select2({
+                        width: '-webkit-fill-available'
+                    });
+                }
+
 
                 if (InvoiceByOrder === 'Y') {
                     if (response[0][0].PackingType !== 'Stock Transfer') {
@@ -567,7 +579,7 @@ function PackingListFG_EditOrView(isEdit, packingListMaster_Code) {
     if (isEdit === 'Y') {
         PackingListFGService.EditValidatePackingListBatchNo(packingListMaster_Code).then(function (response) {
             if (response.Status == 'Y') {
-
+                //Bind_ddlReqNo()
                 //$('#paginator-tbPackingListTransaction').show();
                 PackingListMaster_Code = packingListMaster_Code;
                 EditMode('N');
