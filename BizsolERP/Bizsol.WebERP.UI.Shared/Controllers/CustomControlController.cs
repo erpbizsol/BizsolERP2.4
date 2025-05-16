@@ -45,6 +45,51 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             return PartialView("_BreakDownControl");
 
         }
+        public ActionResult CheckCreditLimits(int AccountMaster_Code
+                                                           , float Amount
+                                                           , float PreviousAmount
+                                                           , string Source
+                                                           , int PasswordsCodeRs
+                                                           , int PasswordsCodeDays
+                                                           , string ShowFormDialog
+                                                           , float LedgerClosing
+                                                           , float OverDueAmount
+                                                           , string ShowOnlyOutstandingInfo
+                                                           , int Log_OnLineVerification_Code
+                                                           , string OnlyCheckCreditLimit
+                                                           , string CheckBillingWithoutAdvance
+                                                           , float AdvancePayPercentage
+                                                           , string EntryDesp
+                                                           , int MasterTableCode
+                                                           , int BuyerPOMaster_Code
+                                                           , string CallBackFunctionName_btnDone
+                                                           , int Code
+                                                           , string Mode)
+        {
+
+             ViewBag.AccountMaster_Code         =AccountMaster_Code;
+             ViewBag.Amount                     =Amount;
+             ViewBag.PreviousAmount             =PreviousAmount;
+             ViewBag.Source                     =Source;
+             ViewBag.PasswordsCodeRs            =PasswordsCodeRs;
+             ViewBag.PasswordsCodeDays          =PasswordsCodeDays;
+             ViewBag.ShowFormDialog             =ShowFormDialog;
+             ViewBag.LedgerClosing              =LedgerClosing;
+             ViewBag.OverDueAmount              =OverDueAmount;
+             ViewBag.ShowOnlyOutstandingInfo    =ShowOnlyOutstandingInfo;
+             ViewBag.Log_OnLineVerification_Code=Log_OnLineVerification_Code;
+             ViewBag.OnlyCheckCreditLimit       =OnlyCheckCreditLimit;
+             ViewBag.CheckBillingWithoutAdvance =CheckBillingWithoutAdvance;
+             ViewBag.AdvancePayPercentage       =AdvancePayPercentage;
+             ViewBag.EntryDesp                  =EntryDesp;
+             ViewBag.MasterTableCode            =MasterTableCode;
+             ViewBag.BuyerPOMaster_Code          = BuyerPOMaster_Code;
+             ViewBag.CallBackFunctionName_btnDone = CallBackFunctionName_btnDone;
+             ViewBag.Code = Code;
+            ViewBag.Mode = Mode;
+            return PartialView("_CheckCreditLimits");
+
+        }
 
     }
 }

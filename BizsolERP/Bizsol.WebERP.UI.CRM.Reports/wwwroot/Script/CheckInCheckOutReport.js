@@ -11,25 +11,25 @@ $(document).ready(function () {
     });
     $('#txtdateTo').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtSalesPerson").focus();
+            //$("#txtSalesPerson").focus();
         }
     });
-    $('#txtSalesPerson').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#txtReportType").focus();
-        }
-    });
-    $('#txtReportType').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#fetchReportButton").focus();
-        }
-    });
-    $('#txtSalesPerson').on('focus', function (e) {
-        $("#txtSalesPerson").val('');
-    });
-    $('#txtReportType').on('focus', function (e) {
-        $("#txtReportType").val('');
-    });
+    //$('#txtSalesPerson').on('keydown', function (e) {
+    //    if (e.key === "Enter") {
+    //        $("#txtReportType").focus();
+    //    }
+    //});
+    //$('#txtReportType').on('keydown', function (e) {
+    //    if (e.key === "Enter") {
+    //        $("#fetchReportButton").focus();
+    //    }
+    //});
+    //$('#txtSalesPerson').on('focus', function (e) {
+    //    $("#txtSalesPerson").val('');
+    //});
+    //$('#txtReportType').on('focus', function (e) {
+    //    $("#txtReportType").val('');
+    //});
     $('#fetchReportButton').click(function () {
         Getcheckinoutlist();
     });
@@ -57,51 +57,94 @@ function GetSalespersonList() {
 
     CRMReportsServices.GetUserList().then(function (response) {
         if (response.length > 0) {
-            $('#txtSalesPersonlist').empty();
-            var options = '<option value="All" selected>All</option>';
-            for (var i = 0; i < response.length; i++) {
-                options += '<option value="' + response[i].UserName + '" text="' + response[i].Code + '"></option>';
-            }
-            $('#txtSalesPersonlist').html(options);
+            //$('#txtSalesPersonlist').empty();
+            //var options = '<option value="All" selected>All</option>';
+            //for (var i = 0; i < response.length; i++) {
+            //    options += '<option value="' + response[i].UserName + '" text="' + response[i].Code + '"></option>';
+            //}
+            //$('#txtSalesPersonlist').html(options);
+
+            BindSelectList($('#ddlUserNamelist')[0], response.map((item) => ({ Code: item.Code, Desp: item.UserName })), 'FirstItemAll');
+            $('#ddlUserNamelist').select2({
+                // allowClear: true,
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
+            });
 
         } else {
-            $('#txtSalesPersonlist').empty();
+           //$('#txtSalesPersonlist').empty();
         }
     }).catch(function (error) {
         console.error('Error fetching User list:', error);
-        $('#txtSalesPersonlist').empty();
+        //$('#txtSalesPersonlist').empty();
     });
 }
 function GetDisplayNameForReportTypes() {
     CRMReportsServices.GetDisplayNameForReportTypes().then(function (response) {
         if (response.length > 0) {
-            $('#txtReportTypelist').empty();
-            let options = '';
-            response.forEach(function (item, index) {
-                options += `<option value="${item.DisplayName}" text="${item.Code}" ${index === 0 ? 'selected' : ''}>${item.DisplayName}</option>`;
-            });
-            $('#txtReportTypelist').html(options);
-            $('#txtReportType').val(response[0].DisplayName);
-           $('#txtReportTypelist').on('change', function () {
-                const selectedValue = $(this).val();
-               $('#txtReportType').val(selectedValue);
+           // $('#txtReportTypelist').empty();
+           // let options = '';
+           // response.forEach(function (item, index) {
+           //     options += `<option value="${item.DisplayName}" text="${item.Code}" ${index === 0 ? 'selected' : ''}>${item.DisplayName}</option>`;
+           // });
+           // $('#txtReportTypelist').html(options);
+           // $('#txtReportType').val(response[0].DisplayName);
+           //$('#txtReportTypelist').on('change', function () {
+           //     const selectedValue = $(this).val();
+           //    $('#txtReportType').val(selectedValue);
+           //});
+
+            BindSelectList($('#ddlReportTypelist')[0], response.map((item) => ({ Code: item.DisplayName, Desp: item.DisplayName })), 'FirstItemSelected');
+            $('#ddlReportTypelist').select2({
+                // allowClear: true,
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
             });
         } else {
-            $('#txtReportTypelist').empty();
-            $('#txtReportType').val('');
+            //$('#txtReportTypelist').empty();
+            //$('#txtReportType').val('');
         }
     }).catch(function (error) {
         console.error('Error fetching report types:', error);
-        $('#txtReportTypelist').empty();
-        $('#txtReportType').val('');
+        //$('#txtReportTypelist').empty();
+        //$('#txtReportType').val('');
     });
 }
 function Getcheckinoutlist() {
     var fromDate = convertDateFormat($("#txtdateFrom").val());
     var toDate = convertDateFormat($("#txtdateTo").val());
-    var ReportTypeName = $('#txtReportType').val();
-    var PersonName = $('#txtSalesPerson').val();
+    //var ReportTypeName = $('#txtReportType').val();
+    var ReportTypeName = $('#ddlReportTypelist option:selected').text();
 
+    //var PersonName = $('#txtSalesPerson').val();
+    var PersonName = $('#ddlUserNamelist option:selected').text();
+    if (ReportTypeName.trim().toUpperCase() !== 'Geo Tag Location'.trim().toUpperCase() && PersonName=='All') {
+        PersonName = '';
+    } 
     CRMReportsServices.Getcheckinoutlist(fromDate,toDate, PersonName, ReportTypeName).then(function (response) {
         if (response.length > 0) {
             if (ReportTypeName.trim().toUpperCase() === 'Geo Tag Location'.trim().toUpperCase()) {
@@ -440,30 +483,17 @@ function PopulateTable(data) {
     // Loop through the data and append rows
     data.forEach(function (item, index) {
         const serialNo = index + 1;
-       
-        //if (item.RoutePlanStatus == 'Un-Verified') {
-        //    td_DeleteBtn = '<a id="btnDelete" class="btn btn-danger icon-height mb-1" title="Delete" onclick="DeleteRoutePlan(this);"><i class="fa fa-times" aria-hidden="true"></i></a>';
-        //} else {
-        //    td_DeleteBtn = '<a id="btnDelete" class="btn btn-danger icon-height mb-1 disabled" title="Delete" ><i class="fa fa-times" aria-hidden="true"></i></a>';
-        //}
-
-        //if (item.RoutePlanStatus == 'Verified') {
-        //    td_StatusBtn = `<button type="button" class="btn btn-success btn-rounded waves-effect waves-light btn-sm btn-width" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`;
-        //} else if (item.RoutePlanStatus == 'Rejected') {
-        //    td_StatusBtn = `<button type="button" class="btn btn-danger  btn-rounded waves-effect waves-light btn-sm btn-width" style="cursor: not-allowed">${item.RoutePlanStatus}</button>`;
-        //} else {
-        //    td_StatusBtn = `<button type="button" class="btn btn-secondary  btn-rounded waves-effect waves-light btn-sm " style="cursor: not-allowed">${item.RoutePlanStatus}</button>`;
-        //}
-       
+           
         var row = `
       <tr>
         <td>${item["S.No"]}</td>
         <td class="MergeUser">${item["User Name"]}</td>
-        <td class="MergeDate">${item["Date"]}</td>
-        <td>${item["Punch Time"]}</td>
+        
         <td>${item["Source"]}</td>
         <td>${item["Type"]}</td>
         <td>${item["Location"]}</td>
+        <td class="MergeDate">${item["Date"]}</td>
+        <td>${item["Punch Time"]}</td>
         <td>${item["Duration(Hrs)"]}</td>
         <td>${item["Distance(KM)"]}</td>
         <td>${item["Remarks"]}</td>
@@ -485,7 +515,9 @@ function ExportGeoLocation() {
     //$('#tblReport tbody').empty();
 
     //$("#tblReport").append(clone);
-    var ReportType = $("#txtReportType").val().replace(" ", "").replace(".", "");
+
+    //var ReportType = $("#txtReportType").val().replace(" ", "").replace(".", "");
+    var ReportType = $('#ddlReportTypelist').val().replace(/ /g, "").replace(".", "");
     var currentDate = new Date();
     var dateString = currentDate.getFullYear() + "-" +
         (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
@@ -517,7 +549,8 @@ function ExportGeoLocation() {
 }
 
 function Export() {
-    var ReportType = $("#txtReportType").val().replace(" ", "").replace(".", "");
+    //var ReportType = $("#txtReportType").val().replace(" ", "").replace(".", "");
+    var ReportType = $('#ddlReportTypelist').val().replace(/ /g, "").replace(".", "");
     var currentDate = new Date();
     var dateString = currentDate.getFullYear() + "-" +
         (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
@@ -526,7 +559,7 @@ function Export() {
         currentDate.getMinutes().toString().padStart(2, "0") + "-" +
         currentDate.getSeconds().toString().padStart(2, "0");
 
-    if (ReportType.toUpperCase() == 'GeoTag Location'.toUpperCase()) {
+    if (ReportType.toUpperCase() == 'GeoTagLocation'.toUpperCase()) {
         ExportGeoLocation();
     }
     else {
@@ -537,4 +570,23 @@ function Export() {
     }
    
 }
+
+function BindSelectList(element, list, FirstItem) {
+    let option = '';
+
+    if (FirstItem == 'FirstItemAll') {
+        option = '<option value="All">All</option>';
+    } else if (FirstItem == 'FirstItemSelected') {
+        option = '';
+    } else {
+        option = '<option value="0"></option>';
+    }
+
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
 window.Export = Export;
+window.BindSelectList = BindSelectList;
+window.ExportGeoLocation = ExportGeoLocation;
