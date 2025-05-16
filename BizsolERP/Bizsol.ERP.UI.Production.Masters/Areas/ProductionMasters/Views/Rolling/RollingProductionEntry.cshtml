@@ -109,26 +109,26 @@
             <div class="row">
                 <div class="col-sm-2 col-6">
                     <label for="txtReceivePlanDate" class="col-form-label-sm fw-bold">Plan Date</label>
-                    <input type="date" class="form-control form-control-sm" id="txtReceivePlanDate">
+                    <input type="date" class="form-control form-control-sm" id="txtReceivePlanDate" onchange="RollingProductionEnty_GatReceivedPlanDetail()">
                 </div>
                 <div class="col-sm-2 col-6">
                     <label for="txtReceiveProductionDate" class="col-form-label-sm fw-bold">Production Date</label>
-                    <input type="date" class="form-control form-control-sm" id="txtReceiveProductionDate">
+                    <input type="date" class="form-control form-control-sm" id="txtReceiveProductionDate" onchange="RollingProductionEnty_GatReceivedPlanDetail()">
                 </div>
                 <div class="col-sm-2 col-6">
                     <label for="ddlGodownReceive" class="col-form-label-sm fw-bold">Warehouse</label>
-                    <select id="ddlGodownReceive" class="form-control form-control-sm box_border" onchange="">
+                    <select id="ddlGodownReceive" class="form-control form-control-sm box_border" onchange="RollingProductionEnty_GatReceivedPlanDetail()">
                     </select>
                 </div>
                 <div class="col-sm-2 col-6">
                     <label for="ddlMachineNoReceive" class="col-form-label-sm fw-bold">Mill</label>
-                    <select id="ddlMachineNoReceive" class="form-control form-control-sm box_border" onchange="">
+                    <select id="ddlMachineNoReceive" class="form-control form-control-sm box_border" onchange="RollingProductionEnty_GatReceivedPlanDetail()">
                     </select>
 
                 </div>
                 <div class="col-sm-2 col-6">
                     <label class="col-form-label-sm fw-bold">Shift</label>
-                    <select id="ddlReceiveShift" class="form-control form-control-sm box_border" onchange="">
+                    <select id="ddlReceiveShift" class="form-control form-control-sm box_border" onchange="RollingProductionEnty_GatReceivedPlanDetail()">
                     </select>
 
                 </div>
@@ -170,7 +170,7 @@
                 <fieldset class="rounded-1 p-3">
                     <legend class="float-none w-auto px-2">RECEIVE</legend>
                         <div class="table-wrapper mt-2 ">
-                            <table id="tbReceiveView" class="table fixed-width-table">
+                        <table id="tbReceiveView" class="table fixed-width-table" style="--bs-table-bg: unset;">
                                 <thead id="tbReceiveViewHeader">
                                 </thead>
                                 <tbody id="tbReceiveViewBody">
@@ -187,7 +187,47 @@
     </div>
 </div>
 
+<div class="modal fade bs-example-modal-center" id="modalGetScrapAndRejectedItem" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:600px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ModalTitle">Scrap And Rejected</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="tbScrapAndRejectedItem" class="fixed-width-table table">
+                        <thead id="tbScrapAndRejectedItemHeader">
+                        </thead>
+                        <tbody id="tbScrapAndRejectedItembody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-tbScrapAndRejectedItem">
+                </div>
 
+                <div class="text-end mt-1">
+                    <a class="btn btn-success icon-height" id="btnOk" onclick="RollingProductionEnty_CheckValidRejected()">
+                        Ok
+                    </a>
+                    &nbsp;
+                    &nbsp;
+                    <a class="btn btn-danger icon-height" data-bs-dismiss="modal">
+                        Close
+                    </a>
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
+<script>
+    let IsRunningPlan='@ViewBag.IsRunningPlan'
+    let NavPVCProductionMaster_Code='@ViewBag.PVCProductionMaster_Code'
+    let NavPlanDate='@ViewBag.PlanDate'
+    let NavMachineNo='@ViewBag.MachineNo'
+    
+   
+</script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>

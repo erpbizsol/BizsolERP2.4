@@ -5,8 +5,13 @@ namespace Bizsol.WebERP.UI.Production.Masters.Areas.ProductionMasters.Controller
     [Area("ProductionMasters")]
     public class RollingController : Controller
     {
-        public IActionResult RollingProductionEntry()
+        public IActionResult RollingProductionEntry(string IsRunningPlan,int PVCProductionMaster_Code, string PlanDate,string MachineNo)
         {
+            ViewBag.IsRunningPlan = IsRunningPlan;
+            ViewBag.PVCProductionMaster_Code = PVCProductionMaster_Code;
+            ViewBag.PlanDate = PlanDate;
+            ViewBag.MachineNo = MachineNo;
+
             return View();
         }
         public IActionResult RollingProductionSummary()
