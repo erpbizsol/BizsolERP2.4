@@ -575,7 +575,7 @@
 
 <div class="row">
     <div class="col-md-12">
-        <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-sm waves-effect waves-light" onclick="SaveData();" />
+        <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-sm waves-effect waves-light" onclick="ValidateOverdueAmount();" />
         @* <input type="button" name="btnCheckOut" id="btnCheckOut" value="Check Out" class="btn btn-primary btn-sm waves-effect waves-light" /> *@
         <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-sm waves-effect waves-light" />
     </div>
@@ -662,6 +662,8 @@
     </div>
 </div>
 <div id="DivSizeControlmodal"></div>
+<div id="DivCheckCreditLimitsModal"></div>
+
 
 <div class="row">
     <div class="modal fade" id="LogicalStockModal" tabindex="-1" role="dialog" aria-hidden="true">

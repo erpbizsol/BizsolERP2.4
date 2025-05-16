@@ -129,19 +129,6 @@ function PageLoad() {
     }
 
 
-    
-    // GetActualLocation();
-    
-
-    //GetFreightTypeList();
-    //GetFreightList();
-    //GetZoneMasterList();
-    //GetPaymentTerms();
-    //GetUOMMasterList();
-    //GetFixedParameter();
-    //GetItemMasterDropdown();
-    //getRateUnitListFromQtyConfig(0);
-
     var FixedParaMarketing_Config = JSON.parse(sessionStorage.getItem('FixedParameterMarketing'));
     var BuyerPOOpenMasterApplicable = FixedParaMarketing_Config.BuyerPOOpenMasterApplicable;
     if (BuyerPOOpenMasterApplicable == 'Y') {
@@ -172,13 +159,7 @@ function PageLoad() {
         $(this).prop('hidden', true); // Disable the button to prevent multiple clicks
         $('#btnLoading').prop('hidden', false);
         ShowLogicalStockModal();
-        // Simulate a delay (e.g., waiting for an API call)
-        //setTimeout(function () {
-        //    // Restore the button to its original state
-        //    $('#btnShow').prop('hidden', false);
-        //    $('#btnLoading').prop('hidden', true);
-
-        //}, 3000); // Replace with your actual logic for completion
+      
     });
 
     // Add New Row Button Click
@@ -260,11 +241,7 @@ function PageLoad() {
         }
     });
 
-    //$('#btnCheckOut').click(function (e) {
-    //    CheckOutVisit();
-
-    //});
-
+ 
     $('#imgSelfie').click(function () {
         ShowImageModal(this.src);
 
@@ -791,14 +768,7 @@ function GetItemMasterDropdown() {
         sessionStorage.setItem('ItemMasterTable', JSON.stringify(response));
 
         if (response.length > 0) {
-            //$('#listItem option').empty();
-            //var option = '';
-            //for (var i = 0; i < response.length; i++) {
-
-            //    option += '<option data-code="' + response[i].Code + '">' + response[i].ItemName + '</option>'
-            //}
-            //$('#listItem')[0].innerHTML = option;
-
+        
             arrayList_ItemMaster = [];
             response = response.map((item) => ({
                 key: item.Code, value: item.ItemName
@@ -1244,6 +1214,7 @@ function ValidateData() {
     var ShowSizeThicknessColumns = CRM_Config.ShowSizeThicknessColumns;
     var ShowExtraColumnOrderQtyAndUnit = CRM_Config.ShowExtraColumnOrderQtyAndUnit;
     var ShowDeliveryDate = CRM_Config.ShowDeliveryDate;
+    var CheckLogicalStockLimit = CRM_Config.CheckLogicalStockLimit;
     var PaymentTerm = $('#ddlPaymentTerms option:selected').text();//$("#txtPaymentTerms").val();
     var Freight = $('#ddlFreight option:selected').text();//$("#txtlistFreight").val();
    
@@ -1452,12 +1423,15 @@ function ValidateData() {
                 Valid = false;
             }
 
-            if (Stock > 0 && QtyMT>0) {
-                //if (parseFloat(QtyMT) > parseFloat(Stock)) {
-                //    MsgStr += "* Qty value shouldn't be greater than the stock value at Row No " + rowNo + "!" + newLine;
-                //    Valid = false;
-                    
-                //}
+            if (Stock > 0 && QtyMT > 0) {
+                if (CheckLogicalStockLimit == 'Y') {
+                    if (parseFloat(QtyMT) > parseFloat(Stock)) {
+                        MsgStr += "* Qty value shouldn't be greater than the stock value at Row No " + rowNo + "!" + newLine;
+                        Valid = false;
+
+                    }
+                }
+               
             }
 
             if (ShowDeliveryDate == 'Y') {
@@ -1561,28 +1535,11 @@ function ValidateData() {
     });
 
 
-    //if (parseFloat(TotalDiscount) > 0 && DiscountedItems > 0){
-    //    var AvgDis = parseFloat(TotalDiscount) / parseFloat(DiscountedItems);
-    //    if (AvgDis > LimitForVerifyDiscount) {
-    //        toastr.warning("The Discount Limit is : " + LimitForVerifyDiscount + " Rs. This record has exceeded discount Limit!");
-    //    }
-    //}
+   
 
     ValidateDiscountLimit();
 
-    
-    //if (PaymentTerm !== '') {
-    //    if (ListValidation("#txtPaymentTerms", "#listPaymentTerms") == false) {
-    //        MsgStr += "* Please Enter Valid Payment Term !" + newLine;
-    //        Valid = false;
-    //    }
-    //}
-    //if (Freight !== '') {
-    //    if (ListValidation("#txtlistFreight", "#listFreight") == false) {
-    //        MsgStr += "* Please Enter Valid Freight !" + newLine;
-    //        Valid = false;
-    //    }
-    //}
+ 
 
     if (EntryType == 'O' && tbodyOrderDetail.rows.length == 0) {
         MsgStr += "* Please enter any record for Order Booking." + newLine;
@@ -1632,9 +1589,9 @@ function removeBase64Prefix(base64String) {
     return base64String.replace(regex, '');
 }
 function SaveData() {
-    if (ValidateData() == false) {
-        return false;
-    }
+    //if (ValidateData() == false) {
+    //    return false;
+    //}
     var allTablesData = {};
     var visitMasterData = [];
     var visitOrderDetailsData = [];
@@ -1648,6 +1605,7 @@ function SaveData() {
     var Config_Marketing = JSON.parse(sessionStorage.getItem('FixedParameterMarketing'));
     var CRM_Config = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
     var Qty_Config = JSON.parse(sessionStorage.getItem('QtyConfig'));
+    var FixedParameterCreditLimit_Config = JSON.parse(sessionStorage.getItem('FixedParameterCreditLimit'));
 
     var AllowInMTRSColForSingleUnit = Config_Marketing.AllowInMTRSColForSingleUnit;
     var ShowExtraColumnOrderQtyAndUnit = CRM_Config.ShowExtraColumnOrderQtyAndUnit;
@@ -1657,6 +1615,13 @@ function SaveData() {
     var QtyPCHeader = Qty_Config.QtyPC;
     var QtyMTRHeader = Qty_Config.QtyMR;
     var QtyMTHeader = Qty_Config.QtyMT;
+
+    if (FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == 'Y') {
+        var OverduePasswordCode = CheckCreditLimitsControl_PasswordCode !== undefined && CheckCreditLimitsControl_PasswordCode !== '' ? CheckCreditLimitsControl_PasswordCode : 0;
+    } else {
+        var OverduePasswordCode = 0;
+    }
+   
 
     var objToggle = $('#toggleSwitch');
 
@@ -1913,12 +1878,13 @@ function SaveData() {
 
     var Data = JSON.stringify(allTablesData);
 
-    VisitOrderEntryService.SaveVisit(allTablesData).then(function (response) {
+    VisitOrderEntryService.SaveVisit(allTablesData, OverduePasswordCode).then(function (response) {
 
         if (response != '') {
             if (response.Status == 'N') {
                 toastr.error(response.Msg);
             } else {
+                
 
                 toastr.success(response.Msg);
                 setTimeout(function () {
@@ -1978,20 +1944,6 @@ function GetCRMFixedParameterConfig() {
     });
 }
 
-//function GetSameDayDuplicateAlert(OrderDate, DealerName) {
-
-//    OrderDate = convertDateFormat(OrderDate);
-//    VisitOrderEntryService.GetSameDayDuplicateAlert(OrderDate, DealerName).then(function (response) {
-
-//        if (response.AlertMsg != '') {
-
-//            return response.AlertMsg;
-//        } else {
-//            return '';
-//        }
-
-//    });
-//}
 function convertDateFormat(dateString) {
     const [day, month, year] = dateString.split('/');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -2006,9 +1958,7 @@ function convertDateFormatForDeliveryDate(dateString) {
     var isoString = date.toISOString();
     //return `${year}-${monthAbbreviation}-${day}`;
     return `${day}-${monthAbbreviation}-${year}`;
-    //return `${day}-${monthAbbreviation}-24`;
-    //return `${monthAbbreviation}-${day}-24`;
-    //return '13-12-2024';
+   
 }
 function GetAccountMasterDetails() {
 
@@ -3119,69 +3069,7 @@ function GetUOM(rowNo) {
         }
     }
 
-    //// Under Direct order Entry Allow to copy Rate from the last row if item name is same and RateUnit is KG.
-    //if (rowNo > 1) {
-    //    var i = rowNo;
-    //    var j = i - 1;
-
-
-
-    //}
-
-
-    //$('#txtSizeApplicable_' + rowNo).val(SizeApplicable);
-    //$('#txtThkApplicable_' + rowNo).val(ThkApplicable);
-    //$('#txtLenApplicable_' + rowNo).val(LenApplicable);
-
-    //if (ThkApplicable == 'N') {
-    //    $('#txtThickness_' + rowNo).attr("disabled", true);
-    //} else {
-    //    $('#txtThickness_' + rowNo).attr("disabled", false);
-    //}
-    //if (LenApplicable == 'N') {
-    //    $('#txtLength_' + rowNo).attr("disabled", true);
-    //} else {
-    //    $('#txtLength_' + rowNo).attr("disabled", false);
-    //    $('#txtLength_' + rowNo).val('6');
-    //}
-
-    //// Under Direct order Entry Allow to copy Rate from the last row if item name is same and RateUnit is KG.
-
-    //var tblorderbookingDetails = document.getElementById("tblorderbooking");
-
-    //if (rowNo > 1) {
-    //    var i = rowNo;
-    //    var j = i - 1;
-
-    //    var CurrRow = tblorderbookingDetails.rows[i];
-    //    var ItemName = CurrRow.cells[OrderTblIdx.ItemName].innerHTML.trim();
-    //    var PreRow = tblorderbookingDetails.rows[j];
-
-    //    var PreIsNewRow = PreRow.cells[OrderTblIdx.IsNewRow].getElementsByTagName('input')[0].value;
-    //    var PreItemName = PreRow.cells[OrderTblIdx.ItemName].innerHTML.trim();
-    //    if (PreItemName.includes("text") == false) {
-    //        var PreItemText = PreItemName;
-    //    } else {
-    //        var PreItemText = PreRow.cells[OrderTblIdx.ItemName].getElementsByTagName('input')[0].value;
-    //    }
-
-
-    //    var IsNewRow = CurrRow.cells[OrderTblIdx.IsNewRow].getElementsByTagName('input')[0].value;
-    //    var ItemText = CurrRow.cells[OrderTblIdx.ItemName].getElementsByTagName('input')[0].value;
-
-    //    if (ItemName !== "" && ItemName.includes("btnAddNewRow") === false && PreIsNewRow == 'Y') {
-
-    //        if (IsNewRow !== 'N' || ItemName.includes("text") !== false) {
-    //            var BasicRate = parseFloat(PreRow.cells[OrderTblIdx.BasicRate].getElementsByTagName('input')[0].value).toFixed(2);
-    //            var RateUnit = PreRow.cells[OrderTblIdx.RateUnit].getElementsByTagName('input')[0].value;
-
-    //            if (BasicRate > 0 && PreItemText == ItemText && RateUnit == 'KG') {
-    //                CurrRow.cells[OrderTblIdx.BasicRate].getElementsByTagName('input')[0].value = parseFloat(BasicRate).toFixed(2);
-    //            }
-    //        }
-    //    }
-
-    //}
+   
 
 
 }
@@ -3205,24 +3093,7 @@ function GetFreightList() {
             }
         }
 
-        //var defaultValue = '';
-
-        //if (response.length > 0) {
-        //    $('#listFreight option').empty();
-        //    var option = '';
-        //    for (var i = 0; i < response.length; i++) {
-        //        if (i == 1) {
-        //            defaultValue = response[1].Field;
-        //        }
-        //        option += '<option text="' + response[i].Code + '">' + response[i].Field + '</option>'
-        //    }
-        //    $('#listFreight')[0].innerHTML = option;
-
-        //}
-        //if (param_VisitMode == 'New') {
-        //    $('#txtlistFreight').val(defaultValue);
-        //}
-
+       
     });
 
 }
@@ -3231,16 +3102,7 @@ function GetFreightTypeList() {
     VisitOrderEntryService.GetFreightTypeList().then(function (response) {
         var defaultValue = '';
         if (response.length > 0) {
-            //$('#listFreightType option').empty();
-            //var option = '';
-            //for (var i = 0; i < response.length; i++) {
-            //    if (i == 1) {
-            //        defaultValue = response[i].Field;
-            //    }
-            //    option += '<option text="' + response[i].Code + '">' + response[i].Field + '</option>'
-            //}
-            //$('#listFreightType')[0].innerHTML = option;
-
+            
             var arrayList_FreightType = [];
             response = response.map((item) => ({
                 key: item.Code, value: item.Field
@@ -3264,17 +3126,7 @@ function GetPaymentTerms() {
         //var defaultValue = '';
         //var defaultCode = 0;
         if (response.length > 0) {
-            //$('#listPaymentTerms option').empty();
-            //var option = '';
-            //for (var i = 0; i < response.length; i++) {
-            //    if (i == 1) {
-            //        defaultValue = response[i].Desp;
-            //        defaultCode = response[i].Code;
-            //    }
-            //    option += '<option data-code="' + response[i].Code + '">' + response[i].Desp + '</option>'
-            //}
-            //$('#listPaymentTerms')[0].innerHTML = option;
-
+            
             var arrayList_PaymentTerms = [];
             response = response.map((item) => ({
                 key: item.Code, value: item.Desp
@@ -3710,29 +3562,7 @@ function ShowLogicalStockModal() {
             $('#btnShow').prop('hidden', false);
             $('#btnLoading').prop('hidden', true);
 
-            //const StringFilterColumn = ["ItemName", "SizeDesp","SIZE","THICKNESS"];
-            //const NumericFilterColumn = ["BalanceQty"];
-            //const DateFilterColumn = [];
-            //const Button = false;
-            //const showButtons = [];
-            //const StringdoubleFilterColumn = [];
-            //const hiddenColumns =  ["ItemMaster_Code", "MinimumQty"];
-            //const ColumnAlignment = {
-            //    "PhysicalStock": "right",
-            //    "SaleOrderQty": "right",
-            //    "RollingForcast": "right",
-            //    "BalanceQty": "right",
-            //    "PendingCRMOrder":"right"
-            //};
-            //if (ShowPendingEnqInStock == 'N') {
-            //    hiddenColumns.push("PendingEnquiry");
-            //}
-            //if (ShowPendingRollingForcastInStock == 'N') {
-            //    hiddenColumns.push("RollingForcast");
-            //}
-            //if (ShowPendingCRMOrderInStock == 'N') {
-            //    hiddenColumns.push("PendingCRMOrder");
-            //}
+            
 
             response.forEach((item, index) => {
                 item["Code"] = `<input type="checkbox" name="record"  data-index="${index}" value="${item["Code"] || 0}" class="select-record" onclick=ResetStockQty(this);>`;
@@ -5640,6 +5470,14 @@ function GetFixedParameter() {
            
         }
     });
+    VisitOrderEntryService.GetFixedParameter().then(function (response) {
+
+        if (response.length > 0) {
+
+            sessionStorage.setItem('FixedParameterCreditLimit', JSON.stringify(response[0]));
+
+        }
+    });
 }
 function GetFixedParameterMarketing() {
     VisitOrderEntryService.GetFixedparameterMarketing().then(function (response) {
@@ -5741,6 +5579,37 @@ function InitSizeControl(itemMaster_Code, itemSizeMaster_Code, callBackFunctionN
     var url = baseUrl+'/CustomControl/SizeControl';
 
     $('#DivSizeControlmodal').load(url, { ItemMaster_Code: itemMaster_Code, ItemSizeMaster_Code: itemSizeMaster_Code, CallBackFunctionName_btnDone: callBackFunctionName_btnDone, RowNo: rowNo });
+
+}
+function InitCheckCreditLimitsControl(AccountMaster_Code, Amount, PreviousAmount, Source, PasswordsCodeRs, PasswordsCodeDays, ShowFormDialog, LedgerClosing, OverDueAmount
+    , ShowOnlyOutstandingInfo, Log_OnLineVerification_Code, OnlyCheckCreditLimit, CheckBillingWithoutAdvance, AdvancePayPercentage
+    , EntryDesp, MasterTableCode, BuyerPOMaster_Code, CallBackFunctionName_btnDone,Code,Mode) {
+
+
+    var url = baseUrl + '/CustomControl/CheckCreditLimits';
+
+    $('#DivCheckCreditLimitsModal').load(url, {
+                                                  AccountMaster_Code:AccountMaster_Code
+                                                , Amount:Amount
+                                                , PreviousAmount:PreviousAmount
+                                                , Source:Source
+                                                , PasswordsCodeRs:PasswordsCodeRs
+                                                , PasswordsCodeDays:PasswordsCodeDays
+                                                , ShowFormDialog:ShowFormDialog
+                                                , LedgerClosing:LedgerClosing
+                                                , OverDueAmount:OverDueAmount
+                                                , ShowOnlyOutstandingInfo:ShowOnlyOutstandingInfo
+                                                , Log_OnLineVerification_Code:Log_OnLineVerification_Code
+                                                , OnlyCheckCreditLimit:OnlyCheckCreditLimit
+                                                , CheckBillingWithoutAdvance:CheckBillingWithoutAdvance
+                                                , AdvancePayPercentage:AdvancePayPercentage
+                                                , EntryDesp:EntryDesp
+                                                , MasterTableCode:MasterTableCode
+                                                , BuyerPOMaster_Code: BuyerPOMaster_Code
+                                                , CallBackFunctionName_btnDone: CallBackFunctionName_btnDone
+                                                , Code: Code
+                                                , Mode:Mode
+                                        });
 
 }
 
@@ -5941,16 +5810,20 @@ function getRateUnitListFromQtyConfig(RowNo) {
     }
 }
 function SelectStockCheck(x) {
+    var CRM_Config = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
     var ObjCurrRow = $(x).closest('tr');
     if ($(x).val() > 0) {
         ObjCurrRow.find('td:eq(0)')[0].getElementsByTagName('input')[0].checked = true;
     }
     var Bal_Qty = ObjCurrRow.find("label").text();
-    //if (parseFloat($(x).val()) > parseFloat(Bal_Qty)) {
-    //    toastr.error("Qty Value shouldn't be greater than Balance Qty");
-    //    $(x).val(0);
-    //    ObjCurrRow.find('td:eq(0)')[0].getElementsByTagName('input')[0].checked = false;
-    //}
+    if (CRM_Config.CheckLogicalStockLimit == 'Y') {
+        if (parseFloat($(x).val()) > parseFloat(Bal_Qty)) {
+            toastr.error("Qty Value shouldn't be greater than Balance Qty");
+            $(x).val(0);
+            ObjCurrRow.find('td:eq(0)')[0].getElementsByTagName('input')[0].checked = false;
+        }
+    }
+   
 }
 function ResetStockQty(x) {
     var ObjCurrRow = $(x).closest('tr');
@@ -5974,6 +5847,26 @@ function ListValidation(inputElement, datalistElement) {
         } else {
             return false; // Invalid input
         }
+    
+}
+
+function ValidateOverdueAmount() {
+
+    if (ValidateData() == false) {
+        return false;
+    }
+    var FixedParameterCreditLimit_Config = JSON.parse(sessionStorage.getItem('FixedParameterCreditLimit'));
+    var TotalOrderAmount =parseFloat($('#txtAmountTotal')[0].innerText);
+    var AccountMaster_Code = $('#ddlCustomerName option:selected').val();
+    var Config_CheckCreditLimit = FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == undefined || FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == '' ? 'N' : FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO;
+
+    if (Config_CheckCreditLimit == 'Y') {
+        if (TotalOrderAmount > 0) {
+            InitCheckCreditLimitsControl(AccountMaster_Code, TotalOrderAmount, 0, 'VISIT MASTER', 0, 0, 'Y', 0, 0, 'N', 0, 'N', 'N', 0, 'Y', 0, 0, 'SaveData',0,'');
+        }
+    } else {
+        SaveData();
+    }
     
 }
 
@@ -6030,3 +5923,5 @@ window.OnChange_ddlItemSize = OnChange_ddlItemSize;
 window.OnChange_ddlItemThickness = OnChange_ddlItemThickness;
 window.OnChange_ddlItemSizeMaster = OnChange_ddlItemSizeMaster;
 window.DeleteOrderItem = DeleteOrderItem;
+window.InitCheckCreditLimitsControl = InitCheckCreditLimitsControl;
+window.ValidateOverdueAmount = ValidateOverdueAmount;

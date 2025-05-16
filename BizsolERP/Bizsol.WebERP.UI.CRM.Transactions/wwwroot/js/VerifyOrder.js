@@ -1,5 +1,5 @@
 ﻿import { VisitOrderEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
-var baseUrl = `${window.location.protocol}//${window.location.host}`;
+var baseUrl = sessionStorage.getItem('AppBaseURL');
 let QtyMTHeader = '';
 let QtyPCHeader = '';
 let QtyMTRHeader = '';
@@ -12,6 +12,8 @@ let indx_BasicRate_DetailView = 16;
 let indx_BasicRate_DetailOutView = 20;
 let indx_DisType_DetailView = 18;
 let indx_DisType_DetailOutView = 22;
+let g_Code = 0;
+let g_Mode = '';
 $(document).ready(function () {
     $("#ERPHeading").text("Verify Order/Visit");
     GetNestedMarketingManList();
@@ -472,8 +474,8 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                 const Button = false;
                 const showButtons = [];
                 const StringdoubleFilterColumn = ["Dealer Name", "City"];
-                const hiddenColumns = ["Code", "Visit Type", "OrderVisitType", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "State", "Verify","Order Qty"];
-                if (ThreeLevelVerification === 'N') {
+                const hiddenColumns = ["Code", "Visit Type", "OrderVisitType", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "State", "Verify", "Order Qty", "OverdueOTPentered","DealerMaster_Code"];
+                if (ThreeLevelVerification === 'N') {                                                                                                     
                     hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                     response.forEach(item => {
                         if (item.hasOwnProperty('VerifiedLv1')) {
@@ -531,7 +533,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL3" hidden >
-                                                 <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.Discount}" hidden >`
+                                                 <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.Discount}" hidden >`;
                         }
                     }
                     else {
@@ -549,15 +551,20 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                     const buttonsHTML = `<span><a href="#" onclick="ViewOrder('${item['Code']}')">${item['Order Id']}</a></span>`;
                     const td_discount = `<span><a href="#" onclick="ViewOrder('${item['Code']}')">${item['Discount']}</a></span>`;
                     //const td_Action = `<button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>`;
-                   
+                    const td_hidden = `<input type="text" id="txtCode" name="txtCode" value="${item.Code}" hidden >
+                                                 <input type="text" id="txtMode${item.Code}" name="txtMode${item.Code}" value="" hidden >
+                                                 <input type="text" id="txtOverdueOTPentered${item.Code}" name="txtOverdueOTPentered" value="${item.OverdueOTPentered}" hidden >
+                                                 <input type="text" id="txtTotalAmount${item.Code}" name="txtTotalAmount" value="${item['Order Amount']}" hidden >
+                                                 <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >`;
                         return {
                             ...item,
                             "Order Id": buttonsHTML,
                             "Discount": td_discount,
                             "Action": VerifiedLv1Button,
-                            //"Action": td_Action,
+                            "Code": td_hidden,
                         };
-                    
+                   
+                   
                 });
 
                 BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
@@ -580,7 +587,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                 const Button = false;
                 const showButtons = [];
                 const StringdoubleFilterColumn = ["Dealer Name", "City"];
-                const hiddenColumns = ["Code", "Visit Type", "OrderVisitType", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "State", "Verify", "Order Qty"];
+                const hiddenColumns = ["Code", "Visit Type", "OrderVisitType", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "State", "Verify", "Order Qty", "OverdueOTPentered", "DealerMaster_Code"];
                 if (ThreeLevelVerification === 'N') {
                     hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                     response.forEach(item => {
@@ -626,7 +633,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL3" hidden >
-                                                 <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.Discount}" hidden >`
+                                                 <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.Discount}" hidden >`;
                         }
                     }
                     else {
@@ -644,13 +651,19 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                     const buttonsHTML = `<span><a href="#" onclick="ViewOrder('${item['Code']}')">${item['Order Id']}</a></span>`;
                     //const td_Action = `<button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>`;
 
+                    const td_hidden = `<input type="text" id="txtCode" name="txtCode" value="${item.Code}" hidden >
+                                                 <input type="text" id="txtMode${item.Code}" name="txtMode${item.Code}" value="" hidden >
+                                                 <input type="text" id="txtOverdueOTPentered${item.Code}" name="txtOverdueOTPentered" value="${item.OverdueOTPentered}" hidden >
+                                                 <input type="text" id="txtTotalAmount${item.Code}" name="txtTotalAmount" value="${item['Order Amount']}" hidden >
+                                                 <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >`;
                     return {
                         ...item,
                         "Order Id": buttonsHTML,
                         "Action": VerifiedLv1Button,
-                        //"Action": td_Action,
+                        "Code": td_hidden,
                     };
-
+                   
+                  
                 });
 
                 BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
@@ -673,7 +686,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                 const Button = false;
                 const showButtons = [];
                 const StringdoubleFilterColumn = ["Zone", "Dealer Name", "City"];
-                const hiddenColumns = ["Code", "Sub Detail.No", "State", "OrderVisitType","DiscountAvg", "DetailCode", "Pricelist (Zone)", "Avg Rate", "Other Charges", "Final Rate", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "Verify"];
+                const hiddenColumns = ["Code", "Sub Detail.No", "State", "OrderVisitType", "DiscountAvg", "DetailCode", "Pricelist (Zone)", "Avg Rate", "Other Charges", "Final Rate", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "Verify", "OverdueOTPentered", "DealerMaster_Code"];
                 if (ThreeLevelVerification === 'N') {
                     hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                     response.forEach(item => {
@@ -823,7 +836,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL3" hidden >
-                                                 <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >`
+                                                 <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >`;
                         }
                     }
                     else {
@@ -840,12 +853,17 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                         <input type="text" id="txtUnit" name="txtUnit" value="${item['Rate Unit']}" hidden ></span>`;
                     //const td_Action = `<button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>`;
                     
-                        return {
-                            ...item,
-                            "Discount": buttonsHTML,
-                            "Action": VerifiedLv1Button,
-                            
-                        };
+                    const td_hidden = `<input type="text" id="txtCode" name="txtCode" value="${item.Code}" hidden >
+                                                 <input type="text" id="txtMode${item.Code}" name="txtMode${item.Code}" value="" hidden >
+                                                 <input type="text" id="txtOverdueOTPentered${item.Code}" name="txtOverdueOTPentered" value="${item.OverdueOTPentered}" hidden >
+                                                 <input type="text" id="txtTotalAmount${item.Code}" name="txtTotalAmount" value="${item['Order Amount']}" hidden >
+                                                 <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >`;
+                    return {
+                        ...item,
+                        "Discount": buttonsHTML,
+                        "Action": VerifiedLv1Button,
+                        "Code": td_hidden,
+                    };
                     
                 });
 
@@ -869,7 +887,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                 const Button = false;
                 const showButtons = [];
                 const StringdoubleFilterColumn = ["Zone", "Dealer Name", "City"];
-                const hiddenColumns = ["Code", "Sub Detail.No", "State", "OrderVisitType", "DiscountAvg", "DetailCode", "Pricelist (Zone)", "Avg Rate", "Other Charges", "Final Rate", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "Verify"];
+                const hiddenColumns = ["Code", "Sub Detail.No", "State", "OrderVisitType", "DiscountAvg", "DetailCode", "Pricelist (Zone)", "Avg Rate", "Other Charges", "Final Rate", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "Verify", "OverdueOTPentered", "DealerMaster_Code"];
                 if (ThreeLevelVerification === 'N') {
                     hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                     response.forEach(item => {
@@ -1019,7 +1037,8 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL3" hidden >
-                                                 <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >`
+                                                 <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >
+                                                 `;
                         }
                     }
                     else {
@@ -1028,7 +1047,8 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL3" hidden >
-                                                 <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >`;
+                                                 <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >
+                                                 `;
                         }
                     }
 
@@ -1036,11 +1056,16 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                         <input type="text" id="txtUnit" name="txtUnit" value="${item['Rate Unit']}" hidden ></span>`;
                     //const td_Action = `<button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>`;
 
+                    const td_hidden = `<input type="text" id="txtCode" name="txtCode" value="${item.Code}" hidden >
+                                                 <input type="text" id="txtMode${item.Code}" name="txtMode${item.Code}" value="" hidden >
+                                                 <input type="text" id="txtOverdueOTPentered${item.Code}" name="txtOverdueOTPentered" value="${item.OverdueOTPentered}" hidden >
+                                                  <input type="text" id="txtTotalAmount${item.Code}" name="txtTotalAmount" value="${item['Order Amount']}" hidden >
+                                                 <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >`;
                     return {
                         ...item,
                         "Discount": buttonsHTML,
                         "Action": VerifiedLv1Button,
-
+                        "Code": td_hidden,
                     };
 
                 });
@@ -1090,6 +1115,14 @@ function GetFixedParameterConfiguration() {
                     QtyPCHeader = response[0].QtyPC !=''? 'Qty ' + response[0].QtyPC : '';
                     QtyMTRHeader = response[0].QtyMR != '' ? 'Qty ' + response[0].QtyMR : '';
                     sessionStorage.setItem('QtyConfig', JSON.stringify(response[0]));
+                }
+            });
+            VisitOrderEntryService.GetFixedParameter().then(function (response) {
+
+                if (response.length > 0) {
+
+                    sessionStorage.setItem('FixedParameterCreditLimit', JSON.stringify(response[0]));
+
                 }
             });
         }
@@ -1426,6 +1459,11 @@ function Verify(Code, element) {
         } else {
             var Mode = 'VisitOrder_VerifyLv1';
             var ObjCurrRow = $(element).closest('tr');
+            var Code = ObjCurrRow.find('input[name="txtCode"]').val();
+            ObjCurrRow.find('input[name="txtMode' + Code + '"]').val(Mode);
+            g_Code = Code;
+            g_Mode = Mode;
+            
             //var Discount = ObjCurrRow[0].cells[indx_DiscountCol].innerHTML;
             var Discount = ObjCurrRow.find('input[name="txtDiscountVal"]').val();
             var DiscountValToCompare = 0;
@@ -1445,7 +1483,8 @@ function Verify(Code, element) {
                 }
 
             }
-            VerifyForAll(Code, Mode)
+            //VerifyForAll(Code, Mode)
+            ValidateOverdueAmount(ObjCurrRow);
         }
     });
 }
@@ -1469,6 +1508,10 @@ function GPVerifyLv1(Code, e) {
             var ObjCurrRow = $(e).closest('tr');
             var Discount = ObjCurrRow.find('input[name="txtDiscountVal"]').val();
             var DiscountValToCompare = 0;
+            var Code = ObjCurrRow.find('input[name="txtCode"]').val();
+            g_Code = Code;
+            g_Mode = Mode;
+            ObjCurrRow.find('input[name="txtMode' + Code + '"]').val(Mode);
             //var Sign = $('#selectSign_' + Code).val();
             var Sign = '-';
             if (Sign === "-") {
@@ -1493,7 +1536,8 @@ function GPVerifyLv1(Code, e) {
                     return;
                 }
             }
-            VerifyForAll(Code, Mode);
+            //VerifyForAll(Code, Mode)
+            ValidateOverdueAmount(ObjCurrRow);
         }
     });
 }
@@ -1516,6 +1560,10 @@ function AdminVerifyLv2(Code, element) {
             //var Discount = $('#txtOtherCharges_' + Code).val();
             var ObjCurrRow = $(element).closest('tr');
             var Discount = ObjCurrRow.find('input[name="txtDiscountVal"]').val();
+            var Code = ObjCurrRow.find('input[name="txtCode"]').val();
+            ObjCurrRow.find('input[name="txtMode' + Code + '"]').val(Mode);
+            g_Code = Code;
+            g_Mode = Mode;
             if (parseFloat(Discount) == 0) {
                 $('#hfIsOtherChargesVerify_' + Code).val("Y");
             }
@@ -1545,14 +1593,27 @@ function AdminVerifyLv2(Code, element) {
                     return;
                 }
             }
-            VerifyForAll(Code, Mode)
+            //VerifyForAll(Code, Mode)
+            ValidateOverdueAmount(ObjCurrRow);
         }
     });
 }
-function VerifyForAll(Code,Mode) {
-    const alertCls = confirm("Are you sure you want to Verify this Visit?");
-    if (alertCls) {
-        VisitOrderEntryService.VerifyVisitOrder(Code, Mode).then(function (response) {
+function VerifyForAll() {
+    //const alertCls = confirm("Are you sure you want to Verify this Visit?");
+    //if (alertCls) {
+
+    
+    var Code = g_Code;
+    var Mode = g_Mode;
+    var VisitMaster_OverdueOTPentered = $("#txtOverdueOTPentered" + Code).val();
+    var FixedParameterCreditLimit_Config = JSON.parse(sessionStorage.getItem('FixedParameterCreditLimit'));
+    if (FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == 'Y' && VisitMaster_OverdueOTPentered=='N') {
+        var OverduePasswordCode = CheckCreditLimitsControl_PasswordCode !== undefined && CheckCreditLimitsControl_PasswordCode !== '' ? CheckCreditLimitsControl_PasswordCode : 0;
+    } else {
+        var OverduePasswordCode = 0;
+    }
+
+    VisitOrderEntryService.VerifyVisitOrder(Code, Mode, OverduePasswordCode).then(function (response) {
             if (response.Status === 'Y') {
                 toastr.success(response.Msg);
                 GetOrderVerifyData();
@@ -1560,7 +1621,7 @@ function VerifyForAll(Code,Mode) {
                 toastr.error(response.Msg);
             }
         });
-    }
+   // }
 }
 function OtherChargesVerifyLv1(Code, Amount) {
     var Discount = $('#txtOtherCharges_' + Code).val();
@@ -1828,6 +1889,58 @@ function getFinancialYear() {
     return startYear + "-" + (startYear + 1);
 }
 
+function InitCheckCreditLimitsControl(AccountMaster_Code, Amount, PreviousAmount, Source, PasswordsCodeRs, PasswordsCodeDays, ShowFormDialog, LedgerClosing, OverDueAmount
+    , ShowOnlyOutstandingInfo, Log_OnLineVerification_Code, OnlyCheckCreditLimit, CheckBillingWithoutAdvance, AdvancePayPercentage
+    , EntryDesp, MasterTableCode, BuyerPOMaster_Code, CallBackFunctionName_btnDone,Code,Mode) {
+
+
+    var url = baseUrl + '/CustomControl/CheckCreditLimits';
+
+    $('#DivCheckCreditLimitsModal').load(url, {
+        AccountMaster_Code: AccountMaster_Code
+        , Amount: Amount
+        , PreviousAmount: PreviousAmount
+        , Source: Source
+        , PasswordsCodeRs: PasswordsCodeRs
+        , PasswordsCodeDays: PasswordsCodeDays
+        , ShowFormDialog: ShowFormDialog
+        , LedgerClosing: LedgerClosing
+        , OverDueAmount: OverDueAmount
+        , ShowOnlyOutstandingInfo: ShowOnlyOutstandingInfo
+        , Log_OnLineVerification_Code: Log_OnLineVerification_Code
+        , OnlyCheckCreditLimit: OnlyCheckCreditLimit
+        , CheckBillingWithoutAdvance: CheckBillingWithoutAdvance
+        , AdvancePayPercentage: AdvancePayPercentage
+        , EntryDesp: EntryDesp
+        , MasterTableCode: MasterTableCode
+        , BuyerPOMaster_Code: BuyerPOMaster_Code
+        , CallBackFunctionName_btnDone: CallBackFunctionName_btnDone
+        , Code: Code
+        , Mode: Mode
+
+    });
+
+}
+function ValidateOverdueAmount(ObjCurrRow) {
+    const alertCls = confirm("Are you sure you want to Verify this Visit?");
+    if (alertCls) {
+
+        var FixedParameterCreditLimit_Config = JSON.parse(sessionStorage.getItem('FixedParameterCreditLimit'));
+        var VisitMaster_OverdueOTPentered = ObjCurrRow.find('input[name="txtOverdueOTPentered"]').val();
+        var TotalOrderAmount = parseFloat(ObjCurrRow.find('input[name="txtTotalAmount"]').val());
+        var AccountMaster_Code = ObjCurrRow.find('input[name="txtDealerCode"]').val();
+        var Config_CheckCreditLimit = FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == undefined || FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == '' ? 'N' : FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO;
+
+        if (Config_CheckCreditLimit == 'Y' && VisitMaster_OverdueOTPentered=='N') {
+            if (TotalOrderAmount > 0) {
+                InitCheckCreditLimitsControl(AccountMaster_Code, TotalOrderAmount, 0, 'VISIT MASTER', 0, 0, 'Y', 0, 0, 'N', 0, 'N', 'N', 0, 'Y', 0, 0, 'VerifyForAll',0,'');
+            }
+        } else {
+            VerifyForAll();
+        }
+    }
+}
+
 window.ViewOrder = ViewOrder;
 window.EditLvl1 = EditLvl1;
 window.calFinalAmt = calFinalAmt;
@@ -1841,6 +1954,8 @@ window.AdminVerifyLv2 = AdminVerifyLv2;
 window.ViewVerificationDetails = ViewVerificationDetails;
 window.ViewDiscountModal = ViewDiscountModal;
 window.UpdateDiscountValue = UpdateDiscountValue;
-
+window.InitCheckCreditLimitsControl = InitCheckCreditLimitsControl;
+window.ValidateOverdueAmount = ValidateOverdueAmount;
+window.VerifyForAll = VerifyForAll;
 
 
