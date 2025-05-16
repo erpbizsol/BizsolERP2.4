@@ -91,6 +91,7 @@ let UrlService = {
     API_ENDPOINT_DeductionMaster: `${environment.BASE_URL}/DeductionMaster`,
     API_ENDPOINT_RollingProduction: `${environment.BASE_URL}/RollingProduction`,
     API_ENDPOINT_LeaveMaster: `${environment.BASE_URL}/LeaveMaster`,
+    API_ENDPOINT_ValidateCreditLimits: `${environment.BASE_URL}/ValidateCreditLimit`,
 }
 
 export { UrlService  }
