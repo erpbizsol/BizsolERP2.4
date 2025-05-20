@@ -190,10 +190,10 @@ const VisitOrderEntryService = {
             }
         );
     },
-    SaveVisit: function SaveVisit(Data) {
+    SaveVisit: function SaveVisit(Data, OverduePasswordCode) {
         var json_data = JSON.stringify(Data, null, 2);
         var userMasterCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + "/SaveVisit?UserMaster_Code=" + userMasterCode;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + "/SaveVisit?UserMaster_Code=" + userMasterCode + "&OverduePasswordCode=" + OverduePasswordCode;
         return promiseAjaxCallApi.CallAPI('POST', URL, json_data).then(
             function (value) {
                 return value;
@@ -242,10 +242,10 @@ const VisitOrderEntryService = {
             }
         );
     },
-    VerifyVisitOrder: function VerifyVisitOrder(VisitMaster_Code, Mode) {
+    VerifyVisitOrder: function VerifyVisitOrder(VisitMaster_Code, Mode, OverduePasswordCode) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/VerifyVisitOrderReport?VisitMaster_Code=${VisitMaster_Code}&UserMaster_Code=${userMasterCode}&Mode=${Mode}`;
+        var URL = UrlService.API_ENDPOINT_VISIT_MASTER + `/VerifyVisitOrderReport?VisitMaster_Code=${VisitMaster_Code}&UserMaster_Code=${userMasterCode}&Mode=${Mode}&OverduePasswordCode=${OverduePasswordCode}`;
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
@@ -486,6 +486,16 @@ const VisitOrderEntryService = {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var UserMaster_Code = authKeyData.UserMaster_Code;
         let url = UrlService.ERP_SIDE_MENU + `/CheckModuleOptionRight?ModuleName=${ModuleName}&OptionName=${OptionName}&ShowMsg=${ShowMsg}&FinYear=${FinYear}&UserMaster_Code=${UserMaster_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+
+
+    },
+    GetFixedParameter: function GetFixedParameter() {
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetFixedParameter`;
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
                 return value;

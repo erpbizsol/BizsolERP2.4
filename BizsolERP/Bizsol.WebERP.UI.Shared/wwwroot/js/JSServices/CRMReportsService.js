@@ -83,7 +83,24 @@ const CRMReportsServices = {
             }
         );
     },
-
+    GetOrderReport: function GetOrderReport(fromDate, toDate, strCondition, reportType, AccountMaster_Code, MarketingManMaster_Code, OtherParameters) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = `${UrlService.API_ENDPOINT_CRMReports}/GetOrderReport` +
+            `?FromDate=${encodeURIComponent(fromDate)}` +
+            `&ToDate=${encodeURIComponent(toDate)}` +
+            `&StrCondition=${encodeURIComponent(strCondition)}` +
+            `&ReportType=${encodeURIComponent(reportType)}` +
+            `&AccountMaster_Code=${encodeURIComponent(AccountMaster_Code)}` +
+            `&MarketingManMaster_Code=${encodeURIComponent(MarketingManMaster_Code)}` +
+            `&OtherParameters=${encodeURIComponent(OtherParameters)}` +
+            `&UserMaster_Code=${encodeURIComponent(userMasterCode)}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
      GetReportTypelist: function GetReportTypelist(ModuleDesc) {
          var URL = UrlService.API_ENDPOINT_CRMReports + `/GetReportType?ModuleDesc=Web Stock Report`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
@@ -116,6 +133,15 @@ const CRMReportsServices = {
     },
     GetDisplayNameForReportTypes: function GetDisplayNameForReportTypes() {
        var URL = UrlService.API_ENDPOINT_CRMReports + `/GetDisplayNameForReportType?ReportName=CheckIn CheckOut Report`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+
+    },
+    GetDisplayNameForOrderReport: function GetDisplayNameForOrderReport(ReportType) {
+        var URL = UrlService.API_ENDPOINT_CRMReports + `/GetDisplayNameForReportType?ReportName=${ReportType}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

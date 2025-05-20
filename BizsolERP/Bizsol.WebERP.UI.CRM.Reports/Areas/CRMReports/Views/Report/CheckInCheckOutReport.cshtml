@@ -38,7 +38,7 @@
             <div class="row">
                 <div class="col-md-3">
                     <label for="txtdateFrom" class="col-form-label-sm fw-bold">From Date</label>
-                    <input id="txtdateFrom" type="text" name="txtdateFrom" autocomplete="off" class="form-control form-control-sm box_border" placeholder="" required>
+                    <input id="txtdateFrom" type="text" name="txtdateFrom" autocomplete="off" class="form-control form-control-sm box_border" placeholder="" required >
                 </div>
                 <div class="col-md-3">
                     <label for="txtdateTo" class="col-form-label-sm fw-bold">To Date</label>
@@ -47,14 +47,17 @@
 
                 <div class="col-md-3">
                     <label for="txtSalesPerson" class="col-form-label-sm fw-bold">User Name</label>
-                    <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Sales Person" value="All">
-                    <datalist id="txtSalesPersonlist"></datalist>
+                    @* <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Sales Person" value="All" hidden>
+                    <datalist id="txtSalesPersonlist"></datalist> *@
+                    <select id="ddlUserNamelist" class="form-control form-control-sm box_border"> </select>
                 </div>
 
                 <div class="col-md-3">
                     <label for="txtReportType" class="col-form-label-sm fw-bold">Report Type</label>
-                    <datalist id="txtReportTypelist"></datalist>
-                    <input list="txtReportTypelist" id="txtReportType" name="txtReportType" class="form-control form-control-sm box_border" placeholder="Report Type" autocomplete="off">
+                   @*  <datalist id="txtReportTypelist"></datalist>
+                    <input list="txtReportTypelist" id="txtReportType" name="txtReportType" class="form-control form-control-sm box_border" placeholder="Report Type" autocomplete="off" hidden> *@
+                    <select id="ddlReportTypelist" class="form-control form-control-sm box_border">
+                    </select>
                 </div>
             </div>
             <div class="row ">
@@ -89,11 +92,12 @@
                 <tr>
                     <th>S.No</th>
                     <th>User Name </th>
-                    <th>Date </th>
-                    <th>Punch Time </th>
+                    
                     <th>Source </th>
                     <th>Type </th>
                     <th>Location </th>
+                    <th>Date </th>
+                    <th>Punch Time </th>
                     <th>Duration(Hrs) </th>
                     <th>Distance(KM) </th>
                     <th>Remarks </th>
