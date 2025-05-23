@@ -76,7 +76,7 @@
             <div class="row">
                
                 <div class="col-md-6 text-end">
-                    <button type="button" class="btn btn-primary icon-height" onclick="SlittingProductionEntry_Back()">Back</button>
+                    <button type="button" class="btn btn-primary btn-height" onclick="SlittingProductionEntry_Back()">Back</button>
                 </div>
             </div>
            
@@ -84,20 +84,20 @@
 
         </fieldset>
     </div>
-    <div class="row" id="DivBtnAdd">
+    <div class="row mt-2" id="DivBtnAdd">
         <div class="col-md-6 ">
 
-            <a class="btn btn-warning icon-height" id="btnAvailableOrderStock">
+            <a class="btn btn-warning btn-height" id="btnAvailableOrderStock">
                 SCALE WEIGHT
             </a>
             &nbsp;
             &nbsp;
-            <a class="btn btn-primary icon-height" onclick="SlittingProductionEntry_CalScrapPerWeight()">
+            <a class="btn btn-primary btn-height" onclick="SlittingProductionEntry_CalScrapPerWeight()">
                WEIGHT/SCRAP
             </a>
             &nbsp;
             &nbsp;
-            <a class="btn btn-primary icon-height" id="btnBrkDownStart" >
+            <a class="btn btn-primary btn-height" id="btnBrkDownStart">
                 BREAK DOWN START
             </a>
 
@@ -106,49 +106,46 @@
     </div>
 
     <div class="col-md-12">
-    <fieldset class="rounded-1 p-3 mt-2">
-        <legend class="float-none w-auto px-2">Issue Details</legend>
-
-    <div class="table-wrapper mt-2">
-        <table id="tbSlittingIssueDetails" class="table fixed-width-table">
-            <thead id="tbSlittingIssueDetailsHeader">
-            </thead>
-            <tbody id="tbSlittingIssueDetailsBody">
-            </tbody>
-            <tfoot>
-            </tfoot>
-        </table>
-    </div>
-    <div class="paginator" id="paginator-tbSlittingIssueDetails">
-    </div>
-    
-    </fieldset>
+        <div class="col-md-12 mt-2">
+            <h4 class="table-heading">Issue Details</h4>
+        </div>
+        <div class="table-wrapper mt-2">
+            <table id="tbSlittingIssueDetails" class="table fixed-width-table">
+                <thead id="tbSlittingIssueDetailsHeader">
+                </thead>
+                <tbody id="tbSlittingIssueDetailsBody">
+                </tbody>
+                <tfoot>
+                </tfoot>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tbSlittingIssueDetails">
+        </div>
     </div>
 
     <div class="col-md-12">
-        <fieldset class="rounded-1 p-3 mt-2">
-        <legend class="float-none w-auto px-2">Received Details</legend>
-
-    <div class="table-wrapper mt-2 ">
-        <table id="tbSlittingReceivedDetails" class="table fixed-width-table">
-            <thead id="tbSlittingReceivedDetailsHeader">
-            </thead>
-            <tbody id="tbSlittingReceivedDetailsBody">
-            </tbody>
-            <tfoot>
-            </tfoot>
-        </table>
-    </div>
-    <div class="paginator" id="paginator-tbSlittingReceivedDetails">
-    </div>
-    </fieldset>
+        <div class="col-md-12 mt-2">
+            <h4 class="table-heading">Received Details</h4>
+        </div>
+        <div class="table-wrapper mt-2 ">
+            <table id="tbSlittingReceivedDetails" class="table fixed-width-table">
+                <thead id="tbSlittingReceivedDetailsHeader">
+                </thead>
+                <tbody id="tbSlittingReceivedDetailsBody">
+                </tbody>
+                <tfoot>
+                </tfoot>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tbSlittingReceivedDetails">
+        </div>
     </div>
 
     
     <div class="row" >
         <div class="col-md-1 col-2">
 
-            <a class="btn btn-primary icon-height" onclick="SlittingProductionEntry_AddReceivedItem('Addnew')">
+            <a class="btn btn-primary btn-height" onclick="SlittingProductionEntry_AddReceivedItem('Addnew')">
                 Add
             </a>
             
@@ -159,13 +156,13 @@
         </div>
 
         <div class="col-md-9 text-end">
-            <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="SlittingProductionEntry_CreatNewEntry()">
+            <a class="btn btn-primary btn-height" id="btnAvailableOrderStock" onclick="SlittingProductionEntry_CreatNewEntry()">
                 Create Entry
             </a>
             &nbsp;
             &nbsp;
 
-            <a class="btn btn-primary icon-height" id="btnPrint">
+            <a class="btn btn-primary btn-height" id="btnPrint">
                 Print ID
             </a>
 
