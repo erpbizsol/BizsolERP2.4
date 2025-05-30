@@ -152,7 +152,23 @@ const GateEntryService = {
                 return value;
             }
         );
-    }
+    },
+    GateEntryCategoryIn: function GateEntryCategoryIn() {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/GateEntryCategoryIn`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GateEntryCategoryOut: function GateEntryCategoryOut() {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/GateEntryCategoryOut`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 
 }
 

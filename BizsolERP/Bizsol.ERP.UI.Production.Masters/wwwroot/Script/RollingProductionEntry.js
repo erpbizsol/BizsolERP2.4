@@ -5,6 +5,7 @@ import { BreakDownService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_B
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 
+
 $("#ERPHeading").text("Tube Mill Production");
 $('#txtFromDate').val(new Date().toISOString().slice(0, 10));
 $('#txtToDate').val(new Date().toISOString().slice(0, 10));
@@ -406,7 +407,7 @@ function RollingProductionEnty_SaveIssueID(CallBy) {
             });
         }
         else {
-            toastr.error('Can not Save Entry! ' + breakDownrespone.Msg + ' on selected Machine No..')
+            toastr.error('Can not Save Entry! ' + breakDownrespone.Msg + ' on selected Mill..')
             HideLoader();
         }
     });
@@ -623,7 +624,7 @@ function GetReceviedDetails() {
             return {
                 ...item,
                 "WeightInCalculatedRange": item.WeightInCalculatedRange=='N'?`<span class="LightRed">`:'',
-                "Action": `<a class="btn btn-info icon-height" title="${item.BundleNo}" onclick="RollingProductionEnty_PrintID(${item.BundleNo})"> <i class="fa fa-print"></i></a>`
+                "Action": `<a class="btn btn-info icon-height" title="${item.BundleNo}" onclick="RollingProductionEnty_PrintID('${item.BundleNo}#')"> <i class="fa fa-print"></i></a>`
             }
         })
 
@@ -918,7 +919,7 @@ async function RollingProductionEnty_AddReceveBundel(ele) {
                 });
             }
             else {
-                toastr.error('Can not Save Entry! ' + breakDownrespone.Msg + ' on selected Machine No..')
+                toastr.error('Can not Save Entry! ' + breakDownrespone.Msg + ' on selected MIll No..')
                 HideLoader();
             }
         });
@@ -1080,8 +1081,66 @@ function RollingProductionEnty_Back() {
 
     window.location.href = baseUrl +"/ProductionMasters/Rolling/RollingProductionSummary"
 }
+function BrkDownStart(Callby) {
+    let entryDate = $('#txtIssueProductionDate').val();
+    let processMaster_Code = G_ProcessMaster_Code;
+    let machineMaster_Code = $('#ddlMachineNo').val();
+    let shiftMaster_Code = $('#ddlIssueShift').val();
+    let godownMaster_Code = $('#ddlGodown').val();
 
+    if (Callby==="R") {
+        entryDate = $('#txtReceiveProductionDate').val();
+        processMaster_Code = G_ProcessMaster_Code;
+        machineMaster_Code = $('#ddlMachineNoReceive').val();
+        shiftMaster_Code = $('#ddlReceiveShift').val();
+        godownMaster_Code = $('#ddlGodownReceive').val();
+    }
 
+    if (entryDate == "") {
+        toastr.error('Invalid Entry Date please Check!');
+        return false
+    }
+    if (processMaster_Code === "0" || processMaster_Code === 0 || typeof processMaster_Code === 'undefined' || processMaster_Code === '' || processMaster_Code === null) {
+        toastr.error('Invalid Process please Check!');
+        return false
+    }
+    if (machineMaster_Code === "0" || machineMaster_Code === 0 || typeof machineMaster_Code === 'undefined' || machineMaster_Code === '' || machineMaster_Code === null) {
+        toastr.error('Invalid Machine No please Check!');
+        return false
+    }
+    if (shiftMaster_Code === "0" || shiftMaster_Code === 0 || typeof shiftMaster_Code === 'undefined' || shiftMaster_Code === '' || shiftMaster_Code === null) {
+        toastr.error('Invalid shift please Check!');
+        return false
+    }
+    if (godownMaster_Code === "0" || godownMaster_Code === 0 || typeof godownMaster_Code === 'undefined' || godownMaster_Code === '' || godownMaster_Code === null) {
+        toastr.error('Invalid Warehouse please Check!');
+        return false
+    }
+
+    InitBrakDownControl(entryDate, processMaster_Code, machineMaster_Code, shiftMaster_Code, godownMaster_Code);
+}
+function InitBrakDownControl(entryDate, processMaster_Code, machineMaster_Code, shiftMaster_Code, godownMaster_Code) {
+    let url = baseUrl + '/CustomControl/BreakDownControl';
+
+    $('#DivBrakDownStartControlModal').load(url, { EntryDate: entryDate, ProcessMaster_Code: processMaster_Code, MachineMaster_Code: machineMaster_Code, ShiftMaster_Code: shiftMaster_Code, GodownMaster_Code: godownMaster_Code });
+
+}
+$('#btnBrkDownStart').on('click', function () {
+    BrkDownStart("I");
+});
+$('#btnReceiveBrkDownStart').on('click', function () {
+    BrkDownStart("R");
+});
+
+function RollingProductionEnty_PrintID(PrintId) {
+    InitSelectPrinterToPrintControl(PrintId);
+}
+function InitSelectPrinterToPrintControl(printText) {
+    let url = baseUrl + '/CustomControl/SelectPrinterToPrintControl';
+
+    $('#DivSelectPrinterToPrintControlModal').load(url, { PrintText: encodeURIComponent(printText) });
+
+}
 
 Bind_ddlGodown();
 Bind_ddlMachineNo();
@@ -1127,6 +1186,7 @@ window.RollingProductionEnty_AddReceveBundel = RollingProductionEnty_AddReceveBu
 window.RollingProductionEnty_calWT = RollingProductionEnty_calWT;
 window.RollingProductionEnty_GetScrapAndRejectedItem = RollingProductionEnty_GetScrapAndRejectedItem;
 window.RollingProductionEnty_CheckValidRejected = RollingProductionEnty_CheckValidRejected;
+window.RollingProductionEnty_PrintID = RollingProductionEnty_PrintID;
 
 
 

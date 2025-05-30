@@ -92,6 +92,7 @@ let UrlService = {
     API_ENDPOINT_RollingProduction: `${environment.BASE_URL}/RollingProduction`,
     API_ENDPOINT_LeaveMaster: `${environment.BASE_URL}/LeaveMaster`,
     API_ENDPOINT_ValidateCreditLimits: `${environment.BASE_URL}/ValidateCreditLimit`,
+    API_ENDPOINT_SelectPrinterToPrint: `${environment.BASE_URL}/SelectPrinterToPrint`,
 }
 
 export { UrlService  }

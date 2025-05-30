@@ -204,6 +204,16 @@ function LoadedInNew() {
 
     });
 
+    GateEntryService.GateEntryCategoryIn().then(function (response) {
+
+        BindSelectList($('#frmLoadedIn_ddlDocumentType')[0], response.map((item) => ({ Code: item.Desp, Desp: item.Desp, VendorName: '' })));
+        $('#frmLoadedIn_ddlDocumentType').select2({
+            width: '-webkit-fill-available'
+        });
+
+    });
+    
+
     $('#DivfrmEmptyOut').hide();
 }
 function EmptyInNew() {
@@ -284,6 +294,19 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
             width: '-webkit-fill-available'
         });
     });
+
+    GateEntryService.GateEntryCategoryIn().then(function (response) {
+
+        BindSelectList($('#frmLoadedIn_ddlDocumentType')[0], response.map((item) => ({ Code: item.Desp, Desp: item.Desp, VendorName: '' })));
+
+        $('#frmLoadedIn_ddlDocumentType').val(gateEntryData[0].DocumentType);
+
+        $('#frmLoadedIn_ddlDocumentType').select2({
+            width: '-webkit-fill-available'
+        });
+        frmLoadedIn_ddlDocumentType('view');
+    });
+    
     $('#frmLoadedIn_txtVendorName').val(gateEntryData[0].VendorName);
 
     $('#frmLoadedIn_txtDocumentNo').val(gateEntryData[0].DocNo);
@@ -309,6 +332,8 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtGoodsDescription').attr('readonly', 'readonly');
     $('#frmLoadedIn_txtQTY').attr('readonly', 'readonly');
     $('#frmLoadedIn_txtUOM').attr('readonly', 'readonly');
+    //$('#frmLoadedIn_ddlDocumentType').attr('readonly', 'readonly');
+    $('#frmLoadedIn_ddlDocumentType').attr('disabled', 'disabled');
     $('#frmLoadedIn_txtVendorName').attr('readonly', 'readonly');
 
     $('#frmLoadedIn_txtDocumentNo').attr('readonly', 'readonly');
@@ -381,7 +406,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
         $('#frmLoadedIn_txtGoodsDescription').val(gateEntryData[0].GoodDescription);
         $('#frmLoadedIn_txtQTY').val(gateEntryData[0].Qty);
         $('#frmLoadedIn_txtUOM').attr('disabled', 'disabled');
-        $('#frmLoadedIn_txtUOM').attr('disabled', 'disabled');
+        
         jQuery('input:radio[name="rdPOAccess"]').filter('[value="withoutpo"]').attr('checked', true);
     }
     else {
@@ -449,10 +474,18 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
        
     });
 
-    BindSelectList($('#frmLoadedOut_ddlDocumentType')[0], doctype.map((item) => ({ Code: item.name, Desp: item.name, VendorName: '' })));
-    $('#frmLoadedOut_ddlDocumentType').select2({
-        width: '-webkit-fill-available'
+    
+    GateEntryService.GateEntryCategoryOut().then(function (response) {
+        BindSelectList($('#frmLoadedOut_ddlDocumentType')[0], response.map((item) => ({ Code: item.Desp, Desp: item.Desp, VendorName: '' })));
+        $('#frmLoadedOut_ddlDocumentType').select2({
+            width: '-webkit-fill-available'
+        });
     });
+
+    ////BindSelectList($('#frmLoadedOut_ddlDocumentType')[0], doctype.map((item) => ({ Code: item.name, Desp: item.name, VendorName: '' })));
+    ////$('#frmLoadedOut_ddlDocumentType').select2({
+    ////    width: '-webkit-fill-available'
+    ////});
 
     $('.nav-tabs button[data-bs-target="#EmptyInTab"]').tab('show')
     $('#frmEmptyIn_btnSave').attr('disabled', 'disabled')
@@ -762,18 +795,20 @@ function GateEntry_SaveData(Mode) {
             $('#frmLoadedOut_ddlUOM').focus();
             return;
         }
+        if (typeof Documenttype === 'undefined' || Documenttype === '' || Documenttype === '0' || Documenttype === null) {
+            valid = false;
+            toastr.error('Please Check! Document Type can not be blank');
+            $('#frmLoadedOut_ddlDocumentType').focus();
+            return;
+        }
+
         if (typeof VendorName === 'undefined' || VendorName === '' || VendorName === null) {
             valid = false;
             toastr.error('Please Check! Customer Name can not be blank');
             $('#frmLoadedOut_txtCustomerName').focus();
             return;
         }
-        if (typeof Documenttype === 'undefined' || Documenttype === ''|| Documenttype === '0' || Documenttype === null) {
-            valid = false;
-            toastr.error('Please Check! Document Type can not be blank');
-            $('#frmLoadedOut_ddlDocumentType').focus();
-            return;
-        }
+        
         
         if (typeof InvoiceNo === 'undefined' || InvoiceNo === '' || InvoiceNo === null) {
             valid = false;
@@ -802,6 +837,7 @@ function GateEntry_SaveData(Mode) {
         GoodDescription = $('#frmLoadedIn_txtGoodsDescription').val();
         Qty = $('#frmLoadedIn_txtQTY').val();
         Uom = $('#frmLoadedIn_txtUOM').val();
+        Documenttype = $('#frmLoadedIn_ddlDocumentType').val();
         VendorName = $('#frmLoadedIn_txtVendorName').val();
        
         InvoiceNo = $('#frmLoadedIn_txtDocumentNo').val();
@@ -945,6 +981,12 @@ function GateEntry_SaveData(Mode) {
                 return;
             }
         }
+        if (typeof Documenttype === 'undefined' || Documenttype === '' || Documenttype === '0' || Documenttype === null) {
+            valid = false;
+            toastr.error('Please Check! Document Type can not be blank');
+            $('#frmLoadedIn_ddlDocumentType').focus();
+            return;
+        }
 
         if (typeof VendorName === 'undefined' || VendorName === '' || VendorName === null) {
             valid = false;
@@ -991,6 +1033,7 @@ function GateEntry_SaveData(Mode) {
         GoodDescription = $('#frmLoadedIn_txtGoodsDescription').val();
         Qty = $('#frmLoadedIn_txtQTY').val();
         Uom = $('#frmLoadedIn_txtUOM').val();
+        Documenttype = $('#frmLoadedIn_ddlDocumentType').val();
         VendorName = $('#frmLoadedIn_txtVendorName').val();
 
         InvoiceNo = $('#frmLoadedIn_txtDocumentNo').val();
@@ -1351,6 +1394,8 @@ $('#frmLoadedIn_fileOtherPhoto').bind('change', function () {
     });
 });
 
+
+
 $('#frmEmptyOut_fileVehiclePhoto').bind('change', function () {
 
     // If file size > 500kB, resize such that width <= 1000, quality = 0.9
@@ -1371,6 +1416,73 @@ $('#frmEmptyOut_fileVehiclePhoto').bind('change', function () {
     
 
 });
+
+
+$('#frmLoadedIn_ddlDocumentType').on('change', function () {
+    frmLoadedIn_ddlDocumentType();
+});
+$('#frmLoadedOut_ddlDocumentType').on('change', function () {
+    frmLoadedOut_ddlDocumentType();
+});
+
+function frmLoadedIn_ddlDocumentType(callby) {
+    let elementValue = $('#frmLoadedIn_ddlDocumentType').val();
+
+    if (elementValue.toLowerCase() === 'sales return') {
+        $('#DivfrmLoadedIn_Vendor')[0].innerHTML = 'Customer Name'
+        GateEntryService.GetVendorOrClientNameListData('CLIENT').then(function (response) {
+            AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedIn_txtVendorName'), $('#frmLoadedIn_txtVendorName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+
+        });
+    }
+    else if (elementValue.toLowerCase().includes('job work') == true) {
+        $('#DivfrmLoadedIn_Vendor')[0].innerHTML = 'Job Worker'
+        GateEntryService.GetVendorOrClientNameListData('JOBWORK').then(function (response) {
+            AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedIn_txtVendorName'), $('#frmLoadedIn_txtVendorName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+
+        });
+    }
+    else {
+        $('#DivfrmLoadedIn_Vendor')[0].innerHTML = 'Vendor Name'
+        GateEntryService.GetVendorOrClientNameListData('VENDOR').then(function (response) {
+            AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedIn_txtVendorName'), $('#frmLoadedIn_txtVendorName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+
+        });
+    }
+    if (typeof callby === 'undefined' || callby === '') {
+        $('#frmLoadedIn_txtVendorName').val('');
+    }
+    
+}
+
+function frmLoadedOut_ddlDocumentType(callby) {
+    let elementValue = $('#frmLoadedOut_ddlDocumentType').val();
+
+    if (elementValue.toLowerCase() === 'purchase return') {
+        $('#DivfrmLoadedOut_CustomerName')[0].innerHTML = 'Vendor Name'
+        GateEntryService.GetVendorOrClientNameListData('VENDOR').then(function (response) {
+            AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedOut_txtCustomerName'), $('#frmLoadedOut_txtCustomerName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+        });
+    }
+    else if (elementValue.toLowerCase().includes('job work') == true) {
+        $('#DivfrmLoadedOut_CustomerName')[0].innerHTML = 'Job Worker'
+        GateEntryService.GetVendorOrClientNameListData('JOBWORK').then(function (response) {
+            AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedOut_txtCustomerName'), $('#frmLoadedOut_txtCustomerName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+        });
+    }
+    else {
+        $('#DivfrmLoadedOut_CustomerName')[0].innerHTML = 'Customer Name'
+        GateEntryService.GetVendorOrClientNameListData('CLIENT').then(function (response) {
+            AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedOut_txtCustomerName'), $('#frmLoadedOut_txtCustomerName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+        });
+    }
+
+    if (typeof callby === 'undefined' || callby === '') {
+        $('#frmLoadedOut_txtCustomerName').val('');
+    }
+    
+}
+
 function ClearAllFrm() {
     GateEntryImageDetail = [{
         imgVehicle: [],
@@ -1447,6 +1559,7 @@ function ClearAllFrm() {
     $('#frmLoadedIn_txtGoodsDescription').val('');
     $('#frmLoadedIn_txtQTY').val('');
     $('#frmLoadedIn_txtUOM').val('');
+    $('#frmLoadedIn_ddlDocumentType').val('');
     $('#frmLoadedIn_txtVendorName').val('');
     $('#frmLoadedIn_txtDocumentNo').val('');
     $('#frmLoadedIn_txtDocumentDate').val('');
@@ -1464,6 +1577,7 @@ function ClearAllFrm() {
     $('#frmLoadedIn_txtGoodsDescription').removeAttr('readonly');
     $('#frmLoadedIn_txtQTY').removeAttr('readonly');
     $('#frmLoadedIn_txtUOM').removeAttr('disabled');
+    $('#frmLoadedIn_ddlDocumentType').removeAttr('disabled');
     $('#frmLoadedIn_txtVendorName').removeAttr('readonly');
     $('#frmLoadedIn_txtDocumentNo').removeAttr('readonly');
     $('#frmLoadedIn_txtDocumentDate').removeAttr('readonly');
@@ -1562,15 +1676,29 @@ function ViewGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val(gateEntryData[0].WeightmentSlipNumberOut);
         $('#frmLoadedOut_txtGoodsDescription').val(gateEntryData[0].GoodDescription);
         $('#frmLoadedOut_txtQty').val(gateEntryData[0].Qty);
-        $('#frmLoadedOut_ddlUOM').val(gateEntryData[0].UOM);
-        $('#frmLoadedOut_ddlUOM').select2({
-            width: '-webkit-fill-available'
+        GateEntryService.GetUOMMasterList().then(function (response) {
+
+            BindSelectList($('#frmLoadedOut_ddlUOM')[0], response.map((item) => ({ Code: item.UOM, Desp: item.UOM, VendorName: '' })));
+            $('#frmLoadedOut_ddlUOM').val(gateEntryData[0].UOM);
+            $('#frmLoadedOut_ddlUOM').select2({
+                width: '-webkit-fill-available'
+            });
+
         });
+
+
+        GateEntryService.GateEntryCategoryOut().then(function (response) {
+            BindSelectList($('#frmLoadedOut_ddlDocumentType')[0], response.map((item) => ({ Code: item.Desp, Desp: item.Desp, VendorName: '' })));
+            $('#frmLoadedOut_ddlDocumentType').val(gateEntryData[0].DocumentType);
+            $('#frmLoadedOut_ddlDocumentType').select2({
+                width: '-webkit-fill-available'
+            });
+            frmLoadedOut_ddlDocumentType('view');
+        });
+       
+        
         $('#frmLoadedOut_txtCustomerName').val(gateEntryData[0].VendorName);
-        $('#frmLoadedOut_ddlDocumentType').val(gateEntryData[0].DocumentType);
-        $('#frmLoadedOut_ddlDocumentType').select2({
-            width: '-webkit-fill-available'
-        });
+        
         $('#frmLoadedOut_txtDocumentNo').val(gateEntryData[0].DocNo);
         $('#frmLoadedOut_txtDocumentDate').val(new Date(gateEntryData[0].InvoiceDate).toISOString().slice(0, 10));
         $('#frmLoadedOut_txtEWayBillNo').val(gateEntryData[0].EwaybillNo);
@@ -1595,7 +1723,6 @@ function ViewGateEntry(gateEntryData, EntryType) {
     }
 
 }
-
 function LockDocumntFutureDate() {
     let maxDate = new Date().toISOString().slice(0, 10);
     let MinDate = new Date()///.toISOString().slice(0, 10);
