@@ -1,0 +1,199 @@
+﻿
+<div class="modal fade bs-example-modal-center" id="SelectPrinterToPrintControlModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content" style="max-width:45%">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Printer:</h5>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    
+                    <div class="col-md-12 ">
+                        <label for="ddlPrinters" class="col-form-label-sm fw-bold">Printer:</label>
+                        <select id="ddlPrinters" class="form-control form-control-sm box_border"></select>
+                    </div>
+                </div>
+
+                <div class="text-end mt-1">
+                    <a class="btn btn-primary" onclick="SelectPrinterToPrintControl_onPrint();">
+                        Print
+                    </a>
+                    &nbsp;
+                    <a class="btn btn-danger" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                    <input type="hidden" value="@ViewBag.PrintText" id="hfPrintText" />
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
+
+<script type="module">
+
+     import { SelectPrinterToPrintService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/SelectPrinterToPrintService.js';
+
+      // $(document).ready(function () {
+      //                      $("#SelectPrinterToPrintControlModal").modal({
+      //                          backdrop: 'static',
+      //                      });
+      //                      $("#SelectPrinterToPrintControlModal").modal('show');
+      //              });
+
+     function getddlPrinters() {
+         SelectPrinterToPrintService.GetPrinterList().then(function (respone) {
+               
+
+              if(respone.length > 0){
+                      BindSelectList($('#ddlPrinters')[0], respone.map((item) => ({ Code: item.PrinterIP, Desp: item.DisplayName,PortNo:item.PORTNo })));
+
+                       if(respone.length==1){
+                              $('#ddlPrinters').val(respone[0].PrinterIP);
+                       }
+
+                     $('#ddlPrinters').select2({
+                        dropdownParent: $('#SelectPrinterToPrintControlModal'),
+                         width: '-webkit-fill-available'
+                    });
+
+                  $(document).ready(function () {
+                          $("#SelectPrinterToPrintControlModal").modal({
+                              backdrop: 'static',
+                          });
+                          $("#SelectPrinterToPrintControlModal").modal('show');
+                  });
+              }else{
+                   toastr.error('No Printer Found');
+                   return;
+              }
+           
+
+           
+       })
+
+    }
+
+   function BindSelectList(element,list) {
+         let option = '<option value="0" PortNo="0"></option>';
+        $.each(list, function (key, val) {
+            option += '<option value="' + val.Code + '" PortNo="'+val.PortNo+'">' + val.Desp + '</option>';
+        });
+        element.innerHTML = option;
+    }
+    
+    function SelectPrinterToPrintControl_onPrint() {
+
+            let printerIP = $('#ddlPrinters').val();
+
+            let ddlPrinters = document.getElementById("ddlPrinters");
+
+            let PortNo = ddlPrinters.options[ddlPrinters.selectedIndex].attributes["PortNo"].value;
+            
+            let printtext = "I8,A\r\nZN\r\nq600\r\nS2\r\nO\r\nJF\r\n\u001bKIZZQ0\r\n\u001bKI9+0.0\r\nD13\r\nZT\r\nQ400,B25\r\n\u001bArg\u001b\u001blabel 500 31\r\n\u001b\u001bexit\r\n\u001bKI80\r\nN\r\nX7,4,3,595,392\r\nLO7,339,585,3\r\nA423,376,2,3,1,1,N,\"#Value1#\"\r\nA577,313,2,3,1,1,N,\"Date :\"\r\nA577,252,2,3,1,1,N,\"BUNDLE NO :\"\r\nA577,170,2,3,1,1,N,\"Weight :\"\r\nA577,120,2,3,1,1,N,\"Size :\"\r\nA577,79,2,3,1,1,N,\"Printed By\"\r\nA485,313,2,3,1,1,N,\"#Value6#\"\r\nA418,280,2,3,1,1,N,\"#Value2#\"\r\nA453,170,2,3,1,1,N,\"#Value4#\"\r\nA492,120,2,3,1,1,N,\"#Value5#\"\r\nA577,45,2,3,1,1,N,\"#Value7#\"\r\nB418,245,2,1,2,4,52,N,\"#Value2#\"\r\nP1\r\n";
+
+          if (printerIP === '0' || printerIP === '') {
+             toastr.error('Please select a printer');
+             return;
+         }
+          let printText = $('#hfPrintText').val();
+           if (printText === '') {
+             toastr.error('Print text is empty');
+             return;
+           }
+            Showloader();
+
+          SelectPrinterToPrintService.USP_RPT_PrintID(printText).then(async function (respone) {
+               HideLoader();
+
+               if(respone.length > 0)
+               {
+
+                     let Usp_PrintIDRespone=await Promise.all(respone.map(async item =>{
+                         
+                         let tempPrintText=printtext;
+                           let DBName = JSON.parse(sessionStorage.getItem('authKey')).ERPDB_Name;
+                              let UserID = JSON.parse(sessionStorage.getItem('UserDetails'))[0].UserID;
+
+                             if(DBName.toUpperCase().includes("BIZSOLERPDBINFRAMATIND")==true){
+
+                                     tempPrintText = tempPrintText.replace(/#Value1#/g, item.ItemName +"(Inframat Ind.)")
+
+                                }
+                             else
+                                 {
+                                        tempPrintText = tempPrintText.replace(/#Value1#/g, item.ItemName +"(Inframat)")
+                                 }
+
+                                 if(item.VendorName==""){
+
+                                        tempPrintText = tempPrintText.replace(/#Value7#/g, UserID)
+
+                                 }
+                              else
+                                  {
+                                          tempPrintText = tempPrintText.replace(/#Value7#/g, item.VendorName)
+                                  }
+
+                               tempPrintText = tempPrintText.replace(/#Value2#/g, item.IDNo)
+                                           //.replace(/#Value3#/g, respone[0].Value3)
+                                             .replace(/#Value4#/g, parseFloat(item.QtyMT).toFixed(3))
+                                            .replace(/#Value5#/g, respone[0].SizeDesp)
+                                             .replace(/#Value6#/g, respone[0].GenerationDate)
+                                            .replace(/#Value8#/g, "")
+                                           .replace(/#Value9#/g, "");
+
+                         let payLoad={}
+                            payLoad.IP=printerIP;
+                             payLoad.PrintText= decodeURIComponent(tempPrintText);
+                            payLoad.PortNo= decodeURIComponent(PortNo);
+
+
+                            let PrintRespon=await SelectPrinterToPrintService.PrintToPrinter(JSON.stringify(payLoad))
+
+                             if(PrintRespon=='Y'){
+                                   toastr.success(PrintRespon.Msg);
+                             }else{
+                                   toastr.error(PrintRespon.Msg);
+                             }
+                        }));
+
+
+                      
+
+               // let payLoad={}
+               // payLoad.IP=printerIP;
+               // payLoad.PrintText= decodeURIComponent(printText);
+               // payLoad.PortNo= decodeURIComponent(PortNo);
+
+               
+               // SelectPrinterToPrintService.PrintToPrinter(JSON.stringify(payLoad)).then(function (respone) {
+
+                
+               //   if(respone.Status =='Y'){
+               //             toastr.success(respone.Msg);
+               //   }else{
+               //        toastr.error(respone.Msg);
+
+               //       return;
+               //  }
+
+
+
+               //  })
+
+               }
+                
+         })
+
+
+           
+
+    }
+    window.SelectPrinterToPrintControl_onPrint = SelectPrinterToPrintControl_onPrint;
+
+     getddlPrinters()
+        
+
+         
+        
+
+</script>
+

@@ -90,6 +90,13 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             return PartialView("_CheckCreditLimits");
 
         }
+        public ActionResult SelectPrinterToPrintControl(string PrintText)
+        {
 
+            ViewBag.PrintText = PrintText;
+
+            return PartialView("_SelectPrinterToPrintControl");
+
+        }
     }
 }

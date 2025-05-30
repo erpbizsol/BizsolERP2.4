@@ -59,22 +59,21 @@
                     
 
                 </div>
-                @* <div class="col-sm-2 col-3 without-label-field">
-                    
-                    <button type="button" class="btn btn-primary btn-height" onclick="RollingProductionSummary_ShowPlanGrid()">S</button>
+                <div class="col-md-12 col-12 mt-2">
 
-                </div> *@
-                 <div class="col-sm-2 col-3 without-label-field">
-
+                    <a class="btn btn-primary btn-height" id="btnBrkDownStart">
+                        BREAK DOWN START
+                    </a> &nbsp;&nbsp;
                     <button type="button" class="btn btn-primary btn-height" onclick="RollingProductionEnty_Back()">Back</button>
-
-                </div> 
+                </div>
+                @*  <div class="col-sm-2 col-3 without-label-field">
+                    <button type="button" class="btn btn-primary btn-height" onclick="RollingProductionEnty_Back()">Back</button>
+                </div>  *@
 
             </div>
             
             <div class="row">
-                <fieldset class="rounded-1 p-3">
-                    <legend class="float-none w-auto px-2">ISSUE SLIT ID</legend>
+                <div class="col-md-12">
                     <div class="table-wrapper mt-2 ">
                         <table id="tbIssueSlitID" class="table fixed-width-table">
                             <thead id="tbIssueSlitIDHeader">
@@ -100,7 +99,10 @@
                     </div>
                     <div class="paginator" id="paginator-tbIssuedIDDetails">
                     </div>
-                </fieldset>
+                </div>
+                @* <fieldset class="rounded-1 p-3">
+                    <legend class="float-none w-auto px-2">ISSUE SLIT ID</legend>
+                </fieldset> *@
             </div>
         </div>
 
@@ -133,21 +135,22 @@
 
                 </div>
                 
-                @* <div class="col-sm-2 col-3 without-label-field">
-
-                    <button type="button" class="btn btn-primary btn-height" onclick="RollingProductionSummary_ShowPlanGrid()">S</button>
-
-                </div> *@
-                <div class="col-sm-2 col-3 without-label-field">
-
+                <div class="col-md-12 col-12">
+                    <a class="btn btn-primary btn-height" id="btnReceiveBrkDownStart">
+                        BREAK DOWN START
+                    </a> &nbsp;&nbsp;
                     <button type="button" class="btn btn-primary btn-height" onclick="RollingProductionEnty_Back()">Back</button>
-
                 </div>
+                @* <div class="col-sm-2 col-3 without-label-field">
+                    <button type="button" class="btn btn-primary btn-height" onclick="RollingProductionEnty_Back()">Back</button>
+                </div> *@
             </div>
 
             <div class="row">
-                <fieldset class="rounded-1 p-3">
-                    <legend class="float-none w-auto px-2">RECEIVE ALL SIZE</legend>
+                <div class="col-md-12 mt-2">
+                    <h4 class="table-heading">RECEIVE ALL SIZE</h4>
+                </div>
+                <div class="col-md-12">
                     <div class="table-wrapper mt-2 ">
                         <table id="tbItemToBeReceive" class="table fixed-width-table">
                             <thead id="tbItemToBeReceiveHeader">
@@ -160,28 +163,34 @@
                     </div>
                     <div class="paginator" id="paginator-tbItemToBeReceive">
                     </div>
-
-                    
-                </fieldset>
+                </div>
+                @* <fieldset class="rounded-1 p-3">
+                    <legend class="float-none w-auto px-2">RECEIVE ALL SIZE</legend>
+                </fieldset> *@
             </div>
 
 
             <div class="row">
-                <fieldset class="rounded-1 p-3">
+               @*  <fieldset class="rounded-1 p-3">
                     <legend class="float-none w-auto px-2">RECEIVE</legend>
-                        <div class="table-wrapper mt-2 ">
+                </fieldset> *@
+                <div class="col-md-12 mt-2">
+                    <h4 class="table-heading">RECEIVE</h4>
+                </div>
+                <div class="col-md-12">
+                    <div class="table-wrapper mt-2 ">
                         <table id="tbReceiveView" class="table fixed-width-table" style="--bs-table-bg: unset;">
-                                <thead id="tbReceiveViewHeader">
-                                </thead>
-                                <tbody id="tbReceiveViewBody">
-                                </tbody>
-                                <tfoot>
-                                </tfoot>
-                            </table>
-                        </div>
-                        <div class="paginator" id="paginator-tbReceiveView">
-                        </div>
-                </fieldset>
+                            <thead id="tbReceiveViewHeader">
+                            </thead>
+                            <tbody id="tbReceiveViewBody">
+                            </tbody>
+                            <tfoot>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="paginator" id="paginator-tbReceiveView">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -220,6 +229,8 @@
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div>
+<div id="DivBrakDownStartControlModal"></div>
+<div id="DivSelectPrinterToPrintControlModal"></div>
 <script>
     let IsRunningPlan='@ViewBag.IsRunningPlan'
     let NavPVCProductionMaster_Code='@ViewBag.PVCProductionMaster_Code'

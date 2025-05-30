@@ -398,7 +398,7 @@ const VisitOrderEntryService = {
         );
     },
     GetBasicRateExtraCharges: function GetBasicRateExtraCharges(ItemName,Size, Thickness,DealerName,ItemSizeMaster_code) {
-        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetBasicRateExtraCharges?ItemName=${ItemName}&Size=${Size}&Thickness=${Thickness}&DealerName=${DealerName}&ItemSizeMaster_code=${ItemSizeMaster_code}`;
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetBasicRateExtraCharges?ItemName=${encodeURIComponent(ItemName)}&Size=${encodeURIComponent(Size)}&Thickness=${encodeURIComponent(Thickness)}&DealerName=${encodeURIComponent(DealerName)}&ItemSizeMaster_code=${ItemSizeMaster_code}`;
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
                 return value;
