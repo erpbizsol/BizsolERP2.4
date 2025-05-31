@@ -179,7 +179,7 @@ function PackingListTransactionSum(response) {
         let DispatchRowsGroupedbyPalletNo = DispatchRows.reduce((acc, item) => {
             // Use the category as the key
             const key = item["Pallet No"];
-            if (!acc.includes(key)) {
+            if (key && !acc.includes(key)) {
                 acc.push(key) ;
             }
            // acc[key].push(item);

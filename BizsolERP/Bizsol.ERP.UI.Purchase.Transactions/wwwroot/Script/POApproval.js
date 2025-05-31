@@ -26,7 +26,7 @@ function unApprovedPO() {
             const showButtons = [];
             const hiddenColumns = ["Code"];
             const ColumnAlignment = {
-                "Total PO Amount": 'right',
+                "Total Bill Amount": 'right',
                 "PO Date": 'center',
                 "PO No": 'center',
             };
@@ -94,7 +94,7 @@ function ViewData(Code) {
                 }; 
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header-PoapprovalModal", "table-body-PoapprovalModal", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
-
+            $('#paginator-PoapprovalModal').hide();
 
         } else {
             toastr.error("No valid data found:", response);
