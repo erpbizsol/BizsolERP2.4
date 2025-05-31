@@ -102,11 +102,6 @@
 }
 
 @media (min-width: 320px) and (max-width: 480px) {
-
-    .select2-container .select2-selection--single .select2-selection__rendered {
-        width: 270px;
-    }
-
     /*input field*/
 
     .col-Date-1 {

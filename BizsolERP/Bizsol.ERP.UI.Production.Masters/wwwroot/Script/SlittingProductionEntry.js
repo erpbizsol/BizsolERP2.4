@@ -1280,7 +1280,7 @@ $('#btnPrint').on('click', function () {
 });
 
 $('#btnModalPrint').on('click', function () {
-   
+    //InitSelectPrinterToPrintControl("01-18I-0002A#01-18I-0002B#");
 
     let PrintId = "";
     let table = document.getElementById("tbPrintID");
@@ -1300,16 +1300,17 @@ $('#btnModalPrint').on('click', function () {
         toastr.error('Plz Select at least one Id!');
         return;
     }
-    
-    SlittingProductionEntryService.PrintIdentificationNos(PrintId, '0').then(function (response) {
-        let url = response.Url;
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.target = '_blank';
-        a.href = url;
-        document.body.appendChild(a);
-        a.click();
-    });
+    InitSelectPrinterToPrintControl(PrintId);
+
+    //SlittingProductionEntryService.PrintIdentificationNos(PrintId, '0').then(function (response) {
+    //    let url = response.Url;
+    //    const a = document.createElement('a');
+    //    a.style.display = 'none';
+    //    a.target = '_blank';
+    //    a.href = url;
+    //    document.body.appendChild(a);
+    //    a.click();
+    //});
 });
 
 $('#btnBrkDownStart').on('click', function () {
@@ -1338,6 +1339,12 @@ $('#btnBrkDownStart').on('click', function () {
     InitBrakDownControl(entryDate, processMaster_Code, machineMaster_Code, shiftMaster_Code, godownMaster_Code);
 });
 
+function InitSelectPrinterToPrintControl(printText) {
+    let url = baseUrl + '/CustomControl/SelectPrinterToPrintControl';
+
+    $('#DivSelectPrinterToPrintControlModal').load(url, { PrintText: encodeURIComponent(printText) });
+
+}
 
 SlittingProductionEntry_ShowPlanGrid();
 getPackingListFGFixedParaMeters();
