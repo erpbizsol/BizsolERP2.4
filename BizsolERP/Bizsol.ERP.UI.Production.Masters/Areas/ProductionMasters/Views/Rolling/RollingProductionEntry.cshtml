@@ -64,6 +64,10 @@
                     <a class="btn btn-primary btn-height" id="btnBrkDownStart">
                         BREAK DOWN START
                     </a> &nbsp;&nbsp;
+                    <a class="btn btn-secondary btn-height" id="btnScanQR" onclick="RollingProductionEnty_btnScanQR()">
+                        Scan QR
+                    </a>
+                    &nbsp;&nbsp;
                     <button type="button" class="btn btn-primary btn-height" onclick="RollingProductionEnty_Back()">Back</button>
                 </div>
                 @*  <div class="col-sm-2 col-3 without-label-field">
@@ -231,6 +235,7 @@
 </div>
 <div id="DivBrakDownStartControlModal"></div>
 <div id="DivSelectPrinterToPrintControlModal"></div>
+<div id="DivScanQRCodeByCameraControlModal"></div>
 <script>
     let IsRunningPlan='@ViewBag.IsRunningPlan'
     let NavPVCProductionMaster_Code='@ViewBag.PVCProductionMaster_Code'
