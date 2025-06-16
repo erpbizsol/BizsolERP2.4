@@ -148,7 +148,7 @@
 
                             let PrintRespon=await SelectPrinterToPrintService.PrintToPrinter(JSON.stringify(payLoad))
 
-                             if(PrintRespon=='Y'){
+                              if(PrintRespon.Status=='Y'){
                                    toastr.success(PrintRespon.Msg);
                              }else{
                                    toastr.error(PrintRespon.Msg);
