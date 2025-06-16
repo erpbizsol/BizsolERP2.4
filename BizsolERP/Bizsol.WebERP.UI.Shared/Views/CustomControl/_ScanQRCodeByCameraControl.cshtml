@@ -110,7 +110,8 @@
 
            })
            .catch((err) => {
-               console.log(err)
+               console.log(err);
+               toastr.error(err);
                //console.error(err)
            })
     }

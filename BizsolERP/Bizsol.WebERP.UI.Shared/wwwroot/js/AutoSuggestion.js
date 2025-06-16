@@ -1,14 +1,15 @@
 ﻿
 const AutoSuggestionControl = {
-    SetUpAutoSuggestion: function SetUpAutoSuggestion(AutoSuggestionInputElement, AutoSuggestionListElement, data,serachMode) {
+    SetUpAutoSuggestion: function SetUpAutoSuggestion(AutoSuggestionInputElement, AutoSuggestionListElement, data, serachMode, IsEnableBizSolhandleEnterKey=true) {
         populateAutoSuggestionList(data, AutoSuggestionListElement);
-        setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListElement);
+        setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListElement, IsEnableBizSolhandleEnterKey);
     }
 }   
 
 export { AutoSuggestionControl }
 
 var AutoSuggestionListId = '';
+
 function populateAutoSuggestionList(data, AutoSuggestionListElement) {
     const AutoSuggestionList = AutoSuggestionListElement;
     AutoSuggestionList.empty();
@@ -26,7 +27,7 @@ function populateAutoSuggestionList(data, AutoSuggestionListElement) {
     AutoSuggestionListId = AutoSuggestionListElement[0].id;
 }
 
-function setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListElement) {
+function setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListElement, IsEnableBizSolhandleEnterKey = true) {
     const AutoSuggestionInput = AutoSuggestionInputElement;
     const AutoSuggestionList = AutoSuggestionListElement;
     let currentIndex = -1;
@@ -96,7 +97,7 @@ function setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListEleme
                 AutoSuggestionInput.val(selectedItem);
                 AutoSuggestionList.hide(); // Hide dropdown after selection
                 currentIndex = -1;
-                BizSolhandleEnterKey(event);
+                if (IsEnableBizSolhandleEnterKey == true) { BizSolhandleEnterKey(event); }
             }
             
            
