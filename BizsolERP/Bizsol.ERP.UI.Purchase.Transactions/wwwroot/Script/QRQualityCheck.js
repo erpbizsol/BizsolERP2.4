@@ -1,37 +1,25 @@
-﻿//import { GateEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GateEntryService.js';
+﻿import { QualityCheckService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/QualityCheckService.js';
 
 $("#ERPHeading").text("Quality Check");
 
-let QRSacnDataArra = []
+
 let baseUrl = sessionStorage.getItem('AppBaseURL');
 
-function BindQualityCheckGrid() {
-    ScanTextToJson();
-
-   // QRSacnDataArra.push({ Code: 1, Name: "Manoj kumar" });
-
-    const StringFilterColumn = [];
-    const NumericFilterColumn = [];
-    const DateFilterColumn = [];
-    const Button = false;
-    const showButtons = []
-    const StringdoubleFilterColumn = [];
-    const hiddenColumns = [];
-    const ColumnAlignment = {};
-
-    BizsolCustomFilterGrid.CreateDataTable("tbQRQualityCheckHeader", "tbQRQualityCheckBody", QRSacnDataArra, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
-
-}
-
-function ScanTextToJson() {
-    //let ScanText = 'JSW VIJAYANAGAR METALLICS LIMITEDSpecification:IS11513_2017CR2Heat No.|Mother Coil|Batch No.|Nominal Size (MM)|QTY(MT)|C %|Mn %|S %|P %|Si %|Al %|N %|||||||||||||||I103939||25251175|2.500 X 1500.0 X Coil X P| 29.045|0.0410|0.22|0.015|0.016|0.011|0.056|0.0048|||||||||||||||';
+async function BindQualityCheckGrid() {
+   
+    let QRSacnDataArra = []
     let ScanText = $('#txtSacnQRText').val();
+
+    if (ScanText.includes("|") == false) {
+        toastr.error('Invalid QR Code.');
+        return;
+    }
 
     ScanText = ScanText.replace('Heat', '|Heat');
     let objScanSplit = ScanText.split('|');
 
     if (objScanSplit.length > 0) {
-        let HeadCount = objScanSplit.length/2;
+        let HeadCount = objScanSplit.length / 2;
         let ValueStartIndex = HeadCount;
         let DataJsonObj = {};
         DataJsonObj.Client = objScanSplit[0];
@@ -44,7 +32,64 @@ function ScanTextToJson() {
 
     }
 
+
+    if (!Array.isArray(QRSacnDataArra) || QRSacnDataArra.length === 0) {
+        $('#tbQRQualityCheck tr').empty();
+        $('#paginator-tbQRQualityCheck').empty();
+        return;
+    }
+
+    await Promise.all(QRSacnDataArra.map(async item => {
+        let HeadKey = Object.keys(item);
+
+        await Promise.all(HeadKey.map(async keyItem => {
+            if (keyItem !== "" && !keyItem.includes("Batch No") && !keyItem.includes("Mother Coil")) {
+                let tempPayLoad = {
+                    ScanQRText: JSON.stringify(QRSacnDataArra) + "##*#" + $('#txtSacnQRText').val(),
+                    BatchNo: item["Batch No."],
+                    MotherCoil: item["Mother Coil"],
+                    QCParameter: keyItem,
+                    QCParameterValue: item[keyItem]
+                };
+
+                let QRQualityRespon = await QualityCheckService.SaveQRQualityCheck(JSON.stringify(tempPayLoad));
+                if (QRQualityRespon.Status === 'Y') {
+                    toastr.success(QRQualityRespon.Msg);
+                } else {
+                    toastr.error(QRQualityRespon.Msg);
+                }
+               
+            }
+        }));
+
+    }));
+
+    const StringFilterColumn = [];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = [];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = [];
+    const ColumnAlignment = {};
+
+    BizsolCustomFilterGrid.CreateDataTable(
+        "tbQRQualityCheckHeader",
+        "tbQRQualityCheckBody",
+        QRSacnDataArra,
+        Button,
+        showButtons,
+        StringFilterColumn,
+        NumericFilterColumn,
+        DateFilterColumn,
+        StringdoubleFilterColumn,
+        hiddenColumns,
+        ColumnAlignment
+    );
+
+    QRSacnDataArra = [];
 }
+
 function InitScanQRCodeByCameraControl(outputQRTextElementID, callBackFunctionName) {
     let url = baseUrl + '/CustomControl/ScanQRCodeByCameraControl';
 
@@ -55,11 +100,19 @@ function QRQualityCheck_btnScanQR() {
 
     InitScanQRCodeByCameraControl("txtSacnQRText", "QRQualityCheck_CallbackScanQRCode");
 }
-function QRQualityCheck_CallbackScanQRCode() {
-    BindQualityCheckGrid();
+async function QRQualityCheck_CallbackScanQRCode() {
+    await BindQualityCheckGrid();
     $('#txtSacnQRText').focus()
 }
-
+$('#txtSacnQRText').on('keyup keypress keydown', async function (e) {
+    var keyCode = e.keyCode || e.which;
+    if (keyCode === 13) {
+        e.preventDefault();
+        await BindQualityCheckGrid();
+        $('#txtSacnQRText').focus()
+        return false;
+    }
+});
 window.QRQualityCheck_CallbackScanQRCode = QRQualityCheck_CallbackScanQRCode;
 window.QRQualityCheck_btnScanQR = QRQualityCheck_btnScanQR;
 //BindQualityCheckGrid();
