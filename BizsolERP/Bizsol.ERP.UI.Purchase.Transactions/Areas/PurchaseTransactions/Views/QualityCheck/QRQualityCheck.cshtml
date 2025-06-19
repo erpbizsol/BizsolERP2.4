@@ -1,0 +1,39 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+
+
+
+
+
+<div class="row">
+    <div class="col-sm-3">
+        <label for="txtSacnQRText">Sacn Text</label>
+        <input type="text" class="form-control form-control-sm" id="txtSacnQRText" autocomplete="off">
+    </div>
+    <div class="col-sm-6 without-label-field">
+
+        <a class="btn btn-secondary btn-height" id="btnScanQR" onclick="QRQualityCheck_btnScanQR()">
+            Scan QR
+        </a>
+        
+    </div>
+</div>
+<div class="table-wrapper mt-2 fixed-height-table">
+    <table id="tbQRQualityCheck" class="table fixed-width-table">
+        <thead id="tbQRQualityCheckHeader">
+        </thead>
+        <tbody id="tbQRQualityCheckBody">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-tbQRQualityCheck">
+</div>
+
+<div id="DivScanQRCodeByCameraControlModal"></div>
+
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/QRQualityCheck.js"></script>
+

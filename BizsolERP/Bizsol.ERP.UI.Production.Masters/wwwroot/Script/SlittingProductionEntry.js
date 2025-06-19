@@ -46,7 +46,8 @@ let G_SlittingPlanMaster_Code = 0;
 let G_Row = ''
 
 let G_UserMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-
+let prevFocus;
+let G_machineIP = "";
 function ChangeMode(Mode) {
     $('#DivProductionGPForm').hide();
     $('#DivProductionGPViewGrid').hide();
@@ -274,6 +275,7 @@ function Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code) {
         console.log(response)
         if (response.length > 0) {
             AllowWeightOnlyByWeighment = response[0].AllowWeightOnlyByWeighment;
+            G_machineIP = response[0].WeightScaleIP;
             G_issueIdentificationNo = response[0]["Identification No"];
             
             G_IssueItemMaster_Code = response[0].IssueItemMaster_Code;
@@ -344,7 +346,7 @@ function Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code) {
                 "Size Desp": `${item.SizeDesp} &nbsp;&nbsp;<a class="btn btn-secondary icon-height" onclick="SlittingProductionEntry_OnClick_NewSize(this)"><i class="fa fa-plus"></i></a>`,
                 "Thickness": item.itemThick,
                 "PCs": eleText.toLowerCase() == 'slitting' && item.NoofSlits > 1 ? `${item.NoofSlits} &nbsp;&nbsp;<a class="btn btn-primary icon-height" onclick="SlittingProductionEntry_AddReceivedItem(this)">Split PC</a>` : item.NoofSlits,
-                "Weight": '<input  class="form-control form-control-sm itemWeight" type="text" maxlength="6" autocomplete="off" value="' + parseFloat(item.Weight).toFixed(3) + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);SlittingProductionEntry_CalScrapWeight();" >',
+                "Weight": '<input id="txtItemWeight_' + item.SNo +'"  class="form-control form-control-sm itemWeight" type="text" maxlength="6" autocomplete="off" value="' + parseFloat(item.Weight).toFixed(3) + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);SlittingProductionEntry_CalScrapWeight();" >',
                 "No Of Pass": '<input  class="form-control form-control-sm" type="text" maxlength="6" autocomplete="off" value="' + item.NoOfPass + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);">',
                 "Manual ID": '<input  class="form-control form-control-sm" type="text" maxlength="6" autocomplete="off" value="' + item.ManualIDNo + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);">',
                 "In Time": '<input  class="form-control form-control-sm " type="time" maxlength="6" autocomplete="off" value="' + item.InTime + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);"  >',
@@ -408,6 +410,15 @@ function Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code) {
                     });
                 }
                 //initialize ItemReceived select control end
+
+                $("input").focus(function () {
+
+
+                    if (typeof prevFocus !== "undefined") {
+                        $("#prev").html(prevFocus.val());
+                    }
+                    prevFocus = $(this);
+                });
 
             } else {
                 $('#tbSlittingReceivedDetails tr').empty();
@@ -1048,10 +1059,10 @@ function SlittingProductionEntry_CreatNewEntry() {
 
     
 
-    //if (AllowWeightOnlyByWeighment === 'Y' && IsGetWeightByScale == false) {
-    //    toastr.error('Please take weight by Scale!');
-    //    return false;
-    //}
+    if (AllowWeightOnlyByWeighment === 'Y' && IsGetWeightByScale == false) {
+        toastr.error('Please take weight by Scale!');
+        return false;
+    }
 
     let CheckStockPayLoad = {
         EntryType: "O",
@@ -1339,11 +1350,74 @@ $('#btnBrkDownStart').on('click', function () {
     InitBrakDownControl(entryDate, processMaster_Code, machineMaster_Code, shiftMaster_Code, godownMaster_Code);
 });
 
+// our single focus event handler
+
+
+$("input").focus(function () {
+
+    // let's check if the previous focus has already been defined
+    if (typeof prevFocus !== "undefined") {
+
+        // we do something with the previously focused element
+        $("#prev").html(prevFocus.val());
+    }
+    prevFocus = $(this);
+});
+
+
 function InitSelectPrinterToPrintControl(printText) {
     let url = baseUrl + '/CustomControl/SelectPrinterToPrintControl';
 
     $('#DivSelectPrinterToPrintControlModal').load(url, { PrintText: encodeURIComponent(printText) });
 
+}
+function SlittingProductionEntry_GetSCaleWeight() {
+    
+
+    if (G_machineIP === "") {
+        toastr.error('Can not calculate Scale Weight! MachineIp not available for this process');
+        return;
+    }
+    Showloader();
+    SlittingProductionEntryService.GetSCaleWeight(G_machineIP).then(function (resp) {
+        if (resp.Status === 'Y') {
+            HideLoader();
+           
+            if (resp.Msg.includes("System.Net.Sockets.SocketException") == true) {
+                toastr.error('Weight Not Available on Scale! Please Put Weight on Scale!');
+                return;
+            }
+
+            toastr.success(resp.Msg);
+                if (typeof prevFocus !== "undefined") {
+                    var id = prevFocus[0].id;
+                    if (id === 'txtScrapWeight' || id.includes("txtItemWeight")) {
+                        var Data = resp.Msg.replace(/\\n/g, '').replace(/\\r/g, '').replace(/"/g, '')
+
+                        Data = parseInt(Data) / 1000
+
+
+                        document.getElementById(id).value = parseFloat(Data).toFixed(3);
+                       IsGetWeightByScale = true;
+                        if (id === 'txtScrapWeight') {
+                            SlittingProductionEntry_CalScrapPerWeight();
+                        } else if (id.includes("txtItemWeight")) {
+                            SlittingProductionEntry_CalScrapWeight();
+                        }
+
+
+                    }
+                }
+            
+
+        } else {
+            toastr.error(resp.Msg);
+            HideLoader();
+        }
+
+    });
+
+    
 }
 
 SlittingProductionEntry_ShowPlanGrid();
@@ -1371,5 +1445,6 @@ window.SlittingProductionEntry_AddReceivedItem = SlittingProductionEntry_AddRece
 window.SlittingProductionEntry_AllCheckSelection = SlittingProductionEntry_AllCheckSelection;
 window.SlittingProductionEntry_OnChangeddlParantID = SlittingProductionEntry_OnChangeddlParantID;
 window.SlittingProductionEntry_CreatNewEntry = SlittingProductionEntry_CreatNewEntry;
+window.SlittingProductionEntry_GetSCaleWeight = SlittingProductionEntry_GetSCaleWeight;
 
 

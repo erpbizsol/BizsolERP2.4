@@ -98,5 +98,14 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             return PartialView("_SelectPrinterToPrintControl");
 
         }
+        public ActionResult ScanQRCodeByCameraControl(string OutputQRTextElementID,string CallBackFunctionName)
+        {
+
+            ViewBag.OutputQRTextElementID = OutputQRTextElementID;
+            ViewBag.CallBackFunctionName = CallBackFunctionName;
+
+            return PartialView("_ScanQRCodeByCameraControl");
+
+        }
     }
 }

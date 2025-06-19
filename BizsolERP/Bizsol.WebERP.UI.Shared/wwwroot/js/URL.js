@@ -94,6 +94,7 @@ let UrlService = {
     API_ENDPOINT_ValidateCreditLimits: `${environment.BASE_URL}/ValidateCreditLimit`,
     API_ENDPOINT_SelectPrinterToPrint: `${environment.BASE_URL}/SelectPrinterToPrint`,
     API_ENDPOINT_GeneratePassword: `${environment.BASE_URL}/GeneratePassword`,
+    API_ENDPOINT_QualityCheck: `${environment.BASE_URL}/QualityCheck`,
 }
 
 export { UrlService  }

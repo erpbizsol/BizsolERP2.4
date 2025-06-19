@@ -167,7 +167,7 @@
                
                 <div class="col-md-3 col-12">
                     <label for="txtScanIdentification" class="col-form-label-sm fw-bold">Scan Batch No / ID:</label>
-                    <input type="text" id="txtScanIdentification" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" autocomplete="off" />
+                    <input type="text" id="txtScanIdentification" class="box_border form-control form-control-sm" value="" autocomplete="off" />
                     <ul id="txtScanIdentification_List" class="AutoSuggestion-list"></ul>
                 </div>
 
@@ -176,6 +176,12 @@
                         Scan NO Of Pallet
                     </a>
                 </div>
+                <div class="col-md-6 col-6 without-label-field">
+                    <a class="btn btn-secondary btn-height" id="btnScanQR" onclick="PackingListFG_btnScanQR()">
+                        Scan QR
+                    </a>
+                </div>
+               
 
                 <div class="col-md-12 col-12 total-PL pt-2">
                     <span><strong id="spPLT">PLT:</strong></span>&nbsp;&nbsp;
@@ -294,6 +300,8 @@
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div>
+
+<div id="DivScanQRCodeByCameraControlModal"></div>
 
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>

@@ -1141,13 +1141,19 @@ function InitSelectPrinterToPrintControl(printText) {
     $('#DivSelectPrinterToPrintControlModal').load(url, { PrintText: encodeURIComponent(printText) });
 
 }
+function InitScanQRCodeByCameraControl(outputQRTextElementID, callBackFunctionName) {
+    let url = baseUrl + '/CustomControl/ScanQRCodeByCameraControl';
 
-Bind_ddlGodown();
-Bind_ddlMachineNo();
-Bind_ddlShift();
-CurrentProductionDate();
+    $('#DivScanQRCodeByCameraControlModal').load(url, { OutputQRTextElementID: outputQRTextElementID, CallBackFunctionName: callBackFunctionName });
 
-LoadNavPlan()
+}
+function RollingProductionEnty_btnScanQR() {
+
+    InitScanQRCodeByCameraControl("txtScanIdNo","RollingProductionEnty_CallbackScanQRCode");
+}
+function RollingProductionEnty_CallbackScanQRCode() {
+    RollingProductionEnty_SaveIssueID('ScanIdNo');
+}
 function LoadNavPlan() {
     if (typeof IsRunningPlan === 'undefined') {
         return;
@@ -1165,16 +1171,23 @@ function LoadNavPlan() {
     if (IsRunningPlan === 'N') {
         //$('#txtIssuePlanDate').val(new Date(NavPlanDate).toISOString().slice(0, 10));
         $('#txtIssuePlanDate').val(NavPlanDate.slice(0, 10));
-        RollingProductionEnty_GatPlanDetail();
-       // $('#txtReceivePlanDate').val(new Date(NavPlanDate).toISOString().slice(0, 10));
+        //RollingProductionEnty_GatPlanDetail();
+        // $('#txtReceivePlanDate').val(new Date(NavPlanDate).toISOString().slice(0, 10));
     }
     //if (IsRunningPlan === 'Y') {
     //    // $('#txtReceivePlanDate').val(new Date(NavPlanDate).toISOString().slice(0, 10));
     //    $('#txtReceiveProductionDate').val(new Date(NavPlanDate).toISOString().slice(0, 10));
     //}
 
-    
+
 }
+Bind_ddlGodown();
+Bind_ddlMachineNo();
+Bind_ddlShift();
+CurrentProductionDate();
+
+LoadNavPlan()
+
 
 window.RollingProductionEnty_Back = RollingProductionEnty_Back;
 window.RollingProductionEnty_GatPlanDetail = RollingProductionEnty_GatPlanDetail;
@@ -1187,6 +1200,9 @@ window.RollingProductionEnty_calWT = RollingProductionEnty_calWT;
 window.RollingProductionEnty_GetScrapAndRejectedItem = RollingProductionEnty_GetScrapAndRejectedItem;
 window.RollingProductionEnty_CheckValidRejected = RollingProductionEnty_CheckValidRejected;
 window.RollingProductionEnty_PrintID = RollingProductionEnty_PrintID;
+window.RollingProductionEnty_btnScanQR = RollingProductionEnty_btnScanQR;
+window.RollingProductionEnty_CallbackScanQRCode = RollingProductionEnty_CallbackScanQRCode;
+
 
 
 
