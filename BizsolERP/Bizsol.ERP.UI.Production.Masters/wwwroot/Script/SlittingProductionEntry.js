@@ -1279,7 +1279,8 @@ $('#btnPrint').on('click', function () {
 
         BindSelectList($('#ddlParantID')[0], response.map((item) => ({ Code: item.ParantID, Desp: item.ParantID })))
         $('#ddlParantID').select2({
-            width: '-webkit-fill-available'
+            width: '-webkit-fill-available',
+            dropdownParent: $('#PintIDModal'),
         });
         HideLoader()
         $("#PintIDModal").modal({
