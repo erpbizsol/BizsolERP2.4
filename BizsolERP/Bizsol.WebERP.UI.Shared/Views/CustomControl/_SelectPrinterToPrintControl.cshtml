@@ -119,33 +119,64 @@
                            let DBName = JSON.parse(sessionStorage.getItem('authKey')).ERPDB_Name;
                               let UserID = JSON.parse(sessionStorage.getItem('UserDetails'))[0].UserID;
 
-                             if(DBName.toUpperCase().includes("BIZSOLERPDBINFRAMATIND")==true){
+                             // if(DBName.toUpperCase().includes("BIZSOLERPDBINFRAMATIND")==true){
 
-                                     tempPrintText = tempPrintText.replace(/#Value1#/g, item.ItemName +"(Inframat Ind.)")
+                             //         tempPrintText = tempPrintText.replace(/#Value1#/g, item.ItemName +"(Inframat Ind.)")
 
-                                }
-                             else
-                                 {
-                                        tempPrintText = tempPrintText.replace(/#Value1#/g, item.ItemName +"(Inframat)")
-                                 }
+                             //    }
+                             // else
+                             //     {
+                             //            tempPrintText = tempPrintText.replace(/#Value1#/g, item.ItemName +"(Inframat)")
+                             //     }
 
-                                 if(item.VendorName==""){
+                             //     if(item.VendorName==""){
 
-                                        tempPrintText = tempPrintText.replace(/#Value7#/g, UserID)
+                             //            tempPrintText = tempPrintText.replace(/#Value7#/g, UserID)
 
-                                 }
-                              else
-                                  {
-                                          tempPrintText = tempPrintText.replace(/#Value7#/g, item.VendorName)
-                                  }
+                             //     }
+                             //  else
+                             //      {
+                             //              tempPrintText = tempPrintText.replace(/#Value7#/g, item.VendorName)
+                             //      }
 
-                               tempPrintText = tempPrintText.replace(/#Value2#/g, item.IDNo)
-                                           //.replace(/#Value3#/g, respone[0].Value3)
-                                             .replace(/#Value4#/g, parseFloat(item.QtyMT).toFixed(3))
-                                            .replace(/#Value5#/g, respone[0].SizeDesp)
-                                             .replace(/#Value6#/g, respone[0].GenerationDate)
-                                            .replace(/#Value8#/g, "")
-                                           .replace(/#Value9#/g, "");
+                             //   tempPrintText = tempPrintText.replace(/#Value2#/g, item.IDNo)
+                             //               //.replace(/#Value3#/g, respone[0].Value3)
+                             //                 .replace(/#Value4#/g, parseFloat(item.QtyMT).toFixed(3))
+                             //                .replace(/#Value5#/g, respone[0].SizeDesp)
+                             //                 .replace(/#Value6#/g, respone[0].GenerationDate)
+                             //                .replace(/#Value8#/g, "")
+                             //               .replace(/#Value9#/g, "");
+
+                               // if(DBName.toUpperCase().includes("BIZSOLERPDBINFRAMATIND")==true){
+
+                               //           tempPrintText = tempPrintText.replace(/#CompanyName#/g,"Inframat Ind.")
+
+                               //    }
+                               // else
+                               //     {
+                               //              tempPrintText = tempPrintText.replace(/#CompanyName#/g, "Inframat")
+                               //     }
+
+                                      tempPrintText = tempPrintText.replace(/#CompanyName#/g, item.CompanyName)
+                                   if(item.VendorName==""){
+
+                                            tempPrintText = tempPrintText.replace(/#UserName#/g, UserID)
+
+                                   }
+                                else
+                                    {
+                                              tempPrintText = tempPrintText.replace(/#UserName#/g, item.VendorName)
+                                    }
+
+                                   tempPrintText = tempPrintText.replace(/#ID#/g, item.IDNo)
+                                                        .replace(/#QRText#/g, item.IDNo)
+                                                      .replace(/#ItemName#/g, item.ItemName)
+                                                    .replace(/#Weight#/g, parseFloat(item.QtyMT).toFixed(3)+" MT")
+                                                      .replace(/#Size#/g, item.SizeDesp)
+                                                       .replace(/#Date#/g, new Date(item.GenerationDate).toISOString().slice(0, 10))
+                                                    .replace(/#MotherID#/g, item.ParentIDNo)
+                                                   .replace(/#Time#/g,  new Date().toTimeString().slice(0,5))
+                                               .replace(/#Shift#/g, item.Shift)
 
                          let payLoad={}
                             payLoad.IP=printerIP;
