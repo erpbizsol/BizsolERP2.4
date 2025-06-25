@@ -76,17 +76,26 @@ function FileUploadChange(event) {
     const target = event.target;
      files = target.files;
     fileName = files?.[0]?.name;
-
     if (files && files.length > 0) {
-        const file = files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const arrayBuffer = e.target?.result;
-            const byteArray = new Uint8Array(arrayBuffer);
-            imageBase64Data = Array.from(byteArray);
-        };
-        reader.readAsArrayBuffer(file);
+        OptimizeImage.reduceFileSize(files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+            ConvertFileToByteArry(blob).then(function (ByteArray) {
+                imageBase64Data = ByteArray;
+            })
+
+
+        });
     }
+
+    //if (files && files.length > 0) {
+    //    const file = files[0];
+    //    const reader = new FileReader();
+    //    reader.onload = (e) => {
+    //        const arrayBuffer = e.target?.result;
+    //        const byteArray = new Uint8Array(arrayBuffer);
+    //        imageBase64Data = Array.from(byteArray);
+    //    };
+    //    reader.readAsArrayBuffer(file);
+    //}
 }
 function StockTransferWherehouseReceive() {
     //$('#tblStockReceive').show();
@@ -298,6 +307,25 @@ function BindSelectList(element, list) {
         option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
     });
     element.innerHTML = option;
+}
+
+function ConvertFileToByteArry(File) {
+    return new Promise(function (resolve, reject) {
+        var fileByteArray = [];
+        var reader = new FileReader();
+
+        reader.readAsArrayBuffer(File);
+        reader.onloadend = function (evt) {
+            if (evt.target.readyState == FileReader.DONE) {
+                var arrayBuffer = evt.target.result,
+                    array = new Uint8Array(arrayBuffer);
+                for (var i = 0; i < array.length; i++) {
+                    fileByteArray.push(array[i]);
+                }
+                resolve(fileByteArray);
+            }
+        }
+    });
 }
 
 window.FileUploadChange = FileUploadChange;

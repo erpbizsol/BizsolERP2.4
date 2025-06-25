@@ -79,15 +79,22 @@
         element.innerHTML = option;
     }
     
-    function SelectPrinterToPrintControl_onPrint() {
-
+  async  function SelectPrinterToPrintControl_onPrint() {
+            
             let printerIP = $('#ddlPrinters').val();
 
             let ddlPrinters = document.getElementById("ddlPrinters");
 
             let PortNo = ddlPrinters.options[ddlPrinters.selectedIndex].attributes["PortNo"].value;
             
-            let printtext = "I8,A\r\nZN\r\nq600\r\nS2\r\nO\r\nJF\r\n\u001bKIZZQ0\r\n\u001bKI9+0.0\r\nD13\r\nZT\r\nQ400,B25\r\n\u001bArg\u001b\u001blabel 500 31\r\n\u001b\u001bexit\r\n\u001bKI80\r\nN\r\nX7,4,3,595,392\r\nLO7,339,585,3\r\nA423,376,2,3,1,1,N,\"#Value1#\"\r\nA577,313,2,3,1,1,N,\"Date :\"\r\nA577,252,2,3,1,1,N,\"BUNDLE NO :\"\r\nA577,170,2,3,1,1,N,\"Weight :\"\r\nA577,120,2,3,1,1,N,\"Size :\"\r\nA577,79,2,3,1,1,N,\"Printed By\"\r\nA485,313,2,3,1,1,N,\"#Value6#\"\r\nA418,280,2,3,1,1,N,\"#Value2#\"\r\nA453,170,2,3,1,1,N,\"#Value4#\"\r\nA492,120,2,3,1,1,N,\"#Value5#\"\r\nA577,45,2,3,1,1,N,\"#Value7#\"\r\nB418,245,2,1,2,4,52,N,\"#Value2#\"\r\nP1\r\n";
+                // let printtext = "I8,A\r\nZN\r\nq600\r\nS2\r\nO\r\nJF\r\n\u001bKIZZQ0\r\n\u001bKI9+0.0\r\nD13\r\nZT\r\nQ400,B25\r\n\u001bArg\u001b\u001blabel 500 31\r\n\u001b\u001bexit\r\n\u001bKI80\r\nN\r\nX7,4,3,595,392\r\nLO7,339,585,3\r\nA423,376,2,3,1,1,N,\"#Value1#\"\r\nA577,313,2,3,1,1,N,\"Date :\"\r\nA577,252,2,3,1,1,N,\"BUNDLE NO :\"\r\nA577,170,2,3,1,1,N,\"Weight :\"\r\nA577,120,2,3,1,1,N,\"Size :\"\r\nA577,79,2,3,1,1,N,\"Printed By\"\r\nA485,313,2,3,1,1,N,\"#Value6#\"\r\nA418,280,2,3,1,1,N,\"#Value2#\"\r\nA453,170,2,3,1,1,N,\"#Value4#\"\r\nA492,120,2,3,1,1,N,\"#Value5#\"\r\nA577,45,2,3,1,1,N,\"#Value7#\"\r\nB418,245,2,1,2,4,52,N,\"#Value2#\"\r\nP1\r\n";
+                //  let printtext = "I8,1,001\r\nq607\r\nS20\r\nH10\r\nZB\r\nR0,0\r\nN\r\nX29,43,2,592,395\r\nLO30,96,560,3\r\nB300,148,0,1,3,9,63,N,\"#Value2#\"\r\nA108,56,0,3,1,1,N,\"#Value1#\"\r\nA41,117,0,3,1,1,N,\"DATE:\"\r\nA41,170,0,3,1,1,N,\"BUNDLE NO.:\"\r\nA43,231,0,3,1,1,N,\"Weight:\"\r\nA43,287,0,3,1,1,N,\"Size:\"\r\nA41,339,0,3,1,1,N,\"Printed By\"\r\nA41,364,0,3,1,1,N,\"#Value7#\"\r\nA131,119,0,3,1,1,N,\"#Value6#\"\r\nA198,172,0,3,1,1,N,\"#Value3#\"\r\nA142,229,0,3,1,1,N,\"#Value4#\"\r\nA114,291,0,2,1,1,N,\"#Value5#\"\r\nW1,1";
+
+
+                let file =   await fetch("../../_content/Bizsol.WebERP.UI.Shared/PrinterPRNFile/LabelInframat.txt")
+                let printtext= await file.text();
+                  debugger;
+                   
 
           if (printerIP === '0' || printerIP === '') {
              toastr.error('Please select a printer');
@@ -112,33 +119,64 @@
                            let DBName = JSON.parse(sessionStorage.getItem('authKey')).ERPDB_Name;
                               let UserID = JSON.parse(sessionStorage.getItem('UserDetails'))[0].UserID;
 
-                             if(DBName.toUpperCase().includes("BIZSOLERPDBINFRAMATIND")==true){
+                             // if(DBName.toUpperCase().includes("BIZSOLERPDBINFRAMATIND")==true){
 
-                                     tempPrintText = tempPrintText.replace(/#Value1#/g, item.ItemName +"(Inframat Ind.)")
+                             //         tempPrintText = tempPrintText.replace(/#Value1#/g, item.ItemName +"(Inframat Ind.)")
 
-                                }
-                             else
-                                 {
-                                        tempPrintText = tempPrintText.replace(/#Value1#/g, item.ItemName +"(Inframat)")
-                                 }
+                             //    }
+                             // else
+                             //     {
+                             //            tempPrintText = tempPrintText.replace(/#Value1#/g, item.ItemName +"(Inframat)")
+                             //     }
 
-                                 if(item.VendorName==""){
+                             //     if(item.VendorName==""){
 
-                                        tempPrintText = tempPrintText.replace(/#Value7#/g, UserID)
+                             //            tempPrintText = tempPrintText.replace(/#Value7#/g, UserID)
 
-                                 }
-                              else
-                                  {
-                                          tempPrintText = tempPrintText.replace(/#Value7#/g, item.VendorName)
-                                  }
+                             //     }
+                             //  else
+                             //      {
+                             //              tempPrintText = tempPrintText.replace(/#Value7#/g, item.VendorName)
+                             //      }
 
-                               tempPrintText = tempPrintText.replace(/#Value2#/g, item.IDNo)
-                                           //.replace(/#Value3#/g, respone[0].Value3)
-                                             .replace(/#Value4#/g, parseFloat(item.QtyMT).toFixed(3))
-                                            .replace(/#Value5#/g, respone[0].SizeDesp)
-                                             .replace(/#Value6#/g, respone[0].GenerationDate)
-                                            .replace(/#Value8#/g, "")
-                                           .replace(/#Value9#/g, "");
+                             //   tempPrintText = tempPrintText.replace(/#Value2#/g, item.IDNo)
+                             //               //.replace(/#Value3#/g, respone[0].Value3)
+                             //                 .replace(/#Value4#/g, parseFloat(item.QtyMT).toFixed(3))
+                             //                .replace(/#Value5#/g, respone[0].SizeDesp)
+                             //                 .replace(/#Value6#/g, respone[0].GenerationDate)
+                             //                .replace(/#Value8#/g, "")
+                             //               .replace(/#Value9#/g, "");
+
+                               // if(DBName.toUpperCase().includes("BIZSOLERPDBINFRAMATIND")==true){
+
+                               //           tempPrintText = tempPrintText.replace(/#CompanyName#/g,"Inframat Ind.")
+
+                               //    }
+                               // else
+                               //     {
+                               //              tempPrintText = tempPrintText.replace(/#CompanyName#/g, "Inframat")
+                               //     }
+
+                                      tempPrintText = tempPrintText.replace(/#CompanyName#/g, item.CompanyName)
+                                   if(item.VendorName==""){
+
+                                            tempPrintText = tempPrintText.replace(/#UserName#/g, UserID)
+
+                                   }
+                                else
+                                    {
+                                              tempPrintText = tempPrintText.replace(/#UserName#/g, item.VendorName)
+                                    }
+
+                                   tempPrintText = tempPrintText.replace(/#ID#/g, item.IDNo)
+                                                        .replace(/#QRText#/g, item.IDNo)
+                                                      .replace(/#ItemName#/g, item.ItemName)
+                                                    .replace(/#Weight#/g, parseFloat(item.QtyMT).toFixed(3)+" MT")
+                                                      .replace(/#Size#/g, item.SizeDesp)
+                                                       .replace(/#Date#/g, new Date(item.GenerationDate).toISOString().slice(0, 10))
+                                                    .replace(/#MotherID#/g, item.ParentIDNo)
+                                                   .replace(/#Time#/g,  new Date().toTimeString().slice(0,5))
+                                               .replace(/#Shift#/g, item.Shift)
 
                          let payLoad={}
                             payLoad.IP=printerIP;

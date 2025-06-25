@@ -76,6 +76,14 @@ function SlittingProductionEntry_ShowPlanGrid() {
                 item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_EditOrView(\'Y\',\'' + item.SlittingPlanMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>'
             });
         }
+        else {
+            
+                response.forEach(item => {
+                    item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_Print(\'' + item["Identification No"] + '\')"> <i class="fa fa-print"></i></a>'
+                });
+            
+        }
+
        // console.log(response);
         //response = response.map((item) => ({
         //    "PackingList No": item.PackingListNo, Date: item.PackingListDate, Warehouse: item.GodownName, "Packing Type": item.PackingType, "Requisition No / Order No": item["Requisition No"], "Party Name": item.ClienName, "Qty KG": item.QtyMT, "Qty PC": item.QtyPC, "Qty SQM": item.QtyMTRS, Status: item.PKStatus,
@@ -1279,9 +1287,25 @@ $('#btnPrint').on('click', function () {
 
         BindSelectList($('#ddlParantID')[0], response.map((item) => ({ Code: item.ParantID, Desp: item.ParantID })))
         $('#ddlParantID').select2({
-            width: '-webkit-fill-available'
+            width: '-webkit-fill-available',
+            dropdownParent: $('#PintIDModal'),
         });
-        HideLoader()
+
+        
+        HideLoader();
+        
+        //$('#ddlParantID').select2({
+        //    data: response.map(item => ({ id: item.ParantID, text: item.ParantID })),
+
+        //    dataAdapter: CustomData,
+        //    resultsAdapter: ResultsAdapter,
+        //    dropdownParent: $('#PintIDModal'),
+        //    width: '-webkit-fill-available',
+        //});
+
+        $('#tbPrintID tr').empty();
+        $('#paginator-tbPrintID').empty();
+        
         $("#PintIDModal").modal({
             backdrop: 'static',
         });
@@ -1419,14 +1443,143 @@ function SlittingProductionEntry_GetSCaleWeight() {
 
     
 }
+function SlittingProductionEntry_Print(IdentificationNo) {
+    Showloader
+    SlittingProductionEntryService.GetChildIDsByParantIDToPrintID('GetChildIDsByParantIDToPrintID', IdentificationNo).then(function (response) {
+        HideLoader()
 
+        BindSelectList($('#ddlParantID')[0], [{ Code: IdentificationNo, Desp: IdentificationNo }]);
+        $('#ddlParantID').val(IdentificationNo);
+        $('#ddlParantID').select2({
+            width: '-webkit-fill-available',
+            dropdownParent: $('#PintIDModal'),
+        });
+
+        const stringFilterColumn = [];
+        const numericFilterColumn = [];
+        const dateFilterColumn = [];
+        const button = false;
+        const stringDoubleFilterColumn = [];
+        const showButtons = [];
+        const hiddenColumns = [];
+        const columnAlignment = {};
+        response = response.map(item => {
+            return {
+                ...item,
+
+                'Print <input type="checkbox" id="checkAllPrint" onchange="SlittingProductionEntry_AllCheckSelection(this)" checked>': `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`,
+            };
+        })
+
+        BizsolCustomFilterGrid.CreateDataTable("table-header-tbPrintID", "table-body-tbPrintID", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+
+
+        $("#PintIDModal").modal({
+            backdrop: 'static',
+        });
+        $('#PintIDModal').modal('show');
+    });
+
+    
+
+}
 SlittingProductionEntry_ShowPlanGrid();
 getPackingListFGFixedParaMeters();
 Bind_AllDLL();
 Bind_ddlIdNo('dllAllPlansOrId', G_UserMaster_Code);
 //LoadFrm();
 
+//var CustomData, ResultsAdapter; 
 
+//var items = Array.from(Array(99992)).map(function (_, index) {
+//    return { id: index, text: "item - " + index };
+//});
+
+//$(document).ready(function () {
+//    $.fn.select2.amd.require(
+//        [
+//            "select2/data/array",
+//            "select2/results",
+//            "select2/dropdown/infiniteScroll",
+//            "select2/utils"
+//        ],
+//        function (ArrayData, ResultsList, InfiniteScroll, Utils) {
+//            function MyCustomData($element, options) {
+//                MyCustomData.__super__.constructor.call(this, $element, options);
+//            }
+//            Utils.Extend(MyCustomData, ArrayData);
+
+//            MyCustomData.prototype.query = function (params, callback) {
+//                var pageSize = 20;
+//                var page = params.page || 1;
+//                var results = [];
+//                var data = this.options.options.data || [];
+//                var term = (params.term || "").trim().toUpperCase();
+
+//                if (term) {
+//                    results = data.filter(function (item) {
+//                        return item.text.toUpperCase().indexOf(term) >= 0;
+//                    });
+//                } else {
+//                    results = data;
+//                }
+
+//                callback({
+//                    results: results.slice((page - 1) * pageSize, page * pageSize),
+//                    pagination: {
+//                        more: results.length >= page * pageSize,
+//                    },
+//                });
+//            };
+
+//            // Assign to global
+//            CustomData = MyCustomData;
+//            ResultsAdapter = Utils.Decorate(ResultsList, InfiniteScroll);
+
+           
+//        }
+//    );
+//});
+
+
+//$('#ddltest').select2({
+//    ajax: {
+//        url: "https://web.bizsol.in/erp25api/api/SlittingEntry/GetSlittingProductionEntryDDl?ddlType=GetPrintIDs&Code=0", // Replace with your API endpoint
+//        dataType: 'json',
+//        delay: 250,
+//        data: function (params) {
+//            return {
+//                searchTerm: params.term, // Search term from Select2 input
+//                page: params.page || 1 // Pagination
+//            };
+//        },
+//        processResults: function (data, params) {
+//            params.page = params.page || 1;
+
+//            return {
+//                results: data, // Results from your API
+//                pagination: {
+//                    more: (params.page * 30) < data.length//data.total_count // Assuming 30 items per page
+//                }
+//            };
+//        },
+//        cache: true
+//    },
+//    placeholder: 'Search for an item',
+//    minimumInputLength: 2, // Start searching after 2 characters
+//    templateResult: function (item) {
+//        if (item.loading) {
+//            return item.text;
+//        }
+//        // Customize how each item is displayed
+//       // return `<div>${item.name} - ${item.description}</div>`;
+//        return `${item.ParantID}`;
+//    },
+//    templateSelection: function (item) {
+//        // Customize how the selected item is displayed
+//        return item.name || item.text;
+//    }
+//});
 
 window.SlittingProductionEntry_CreateNew = SlittingProductionEntry_CreateNew;
 window.SlittingProductionEntry_Back = SlittingProductionEntry_Back;
@@ -1446,5 +1599,6 @@ window.SlittingProductionEntry_AllCheckSelection = SlittingProductionEntry_AllCh
 window.SlittingProductionEntry_OnChangeddlParantID = SlittingProductionEntry_OnChangeddlParantID;
 window.SlittingProductionEntry_CreatNewEntry = SlittingProductionEntry_CreatNewEntry;
 window.SlittingProductionEntry_GetSCaleWeight = SlittingProductionEntry_GetSCaleWeight;
+window.SlittingProductionEntry_Print = SlittingProductionEntry_Print;
 
 
