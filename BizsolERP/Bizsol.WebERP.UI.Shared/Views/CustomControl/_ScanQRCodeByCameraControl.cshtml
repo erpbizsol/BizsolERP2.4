@@ -9,11 +9,13 @@
                 <div class="row text-center">
 
                     <div class="col-12" style="margin: 0 0 1rem 0;">
-                        <a class="btn btn-success btn-height" id="ScanQRCodeByCameraControl_btnStart">Start Scan</a>
+                        <a class="btn btn-success btn-height" id="ScanQRCodeByCameraControl_btnSingle">Single Scan</a>
+                        &nbsp;
+                        <a class="btn btn-success btn-height" id="ScanQRCodeByCameraControl_btnMultiple">Multiple Scan</a>
                         &nbsp;
                         <a class="btn btn-secondary btn-height" id="ScanQRCodeByCameraControl_btnReset">Reset</a>
                         &nbsp;
-                        <a class="btn btn-danger btn-height" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                        <a class="btn btn-danger btn-height" id="ScanQRCodeByCameraControl_btnClose" aria-label="Close">Close</a>
                     </div>
 
                     <div class="col-12">
@@ -78,7 +80,7 @@
                    ScanQRCodeByCameraControl_SourceSelectPanel.style.display = 'block'
                }
 
-               document.getElementById('ScanQRCodeByCameraControl_btnStart').addEventListener('click', () => {
+               document.getElementById('ScanQRCodeByCameraControl_btnSingle').addEventListener('click', () => {
 
                    codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
 
@@ -103,9 +105,37 @@
                    console.log(`Started continous decode from camera with id ${selectedDeviceId}`)
                })
 
+               document.getElementById('ScanQRCodeByCameraControl_btnMultiple').addEventListener('click', () => {
+
+                   codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+
+                       if (result) {
+                           let outputTextID=$('#hfOutputQRTextElementID').val();
+                           console.log(result)
+                           // this.alert('Read text Is: ' + result.text);
+
+                            $('#'+outputTextID).val(result.text);
+
+                             toastr.success('Read text Is: ' + result.text);
+                           
+                           window[$('#hfCallBackFunctionName').val()]();
+                       }
+                       if (err && !(err instanceof ZXing.NotFoundException)) {
+                          //console.error(err)
+                          toastr.error(err);
+                       }
+                   })
+
+                   console.log(`Started continous decode from camera with id ${selectedDeviceId}`)
+               })
+
                document.getElementById('ScanQRCodeByCameraControl_btnReset').addEventListener('click', () => {
                    codeReader.reset()
                    console.log('Reset.')
+               })
+               document.getElementById('ScanQRCodeByCameraControl_btnClose').addEventListener('click', () => {
+                   codeReader.reset()
+                   $("#ScanQRCodeByCameraControlModal").modal('hide')
                })
 
            })
@@ -151,7 +181,7 @@
     //                ScanQRCodeByCameraControl_SourceSelectPanel.style.display = 'block'
     //            }
 
-    //            document.getElementById('ScanQRCodeByCameraControl_btnStart').addEventListener('click', () => {
+    //            document.getElementById('ScanQRCodeByCameraControl_btnSingle').addEventListener('click', () => {
 
     //                codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
 
