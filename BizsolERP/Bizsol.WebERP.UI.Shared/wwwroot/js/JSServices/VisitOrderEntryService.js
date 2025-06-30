@@ -504,6 +504,16 @@ const VisitOrderEntryService = {
 
 
     },
+
+    DeleteVisitOrderDetails_Row: function DeleteVisitOrderDetails_Row(VisitMaster_Code, Code ) {
+        
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/DeleteVisitOrderDetails_Row?VisitMaster_Code=${VisitMaster_Code}&Code=${Code}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    }
 }
 
 export { VisitOrderEntryService }
