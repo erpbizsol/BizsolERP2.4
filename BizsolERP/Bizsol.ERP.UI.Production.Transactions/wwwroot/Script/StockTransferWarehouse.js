@@ -5,6 +5,7 @@ let Godownmaster_Code = 0;
 let files = [];
 let fileName = '';
 let imageBase64Data = [];
+let baseUrl = sessionStorage.getItem('AppBaseURL');
 
 $(document).ready(function () {
     $("#ERPHeading").text("Warehouse Receive");
@@ -328,7 +329,23 @@ function ConvertFileToByteArry(File) {
     });
 }
 
+function InitScanQRCodeByCameraControl(outputQRTextElementID, callBackFunctionName) {
+    let url = baseUrl + '/CustomControl/ScanQRCodeByCameraControl';
+
+    $('#DivScanQRCodeByCameraControlModal').load(url, { OutputQRTextElementID: outputQRTextElementID, CallBackFunctionName: callBackFunctionName });
+
+}
+function StrockTransferWarehouse_btnScanQR() {
+
+    InitScanQRCodeByCameraControl("txtScanIdentification", "StrockTransferWarehouse_CallbackScanQRCode");
+}
+function StrockTransferWarehouse_CallbackScanQRCode() {
+    StockTransferWherehouseReceive();
+    $('#ddlRollIdNo').focus();
+}
 window.FileUploadChange = FileUploadChange;
 window.CloseModal = CloseModal;
 window.SaveReceivedData = SaveReceivedData;
 window.triggerFileInputClick = triggerFileInputClick;
+window.StrockTransferWarehouse_CallbackScanQRCode = StrockTransferWarehouse_CallbackScanQRCode;
+window.StrockTransferWarehouse_btnScanQR = StrockTransferWarehouse_btnScanQR;

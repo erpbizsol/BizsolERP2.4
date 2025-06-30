@@ -14,13 +14,13 @@
 
                 <div class="row">
                     <!-- Warehouse Field -->
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-3 form-group">
                         <label for="ddlWarehouse" class="form-label">Warehouse <span class="text-danger">*</span></label>
                         <select id="ddlWarehouse" class="form-control form-control-sm box_border"></select>
                     </div>
 
                     <!-- Attachment Field -->
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-3 form-group">
                         <label for="attachment" class="form-label">Attachment <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <span class="input-group-text" onclick="triggerFileInputClick()" style="cursor: pointer; height:28px">
@@ -31,10 +31,15 @@
                     </div>
 
                     <!-- Roll Id No Field -->
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-3 form-group">
                         <label for="ddlRollIdNo" class="form-label">Roll Id No <span class="text-danger">*</span></label>
                         <input type="text" id="ddlRollIdNo" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" autocomplete="off" />
                         <ul id="ddlRollIdNoList" class="AutoSuggestion-list"></ul>
+                    </div>
+                <div class="col-md-3 form-group without-label-field">
+                    <a class="btn btn-secondary btn-height" id="btnScanQR" onclick="StrockTransferWarehouse_btnScanQR()">
+                            Scan QR
+                        </a>
                     </div>
                 </div>
         </div>
@@ -79,3 +84,5 @@
         </div>
     </div>
 </div>
+
+<div id="DivScanQRCodeByCameraControlModal"></div>

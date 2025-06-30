@@ -686,7 +686,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                 const Button = false;
                 const showButtons = [];
                 const StringdoubleFilterColumn = ["Zone", "Dealer Name", "City"];
-                const hiddenColumns = ["Code", "Sub Detail.No", "State", "OrderVisitType", "DiscountAvg", "DetailCode", "Pricelist (Zone)", "Avg Rate", "Other Charges", "Final Rate", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "Verify", "OverdueOTPentered", "DealerMaster_Code"];
+                const hiddenColumns = ["Code", "Sub Detail.No", "State", "OrderVisitType", "DiscountAvg", "DetailCode", "Pricelist (Zone)", "Avg Rate", "Other Charges", "Final Rate", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "Verify", "OverdueOTPentered", "DealerMaster_Code", "hiddenRow"];
                 if (ThreeLevelVerification === 'N') {
                     hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                     response.forEach(item => {
@@ -820,6 +820,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                         if (item.VerifiedLv1 == "Verify") {
                             VerifiedLv1Button = `<button class="btn btn-primary icon-height mb-1" title="Verification Level 1" id="btnVerify"  onclick="Verify('${item.Code}',this)"><i class="fa fa-check" aria-hidden="true"></i></button>
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
+                                                 <button class="btn btn-danger icon-height mb-1" title="Delete Line" id="btnDelete" onclick="VerifyOrder_DeleteLine('${item.Code}','${item.DetailCode}',this)"><i class="fa fa-trash"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL1" hidden >
                                                  <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >`;
@@ -827,6 +828,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                         if (item.VerifiedLv1 != "Verify" && item.VerifiedLv2 == "Verify") {
                             VerifiedLv1Button = `<button class="btn btn-warning icon-height mb-1" title="Verification Level 2" id="btnVerify1"  onclick="GPVerifyLv1('${item.Code}',this)"><i class="fa fa-check" aria-hidden="true"></i></button>
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
+                                                 <button class="btn btn-danger icon-height mb-1" title="Delete Line" id="btnDelete" onclick="VerifyOrder_DeleteLine('${item.Code}','${item.DetailCode}',this)"><i class="fa fa-trash"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL2" hidden >
                                                  <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >`;
@@ -834,6 +836,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                         if (item.VerifiedLv1 != "Verify" && item.VerifiedLv2 != "Verify" && item.VerifiedLv3 == "Verify") {
                             VerifiedLv1Button = `<button class="btn btn-success icon-height mb-1" title="Verification Level 3" id="btnVerify2"  onclick="AdminVerifyLv2('${item.Code}',this)"><i class="fa fa-check" aria-hidden="true"></i></button>
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
+                                                 <button class="btn btn-danger icon-height mb-1" title="Delete Line" id="btnDelete" onclick="VerifyOrder_DeleteLine('${item.Code}','${item.DetailCode}',this)"><i class="fa fa-trash"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL3" hidden >
                                                  <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >`;
@@ -843,6 +846,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                         if (item.Verify == "Verify") {
                             VerifiedLv1Button = `<button class="btn btn-primary icon-height mb-1" title="Verification Level 1" id="btnVerify"  onclick="Verify('${item.Code}',this)"><i class="fa fa-check" aria-hidden="true"></i></button>
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
+                                                 <button class="btn btn-danger icon-height mb-1" title="Delete Line" id="btnDelete" onclick="VerifyOrder_DeleteLine('${item.Code}','${item.DetailCode}',this)"><i class="fa fa-trash"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL3" hidden >
                                                  <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >`;
@@ -859,10 +863,12 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                                  <input type="text" id="txtTotalAmount${item.Code}" name="txtTotalAmount" value="${item['Order Amount']}" hidden >
                                                  <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >`;
                     return {
+                        "hiddenRow": JSON.stringify(item),
                         ...item,
                         "Discount": buttonsHTML,
                         "Action": VerifiedLv1Button,
-                        "Code": td_hidden,
+                        "Code": td_hidden
+                        
                     };
                     
                 });
@@ -887,7 +893,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                 const Button = false;
                 const showButtons = [];
                 const StringdoubleFilterColumn = ["Zone", "Dealer Name", "City"];
-                const hiddenColumns = ["Code", "Sub Detail.No", "State", "OrderVisitType", "DiscountAvg", "DetailCode", "Pricelist (Zone)", "Avg Rate", "Other Charges", "Final Rate", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "Verify", "OverdueOTPentered", "DealerMaster_Code"];
+                const hiddenColumns = ["Code", "Sub Detail.No", "State", "OrderVisitType", "DiscountAvg", "DetailCode", "Pricelist (Zone)", "Avg Rate", "Other Charges", "Final Rate", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "Verify", "OverdueOTPentered", "DealerMaster_Code", "hiddenRow"];
                 if (ThreeLevelVerification === 'N') {
                     hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                     response.forEach(item => {
@@ -1021,6 +1027,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                         if (item.VerifiedLv1 == "Verify") {
                             VerifiedLv1Button = `<button class="btn btn-primary icon-height mb-1" title="Verification Level 1" id="btnVerify"  onclick="Verify('${item.Code}',this)"><i class="fa fa-check" aria-hidden="true"></i></button>
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
+                                                  <button class="btn btn-danger icon-height mb-1" title="Delete Line" id="btnDelete" onclick="VerifyOrder_DeleteLine('${item.Code}','${item.DetailCode}',this)"><i class="fa fa-trash"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL1" hidden >
                                                  <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >`;
@@ -1028,6 +1035,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                         if (item.VerifiedLv1 != "Verify" && item.VerifiedLv2 == "Verify") {
                             VerifiedLv1Button = `<button class="btn btn-warning icon-height mb-1" title="Verification Level 2" id="btnVerify1"  onclick="GPVerifyLv1('${item.Code}',this)"><i class="fa fa-check" aria-hidden="true"></i></button>
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
+                                                  <button class="btn btn-danger icon-height mb-1" title="Delete Line" id="btnDelete" onclick="VerifyOrder_DeleteLine('${item.Code}','${item.DetailCode}',this)"><i class="fa fa-trash"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL2" hidden >
                                                  <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >`;
@@ -1035,6 +1043,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                         if (item.VerifiedLv1 != "Verify" && item.VerifiedLv2 != "Verify" && item.VerifiedLv3 == "Verify") {
                             VerifiedLv1Button = `<button class="btn btn-success icon-height mb-1" title="Verification Level 3" id="btnVerify2"  onclick="AdminVerifyLv2('${item.Code}',this)"><i class="fa fa-check" aria-hidden="true"></i></button>
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
+                                                  <button class="btn btn-danger icon-height mb-1" title="Delete Line" id="btnDelete" onclick="VerifyOrder_DeleteLine('${item.Code}','${item.DetailCode}',this)"><i class="fa fa-trash"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL3" hidden >
                                                  <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >
@@ -1045,6 +1054,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                         if (item.Verify == "Verify") {
                             VerifiedLv1Button = `<button class="btn btn-primary icon-height mb-1" title="Verification Level 1" id="btnVerify"  onclick="Verify('${item.Code}',this)"><i class="fa fa-check" aria-hidden="true"></i></button>
                                                  <button class="btn btn-danger icon-height mb-1" title="Reject" id="btnReject" onclick="Reject('${item.Code}')"><i class="fa fa-times"></i></button>
+                                                  <button class="btn btn-danger icon-height mb-1" title="Delete Line" id="btnDelete" onclick="VerifyOrder_DeleteLine('${item.Code}','${item.DetailCode}',this)"><i class="fa fa-trash"></i></button>
                                                  <button class="btn btn-info icon-height mb-1" title="View Verification Details" onclick="ViewVerificationDetails('${item['Code']}')"><i class="fa fa-eye"></i></button>
                                                  <input type="text" id="txtLevel" name="txtLevel" value="LVL3" hidden >
                                                  <input type="text" id="txtDiscountVal" name="txtDiscountVal" value="${item.DiscountAvg}" hidden >
@@ -1062,6 +1072,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                                   <input type="text" id="txtTotalAmount${item.Code}" name="txtTotalAmount" value="${item['Order Amount']}" hidden >
                                                  <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >`;
                     return {
+                        "hiddenRow": JSON.stringify(item),
                         ...item,
                         "Discount": buttonsHTML,
                         "Action": VerifiedLv1Button,
@@ -1940,6 +1951,38 @@ function ValidateOverdueAmount(ObjCurrRow) {
         }
     }
 }
+function VerifyOrder_DeleteLine(Visitcode,DetailCode,itemRow) {
+    var ModuleName = "Verify Order/Visit",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    var OptionName = 'DeleteRow';
+    let objItemRow = JSON.parse($(itemRow).closest('tr')[0].cells[0].innerHTML.trim());
+    
+    let RowDetails = `\nOrder Id:${objItemRow['Order Id']} \n Visit Date:${objItemRow['Visit Date']} \n Dealer Name:${objItemRow['Dealer Name']}\n Item Name:${objItemRow['Item Name']}\n Size:${objItemRow['Size']} \n Thk:${objItemRow['Thk']} \n Final Amount:${objItemRow['Final Amount']}`;
+    VisitOrderEntryService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            const alertCls = confirm("Are you sure you want to Delete Row?" + RowDetails);
+            if (alertCls) {
+                VisitOrderEntryService.DeleteVisitOrderDetails_Row(Visitcode, DetailCode).then(function (res) {
+
+                    if (res.Status == 'Y') {
+                        toastr.success(res.Msg)
+                        GetOrderVerifyData();
+                    } else {
+                        toastr.error(res.Msg)
+                    }
+                    
+                })
+                
+               
+            }
+        }
+    });
+}
 
 window.ViewOrder = ViewOrder;
 window.EditLvl1 = EditLvl1;
@@ -1957,5 +2000,6 @@ window.UpdateDiscountValue = UpdateDiscountValue;
 window.InitCheckCreditLimitsControl = InitCheckCreditLimitsControl;
 window.ValidateOverdueAmount = ValidateOverdueAmount;
 window.VerifyForAll = VerifyForAll;
+window.VerifyOrder_DeleteLine = VerifyOrder_DeleteLine;
 
 
