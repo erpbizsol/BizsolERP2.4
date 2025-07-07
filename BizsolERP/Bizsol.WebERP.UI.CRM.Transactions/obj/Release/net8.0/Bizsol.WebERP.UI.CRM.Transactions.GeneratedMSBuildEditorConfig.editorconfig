@@ -1,0 +1,75 @@
+is_global = true
+build_property.TargetFramework = net8.0
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = Bizsol.WebERP.UI.CRM.Transactions
+build_property.RootNamespace = Bizsol.WebERP.UI.CRM.Transactions
+build_property.ProjectDir = D:\ERP2.4\BizsolERP\Bizsol.WebERP.UI.CRM.Transactions\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = true
+build_property.MSBuildProjectDirectory = D:\ERP2.4\BizsolERP\Bizsol.WebERP.UI.CRM.Transactions
+build_property._RazorSourceGeneratorDebug = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/ClosePendingOrder/ClosePendingOrder.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXENsb3NlUGVuZGluZ09yZGVyXENsb3NlUGVuZGluZ09yZGVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/CRMDashboard/CRMDashboard.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXENSTURhc2hib2FyZFxDUk1EYXNoYm9hcmQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/DailyCheckinOrCheckout/CheckinOrCheckout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXERhaWx5Q2hlY2tpbk9yQ2hlY2tvdXRcQ2hlY2tpbk9yQ2hlY2tvdXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/ExpenseEntry/ExpenseEntryDetail.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXEV4cGVuc2VFbnRyeVxFeHBlbnNlRW50cnlEZXRhaWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/ExpenseEntry/ExpenseEntryList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXEV4cGVuc2VFbnRyeVxFeHBlbnNlRW50cnlMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/OrderEntryList/OrderEntryList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXE9yZGVyRW50cnlMaXN0XE9yZGVyRW50cnlMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/RoutePlan/RoutePlanMaster.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXFJvdXRlUGxhblxSb3V0ZVBsYW5NYXN0ZXIuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/RoutePlan/RoutePlanVerify.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXFJvdXRlUGxhblxSb3V0ZVBsYW5WZXJpZnkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/Visit/UnverifiedExceededOrder.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXFZpc2l0XFVudmVyaWZpZWRFeGNlZWRlZE9yZGVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/Visit/VerifyOrder.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXFZpc2l0XFZlcmlmeU9yZGVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/Visit/Visit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXFZpc2l0XFZpc2l0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/Visit/VisitOrderEntry.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXFZpc2l0XFZpc2l0T3JkZXJFbnRyeS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 

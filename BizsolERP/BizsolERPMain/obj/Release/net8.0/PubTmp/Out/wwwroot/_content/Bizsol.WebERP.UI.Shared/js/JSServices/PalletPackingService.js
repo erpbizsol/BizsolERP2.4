@@ -1,0 +1,107 @@
+﻿import { UrlService } from '../URL.js';
+import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
+
+
+const PalletPackingService = {
+    GetPackedPalletDateAndOrderWise: function GetPackedPalletDateAndOrderWise(Date, BuyerPOMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/GetPackedPalletDateAndOrderWise?Date=" + Date + "" + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    CheckDuplicateIDPallet: function CheckDuplicateIDPallet(ColForWhere, ColValue, PalletNo, IdentificationNo) {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/CheckDuplicateIDPallet?ColForWhere=" + ColForWhere + "" + "&ColValue=" + ColValue + "" + "&PalletNo=" + PalletNo + "" + "&IdentificationNo=" + IdentificationNo + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+AddIDInPallet: function AddIDInPallet(ColForWhere, ColValue, PalletNo, PalletRemark, PalletWeight, Date, PalletType) {
+    var URL = UrlService.API_ENDPOINT_PalletPacking + "/AddIDInPallet?ColForWhere=" + ColForWhere + "" + "&ColValue=" + ColValue + "" + "&PalletNo=" + PalletNo + "" + "&PalletRemark=" + PalletRemark + "" + "&PalletWeight=" + PalletWeight + "" + "&Date=" + Date + "" + "&PalletType=" + PalletType + "";
+
+    return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+    },
+RemoveIDFromPallet: function RemoveIDFromPallet(ColForWhere, ColValue) {
+
+    var URL = UrlService.API_ENDPOINT_PalletPacking + "/RemoveIDFromPallet?ColForWhere=" + ColForWhere + "" + "&ColValue=" + ColValue + "";
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+    },
+GetPendingIDOrderWise: function GetPendingIDOrderWise(BuyerPOMaster_Code, GodownMaster_Code) {
+    var URL = UrlService.API_ENDPOINT_PalletPacking + "/GetPendingIDOrderWise?BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&GodownMaster_Code=" + GodownMaster_Code;
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+    },
+GetPalletDetail: function GetPalletDetail(PalletNo) {
+    var URL = UrlService.API_ENDPOINT_PalletPacking + "/GetPalletDetail?PalletNo=" + PalletNo + "";
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+    },
+FillPendingOrder: function FillPendingOrder() {
+    var URL = UrlService.API_ENDPOINT_PalletPacking + "/FillPendingOrder";
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+    },
+FillWarehouse: function FillWarehouse() {
+    let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+    var URL = UrlService.API_ENDPOINT_PalletPacking + "/FillWarehouse?UserMaster_Code=" + userCode;
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+    },
+FillPalletType: function FillPalletType() {
+    var URL = UrlService.API_ENDPOINT_PalletPacking + "/FillPalletType";
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+    },
+ScanID: function ScanID(IdentificationNo, GodownMaster_Code) {
+    var URL = UrlService.API_ENDPOINT_PalletPacking + "/ScanID?IdentificationNo=" + IdentificationNo + "" + "&GodownMaster_Code=" + GodownMaster_Code;
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+    },
+EditPallet: function EditPallet(PalletNo, GodownMaster_Code) {
+    var URL = UrlService.API_ENDPOINT_PalletPacking + "/EditPallet?PalletNo=" + PalletNo + "" + "&GodownMaster_Code=" + GodownMaster_Code;
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+    },
+    GetPackedPalletDate: function GetPackedPalletDate() {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/GetPackedPalletDate";
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+    },
+}
+
+export { PalletPackingService }

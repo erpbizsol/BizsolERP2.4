@@ -4,12 +4,15 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <CopyRazorGenerateFilesToPublishDirectory>true</CopyRazorGenerateFilesToPublishDirectory>
+
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.2.0" />
+    <Content Update="Views\**\*.cshtml" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <ProjectReference Include="..\Bizsol.ERP.UI.Common.Masters\Bizsol.WebERP.UI.Common.Masters.csproj" />
     <ProjectReference Include="..\Bizsol.ERP.UI.Common.Reports\Bizsol.WebERP.UI.Common.Reports.csproj" />
@@ -45,6 +48,8 @@
     <ProjectReference Include="..\Bizsol.ERP.UI.Taxation.Test\Bizsol.WebERP.UI.Taxation.Test.csproj" />
     <ProjectReference Include="..\Bizsol.ERP.UI.Taxation.Transactions\Bizsol.WebERP.UI.Taxation.Transactions.csproj" />
     <ProjectReference Include="..\Bizsol.ERP.UI.Tools\Bizsol.WebERP.UI.Tools.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.CRM.Reports\Bizsol.WebERP.UI.CRM.Reports.csproj" />
+    <ProjectReference Include="..\Bizsol.WebERP.UI.CRM.Transactions\Bizsol.WebERP.UI.CRM.Transactions.csproj" />
     <ProjectReference Include="..\Bizsol.WebERP.UI.Shared\Bizsol.WebERP.UI.Shared.csproj" />
   </ItemGroup>
 

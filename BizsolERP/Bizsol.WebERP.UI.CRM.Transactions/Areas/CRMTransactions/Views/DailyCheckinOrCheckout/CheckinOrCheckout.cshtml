@@ -1,0 +1,44 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <h5 class="text-center font-weight-bold mb-4">
+                    Day Wise Check In/Check Out
+                </h5>
+                <form >
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <span>Today <b>:</b><text id="lblToday"></text></span>
+                        </div>
+                        <div class="col-md-4">
+                            <span>Total Distance <b>:</b><text id="lblDistance"></text></span>
+                        </div>
+                        <div class="col-md-4">
+                            <span>Duration Hrs <b>:</b> <text id="lblDuration"></text></span>
+                        </div>
+                    </div>
+                   
+                        <div class="row ">
+                        <div class="col-sm-12 text-center">
+                                <button type="button" id="btnSaveCheckInCheckOut" onclick="SaveCheckInCheckOut()" class="btn btn-primary btn-height" >
+                                    Check In
+                                </button>
+                            </div>
+                        </div>
+                
+                    <div class="card-body">
+                        <div id="checkInCheckOutGrid">
+                            
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_SizeControlpage.js"></script> *@
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/CheckinOrCheckout.js"></script>

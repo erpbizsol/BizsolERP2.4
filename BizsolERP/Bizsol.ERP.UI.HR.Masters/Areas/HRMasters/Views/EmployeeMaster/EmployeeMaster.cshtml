@@ -1,0 +1,963 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.HR.Masters/js/EmployeeMaster.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script type="module" src="~/_content/Bizsol.WEBERP.UI.Shared/js/BizsolPBControls.js"></script>
+<script>
+    var param_Emp_Mode = '@ViewBag.Emp_Mode';
+    var param_Emp_Code = '@ViewBag.Emp_Code';
+</script>
+<style>
+    /* Hide the spinner arrows in most modern browsers */
+    input[type="number"]:not([name="txtYearPassing"])::-webkit-outer-spin-button,
+    input[type="number"]:not([name="txtYearPassing"])::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* Hide the spinner arrows in Firefox */
+    input[type="number"]:not([name="txtYearPassing"]) {
+        -moz-appearance: textfield;
+    }
+
+    .datepicker td, .datepicker th {
+        border-radius: 20px !important;
+    }
+
+    .datepicker table tr td, .datepicker table tr td {
+        padding: 8px 9px !important;
+        height: 16px !important;
+    }
+
+    .datepicker table tfoot {
+        display: none;
+    }
+</style>
+
+<div class="row mb-2">
+    <div class="col-md-12">
+
+        <div class="tab-section">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#PersonalDetails"
+                            type="button" role="tab" aria-controls="PersonalDetails" aria-selected="true">
+                        Personal Details
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="professional-tab" data-bs-toggle="tab" data-bs-target="#ProfessionalDetails"
+                            type="button" role="tab" aria-controls="ProfessionalDetails" aria-selected="false">
+                        Professional Details
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="Bank-tab" data-bs-toggle="tab" data-bs-target="#BankDetails" type="button"
+                            role="tab" aria-controls="BankDetails" aria-selected="true">
+                        Bank/Other Details
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="Attendence-tab" data-bs-toggle="tab" data-bs-target="#AttendenceDetails" type="button"
+                            role="tab" aria-controls="AttendenceDetails" aria-selected="false">
+                        Attendence Details
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="Family-tab" data-bs-toggle="tab" data-bs-target="#FamilyDetails" type="button"
+                            role="tab" aria-controls="FamilyDetails" aria-selected="true">
+                        Educaional/Family Details
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation" id="navMachine-tab">
+                    <button class="nav-link" id="Machine-tab" data-bs-toggle="tab" data-bs-target="#MachineAllocation" type="button"
+                            role="tab" aria-controls="MachineAllocation" aria-selected="false">
+                        Machine Allocation
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation" hidden>
+                    <button class="nav-link" id="OtherDetails-tab" data-bs-toggle="tab" data-bs-target="#OtherDetails" type="button"
+                            role="tab" aria-controls="OtherDetails" aria-selected="false">
+                        Other Details
+                    </button>
+                </li>
+            </ul>
+            <div class="tab-content" id="divPersonalDetails">
+                <div class="tab-pane fade show active" id="PersonalDetails" role="tabpanel" aria-labelledby="dashboard-tab">
+                    <div id="Dashboard" role="tabpanel" class="tab-pane active border-1 ">
+                        <div class="row">
+
+                            <div class="col-md-4">
+                                <label for="txtEmpName" class="form-label">Card No<span class="text-danger">*</span></label>
+
+                                <div class="input-group">
+                                    <input type="text" class="box_border form-control form-control-sm  text-end" id="txtCardPrefix" autocomplete="off" disabled>
+                                    <input type="text" class="box_border form-control form-control-sm" id="txtCardNo" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="txtEmpName" class="form-label">Employee Name<span class="text-danger">*</span></label>
+
+                                <div class="input-group">
+                                    <select id="title" name="title" class="box_border form-control-sm w-auto">
+                                        <option value="Mr.">Mr.</option>
+                                        <option value="Mrs.">Mrs.</option>
+                                        <option value="Miss">Miss</option>
+                                    </select>
+                                    <input type="text" class="box_border form-control form-control-sm" id="txtEmpName" autocomplete="off" maxlength="60">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="txtFatherName" class="form-label">Father's/Husband's Name<span class="text-danger">*</span></label>
+
+                                <input type="text" class="box_border form-control form-control-sm" id="txtFatherName" autocomplete="off" maxlength="60">
+
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="txtPermanentAddress" class="form-label">Permanent Address<span class="text-danger">*</span></label>
+
+                                <textarea type="text" class="box_border form-control form-control-sm" id="txtPermanentAddress" rows="3" autocomplete="off" maxlength="300"></textarea>
+
+                            </div>
+                            <div class="col-md-4">
+                                <label for="txtPersentAddress" class="form-label">Persent Address<span class="text-danger">*</span></label>
+
+                                <textarea type="text" class="box_border form-control form-control-sm" id="txtPersentAddress" rows="3" autocomplete="off" maxlength="300"></textarea>
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="ddlCountry" class="form-label">Nationality<span class="text-danger">*</span></label>
+
+                                <select id="ddlCountry" class="form-control form-control-sm box_border">
+                                </select>
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="txtContact" class="form-label">Contact No<span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <select id="ddlCountryCode" name="ddlCountryCode" class="box_border form-control-sm w-auto flag-option">
+                                        <option value="+91" data-flag="in" class="flag-option">+91</option>
+                                        <option value="+44" data-flag="gb">+44</option>
+                                        <option value="+61" data-flag="au">+61</option>
+                                        <option value="+1" data-flag="us">+1</option>
+                                        <option value="+81" data-flag="jp">+81</option>
+                                        <option value="+33" data-flag="fr">+33</option>
+                                        <option value="+49" data-flag="de">+49</option>
+                                        <option value="+86" data-flag="cn">+86</option>
+                                        <option value="+353" data-flag="ie">+353</option>
+                                        <option value="+66" data-flag="th">+66</option>
+                                        <option value="+971" data-flag="ae">+971</option>
+                                    </select>
+                                    <input type="number" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" id="txtContact" name="txtContact" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-2">
+                                <label for="txtContact" class="form-label">Mobile No<span class="text-danger">*</span></label>
+
+                                <input type="number" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" id="txtMobile" autocomplete="off">
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="txtEmergencyContact" class="form-label">Emergency Contact No</label>
+
+                                <input type="number" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" id="txtEmergencyContact" autocomplete="off">
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="txtPersentAddress" class="form-label">Email</label>
+
+                                <input type="email" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" id="txtEmail" autocomplete="off" maxlength="50">
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="txtContact" class="form-label">Personal Email</label>
+                                <input type="email" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" id="txtPersonalEmail" autocomplete="off" maxlength="50">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="ddlMaritalStatus" class="form-label">Marital Status<span class="text-danger">*</span></label>
+
+                                <select id="ddlMaritalStatus" class="form-control form-control-sm box_border">
+                                    <option value="single">Single</option>
+                                    <option value="married">Married</option>
+                                    <option value="divorced">Divorced</option>
+                                    <option value="widowed">Widowed</option>
+                                    <option value="separated">Separated</option>
+                                </select>
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="ddlGender" class="form-label">Gender<span class="text-danger">*</span></label>
+
+                                <select id="ddlGender" class="form-control form-control-sm box_border">
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-2">
+                                <label for="dtDOB" class="form-label">DOB<span class="text-danger">*</span></label>
+
+                                <input type="text" class="box_border form-control form-control-sm" id="dtDOB" autocomplete="off">
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="dtDOM" class="form-label">DOM<span class="text-danger">*</span></label>
+
+                                <input type="text" class="box_border form-control form-control-sm" id="dtDOM" autocomplete="off">
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="txtUID1" id="txtUID1Header" class="form-label">UID 1</label><span class="text-danger" id="UID1Man">*</span>
+
+                                <input type="text" class="box_border form-control form-control-sm" id="txtUID1" autocomplete="off" maxlength="15">
+
+                            </div>
+                            <div class="col-md-2" id="divUID2">
+                                <label for="txtUID2" id="txtUID2Header" class="form-label">UID 2</label><span class="text-danger" id="UID2Man">*</span>
+                                <input type="text" class="box_border form-control form-control-sm" id="txtUID2" autocomplete="off" maxlength="15">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="ddlBloodGroup" class="form-label">Blood Group</label>
+
+                                <select id="ddlBloodGroup" class="form-control form-control-sm box_border">
+                                    <option value=""></option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                </select>
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="ddlUserName" class="form-label">User Name<span class="text-danger">*</span></label>
+
+                                <select id="ddlUserName" class="form-control form-control-sm box_border">
+                                </select>
+
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-2" id="divLocation">
+                                <label for="txtLocation" class="form-label">Location</label>
+
+                                <input type="text" class="box_border form-control form-control-sm" id="txtLocation" autocomplete="off" maxlength="50">
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="ddlEmpSkill" class="form-label">Employee Skill<span class="text-danger">*</span></label>
+
+                                <select id="ddlEmpSkill" name="ddlEmpSkill" class="form-control form-control-sm box_border">
+                                </select>
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="ddlEmpGrade" class="form-label">Employee Grade</label>
+
+                                <select id="ddlEmpGrade" name="ddlEmpGrade" class="form-control form-control-sm box_border">
+                                </select>
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="ddlEmpCategory" class="form-label">Employee Category</label>
+
+                                <select id="ddlEmpCategory" name="ddlEmpCategory" class="form-control form-control-sm box_border">
+                                </select>
+
+                            </div>
+                            <div class="col-md-2">
+                                <label for="txtFileInput" class="form-label">Photo</label>
+                                <input type="file" id="txtFileInput" name="txtFileInput" class="box_border form-control form-control-sm" accept="image/*" capture="camera" />
+
+                                <input type="hidden" id="hfFileInput" name="hfFileInput" value="" />
+                                <input type="hidden" id="hfFileCode" name="hfFileCode" value=0 />
+                            </div>
+                            <div class="col-md-2  span-two-rows">
+                                <div class="form-group">
+
+                                    <img id="imgSelfie" class="rounded-circle avatar-lg" src="" />
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="ProfessionalDetails" role="tabpanel" aria-labelledby="dashboard-tab">
+                    <div class="row">
+
+                        <div class="col-md-2">
+                            <label for="ddlDepartment" class="form-label">Department<span class="text-danger">*</span></label>
+
+                            <select id="ddlDepartment" name="ddlDepartment" class="form-control form-control-sm box_border">
+                            </select>
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ddlSubDepartment" class="form-label">Sub Department</label><span class="text-danger" hidden id="spansubdept">*</span>
+
+                            <select id="ddlSubDepartment" name="ddlSubDepartment" class="form-control form-control-sm box_border">
+                            </select>
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ddlDesignation" class="form-label">Designation</label>
+
+                            <select id="ddlDesignation" name="ddlDesignation" class="form-control form-control-sm box_border">
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="dtDOJ" class="form-label">Date of Joining<span class="text-danger">*</span></label>
+
+                            <input type="date" class="box_border form-control form-control-sm" id="dtDOJ" autocomplete="off">
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ddlShift" class="form-label">Shift</label>
+
+                            <select id="ddlShift" name="ddlShift" class="form-control form-control-sm box_border">
+                            </select>
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtWorkingHours" class="form-label">Working Hours</label>
+
+                            <input type="number" class="box_border form-control form-control-sm  text-end" id="txtWorkingHours" autocomplete="off" maxlength="50">
+
+                        </div>
+                    </div>
+                    <div class="row">
+
+                        <div class="col-md-2">
+                            <label for="txtBasicSalary" id="lblBasicSalary" class="form-label">Basic Salary</label>
+
+                            <input type="number" class="box_border form-control form-control-sm  text-end" id="txtBasicSalary" autocomplete="off" maxlength="50">
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtDA" id="lblDA" class="form-label">DA</label>
+
+                            <input type="number" class="box_border form-control form-control-sm  text-end" id="txtDA" autocomplete="off" maxlength="50">
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtHRA" id="lblHRA" class="form-label">HRA</label>
+
+                            <input type="number" class="box_border form-control form-control-sm  text-end" id="txtHRA" autocomplete="off" maxlength="50">
+
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="txtConvayance" id="lblConvayance" class="form-label">Convayance</label>
+
+                            <input type="number" class="box_border form-control form-control-sm  text-end" id="txtConvayance" autocomplete="off" maxlength="50">
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtOtherAllowance" class="form-label">Other Allowance</label>
+                            <div class="input-group">
+                                <input type="number" class="box_border form-control form-control-sm  text-end" disabled id="txtOtherAllowance" autocomplete="off" maxlength="50">
+                                <input type="button" name="btnOtherAllowance" id="btnOtherAllowance" value="..." class="btn btn-primary  form-control-sm" />
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtDeduction" class="form-label">Standard Deduction</label>
+                            <div class="input-group">
+                                <input type="number" class="box_border form-control form-control-sm  text-end" disabled id="txtDeduction" autocomplete="off" maxlength="10">
+                                <input type="button" name="btnDeduction" id="btnDeduction" value="..." class="btn btn-primary  form-control-sm" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label for="txtTotalSalary" class="form-label">Total Salary</label>
+
+                            <input type="number" class="box_border form-control form-control-sm  text-end" disabled id="txtTotalSalary" autocomplete="off" maxlength="50">
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtTotalCTC" class="form-label">Total CTC</label>
+
+                            <input type="number" class="box_border form-control form-control-sm  text-end" disabled id="txtTotalCTC" autocomplete="off" maxlength="50">
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ddlPaymentMode" class="form-label">Payment Mode</label>
+
+                            <select id="ddlPaymentMode" name="ddlPaymentMode" class="form-control form-control-sm box_border">
+                                <option value=""></option>
+                                <option value="Cash">Cash</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Cheque">Cheque</option>
+                                <option value="Online">Online</option>
+                            </select>
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ddlOTApplicable" class="form-label">OT Applicable</label>
+
+                            <select id="ddlOTApplicable" name="ddlOTApplicable" class="form-control form-control-sm box_border">
+                                <option value="Y">Yes</option>
+                                <option value="N" selected>No</option>
+                            </select>
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ddlOTRateCondition" class="form-label">OT Rate Condition</label><span class="text-danger" id="spanOTCon">*</span>
+
+                            <select id="ddlOTRateCondition" disabled name="ddlOTRateCondition" class="form-control form-control-sm box_border">
+                                <option value=""></option>
+                                <option value="Basic">Basic</option>
+                                <option value="Basic + DA">Basic + DA</option>
+                                <option value="Total">Total</option>
+                                <option value="Manual">Manual</option>
+                            </select>
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtOTRate" class="form-label">OT Rate</label><span class="text-danger" id="spanOT">*</span>
+
+                            <input type="text" disabled class="box_border form-control form-control-sm  text-end" id="txtOTRate" autocomplete="off" maxlength="50">
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label for="ddlPFApplicable" class="form-label">PF Applicable</label>
+
+                            <select id="ddlPFApplicable" name="ddlPFApplicable" class="form-control form-control-sm box_border">
+                                <option value="Y">Yes</option>
+                                <option value="N" selected>No</option>
+                            </select>
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtPFAccountNo" class="form-label">PF Account No</label><span class="text-danger" id="spanPFAC">*</span>
+
+                            <input type="number" class="box_border form-control form-control-sm" disabled id="txtPFAccountNo" autocomplete="off" maxlength="50">
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ddlSalaryForPF" class="form-label">Salary for PF</label><span class="text-danger" id="spanddlsalPF">*</span>
+
+                            <select id="ddlSalaryForPF" name="ddlSalaryForPF" disabled class="form-control form-control-sm box_border">
+                                <option value="" selected></option>
+                                <option value="Basic (Within Limit)">Basic (Within Limit)</option>
+                                <option value="Basic+DA (Within Limit)" selected>Basic+DA (Within Limit)</option>
+                                <option value="Basic (Actual)">Basic (Actual)</option>
+                                <option value="Basic+DA (Actual)" selected>Basic+DA (Actual)</option>
+                                <option value="Manual">Manual</option>
+
+                            </select>
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtSalaryForPF" class="form-label">Salary for PF</label><span class="text-danger" id="spantxtsalPF">*</span>
+
+                            <input type="text" class="box_border form-control form-control-sm  text-end" disabled id="txtSalaryForPF" autocomplete="off" maxlength="50">
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ddlFPFRate" class="form-label">FPF Rate</label><span class="text-danger" id="spanFPF">*</span>
+
+                            <input type="text" class="box_border form-control form-control-sm  text-end" disabled id="txtFPFRate" autocomplete="off" maxlength="50">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtEPFRate" class="form-label">EPF Rate</label><span class="text-danger" id="spanEPF">*</span>
+
+                            <input type="text" class="box_border form-control form-control-sm  text-end" disabled id="txtEPFRate" autocomplete="off" maxlength="50">
+
+                        </div>
+
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label for="txtVPFRate" class="form-label">VPF Rate</label><span class="text-danger" id="spanVPF">*</span>
+
+                            <input type="text" class="box_border form-control form-control-sm  text-end" disabled id="txtVPFRate" autocomplete="off" maxlength="50">
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ddlESIApplicable" class="form-label">ESI Applicable</label>
+
+                            <select id="ddlESIApplicable" name="ddlESIApplicable" class="form-control form-control-sm box_border">
+                                <option value="Y">Yes</option>
+                                <option value="N" selected>No</option>
+                            </select>
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtESIInsuranceNo" class="form-label">ESI Insurance No</label><span class="text-danger" id="spanESI">*</span>
+
+                            <input type="number" class="box_border form-control form-control-sm" disabled id="txtESIInsuranceNo" autocomplete="off" maxlength="50">
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ddlTDSApplicable" class="form-label">TDS Applicable</label>
+
+                            <select id="ddlTDSApplicable" name="ddlTDSApplicable" class="form-control form-control-sm box_border">
+                                <option value="Y">Yes</option>
+                                <option value="N" selected>No</option>
+                            </select>
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtPAN" class="form-label">PAN</label><span class="text-danger" id="spanPAN">*</span>
+
+                            <input type="text" class="box_border form-control form-control-sm" disabled id="txtPAN" autocomplete="off" maxlength="50">
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtLeave" class="form-label">Leave Details</label>
+                            <div class="input-group">
+                                <input type="number" class="box_border form-control form-control-sm  text-end" disabled id="txtLeave" autocomplete="off" maxlength="10">
+                                <input type="button" name="btnLeave" id="btnLeave" value="..." class="btn btn-primary  form-control-sm" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="BankDetails" role="tabpanel" aria-labelledby="Bank-tab">
+
+                    <div class="row">
+
+                        <div class="col-md-4">
+                            <label for="txtBankAccNo" class="form-label">Bank A/C No</label>
+
+
+                            <input type="text" class="box_border form-control form-control-sm" id="txtBankAccNo" autocomplete="off" maxlength="60">
+
+                        </div>
+                        <div class="col-md-4">
+                            <label for="txtEmpNameInBank" class="form-label">Employee Name In Bank</label>
+
+
+                            <input type="text" class="box_border form-control form-control-sm" id="txtEmpNameInBank" autocomplete="off" maxlength="60">
+
+                        </div>
+                        <div class="col-md-4">
+                            <label for="ddlBankName" class="form-label">Bank Name</label>
+                            <select id="ddlBankName" name="ddlBankName" class="form-control form-control-sm box_border">
+                            </select>
+
+                        </div>
+
+                    </div>
+                    <div class="row">
+
+                        <div class="col-md-2">
+                            <label for="ddlBankBranch" class="form-label">Bank Branch</label>
+                            @*  <select id="ddlBankBranch" name="ddlBankBranch" class="form-control form-control-sm box_border">
+                            </select> *@
+                            <input type="text" class="box_border form-control form-control-sm" id="txtBankBranch" autocomplete="off" maxlength="100">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtIFSC" class="form-label">IFSC</label>
+
+
+                            <input type="text" class="box_border form-control form-control-sm" id="txtIFSC" autocomplete="off" maxlength="15">
+
+                        </div>
+                        <div class="col-md-4">
+                            <label for="txtBankAdd1" class="form-label">Address 1</label>
+
+
+                            <textarea class="box_border form-control form-control-sm" id="txtBankAdd1" autocomplete="off" maxlength="200" rows="2"></textarea>
+
+                        </div>
+                        <div class="col-md-4">
+                            <label for="txtBankAdd2" class="form-label">Address 2</label>
+
+
+                            <textarea class="box_border form-control form-control-sm" id="txtBankAdd2" autocomplete="off" maxlength="200" rows="2"></textarea>
+
+                        </div>
+                    </div>
+                    <div class="row">
+
+                        <div class="col-md-2">
+                            <label for="ddlBankCity" class="form-label">City</label>
+                            <select id="ddlBankCity" name="ddlBankCity" class="form-control form-control-sm box_border">
+                            </select>
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtBankDistrict" class="form-label">District</label>
+
+
+                            <input type="text" class="box_border form-control form-control-sm" id="txtBankDistrict" autocomplete="off" maxlength="35">
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ddlBankState" class="form-label">State</label>
+
+                            <select id="ddlBankState" name="ddlBankBranch" class="form-control form-control-sm box_border">
+                            </select>
+
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ddlBankCountry" class="form-label">Nation</label>
+                            <select id="ddlBankCountry" name="ddlBankCountry" class="form-control form-control-sm box_border">
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="txtBankPin" class="form-label">Pin</label>
+
+
+                            <input type="text" class="box_border form-control form-control-sm" id="txtBankPin" autocomplete="off" maxlength="10">
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="AttendenceDetails" role="tabpanel" aria-labelledby="Attendence-tab">
+
+                    <div class="row">
+
+                        <div class="col-md-2">
+                            <input type="radio" name="Attendence" value="Calender"> As Per Calender Year<br>
+
+                        </div>
+                        <div class="col-md-2">
+                            <input type="radio" name="Attendence" value="Fin"> As Per Fin Year<br>
+
+                        </div>
+                    </div>
+                    <div id="DivtblAttendence">
+                        <div class="table-wrapper fixed-height-table">
+                            <table id="tblAttendence" class="fixed-width-table table">
+                                <thead id="Attendence-header">
+                                </thead>
+                                <tbody id="Attendence-body">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="paginator" id="paginator-Attendence">
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="tab-pane fade" id="FamilyDetails" role="tabpanel" aria-labelledby="Family-tab">
+                    <div class="row">
+
+                        <div class="col-md-3">
+                            <label for="txtInsurancePolicyNo" class="form-label">Insurance & Policy No</label>
+
+
+                            <input type="text" class="box_border form-control form-control-sm" id="txtInsurancePolicyNo" autocomplete="off" maxlength="60">
+
+                        </div>
+                        <div class="col-md-3">
+                            <label for="txtEduBack" class="form-label">Educational Background</label>
+
+
+                            <input type="text" class="box_border form-control form-control-sm" id="txtEduBack" autocomplete="off" maxlength="60">
+
+                        </div>
+                        <div class="col-md-6">
+                            <label for="txtCloseRelative" class="form-label">Details of Close Relative Working in UNIT</label>
+
+
+                            <input type="text" class="box_border form-control form-control-sm" id="txtCloseRelative" autocomplete="off" maxlength="200">
+
+                        </div>
+                    </div>
+                    <div class="row">
+
+                        <div class="col-md-6">
+                            <label for="txtEduBack" class="form-label">Last Employer Details</label>
+                            <div class="table-wrapper" style="overflow: auto;">
+                                <table id="tblLastEmployerDetails" class="table">
+                                    <thead role="rowgroup" class="text-sm-center">
+                                        <tr role="row">
+                                            <th class="lead-Date width_cust" role="columnheader">Name</th>
+                                            <th class="lead-Date width_cust" role="columnheader">Address</th>
+                                            <th class="lead-text width_cust" role="columnheader">Designation</th>
+                                            <th class="lead-text width_cust" role="columnheader">Delete</th>
+                                        </tr>
+                                        <!-- end table row-->
+                                    </thead>
+                                    <tbody id="LastEmployerDetails" role="rowgroup"></tbody>
+                                    <tfoot>
+
+                                        <tr role="row" id="trAddLastEmpBtn">
+                                            <td style="text-align: left;" colspan="4">
+                                                <button class="btn btn-primary icon-height mb-1" title="Add New Row" onclick="AddNewRow_LastEmployer();"><i class="fa fa-plus"></i></button>
+
+                                            </td>
+                                        </tr>
+
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                        </div>
+                        <div class="col-md-6">
+                            <label for="txtEduBack" class="form-label">Educational Degree(s)</label>
+                            <div class="table-wrapper" style="overflow: auto;">
+                                <table id="tblEducationalDegree" class="table">
+                                    <thead role="rowgroup" class="text-sm-center">
+                                        <tr role="row">
+                                            <th class="lead-Date width_cust" role="columnheader">Degree</th>
+                                            <th class="lead-Date width_cust" role="columnheader">Year of Passing</th>
+                                            <th class="lead-text width_cust" role="columnheader">Collage Name</th>
+                                            <th class="lead-text width_cust" role="columnheader">Address</th>
+                                            <th class="lead-text width_cust" role="columnheader">Delete</th>
+                                        </tr>
+                                        <!-- end table row-->
+                                    </thead>
+                                    <tbody id="EducationalDegree" role="rowgroup"></tbody>
+                                    <tfoot>
+
+                                        <tr role="row" id="trAddEducationBtn">
+                                            <td style="text-align: left;" colspan="5">
+                                                <button class="btn btn-primary icon-height mb-1" title="Add New Row" onclick="AddNewRow_Education();"><i class="fa fa-plus"></i></button>
+
+                                            </td>
+                                        </tr>
+
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row">
+
+                        <div class="col-md-12">
+                            <label for="txtEduBack" class="form-label">Family Details</label>
+                            <div class="table-wrapper" style="overflow: auto;">
+                                <table id="tblFamilyDetails" class="table">
+                                    <thead role="rowgroup" class="text-sm-center">
+                                        <tr role="row">
+                                            <th class="lead-Date width_cust" role="columnheader">Member Name</th>
+                                            <th class="lead-Date width_cust" role="columnheader">Relation</th>
+                                            <th class="lead-text width_cust" role="columnheader">DOB</th>
+                                            <th class="lead-text width_cust" role="columnheader">Degree</th>
+                                            <th class="lead-Date width_cust" role="columnheader">Collage Name</th>
+                                            <th class="lead-Date width_cust" role="columnheader">Address</th>
+                                            <th class="lead-text width_cust" role="columnheader">Visa No</th>
+                                            <th class="lead-text width_cust" role="columnheader">Visa Expired On</th>
+                                            <th class="lead-text width_cust" role="columnheader">Delete</th>
+                                        </tr>
+                                        <!-- end table row-->
+                                    </thead>
+                                    <tbody id="FamilyDetails" role="rowgroup"></tbody>
+                                    <tfoot>
+
+                                        <tr role="row" id="trAddFamilyBtn">
+                                            <td style="text-align: left;" colspan="9">
+                                                <button class="btn btn-primary icon-height mb-1" title="Add New Row" onclick="AddNewRow_Family();"><i class="fa fa-plus"></i></button>
+
+                                            </td>
+                                        </tr>
+
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="MachineAllocation" role="tabpanel" aria-labelledby="Machine-tab">
+
+                    <div class="row">
+
+                        <div class="col-md-6">
+                            <label for="txtEduBack" class="form-label">Machine Details</label>
+                            <div class="table-wrapper" style="overflow: auto;">
+                                <table id="tblMachineAllocation" class="table">
+                                    <thead role="rowgroup" class="text-sm-center">
+                                        <tr role="row">
+                                            <th class="lead-Date width_cust" role="columnheader">Machine</th>
+                                            <th class="lead-Date width_cust" role="columnheader">Percentage</th>
+                                            <th class="lead-text width_cust" role="columnheader">Delete</th>
+                                        </tr>
+                                        <!-- end table row-->
+                                    </thead>
+                                    <tbody id="MachineAllocation" role="rowgroup"></tbody>
+                                    <tfoot>
+
+                                        <tr role="row" id="trAddMachineBtn">
+                                            <td style="text-align: left;" colspan="3">
+                                                <button class="btn btn-primary icon-height mb-1" title="Add New Row" onclick="AddNewRow_Machine();"><i class="fa fa-plus"></i></button>
+
+                                            </td>
+                                        </tr>
+
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@* <div class="row">
+    <div class="col-md-12">
+        <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-sm waves-effect waves-light" onclick="SaveData();" />
+        <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-sm waves-effect waves-light" />
+    </div>
+</div> *@
+
+
+<div class="row">
+    <div id="PBControls"></div>
+
+</div>
+
+<div class="row">
+    <div class="modal fade" id="OtherAllowanceModal" style="position: fixed;transform: translate(-50%, -50%);top: 50%;left: 50%;" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-width-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title">Other Allowance</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="tblAllowance">
+                        <div class="table-wrapper fixed-height-table">
+                            <table id="Allowance" class="fixed-width-table table">
+                                <thead id="Allowance-header">
+                                </thead>
+                                <tbody id="Allowance-body">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="paginator" id="paginator-Allowance">
+                        </div>
+                    </div>
+                    <input type="hidden" id="hdnSelectedCode" name="hdnSelectedCode">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary btn-sm waves-effect waves-light" onclick="SaveEmployeeAllowanceDetails()">Save</button>
+                    <button type="button" class="btn btn-secondary btn-sm waves-effect waves-light" onclick="CloseAllowanceModal()" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="modal fade" id="ImageModal" tabindex="-1" style="position: fixed;transform: translate(-50%, -50%);top: 50%;left: 50%;" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-width-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title">Image</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" onclick="CloseModal()" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <img id="ImgModal" style="border: 1px solid #555; width:80%; display: block; margin-left: auto; margin-right: auto; " />
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm waves-effect waves-light" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="modal fade" id="LeaveModal" style="position: fixed;transform: translate(-50%, -50%);top: 50%;left: 50%;" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-width-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title">Leave Details</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="tblLeave">
+                        <div class="table-wrapper fixed-height-table">
+                            <table id="Leave" class="fixed-width-table table">
+                                <thead id="Leave-header">
+                                </thead>
+                                <tbody id="Leave-body">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="paginator" id="paginator-Leave">
+                        </div>
+                    </div>
+                    <input type="hidden" id="hdnSelectedCode" name="hdnSelectedCode">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary btn-sm waves-effect waves-light" onclick="SaveEmployeeLeaveDetails()">Save</button>
+                    <button type="button" class="btn btn-secondary btn-sm waves-effect waves-light" onclick="CloseLeaveModal()" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="modal fade" id="DeductionModal" style="position: fixed;transform: translate(-50%, -50%);top: 50%;left: 50%;" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-width-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title">Standard Deductions</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="tblDeduction">
+                        <div class="table-wrapper fixed-height-table">
+                            <table id="Deduction" class="fixed-width-table table">
+                                <thead id="Deduction-header">
+                                </thead>
+                                <tbody id="Deduction-body">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="paginator" id="paginator-Deduction">
+                        </div>
+                    </div>
+                    <input type="hidden" id="hdnSelectedCode" name="hdnSelectedCode">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary btn-sm waves-effect waves-light" onclick="SaveEmployeeDeductionDetails()">Save</button>
+                    <button type="button" class="btn btn-secondary btn-sm waves-effect waves-light" onclick="CloseDeductionModal()" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

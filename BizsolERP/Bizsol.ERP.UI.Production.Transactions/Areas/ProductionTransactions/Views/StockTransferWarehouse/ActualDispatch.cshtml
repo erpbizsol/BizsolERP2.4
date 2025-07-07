@@ -1,0 +1,92 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/ActualDispatch.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+<style>
+    .modal-dialog {
+        max-width: 1050px;
+    }
+    #ActualDispatch tfoot {
+        position: sticky;
+        bottom: 0;
+        z-index: 0; 
+    }
+    #ActualDispatch tfoot td, #ActualDispatch tfoot th {
+        background-color: #d5dde5; 
+    }
+    .mt-4 {
+        margin-top: 1.6rem !important;
+    }
+
+    .fixed-height-table{
+        height:470px;
+    }
+</style>
+<div class="tab-section">
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+            <div class="row">
+                <div class="col-md-4 form-group">
+                    <label for="partyName" class="form-label">Party Name <span class="text-danger">*</span></label>
+                    <select id="ddlPartyName" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+                    <div class="col-md-2 align-items-end mt-4">
+                    <button type="button" id="btnShow" class="btn btn-primary btn-height" onclick="onPartyNameSelectGrid()">Show</button>
+                    <button type="button" id="btnExport" class="btn btn-primary btn-height" onclick="">Export</button>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="tblActualDispatch" style="display: none;">
+        <div class="table-wrapper fixed-height-table">
+            <table id="ActualDispatch" class="fixed-width-table table">
+                <thead id="table-header-ActualDispatch">
+                </thead>
+                <tbody id="table-body-ActualDispatch">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-ActualDispatch">
+        </div>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title"></h5>
+                <input type="hidden" value="" id="txtPackingListMaster_Code"/>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="NoOfDispatch" class="fixed-width-table table">
+                        <thead id="table-header-NoOfDispatch">
+                        </thead>
+                        <tbody id="table-body-NoOfDispatch">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-NoOfDispatch">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btnDownload" class="btn btn-primary btn-height" onclick="Download()">Export</button>
+                <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+<table id="tblReport" hidden="hidden">
+    <thead id="table-headerPrint">
+        <tr></tr>
+    </thead>
+    <tbody id="table-bodyPrint">
+    </tbody>
+</table>
+</div>

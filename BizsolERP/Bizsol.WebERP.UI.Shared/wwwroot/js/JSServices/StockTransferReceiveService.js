@@ -1,0 +1,116 @@
+﻿import { UrlService } from '../URL.js';
+import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
+
+
+const StockTransferReceiveService = {
+    GetPendingRoll: function GetPendingRoll(Godownmaster_Code, IdentificationNo, isReceivedPallet) {
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPendingRoll?Godownmaster_Code=" + Godownmaster_Code + "&IdentificationNo=" + IdentificationNo + "&IsReceivedPallet=" + isReceivedPallet;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+StockTransferWherehouseReceive: function StockTransferWherehouseReceive(Obj) {
+    var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/StockTransferWherehouseReceive";
+    return promiseAjaxCallApi.CallAPI('POST', URL,Obj).then(
+        function (value) {
+            return value;
+        }
+        );
+},
+GetWarehouse: function GetWarehouse() {
+    let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+    var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetWarehouse?UserMaster_Code=" + userCode;
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+},
+ItemWaiseVerifyRollIdInPackingList: function ItemWaiseVerifyRollIdInPackingList(Data) {
+    var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/ItemWaiseVerifyRollIdInPackingList";
+
+    return promiseAjaxCallApi.CallAPI('POST', URL, Data).then(
+        function (value) {
+            return value;
+        }
+    );
+},
+GetFixedParaMeter: function GetFixedParaMeter() {
+        
+    var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetFixedParaMeter";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+},
+PackingActualPalletIDDispatch: function PackingActualPalletIDDispatch(PalletNo, PartyName) {
+    let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/PackingActualPalletIDDispatch?PalletNo=" + PalletNo + "" + "&PartyName=" + PartyName + "" + "&UserMaster_Code=" + userCode;
+    return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+},
+RemoveIDDispatch: function RemoveIDDispatch(PalletNo,PartyName) {
+    var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/RemoveIDDispatch?PalletNo=" + PalletNo +"" + "&PartyName=" + PartyName + "";
+    return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+},
+GetPartyNamePendingPackingListActualDespatch: function GetPartyNamePendingPackingListActualDespatch() {
+    var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPartyNamePendingPackingListActualDespatch";
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+},
+GetPendingPackingListPalletsActualDespatch: function GetPendingPackingListPalletsActualDespatch(PartyName) {
+    var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPendingPackingListPalletsActualDespatch?PartyName=" + PartyName + "";
+    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        function (value) {
+            return value;
+        }
+    );
+    },
+    GetPalletActualDespatchDetails: function GetPalletActualDespatchDetails(PalletNo, PartyName){
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPalletActualDespatchDetails?PalletNo=" + `${PalletNo}` + "&PartyName=" + `${PartyName}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetPendingPackingListActualDespatch: function GetPendingPackingListActualDespatch(PartyName) {
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPendingPackingListActualDespatch?PartyName=" + PartyName + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetPendingPackingListActualDespatchDetails: function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPendingPackingListActualDespatchDetails?PackingListMaster_Code=" + PackingListMaster_Code + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    PackingListActualDespatchAllPallet: function PackingListActualDespatchAllPallet(PackingListMaster_Code) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/PackingListActualDespatchAllPallet?PackingListMaster_Code=" + PackingListMaster_Code + "" + "&UserMaster_Code=" + userCode;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+}
+export { StockTransferReceiveService }

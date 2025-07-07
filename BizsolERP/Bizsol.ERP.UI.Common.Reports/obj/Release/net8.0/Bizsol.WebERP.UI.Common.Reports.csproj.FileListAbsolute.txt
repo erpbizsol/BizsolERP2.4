@@ -323,3 +323,33 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\r
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\System.Xml.XPath.XDocument.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\WindowsBase.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.MvcApplicationPartsAssemblyInfo.cs
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.deps.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.runtimeconfig.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\ErrorMessages.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.staticwebassets.runtime.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.exe
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\System.Formats.Asn1.dll
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.csproj.AssemblyReference.cache
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.GeneratedMSBuildEditorConfig.editorconfig
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.AssemblyInfoInputs.cache
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.AssemblyInfo.cs
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.csproj.CoreCompileInputs.cache
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.MvcApplicationPartsAssemblyInfo.cs
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.MvcApplicationPartsAssemblyInfo.cache
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.sourcelink.json
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\staticwebassets.build.json
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\staticwebassets.development.json
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Common.Reports.Microsoft.AspNetCore.StaticWebAssets.props
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Common.Reports.props
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\staticwebassets\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.Common.Reports.props
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\staticwebassets\msbuild.buildTransitive.Bizsol.WebERP.UI.Common.Reports.props
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\staticwebassets.pack.json
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\scopedcss\bundle\Bizsol.WebERP.UI.Common.Reports.styles.css
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.W.141AD76B.Up2Date
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.dll
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\refint\Bizsol.WebERP.UI.Common.Reports.dll
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.pdb
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.genruntimeconfig.cache
+D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\ref\Bizsol.WebERP.UI.Common.Reports.dll

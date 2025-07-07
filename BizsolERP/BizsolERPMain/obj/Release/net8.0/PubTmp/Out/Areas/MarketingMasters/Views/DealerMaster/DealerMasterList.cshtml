@@ -1,0 +1,62 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Masters/js/DealerMasterList.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+
+            <div class="col-md-3">
+                <label for="ddlDistributor" class="form-label">Distributor <span class="text-danger">*</span></label>
+                <input list="ddlDistributorList" id="txtDistributor" name="txtDistributor" class="form-control form-control-sm box_border" onclick="$(this).val('');" placeholder="" autocomplete="off" required>
+                <datalist id="ddlDistributorList"></datalist>
+                <input type="hidden" id="hdntxtDistributor" name="hdntxtDistributor">
+            </div>
+
+            <div class="col-md-3 without-label-field">
+                <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+                &nbsp;
+                <button type="button" id="btnAddDealerMaster" class="btn btn-primary btn-height btn-width">Create New</button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+<div id="tblDealerMasterList">
+    <div class="table-wrapper fixed-height-table">
+        <table id="DealerMasterList" class="fixed-width-table table">
+            <thead id="DealerMasterList-header">
+            </thead>
+            <tbody id="DealerMasterList-body">
+            </tbody>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-DealerMasterList">
+    </div>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="deleteReason" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="DeleteModal()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div> 

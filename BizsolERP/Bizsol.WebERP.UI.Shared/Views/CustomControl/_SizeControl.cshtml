@@ -1,0 +1,185 @@
+﻿
+<div class="modal fade bs-example-modal-center" id="SizeControlmodal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Size Details:</h5>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="col-form-label-sm fw-bold"> Size Desp</label>
+                    </div>
+                    <div class="col-md-9">
+                        <select id="ddlItemSizeMaster" class="form-control form-control-sm" onchange="onSizeControl_ddlItemSizeMasterChange()">
+                        </select>
+                    </div>
+                </div>
+               
+                <table  class="table mt-1" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>
+                                Parameter
+                            </th>
+                            <th style="width:40%">Value</th>
+
+                        </tr>
+                    </thead>
+                    <tbody id="tbSizeParameter">
+
+                        @*  @foreach (var item in ViewBag.SizeTable)
+                        {
+                        <tr>
+                        <td>@item.ParameterName</td>
+                        <td>
+                        <input type="text" id="" value="@item.ParameterValue" list="list_@item.ParameterName.ToString().Replace(" ","")" onfocusout="checkDataListValidSize(this.value, 'list_@item.ParameterName.ToString().Replace(" ","")', 'hf_@item.ParameterName.ToString().Replace(" ","")')" onclick="$(this).val('');" autocomplete="off" style="background-color: #ccc !important; pointer-events: none;" />
+                        <datalist id="list_@item.ParameterName.ToString().Replace(" ","")">
+                        </datalist>
+                        <input type="hidden" value="@item.ValueCode" id="hf_@item.ParameterName.ToString().Replace(" ","")" />
+                        <input type="hidden" value="@item.ParameterCode" id="hf_ItemParameterMaster_Code_@item.ParameterName.ToString().Replace(" ","")" />
+                        </td>
+                        </tr>
+
+                        } *@
+                    </tbody>
+
+                    <tfoot>
+                    </tfoot>
+                </table>
+                
+                <div class="text-end mt-1">
+                    <a class="btn btn-primary" onclick="onSizeControl_CreateSize();">
+                        Done
+                    </a>
+                    &nbsp;
+                    <a class="btn btn-danger" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                    <input type="hidden" value="@ViewBag.ItemMaster_Code" id="hfItemMaster_Code" />
+                    <input type="hidden" value="@ViewBag.ItemSizeMaster_Code" id="hfItemSizeMaster_Code" />
+                    <input type="hidden" value="@ViewBag.CallBackFunctionName_btnDone" id="hfCallBackFunctionName_btnDone" />
+                    <input type="hidden" value="@ViewBag.SizeControlRowNo" id="hfRow_Id" />
+                    <input type="hidden" value="@ViewBag.ProcessMaster_Code" id="hfProcessMaster_Code" />
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
+@* <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_SizeControlpage.js"></script> *@
+<script type="module">
+
+    import { SizeControlService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/_SizeControlService.js'
+
+let arraySizeControlDllID = [];
+
+let SizeControl_NewSizeMaster_Code = 0;
+let SizeControl_NewSizeDesp = '';
+
+function getAllSize() {
+   SizeControlService.GetItemSizeListByItemCode($('#hfItemMaster_Code').val()).then(function (respone) {
+       BindSelectList($('#ddlItemSizeMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.SizeDesp })));
+
+       $('#ddlItemSizeMaster').val($('#hfItemSizeMaster_Code').val());
+       $('#ddlItemSizeMaster').select2({
+           dropdownParent: $('#SizeControlmodal')
+       });
+
+       getItemParameterList();
+   })
+    
+}
+
+function getItemParameterList() {
+        SizeControlService.GetItemParameterMasterList($('#hfItemMaster_Code').val(), $('#hfItemSizeMaster_Code').val(),$('#hfProcessMaster_Code').val()).then(function (respone) {
+        console.log(respone);
+        arraySizeControlDllID = respone.map((item) => ({ ParameterCode: item.ParameterCode, ParameterName: item.ParameterName, ParameterValue: item.ParameterValue, ValueCode: item.ValueCode, SizeControlDllID: item.ParameterName.split(' ').join('') }))
+        let tbRow = '';
+        $.each(respone, function (key, val) {
+                let IsLocked=val.Locked==='Y' && val.ValueCode>0 ? 'disabled':''
+            let PValue = '<select id="' + val.ParameterName.split(' ').join('') +'"  '+IsLocked+'></select>'
+            tbRow += '<tr><td>' + val.ParameterName + '</td><td>' + PValue + '</td></tr>';
+            GetSizeDll(val.ParameterName.split(' ').join(''), val.ParameterCode, val.ValueCode);
+            
+        });
+
+        $('#tbSizeParameter')[0].innerHTML = tbRow;
+        
+
+    })
+}
+
+function GetSizeDll(ddlelementID, ItemParameterMaster_Code, ValueCode) {
+    SizeControlService.GetItemSizeDropdownList(ItemParameterMaster_Code, $('#hfItemMaster_Code').val()).then(function (respone) {
+       // console.log(respone);
+        BindSelectList($('#' + ddlelementID)[0], respone.map((item) => ({ Code: item.Code, Desp: item.Desp })));
+        $('#' + ddlelementID).val(ValueCode);
+        $('#' + ddlelementID).select2({
+            dropdownParent: $('#SizeControlmodal'),
+            width: '-webkit-fill-available'
+        });
+    })
+}
+function BindSelectList(element,list) {
+    let option = '<option value="0"></option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
+function onSizeControl_ddlItemSizeMasterChange(){
+    $('#hfItemSizeMaster_Code').val($('#ddlItemSizeMaster').val());
+    getItemParameterList();
+}
+function CreateSize() {
+
+    var validFrom = true;
+    var ItemSizeParameterCodes = '';
+
+    arraySizeControlDllID.forEach((value) => {
+        let ItemParameterValue_Code = $('#' + value.SizeControlDllID).val();
+        if (ItemParameterValue_Code == 0) {
+            alert('inval' + value.SizeControlDllID);
+            validFrom = false;
+            return;
+        }
+        ItemSizeParameterCodes += value.ParameterCode + ',' + ItemParameterValue_Code + '#'
+    })
+    
+
+    if (validFrom==true) {
+       // alert(ItemSizeParameterCodes);
+        SizeControlService.CreateItemSize($('#hfItemMaster_Code').val(), ItemSizeParameterCodes, 0).then(function (respone) {
+            //console.log(respone);
+            //alert(respone[0].Code + 'SizeDesp:' + respone[0].SizeDesp);
+            SizeControl_NewSizeMaster_Code = respone[0].Code;
+            SizeControl_NewSizeDesp = respone[0].SizeDesp;
+            window.SizeControl_NewSizeMaster_Code = SizeControl_NewSizeMaster_Code;
+            window.SizeControl_NewSizeDesp = SizeControl_NewSizeDesp;
+            window[$('#hfCallBackFunctionName_btnDone').val()]();
+            $("#SizeControlmodal").modal('hide');
+        })
+    }
+    
+
+}
+getAllSize();
+window.getAllSize = getAllSize;
+window.onSizeControl_CreateSize = CreateSize;
+window.onSizeControl_ddlItemSizeMasterChange = onSizeControl_ddlItemSizeMasterChange;
+
+
+
+
+
+</script>
+<script>
+    $(document).ready(function () {
+       // ME();
+        //getAllSize();
+
+        $("#SizeControlmodal").modal({
+            backdrop: 'static',
+           // keyboard: false
+        });
+        $("#SizeControlmodal").modal('show');
+    });
+</script>

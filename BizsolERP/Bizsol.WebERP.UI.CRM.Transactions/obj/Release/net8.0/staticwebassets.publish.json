@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "uUbOT7860CVE0uPyA7HQGk3neMfWxC+ARsd+rBcXJRk=",
+  "Source": "Bizsol.WebERP.UI.CRM.Transactions",
+  "BasePath": "_content/Bizsol.WebERP.UI.CRM.Transactions",
+  "Mode": "Default",
+  "ManifestType": "Publish",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

@@ -1,0 +1,214 @@
+﻿
+
+<div class="modal fade bs-example-modal-center" id="AttachmentControlmodal" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="true">
+@* <div class="modal fade bs-example-modal-center" id="AttachmentControlmodal" role="dialog" > *@
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:800px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bizsol ERP Document Control</h5>
+                    @* <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" ></button> *@
+                <button type="button" class="btn-close" onclick="$('#AttachmentControlmodal').modal('hide')" aria-hidden="false"></button>
+            </div>
+            <div class="modal-body">
+                <form action="#" class="dropzone" id="fileUploadForm">
+                    <div class="upload-container">
+                       <div class="row">
+                        <div class="col-md-2">
+                                <i class="display-2 text-muted bx bx-cloud-upload"></i>
+                            </div>
+                           <div class="col-md-8 mt-3">
+                                <input type="text" id="file-names" placeholder="Drag & Drop image here or choose a file" ondragenter="preventDefaults(event);this.classList.add('hover');" ondragover="preventDefaults(event);this.classList.add('hover');" ondragleave="preventDefaults(event);this.classList.remove('hover');" ondrop="preventDefaults(event);handleDrop(event);this.classList.remove('hover')" readonly />
+                            </div>
+                            <div class="col-md-2 mt-4">
+                                <label id="file-button" onclick="document.getElementById('file-input').click()">Browse</label>
+                                <input type="file" id="file-input" multiple onchange="handleFiles(this.files)">
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="file-list" id="fileList" >
+                                <!-- Dynamically added files will appear here -->
+                            </div>
+                        </div>
+                            
+                       
+                        </div>
+                        <div class="row">
+                            <div class="col-12 text-end">
+                                <a class="btn btn-primary btn-height btn-width" onclick="Save_AttachmentControl()">
+                                    Save
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+
+                <div class="table-wrapper mt-1">
+                    <table id="tbAttachmentControl" class="table fixed-width-table">
+                        <thead id="table-header-tbAttachmentControl">
+                        </thead>
+                        <tbody id="table-body-tbAttachmentControl">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-tbAttachmentControl">
+                </div>
+
+                
+                <div class="text-end mt-1">
+                    <a class="btn btn-primary  btn-height btn-width" onclick="DownloadAll_AttachmentControl()">
+                       Download all
+                    </a>
+                    &nbsp;
+                    
+                    <input type="hidden" value="@ViewBag.MasterTableName" id="hfMasterTableName" />
+                    <input type="hidden" value="@ViewBag.MasterTableCode" id="hfMasterTableCode" />
+                    <input type="hidden" value="@ViewBag.DetailTableName" id="hfDetailTableName" />
+                    <input type="hidden" value="@ViewBag.DetailTableCode" id="hfDetailTableCode" />
+                    <input type="hidden" value="@ViewBag.EntryNo" id="hfEntryNo" />
+                    <input type="hidden" value="@ViewBag.EntryDate" id="hfEntryDate" />
+                    <input type="hidden" value="@ViewBag.Mode" id="hfMode"/>
+                    <input type="hidden" value="@ViewBag.SourceDownloadFileName" id="hfSourceDownloadFileName" />
+                    
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
+<style>
+    
+    #file-button {
+        background-color: #5156be;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    #file-names {
+        width: 100%;
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        font-size: 16px;
+    }
+
+    #file-names.hover {
+            border-color: #007BFF;
+            background-color: #f0f8ff;
+            border-width: medium;
+    }
+
+ 
+
+    .file-input {
+        display: none;
+    }
+
+    .upload-container input[type="file"] {
+        display: none;
+    }
+
+   
+   
+</style>
+
+@* <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script> *@
+<script>
+        var fileInput = document.getElementById('file-input');
+        var fileNamesInput = document.getElementById('file-names');
+        var fileList = document.getElementById('fileList');
+        var fileListArry=[]
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            for (let index = 0; index<files.length; index++) {
+                const file = files[index];
+                fileListArry.push(file);
+            }
+            UpdateFileUploadGrid();
+        }
+    }
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            for (let index = 0; index<files.length; index++) {
+                const file = files[index];
+                fileListArry.push(file);
+            }
+            UpdateFileUploadGrid();
+        }
+    }
+
+    function UpdateFileUploadGrid() {
+        fileList.innerHTML='';
+        $.each(fileListArry, function (index, val) {
+            const file = val;
+
+            const fileItem = document.createElement('div');
+
+            fileItem.classList.add('file-list-item');
+
+            const fileParticularsInput = document.createElement('input');
+            fileParticularsInput.type = "text";
+            fileParticularsInput.placeholder = "Document Particulars";
+            fileParticularsInput.classList.add('file-particulars-input');
+            fileParticularsInput.setAttribute("id", "txtParticularsInput_" + index);
+
+            const fileNameInput = document.createElement('a');
+            fileNameInput.href = "#";
+            fileNameInput.classList.add('file-name-input');
+            fileNameInput.classList.add('m-2');
+            fileNameInput.innerHTML = file.name;
+            fileNameInput.setAttribute("onclick", "ViewFile_AttachmentControl(" + index +")");
+
+            fileItem.appendChild(fileParticularsInput);
+            fileItem.appendChild(fileNameInput);
+
+            // Add delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.classList.add('btn');
+            deleteBtn.classList.add('btn-danger');
+            deleteBtn.classList.add('icon-height');
+            deleteBtn.classList.add('m-2');
+            deleteBtn.innerHTML = "<i class='fa fa-trash'></i>"
+            deleteBtn.setAttribute("onclick", "DeleteFile_AttachmentControl("+index+")");
+
+
+            fileItem.appendChild(deleteBtn);
+            fileList.appendChild(fileItem);
+        });
+    }
+
+</script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_AttachmentControlPage.js"></script>
+<script>
+    
+    $(document).ready(function () {
+       GatAllAttachment();
+        $("#AttachmentControlmodal").modal({
+            backdrop: 'static',
+            // keyboard: false
+        });
+        $("#AttachmentControlmodal").modal('show');
+        //loadatta();
+        
+         
+    });
+</script>
+
+
+
+

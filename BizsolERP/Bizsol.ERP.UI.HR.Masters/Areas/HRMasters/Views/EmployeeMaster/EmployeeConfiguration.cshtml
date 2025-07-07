@@ -1,0 +1,306 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.HR.Masters/js/EmployeeConfiguration.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<script>
+
+</script>
+<style>
+    .highlighted-date {
+        background-color: #3926B6;
+        color: white;
+        border-radius: 30px;
+    }
+
+    .datepicker td, .datepicker th {
+        border-radius: 20px !important;
+    }
+
+    .datepicker table tr td, .datepicker table tr td {
+        padding: 8px 9px !important;
+        height: 16px !important;
+    }
+
+    .datepicker table tfoot {
+        display: none;
+    }
+
+    #hidetexbox {
+        display: none;
+    }
+
+    .btn:not(:disabled):not(.disabled) {
+        cursor: pointer !important;
+    }
+
+    /* Hide the spinner arrows in most modern browsers */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* Hide the spinner arrows in Firefox */
+    input[type="number"] {
+        -moz-appearance: textfield;
+    }
+</style>
+
+<div class="card">
+    <div class="card-body">
+       
+        <div class="row">
+            <div class="col-md-2 form-group">
+                <label for="toggleStdPrefix" class="form-label">STD Prefix Applicable</label>
+
+                <div class="d-flex flex-wrap gap-xxl-2 ">
+                    <input type="checkbox"
+                           id="toggleStdPrefix"
+                           switch="success">
+                    <label data-on-label="Yes" data-off-label="No" for="toggleStdPrefix"></label>
+
+                </div>
+
+            </div>
+            <div class="col-md-2 ">
+                <label for="txtStdPrefix" class="form-label">STD Prefix</label>
+                <input type="text" id="txtStdPrefix" class="box_border form-control form-control-sm" autocomplete="off" value="">
+            </div>
+            <div class="col-md-2 ">
+                <label for="ddlPrefix1" class="form-label">Prefix 1</label>
+                <select id="ddlPrefix1" class="form-control form-control-sm box_border" onchange="UpdateDropdownValues();"></select>
+            </div>
+            <div class="col-md-2">
+                <label for="ddlPrefix2" class="form-label">Prefix 2</label>
+                <select id="ddlPrefix2" class="form-control form-control-sm box_border" onchange="UpdateDropdownValues();"></select>
+            </div>
+            <div class="col-md-2">
+                <label for="ddlPrefix3" class="form-label">Prefix 3</label>
+                <select id="ddlPrefix3" class="form-control form-control-sm box_border" onchange="UpdateDropdownValues();"></select>
+            </div>
+            <div class="col-md-2">
+                <label for="ddlPrefixSep" class="form-label">Prefix Separator</label>
+                <select id="ddlPrefixSep" class="form-control form-control-sm box_border">
+                    <option value=""></option>
+                    <option value="/">/</option>
+                    <option value="-">-</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-2">
+                <label for="ddlCardNo" class="form-label">Card No</label>
+                <select id="ddlCardNo" class="form-control form-control-sm box_border">
+                    <option value="Auto">Auto</option>
+                    <option value="Manual">Manual</option>
+                </select>
+            </div>
+            <div class="col-md-2 form-group">
+                <label for="ddlDupCardNo" class="form-label">Duplicate Card No</label>
+                <select id="ddlDupCardNo" class="form-control form-control-sm box_border"></select>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+<div class="card">
+    <div class="card-body">
+
+        <div class="row">
+            <div class="col-md-2">
+                <label for="txtAadharCardCond" class="form-label">UID 1 Mandatory</label>
+                <div class="d-flex flex-wrap gap-xxl-2 ">
+                    <input type="checkbox"
+                           id="toggleAadharCardCond"
+                           switch="success">
+                    <label data-on-label="Yes" data-off-label="No" for="toggleAadharCardCond"></label>
+
+                </div>
+
+
+            </div>
+            <div class="col-md-2">
+                <label for="txtAadharCardHeader" class="form-label">UID 1 Header</label>
+                <input type="text" id="txtAadharCardHeader" name="txtAadharCardHeader" autocomplete="off" class="box_border form-control form-control-sm" value="" />
+            </div>
+            
+            <div class="col-md-2">
+                <label for="ddlAadharCardDataVal" class="form-label">UID 1 Data Value</label>
+                <select id="ddlAadharCardDataVal" class="form-control form-control-sm box_border">
+                    <option value="All">All</option>
+                    <option value="Numeric">Numeric</option>
+                    <option value="AlphaNumeric">AlphaNumeric</option>
+                </select>
+            </div>
+            <div class="col-md-2 form-group">
+                <label for="txtAadharCardMinLen" class="form-label">UID 1 Min Length</label>
+                <input type="number" id="txtAadharCardMinLen" class="box_border form-control form-control-sm" autocomplete="off" value="">
+            </div>
+            <div class="col-md-2 ">
+                <label for="txtAadharCardMaxLen" class="form-label">UID 1 Max Length</label>
+                <input type="number" id="txtAadharCardMaxLen" name="txtAadharCardMaxLen" class="box_border form-control form-control-sm" autocomplete="off" value="" required />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-2">
+                <label for="txtAadharCardCond" class="form-label">UID 2 Mandatory</label>
+                <div class="d-flex flex-wrap gap-xxl-2 ">
+                    <input type="checkbox"
+                           id="toggleUID2Mandatory"
+                           switch="success">
+                    <label data-on-label="Yes" data-off-label="No" for="toggleUID2Mandatory"></label>
+
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label for="txtUID2Header" class="form-label">UID 2 Header</label>
+                <input type="text" id="txtUID2Header" name="txtUID2Header" autocomplete="off" class="box_border form-control form-control-sm" value="" />
+            </div>
+            
+            <div class="col-md-2">
+                <label for="ddlUID2DataVal" class="form-label">UID 2 Data Value</label>
+                <select id="ddlUID2DataVal" class="form-control form-control-sm box_border">
+                    <option value="All">All</option>
+                    <option value="Numeric">Numeric</option>
+                    <option value="AlphaNumeric">AlphaNumeric</option>
+                </select>
+            </div>
+            <div class="col-md-2 form-group">
+                <label for="txtUID2MinLen" class="form-label">UID 2 Min Length</label>
+                <input type="number" id="txtUID2MinLen" class="box_border form-control form-control-sm" autocomplete="off" value="">
+            </div>
+            <div class="col-md-2 ">
+                <label for="txtUID2MaxLen" class="form-label">UID 2 Max Length</label>
+                <input type="number" id="txtUID2MaxLen" name="txtUID2MaxLen" class="box_border form-control form-control-sm" autocomplete="off" value="" required />
+            </div>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            
+
+            <div class="col-md-2">
+                <label for="txtLocation" class="form-label">Location</label>
+                <input type="text" id="txtLocation" name="txtLocation" class="box_border form-control form-control-sm" autocomplete="off" value="" />
+
+
+            </div>
+            <div class="col-md-2 ">
+                <label for="txtSalaryLimitPF" class="form-label">Salary Limit for PF</label>
+                <input type="number" id="txtSalaryLimitPF" name="txtSalaryLimitPF" class="box_border form-control form-control-sm" autocomplete="off" value="" required />
+            </div>
+
+
+            <div class="col-md-2">
+                <label for="txtEmpSkill" class="form-label">Employee Skill</label>
+                <input type="text" id="txtEmpSkill" name="txtEmpSkill" title="Please enter # seperated values." class="box_border form-control form-control-sm" autocomplete="off" value="" />
+            </div>
+            <div class="col-md-2 form-group">
+                <label for="txtEmpGrade" class="form-label">Employee Grade</label>
+                <input type="text" id="txtEmpGrade" class="box_border form-control form-control-sm" title="Please enter # seperated values." autocomplete="off" value="">
+            </div>
+            <div class="col-md-2 ">
+                <label for="txtEmpCategory" class="form-label">Employee Category</label>
+                <input type="text" id="txtEmpCategory" name="txtEmpCategory" class="box_border form-control form-control-sm" title="Please enter # seperated values." autocomplete="off" value="" required />
+            </div>
+        </div>
+
+
+        <div class="row">
+           
+
+            <div class="col-md-2 form-group">
+                <label for="txtBasicSalaryHeader" class="form-label">Basic Salary Header</label>
+                <input type="text" id="txtBasicSalaryHeader" class="box_border form-control form-control-sm" autocomplete="off" value="">
+            </div>
+            <div class="col-md-2 ">
+                <label for="txtHRAHeader" class="form-label">HRA Header</label>
+                <input type="text" id="txtHRAHeader" name="txtHRAHeader" class="box_border form-control form-control-sm" autocomplete="off" value="" required />
+            </div>
+
+            <div class="col-md-2 form-group">
+                <label for="txtDAHeader" class="form-label">DA Header</label>
+                <input type="text" id="txtDAHeader" class="box_border form-control form-control-sm" autocomplete="off" value="">
+            </div>
+            <div class="col-md-2 ">
+                <label for="txtConveyanceHeader" class="form-label">Conveyance Header</label>
+                <input type="text" id="txtConveyanceHeader" name="txtConveyanceHeader" class="box_border form-control form-control-sm" autocomplete="off" value="" required />
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col-md-2 ">
+                <label for="toggleDupEmp" class="form-label">Duplicate Emp Name</label>
+                <div class="d-flex flex-wrap gap-xxl-2 ">
+                    <input type="checkbox"
+                           id="toggleDupEmp"
+                           switch="success">
+                    <label data-on-label="Yes" data-off-label="No" for="toggleDupEmp"></label>
+
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label for="toggleSubDeptApp" class="form-label">Sub Department Applicable</label>
+                <div class="d-flex flex-wrap gap-xxl-2 ">
+                    <input type="checkbox"
+                           id="toggleSubDeptApp"
+                           switch="success">
+                    <label data-on-label="Yes" data-off-label="No" for="toggleSubDeptApp"></label>
+
+                </div>
+            </div>
+            <div class="col-md-2 form-group">
+                <label for="togglePFApp" class="form-label">PF Applicable</label>
+                <div class="d-flex flex-wrap gap-xxl-2 ">
+                    <input type="checkbox"
+                           id="togglePFApp"
+                           switch="success">
+                    <label data-on-label="Yes" data-off-label="No" for="togglePFApp"></label>
+
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label for="toggleESIApp" class="form-label">ESI Applicable</label>
+                <div class="d-flex flex-wrap gap-xxl-2 ">
+                    <input type="checkbox"
+                           id="toggleESIApp"
+                           switch="success">
+                    <label data-on-label="Yes" data-off-label="No" for="toggleESIApp"></label>
+
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label for="toggleAskVPF" class="form-label">Ask VPF Rate</label>
+                <div class="d-flex flex-wrap gap-xxl-2 ">
+                    <input type="checkbox"
+                           id="toggleAskVPF"
+                           switch="success">
+                    <label data-on-label="Yes" data-off-label="No" for="toggleAskVPF"></label>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-height btn-width" onclick="SaveData();" />
+        <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-height btn-width" />
+        <input type="hidden" id="txtCode" name="txtCode">
+        <input type="hidden" id="txtEmpMasterCount" name="txtEmpMasterCount">
+    </div>
+</div>
+
+

@@ -1,0 +1,717 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+
+<div class="tab-section" id="DivGateEntryForm">
+    <ul class="nav nav-tabs" id="GateEntryTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#EmptyInTab" role="tab" aria-controls="home" aria-selected="true" onclick="GateEntyMode_GateEntry('form','EmptyInNew')">
+                Empty In
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#LoadedInTab" role="tab" aria-controls="profile" aria-selected="false" onclick="GateEntyMode_GateEntry('form','LoadedInNew')">
+                Loaded In
+            </button>
+        </li>
+    </ul>
+    <div class="tab-content" id="GateEntryTabContent">
+        <div class="tab-pane fade show active" id="EmptyInTab" role="tabpanel" aria-labelledby="home-tab">
+            <div class="row">
+                @*  Empty-in *@
+
+                <div class="col-sm-6" id="DivfrmEmptyIn">
+                    @*  <div class="row">
+                        <div class="col-sm-6">
+                            Empty-in
+                        </div>
+                        <div class="col-sm-6">
+                            Empty-in
+                        </div>
+                    </div> *@
+                    <div class="row">
+                        <div class="col-4">
+                            Date In
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtDateIn" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" readonly autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Vehicle No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtVehicleNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="10" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Driver Name
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtDriverName" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Driver No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtDriverNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="12" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Transporter Name.
+                        </div>
+                        <div class="col-8">
+                            @* <select id="frmEmptyIn_ddlTransporterName" class="BizSolFormControl form-control-sm" onkeypress="BizSolhandleEnterKey(event)">
+                            </select> *@
+                            <input id="frmEmptyIn_ddlTransporterName" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                            <ul id="frmEmptyIn_ddlTransporterName_List" class="AutoSuggestion-list"></ul>
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmEmptyInVehicleEmptyWeight">
+                        <div class="col-4">
+                            Vehicle Empty Weight(KG)
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtVehicleEmptyWeight" class="BizSolFormControl form-control form-control-sm" type="text" onchange="BizSolInputControl.OnChangeFloatTextBox(this,2)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmEmptyInWeightmentSlipNoEmpty">
+                        <div class="col-4">
+                            Weightment Slip No.(Empty)
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtWeightmentSlipNoEmpty" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Vehicle In Time.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtVehicleInTime" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" readonly autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Vehicle Photo
+                        </div>
+                        <div class="col-8">
+                            <div class="input-group" id="DivfrmEmptyIn_fileVehiclePhoto">
+                                <span class=" input-group-text" onclick="document.getElementById('frmEmptyIn_fileVehiclePhoto').click()" style="cursor: pointer;height: 28px;">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input id="frmEmptyIn_fileVehiclePhoto" asp-for="Attachment" type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" />
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmEmptyInReportingDatetime">
+                        <div class="col-4">
+                            Reporting Date time
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtReportingDatetime" class="BizSolFormControl form-control form-control-sm" type="datetime-local" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Remarks
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtRemarks" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12 text-end">
+                            <button id="frmEmptyIn_btnSave" type="button" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('EmptyInSave')">Save</button> &nbsp;
+                            <button id="frmEmptyIn_btnCancel" type="button" class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                @*  Loaded-Out *@
+
+                <div class="col-sm-6" id="DivfrmLoadedOut">
+                    <div class="row">
+                        <div class="col-4">
+                            Date Out
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtDateOut" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" readonly>
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmLoadedOutVehicleLoadedWeight">
+                        <div class="col-4">
+                            Vehicle Loaded Weight (KG) 
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtVehicleLoadedWeight" class="BizSolFormControl form-control form-control-sm" type="text" onchange="BizSolInputControl.OnChangeFloatTextBox(this,2)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" autocomplete="off">
+                            
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmLoadedOutWeightmentSlipNoLoadedOut">
+                        <div class="col-4">
+                            Weightment Slip No. Loaded
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtWeightmentSlipNoLoadedOut" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Vehicle Out Time
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtVehicleOutTime" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" readonly>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Vehicle Photo
+                        </div>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <span class="input-group-text" onclick="document.getElementById('frmLoadedOut_fileVehiclePhoto').click()" style="cursor: pointer;height: 28px;">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input id="frmLoadedOut_fileVehiclePhoto" asp-for="Attachment" type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" />
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Goods Photo
+                        </div>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <span class=" input-group-text" onclick="document.getElementById('frmLoadedOut_fileGoodsPhoto').click()" style="cursor: pointer;height: 28px;">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input id="frmLoadedOut_fileGoodsPhoto" asp-for="Attachment" type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" />
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Document Photo
+                        </div>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <span class=" input-group-text" onclick="document.getElementById('frmLoadedOut_fileInvoicePhoto').click()" style="cursor: pointer;height: 28px;">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input id="frmLoadedOut_fileInvoicePhoto" asp-for="Attachment" type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" />
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Other Photo
+                        </div>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <span class=" input-group-text" onclick="document.getElementById('frmLoadedOut_fileOtherPhoto').click()" style="cursor: pointer;height: 28px;">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input id="frmLoadedOut_fileOtherPhoto" asp-for="Attachment" type="file" multiple accept=".jpg, .png, .jpeg" class="form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" />
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Goods Description
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtGoodsDescription" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                            <ul id="frmLoadedOut_txtGoodsDescription_List" class="AutoSuggestion-list"></ul>
+                            
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            QTY
+                        </div>
+                        <div class="col-3">
+                            <input id="frmLoadedOut_txtQty" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="8" autocomplete="off">
+                        </div>
+                        <div class="col-2">
+                            UOM
+                        </div>
+                        <div class="col-3">
+                            <select id="frmLoadedOut_ddlUOM" class="BizSolFormControl form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" > </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Customer Name
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtCustomerName" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                            <ul id="frmLoadedOut_txtCustomerName_List" class="AutoSuggestion-list"></ul>
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Document Type
+                        </div>
+                        <div class="col-8">
+                            <select id="frmLoadedOut_ddlDocumentType" class="BizSolFormControl form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" ></select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Document No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtDocumentNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Document date.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtDocumentDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            E-Way Bill No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtEWayBillNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            E-Way Bill Date.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtEWayBillDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-12 text-end">
+                            <button type="button" id="frmLoadedOut_btnSave" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('UpdateEmptyInSave')">Save</button> &nbsp;
+                            <button type="button" id="frmLoadedOut_btnCancel" class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="tab-pane fade" id="LoadedInTab" role="tabpanel" aria-labelledby="profile-tab">
+            <div class="row">
+                @*  Loaded-in *@
+
+                <div class="col-sm-6" id="DivfrmLoadedIn">
+                    <div class="row">
+                        <div class="col-4">
+                            Date In
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtDateIn" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" readonly autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Vehicle No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtVehicleNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="10" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Driver Name
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtDriverName" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Driver No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtDriverNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="12" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Transporter Name.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_ddlTransporterName" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                            <ul id="frmLoadedIn_ddlTransporterName_List" class="AutoSuggestion-list"></ul>
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmLoadedInVehicleLoadedWeight">
+                        <div class="col-4">
+                            Vehicle Loaded Weight(KG)
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtVehicleLoadedWeight" class="BizSolFormControl form-control form-control-sm" type="text" onchange="BizSolInputControl.OnChangeFloatTextBox(this,2)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmLoadedInWeightmentSlipNoLoaded">
+                        <div class="col-4">
+                            Weightment Slip No.(Loaded)
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtWeightmentSlipNoLoaded" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Vehicle In Time.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtVehicleInTime" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off" readonly>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Vehicle Photo
+                        </div>
+                        <div class="col-8">
+                            <div class="input-group" id="DivfrmLoadedIn_fileVehiclePhoto">
+                                <span class="input-group-text" onclick="document.getElementById('frmLoadedIn_fileVehiclePhoto').click()" style="cursor: pointer;height: 28px;">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input id="frmLoadedIn_fileVehiclePhoto" asp-for="Attachment" type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" />
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Goods Photo
+                        </div>
+                        <div class="col-8">
+                            <div class="input-group" id="DivfrmLoadedIn_fileGoodsPhoto">
+                                <span class=" input-group-text" onclick="document.getElementById('frmLoadedIn_fileGoodsPhoto').click()" style="cursor: pointer;height: 28px;">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input id="frmLoadedIn_fileGoodsPhoto" asp-for="Attachment" type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" />
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Document Photo
+                        </div>
+                        <div class="col-8">
+                            <div class="input-group" id="DivfrmLoadedIn_fileInvoicePhoto">
+                                <span class=" input-group-text" onclick="document.getElementById('frmLoadedIn_fileInvoicePhoto').click()" style="cursor: pointer;height: 28px;">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input id="frmLoadedIn_fileInvoicePhoto" asp-for="Attachment" type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" />
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Other Photo
+                        </div>
+                        <div class="col-8">
+                            <div class="input-group" id="DivfrmLoadedIn_fileOtherPhoto">
+                                <span class=" input-group-text" onclick="document.getElementById('frmLoadedIn_fileOtherPhoto').click()" style="cursor: pointer;height: 28px;">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input id="frmLoadedIn_fileOtherPhoto" asp-for="Attachment" type="file" multiple accept=".jpg, .png, .jpeg" class="form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" />
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmLoadedInPOAccess">
+                        <div class="col-4">
+                            PO Access
+                        </div>
+                        <div class="col-8">
+                            <input type="radio" class="box_border" name="rdPOAccess" onclick="GateEntry_rdPOAccess_onClick(this)" value="withpo" checked />&nbsp;
+                            <label>
+                                With PO
+                            </label>
+                            &nbsp;
+                            &nbsp;
+                            <input type="radio" class="box_border" name="rdPOAccess" onclick="GateEntry_rdPOAccess_onClick(this)" value="withoutpo" />&nbsp;
+                            <label>
+                                W/O PO
+                            </label>
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmLoadedInddlPurchaseOrder">
+                        <div class="col-4">
+                            Purchase Order
+                        </div>
+                        <div class="col-8">
+                            <select id="frmLoadedIn_ddlPurchaseOrder" onchange="GateEntry_frmLoadedIn_ddlPurchaseOrder_Change()">
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmLoadedInPoItemGrid" style="display:none">
+                        <div class="col-12 mb-2">
+                            <div class="table-wrapper mt-2">
+                                <table id="tbGateEntyLoadedInPoItem" class="table fixed-width-table">
+                                    <thead id="tbGateEntyLoadedInPoItemHeader">
+                                    </thead>
+                                    <tbody id="tbGateEntyLoadedInPoItemBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="paginator" id="paginator-tbGateEntyLoadedInPoItem">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row" id="RowfrmLoadedInGoodsDescription">
+                        <div class="col-4">
+                            Goods Description
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtGoodsDescription" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                            <ul id="frmLoadedIn_txtGoodsDescription_List" class="AutoSuggestion-list"></ul>
+
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmLoadedInQTYorUOM">
+                        <div class="col-4">
+                            QTY
+                        </div>
+                        <div class="col-3">
+                            <input id="frmLoadedIn_txtQTY" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="8" autocomplete="off">
+                        </div>
+                        <div class="col-2">
+                            UOM
+                        </div>
+                        <div class="col-3">
+                            <select id="frmLoadedIn_txtUOM" class="BizSolFormControl form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" > </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Vendor Name
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtVendorName" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                            <ul id="frmLoadedIn_txtVendorName_List" class="AutoSuggestion-list"></ul>
+
+                        </div>
+                    </div>
+                    @* <div class="row">
+                        <div class="col-4">
+                            Document Type
+                        </div>
+                        <div class="col-8">
+                            <input class="BizSolFormControl form-control form-control-sm" type="text" readonly>
+                        </div>
+                    </div> *@
+                    <div class="row">
+                        <div class="col-4">
+                            Document No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtDocumentNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Document date.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtDocumentDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmLoadedInReportingDatetime">
+                        <div class="col-4">
+                            Reporting Date time
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtReportingDatetime" class="BizSolFormControl form-control form-control-sm" type="datetime-local" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            E-Way Bill No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtEWayBillNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            E-Way Bill Date.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtEWayBillDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Remarks
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtRemarks" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12 text-end">
+                            <button type="button" id="frmLoadedIn_btnSave" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('LoadedInSave')">Save</button> &nbsp;
+                            <button type="button" id="frmLoadedIn_btnCancel" class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                @* Empty-Out *@
+
+                <div class="col-sm-6" id="DivfrmEmptyOut">
+                    <div class="row">
+                        <div class="col-4">
+                            Date Out
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyOut_txtDateOut" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off" readonly>
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmEmptyOutVehicleEmptyWeight">
+                        <div class="col-4">
+                            Vehicle Empty Weight(KG)
+                        </div>
+                        <div class="col-8">
+                            
+                            <input id="frmEmptyOut_txtVehicleEmptyWeight" class="BizSolFormControl form-control form-control-sm" type="text" onchange="BizSolInputControl.OnChangeFloatTextBox(this,2)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmEmptyOutWeightmentSlipNoLoaded">
+                        <div class="col-4">
+                            Weightment Slip No.(Empty)
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyOut_txtWeightmentSlipNoLoaded" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-4">
+                            Vehicle Out Time
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyOut_txtOutTime" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off" readonly>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            Vehicle Photo
+                        </div>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <span class="input-group-text" onclick="document.getElementById('frmEmptyOut_fileVehiclePhoto').click()" style="cursor: pointer;height: 28px;">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input id="frmEmptyOut_fileVehiclePhoto" asp-for="Attachment" type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" />
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-12 text-end">
+                            <button type="button" id="frmEmptyOut_btnSave" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('UpdateLoadedInSave')">Save</button> &nbsp;
+                            <button type="button" id="frmEmptyOut_btnCancel" class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<div id="DivGateEntryGrid">
+    <div class="row">
+        <div class="col-sm-3">
+            <label for="from-date">From Date</label>
+            <input type="date" class="form-control form-control-sm" id="txtFromDate" onchange="GateEntryGirdByDates()">
+        </div>
+        <div class="col-sm-3">
+            <label for="to-date">To Date</label>
+            <input type="date" class="form-control form-control-sm" id="txtToDate" onchange="GateEntryGirdByDates()">
+        </div>
+        <div class="col-sm-3">
+            <label for="to-date">Vehicles IN</label>
+            <select class="form-control form-control-sm" id="ddlVehiclesStatusInFectory" >
+                <option value="all">All</option>
+                <option value="LIN">Loaded IN</option>
+                <option value="EIN">Empty IN</option>
+            </select>
+        </div>
+        <div class="col-sm-3 without-label-field text-end">
+            <label></label>
+            <button type="button" class="btn btn-primary icon-height" onclick="GateEntryGirdByDates()">Show</button>
+            <button type="button" class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','EmptyInNew')">CREATE NEW</button>
+            &nbsp;
+            <i class="fa fa-gear" onclick="ShowGateEntryConfigurationModal()" style="cursor:pointer"></i>
+
+        </div>
+    </div>
+    <div class="table-wrapper mt-2">
+        <table id="tbGateEntyView" class="table fixed-width-table">
+            <thead id="tbGateEntyViewHeader">
+            </thead>
+            <tbody id="tbGateEntyViewBody">
+            </tbody>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-tbGateEntyView">
+    </div>
+</div>
+
+<div id="GateEntry_AttachmentControlmodal"></div>
+
+<div class="modal fade bs-example-modal-center" id="GateEntryConfigurationModal" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:484px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Set Configuration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="DivChkSetGateEntryConfiguration" class="row">
+                </div>
+
+                <div class="text-end mt-1">
+                    <a class="btn btn-danger icon-height" data-bs-dismiss="modal">
+                        Close
+                    </a>
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
+
+
+
+
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GateEntry.js"></script>
+

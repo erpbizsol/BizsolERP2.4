@@ -1,0 +1,117 @@
+﻿@media only screen and (max-width: 760px), (min-device-width: 768px) and (max-device-width: 1024px) {
+    /*.mobile-content {
+        background-image: url('./assets/images/users/erp1.png');
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+    }*/
+
+
+    /*.main-content {*/
+    /*        background-size: contain !important; */
+    /*background-position: top !important;
+        height: auto;
+    }*/
+
+
+    .navbar-header .erpHedTextSize {
+        font-size: 9pt !important;
+    }
+
+    body:not([data-sidebar-size=sm]) #vertical-menu-btn {
+        margin-right: 0px;
+    }
+
+    .navbar-header .pt-4 {
+        padding-top: 1.7rem !important;
+    }
+
+    .toolbar1 {
+        text-align: left;
+    }
+
+    .footer .text-left,
+    .footer .text-end {
+        text-align: center !important;
+    }
+
+    .modal-content-width-sm {
+        width: 100%;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    }
+
+    .without-label-field {
+        margin-top: 0.2rem;
+    }
+
+    .fixed-height-table {
+        height: 500px;
+    }
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) {
+
+    /* CSS */
+
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+
+    /* CSS */
+
+}
+
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+
+    /* CSS */
+
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+
+    /* CSS */
+
+}
+
+@media (min-width: 320px) and (max-width: 480px) {
+    #tblorderbooking {
+        width: 240%;
+        overflow-x: auto;
+        table-layout: fixed;
+    }
+    
+    /*input field*/
+
+    .col-Date-1 {
+        width:auto;
+    }
+
+    /*#tblorderbooking {
+        width: 174%;
+    }*/
+
+    .itemName {
+        width: 128px;
+    }
+
+    .width-5 {
+        width: 61px;
+    }
+    
+    .width-6 {
+        width: 69px;
+    }
+
+    .width-12 {
+        width: 109px;
+    }
+
+    .priceList {
+        width: 139px;
+    }
+
+}

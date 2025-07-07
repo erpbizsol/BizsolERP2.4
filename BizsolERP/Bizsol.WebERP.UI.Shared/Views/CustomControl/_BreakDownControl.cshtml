@@ -1,0 +1,187 @@
+﻿
+<div class="modal fade bs-example-modal-center" id="BreakDownControlModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Break Down Details:</h5>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-12 ">
+                        <label for="txtStartTimer" class="col-form-label-sm fw-bold">Time:</label>
+                        <input type="time" id="txtStartTimer" name="txtStartTimer" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Timer" required />
+                    </div>
+                    <div class="col-md-12 ">
+                        <label for="ddlReasonMaster" class="col-form-label-sm fw-bold">Reason:</label>
+                        <select id="ddlReasonMaster" class="form-control form-control-sm box_border"></select>
+                    </div>
+                    <div class="col-md-12 ">
+                        <label for="ddlDepartMentMaster" class="col-form-label-sm fw-bold">Department:</label>
+                        <select id="ddlDepartMentMaster" class="form-control form-control-sm box_border"></select>
+                    </div>
+                    <div class="col-md-12 ">
+                        <label for="ddlOperatorNameMaster" class="col-form-label-sm fw-bold">Operator Name:</label>
+                        <select id="ddlOperatorNameMaster" class="form-control form-control-sm box_border"></select>
+                    </div>
+                    <div class="col-md-12 ">
+                        <label for="txtRemark" class="col-form-label-sm fw-bold">Remark:</label>
+                        <input type="text" id="txtRemark" name="txtRemark" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Remark" required />
+                    </div>
+                </div>
+
+                <div class="text-end mt-1">
+                    <a class="btn btn-primary" onclick="BreakDownControl_onStartBreakDown();">
+                        Save
+                    </a>
+                    &nbsp;
+                    <a class="btn btn-danger" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                    <input type="hidden" value="@ViewBag.EntryDate" id="hfEntryDate" />
+                    <input type="hidden" value="@ViewBag.ProcessMaster_Code" id="hfProcessMaster_Code" />
+                    <input type="hidden" value="@ViewBag.MachineMaster_Code" id="hfMachineMaster_Code" />
+                    <input type="hidden" value="@ViewBag.ShiftMaster_Code" id="hfShiftMaster_Code" />
+                    <input type="hidden" value="@ViewBag.GodownMaster_Code" id="hfGodownMaster_Code" />
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
+
+<script type="module">
+
+    import { BreakDownService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/_BreakDownService.js';
+
+    function setStartCurrentTime() {
+        const currentTime = new Date();
+        const hours = currentTime.getHours().toString().padStart(2, '0'); 
+        const minutes = currentTime.getMinutes().toString().padStart(2, '0'); 
+        const time = `${hours}:${minutes}`; 
+        document.getElementById('txtStartTimer').value = time;
+    }
+
+    function getReasonDropDownList() {
+       BreakDownService.GetDDlBreakDown('ddlReason').then(function (respone) {
+           BindSelectList($('#ddlReasonMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.ReasonDesp })));
+
+           
+           $('#ddlReasonMaster').select2({
+               dropdownParent: $('#BreakDownControlModal'),
+                width: '-webkit-fill-available'
+           });
+
+           
+       })
+
+    }
+
+    function getDepartmentDropDownList() {
+        BreakDownService.GetDDlBreakDown('ddlDepartment').then(function (respone) {
+            BindSelectList($('#ddlDepartMentMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.DepartmentName })));
+
+           
+           $('#ddlDepartMentMaster').select2({
+               dropdownParent: $('#BreakDownControlModal'),
+                width: '-webkit-fill-available'
+           });
+          
+        })
+    }
+
+    function getOperatorDropDownList() {
+        BreakDownService.GetDDlBreakDown('ddlOperatorName').then(function (respone) {
+          BindSelectList($('#ddlOperatorNameMaster')[0], respone.map((item) => ({ Code: item.Code, Desp: item.OperatorName })));
+
+          
+           $('#ddlOperatorNameMaster').select2({
+               dropdownParent: $('#BreakDownControlModal'),
+                width: '-webkit-fill-available'
+           });
+        })
+    }
+    function BindSelectList(element,list) {
+        let option = '<option value="0"></option>';
+        $.each(list, function (key, val) {
+            option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+        });
+        element.innerHTML = option;
+    }
+    
+    function BreakDownControl_onStartBreakDown() {
+       
+       let  txtBrkStartTime = $('#txtStartTimer').val();
+       let  ReasonMasterCode = $('#ddlReasonMaster').val();
+       let  DepartmentMasterCode = $('#ddlDepartMentMaster').val();
+       let  OperatorName_Code = $('#ddlOperatorNameMaster').val();
+       let  txtBrkRemark = $('#txtRemark').val();
+
+       if (typeof txtBrkStartTime === 'undefined' || txtBrkStartTime === '' || txtBrkStartTime === null) {
+
+            toastr.error('Start Time can not be Blank!');
+
+            return false;
+        }
+        if (typeof ReasonMasterCode === 'undefined' || ReasonMasterCode === '' || ReasonMasterCode === null || ReasonMasterCode === "0") {
+             toastr.error('Reason can not be Blank!');
+            return false;
+        }
+        if (typeof DepartmentMasterCode === 'undefined' || DepartmentMasterCode === '' || DepartmentMasterCode === null || DepartmentMasterCode === "0") {
+
+            toastr.error('Department can not be Blank!');
+          
+            return false;
+        }  
+         if (typeof OperatorName_Code === 'undefined' || OperatorName_Code === '' || OperatorName_Code === null || OperatorName_Code === '0') {
+            toastr.error('Operator Name can not be Blank!');
+            return false;
+        }
+         
+        if (typeof txtBrkRemark === 'undefined' || txtBrkRemark === '' || txtBrkRemark === null) {
+            toastr.error('Remark can not be Blank!');
+            return false;
+        }
+         
+        BreakDownService.IsBreakDownRunning($('#hfProcessMaster_Code').val(),$('#hfMachineMaster_Code').val(),$('#hfGodownMaster_Code').val()).then(function (respone) {
+
+            if(respone.Status === 'N'){
+               BreakDownService.StartBreakDown($('#hfEntryDate').val(),$('#hfProcessMaster_Code').val(),$('#hfMachineMaster_Code').val(),$('#hfShiftMaster_Code').val(),ReasonMasterCode,txtBrkStartTime,txtBrkRemark,DepartmentMasterCode,OperatorName_Code,$('#hfGodownMaster_Code').val()).then(function (respone1) {
+
+                    if(respone1.Status === 'Y'){
+                        toastr.success(respone1.Msg);
+                         $("#BreakDownControlModal").modal('hide');
+                    }else{
+                        toastr.error(respone1.Msg);
+                    }
+
+                })
+            }else{
+                toastr.error(respone.Msg);
+            }
+
+        })
+       
+
+
+    }
+    window.BreakDownControl_onStartBreakDown = BreakDownControl_onStartBreakDown;
+
+        getReasonDropDownList();
+        getDepartmentDropDownList();
+        getOperatorDropDownList();
+        setStartCurrentTime();
+
+        BreakDownService.IsBreakDownRunning($('#hfProcessMaster_Code').val(),$('#hfMachineMaster_Code').val(),$('#hfGodownMaster_Code').val()).then(function (respone) {
+
+            if(respone.Status === 'N'){
+                $(document).ready(function () {
+                $("#BreakDownControlModal").modal({
+                    backdrop: 'static',
+                });
+                $("#BreakDownControlModal").modal('show');
+                });
+            }else{
+                toastr.error(respone.Msg);
+            }
+
+        })
+
+</script>
+

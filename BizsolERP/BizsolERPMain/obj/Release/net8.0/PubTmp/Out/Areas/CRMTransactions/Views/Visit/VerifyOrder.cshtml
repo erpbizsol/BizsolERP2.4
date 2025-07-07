@@ -1,0 +1,212 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    
+    .align-items-end{
+        margin-top:24px;
+    }
+
+    .form-label {
+        font-weight: bold;
+    }
+
+   
+
+    .modal-dialog {
+        width: 100%;
+    }
+
+    .modal-header {
+        background-color: #3f51b5;
+        height: 40px;
+    }
+
+    .modal-title {
+        text-align: center;
+        color: #eef6f2;
+    }
+
+    .modal {
+        overflow: visible !important;
+        position: absolute;
+        top:  9%;
+
+    }
+</style>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/VerifyOrder.js"></script>
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-2">
+                <label for="ddlSalesPerson" class="form-label">Sales Person <span class="text-danger">*</span></label>
+                <input list="ddlSalesPersonList" id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border" placeholder="Sales Person" autocomplete="off" value="All">
+                <datalist id="ddlSalesPersonList"></datalist>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlDealerName" class="form-label">Dealer Name  <span class="text-danger">*</span></label>
+                <input list="ddlDealerNameList" id="ddlDealerName" name="ddlDealerName" class="form-control form-control-sm box_border" placeholder="Dealer Name" autocomplete="off" value="All">
+                <datalist id="ddlDealerNameList"></datalist>
+            </div>
+            <div class="col-md-2">
+                <label for="listTemplate" class="form-label">Template<span class="text-danger">*</span></label>
+                <select id="listTemplate" name="listTemplate" class="form-control form-control-sm box_border" autocomplete="off">
+                    <option value="CONSOLIDATED_VIEW" selected>Consolidated View</option>
+                    <option value="CONSOLIDATED_OUTSTANDING_VIEW">Consolidated View(With Outstanding)</option>
+                    <option value="DETAIL_VIEW">Detailed View</option>
+                    <option value="DETAIL_OUTSTANDING_VIEW">Detailed View(With Outstanding)</option>
+                </select>
+            </div>
+            <div class="col-md-1 align-items-end">
+                <button type="button" id="btnShow" class="btn btn-primary btn-height">Show</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="txtTable" style="display:none">
+<div class="table-wrapper fixed-height-table">
+    <table id="Visit" class="fixed-width-table table">
+        <thead id="table-header">
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-Visit">
+</div>
+</div>
+
+<div class="row">
+    <div id="ShowOrderDetailModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class=" modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="ShowDetailModal">ORDER DETAILS</h6>
+                    <button type="button" class="close modal-close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true" class="modal-close-icon">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-wrapper fixed-height-table">
+                        <table id="OrderDetails" class="fixed-width-table table">
+                            <thead id="OrderTable-header">
+                            </thead>
+                            <tbody id="OrderTable-body">
+                            </tbody>
+
+                        </table>
+
+                    </div>
+                    <div class="paginator" id="paginator-OrderDetails">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger btn-height" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="ReasonModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" data-bs-dismiss="modal">
+                    <span aria-hidden="true" class="modal-close-icon">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="txtReason" class="form-control form-control-sm" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtCode" class="form-control" value="0" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-height" onclick="SaveRejectVisit()">OK</button>
+                <button type="button" class="btn btn-danger btn-height" onclick="Close()" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div id="ShowVerificationModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class=" modal-dialog " role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="ShowVerificationModal">Order Verification Details</h6>
+                    <button type="button" class="close modal-close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true" class="modal-close-icon">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-wrapper fixed-height-table">
+                        <table id="VerificationDetails" class="fixed-width-table table">
+                           <tbody id="Verification-body">
+                            </tbody>
+
+                        </table>
+
+                    </div>
+                 
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger btn-height" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div id="ShowDiscountModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class=" modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="DiscountHeader">Discount History</h6>
+                    <button type="button" class="close modal-close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true" class="modal-close-icon">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-wrapper">
+                        <table id="DiscountDetails" class="fixed-width-table table">
+                            <thead id="DiscountTable-header">
+                            </thead>
+                            <tbody id="DiscountTable-body">
+                            </tbody>
+
+                        </table>
+
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2" id="divAmt">
+                            <label for="txtDiscount" class="col-form-label-sm fw-bold">Discount<span class="universal"></span></label>
+                            <div class="form-group">
+                                <input type="number" onkeypress="return numberdecimalOnly(event); " onchange="ValidateDiscountLimit();" maxlength="6" ID="txtDiscount" name="txtDiscount" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" placeholder=" " />
+                            </div>
+                        </div>
+                        <div class="col-md-2" id="divAmt">
+                            <label for="txtDiscountUnit" class="col-form-label-sm fw-bold">Unit<span class="universal"></span></label>
+                            <div class="form-group">
+                                <input type="text" onkeypress="return numberdecimalOnly(event); " disabled ID="txtDiscountUnit" name="txtDiscountUnit" class="box_border form-control form-control-sm " autocomplete="off" placeholder=" " />
+                            </div>
+                        </div>
+                        <div class="col-md-4 " style="margin-top: 2.7rem;">
+                            <input type="checkbox" id="chkApplicableForWholeOrder" name="chkApplicableForWholeOrder" class="box_border" checked />
+                            <label for="chkApplicableForWholeOrder">Applicable For Whole Order</label> 
+                        </div>
+                    </div>
+                    <input type="hidden" id="txtVisitMasterCode" class="form-control" value="0" />
+                    <input type="hidden" id="txtVisitOrderDetailsCode" class="form-control" value="0" />
+                    <input type="hidden" id="txtOldDiscount" class="form-control"  />
+                    <input type="hidden" id="txtDiscountLevel" class="form-control" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary btn-height" id="btnUpdate" onclick="UpdateDiscountValue();">Update</button>
+                    <button type="button" class="btn btn-secondary btn-height" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>

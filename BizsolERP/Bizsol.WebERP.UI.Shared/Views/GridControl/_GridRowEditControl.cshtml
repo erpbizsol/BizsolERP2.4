@@ -1,0 +1,240 @@
+﻿<style>
+      .dropdown-list {
+         /*  display: none; /* Initially hidden */ */
+          position: relative;
+          background-color: white;
+          border: 1px solid #ccc;
+          width: 251px;
+          font-size: 10pt;
+          max-height: 200px;
+          overflow-y: auto;
+          padding: 0;
+          margin-top: 5px;
+          list-style-type: none;
+          z-index: 1000; /* Ensure it appears above other content */
+      }
+
+          .dropdown-list li {
+              padding: 8px;
+              cursor: pointer;
+          }
+
+              .dropdown-list li:hover {
+                  background-color: #f0f0f0; /* Highlight on hover */
+              }
+
+      .highlighted {
+          background-color: #9aa0a5; /* Highlight color */
+          color: white; /* Text color for highlighted item */
+      }
+  </style>
+<div id="GridRowEditControlmodal" class="modal fade bs-example-modal-center" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content"  id="modalContent">
+            <div class="modal-header">
+                <h5>@ViewBag.GridHeader</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+        <div style="overflow: auto;">
+                <div class="row">
+               <div class="col-lg-1"></div>
+                <div class="col-lg-10">
+                        
+                        @if (ViewBag.ArrayControls != null )
+                    {
+                        var Indx_FieldName=0;
+                        var Indx_Caption=1;
+                        var Indx_ControlType=2;
+                        var Indx_Control=3;
+                        var Indx_ControlValue=4;
+                        var Indx_ControlList=5;
+
+                            @foreach (var item in ViewBag.ArrayControls)
+                        {
+                            <div>
+                                <div class="mb-3">
+                                <label for="txt_@item[Indx_FieldName]" class="form-label">@item[Indx_Caption]</label>
+                                
+                                        @if (item[Indx_ControlType] == "Input" && item[Indx_Control] == "String")
+                                        {
+                                            <input class="form-control" type="text" placeholder="" autocomplete="off" name="txt_@item[Indx_FieldName]" maxlength="10" id="txt_@item[Indx_FieldName]" value="@item[Indx_ControlValue]">
+                                        }
+                                        else if (item[Indx_ControlType] == "Input" && item[Indx_Control] == "Number")
+                                        {
+                                            <input class="form-control" type="number" placeholder="" autocomplete="off" name="txt_@item[Indx_FieldName]" maxlength="10" id="txt_@item[Indx_FieldName]" value="@item[Indx_ControlValue]">
+                                        }else if (item[Indx_ControlType]  == "Input" && item[Indx_Control]== "FirstLetterSearchList")
+                                        {
+                                            
+                                             var itemsJson = Newtonsoft.Json.JsonConvert.DeserializeObject(item[Indx_ControlList]);
+                                             var firstItem = ((Newtonsoft.Json.Linq.JContainer)itemsJson).First;
+                                           // Access the first element inside the first item (nested structure)
+                                            var nestedElement = firstItem.First;
+
+                                            <select class="js-example-basic-single" style="width:200px" id="txt_@item[Indx_FieldName]" value="@item[Indx_ControlValue]" name="FirstLetterSearchList">
+                                            @foreach (var lstitem in nestedElement){
+                                                @if(lstitem==item[Indx_ControlValue]){
+                                                    <option selected>@lstitem</option>
+                                                }else{
+                                                    <option>@lstitem</option>
+                                                }
+                                                     
+                                            }
+                                            </select>
+                                        }else if (item[Indx_ControlType]  == "Input" && item[Indx_Control]== "SearchList")
+                                        {
+                                            
+                                             var itemsJson = Newtonsoft.Json.JsonConvert.DeserializeObject(item[Indx_ControlList]);
+                                             var firstItem = ((Newtonsoft.Json.Linq.JContainer)itemsJson).First;
+                                           // Access the first element inside the first item (nested structure)
+                                            var nestedElement = firstItem.First;
+
+                                            <select class="js-example-basic-single" style="width:200px" id="txt_@item[Indx_FieldName]"  value="@item[Indx_ControlValue]" name="SearchList">
+                                            @foreach (var lstitem in nestedElement){
+                                                
+                                                @if(lstitem==item[Indx_ControlValue]){
+                                                    <option selected>@lstitem</option>
+                                                }else{
+                                                    <option>@lstitem</option>
+                                                }
+                                            }
+                                            </select>
+                                        }else if (item[Indx_ControlType]  == "Input" && item[Indx_Control]== "List")
+                                        {
+                                            
+                                             var itemsJson = Newtonsoft.Json.JsonConvert.DeserializeObject(item[Indx_ControlList]);
+                                             var firstItem = ((Newtonsoft.Json.Linq.JContainer)itemsJson).First;
+                                           // Access the first element inside the first item (nested structure)
+                                            var nestedElement = firstItem.First;
+
+                                            <select  style="width:200px" id="txt_@item[Indx_FieldName]"  value="@item[Indx_ControlValue]" name="CustomDropdown">
+                                            @foreach (var lstitem in nestedElement){
+                                                
+                                                @if(lstitem==item[Indx_ControlValue]){
+                                                    <option selected>@lstitem</option>
+                                                }else{
+                                                    <option>@lstitem</option>
+                                                }
+                                            }
+                                            </select>
+                                        }else if (item[Indx_ControlType]  == "Input" && item[Indx_Control]== "MultiselectList")
+                                        {
+                                            
+                                             var itemsJson = Newtonsoft.Json.JsonConvert.DeserializeObject(item[Indx_ControlList]);
+                                             var firstItem = ((Newtonsoft.Json.Linq.JContainer)itemsJson).First;
+                                           // Access the first element inside the first item (nested structure)
+                                            var nestedElement = firstItem.First;
+
+                                            <select  class="multi-select"  style="width:200px" id="multiSelect" name="CustomDropdown" multiple="multiple">
+                                            @foreach (var lstitem in nestedElement){
+                                                
+                                                @if(lstitem==item[Indx_ControlValue]){
+                                                    <option selected>@lstitem</option>
+                                                }else{
+                                                    <option>@lstitem</option>
+                                                }
+                                            }
+                                            </select>
+                                        }else if (item[Indx_ControlType] == "Input" && item[Indx_Control]== "Suggestion")
+                                        {
+                                            <input id="txtauto" type="text" name="txtauto" class="tabcancel" autocomplete="off" placeholder="" required value="@item[Indx_ControlValue]" />
+                                        }
+                                        else if (item[Indx_ControlType] == "Input" && item[Indx_Control]== "Date")
+                                        {
+                                            <input id="txtdate" type="date" name="txt_@item[Indx_FieldName]" class="tabcancel" autocomplete="off" placeholder="" required value="@item[Indx_ControlValue]" />
+                                        }else if (item[Indx_ControlType] == "Input" && item[Indx_Control]== "Time")
+                                        {
+                                            <input id="txttime" type="time" name="txt_@item[Indx_FieldName]" class="tabcancel" autocomplete="off" placeholder="" required value="@item[Indx_ControlValue]" />
+                                        }
+                                        else if (item[Indx_ControlType] == "Checkbox")
+                                        {
+                                            <input id="Chk_@item[Indx_FieldName]" type="checkbox" name="Chk_@item[Indx_FieldName]" checked />
+                                        }
+                                        else if (item[Indx_ControlType] == "Switch")
+                                        {
+                                            <input type="checkbox" id="switch_@item[Indx_FieldName]" switch="primary" checked />
+                                            <label for="switch_@item[Indx_FieldName]" data-on-label="Yes" data-off-label="No"></label>
+                                        }
+                                        else 
+                                        {
+                                            <input class="form-control" type="text" placeholder="@item[Indx_Caption]" autocomplete="off" name="txt_@item[Indx_FieldName]" maxlength="10" id="txt_@item[Indx_FieldName]" value="@item[Indx_Caption]">
+                                        }
+
+                               
+                                </div>
+                            </div>
+
+                        }
+                    }
+                    else
+                    {
+                        <div>No items to display.</div>
+                    }
+                </div>
+                <div class="col-lg-1"></div>
+               
+                </div>
+        </div>
+        <br />
+            <div class="modal-footer">
+                <a class="btn btn-primary">
+                Update
+            </a>
+
+                <a class="btn btn-danger" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                <input type="hidden" value="@ViewBag.RowCode" id="hf_Code" />
+        </div>
+    </div>
+    </div>
+</div>
+<script>
+    $(document).ready(function () {
+
+        $("#GridRowEditControlmodal").modal({
+            backdrop: 'static',
+           // keyboard: false
+        });
+        $("#GridRowEditControlmodal").modal('show');
+       
+        $('.js-example-basic-single').each(function() {
+
+            let dropdownName = $(this).attr('name');
+            let dropdownid = $(this).attr('id');
+             if (dropdownName === 'FirstLetterSearchList') {
+                    $('#'+dropdownid).select2({
+                        allowClear: true,
+                        dropdownParent: $("#GridRowEditControlmodal"),
+                         matcher: function (params, data) {
+                            // If there's no search term, return all data
+                            if ($.trim(params.term) === '') {
+                                return data;
+                            }
+            
+                            // Match items that start with the search term
+                            if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                                return data;
+                            }
+            
+                            // Return null if no match
+                            return null;
+                        }
+                    });
+                } else if (dropdownName === 'SearchList') {
+                    $('#'+dropdownid).select2({
+                         allowClear: true,
+                        dropdownParent: $("#GridRowEditControlmodal")
+                    });
+                }
+           
+        });
+        $('#multiSelect').select2({
+    placeholder: "Select options",
+    allowClear: true
+  });
+      
+ 
+    });
+
+</script>

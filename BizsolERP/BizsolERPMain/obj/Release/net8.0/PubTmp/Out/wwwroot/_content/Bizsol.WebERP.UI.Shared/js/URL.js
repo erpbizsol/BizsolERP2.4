@@ -1,0 +1,82 @@
+﻿import { environment } from './environment.js';
+
+let UrlService = {
+    BASE_URL: environment.BASE_URL,
+    ERP_SIDE_MENU: `${environment.BASE_URL}/UserModule`,
+    API_ENDPOINT_ENQUIRY: `${environment.BASE_URL}/Enquiry`,
+    API_ENDPOINT_REPORTS: `${environment.BASE_URL}/Report`,
+    API_ENDPOINT_RUNNING_ENQUIRY_DETAILS: `${environment.BASE_URL}/RunningEnquiryDetails`,
+    API_ENDPOINT_COUNTRY: `${environment.BASE_URL}/Country`,
+    API_ENDPOINT_STATE: `${environment.BASE_URL}/State`,
+    API_ENDPOINT_CITY: `${environment.BASE_URL}/City`,
+    API_ENDPOINT_CHEMICAL: `${environment.BASE_URL}/Chemical`,
+    API_ENDPOINT_CATEGORY: `${environment.BASE_URL}/Category`,
+    API_ENDPOINT_SUBCATEGORY: `${environment.BASE_URL}/SubCategory`,
+    API_ENDPOINT_CANCELPENDINGORDER: `${environment.BASE_URL}/CancelPendingOrder`,
+    API_ENDPOINT_LEADSOURCE: `${environment.BASE_URL}/LeadSource`,
+    API_ENDPOINT_INDUSTRYTYPE: `${environment.BASE_URL}/IndustryType`,
+    API_ENDPOINT_DEPARTMENT: `${environment.BASE_URL}/Department`,
+    API_ENDPOINT_SUBDEPARTMENT: `${environment.BASE_URL}/SubDepartment`,
+    API_ENDPOINT_DESIGNATION: `${environment.BASE_URL}/Designation`,
+    API_ENDPOINT_SubDepartment: `${environment.BASE_URL}/SubDepartment`,
+    API_ENDPOINT_SALESPERSON: `${environment.BASE_URL}/MarketingMan`,
+    API_ENDPOINT_ENQUIRYFOLLOWUP: `${environment.BASE_URL}/EnquiryFollowUp`,
+    API_ENDPOINT_UOM: `${environment.BASE_URL}/UOM`,
+    API_ENDPOINT_PRODUCT: `${environment.BASE_URL}/Item`,
+    API_ENDPOINT_SPECIFICATION: `${environment.BASE_URL}/ItemSize`,
+    API_ENDPOINT_PAYMENT_TERMS_MASTER: `${environment.BASE_URL}/PaymentTerms`,
+    API_ENDPOINT_BANK_MASTER: `${environment.BASE_URL}/Bank`,
+    API_ENDPOINT_DROPDOWN: `${environment.BASE_URL}/Dropdown`,
+    API_ENDPOINT_WARE_HOUSE: `${environment.BASE_URL}/WarehouseMaster`,
+    API_DOCUMENT_ATTECHMENT: `${environment.BASE_URL}/DocumentAttachment`,
+    API_DOCUMENT_BloodGroup: `${environment.BASE_URL}/BloodGroup`,
+    API_DOCUMENT_AllowanceMaster: `${environment.BASE_URL}/AllowanceMaster`,
+    API_DOCUMENT_DeductionMaster: `${environment.BASE_URL}/DeductionMaster`,
+    API_DOCUMENT_LeaveMaster: `${environment.BASE_URL}/LeaveMaster`,
+
+    API_UserMODULE: `${environment.BASE_URL}/UserModule`,
+
+
+    API_ENDPOINT_DROPDOWND: `${environment.BASE_URL}/Dropdown/GetDropdownList`,
+
+    API_ENDPOINT_Dropdown: `${environment.BASE_URL}/Dropdown`,
+    API_ENDPOINT_TankConfiguration: `${environment.BASE_URL}/TankConfiguration`,
+    API_ENDPOINT_HSNCodeMaster: `${environment.BASE_URL}/HSNCodeMaster`,
+    API_ENDPOINT_HRCONFIG: `${environment.BASE_URL}/ConfigHR`,
+
+    API_ENDPOINT_TankDailyStock: `${environment.BASE_URL}/DailyTankStock`,
+    
+    API_ENDPOINT_ACCOUNT_MASTER: `${environment.BASE_URL}/AccountMaster`,
+    API_ENDPOINT_ServicePOApproval: `${environment.BASE_URL}/ServicePOApproval`,
+    API_ENDPOINT_QuotationApproval: `${environment.BASE_URL}/QuotationApproval`,
+    API_ENDPOINT_POApproval: `${environment.BASE_URL}/POApproval`,
+    API_ENDPOINT_SaleOrderApproval: `${environment.BASE_URL}/SaleOrderApproval`,
+    API_ENDPOINT_WebNotification: `${environment.BASE_URL}/WebNotification`,
+    API_ENDPOINT_ItemSize: `${environment.BASE_URL}/ItemSize`,
+    API_ENDPOINT_FixedParameter: `${environment.BASE_URL}/FixedParameter`,
+    API_ENDPOINT_GateEntryMaster: `${environment.BASE_URL}/GateEntryMaster`,
+    API_ENDPOINT_GatependingOrderforDO: `${environment.BASE_URL}/PendingOrderDO`,
+    API_ENDPOINT_GetListOfRateUnit: `${environment.BASE_URL}/RateUnit`,
+    API_ENDPOINT_StockTransferReceive: `${environment.BASE_URL}/StockTransferReceive`,
+    API_ENDPOINT_TankMaster: `${environment.BASE_URL}/TankMaster`,
+    API_ENDPOINT_DayWiseCheckInOut: `${environment.BASE_URL}/DayWiseCheckInOut`,
+    API_ENDPOINT_EmployeeMaster: `${environment.BASE_URL}/EmployeeMaster`,
+    API_ENDPOINT_QUALITY_CHECK: `${environment.BASE_URL}/QualityCheck`,
+    API_ENDPOINT_CRYSTAL: `${environment.BASE_URL}/CrystalReport`,
+    API_ENDPOINT_PalletPacking: `${environment.BASE_URL}/PalletPacking`,
+    API_ENDPOINT_PhysicalStockTaking: `${environment.BASE_URL}/PhysicalStockTaking`,
+    API_ENDPOINT_FIXED_PARAMETER: `${environment.BASE_URL}/FixedParameter`,
+
+    //CRM API Service EndPoints
+    API_ENDPOINT_ROUTE_PLAN: `${environment.BASE_URL}/RoutePlan`,
+    API_ENDPOINT_VISIT_MASTER: `${environment.BASE_URL}/Visit`,
+    API_ENDPOINT_CRM_DASHBOARD: `${environment.BASE_URL}/CRMDashboard`,
+    API_ENDPOINT_CRMReports: `${environment.BASE_URL}/CRMReports`,
+    API_ENDPOINT_CRM_CONFIG: `${environment.BASE_URL}/ConfigCRM`,
+    API_ENDPOINT_ITEM: `${environment.BASE_URL}/Item`,
+    API_ENDPOINT_EXPENSE_ENTRY: `${environment.BASE_URL}/ExpenseEntryMaster`,
+    API_ENDPOINT_DEALER_MASTER: `${environment.BASE_URL}/DealerMaster`,
+}
+
+export { UrlService  }
+

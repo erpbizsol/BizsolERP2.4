@@ -1,0 +1,417 @@
+{
+  "Files": [
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\css\\Filter.css",
+      "PackagePath": "staticwebassets\\css\\Filter.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\css\\site.css",
+      "PackagePath": "staticwebassets\\css\\site.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\favicon.ico",
+      "PackagePath": "staticwebassets\\favicon.ico"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\AutoSuggestion.js",
+      "PackagePath": "staticwebassets\\js\\AutoSuggestion.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\BizSolGeoLocation.js",
+      "PackagePath": "staticwebassets\\js\\BizSolGeoLocation.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\BizSolInputControl.js",
+      "PackagePath": "staticwebassets\\js\\BizSolInputControl.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\BizsolPBControls.js",
+      "PackagePath": "staticwebassets\\js\\BizsolPBControls.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\BlockUI.js",
+      "PackagePath": "staticwebassets\\js\\BlockUI.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\CommonFunctions.js",
+      "PackagePath": "staticwebassets\\js\\CommonFunctions.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\Filter.js",
+      "PackagePath": "staticwebassets\\js\\Filter.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\HelperFunction.js",
+      "PackagePath": "staticwebassets\\js\\HelperFunction.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\CRMDashboardService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\CRMDashboardService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\CRMReportsService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\CRMReportsService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\CheckinOrCheckOutService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\CheckinOrCheckOutService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\ClosePendingOrderService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\ClosePendingOrderService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\DealerMasterService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\DealerMasterService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\EmployeeMasterServices.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\EmployeeMasterServices.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\ExpenseEntryService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\ExpenseEntryService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\GateEntryService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\GateEntryService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\MenuServices.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\MenuServices.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\OrderEntryListService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\OrderEntryListService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\POApprovalService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\POApprovalService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\PalletPackingService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\PalletPackingService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\PhysicalStockTakingItemService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\PhysicalStockTakingItemService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\QuotationApprovalService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\QuotationApprovalService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\RoutePlanService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\RoutePlanService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\SaleOrderApprovalService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\SaleOrderApprovalService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\ServicePOApprovalService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\ServicePOApprovalService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\StateMasterService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\StateMasterService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\StockTransferReceiveService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\StockTransferReceiveService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\VisitOrderEntryService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\VisitOrderEntryService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\WebNotificationService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\WebNotificationService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\_AttachmentControlService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\_AttachmentControlService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\_GridRowEditControlService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\_GridRowEditControlService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\JSServices\\_SizeControlService.js",
+      "PackagePath": "staticwebassets\\js\\JSServices\\_SizeControlService.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\Pages\\CustomControl\\_AttachmentControlPage.js",
+      "PackagePath": "staticwebassets\\js\\Pages\\CustomControl\\_AttachmentControlPage.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\Pages\\CustomControl\\_GridRowEditControlPage.js",
+      "PackagePath": "staticwebassets\\js\\Pages\\CustomControl\\_GridRowEditControlPage.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\Pages\\CustomControl\\_SizeControlPage.js",
+      "PackagePath": "staticwebassets\\js\\Pages\\CustomControl\\_SizeControlPage.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\PromiseAjaxCallApi.js",
+      "PackagePath": "staticwebassets\\js\\PromiseAjaxCallApi.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\URL.js",
+      "PackagePath": "staticwebassets\\js\\URL.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\environment.js",
+      "PackagePath": "staticwebassets\\js\\environment.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\js\\site.js",
+      "PackagePath": "staticwebassets\\js\\site.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\LICENSE",
+      "PackagePath": "staticwebassets\\lib\\bootstrap"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.min.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.min.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.min.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.min.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.min.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-grid.rtl.min.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.min.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.min.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.min.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.min.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.min.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-reboot.rtl.min.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.min.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.min.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.min.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.min.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.min.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.rtl.min.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.min.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.min.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.min.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.min.css",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.min.css"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.min.css.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\css\\bootstrap.rtl.min.css.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.js",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.js.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.js.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.min.js",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.min.js.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.bundle.min.js.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.esm.js",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.esm.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.esm.js.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.esm.js.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.esm.min.js",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.esm.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.esm.min.js.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.esm.min.js.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.js",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.js.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.js.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.min.js",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.min.js.map",
+      "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.min.js.map"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\jquery-validation-unobtrusive\\LICENSE.txt",
+      "PackagePath": "staticwebassets\\lib\\jquery-validation-unobtrusive\\LICENSE.txt"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\jquery-validation-unobtrusive\\jquery.validate.unobtrusive.js",
+      "PackagePath": "staticwebassets\\lib\\jquery-validation-unobtrusive\\jquery.validate.unobtrusive.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\jquery-validation-unobtrusive\\jquery.validate.unobtrusive.min.js",
+      "PackagePath": "staticwebassets\\lib\\jquery-validation-unobtrusive\\jquery.validate.unobtrusive.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\jquery-validation\\LICENSE.md",
+      "PackagePath": "staticwebassets\\lib\\jquery-validation\\LICENSE.md"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\jquery-validation\\dist\\additional-methods.js",
+      "PackagePath": "staticwebassets\\lib\\jquery-validation\\dist\\additional-methods.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\jquery-validation\\dist\\additional-methods.min.js",
+      "PackagePath": "staticwebassets\\lib\\jquery-validation\\dist\\additional-methods.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\jquery-validation\\dist\\jquery.validate.js",
+      "PackagePath": "staticwebassets\\lib\\jquery-validation\\dist\\jquery.validate.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\jquery-validation\\dist\\jquery.validate.min.js",
+      "PackagePath": "staticwebassets\\lib\\jquery-validation\\dist\\jquery.validate.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\jquery\\LICENSE.txt",
+      "PackagePath": "staticwebassets\\lib\\jquery\\LICENSE.txt"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\jquery\\dist\\jquery.js",
+      "PackagePath": "staticwebassets\\lib\\jquery\\dist\\jquery.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\jquery\\dist\\jquery.min.js",
+      "PackagePath": "staticwebassets\\lib\\jquery\\dist\\jquery.min.js"
+    },
+    {
+      "Id": "D:\\ERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\wwwroot\\lib\\jquery\\dist\\jquery.min.map",
+      "PackagePath": "staticwebassets\\lib\\jquery\\dist\\jquery.min.map"
+    },
+    {
+      "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.Bizsol.WebERP.UI.Shared.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.build.Bizsol.WebERP.UI.Shared.props",
+      "PackagePath": "build\\Bizsol.WebERP.UI.Shared.props"
+    },
+    {
+      "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.Shared.props",
+      "PackagePath": "buildMultiTargeting\\Bizsol.WebERP.UI.Shared.props"
+    },
+    {
+      "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.buildTransitive.Bizsol.WebERP.UI.Shared.props",
+      "PackagePath": "buildTransitive\\Bizsol.WebERP.UI.Shared.props"
+    }
+  ],
+  "ElementsToRemove": []
+}
