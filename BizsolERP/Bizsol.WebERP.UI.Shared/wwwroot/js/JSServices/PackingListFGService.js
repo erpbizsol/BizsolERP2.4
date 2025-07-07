@@ -162,6 +162,16 @@ const PackingListFGService = {
             }
         );
     },
+    UpdateRate: function UpdateRate(PackingListMaster_Code, ItemMaster_Code, Rate) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/UpdateRate?PackingListMaster_Code=" + PackingListMaster_Code + "&ItemMaster_Code=" + ItemMaster_Code + "&Rate=" + Rate;
+        //alert(url);
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 

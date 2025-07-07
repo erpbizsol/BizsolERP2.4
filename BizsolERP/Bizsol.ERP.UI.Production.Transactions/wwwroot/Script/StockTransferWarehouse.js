@@ -6,6 +6,13 @@ let files = [];
 let fileName = '';
 let imageBase64Data = [];
 let baseUrl = sessionStorage.getItem('AppBaseURL');
+let G_IsReceivedPallet = 'N';
+let G_IsReceivedPalletInStockTransfer = 'N';
+let StockTransferReceiveFGFixedParaMeters = await StockTransferReceiveService.GetFixedParaMeter();
+
+if (StockTransferReceiveFGFixedParaMeters.length > 0 && StockTransferReceiveFGFixedParaMeters.find(x => x.PeramaterName === 'IsReceivedPalletInStockTransfer').PeramaterValue != '') {
+    G_IsReceivedPalletInStockTransfer = StockTransferReceiveFGFixedParaMeters.find(x => x.PeramaterName === 'IsReceivedPalletInStockTransfer').PeramaterValue;
+}
 
 $(document).ready(function () {
     $("#ERPHeading").text("Warehouse Receive");
@@ -28,6 +35,10 @@ $(document).ready(function () {
             return false;
         }
     });
+
+    if (G_IsReceivedPalletInStockTransfer==='N') {
+        $('#DivIsReceivedPallet').hide();
+    }
 });
 function getWarehouse() {    
     StockTransferReceiveService.GetWarehouse().then(function (response) {
@@ -58,7 +69,7 @@ function getWarehouse() {
     });
 }
 function getPendingRoll(Godownmaster_Code) {
-    StockTransferReceiveService.GetPendingRoll(Godownmaster_Code, "0").then(function (response) {
+    StockTransferReceiveService.GetPendingRoll(Godownmaster_Code, "0", G_IsReceivedPallet).then(function (response) {
         if (response && response.length > 0) {
         AutoSuggestionControl.SetUpAutoSuggestion($('#ddlRollIdNo'), $('#ddlRollIdNoList'), response.map((item) => ({ Desp: item.IdentificationNo })), 'StartWith');
     } else {
@@ -102,17 +113,18 @@ function StockTransferWherehouseReceive() {
     //$('#tblStockReceive').show();
     let obj = [{
         godownMaster_Code: Godownmaster_Code,
-        rollIdNo: $("#ddlRollIdNo").val(),
+        rollIdNo: G_IsReceivedPallet=='N'? $("#ddlRollIdNo").val():'',
         user_Code: JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code,
         companyCode: JSON.parse(sessionStorage.getItem('authKey')).CompanyCode,
         attachFileName: fileName,
-        attachData: imageBase64Data
+        attachData: imageBase64Data,
+        palletNo: G_IsReceivedPallet == 'Y' ? $("#ddlRollIdNo").val() : ''
     }];
 
     if ($('#ddlRollIdNo').val()?.includes("*")) {
         if ($('#fileInput').val() !== '') {
             Showloader();
-            StockTransferReceiveService.GetPendingRoll(Godownmaster_Code, obj[0].rollIdNo).then(function (res) {
+            StockTransferReceiveService.GetPendingRoll(Godownmaster_Code, obj[0].rollIdNo, G_IsReceivedPallet).then(function (res) {
                 if (res && Array.isArray(res) && res.length > 0) {
                     HideLoader();
                     $('#tblStockReceive').hide();
@@ -203,7 +215,7 @@ function ChangeBackgroundColor() {
                 cell.style.backgroundColor = 'red';
                 cell.style.color = 'white';
             }
-            else if (cell.textContent.trim() === 'Entry is Accepted' || cell.textContent.includes("received") === true){
+            else if (cell.textContent.trim() === 'Entry is Accepted' || cell.textContent.includes("Entry is Accepted") === true || cell.textContent.includes("received") === true){
                 cell.style.backgroundColor = 'green';
                 cell.style.color = 'white';
             }
@@ -343,9 +355,26 @@ function StrockTransferWarehouse_CallbackScanQRCode() {
     StockTransferWherehouseReceive();
     $('#ddlRollIdNo').focus();
 }
+
+function StrockTransferWarehouse_ShowPallets() {
+    if ($('#chkShowPallets')[0].checked == true) {
+        G_IsReceivedPallet = "Y";
+    }
+    else {
+        G_IsReceivedPallet = "N";
+    }
+    if (Godownmaster_Code > 0) {
+        $('#ddlRollIdNo').val('');
+        getPendingRoll(Godownmaster_Code, "0");
+        $('#tblStockReceive').hide();
+        $('#fileInput').val('');
+    }
+    
+}
 window.FileUploadChange = FileUploadChange;
 window.CloseModal = CloseModal;
 window.SaveReceivedData = SaveReceivedData;
 window.triggerFileInputClick = triggerFileInputClick;
 window.StrockTransferWarehouse_CallbackScanQRCode = StrockTransferWarehouse_CallbackScanQRCode;
 window.StrockTransferWarehouse_btnScanQR = StrockTransferWarehouse_btnScanQR;
+window.StrockTransferWarehouse_ShowPallets = StrockTransferWarehouse_ShowPallets;
