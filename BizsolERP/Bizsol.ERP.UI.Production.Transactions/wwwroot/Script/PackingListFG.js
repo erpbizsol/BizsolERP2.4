@@ -36,8 +36,9 @@ let G_DefaultAccountCodeStockTransfar = 0;
 let G_QtyMT = 'MT';
 let G_QtyPC = 'PC';
 let G_QtyMTR = 'MTRS';
-
+let G_DetailsModalType ='ScanPallet'
 let FixedParameterQtyConfiguration = await PalletPackingService.FixedParameterQtyConfiguration();
+let G_TransactionRate = 0;
 
 if (FixedParameterQtyConfiguration.length > 0) {
     G_QtyMT = FixedParameterQtyConfiguration[0].QtyMT
@@ -655,6 +656,8 @@ function EditMode(isView) {
                 //if ('@ViewBag.ddlPackingType' === 'Stock Transfer') { changeddlPackingType(); }
 
                 $('#btnScanQR').show();
+                $('#btnUpdateRate').hide();
+
                 $('#btnLoadingEnd')[0].innerHTML = "End Loading"
                 if (response[0][0].LoadingStatus === 'C') {
                     $('#btnLoadingEnd')[0].innerHTML = "Loaded"; $('#btnScanNoPallet').hide();
@@ -667,6 +670,13 @@ function EditMode(isView) {
                     $('#btnLoadingEnd').attr("onclick", "return PackingListFG_EndLoading()");
                     $('#btnScanNoPallet').show();
                     $('#btnScanQR').show();
+                    $('#DivBtnAdd').show();
+
+                    G_TransactionRate = response[1].filter(item => item.Rate > 0).length;
+                    if (G_EwayBillApplicable == "Y" && PackingType == "S" &&  G_TransactionRate==0) {
+                       
+                        $('#btnUpdateRate').show();
+                    }
                 }
                 
                 if (isView === 'Y') {
@@ -718,6 +728,7 @@ function PackingListFG_CreateNew() {
         ChangeMode('New');
         PackingListFG_OnChangeddlPackingType();
         $('#btnScanNoPallet').show();
+        $('#btnUpdateRate').hide();
         if (ShowPalletTypeAndNoInPackingList === 'Y') {
             $('#btnScanNoPallet').show();
             $('#btnAvailableOrderStock').show();
@@ -791,7 +802,7 @@ function PackingListFG_ShowDetailsModals(For) {
             return
         }
 
-        PackingListFGService.GetDetails(For,RMRequisitionMaster_Code).then(function (response) {
+        PackingListFGService.GetDetails(For, RMRequisitionMaster_Code).then(function (response) {
 
 
             console.log(response);
@@ -864,6 +875,7 @@ function PackingListFG_ShowDetailsModals(For) {
         let ddlConsignee = document.getElementById("ddlConsignee");
         let ConsigneeName = ddlConsignee.options[ddlConsignee.selectedIndex].text;
         $('#btnLoadNoOfPallet').show();
+        $('#btnLoadNoOfPallet')[0].innerHTML = "Load";
         if (ConsigneeName === '') {
             return;
         }
@@ -883,7 +895,7 @@ function PackingListFG_ShowDetailsModals(For) {
             const Button = false;
             const showButtons = []
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["RMRequisitionMaster_Code", "StockGodownCode", "ConsigneeName","OrderNo",""];
+            const hiddenColumns = ["RMRequisitionMaster_Code", "StockGodownCode", "ConsigneeName", "OrderNo", ""];
             const ColumnAlignment = {
                 //"PC": 'right',
             };
@@ -894,6 +906,7 @@ function PackingListFG_ShowDetailsModals(For) {
             if (response.length > 0) {
                 BizsolCustomFilterGrid.CreateDataTable("tbDetailsHeader", "tbDetailsbody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
                 $('#ModalTitle')[0].innerHTML = 'Scan No. Of Pallet';
+                G_DetailsModalType = 'ScanPallet'
                 $("#DetailsModal").modal({
                     backdrop: 'static',
                 });
@@ -905,6 +918,45 @@ function PackingListFG_ShowDetailsModals(For) {
 
         });
 
+    }
+    else if (For === 'ItemForRateUpdateDetail') {
+        PackingListFGService.GetPendingOrderList('ItemForRateUpdate', '0', PackingListMaster_Code, 0).then(function (response) {
+
+
+            console.log(response);
+            response = response.map((item) => ({
+                ...item,
+                "Rate": '<input id="txtRate" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="6" autocomplete="off" value="0"><input type="hidden" value="' + item.ItemMaster_Code + '"/>'
+            }))
+
+            const StringFilterColumn = [];
+            const NumericFilterColumn = [];
+            const DateFilterColumn = [];
+            const Button = false;
+            const showButtons = []
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = ["ItemMaster_Code","HideObj"];
+            const ColumnAlignment = {
+                "Rate": 'right;Width:50px',
+            };
+            
+
+            if (response.length > 0) {
+                BizsolCustomFilterGrid.CreateDataTable("tbDetailsHeader", "tbDetailsbody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+                $('#ModalTitle')[0].innerHTML = 'Update Rate';
+                G_DetailsModalType='Rate'
+                $("#DetailsModal").modal({
+                    backdrop: 'static',
+                });
+                $("#DetailsModal").modal('show');
+                $('#btnLoadNoOfPallet')[0].innerHTML = "Update";
+                $('#btnLoadNoOfPallet').show();
+            } else {
+                //$('#tbPackingListFGView tr').empty()
+                toastr.error('No Data Found!');
+            }
+
+        });
     }
 }
 
@@ -1279,22 +1331,34 @@ function PackingListFG_Remove(packingListMaster_Code, packingListTransaction_Cod
     }
 }
 
-function PackingListFG_LoadNoOfPallet() {
+ function PackingListFG_LoadNoOfPallet() {
     let LoadNoOfPalletData = [];
     let dtScanPendingOrderForPallet = document.getElementById("tbDetails");
     let RowNo = 1;
+    let indxCells = 5;
+
+    if (G_DetailsModalType==='Rate') {
+        indxCells = 2;
+    }
     for (let i = 0; i < dtScanPendingOrderForPallet.rows.length; i++) {
         if (i == 0) {
 
         }
         else {
             let tbScanPendingOrderPalletUpdateRow = dtScanPendingOrderForPallet.rows[i];
-            let noofPallet = tbScanPendingOrderPalletUpdateRow.cells[5].getElementsByTagName('input')[0].value;
-            let BuyerPODetail_Code = tbScanPendingOrderPalletUpdateRow.cells[5].getElementsByTagName('input')[1].value;
+            let noofPallet = tbScanPendingOrderPalletUpdateRow.cells[indxCells].getElementsByTagName('input')[0].value;
+            let BuyerPODetail_Code = tbScanPendingOrderPalletUpdateRow.cells[indxCells].getElementsByTagName('input')[1].value;
             if (noofPallet == "" || noofPallet == "0") {
                 //M.toast({ html: 'No Of Pallet can not be blank or Zero' });
                 //return;
-            } else {
+            } else if (G_DetailsModalType === 'Rate') {
+                LoadNoOfPalletData.push({
+                    
+                    ItemMaster_Code: BuyerPODetail_Code,
+                    Rate: noofPallet
+                });
+            }
+            else {
                 LoadNoOfPalletData.push({
                     rowNo: RowNo,
                     buyerPODetail_Code: BuyerPODetail_Code,
@@ -1306,11 +1370,26 @@ function PackingListFG_LoadNoOfPallet() {
     }
 
     if (LoadNoOfPalletData == 0 ) {
-        toastr.warning('Please Add atleast one No Of Pallet');
+        toastr.warning(`Please Add atleast one No Of ${G_DetailsModalType === 'Rate' ? 'Rate' :'Pallet'}`);
         return;
     }
 
-    PackingListFG_StartLoading(LoadNoOfPalletData);
+    if (G_DetailsModalType === 'Rate') {
+        Promise.all(LoadNoOfPalletData.map(async item => {
+
+            let UpdateRespon = await PackingListFGService.UpdateRate(PackingListMaster_Code,item.ItemMaster_Code, item.Rate)
+
+            if (UpdateRespon.Status == 'Y') {
+                toastr.success(UpdateRespon.Msg);
+            } else {
+                toastr.error(UpdateRespon.Msg);
+            }
+        }))
+       // toastr.success(UpdateRespon.Msg);
+
+    } else { 
+        PackingListFG_StartLoading(LoadNoOfPalletData);
+    }
     
 }
 function ClrFrm() {
@@ -1405,6 +1484,7 @@ function ClrFrm() {
     let chkShowDataList = $('#chkShowIdDataList');
     chkShowDataList[0].checked = false;
     $('#btnScanQR').hide();
+    $('#btnUpdateRate').hide();
 }
 function ScanId() {
    
