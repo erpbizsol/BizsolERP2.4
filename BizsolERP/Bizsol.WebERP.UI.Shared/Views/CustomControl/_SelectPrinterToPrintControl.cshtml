@@ -171,7 +171,7 @@
                                    tempPrintText = tempPrintText.replace(/#ID#/g, item.IDNo)
                                                         .replace(/#QRText#/g, item.IDNo)
                                                       .replace(/#ItemName#/g, item.ItemName)
-                                                    .replace(/#Weight#/g, parseFloat(item.QtyMT).toFixed(3)+" MT")
+                                                            .replace(/#Weight#/g, parseFloat(item.QtyMT).toFixed(3)+" MT"+ "(Aprox), PCS("+item.Grade+")")
                                                       .replace(/#Size#/g, item.SizeDesp)
                                                        .replace(/#Date#/g, new Date(item.GenerationDate).toISOString().slice(0, 10))
                                                     .replace(/#MotherID#/g, item.ParentIDNo)
