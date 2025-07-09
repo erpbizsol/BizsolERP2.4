@@ -372,6 +372,7 @@ function CreateNew() {
             $('#newCreateForm select').prop('disabled', true);
             $('#referenceNo').prop('disabled', false);
             $('#packingWt').prop('disabled', false);
+            $('#btnScanQR').show();
         } else {
             return;
         }
@@ -394,6 +395,7 @@ function proceedWithNewPallet() {
     $("#txtScanIdentificationNoList").empty();
     $('#newCreateForm input').prop('disabled', false);
     $('#newCreateForm select').prop('disabled', false);
+    $('#btnScanQR').show();
     Godownmaster_Code = 0;
     FillWarehouse();
     FillPendingOrderModal();
@@ -630,6 +632,7 @@ function EditPallet(PalletNo1, isAction) {
             $('#newCreateForm').show();
             $('#dateAndOrderByPallet').hide();
             $('#tdlScanIdentification').show();
+            $('#btnScanQR').show();
 
             BuyerPOMaster_Code = response[0].BuyerPOMaster_Code;
             Godownmaster_Code = response[0].GodownMaster_Code;
@@ -785,6 +788,7 @@ function GetPalletViewDetail(PalletNo) {
             $('#newCreateForm input').prop('disabled', true);
             $('#newCreateForm select').prop('disabled', true);
             $('#tdlScanIdentification').show();
+            $('#btnScanQR').hide();
 
             Godownmaster_Code = response[0].GodownMaster_Code;
             editPalletTable(PalletNo, Godownmaster_Code,'N');
