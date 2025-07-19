@@ -366,7 +366,7 @@ function RollingProductionEnty_SaveIssueID(CallBy) {
                 godownMaster_Code: GodownMaster_Code,
                 itemMaster_Code: HideColObj.ItemMaster_Code,
                 itemSizeMaster_Code: HideColObj.ItemSizeMaster_Code,
-                qtyMT: parseFloat(HideColObj.QtyMT).toFixed(2),
+                qtyMT: parseFloat(HideColObj.QtyMT).toFixed(3),
                 inputID: HideColObj.IdentificationNo,
                 entrydate: EntryDate,
                 planBatchNo: HideColObj.PlanBatchNo,

@@ -64,7 +64,10 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
                                                            , int BuyerPOMaster_Code
                                                            , string CallBackFunctionName_btnDone
                                                            , int Code
-                                                           , string Mode)
+                                                           , string Mode
+                                                           , string AskPassword
+                                                           , string AskRemark
+            )
         {
 
              ViewBag.AccountMaster_Code         =AccountMaster_Code;
@@ -87,6 +90,8 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
              ViewBag.CallBackFunctionName_btnDone = CallBackFunctionName_btnDone;
              ViewBag.Code = Code;
             ViewBag.Mode = Mode;
+            ViewBag.AskPassword = AskPassword;
+            ViewBag.AskRemark = AskRemark;
             return PartialView("_CheckCreditLimits");
 
         }
