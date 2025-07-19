@@ -27,9 +27,13 @@
                     </div>
                 <div class="paginator" id="paginator-CreditLimitDayBaseTable">
                 </div>
-                    <div class="col-12">
+                    <div id="divtxtOTP" class="col-12">
                         <label for="txtOTP" class="col-form-label-sm fw-bold">Enter Authorization Code:</label>
                         <input type="text" id="txtOTP" placeholder="Enter The OTP" autocomplete="off" maxlength="6" class="box_border form-control form-control-sm" />
+                    </div>
+                    <div id="divtxtRemark" class="col-12">
+                        <label for="txtRemark" class="col-form-label-sm fw-bold">Enter remark:</label>
+                        <input type="text" id="txtRemark" placeholder="Enter The Remark" autocomplete="off" maxlength="250" class="box_border form-control form-control-sm" />
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -57,6 +61,8 @@
                     <input type="hidden" value="@ViewBag.CallBackFunctionName_btnDone" id="hfCallBackFunctionName_btnDone" name="CallBackFunctionName_btnDone" />
                     <input type="hidden" value="@ViewBag.Code" id="hfCode" name="Code" />
                     <input type="hidden" value="@ViewBag.Mode" id="hfMode" name="Mode" />
+                    <input type="hidden" value="@ViewBag.AskPassword" id="hfAskPassword" name="AskPassword" />
+                    <input type="hidden" value="@ViewBag.AskRemark" id="hfAskRemark" name="AskRemark" />
                 </div>
             </div>
         </div>
@@ -73,7 +79,9 @@
     let CheckCreditLimitsControl_PasswordCode = 0;
     let CheckCreditLimitsControl_Code=0;
     let CheckCreditLimitsControl_Mode='';
-
+    let CheckCreditLimitsControl_Remark='';
+    let AskPassword=$('#hfAskPassword').val();
+    let AskRemark=$('#hfAskRemark').val();
     $(document).ready(function () {
 
          var AccountMaster_Code=$('#hfAccountMaster_Code').val();
@@ -93,6 +101,7 @@
          var EntryDesp=$('#hfEntryNo').val();
          var MasterTableCode=$('#hfMasterTableCode').val();
          var BuyerPOMaster_Code=$('#hfBuyerPOMaster_Code').val();
+         
 
 
          CheckCreditLimitsService.CheckCreditLimits(AccountMaster_Code, Amount, PreviousAmount, Source, PasswordsCodeRs , PasswordsCodeDays , ShowFormDialog , LedgerClosing
@@ -170,15 +179,25 @@
                             $('#divCreditLimitDayBaseTable').hide();
                         }
 
+                        if(AskPassword==='N'){
+                            $('#divtxtOTP').hide();
+                        }
+                        if(AskRemark==='N'){
+                            $('#divtxtRemark').hide();
+                        }
+                       
                     }
                     else{
                         CheckCreditLimitsControl_PasswordCode=0;
+                       
                         window.CheckCreditLimitsControl_PasswordCode=CheckCreditLimitsControl_PasswordCode;
+                        window.CheckCreditLimitsControl_Remark=CheckCreditLimitsControl_Remark;
                         window[$('#hfCallBackFunctionName_btnDone').val()]();
                     }
                 }else{
                     CheckCreditLimitsControl_PasswordCode=0;
                         window.CheckCreditLimitsControl_PasswordCode=CheckCreditLimitsControl_PasswordCode;
+                        window.CheckCreditLimitsControl_Remark=CheckCreditLimitsControl_Remark;
                         window[$('#hfCallBackFunctionName_btnDone').val()]();
                     }
             });
@@ -188,11 +207,49 @@
     });
 
     function ValidateOTP(){
+        
         var Password=$('#txtOTP').val();
-        if(Password==undefined || Password==''){
+        var Remark=$('#txtRemark').val();
+
+        
+       
+
+
+
+       
+
+        if(AskPassword==='Y' && (Password==undefined || Password=='')){
             toastr.error('Please enter OTP!');
             return false;
         }
+        if(AskRemark==='Y' && (Remark==undefined || Remark=='')){
+            toastr.error('Please enter Remark!');
+            return false;
+        }
+        
+        // only askRemark
+        if(AskRemark==='Y' && AskPassword==='N'){
+            window.CheckCreditLimitsControl_Code=$('#hfCode').val();
+            window.CheckCreditLimitsControl_Mode=$('#hfMode').val();
+            CheckCreditLimitsControl_PasswordCode=0;
+            window.CheckCreditLimitsControl_PasswordCode=CheckCreditLimitsControl_PasswordCode;
+            window.CheckCreditLimitsControl_Remark=Remark;
+            window[$('#hfCallBackFunctionName_btnDone').val()]();
+            $("#CheckCreditLimitsModal").modal('hide');
+            return false;
+        }
+
+       if(AskPassword==='N'){
+            window.CheckCreditLimitsControl_Code=$('#hfCode').val();
+            window.CheckCreditLimitsControl_Mode=$('#hfMode').val();
+            CheckCreditLimitsControl_PasswordCode=0;
+            window.CheckCreditLimitsControl_PasswordCode=CheckCreditLimitsControl_PasswordCode;
+            window.CheckCreditLimitsControl_Remark=CheckCreditLimitsControl_Remark;
+            window[$('#hfCallBackFunctionName_btnDone').val()]();
+            $("#CheckCreditLimitsModal").modal('hide');
+            return false;
+        }
+
          CheckCreditLimitsService.ValidateOTP(Password).then(function (response) {
         
                 if (response !== undefined && response !== '') {
@@ -203,6 +260,7 @@
                         window.CheckCreditLimitsControl_Mode=$('#hfMode').val();
                         CheckCreditLimitsControl_PasswordCode=response.Code;
                         window.CheckCreditLimitsControl_PasswordCode=CheckCreditLimitsControl_PasswordCode;
+                        window.CheckCreditLimitsControl_Remark=Remark;
                         window[$('#hfCallBackFunctionName_btnDone').val()]();
                         $("#CheckCreditLimitsModal").modal('hide');
                     }else{
@@ -216,4 +274,5 @@
 
     window.ValidateOTP = ValidateOTP;
     window.CheckCreditLimitsControl_PasswordCode=CheckCreditLimitsControl_PasswordCode;
+    window.CheckCreditLimitsControl_Remark=CheckCreditLimitsControl_Remark;
 </script>

@@ -1615,11 +1615,13 @@ function SaveData() {
     var QtyPCHeader = Qty_Config.QtyPC;
     var QtyMTRHeader = Qty_Config.QtyMR;
     var QtyMTHeader = Qty_Config.QtyMT;
-
-    if (FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == 'Y') {
+    var OverduePasswordRemark = '0';
+    if (FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == 'Y' || FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == 'R') {
         var OverduePasswordCode = CheckCreditLimitsControl_PasswordCode !== undefined && CheckCreditLimitsControl_PasswordCode !== '' ? CheckCreditLimitsControl_PasswordCode : 0;
+         OverduePasswordRemark = CheckCreditLimitsControl_Remark !== undefined && CheckCreditLimitsControl_Remark !== '' ? CheckCreditLimitsControl_Remark : '0';
     } else {
         var OverduePasswordCode = 0;
+        
     }
    
 
@@ -1878,7 +1880,7 @@ function SaveData() {
 
     var Data = JSON.stringify(allTablesData);
 
-    VisitOrderEntryService.SaveVisit(allTablesData, OverduePasswordCode).then(function (response) {
+    VisitOrderEntryService.SaveVisit(allTablesData, OverduePasswordCode, OverduePasswordRemark).then(function (response) {
 
         if (response != '') {
             if (response.Status == 'N') {
@@ -5583,7 +5585,7 @@ function InitSizeControl(itemMaster_Code, itemSizeMaster_Code, callBackFunctionN
 }
 function InitCheckCreditLimitsControl(AccountMaster_Code, Amount, PreviousAmount, Source, PasswordsCodeRs, PasswordsCodeDays, ShowFormDialog, LedgerClosing, OverDueAmount
     , ShowOnlyOutstandingInfo, Log_OnLineVerification_Code, OnlyCheckCreditLimit, CheckBillingWithoutAdvance, AdvancePayPercentage
-    , EntryDesp, MasterTableCode, BuyerPOMaster_Code, CallBackFunctionName_btnDone,Code,Mode) {
+    , EntryDesp, MasterTableCode, BuyerPOMaster_Code, CallBackFunctionName_btnDone, Code, Mode, AskPassword, AskRemark) {
 
 
     var url = baseUrl + '/CustomControl/CheckCreditLimits';
@@ -5608,7 +5610,9 @@ function InitCheckCreditLimitsControl(AccountMaster_Code, Amount, PreviousAmount
                                                 , BuyerPOMaster_Code: BuyerPOMaster_Code
                                                 , CallBackFunctionName_btnDone: CallBackFunctionName_btnDone
                                                 , Code: Code
-                                                , Mode:Mode
+                                                , Mode: Mode
+                                                , AskPassword: AskPassword
+                                                , AskRemark: AskRemark
                                         });
 
 }
@@ -5860,9 +5864,11 @@ function ValidateOverdueAmount() {
     var AccountMaster_Code = $('#ddlCustomerName option:selected').val();
     var Config_CheckCreditLimit = FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == undefined || FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == '' ? 'N' : FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO;
 
-    if (Config_CheckCreditLimit == 'Y') {
+    ///Config_CheckCreditLimit='R' means it will check credit limit only for Crm and Not Check in ERP
+
+    if (Config_CheckCreditLimit == 'Y' || Config_CheckCreditLimit == 'R') {
         if (TotalOrderAmount > 0) {
-            InitCheckCreditLimitsControl(AccountMaster_Code, TotalOrderAmount, 0, 'VISIT MASTER', 0, 0, 'Y', 0, 0, 'N', 0, 'N', 'N', 0, 'Y', 0, 0, 'SaveData',0,'');
+            InitCheckCreditLimitsControl(AccountMaster_Code, TotalOrderAmount, 0, 'VISIT MASTER', 0, 0, 'Y', 0, 0, 'N', 0, 'N', 'N', 0, 'Y', 0, 0, 'SaveData',0,'','N','Y');
         }
     } else {
         SaveData();

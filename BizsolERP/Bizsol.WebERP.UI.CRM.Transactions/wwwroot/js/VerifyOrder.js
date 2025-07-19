@@ -14,6 +14,7 @@ let indx_DisType_DetailView = 18;
 let indx_DisType_DetailOutView = 22;
 let g_Code = 0;
 let g_Mode = '';
+let G_AskPassword = 'Y';
 $(document).ready(function () {
     $("#ERPHeading").text("Verify Order/Visit");
     GetNestedMarketingManList();
@@ -1187,7 +1188,11 @@ function ViewVerificationDetails(Code) {
             row.append('<td><b>' + field + '</b></td>');  // Add the field name as the first column
 
             row.append('<td>' + values[index] + '</td>');
-            tbody.append(row);
+
+            if (field.includes("Over Due Remark") == true && values[index]===""){ }
+            else {
+                tbody.append(row);
+            }
        
         });
 
@@ -1455,6 +1460,7 @@ function Verify(Code, element) {
     var ThreeLevelVerificationApplicable = CRM_Config.ThreeLevelVerificationApplicable;
     if (ThreeLevelVerificationApplicable == 'Y') {
         var OptionName = "VerifyL1"
+        G_AskPassword = 'N';
     } else {
         var OptionName = "Verify"
     }
@@ -1506,7 +1512,7 @@ function GPVerifyLv1(Code, e) {
         FinYear = getFinancialYear();
     var CRM_Config = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
     var DiscountLimit = CRM_Config.LimitForVerifyDiscount;
-    
+        G_AskPassword = 'N';
     VisitOrderEntryService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
 
         if (response.CheckModuleOptionRight == 'N') {
@@ -1559,6 +1565,7 @@ function AdminVerifyLv2(Code, element) {
         FinYear = getFinancialYear();
     var CRM_Config = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
     var DiscountLimit = CRM_Config.LimitForVerifyDiscount;
+    G_AskPassword = 'Y';
     VisitOrderEntryService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
 
         if (response.CheckModuleOptionRight == 'N') {
@@ -1618,13 +1625,15 @@ function VerifyForAll() {
     var Mode = g_Mode;
     var VisitMaster_OverdueOTPentered = $("#txtOverdueOTPentered" + Code).val();
     var FixedParameterCreditLimit_Config = JSON.parse(sessionStorage.getItem('FixedParameterCreditLimit'));
-    if (FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == 'Y' && VisitMaster_OverdueOTPentered=='N') {
+    var OverduePasswordRemark = '0';
+    if ((FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == 'Y' || FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == 'R') && VisitMaster_OverdueOTPentered=='N') {
         var OverduePasswordCode = CheckCreditLimitsControl_PasswordCode !== undefined && CheckCreditLimitsControl_PasswordCode !== '' ? CheckCreditLimitsControl_PasswordCode : 0;
+        OverduePasswordRemark = CheckCreditLimitsControl_Remark !== undefined && CheckCreditLimitsControl_Remark !== '' ? CheckCreditLimitsControl_Remark : '0';
     } else {
         var OverduePasswordCode = 0;
     }
 
-    VisitOrderEntryService.VerifyVisitOrder(Code, Mode, OverduePasswordCode).then(function (response) {
+    VisitOrderEntryService.VerifyVisitOrder(Code, Mode, OverduePasswordCode, OverduePasswordRemark).then(function (response) {
             if (response.Status === 'Y') {
                 toastr.success(response.Msg);
                 GetOrderVerifyData();
@@ -1902,7 +1911,7 @@ function getFinancialYear() {
 
 function InitCheckCreditLimitsControl(AccountMaster_Code, Amount, PreviousAmount, Source, PasswordsCodeRs, PasswordsCodeDays, ShowFormDialog, LedgerClosing, OverDueAmount
     , ShowOnlyOutstandingInfo, Log_OnLineVerification_Code, OnlyCheckCreditLimit, CheckBillingWithoutAdvance, AdvancePayPercentage
-    , EntryDesp, MasterTableCode, BuyerPOMaster_Code, CallBackFunctionName_btnDone,Code,Mode) {
+    , EntryDesp, MasterTableCode, BuyerPOMaster_Code, CallBackFunctionName_btnDone, Code, Mode, AskPassword) {
 
 
     var url = baseUrl + '/CustomControl/CheckCreditLimits';
@@ -1928,6 +1937,8 @@ function InitCheckCreditLimitsControl(AccountMaster_Code, Amount, PreviousAmount
         , CallBackFunctionName_btnDone: CallBackFunctionName_btnDone
         , Code: Code
         , Mode: Mode
+        , AskPassword: AskPassword
+        , AskRemark: 'Y'
 
     });
 
@@ -1942,9 +1953,12 @@ function ValidateOverdueAmount(ObjCurrRow) {
         var AccountMaster_Code = ObjCurrRow.find('input[name="txtDealerCode"]').val();
         var Config_CheckCreditLimit = FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == undefined || FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == '' ? 'N' : FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO;
 
-        if (Config_CheckCreditLimit == 'Y' && VisitMaster_OverdueOTPentered=='N') {
+
+        ///Config_CheckCreditLimit='R' means it will check credit limit only for Crm and Not Check in ERP
+
+        if ((Config_CheckCreditLimit == 'Y' || Config_CheckCreditLimit == 'R') && VisitMaster_OverdueOTPentered=='N') {
             if (TotalOrderAmount > 0) {
-                InitCheckCreditLimitsControl(AccountMaster_Code, TotalOrderAmount, 0, 'VISIT MASTER', 0, 0, 'Y', 0, 0, 'N', 0, 'N', 'N', 0, 'Y', 0, 0, 'VerifyForAll',0,'');
+                InitCheckCreditLimitsControl(AccountMaster_Code, TotalOrderAmount, 0, 'VISIT MASTER', 0, 0, 'Y', 0, 0, 'N', 0, 'N', 'N', 0, 'Y', 0, 0, 'VerifyForAll', 0, '', G_AskPassword);
             }
         } else {
             VerifyForAll();

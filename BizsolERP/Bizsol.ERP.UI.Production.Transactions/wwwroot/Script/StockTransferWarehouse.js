@@ -349,7 +349,7 @@ function InitScanQRCodeByCameraControl(outputQRTextElementID, callBackFunctionNa
 }
 function StrockTransferWarehouse_btnScanQR() {
 
-    InitScanQRCodeByCameraControl("txtScanIdentification", "StrockTransferWarehouse_CallbackScanQRCode");
+    InitScanQRCodeByCameraControl("ddlRollIdNo", "StrockTransferWarehouse_CallbackScanQRCode");
 }
 function StrockTransferWarehouse_CallbackScanQRCode() {
     StockTransferWherehouseReceive();
