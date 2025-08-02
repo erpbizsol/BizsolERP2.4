@@ -5,9 +5,11 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/PhysicalStockTaking.js"></script> 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 <style>
     .modal-dialog {
-        max-width: 1050px;
+        max-width: 750px;
     }
     .highlighted-date {
         background-color: #3926B6;
@@ -40,64 +42,104 @@
         margin-top: 2.1rem;
     }
 </style>
-<div class="tab-section">
-    <ul class="nav nav-tabs" id="myTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="true">Physical Stock Taking</button>
-        </li>
-    </ul>
-    <div class="tab-content" id="myTabContent">
-        <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
-            
-            <div class="row">
-                <input type="hidden" name="Code" id="Code" class="form-control" value="0">
-                <!-- Date -->
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label for="txtdate" class="col-form-label-sm fw-bold">Date:<span class="text-danger">*</span></label>
-                        <input id="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" required />
-                    </div>
-                </div>
-
-                <!-- Remarks -->
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="col-form-label-sm fw-bold required"><b>Remarks:<span class="text-danger">*</span></b></label>
-                        <input type="text" name="remarks" id="remarks" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Remarks" required/>
-                    </div>
-                </div>
-
-                <!-- Physical Warehouse -->
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="col-form-label-sm fw-bold required"><b>Physical Warehouse:</b><span class="text-danger">*</span></label>
-                        <datalist id="txtPhysicalWarehouseList"></datalist>
-                        <input list="txtPhysicalWarehouseList" id="txtPhysicalWarehouse" type="text" name="txtPhysicalWarehouse" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Physical Warehouse" required />
-                    </div>
-                </div>
-
-                <!-- Item Name -->
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="col-form-label-sm fw-bold required"><b>Item Name:</b><span class="text-danger">*</span></label>
-                        <input type="text" name="itemName" id="itemName" class="box_border form-control form-control-sm" autocomplete="off" maxlength="8" placeholder="Item Name" required />
-                    </div>
-                </div>
-
-                <!-- Scan Identification No -->
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="col-form-label-sm fw-bold required"><b>Scan Identification No:</b><span class="text-danger">*</span></label>
-                        <datalist id="txtScanIdentificationNoList"></datalist>
-                        <input list="txtScanIdentificationNoList" id="txtScanIdentificationNo" oninput="onScanIdSelect(event)" type="text" name="txtScanIdentificationNo" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Scan Identification No" required />
-                    </div>
-                </div>
-            </div>
-            
+<div id="dateWisePhysicalStock">
+    <div class="row">
+        @* <div class="col-sm-3 col-6"> *@
+        @*     <label for="from-date">From Date</label> *@
+        @*     <input type="date" class="form-control form-control-sm" id="txtFromDate"> *@
+        @* </div> *@
+        @* <div class="col-sm-3 col-6"> *@
+        @*     <label for="to-date">To Date</label> *@
+        @*     <input type="date" class="form-control form-control-sm" id="txtToDate"> *@
+        @* </div> *@
+        <div class="col-md-12 text-end">
+            <button type="button" onclick="CreateNew('0')" title="Create New" class="btn btn-primary btn-height">Create New</button>
+        </div>
+    </div>
+    <div id="tbldateWisePhysicalStock" class="mt-1">
+        <div class="table-wrapper fixed-height-table">
+            <table id="PhysicalStockTable" class="fixed-width-table table">
+                <thead id="table-header-tbldateWisePhysicalStock">
+                </thead>
+                <tbody id="table-body-tbldateWisePhysicalStock">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-PhysicalStockTable">
         </div>
     </div>
 </div>
-<div id="tblPhysicalStockTaking">
+
+<div id="newCreateForm" class="card" style="display:none">
+    <form class="card-body">
+        <div class="row">
+            <input type="hidden" name="Code" id="Code" class="form-control" value="0">
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtEntryNo" class="col-form-label-sm fw-bold">Entry No:<span class="text-danger">*</span></label>
+                    <input id="txtEntryNo" name="txtEntryNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Entry No" required readonly/>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtdate" class="col-form-label-sm fw-bold">Entry Date:<span class="text-danger">*</span></label>
+                    <input id="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" required />
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="remarks" class="col-form-label-sm fw-bold required">Entry Desp:<span class="text-danger">*</span></label>
+                    <input type="text" name="remarks" id="remarks" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Remarks" required />
+                </div>
+            </div>
+
+            <div class="col-md-3" id="PerameterBasedHideAndShow">
+                <div class="form-group" >
+                    <label for="ddlPhysicalWarehouse" class="col-form-label-sm fw-bold required">Physical Warehouse:<span class="text-danger">*</span></label>
+                    <select id="ddlPhysicalWarehouse" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+            </div>
+        </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                    <label for="ddlPhysicalType" class="col-form-label-sm fw-bold required">Physical Type:<span class="text-danger">*</span></label>
+                    <select id="ddlPhysicalType" class="form-control form-control-sm box_border" onchange="GetPhysicalType()">
+                        <option value="A" selected>All</option>
+                        <option value="ID">ID</option>
+                        <option value="Bu">Bundle</option>
+                        <option value="B">Batch</option>
+                    </select>
+                    </div>
+                </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="ddlItemName" class="col-form-label-sm fw-bold required">Item Name:<span class="text-danger">*</span></label>
+                    <select id="ddlItemName" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtScanIdentificationNo" class="col-form-label-sm fw-bold required">Scan Identification No:<span class="text-danger">*</span></label>
+                    <input type="text" id="txtScanIdentificationNo" name="txtCheckInTime" class="box_border BizSolFormControl form-control form-control-sm" value="" autocomplete="off" />
+                    <ul id="txtScanIdentificationNoList" class="AutoSuggestion-list"></ul>
+                </div>
+            </div>
+            <div class="col-md-3 text-end" style="margin-top:2rem">
+                <button type="button" class="btn btn-primary icon-height" onclick="PhysicalStock_Back()">Back</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div id="tblPhysicalStockTaking" style="display: none;">
     <div class="table-wrapper fixed-height-table">
         <table id="PhysicalStockTaking" class="fixed-width-table table">
             <thead id="table-header-PhysicalStockTaking">
@@ -108,4 +150,92 @@
     </div>
     <div class="paginator" id="paginator-PhysicalStockTaking">
     </div>
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Item</h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()">
+                    <span aria-hidden="true">x</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper">
+                    <table class="table">
+                        <tr>
+                            <th>Item Size</th>
+                            <th>Size Desp</th>
+                            <th>New Size</th>
+                            <th>Qty PC</th>
+                            <th>Qty MT</th>
+                            <th>Action</th>
+                        </tr>
+                        <tr>
+                            <td style="width:80px"><select id="ddlItemSize" class="form-control form-control-sm box_border"></select></td>                         
+                            <td><label id="ddlItemSize1"></label></td>
+                            <td><input type="button" class="form-control form-control-sm box_border btn btn-primary icon-height" value="New Size" onclick="NewSizeAddControl()" /></td>
+                            <td><input type="text" placeholder="Qty PC" id="SizeControlQtyPC" autocomplete="off" class="form-control form-control-sm box_border" oninput="validateInput(this)" maxlength="7" style="text-align:right" /></td>
+                            <td><input type="text" placeholder="Qty MT" id="SizeControlQtyMT" autocomplete="off" class="form-control form-control-sm box_border" oninput="validateDecimalInput(this)" style="text-align:right" /></td>
+                            <td><input type="button" class="form-control form-control-sm box_border btn btn-primary icon-height" value="ADD" onclick="NewAddSizePhysical_Stock()"/></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="tblAddPhysicalStock" style="display: none;">
+    <div class="table-wrapper fixed-height-table">
+        <table id="tblAddPhysicalStock" class="fixed-width-table table">
+            <thead id="table-header-tblAddPhysicalStock">
+            </thead>
+            <tbody id="table-body-tblAddPhysicalStock">
+            </tbody>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-tblAddPhysicalStock">
+    </div>
+</div>
+<div class="modal fade" id="ViewModal_Open" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Stock Audit Report</h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModalView_Physical()">
+                    <span aria-hidden="true">x</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="tblViewModal_Open" class="fixed-width-table table">
+                        <thead id="table-header-tblViewModal_Open">
+                        </thead>
+                        <tbody id="table-body-tblViewModal_Open">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-tblViewModal_Open">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-height" onclick="Physical_ExportButton()">Export</button>
+                <button type="button" class="btn btn-danger btn-height" onclick="CloseModalView_Physical()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="DivSizeControlmodal"></div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
 </div>

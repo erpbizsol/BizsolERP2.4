@@ -9,23 +9,27 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = Bizsol.WebERP.UI.Shared
 build_property.RootNamespace = Bizsol.WebERP.UI.Shared
-build_property.ProjectDir = D:\ERP2.4\BizsolERP\Bizsol.WebERP.UI.Shared\
+build_property.ProjectDir = D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.WebERP.UI.Shared\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = true
-build_property.MSBuildProjectDirectory = D:\ERP2.4\BizsolERP\Bizsol.WebERP.UI.Shared
+build_property.MSBuildProjectDirectory = D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.WebERP.UI.Shared
 build_property._RazorSourceGeneratorDebug = 
 
-[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.Shared/Views/CustomControl/_AttachmentControl.cshtml]
+[D:/All Project/BizsolERP2.4/BizsolERP/Bizsol.WebERP.UI.Shared/Views/CustomControl/_AttachmentControl.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ3VzdG9tQ29udHJvbFxfQXR0YWNobWVudENvbnRyb2wuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.Shared/Views/CustomControl/_SizeControl.cshtml]
+[D:/All Project/BizsolERP2.4/BizsolERP/Bizsol.WebERP.UI.Shared/Views/CustomControl/_BreakDownControl.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ3VzdG9tQ29udHJvbFxfQnJlYWtEb3duQ29udHJvbC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/All Project/BizsolERP2.4/BizsolERP/Bizsol.WebERP.UI.Shared/Views/CustomControl/_SizeControl.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ3VzdG9tQ29udHJvbFxfU2l6ZUNvbnRyb2wuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/ERP2.4/BizsolERP/Bizsol.WebERP.UI.Shared/Views/GridControl/_GridRowEditControl.cshtml]
+[D:/All Project/BizsolERP2.4/BizsolERP/Bizsol.WebERP.UI.Shared/Views/GridControl/_GridRowEditControl.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcR3JpZENvbnRyb2xcX0dyaWRSb3dFZGl0Q29udHJvbC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

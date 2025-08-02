@@ -1,8 +1,13 @@
 ﻿import { POApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/POApprovalService.js';
+let FrmType = '';
+let FrmAction = '';
 $(document).ready(function () {
     var urlParams = getUrlVars();
-    var menuValue = urlParams['menu'];
-    if (menuValue) {
+    var menuValue = decodeURI(urlParams['menu']);
+     FrmType = decodeURI(urlParams['FrmType']);
+     FrmAction = decodeURI(urlParams['FrmAction']);
+    
+    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
         $("#ERPHeading").text(menuValue);
     }
     else {
@@ -11,7 +16,7 @@ $(document).ready(function () {
     unApprovedPO();
 });
 function unApprovedPO() {
-    POApprovalService.GetUnApprovedPO().then(function (response) {
+    POApprovalService.GetUnApprovedPO(FrmAction, FrmType).then(function (response) {
         if (response && response.length > 0) {
             const stringFilterColumn = ["Party Name"];
             const numericFilterColumn = ["PO No"];
@@ -21,7 +26,7 @@ function unApprovedPO() {
             const showButtons = [];
             const hiddenColumns = ["Code"];
             const ColumnAlignment = {
-                "PO Amount": 'right',
+                "Total PO Amount": 'right',
                 "PO Date": 'center',
                 "PO No": 'center',
             };
@@ -43,11 +48,13 @@ function unApprovedPO() {
     });
 }
 function ViewData(Code) {
+    PODeliveryTermsDetails(Code);
     POApprovalService.GetPODetail(Code).then(function (response) {
         if (response && response.length > 0) {
             $('#myModal').modal({
                 backdrop: 'static',
             });
+            $('#hfCodeForBack').val(Code);
             $('#myModal').modal('show');
             const stringFilterColumn = [];
             const numericFilterColumn = [];
@@ -62,7 +69,11 @@ function ViewData(Code) {
                 "Dis. (%)":'right',
                 "Rate After Discount":'right',
                 "Amount":'right',
-                "Indent No":'right',
+                "Indent No": 'right',
+                "Last Purchased Qty":'right',
+                "Last PO Rate":'right',
+                "Last Po Date":'center',
+                "Amount":'right',
             };
             const updatedResponse = response.map(item => {
                 const showPOWithOutIndentButton = item.AllowPOWithOutIndent_RawMaterial_Code === 'N';
@@ -90,13 +101,37 @@ function ViewData(Code) {
         toastr.error("Error in fetching data:", error);
     });
 }
-
+function PODeliveryTermsDetails(Code) {
+    POApprovalService.GetPODeliveryTermsDetail(Code).then(function (response) {
+        if (response && response.length > 0) {
+            $('#myModal').modal({
+                backdrop: 'static',
+            });
+            $('#hfCodeForBack').val(Code);
+            $('#myModal').modal('show');
+            const stringFilterColumn = [];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+            const ColumnAlignment = {};
+            BizsolCustomFilterGrid.CreateDataTable("table-header-PoapprovalModal", "table-body-PoapprovalModal", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            $('#paginator-PoapprovalDeliveryTerms').hide();
+        } else {
+            toastr.error("No valid data found:", response);
+        }
+    }).catch(error => {
+        toastr.error("Error in fetching data:", error);
+    });
+}
 function CloseModal() {
     $('#myModal').modal('hide');
 }
 
 function Approval(Code) {
-    POApprovalService.POApproved(Code).then(function (approvedata) {
+    POApprovalService.POApproved(Code, FrmAction, FrmType).then(function (approvedata) {
         if (approvedata.Status === "Y") {
             toastr.success(approvedata.Msg);
             unApprovedPO();
@@ -126,9 +161,10 @@ function ViewHistory(ItemMaster_Code, itemsizemaster_Code) {
             const showButtons = [];
             const hiddenColumns = [];
             const ColumnAlignment = {
-                "PODate": "center",
-                "PONo": "center",
+                "PO Date": "center",
+                "PO No": "center",
                 "QtyMT": "right",
+                "Rate": "right",
             };
             BizsolCustomFilterGrid.CreateDataTable("table-header-PoaprrovalHistory", "table-body-PoaprrovalHistory", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
         } else {
@@ -185,6 +221,11 @@ function getUrlVars() {
     return vars;
 }
 
+function BackButton() {
+    var Code = $('#hfCodeForBack').val();
+    $('#myHistoryModal').modal('hide');
+    ViewData(Code);
+}
 window.ViewData = ViewData;
 window.CloseModal = CloseModal;
 window.Approval = Approval;
@@ -192,3 +233,4 @@ window.ViewHistory = ViewHistory;
 window.CloseHistoryModal = CloseHistoryModal;
 window.POWithOutIndent = POWithOutIndent;
 window.AttchmentFile = AttchmentFile;
+window.BackButton = BackButton;
