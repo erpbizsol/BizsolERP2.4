@@ -3713,7 +3713,7 @@ function ShowLogicalStockModal() {
             });
 
             const StringFilterColumn = ["Item Name", "Size Desp", "SIZE", "Thickness"];
-            const NumericFilterColumn = ["Balance Qty"];
+            const NumericFilterColumn = ["Balance Qty","Rolling Forcast"];
             const DateFilterColumn = [];
             const Button = false;
             const showButtons = [];

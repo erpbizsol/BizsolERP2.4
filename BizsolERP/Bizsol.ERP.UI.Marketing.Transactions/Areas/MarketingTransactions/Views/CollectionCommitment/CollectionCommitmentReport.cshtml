@@ -1,0 +1,57 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/CollectionCommitmentReport.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
+<style>
+    .without-label-field {
+        margin-top: 2.1rem;
+    }
+</style>
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtFromDate" class="col-form-label-sm fw-bold required"><b>From Date:</b><span class="text-danger">*</span></label>
+                    <input type="date" id="txtFromDate" name="FromDate" class="form-control form-control-sm box_border" autocomplete="off" required />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtToDate"  class="col-form-label-sm fw-bold"><b>To Date:<span class="text-danger">*</span></b></label>
+                    <input type="date" id="txtToDate" name="ToDate" class="form-control form-control-sm box_border" autocomplete="off" required />
+                </div>
+            </div>
+            <div class="col-md-2 without-label-field">
+                <input type="button" id="btnShow" class="btn btn-primary btn-height" value="Show">
+                <input type="button" id="btnDownload" class="btn btn-success btn-height" value="Download">
+                <input type="button" id="btnBack" class="btn btn-success btn-height" value="Back">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-wrapper fixed-height-table">
+    <table id="tbCollectionCommitmentReport" class="fixed-width-table table">
+        <thead id="tableheader-CollectionCommitmentReport">
+        </thead>
+        <tbody id="tablebody-CollectionCommitmentReport">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-tbCollectionCommitmentReport">
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
+</div>

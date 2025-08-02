@@ -31,5 +31,13 @@ namespace Bizsol.WebERP.UI.CRM.Transactions.Areas.CRMTransactions.Controllers
 
             return View();
         }
+        public IActionResult ExpenseEntryConfiguration()
+        {
+            return View();
+        }
+        public IActionResult ExpenseHeadMaster()
+        {
+            return View();
+        }
     }
 }

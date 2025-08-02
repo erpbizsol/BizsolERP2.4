@@ -36,6 +36,14 @@ const CollectionCommitmentService = {
             }
         );
     },
+    CollectionCommitmentReportTable: function CollectionCommitmentReportTable(FromDate, ToDate) {
+        var URL = UrlService.API_ENDPOINT_CollectionCommitment + "/CollectionCommitmentReportTable?FromDate=" + FromDate + "" + "&ToDate=" + ToDate + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { CollectionCommitmentService }
