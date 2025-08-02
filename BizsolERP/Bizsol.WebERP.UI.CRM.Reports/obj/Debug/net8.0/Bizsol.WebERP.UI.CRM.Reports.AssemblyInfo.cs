@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Bizsol.WebERP.UI.CRM.Reports")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b551227c2465ec012823748657ad9e363be3737f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6ff2258cadb2efdc667b85abc3d287f5e9412b36")]
 [assembly: System.Reflection.AssemblyProductAttribute("Bizsol.WebERP.UI.CRM.Reports")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Bizsol.WebERP.UI.CRM.Reports")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

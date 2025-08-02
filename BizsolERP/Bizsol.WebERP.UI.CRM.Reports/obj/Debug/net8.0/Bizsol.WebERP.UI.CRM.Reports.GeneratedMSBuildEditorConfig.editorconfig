@@ -38,6 +38,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNUmVwb3J0c1xWaWV3c1xSZXBvcnRcR2V0RGFpbHlWaXNpdFJlcG9ydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/All Project/BizsolERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/Report/OrderReport.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNUmVwb3J0c1xWaWV3c1xSZXBvcnRcT3JkZXJSZXBvcnQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/All Project/BizsolERP2.4/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/Report/StockReport.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNUmVwb3J0c1xWaWV3c1xSZXBvcnRcU3RvY2tSZXBvcnQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
