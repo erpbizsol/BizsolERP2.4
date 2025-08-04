@@ -1,0 +1,56 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/ExpenseHeadMaster.js"></script>
+
+<div id="locateExpenseHeadMaster">
+    <div class="card col-md-8">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3" style="margin-top:2.1rem">
+                    <button type="button" onclick="CreateNew_ExpenseHeadMaster()" title="Create New" class="btn btn-primary btn-height">Create New</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-8">
+            <div id="tblExpenseHeadMaster">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="ExpenseHeadMaster" class="fixed-width-table table">
+                        <thead id="table-header-ExpenseHeadMaster">
+                        </thead>
+                        <tbody id="table-body-ExpenseHeadMaster">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-ExpenseHeadMaster">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="newCreateForm" class="card" style="display:none">
+    <form class="card-body">
+        <div class="row">
+            <input type="hidden" name="Code" id="Code" class="form-control" value="0">
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtExpenseDescription" class="col-form-label-sm fw-bold">Expense Description:<span class="text-danger">*</span></label>
+                    <input id="txtExpenseDescription" type="text" name="txtExpenseDescription" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Designation Code" maxlength="11" required />
+                </div>
+            </div>
+
+            <div class="col-md-9 text-end" style="margin-top:2rem">
+                <button type="button" onclick="submit_ExpenseHeadMaster()" id="saveExpenseHeadMasterButton" title="Save" class="btn btn-primary btn-height">Save</button>
+                <button type="button" class="btn btn-primary btn-height" title="Back" onclick="ExpenseHeadMaster_Back()">Back</button>
+            </div>
+        </div>
+    </form>
+</div>
