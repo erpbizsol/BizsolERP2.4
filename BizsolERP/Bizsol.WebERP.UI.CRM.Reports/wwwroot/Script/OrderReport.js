@@ -198,7 +198,7 @@ function GetReportData() {
             $('#tblOrderReport').show();
             $('#paginator-tblOrderReport').show();
 
-            const StringFilterColumn = ["Party Name","Order No","Sales Person","City","Transporter Name","Vehicle No"];
+            const StringFilterColumn = ["Party Name", "Order No", "Sales Person", "City", "Transporter Name", "Vehicle No","Status"];
             const NumericFilterColumn = [];
             const DateFilterColumn = ["Invoice Date"];
             const Button = false;

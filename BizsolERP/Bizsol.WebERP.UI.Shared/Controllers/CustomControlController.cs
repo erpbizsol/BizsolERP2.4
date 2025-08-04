@@ -112,5 +112,13 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             return PartialView("_ScanQRCodeByCameraControl");
 
         }
+        public ActionResult SelectMachineToGetWeightControl(string OutputTextElementID)
+        {
+
+            ViewBag.OutputTextElementID = OutputTextElementID;
+
+            return PartialView("_SelectMachineToGetWeightControl");
+
+        }
     }
 }
