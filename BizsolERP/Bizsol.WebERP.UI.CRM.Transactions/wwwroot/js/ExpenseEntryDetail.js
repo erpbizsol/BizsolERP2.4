@@ -14,6 +14,7 @@ const Indx_Tbl = {
     ExpenseEntryDetail_Code: 9,
     ExpenseHeadMaster_Code: 10
 }
+var MarketingPersonName = param_MarketingMan_Name;
 
 $(document).ready(function () {
     $("#ERPHeading").text("Expense Entry Details");
@@ -39,10 +40,10 @@ $(document).ready(function () {
 
         }
     });
-
     PopulateExpenseHeadDetails(param_ExpenseEntryMaster_Code);
 
     $('#btnBack').click(function (e) {
+        $('#ddlMarketingMan').val(MarketingPersonName);
         window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
     });
 
@@ -76,7 +77,6 @@ function DisableControls() {
     }
 }
 function PopulateExpenseHeadDetails(Code) {
-    var MarketingPersonName = param_MarketingMan_Name;
 
     ExpenseEntryService.GetExpenseEntryDetails(MarketingPersonName, Code).then(function (response) {
         if (response.ExpenseEntryDetail.length > 0) {
@@ -86,18 +86,19 @@ function PopulateExpenseHeadDetails(Code) {
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Designation Name", "Per Day Limit", "VerifyStatus", "ExpenseEntryDetail_Code", "ExpenseHeadMaster_Code","Attachment"];
+            const hiddenColumns = ["Designation Name", "Per Day Limit", "VerifyStatus", "ExpenseEntryDetail_Code", "ExpenseHeadMaster_Code", "Attachment","Effective From"];
             const ColumnAlignment = {
-                "Allowed Amount": "right",
-                "Approved Amount": "right",
+                "Allowed Amount": "center",
+                "Approved Amount": "center",
                 "Effective From": "center",
-                "Expense Amount": "right"
+                "Expense Amount": "center",
+                "Remarks" : "center"
             };
             response.ExpenseEntryDetail.forEach((item, index) => {
                 item["Per Day Limit"] = `<input type="number" id="txtPerDay" data-index="${index}" value="${item["Per Day Limit"] || 0}" class="bal-mt-input" readonly="readonly" autocomplete="off">`;
                 item["Allowed Amount"] = `<input type="number" id="txtAllowedAmount" data-index="${index}" value="${item["Allowed Amount"] || 0}" class="bal-mt-input" readonly="readonly" autocomplete="off">`;
                 item["Expense Amount"] = `<input type="number" id="txtExpendedAmount" data-index="${index}" value="${item["Expense Amount"] || 0}" class="bal-mt-input" onfocusout="CalculateApprovedAmount(this);" autocomplete="off">`;
-                item["Approved Amount"] = `<input type="number" id="txtApprovedAmount" data-index="${index}" value="${item["Approved Amount"] || 0}" class="bal-pc-input" autocomplete="off">`;
+                item["Approved Amount"] = `<input type="number" id="txtApprovedAmount" data-index="${index}" value="${item["Approved Amount"] || 0}" class="bal-pc-input" readonly="readonly" autocomplete="off">`;
                 item["Remarks"] = `<input type="text" id="txtRemarks" data-index="${index}" value="${item["Remarks"]}" class="bal-mtrs-input" autocomplete="off">`;
                 item["Attachment"] = `<a id="btnAttachment" class="btn btn-success icon-height mb-1" title="Attachment" onclick="ViewAttachment(this)"><i class="fa fa-paperclip" aria-hidden="true"></i></a>`;
             });
@@ -142,6 +143,20 @@ function CalculateApprovedAmount(x) {
         ApprovedAmount = AllowedAmount;
     }
     ObjCurrRow.find('#txtApprovedAmount').val(ApprovedAmount);
+
+    if (parseFloat(AllowedAmount) < parseFloat(ExpendedAmount)) {
+        let ExpendedAmountGreater = confirm("The amount exceeds the allowed amount! Do you want to proceed with this !");
+        if (ExpendedAmountGreater) {
+            if (parseFloat(AllowedAmount) < parseFloat(ExpendedAmount)) {
+                ApprovedAmount = AllowedAmount;
+            }
+            ObjCurrRow.find('#txtApprovedAmount').val(ApprovedAmount);
+        }
+        else {
+            ObjCurrRow.find('#txtApprovedAmount').val(0);
+        }
+    }
+    
 }
 
 function setupDateInputFormatting() {
@@ -516,27 +531,34 @@ function SaveData() {
 function ValidateData() {
     var TotalDays = $('#txtTotalDays').val();
     var TotalAllowed = 0;
+    var TotalApproved = 0;
     var TotalExp = 0;
 
-    if (TotalDays < 1) {
+    if (TotalDays < 0) {
         toastr.error("Please select a valid range of dates.");
         return false;
     }
-
+    
     $("#ExpenseEntryDetails tbody tr").each(function (index, row) {
         var AllowedAmount = $(this).find('td:eq(' + Indx_Tbl.AllowedAmount + ')')[0].getElementsByTagName('input')[0].value;
         var ExpenseAmount = $(this).find('td:eq(' + Indx_Tbl.ExpenseAmount + ')')[0].getElementsByTagName('input')[0].value;
+        var ApprovedAmount = $(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')')[0].getElementsByTagName('input')[0].value;
 
         TotalAllowed += parseFloat(AllowedAmount);
         TotalExp += parseFloat(ExpenseAmount);
+        TotalApproved += parseFloat(ApprovedAmount);
 
     });
-    if (TotalAllowed <= 0) {
+    if (TotalAllowed < 0) {
         toastr.error("Invalid Allowed Amount.");
         return false;
     }
-    if (TotalExp <= 0) {
+    if (TotalExp < 0) {
         toastr.error("Invalid Expense Amount.");
+        return false;
+    }
+    if (TotalApproved > TotalExp) {
+        toastr.warning("Approved amount can not greater then expended amount");
         return false;
     }
     return true;
