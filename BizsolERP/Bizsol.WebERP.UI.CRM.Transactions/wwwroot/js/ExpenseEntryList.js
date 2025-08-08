@@ -74,7 +74,7 @@ $(document).ready(function () {
 
     $('#btnExpenseEntryConfig').click(function (e) {
 
-        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryConfiguration";
+        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseHeadMaster";
 
     });
  });
