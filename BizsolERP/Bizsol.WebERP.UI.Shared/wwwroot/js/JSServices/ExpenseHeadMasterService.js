@@ -3,30 +3,16 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 
 const ExpenseHeadMasterService = {
-    GetExpenseHeadMaster: function GetExpenseHeadMaster() {
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_ExpenseHeadMaster + `/GetExpenseHeadMaster`;
-        
+    GetExpenseHeadMasterList: function GetExpenseHeadMasterList() {
+        var URL = UrlService.API_ENDPOINT_ExpenseHeadMaster + "/GetExpenseHeadList";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
             }
         );
     },
-    SaveExpenseHeadMaster: function SaveExpenseHeadMaster(Data) {
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var userMasterCode = authKeyData.UserMaster_Code;
-        var json_data = JSON.stringify(Data, null, 2);
-        var URL = UrlService.API_ENDPOINT_ExpenseHeadMaster + `/SaveExpenseHeadMaster`;
-        return promiseAjaxCallApi.CallAPI('POST', URL, json_data).then(
-            function (value) {
-                return value;
-            }
-        );
-    },
-    GetExpenseHeadMasterList: function GetExpenseHeadMasterList(Status) {
-        var URL = UrlService.API_ENDPOINT_ExpenseHeadMaster + "/GetExpenseHeadMasterList?Status=" + Status + "";
+    GetDESIGNATIONAMEList: function GetDESIGNATIONAMEList() {
+        var URL = UrlService.API_ENDPOINT_ExpenseHeadMaster + "/GetDESIGNATIONAMEList";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -42,8 +28,11 @@ const ExpenseHeadMasterService = {
         );
     },
     SaveExpenseHeadMaster: function SaveExpenseHeadMaster(Data) {
-        var URL = UrlService.API_ENDPOINT_ExpenseHeadMaster + "/SaveExpenseHeadMaster";
-        return promiseAjaxCallApi.CallAPI('POST', URL, Data).then(
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var json_data = JSON.stringify(Data, null, 2);
+        var URL = UrlService.API_ENDPOINT_ExpenseHeadMaster + `/SaveExpenseHeadMaster`;
+        return promiseAjaxCallApi.CallAPI('POST', URL, json_data).then(
             function (value) {
                 return value;
             }

@@ -96,9 +96,9 @@ function PopulateExpenseHeadDetails(Code) {
             };
             response.ExpenseEntryDetail.forEach((item, index) => {
                 item["Per Day Limit"] = `<input type="number" id="txtPerDay" data-index="${index}" value="${item["Per Day Limit"] || 0}" class="bal-mt-input" readonly="readonly" autocomplete="off">`;
-                item["Allowed Amount"] = `<input type="number" id="txtAllowedAmount" data-index="${index}" value="${item["Allowed Amount"] || 0}" class="bal-mt-input" readonly="readonly" autocomplete="off">`;
-                item["Expense Amount"] = `<input type="number" id="txtExpendedAmount" data-index="${index}" value="${item["Expense Amount"] || 0}" class="bal-mt-input" onfocusout="CalculateApprovedAmount(this);" autocomplete="off">`;
-                item["Approved Amount"] = `<input type="number" id="txtApprovedAmount" data-index="${index}" value="${item["Approved Amount"] || 0}" class="bal-pc-input" readonly="readonly" autocomplete="off">`;
+                item["Allowed Amount"] = `<input type="number" id="txtAllowedAmount" data-index="${index}" value="${item["Allowed Amount"] || 0}" class="bal-mt-input" readonly="readonly" autocomplete="off" style="text-align: right;">`;
+                item["Expense Amount"] = `<input type="number" id="txtExpendedAmount" data-index="${index}" value="${item["Expense Amount"] || 0}" class="bal-mt-input" onfocusout="CalculateApprovedAmount(this);" autocomplete="off" style="text-align: right;">`;
+                item["Approved Amount"] = `<input type="number" id="txtApprovedAmount" data-index="${index}" value="${item["Approved Amount"] || 0}" class="bal-pc-input" readonly="readonly" autocomplete="off" style="text-align: right;">`;
                 item["Remarks"] = `<input type="text" id="txtRemarks" data-index="${index}" value="${item["Remarks"]}" class="bal-mtrs-input" autocomplete="off">`;
                 item["Attachment"] = `<a id="btnAttachment" class="btn btn-success icon-height mb-1" title="Attachment" onclick="ViewAttachment(this)"><i class="fa fa-paperclip" aria-hidden="true"></i></a>`;
             });
