@@ -97,6 +97,7 @@ let UrlService = {
     API_ENDPOINT_QualityCheck: `${environment.BASE_URL}/QualityCheck`,
     API_ENDPOINT_CollectionCommitment: `${environment.BASE_URL}/CollectionCommitment`,
     API_ENDPOINT_ExpenseHeadMaster: `${environment.BASE_URL}/ExpenseHeadMaster`,
+    API_ENDPOINT_Weighment: `${environment.BASE_URL}/Weighment`,
 }
 
 export { UrlService  }
