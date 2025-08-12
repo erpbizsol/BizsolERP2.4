@@ -104,7 +104,6 @@ function CollectionCommitmentTableShow() {
 
                 BizsolCustomFilterGrid.CreateDataTable("table-header-CollectionCommitment", "tablebody-CollectionCommitment", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
                 $('#btnSave').show();
-                PopulateTableForPrint(response);
             } else {
                 HideLoader();
                 toastr.error("Data Not Found");
@@ -116,6 +115,7 @@ function CollectionCommitmentTableShow() {
         HideLoader();
         console.log(error.Msg || 'Error during Collection Commitment');
         $("#tbCollectionCommitment").hide();
+        $("#paginator-tbCollectionCommitment").hide();
         $('#btnSave').hide();
         });
 }
