@@ -13,6 +13,7 @@
             <div class="row">
                 <div class="col-md-12 text-end">
                     <button type="button" onclick="CreateNew_ExpenseHeadMaster()" title="Create New" class="btn btn-primary btn-height">Create New</button>
+                    <button type="button" id="btnExpenseEntryListDetails" title="Back" class="btn btn-primary btn-height">Back</button>
                 </div>
             </div>
         </div>
@@ -69,7 +70,7 @@
             <div class="col-md-3">
                 <div class="form-group">
                     <label for="txtPerDayLimit" class="col-form-label-sm fw-bold">Per Day Limit:<span class="text-danger">*</span></label>
-                    <input id="txtPerDayLimit" type="text" name="txtPerDayLimit" class="box_border form-control form-control-sm" autocomplete="off" maxlength="8" oninput="validateDecimalInput(this)" required />
+                    <input id="txtPerDayLimit" type="text" name="txtPerDayLimit" class="box_border form-control form-control-sm text-end" autocomplete="off" maxlength="8" oninput="validateDecimalInput(this)" required />
                 </div>
             </div>
 

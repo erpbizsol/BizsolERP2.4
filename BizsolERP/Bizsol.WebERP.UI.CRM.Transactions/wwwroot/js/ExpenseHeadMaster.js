@@ -89,7 +89,10 @@ function GetExpenseHeadMasterByCode(G_ExpenseHeadMaster) {
             const showButtons = [];
             const StringdoubleFilterColumn = [];
             const hiddenColumns = ["Code"];
-            const ColumnAlignment = {};
+            const ColumnAlignment = {
+                "Per Day Limit": 'right',
+                "Effective From": 'center',
+            };
 
             BizsolCustomFilterGrid.CreateDataTable("table-header-ExpenseHeadLimitDetails", "table-body-ExpenseHeadLimitDetails", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
             if (data.DesignationName) {
@@ -154,7 +157,7 @@ function BindSelectList(element, list) {
     element.innerHTML = option;
 }
 function ClearFormData() {
-    $('#txtExpenseDescription').val('');
+    //$('#txtExpenseDescription').val('');
     $('#txtPerDayLimit').val('');
 }
 function submit_ExpenseHeadMaster() {
@@ -202,49 +205,11 @@ function submit_ExpenseHeadMaster() {
             }
         });
 }
-//function submit_ExpenseHeadMaster() {
-//    let code = G_ExpenseHeadMaster;
-//    let ExpenseDescription = $('#txtExpenseDescription').val();
-//    let designationCode = $('#txtDesignation').val();
-//    let G_Date = $('#txtEffectiveDate').val();
-//    let PerDayLimit = $('#txtPerDayLimit').val();
+$('#btnExpenseEntryListDetails').click(function (e) {
 
-//    if (!ExpenseDescription) {
-//        toastr.warning('Please Fill The Expense Description.');
-//        return;
-//    }
+    window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
 
-//    let payLoadData = {
-//        expenseHeadMaster: [
-//            {
-//                code: parseInt(code),
-//                expenseDesp: ExpenseDescription
-//            }
-//        ]
-//    };
-
-//    if (designationCode && parseInt(designationCode) !== 0 &&G_Date && G_Date.trim() !== '' &&PerDayLimit && parseFloat(PerDayLimit) !== 0) {
-//        payLoadData.expenseHeadLimitDetails = [
-//            {
-//                designationMaster_Code: parseInt(designationCode),
-//                effectiveFrom: G_Date,
-//                perDayLimit: parseFloat(PerDayLimit)
-//            }
-//        ];
-//    }
-
-//    ExpenseHeadMasterService.SaveExpenseHeadMaster(payLoadData)
-//        .then(function (response) {
-//            if (response.Status === 'Y') {
-//                toastr.success(response.Msg);
-//                ClearFormData();
-//                GetExpenseHeadMasterByCode(G_ExpenseHeadMaster);
-//            } else if (response.Status === 'N') {
-//                toastr.warning(response.Msg);
-//            }
-//        });
-//}
-
+});
 
 window.GetExpenseHeadMasterTable = GetExpenseHeadMasterTable;
 window.EditData = EditData;
