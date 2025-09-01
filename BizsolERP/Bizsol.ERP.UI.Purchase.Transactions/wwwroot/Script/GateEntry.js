@@ -1770,6 +1770,28 @@ function EnableScaleWeight() {
     
 }
 
+function applyAlphaNumUppercase(selector) {
+    document.querySelectorAll(selector).forEach(input => {
+
+        // Block invalid characters on keypress
+        input.addEventListener("keypress", function (e) {
+            const char = String.fromCharCode(e.which);
+            if (!/[a-zA-Z0-9]/.test(char)) {
+                e.preventDefault();
+            }
+        });
+
+        // Handle paste & enforce uppercase
+        input.addEventListener("input", function () {
+            this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        });
+
+    });
+}
+
+// Apply to all inputs with this class
+applyAlphaNumUppercase(".alphanum-uppercase");
+
 window.GateEntyMode_GateEntry = GateEntyMode_GateEntry
 window.GateEntryGirdByDates = GateEntryGirdByDates
 window.ViewAttachment_GateEntry = ViewAttachment_GateEntry

@@ -397,8 +397,8 @@ const VisitOrderEntryService = {
             }
         );
     },
-    GetBasicRateExtraCharges: function GetBasicRateExtraCharges(ItemName,Size, Thickness,DealerName,ItemSizeMaster_code) {
-        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetBasicRateExtraCharges?ItemName=${encodeURIComponent(ItemName)}&Size=${encodeURIComponent(Size)}&Thickness=${encodeURIComponent(Thickness)}&DealerName=${encodeURIComponent(DealerName)}&ItemSizeMaster_code=${ItemSizeMaster_code}`;
+    GetBasicRateExtraCharges: function GetBasicRateExtraCharges(ItemName,Size, Thickness,DealerName,ItemSizeMaster_code,UOM) {
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetBasicRateExtraCharges?ItemName=${encodeURIComponent(ItemName)}&Size=${encodeURIComponent(Size)}&Thickness=${encodeURIComponent(Thickness)}&DealerName=${encodeURIComponent(DealerName)}&ItemSizeMaster_code=${ItemSizeMaster_code}&UOM=${UOM}`;
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
                 return value;
@@ -513,7 +513,26 @@ const VisitOrderEntryService = {
                 return value;
             }
         );
+    },
+    GetWeightPerPCByItemSizeMasterCode: function GetWeightPerPCByItemSizeMasterCode(ItemSizeMaster_Code) {
+
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetWeightPerPCByItemSizeMasterCode?ItemSizeMaster_Code=${ItemSizeMaster_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetDefaultItemSizeMasterCode: function GetDefaultItemSizeMasterCode(ItemMaster_Code, Size, Thickness) {
+
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetDefaultItemSizeMasterCode?ItemMaster_Code=${ItemMaster_Code}&Size=${Size}&Thickness=${Thickness}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
     }
+
 }
 
 export { VisitOrderEntryService }
