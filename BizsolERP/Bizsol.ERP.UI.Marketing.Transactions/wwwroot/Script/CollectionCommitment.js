@@ -1,5 +1,7 @@
 ﻿import { CollectionCommitmentService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CollectionCommitmentService.js';
+import { OrderEntryListService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/OrderEntryListService.js';
 
+var baseUrl = sessionStorage.getItem('AppBaseURL');
 let G_todayDate = '';
 $(document).ready(function () {
     $("#ERPHeading").text("Collection Commitment");
@@ -17,7 +19,22 @@ $(document).ready(function () {
     $('#btnShow').click(function () {
         CollectionCommitmentTableShow();
     });
-    
+    $('#btnReport').click(function () {
+        var ModuleName = "Target (Dealer Wise)",
+            OptionName = "Report",
+            ShowMsg = "Y",
+            FinYear = getFinancialYear();
+        OrderEntryListService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+
+            if (response.CheckModuleOptionRight == 'N') {
+                toastr.error(response.Msg);
+                return false;
+            } else {
+                window.location = baseUrl + "/MarketingTransactions/CollectionCommitment/CollectionCommitmentReport";
+            }
+
+        });
+    });
 });
 function OrderByType() {
     CollectionCommitmentService.CollectionCommitmentOrderByList().then(function (response) {
@@ -33,6 +50,18 @@ function OrderByType() {
     }).catch(function (error) {
         console.log('Error fetching user list:', error);
     });
+}
+function getFinancialYear() {
+    var currentDate = new Date();
+    var currentMonth = currentDate.getMonth(); 
+
+    var startYear = currentDate.getFullYear();
+
+    if (currentMonth < 3) {
+        startYear = startYear - 1; 
+    }
+
+    return startYear + "-" + (startYear + 1);
 }
 function CollectionCommitmentTableShow() {
     let TxtOrderBy = $('#ddlOrderBy').val();
@@ -86,6 +115,7 @@ function CollectionCommitmentTableShow() {
         HideLoader();
         console.log(error.Msg || 'Error during Collection Commitment');
         $("#tbCollectionCommitment").hide();
+        $("#paginator-tbCollectionCommitment").hide();
         $('#btnSave').hide();
         });
 }

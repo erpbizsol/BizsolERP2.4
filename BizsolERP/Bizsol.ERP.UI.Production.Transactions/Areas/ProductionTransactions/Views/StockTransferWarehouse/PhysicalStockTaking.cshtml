@@ -128,11 +128,14 @@
             <div class="col-md-3">
                 <div class="form-group">
                     <label for="txtScanIdentificationNo" class="col-form-label-sm fw-bold required">Scan Identification No:<span class="text-danger">*</span></label>
-                    <input type="text" id="txtScanIdentificationNo" name="txtCheckInTime" class="box_border BizSolFormControl form-control form-control-sm" value="" autocomplete="off" />
+                    <input type="text" id="txtScanIdentificationNo" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" autocomplete="off" />
                     <ul id="txtScanIdentificationNoList" class="AutoSuggestion-list"></ul>
                 </div>
             </div>
             <div class="col-md-3 text-end" style="margin-top:2rem">
+                <a class="btn btn-secondary btn-height" id="btnScanQR" onclick="PhysicalStockTacking_btnScanQR()">
+                    Scan QR
+                </a>
                 <button type="button" class="btn btn-primary icon-height" onclick="PhysicalStock_Back()">Back</button>
             </div>
         </div>
@@ -230,6 +233,7 @@
     </div>
 </div>
 <div id="DivSizeControlmodal"></div>
+<div id="DivScanQRCodeByCameraControlModal"></div>
 <div class="table-wrapper fixed-height-table" hidden="hidden">
     <table id="tblReport" hidden="hidden">
         <thead id="table-headerPrint">

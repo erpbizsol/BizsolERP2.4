@@ -5,6 +5,7 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/CollectionCommitment.js"></script>
+
 <style>
     .without-label-field {
         margin-top: 2.1rem;
@@ -28,6 +29,7 @@
             <div class="col-md-2 without-label-field">
                 <input type="button" id="btnShow" class="btn btn-primary btn-height" value="Show">
                 <input type="button" id="btnSave" class="btn btn-success btn-height" value="Save" onclick="UpdateCommitmentAmount()">
+                <input type="button" id="btnReport" class="btn btn-success btn-height" value="Report">
             </div>
         </div>
     </div>
@@ -42,4 +44,13 @@
     </table>
 </div>
 <div class="paginator" id="paginator-tbCollectionCommitment">
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
 </div>

@@ -21,6 +21,9 @@ let GateEntryImageDetail = [{
     ImgOther: []
 
 }];
+
+let baseUrl = sessionStorage.getItem('AppBaseURL');
+
 function GateEntryGirdByDates() {
 
     let FromDate = $('#txtFromDate').val(), Todate = $('#txtToDate').val();
@@ -79,6 +82,7 @@ GateEntryService.GetMinPending().then(function (response) {
     GateEntryGirdByDates();
     GetConfigGateEntry();
     LockDocumntFutureDate();
+    
 });
 
 function ViewAttachment_GateEntry(GateEntryMaster_Code, sourceDownloadFileName) {
@@ -539,6 +543,7 @@ function setGateEntryParamater(element, PeramaterName, PeramaterValue) {
 function GetConfigGateEntry() {
     GateEntryService.GetConfigGateEntry().then(function (response) {
         ConfigGateEntry = response;
+        EnableScaleWeight();
     });
 }
 
@@ -1743,7 +1748,49 @@ function LockDocumntFutureDate() {
     $('#frmLoadedIn_txtEWayBillDate').attr('min', MinDate);
     $('#frmLoadedOut_txtEWayBillDate').attr('min', MinDate);
 }
+function GateEntry_InitSelectMachineToGetWeightControl(outputTextElementID) {
+    let url = baseUrl + '/CustomControl/SelectMachineToGetWeightControl';
 
+    $('#GateEntry_DivSelectMachineToGetWeightControl').load(url, { OutputTextElementID: outputTextElementID });
+
+}
+function EnableScaleWeight() {
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'WeightByScale').PeramaterValue === 'Y') {
+        // Enable the scale weight button
+        $('#btnScaleWeigh_frmEmptyIn_txtVehicleEmptyWeight').show();
+        $('#btnScaleWeigh_frmLoadedOut_txtVehicleLoadedWeight').show();
+        $('#btnScaleWeigh_frmLoadedIn_txtVehicleLoadedWeight').show();
+        $('#btnScaleWeigh_frmEmptyOut_txtVehicleEmptyWeight').show();
+    } else {
+        $('#btnScaleWeigh_frmEmptyIn_txtVehicleEmptyWeight').hide();
+        $('#btnScaleWeigh_frmLoadedOut_txtVehicleLoadedWeight').hide();
+        $('#btnScaleWeigh_frmLoadedIn_txtVehicleLoadedWeight').hide();
+        $('#btnScaleWeigh_frmEmptyOut_txtVehicleEmptyWeight').hide();
+    }
+    
+}
+
+function applyAlphaNumUppercase(selector) {
+    document.querySelectorAll(selector).forEach(input => {
+
+        // Block invalid characters on keypress
+        input.addEventListener("keypress", function (e) {
+            const char = String.fromCharCode(e.which);
+            if (!/[a-zA-Z0-9]/.test(char)) {
+                e.preventDefault();
+            }
+        });
+
+        // Handle paste & enforce uppercase
+        input.addEventListener("input", function () {
+            this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        });
+
+    });
+}
+
+// Apply to all inputs with this class
+applyAlphaNumUppercase(".alphanum-uppercase");
 
 window.GateEntyMode_GateEntry = GateEntyMode_GateEntry
 window.GateEntryGirdByDates = GateEntryGirdByDates
@@ -1753,3 +1800,4 @@ window.setGateEntryParamater = setGateEntryParamater
 window.GateEntry_rdPOAccess_onClick = GateEntry_rdPOAccess_onClick
 window.GateEntry_SaveData = GateEntry_SaveData
 window.GateEntry_frmLoadedIn_ddlPurchaseOrder_Change = GateEntry_frmLoadedIn_ddlPurchaseOrder_Change
+window.GateEntry_InitSelectMachineToGetWeightControl = GateEntry_InitSelectMachineToGetWeightControl

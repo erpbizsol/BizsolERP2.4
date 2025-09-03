@@ -24,6 +24,13 @@ $(document).ready(function () {
     const currentDate = `${dd}-${mm}-${yyyy}`;
     $('#txtFromDate, #txtToDate').val(currentDate);
 
+    var ObjUserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
+    if (ObjUserDetails !== undefined && ObjUserDetails[0].UserType == 'A') {
+        $('#btnExpenseEntryConfig').prop('hidden', false);
+    } else {
+        $('#btnExpenseEntryConfig').prop('hidden', true);
+    }
+
      GetNestedMarketingManList();
      DatePicker();
 
@@ -62,8 +69,14 @@ $(document).ready(function () {
      $("#btnAddExpenseEntry").click(function () {
         CreateNew(0);
     });
-     var userName = JSON.parse(sessionStorage.getItem('UserDetails'))[0].UserID;
-    $("#ddlMarketingMan").val(userName);
+    // var userName = JSON.parse(sessionStorage.getItem('UserDetails'))[0].UserID;
+    //$("#ddlMarketingMan").val(userName);
+
+    $('#btnExpenseEntryConfig').click(function (e) {
+
+        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseHeadMaster";
+
+    });
  });
 
 function GetNestedMarketingManList() {
@@ -71,7 +84,7 @@ function GetNestedMarketingManList() {
         if (response.length > 0) {
             $('#ddlSalesPersonList option').remove();
 
-            var option = '<option text="0" value="All" selected >All</option>';
+            var option = '<option text="0" value="" selected ></option>';
 
             for (var i = 0; i < response.length; i++) {
                 option += '<option text="' + response[i].Code + '" value="' + response[i].PersonName + '" >' + response[i].PersonName + '</option>';
@@ -138,8 +151,6 @@ function GetExpenseEntryList(){
                 };
                 
             });
-
-
 
             BizsolCustomFilterGrid.CreateDataTable("ExpenseEntryList-header", "ExpenseEntryList-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
         }

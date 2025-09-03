@@ -9,5 +9,9 @@ namespace Bizsol.WebERP.UI.Marketing.Transactions.Areas.MarketingTransactions.Co
         {
             return View();
         }
+        public IActionResult CollectionCommitmentReport()
+        {
+            return View();
+        }
     }
 }

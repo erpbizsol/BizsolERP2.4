@@ -242,7 +242,7 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
                 let buttonsCheckBox = `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`;
                 let buttonsHTML = item?.['Allow Edit'] === 'Y'
                     ? `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditPallet(${item?.['Pallet No']},'Y')"><i class="fa-solid fa-pencil"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>&nbsp;<button class="btn btn-secondary icon-height mb-1" title="View In ID" onclick="ViewPalletId(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>`
-                    : `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetPalletViewDetail(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>&nbsp;<button class="btn btn-secondary icon-height mb-1" title="View In ID" onclick="ViewPalletId(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>`;
+                    : `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetPalletViewDetail(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>&nbsp;&nbsp;<button class="btn btn-secondary icon-height mb-1" title="View In ID" onclick="ViewPalletId(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>`;
 
                 return {
                     ...item,
@@ -1269,7 +1269,7 @@ function ViewPalletId(PalletNo) {
             const hiddenColumns = [];
             const columnAlignment = {};
 
-            BizsolCustomFilterGrid.CreateDataTable("table-header-ViewInIdPalletTable", "table-body-ViewInIdPalletTable", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment,false);
+            BizsolCustomFilterGrid.CreateDataTable("table-header-ViewInIdPalletTable", "table-body-ViewInIdPalletTable", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
         } else {
             HideLoader();
             toastr.error('No Data Found');
