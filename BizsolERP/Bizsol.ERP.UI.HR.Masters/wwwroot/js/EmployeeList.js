@@ -37,6 +37,8 @@ $(document).ready(function () {
     $(document).on('click change', function (event) {
         ShowCardDespColumn();
     });
+    BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnEmpConfig');
+    
 });
 
 function ShowCardDespColumn() {
