@@ -328,8 +328,6 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\B
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\ErrorMessages.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.staticwebassets.runtime.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.exe
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.Abstractions.dll
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\System.Formats.Asn1.dll
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.csproj.AssemblyReference.cache
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.GeneratedMSBuildEditorConfig.editorconfig
@@ -353,3 +351,25 @@ D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\refint\Bizsol.We
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.pdb
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.genruntimeconfig.cache
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\ref\Bizsol.WebERP.UI.HR.Reports.dll
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.csproj.AssemblyReference.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.GeneratedMSBuildEditorConfig.editorconfig
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.AssemblyInfoInputs.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.AssemblyInfo.cs
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.csproj.CoreCompileInputs.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.MvcApplicationPartsAssemblyInfo.cs
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.MvcApplicationPartsAssemblyInfo.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.sourcelink.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\staticwebassets.build.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\staticwebassets.development.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.HR.Reports.Microsoft.AspNetCore.StaticWebAssets.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.HR.Reports.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\staticwebassets\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.HR.Reports.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\staticwebassets\msbuild.buildTransitive.Bizsol.WebERP.UI.HR.Reports.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\staticwebassets.pack.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\scopedcss\bundle\Bizsol.WebERP.UI.HR.Reports.styles.css
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.W.149D62EC.Up2Date
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.dll
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\refint\Bizsol.WebERP.UI.HR.Reports.dll
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.pdb
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Reports.genruntimeconfig.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.HR.Reports\obj\Release\net8.0\ref\Bizsol.WebERP.UI.HR.Reports.dll

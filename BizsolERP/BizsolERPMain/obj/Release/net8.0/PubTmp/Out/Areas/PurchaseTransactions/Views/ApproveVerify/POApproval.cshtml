@@ -25,11 +25,15 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
+                <input type="hidden" id="hfCodeForBack" value="0"/>
                 <h5 class="modal-title">View Details</h5>
-                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">x</span></button>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()">
+                    <span aria-hidden="true" class="modal-close-icon">&times;</span>
+                </button>
+                    
             </div>
             <div class="modal-body">
-                <div class="table-wrapper fixed-height-table">
+                <div class="table-wrapper ">
                     <table id="PoapprovalModal" class="fixed-width-table table">
                         <thead id="table-header-PoapprovalModal">
                         </thead>
@@ -38,6 +42,16 @@
                     </table>
                 </div>
                 <div class="paginator" id="paginator-PoapprovalModal">
+                </div>
+                <div class="table-wrapper ">
+                    <table id="PoapprovalDeliveryTerms" class="fixed-width-table table">
+                        <thead id="table-header-PoapprovalDeliveryTerms">
+                        </thead>
+                        <tbody id="table-body-PoapprovalDeliveryTerms">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-PoapprovalDeliveryTerms">
                 </div>
             </div>
             <div class="modal-footer">
@@ -52,7 +66,10 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modal-title"></h5>
-                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseHistoryModal()"><span aria-hidden="true">x</span></button>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseHistoryModal()">
+                    <span aria-hidden="true" class="modal-close-icon">&times;</span>
+                   @* <span aria-hidden="true">x</span> *@
+                </button>
             </div>
             <div class="modal-body">
                 <div class="table-wrapper fixed-height-table">
@@ -67,6 +84,7 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-height" onclick="BackButton()">Back</button>
                 <button type="button" class="btn btn-danger btn-height" onclick="CloseHistoryModal()">Cancel</button>
             </div>
         </div>

@@ -50,13 +50,15 @@
             </div>
             <div class="col-12 col-md-3 col-lg-2 col-xl-3">
                 <label for="userName" class="form-label">User Name <span class="text-danger">*</span></label>
-                <input list="ddlUserNameList" id="ddlUserName" name="ddlUserName" class="form-control form-control-sm box_border" placeholder="User Name" autocomplete="off" required>
-                <datalist id="ddlUserNameList"></datalist>
+               @*  <input list="ddlUserNameList" id="ddlUserName" name="ddlUserName" class="form-control form-control-sm box_border" placeholder="User Name" autocomplete="off" required>
+                <datalist id="ddlUserNameList"></datalist> *@
+                <select id="ddlUserNameList" class="form-control form-control-sm box_border"></select>
             </div>
             <div class="col-md-2">
                 <label for="orderstatus" class="form-label">Order Status <span class="text-danger">*</span></label>
-                <input list="ddlOrderStatusList" id="ddlOrderStatus" name="ddlOrderStatus" class="form-control form-control-sm box_border" placeholder="Order Status" autocomplete="off" value="All" required>
-                <datalist id="ddlOrderStatusList"></datalist>
+               @*  <input list="ddlOrderStatusList" id="ddlOrderStatus" name="ddlOrderStatus" class="form-control form-control-sm box_border" placeholder="Order Status" autocomplete="off" value="All" required>
+                <datalist id="ddlOrderStatusList"></datalist> *@
+                <select id="ddlOrderStatusList" class="form-control form-control-sm box_border"></select>
             </div>
 
 
@@ -64,7 +66,7 @@
                 <button type="button" id="btnShow" class="btn btn-primary btn-height" title="Show Orders">Show</button>
                @*  <button type="button" id="btnAddDirectOrder" class="btn btn-primary btn-height" title="Create New Order">Create New</button> *@
                 <button type="button" id="btnDirectOrder" class="btn btn-primary btn-height" title="Create New Order ">Create New</button>
-                <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="New Order "><i class="fa fa-download" aria-hidden="true"></i></button>
+                <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download List"><i class="fa fa-download" aria-hidden="true"></i></button>
                @*  <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download">Download</button> *@
                 <button type="button" id="btnCRMConfig" class="btn btn-warning btn-height" title="CRM Configuration Settings"> <i class="fa fa-gear"></i></button>
                

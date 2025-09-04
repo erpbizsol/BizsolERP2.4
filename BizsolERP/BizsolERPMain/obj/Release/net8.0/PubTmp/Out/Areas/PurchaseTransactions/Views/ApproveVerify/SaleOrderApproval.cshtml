@@ -30,7 +30,7 @@
                 <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">x</span></button>
             </div>
             <div class="modal-body">
-                <div class="table-wrapper fixed-height-table">
+                <div class="table-wrapper">
                     <table id="SaleOrderApprovalTable" class="fixed-width-table table">
                         <thead id="table-header-SaleOrderApprovalTable">
                         </thead>
@@ -40,8 +40,60 @@
                 </div>
                 <div class="paginator" id="paginator-SaleOrderApprovalTable">
                 </div>
+                <div class="table-wrapper ">
+                    <table id="SaleOrderDeliveryTermsTable" class="fixed-width-table table">
+                        <thead id="table-header-SaleOrderDeliveryTermsTable">
+                        </thead>
+                        <tbody id="table-body-SaleOrderDeliveryTermsTable">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-SaleOrderDeliveryTermsTable">
+                </div>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="OTPModalDisplay" tabindex="-1" role="dialog">
+    <div class="modal-dialog" >
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Credit Limit Check For <span id="ChkCreditLimitPartyName"></span></h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body row">
+                <div class="table-wrapper col-6">
+                    <table id="CreditLimitAmountBaseTable" class="table">
+                        <thead id="table-header-CreditLimitAmountBaseTable">
+                        </thead>
+                        <tbody id="table-body-CreditLimitAmountBaseTable">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-CreditLimitAmountBaseTable" >
+                </div>
+                <div class="table-wrapper col-6">
+                    <table id="CreditLimitDayBaseTable" class=" table">
+                        <thead id="table-header-CreditLimitDayBaseTable">
+                        </thead>
+                        <tbody id="table-body-CreditLimitDayBaseTable">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-CreditLimitDayBaseTable">
+                </div>
+                <div class="col-12">
+                    <label for="txtOTP" class="col-form-label-sm fw-bold">Enter Authorization Code:</label>
+                    <input type="text" id="txtOTP" placeholder="Enter The OTP" autocomplete="off" maxlength="6"/>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-height" onclick="SaleOrder_Authentication()">AUTHENTICATION REQUEST NOTIFICATION </button>
+                <button type="button" class="btn btn-primary btn-height" onclick="SaleOrder_OTPReceive()">OK</button>
                 <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

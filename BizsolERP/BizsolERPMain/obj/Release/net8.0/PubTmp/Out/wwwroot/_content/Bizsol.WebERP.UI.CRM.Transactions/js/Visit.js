@@ -15,7 +15,7 @@ $(document).ready(function () {
     $('#btnShow').on('click', function () {
         var FromDate = $('#txtFromDate').val();
         var ToDate = $('#txtToDate').val();
-        var SalesPerson = $('#ddlSalesPerson').val();
+        //var SalesPerson = $('#ddlSalesPerson').val();
         if (typeof $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null) {
             $('#txtFromDate').focus();
         }
@@ -26,6 +26,7 @@ $(document).ready(function () {
             $('#ddlSalesPerson').focus();
         }
         else {
+            var SalesPerson = $('#ddlSalesPersonlist option:selected').text();
             GetVisitMasterList(FromDate, ToDate, SalesPerson);
         }
     });
@@ -49,31 +50,73 @@ $(document).ready(function () {
     });
 });
 function GetUserdetails() {
-    VisitOrderEntryService.GetUserDetails().then(function (response) {
-        if (response && response.length > 0) {
-            response.forEach(item => {
-                if (item.UserID) {
-                    User_Id = item.UserID;
-                }
-            });
-        }
-        else {
-            toastr.error('No Data Found')
-        }
-    });
+    //VisitOrderEntryService.GetUserDetails().then(function (response) {
+    //    if (response && response.length > 0) {
+    //        response.forEach(item => {
+    //            if (item.UserID) {
+    //                User_Id = item.UserID;
+    //            }
+    //        });
+    //    }
+    //    else {
+    //        toastr.error('No Data Found')
+    //    }
+    //});
+
+    var UserDetailsData = JSON.parse(sessionStorage.getItem('UserDetails'));
+    var UserMaster_Code = UserDetailsData[0].Code;
+    User_Id = UserDetailsData[0].UserID;
 }
+
+function BindSelectList(element, list, FirstItem) {
+    let option = '';
+
+    if (FirstItem == 'FirstItemAll') {
+        option = '<option value="All">All</option>';
+    } else if (FirstItem == 'FirstItemSelected') {
+        option = '';
+    } else {
+        option = '<option value="0"></option>';
+    }
+
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
+
 function GetNestedMarketingManList() {
     VisitOrderEntryService.GetNestedMarketingManList().then(function (response) {
         if (response.length > 0) {
             $('#ddlSalesPersonList option').remove();
 
-            var option = '<option text="0" value="All" selected >All</option>';
+            //var option = '<option text="0" value="All" selected >All</option>';
 
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].PersonName + '" >' + response[i].PersonName + '</option>';
-            }
+            //for (var i = 0; i < response.length; i++) {
+            //    option += '<option text="' + response[i].Code + '" value="' + response[i].PersonName + '" >' + response[i].PersonName + '</option>';
+            //}
 
-            $('#ddlSalesPersonList')[0].innerHTML = option;
+            //$('#ddlSalesPersonList')[0].innerHTML = option;
+
+            BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })), 'FirstItemAll');
+            $('#ddlSalesPersonlist').select2({
+                allowClear: true,
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
+            });
+
         } else {
             toastr.error('No Data Found')
             return false;
@@ -113,7 +156,7 @@ const getButtonSet = (status, Code,date, VisitMaster_Code, Verified, Closed, Che
             buttons += getButtonHTML("", "btn btn-danger icon-height mb-1", "", "fa-solid fa-pencil", "Edit", true, "Edit disabled for unregistered visits");
             buttons += getButtonHTML("", "btn btn-danger icon-height mb-1", "", "fa-solid fa-eye", "View", true, "View disabled for unregistered visits");
         } else {
-            buttons += getButtonHTML("", "btn btn-primary icon-height mb-1", `IsCheckIn(${Code}, '${date}')`, "fa-solid fa-sign-in", "Check-In");
+            buttons += getButtonHTML("", "btn btn-primary icon-height mb-1", `IsCheckIn(${Code}, '${date}',this)`, "fa-solid fa-sign-in", "Check-In");
             buttons += getButtonHTML("", "btn btn-danger btn-height mb-1", `CheckOutVisit(${VisitMaster_Code})`, "fa-solid fa-sign-out", "Check-Out", true);
             buttons += getButtonHTML("", "btn btn-danger icon-height mb-1", "", "fa-solid fa-pencil", "Edit", true, "Edit disabled for unregistered visits");
             buttons += getButtonHTML("", "btn btn-danger icon-height mb-1", "", "fa-solid fa-eye", "View", true, "View disabled for unregistered visits");
@@ -124,13 +167,16 @@ const getButtonSet = (status, Code,date, VisitMaster_Code, Verified, Closed, Che
     return buttons;
 };
 function GetVisitMasterList(FromDate, ToDate, SalesPerson) {
+    var UserDetailsData = JSON.parse(sessionStorage.getItem('UserDetails'));
+    var UserMaster_Code = UserDetailsData[0].Code;
+    User_Id = UserDetailsData[0].UserID;
     var fromDate = convertDateFormat(FromDate);
     var toDate = convertDateFormat(ToDate);
     VisitOrderEntryService.GetVisitMasterList(fromDate, toDate, SalesPerson, User_Id).then(function (response) {
         if (response.length > 0) {
             $("#txtTable").show();
             const StringFilterColumn = ["Created By", "Visit Type", "Status" ];
-            const NumericFilterColumn = ["Total Amount","Total Order Qty"];
+            const NumericFilterColumn = ["Total Amount"];
             const DateFilterColumn = ["Date"];
             const Button = false;
             const showButtons = [];
@@ -138,7 +184,6 @@ function GetVisitMasterList(FromDate, ToDate, SalesPerson) {
             const hiddenColumns = ["Code", "VisitMaster_Code", "Button", "Verified", "Closed", "CheckIn", "CheckOut"];
             const ColumnAlignment = { 
                 "Total Amount": 'right',
-                "Total Order Qty": 'right',
                 "Date" : 'center',
                 "Verified" : 'center',
                 "Closed": 'center',
@@ -196,6 +241,15 @@ function GetVisitMasterListForDate() {
                 }
             });
             highlightSelectedDates();
+
+            // By default show data
+            var FromDate = $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null?'': $('#txtFromDate').val();
+            var ToDate = $('#txtToDate').val() === 'undefined' || $('#txtToDate').val() === '' || $('#txtToDate').val() === null?'': $('#txtToDate').val();
+            //var SalesPerson = $('#ddlSalesPerson').val() === undefined ? '': $('#ddlSalesPerson').val();
+            var SalesPerson = $('#ddlSalesPersonlist option:selected').text();
+            
+                GetVisitMasterList(FromDate, ToDate, SalesPerson);
+            
         }
         else {
             toastr.error('No Data Found')
@@ -308,7 +362,8 @@ function showLocation(position) {
 function EditData(code, VisitMaster_Code) {
     const codes = window.btoa(code);
     const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
+    //window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
+    window.location = baseUrl + "/CRMTransactions/Visit/DirectOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=Edit";
 }
 function ViewData(code, VisitMaster_Code) {
     if (typeof VisitMaster_Code === 'undefined') {
@@ -317,7 +372,8 @@ function ViewData(code, VisitMaster_Code) {
     }
     const codes = window.btoa(code);
     const VisitMaster_Codes = window.btoa(VisitMaster_Code);
-    window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
+    //window.location = baseUrl + "/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
+    window.location = baseUrl + "/CRMTransactions/Visit/DirectOrderEntry?RoutePlanCode=" + codes + "&VisitMaster_Code=" + VisitMaster_Codes + "&VisitMode=View";
 }
 function IsNotVisited(code) {
     const alertCls = confirm("Are you sure you want to close this?");
@@ -347,7 +403,8 @@ function SaveNotVisited() {
                 document.getElementById('txtCode').value = '0';
                 var FromDate = $('#txtFromDate').val();
                 var ToDate = $('#txtToDate').val();
-                var SalesPerson = $('#ddlSalesPerson').val();
+                //var SalesPerson = $('#ddlSalesPerson').val();
+                var SalesPerson = $('#ddlSalesPersonlist option:selected').text();
                 GetVisitMasterList(FromDate, ToDate, SalesPerson);
 
             } else {
@@ -359,7 +416,7 @@ function SaveNotVisited() {
 function Close() {
     $('#ReasonModal').modal('hide');
 }
-function IsCheckIn(RoutePlanMaster_Code, date) {
+function IsCheckIn(RoutePlanMaster_Code, date,e) {
     const currentDateOnly = new Date(new Date().setHours(0, 0, 0, 0));
     const visitDate = new Date(date);
     const visitDateOnly = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate());
@@ -375,6 +432,7 @@ function IsCheckIn(RoutePlanMaster_Code, date) {
         return false;
     }
     const checkInTime = GetCurrentTime();
+    $(e).prop('disabled', true);
     VisitOrderEntryService.CheckInVisit(RoutePlanMaster_Code, checkInTime, location, checkedInAddress).then(function (response) {
         if (response.Status === 'Y') {
             //toastr.success(response.Msg);
@@ -382,7 +440,8 @@ function IsCheckIn(RoutePlanMaster_Code, date) {
             const encodedVisitMasterCode = window.btoa(response.Code);
             toastr.success("Check-In successful! You can view and edit the selected plan details.");
             setTimeout(function () {
-                window.location = `${baseUrl}/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&VisitMaster_Code=${encodedVisitMasterCode}&VisitMode=Edit`;
+                //window.location = `${baseUrl}/CRMTransactions/Visit/VisitOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&VisitMaster_Code=${encodedVisitMasterCode}&VisitMode=Edit`;
+                window.location = `${baseUrl}/CRMTransactions/Visit/DirectOrderEntry?RoutePlanCode=${encodedRoutePlanCode}&VisitMaster_Code=${encodedVisitMasterCode}&VisitMode=Edit`;
             }, 2000); // 2 seconds delay before redirect
             
         } else {
@@ -439,7 +498,8 @@ function CheckOutVisit(VisitMaster_Code) {
                 toastr.success(response.Msg);
                 var FromDate = $('#txtFromDate').val();
                 var ToDate = $('#txtToDate').val();
-                var SalesPerson = $('#ddlSalesPerson').val();
+                // var SalesPerson = $('#ddlSalesPerson').val();
+                var SalesPerson = $('#ddlSalesPersonlist option:selected').text();
                 GetVisitMasterList(FromDate, ToDate, SalesPerson);
             }
         }

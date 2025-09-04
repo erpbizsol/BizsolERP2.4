@@ -91,7 +91,7 @@ function setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListEleme
             }
         } else if (event.key === 'Enter') {
             event.preventDefault(); // Prevent form submission
-            if (currentIndex > -1) {
+            if (currentIndex > -1 && itemCount>0) {
                 const selectedItem = items.eq(currentIndex).text();
                 AutoSuggestionInput.val(selectedItem);
                 AutoSuggestionList.hide(); // Hide dropdown after selection

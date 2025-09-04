@@ -1,97 +1,73 @@
 ﻿import { StockTransferReceiveService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/StockTransferReceiveService.js';
+import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
 
 let Godownmaster_Code = 0;
-let imageSrc = null;
-let base64String = '';
 let files = [];
 let fileName = '';
-let base64Data = [];
 let imageBase64Data = [];
 
-let PartyName = '';
 $(document).ready(function () {
     $("#ERPHeading").text("Warehouse Receive");
-
-        $('#myTab').on('shown.bs.tab', function (e) {
-            const targetTab = $(e.target).attr('id');  
-            if (targetTab === 'home-tab') {
-                getWarehouse();
-                $('#tblActualDispatch').hide();
-            } else if (targetTab === 'profile-tab') {
-                getPartyNamePendingPackingListActualDespatch();
-                $('#tblStockReceive').hide();
-                $('#tblActualDispatch').show();
-            }
-        });
-        if ($('#home-tab').hasClass('active')) {
             getWarehouse();
-            
-    }
-    $('#ddlWarehouse').on('focus', function (e) {
-        $("#ddlWarehouse").val("");
-    });
-    $('#ddlRollIdNo').on('focus', function (e) {
-        $("#ddlRollIdNo ").val("");
-    });
-    $('#ddlWarehouse').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#fileInput").focus();
-        }
-    });
+
+    //$('#ddlRollIdNo').on('focus', function (e) {
+    //    $("#ddlRollIdNo ").val("");
+    //});
     $('#fileInput').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#ddlRollIdNo").focus();
         }
     });
-    $('#ddlRollIdNo').on('keydown', function (e) {
-        if (e.key === "Enter") {
+    $('#ddlRollIdNo').on('keyup keypress', function (e) {
+        var keyCode = e.keyCode || e.which;
+        if (keyCode === 13) {
+            e.preventDefault();
             StockTransferWherehouseReceive();
+            $('#ddlRollIdNo').focus()
+            return false;
         }
     });
-    });
+});
 function getWarehouse() {    
     StockTransferReceiveService.GetWarehouse().then(function (response) {
         if (response && response.length > 0) {
-            $('#ddlWarehouseList option').remove();
-            var option = '';
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].GodownName + '" >' + response[i].GodownName + '</option>';
-            }
-            $('#ddlWarehouseList')[0].innerHTML = option;
-        } else {
-            toastr.error('No data received or empty response');
-        }
-        const inputElement = document.getElementById("ddlWarehouse");
-        const dataList = document.getElementById("ddlWarehouseList");
-            inputElement.addEventListener("input", () => {
+            BindSelectList($('#ddlWarehouse')[0], response.map((item) => ({ Code: item.Code, Desp: item.GodownName })));
+
+            $('#ddlWarehouse').select2({
+                width: '-webkit-fill-available'
+            });
+            const inputElement = document.getElementById("ddlWarehouse");
+            $('#ddlWarehouse').on("change", () => {
                 const inputValue = inputElement.value;
-                const selectedOption = Array.from(dataList.options).find(
+                const selectedOption = Array.from(inputElement.options).find(
                     option => option.value === inputValue
                 );
                 if (selectedOption) {
-                     Godownmaster_Code = selectedOption.getAttribute("text");
+                    Godownmaster_Code = selectedOption.getAttribute("value");
                     getPendingRoll(Godownmaster_Code, "0");
+                    $('#tblStockReceive').hide();
+                    $('#fileInput').val('');
                 }
             });
+        } else {
+            toastr.error('No data received or empty response');
+        }
     }).catch(function (error) {
         toastr.error('Error fetching warehouse data:', error);
     });
 }
 function getPendingRoll(Godownmaster_Code) {
     StockTransferReceiveService.GetPendingRoll(Godownmaster_Code, "0").then(function (response) {
-            const datalist = $('#ddlRollIdNoList');
-            datalist.empty();
-             if (response && response.length > 0) {
-                 response.forEach(function (item) {
-                 const option = $('<option>').val(item.IdentificationNo).text(item.IdentificationNo);
-                 datalist.append(option);
-            });
-        } else {
-            toastr.error('No data received or empty response');
-        }
-    }).catch(function (error) {
-        toastr.error('Error fetching user list:', error);
-    });
+        if (response && response.length > 0) {
+        AutoSuggestionControl.SetUpAutoSuggestion($('#ddlRollIdNo'), $('#ddlRollIdNoList'), response.map((item) => ({ Desp: item.IdentificationNo })), 'StartWith');
+    } else {
+        $('#ddlRollIdNoList').empty();
+    }
+    })
+        .catch (function (error) {
+    console.error("Error fetching pending IDs:", error);
+});
+        
 }
 function triggerFileInputClick() {
     document.getElementById('fileInput').click();
@@ -113,7 +89,7 @@ function FileUploadChange(event) {
     }
 }
 function StockTransferWherehouseReceive() {
-    $('#StockTransferReceive').show();
+    //$('#tblStockReceive').show();
     let obj = [{
         godownMaster_Code: Godownmaster_Code,
         rollIdNo: $("#ddlRollIdNo").val(),
@@ -125,10 +101,11 @@ function StockTransferWherehouseReceive() {
 
     if ($('#ddlRollIdNo').val()?.includes("*")) {
         if ($('#fileInput').val() !== '') {
-            
+            Showloader();
             StockTransferReceiveService.GetPendingRoll(Godownmaster_Code, obj[0].rollIdNo).then(function (res) {
                 if (res && Array.isArray(res) && res.length > 0) {
-                    $('#StockTransferReceive').hide();
+                    HideLoader();
+                    $('#tblStockReceive').hide();
                     $('#myModal').modal({
                         backdrop: 'static',
                     });
@@ -155,9 +132,10 @@ function StockTransferWherehouseReceive() {
                         };
                     });
                     BizsolCustomFilterGrid.CreateDataTable("table-header-NoOfVerify", "table-body-NoOfVerify", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
-                    
+                    $('#paginator-NoOfVerify').hide();
                 } else {
-                    toastr.error('No Data Found');
+                    HideLoader();
+                    //toastr.error('No Data Found');
                 }
             })
                 .catch(function (error) {
@@ -171,8 +149,11 @@ function StockTransferWherehouseReceive() {
         }
     } else {
         if ($('#fileInput').val() !== '') {
+            Showloader();
             StockTransferReceiveService.StockTransferWherehouseReceive(JSON.stringify(obj)).then(function (response) {
                 if (response && response.length > 0) {
+                    HideLoader();
+                    $('#tblStockReceive').show();
                     const stringFilterColumn = [];
                     const numericFilterColumn = [];
                     const dateFilterColumn = [];
@@ -182,11 +163,14 @@ function StockTransferWherehouseReceive() {
                     const hiddenColumns = [];
                     const columnAlignment = {};
 
-                    BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+                    BizsolCustomFilterGrid.CreateDataTable("table-header-StockTransferReceive", "table-body-StockTransferReceive", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
                     $("#ddlRollIdNo").val('');
                     ChangeBackgroundColor();
+                    $('#paginator-StockTransferReceive').hide();
+                    getPendingRoll(Godownmaster_Code);
                 } else {
-                    toastr.error('No Data Found');
+                    HideLoader();
+                    //toastr.error('No Data Found');
                 }
             })
                 .catch(function (error) {
@@ -195,21 +179,21 @@ function StockTransferWherehouseReceive() {
         }
         else {
             toastr.error('Please select a file to proceed');
-            $('#StockTransferReceive').hide();
+            $('#tblStockReceive').hide();
             return;
         }         
     }
 }
 function ChangeBackgroundColor() {
-    const tableRows = document.querySelectorAll('#table-body tr');
+    const tableRows = document.querySelectorAll('#table-body-StockTransferReceive tr');
     tableRows.forEach(row => {
         const cells = row.querySelectorAll('td');
         cells.forEach(cell => {
-            if (cell.textContent.trim() === 'Entry is invalid') {
+            if (cell.textContent.trim() === 'Entry is invalid' ) {
                 cell.style.backgroundColor = 'red';
                 cell.style.color = 'white';
             }
-            else if (cell.textContent.trim() === 'Entry is valid'){
+            else if (cell.textContent.trim() === 'Entry is Accepted' || cell.textContent.includes("received") === true){
                 cell.style.backgroundColor = 'green';
                 cell.style.color = 'white';
             }
@@ -217,7 +201,6 @@ function ChangeBackgroundColor() {
     });
 }
 function SaveReceivedData() {
-    
     let ReveivedTable = document.getElementById("table-body-NoOfVerify");
     let selectedRows = [];
     for (let i = 0; i < ReveivedTable.rows.length; i++) {
@@ -244,9 +227,10 @@ function SaveReceivedData() {
     if (selectedRows.length > 0) {
         let isValid = true;
         let Data = selectedRows.map(row => {
-            const receviedQty = row.ReceviedQty;
-            const inputField = $(`#receviedQTYPC[data-packing-list-no="${row.PackingListMaster_Code}"]`); 
-            if (!receviedQty || receviedQty < 1 || receviedQty > inputField.attr('max')) {
+            const receviedQty = parseInt(row.ReceviedQty);
+            const inputField = $(`#receviedQTYPC[data-packing-list-no="${row.PackingListMaster_Code}"]`);
+            const maxQty = parseInt(inputField.attr('max'));
+            if (receviedQty < 1 || receviedQty > maxQty) {
                 toastr.error('Received quantity must be between 1 and the available balance.');
                 isValid = false;
                 return null; 
@@ -264,9 +248,31 @@ function SaveReceivedData() {
             };
         }).filter(item => item !== null); 
         if (isValid && Data.length > 0) {
+            Showloader();
             StockTransferReceiveService.ItemWaiseVerifyRollIdInPackingList(JSON.stringify(Data)).then(function (response) {
                 if (response.Status === 'Y') {
+                    HideLoader();
+                    $('#tblStockReceive').show();
                     toastr.success(response.Msg);
+                    let msgData = []
+                    msgData.push({
+                        "Desp": "Chemical Item",
+                        "Value": response.Msg
+
+                    })
+                    const stringFilterColumn = [];
+                    const numericFilterColumn = [];
+                    const dateFilterColumn = [];
+                    const button = false;
+                    const stringDoubleFilterColumn = [];
+                    const showButtons = [];
+                    const hiddenColumns = [];
+                    const columnAlignment = {};
+
+                    BizsolCustomFilterGrid.CreateDataTable("table-header-StockTransferReceive", "table-body-StockTransferReceive", msgData, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+                    ChangeBackgroundColor();
+                    $('#paginator-StockTransferReceive').hide();
+                    $("#ddlRollIdNo").val('');
                     CloseModal();
                     ClearForm();
                 }
@@ -286,103 +292,15 @@ function ClearForm() {
     //$("#ddlRollIdNoList").val('');
     getPendingRoll(Godownmaster_Code);
 }
-
-function getPartyNamePendingPackingListActualDespatch() {
-    $('#ddlPalletNo').on('focus', function (e) {
-        $("#ddlPalletNo ").val("");
+function BindSelectList(element, list) {
+    let option = '<option value="0"></option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
     });
-    $('#ddlPartyName').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#ddlPalletNo").focus();
-        }
-    });
-    $('#ddlPalletNo').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            PackingActualPalletIDDispatch();
-        }
-    });
-    Showloader();
-    StockTransferReceiveService.GetPartyNamePendingPackingListActualDespatch().then(function (response) {
-        if (response && response.length > 0) {
-            HideLoader();
-            $('#ddlPartyNameList option').remove();
-            var option = '';
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].AccountDesp + '" >' + response[i].AccountDesp + '</option>';
-            }
-            $('#ddlPartyNameList')[0].innerHTML = option;
-        } else {
-            toastr.error('No data received or empty response');
-        }
-        const inputElement = document.getElementById("ddlPartyName");
-        const dataList = document.getElementById("ddlPartyNameList");
-        inputElement.addEventListener("input", () => {
-            const inputValue = inputElement.value;
-            const selectedOption = Array.from(dataList.options).find(
-                option => option.value === inputValue
-            );
-            if (selectedOption) {
-                PartyName = $("#ddlPartyName").val();
-                getPendingPackingListPalletsActualDespatch(PartyName);
-            }
-        });
-    }).catch(function (error) {
-        toastr.error('Error fetching warehouse data:', error);
-    });
-}
-function getPendingPackingListPalletsActualDespatch(PartyName) {
-    StockTransferReceiveService.GetPendingPackingListPalletsActualDespatch(PartyName).then(function (response) {
-        const datalist = $('#ddlPalletNoList');
-        datalist.empty();
-        if (response && response.length > 0) {
-            response.forEach(function (item) {
-                const option = $('<option>').val(item.PalletNo).text(item.PalletNo);
-                datalist.append(option);
-            });
-        } else {
-            toastr.error('No data received or empty response');
-        }
-    }).catch(function (error) {
-        toastr.error('Error fetching user list:', error);
-    });
-}
-function PackingActualPalletIDDispatch() {
-    let PalletNo = $("#ddlPalletNo").val();
-    PartyName = $("#ddlPartyName").val();
-    if (PalletNo == "") {
-        return;
-    }
-    StockTransferReceiveService.PackingActualPalletIDDispatch(PalletNo, PartyName).then(function (response) {
-            $("#ddlPalletNo ").val("");
-            toastr.success(response.Msg);
-            StockTransferReceiveService.GetPalletActualDespatchDetails(PalletNo, PartyName).then(function (results) {
-                if (results && Array.isArray(results) && results.length > 0) {
-                    const stringFilterColumn = [];
-                    const numericFilterColumn = [];
-                    const dateFilterColumn = [];
-                    const button = false;
-                    const stringDoubleFilterColumn = [];
-                    const showButtons = [];
-                    const hiddenColumns = [];
-                    const ColumnAlignment = {};
-                    BizsolCustomFilterGrid.CreateDataTable("table-header-ActualDispatch", "table-body-ActualDispatch", results, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
-                }
-                else {
-                    toastr.error('No Data Found');
-                }
-            }).catch(error => {
-                toastr.error(error.Msg);
-            });
-
-        
-    });
+    element.innerHTML = option;
 }
 
-window.getWarehouse = getWarehouse;
-window.getPendingRoll = getPendingRoll;
 window.FileUploadChange = FileUploadChange;
-window.getPendingPackingListPalletsActualDespatch = getPendingPackingListPalletsActualDespatch;
-window.getPartyNamePendingPackingListActualDespatch = getPartyNamePendingPackingListActualDespatch;
 window.CloseModal = CloseModal;
 window.SaveReceivedData = SaveReceivedData;
 window.triggerFileInputClick = triggerFileInputClick;

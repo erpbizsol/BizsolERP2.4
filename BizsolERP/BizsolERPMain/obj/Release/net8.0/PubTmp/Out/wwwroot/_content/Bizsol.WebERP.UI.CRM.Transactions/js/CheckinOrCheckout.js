@@ -6,7 +6,7 @@ import { BizSolGeoLocation } from '../../Bizsol.WebERP.UI.Shared/js/BizSolGeoLoc
 import { CheckinOrCheckOutService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CheckinOrCheckOutService.js';
 
 function GetDayWiseCheckInOutList() {
-    $("#ERPHeading").text("Day Wise Check In/Check Out");
+    $("#ERPHeading").text("Daily Attendance");
     CheckinOrCheckOutService.GetDayWiseCheckInOut().then(function (response) {
         console.log(response);
         if (response.length > 0) {
