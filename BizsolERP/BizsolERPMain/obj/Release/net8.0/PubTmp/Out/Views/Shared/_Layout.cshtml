@@ -41,8 +41,8 @@
 <body>
     <!-- Loader (hidden by default) -->
     <div id="loader" class="loader-overlay">
-        @* <img src="~/assets/images/logo-gifR2.gif" alt="Loading..." class="loader-img"> *@
-        <img src="~/assets/images/logo-af2.gif" alt="Loading..." class="loader-img">
+        @* <img src="~/assets/images/logo-af2.gif" alt="Loading..." class="loader-img">  *@
+        <img src="~/assets/images/loader2.gif" alt="Loading..." class="loader-img">
     </div>
 
     <div id="layout-wrapper" class="content-hidden">
@@ -219,6 +219,8 @@
                 </div>
                 <!-- Sidebar -->
             </div>
+            
+
         </div>
         <!-- Left Sidebar End -->
         <!-- ============================================================== -->
@@ -261,6 +263,7 @@
             </div>
         </footer>
         <!-- End Footer -->
+        @* <div id="sidebar-overlay"></div> *@
     </div>
 
     <!-- Right Sidebar -->
@@ -399,6 +402,9 @@
     <!-- /Right-bar -->
     <!-- Right bar overlay-->
     <div class="rightbar-overlay"></div>
+    <div id="sidebar-overlay"></div>
+   
+
     <!--toastr-->
     <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
     @* "toast-top-right": Top - right corner(default )
@@ -467,7 +473,10 @@
        if (authKey !== '') {
               sessionStorage.setItem('authKey', authKey);
               sessionStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
-              window.AppBaseURL='@Html.Raw(ViewBag.AppBaseURL)';
+              //window.AppBaseURL='@Html.Raw(ViewBag.AppBaseURL)';
+            if (window.location.href.toLowerCase().includes('localhost') == false) {
+                window.location.href = '@Html.Raw(ViewBag.AppBaseURL)';
+            }
         }
         // });
 
@@ -524,5 +533,6 @@
     <script type="module" src="~/assets/script/webnotification.js"></script>
     <script src="~/assets/script/Logout.js"></script>
 
+    
 </body>
 </html>

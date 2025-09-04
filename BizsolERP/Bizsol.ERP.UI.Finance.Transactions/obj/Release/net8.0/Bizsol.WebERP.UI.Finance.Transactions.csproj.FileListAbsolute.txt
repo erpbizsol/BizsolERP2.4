@@ -328,8 +328,6 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\B
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\ErrorMessages.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.staticwebassets.runtime.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.exe
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.Abstractions.dll
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\System.Formats.Asn1.dll
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.csproj.AssemblyReference.cache
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.GeneratedMSBuildEditorConfig.editorconfig
@@ -353,3 +351,25 @@ D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\refint
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.pdb
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.genruntimeconfig.cache
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\ref\Bizsol.WebERP.UI.Finance.Transactions.dll
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.csproj.AssemblyReference.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.GeneratedMSBuildEditorConfig.editorconfig
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.AssemblyInfoInputs.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.AssemblyInfo.cs
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.csproj.CoreCompileInputs.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.MvcApplicationPartsAssemblyInfo.cs
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.MvcApplicationPartsAssemblyInfo.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.sourcelink.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\staticwebassets.build.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\staticwebassets.development.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Finance.Transactions.Microsoft.AspNetCore.StaticWebAssets.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Finance.Transactions.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\staticwebassets\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.Finance.Transactions.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\staticwebassets\msbuild.buildTransitive.Bizsol.WebERP.UI.Finance.Transactions.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\staticwebassets.pack.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\scopedcss\bundle\Bizsol.WebERP.UI.Finance.Transactions.styles.css
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.W.5676C1BC.Up2Date
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.dll
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\refint\Bizsol.WebERP.UI.Finance.Transactions.dll
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.pdb
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Transactions.genruntimeconfig.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Transactions\obj\Release\net8.0\ref\Bizsol.WebERP.UI.Finance.Transactions.dll

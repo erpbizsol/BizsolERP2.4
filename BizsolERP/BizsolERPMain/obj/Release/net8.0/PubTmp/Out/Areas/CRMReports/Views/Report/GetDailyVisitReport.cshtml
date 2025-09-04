@@ -49,31 +49,41 @@
 
                 <div class="col-md-3">
                     <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Sales Person</label>
-                    <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Sales Person" value="All">
+                    <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Sales Person" value="All" hidden>
                     <datalist id="txtSalesPersonlist"></datalist>
+                    <select id="ddlSalesPersonlist" class="form-control form-control-sm box_border">
+                    </select>
                 </div>
 
                 <div class="col-md-3">
                     <label for="txtDealerName" class="col-form-label-sm fw-bold">Dealer Name</label>
-                    <input list="txtDealerNamelist" id="txtDealerName" name="txtDealerName" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Dealer Name" value="All">
+                    <input list="txtDealerNamelist" id="txtDealerName" name="txtDealerName" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Dealer Name" value="All" hidden>
                     <datalist id="txtDealerNamelist"></datalist>
+                    <select id="ddlDealerNamelist" class="form-control form-control-sm box_border">
+                    </select>
                 </div>
             </div>
             <div class="row">
                 <div class="col-md-3">
                     <label for="txtOrderType" class="col-form-label-sm fw-bold">Order Type</label>
-                    <input list="txtOrderTypelist" id="txtOrderType" name="txtOrderType" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Order Type" value="All">
+                    <input list="txtOrderTypelist" id="txtOrderType" name="txtOrderType" autocomplete="off" class="form-control form-control-sm box_border" placeholder="Order Type" value="All" hidden>
                     <datalist id="txtOrderTypelist"></datalist>
+                    <select id="ddlOrderTypelist" class="form-control form-control-sm box_border">
+                    </select>
                 </div>
                 <div class="col-md-3">
                     <label for="txtOrderStatus" class="col-form-label-sm fw-bold">Order Status</label>
                     <datalist id="txtOrderStatuslist"></datalist>
-                    <input list="txtOrderStatuslist" id="txtOrderStatus" name="txtOrderStatus" class="form-control form-control-sm box_border" placeholder="Order Status" autocomplete="off" value="All">
+                    <input list="txtOrderStatuslist" id="txtOrderStatus" name="txtOrderStatus" class="form-control form-control-sm box_border" placeholder="Order Status" autocomplete="off" value="All" hidden>
+                    <select id="ddlOrderStatuslist" class="form-control form-control-sm box_border">
+                    </select>
                 </div>
                 <div class="col-md-3">
                     <label for="txtReportType" class="col-form-label-sm fw-bold">Report Type</label>
                     <datalist id="txtReportTypelist"></datalist>
-                    <input list="txtReportTypelist" id="txtReportType" name="txtReportType" class="form-control form-control-sm box_border" placeholder="Report Type" autocomplete="off">
+                    <input list="txtReportTypelist" id="txtReportType" name="txtReportType" class="form-control form-control-sm box_border" placeholder="Report Type" autocomplete="off" hidden>
+                    <select id="ddlReportTypelist" class="form-control form-control-sm box_border">
+                    </select>
                 </div>
                 <div class="col-md-3 text-end without-label-field">
                     <button type="button" id="fetchReportButton" class="btn btn-primary btn-height btn-width">Show</button>

@@ -14,7 +14,8 @@
         element.setCustomValidity("");
         if (element.value.split('.').length > 2) {
             element.setCustomValidity("Only allowed Float Numbers");
-
+            
+            element.value = '0';
 
         } else if (Number.isInteger(parseFloat(element.value)) == true && parseFloat(element.value)>0) {
             element.setCustomValidity("Only allowed Float Numbers");
