@@ -84,6 +84,7 @@ function DisableControls() {
         $('input, textarea').prop('disabled', true);
         //$('a').addClass('disabled');
         $("#btnBack").prop("disabled", false);
+        $("#btnVerify").prop("disabled", true);
 
     }
     if (param_ExpenseEntryMaster_Code > 0) {
@@ -605,6 +606,14 @@ function ValidateData() {
     var TotalAllowed = 0;
     var TotalApproved = 0;
     var TotalExp = 0;
+    var EntryDateRange = $('#txtEntryDate').val();
+    var FromDateRange = $('#txtFromDate').val();
+    var ToDateRange = $('#txtToDate').val();
+
+    if (EntryDateRange <= FromDateRange || EntryDateRange <= ToDateRange) {
+        toastr.warning("Entry Date must be greater than both From Date and To Date");
+        return false;
+    }
 
     if (TotalDays < 0) {
         toastr.error("Please select a valid range of dates.");
@@ -677,6 +686,9 @@ ExpenseEntryService.ExpenseEntry_ValidateMarketingPersonSenior(param_ExpenseEntr
         } else {
             $('#btnVerify').prop('disabled', true);
         }
+    }
+    if (param_Mode == 'View' && param_ExpenseEntryMaster_Code > 0) {
+        $("#btnVerify").prop("disabled", true);
     }
 });
 }
