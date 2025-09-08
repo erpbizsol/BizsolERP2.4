@@ -24,6 +24,7 @@ const ExpenseHeadMasterService = {
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
+
             }
         );
     },

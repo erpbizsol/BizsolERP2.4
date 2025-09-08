@@ -1,0 +1,43 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/CommonSingleEntryForm.js"></script>
+
+<div id="newCreateForm" class="card col-md-8">
+    <form class="card-body">
+        <div class="row">
+            <input type="hidden" name="Code" id="Code" class="form-control" value="0">
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label id="labelDescription"  for="txtDescription" class="col-form-label-sm fw-bold"><span class="text-danger">*</span></label>
+                    <input id="txtDescription" name="txtDescription" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Description" required />
+                </div>
+            </div>
+            <div class="col-md-3" style="margin-top:2.2rem">
+                <button type="button" onclick="submit_CommonSingleEntry()" id="saveCommonSingleEntryButton" title="Save" class="btn btn-primary btn-height">Save</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div id="tblCommonSingleEntryForm">
+            <div class="table-wrapper fixed-height-table">
+                <table id="CommonSingleEntryForm" class="fixed-width-table table">
+                    <thead id="table-header-CommonSingleEntryForm">
+                    </thead>
+                    <tbody id="table-body-CommonSingleEntryForm">
+                    </tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-CommonSingleEntryForm">
+            </div>
+        </div>
+    </div>
+</div>

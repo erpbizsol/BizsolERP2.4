@@ -96,15 +96,24 @@ const ExpenseEntryService = {
             }
         );
     },
-    ExpenseEntry_ValidateMarketingPersonSenior: function ExpenseEntry_ValidateMarketingPersonSenior(MarketingPersonName) {
+    ExpenseEntry_ValidateMarketingPersonSenior: function ExpenseEntry_ValidateMarketingPersonSenior(Code) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_EXPENSE_ENTRY + `/ExpenseEntry_ValidateMarketingPersonSenior?UserMaster_Code=${encodeURIComponent(userMasterCode)}&MarketingPersonName=${MarketingPersonName}`;
+        var URL = UrlService.API_ENDPOINT_EXPENSE_ENTRY + `/ExpenseEntry_ValidateMarketingPersonSenior?UserMaster_Code=${encodeURIComponent(userMasterCode)}&Code=${Code}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
             }
         );
     },
+    CalculateAllowedAmount: function CalculateAllowedAmount(MarketingManMaster_Code,FromDate,ToDate) {
+        var URL = UrlService.API_ENDPOINT_EXPENSE_ENTRY + `/CalculateAllowedAmount?MarketingManMaster_Code=${MarketingManMaster_Code}&FromDate=${FromDate}&ToDate=${ToDate}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    
     }
     export { ExpenseEntryService }

@@ -62,18 +62,12 @@ function EditData(Code, desp, Mode) {
         CreateNew_ExpenseHeadMaster();
         $('#txtExpenseDescription').val(desp);
         $('#newCreateForm input').prop('disabled', true);
-        $('#newCreateFormExpenseHeadLimit input').prop('disabled', true);
-        $('#newCreateFormExpenseHeadLimit select').prop('disabled', true);
-        $('#saveExpenseHeadMasterButton').prop('disabled', true);
+        $('#newCreateFormExpenseHeadLimit').hide();
         GetExpenseHeadMasterByCode(G_ExpenseHeadMaster);
     }
      else {
         CreateNew_ExpenseHeadMaster();
         $('#txtExpenseDescription').val(desp);
-        $('#newCreateForm input').prop('disabled', false);
-        $('#newCreateFormExpenseHeadLimit input').prop('disabled', false);
-        $('#newCreateFormExpenseHeadLimit select').prop('disabled', false);
-        $('#saveExpenseHeadMasterButton').prop('disabled', false);
         GetExpenseHeadMasterByCode(G_ExpenseHeadMaster);
     }
 }
@@ -93,8 +87,17 @@ function GetExpenseHeadMasterByCode(G_ExpenseHeadMaster) {
                 "Per Day Limit": 'right',
                 "Effective From": 'center',
             };
+            const updatedResponse = response.map(item => {
+                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit Limit" onclick="EditLimitData('${item?.["Expense Category"]}','${item?.["Effective From"]}','${item?.["Per Day Limit"]}')"><i class="fa fa-pencil"></i></button>&nbsp`;
+                
+                return {
+                    ...item,
+                    Action: buttonsHTML,
+                };
 
-            BizsolCustomFilterGrid.CreateDataTable("table-header-ExpenseHeadLimitDetails", "table-body-ExpenseHeadLimitDetails", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+            });
+
+            BizsolCustomFilterGrid.CreateDataTable("table-header-ExpenseHeadLimitDetails", "table-body-ExpenseHeadLimitDetails", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
             if (data.DesignationName) {
                 BizSolHelperFunction.SelectOptionByText('txtDesignation', data.DesignationName);
             }
@@ -112,6 +115,17 @@ function GetExpenseHeadMasterByCode(G_ExpenseHeadMaster) {
             $("#tblExpenseHeadLimitDetails").hide();
         }
     });
+}
+function EditLimitData(desp,effectiveDate,parDayLimit) {
+    BizSolHelperFunction.SelectOptionByText('txtDesignation', desp);
+    const parts = effectiveDate.split('-');
+    if (parts.length === 3) {
+        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        $('#txtEffectiveDate').val(formattedDate);
+    } else {
+        $('#txtEffectiveDate').val(''); 
+    }
+    $('#txtPerDayLimit').val(parDayLimit);
 }
 function CreateNew_ExpenseHeadMaster() {
     $('#locateExpenseHeadMaster').hide();
@@ -133,6 +147,7 @@ function ExpenseHeadMaster_Back() {
     ClearFormData();
     GetExpenseHeadMasterTable();
     $("#tblExpenseHeadLimitDetails").hide();
+    $('#txtExpenseDescription').val('');
 }
 function GetDESIGNATIONAMEList() {
     ExpenseHeadMasterService.GetDESIGNATIONAMEList().then(function (response) {
@@ -171,11 +186,15 @@ function submit_ExpenseHeadMaster() {
         toastr.warning('Please Fill The Expense Description.');
         return;
     }
+    if (!PerDayLimit) {
+        toastr.warning('Please Fill The PerDayLimit.');
+        return;
+    }
 
     let objExpenseHeadLimitDetails = [];
     if (designationCode && parseInt(designationCode) !== 0 && G_Date && G_Date.trim() !== '' && PerDayLimit && parseFloat(PerDayLimit) !== 0) {
         objExpenseHeadLimitDetails.push({
-            designationMaster_Code: parseInt(designationCode),
+            marketingManExpenseEntryCategory_Code: parseInt(designationCode),
             effectiveFrom: G_Date,
             perDayLimit: parseFloat(PerDayLimit)
         })
@@ -217,3 +236,4 @@ window.CreateNew_ExpenseHeadMaster = CreateNew_ExpenseHeadMaster;
 window.ExpenseHeadMaster_Back = ExpenseHeadMaster_Back;
 window.validateDecimalInput = validateDecimalInput;
 window.submit_ExpenseHeadMaster = submit_ExpenseHeadMaster;
+window.EditLimitData = EditLimitData;

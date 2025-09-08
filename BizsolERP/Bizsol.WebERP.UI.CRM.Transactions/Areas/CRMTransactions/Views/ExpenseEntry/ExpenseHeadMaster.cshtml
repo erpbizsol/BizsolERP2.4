@@ -6,7 +6,11 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/ExpenseHeadMaster.js"></script>
-
+<style>
+    .fixed-height-table-limit{
+        height: 320px;
+    }
+</style>
 <div id="locateExpenseHeadMaster">
     <div class="card col-md-8">
         <div class="card-body">
@@ -47,6 +51,9 @@
                     <input id="txtExpenseDescription" type="text" name="txtExpenseDescription" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Expense Description" maxlength="11" required />
                 </div>
             </div>
+            <div class="col-md-9 text-end" style="margin-top:2rem">
+                <button type="button" id="btnExpenseEntryListBack" class="btn btn-primary btn-height" title="Back" onclick="ExpenseHeadMaster_Back()">Back</button>
+            </div>
         </div>
     </form>
 </div>
@@ -57,7 +64,7 @@
 
             <div class="col-md-3">
                 <div class="form-group">
-                    <label for="txtDesignation" class="col-form-label-sm fw-bold">Designation:<span class="text-danger">*</span></label>
+                    <label for="txtDesignation" class="col-form-label-sm fw-bold">Expense Category:<span class="text-danger">*</span></label>
                     <select id="txtDesignation" class="form-control form-control-sm box_border"></select>
                 </div>
             </div> 
@@ -76,7 +83,6 @@
 
             <div class="col-md-3 text-end" style="margin-top:2rem">
                 <button type="button" onclick="submit_ExpenseHeadMaster()" id="saveExpenseHeadMasterButton" title="Save" class="btn btn-primary btn-height">Save</button>
-                <button type="button" class="btn btn-primary btn-height" title="Back" onclick="ExpenseHeadMaster_Back()">Back</button>
             </div>
         </div>
     </form>
@@ -84,7 +90,7 @@
 <div class="row">
     <div class="col-md-8">
         <div id="tblExpenseHeadLimitDetails">
-            <div class="table-wrapper fixed-height-table">
+            <div class="table-wrapper fixed-height-table-limit">
                 <table id="ExpenseHeadLimitDetails" class="fixed-width-table table">
                     <thead id="table-header-ExpenseHeadLimitDetails">
                     </thead>
