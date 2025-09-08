@@ -574,7 +574,7 @@ async function RollingProductionEnty_GatReceivedPlanDetail() {
                 "Warehouse": `<select id="ddlReceivedGodown_${indxRowNo}" class="form-control form-control-sm box_border"></select>`,
                 "Rejected PC": `<input class="BizSolFormControl form-control form-control-sm" type="text" onchange="BizSolInputControl.OnChangeNumericTextBox(this)" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" value="0" autocomplete="off" maxlength="5">`,
                 "Rejected MT": `<input class="BizSolFormControl form-control form-control-sm" type="text" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" value="0" autocomplete="off">`,
-                "Action": '<a class="btn btn-secondary icon-height" title="Scrap Item" onclick="RollingProductionEnty_GetScrapAndRejectedItem()"> <i class="fa fa-print"></i></a>&nbsp;&nbsp; <a class="btn btn-success icon-height" title="Add" onclick="RollingProductionEnty_AddReceveBundel(this)"> <i class="fa fa-save"></i></a>'
+                "Action": '<a class="btn btn-secondary icon-height" title="Scrap & Reject Item" onclick="RollingProductionEnty_GetScrapAndRejectedItem()"> <i class="fa fa-print"></i></a>&nbsp;&nbsp; <a class="btn btn-success icon-height" title="Add" onclick="RollingProductionEnty_AddReceveBundel(this)"> <i class="fa fa-save"></i></a>'
             }
         })
        

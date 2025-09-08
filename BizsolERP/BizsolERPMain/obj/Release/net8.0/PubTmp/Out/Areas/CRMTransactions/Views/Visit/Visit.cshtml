@@ -50,8 +50,10 @@
                 </div>
                 <div class="col-md-3">
                 <label for="ddlSalesPerson" class="form-label">Sales Person  <span class="text-danger">*</span></label>
-                    <input list="ddlSalesPersonList" id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border" placeholder="Sales Person" autocomplete="off" value="All">
-                    <datalist id="ddlSalesPersonList"></datalist>
+                    @* <input list="ddlSalesPersonList" id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border" placeholder="Sales Person" autocomplete="off" value="All" hidden>
+                    <datalist id="ddlSalesPersonList"></datalist> *@
+                <select id="ddlSalesPersonlist" class="form-control form-control-sm box_border">
+                </select>
                 </div>
                 <div class="col-md-2">
                     <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width mt-4">Show</button>

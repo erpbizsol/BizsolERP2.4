@@ -8,6 +8,7 @@ let G_PhysicalStockTackingMaster_Code = 0;
 let responseData = [];
 let todayDate = '';
 let baseUrl = sessionStorage.getItem('AppBaseURL');
+
 $(document).ready(function () {
     $("#ERPHeading").text("Stock Audit");
     highlightSelectedDates();
@@ -484,7 +485,7 @@ function ScanIdDataListStockTacing(ItemMaster_Code) {
         .then(function (response) {
             HideLoader();
             if (response && response.length > 0) {
-                AutoSuggestionControl.SetUpAutoSuggestion($('#txtScanIdentificationNo'), $('#txtScanIdentificationNoList'), response.map((item) => ({ Desp: item.StockID })), 'StartWith');
+                AutoSuggestionControl.SetUpAutoSuggestion($('#txtScanIdentificationNo'), $('#txtScanIdentificationNoList'), response.map((item) => ({ Desp: item.StockID })), 'StartWith', false);
             } else {
                 $('#txtScanIdentificationNoList').empty();
             }
@@ -672,6 +673,27 @@ function PopulateTableForPrint(data) {
 
 }
 
+
+function InitScanQRCodeByCameraControl(outputQRTextElementID, callBackFunctionName) {
+    let url = baseUrl + '/CustomControl/ScanQRCodeByCameraControl';
+
+    $('#DivScanQRCodeByCameraControlModal').load(url, { OutputQRTextElementID: outputQRTextElementID, CallBackFunctionName: callBackFunctionName });
+
+}
+function PhysicalStockTacking_btnScanQR() {
+
+    InitScanQRCodeByCameraControl("txtScanIdentificationNo", "PhysicalStockTacking_CallbackScanQRCode");
+}
+function PhysicalStockTacking_CallbackScanQRCode() {
+    IdentificationNo = $('#txtScanIdentificationNo').val();
+    if (IdentificationNo === '') {
+        return;
+    }
+    ScanCoilDetails(IdentificationNo, ItemMaster_Code);
+    $('#txtScanIdentificationNo').val('');
+    $('#txtScanIdentificationNo').focus()
+}
+
 window.ScanCoilDetails = ScanCoilDetails;
 window.CreateNew = CreateNew;
 window.CloseModal = CloseModal;
@@ -688,4 +710,6 @@ window.NewAddSizePhysical_Stock = NewAddSizePhysical_Stock;
 window.NewSizeAddControl = NewSizeAddControl;
 window.PhysicalStockTacking_SizeCallBack = PhysicalStockTacking_SizeCallBack;
 window.Physical_ExportButton = Physical_ExportButton;
+window.PhysicalStockTacking_btnScanQR = PhysicalStockTacking_btnScanQR;
+window.PhysicalStockTacking_CallbackScanQRCode = PhysicalStockTacking_CallbackScanQRCode;
 

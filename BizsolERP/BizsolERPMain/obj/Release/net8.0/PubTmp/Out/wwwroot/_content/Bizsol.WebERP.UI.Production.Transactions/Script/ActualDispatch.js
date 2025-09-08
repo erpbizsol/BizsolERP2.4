@@ -32,6 +32,7 @@ function getPartyNamePendingPackingListActualDespatch() {
                 width: '-webkit-fill-available'
             });
         } else {
+            HideLoader();
             toastr.error('No data received or empty response');
         }
     }).catch(function (error) {

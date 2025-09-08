@@ -77,7 +77,7 @@
 
 @media (min-width: 768px) and (max-width: 1024px) {
     #tblorderbooking {
-        width: 150% !important;
+        /*width: 150% !important;*/ /*RollBakckhariom*/
         table-layout: auto;
     }
 
@@ -92,7 +92,7 @@
 @media (min-width: 481px) and (max-width: 767px) {
 
     #tblorderbooking {
-        width: 450% !important;
+        /* width: 450% !important;*/ /*RollBakckhariom*/
         table-layout: auto;
     }
 
@@ -133,7 +133,7 @@
     }
 
     #tblorderbooking {
-        width: 500% !important;
+       /* width: 500% !important;*/  /*RollBakckhariom*/
         table-layout: auto;
     }
 

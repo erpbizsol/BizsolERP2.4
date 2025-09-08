@@ -328,8 +328,6 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\B
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\ErrorMessages.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.staticwebassets.runtime.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.exe
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.Abstractions.dll
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\System.Formats.Asn1.dll
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.csproj.AssemblyReference.cache
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.GeneratedMSBuildEditorConfig.editorconfig
@@ -353,3 +351,25 @@ D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\refint\Bizsol.
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.pdb
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.genruntimeconfig.cache
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\ref\Bizsol.WebERP.UI.Finance.Test.dll
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.csproj.AssemblyReference.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.GeneratedMSBuildEditorConfig.editorconfig
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.AssemblyInfoInputs.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.AssemblyInfo.cs
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.csproj.CoreCompileInputs.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.MvcApplicationPartsAssemblyInfo.cs
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.MvcApplicationPartsAssemblyInfo.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.sourcelink.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\staticwebassets.build.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\staticwebassets.development.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Finance.Test.Microsoft.AspNetCore.StaticWebAssets.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Finance.Test.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\staticwebassets\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.Finance.Test.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\staticwebassets\msbuild.buildTransitive.Bizsol.WebERP.UI.Finance.Test.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\staticwebassets.pack.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\scopedcss\bundle\Bizsol.WebERP.UI.Finance.Test.styles.css
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.W.88A8D61F.Up2Date
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.dll
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\refint\Bizsol.WebERP.UI.Finance.Test.dll
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.pdb
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Test.genruntimeconfig.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Finance.Test\obj\Release\net8.0\ref\Bizsol.WebERP.UI.Finance.Test.dll
