@@ -98,6 +98,7 @@ let UrlService = {
     API_ENDPOINT_CollectionCommitment: `${environment.BASE_URL}/CollectionCommitment`,
     API_ENDPOINT_ExpenseHeadMaster: `${environment.BASE_URL}/ExpenseHeadMaster`,
     API_ENDPOINT_Weighment: `${environment.BASE_URL}/Weighment`,
+    API_ENDPOINT_CommonSingleEntryForm: `${environment.BASE_URL}/CommonSingleEntryForm`,
 }
 
 export { UrlService  }
