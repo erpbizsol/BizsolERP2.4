@@ -1,5 +1,5 @@
 ﻿import { OrderEntryListService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/OrderEntryListService.js';
-
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 let fixedParaMeterConfigurationList = [];
 let QtyMTHeader = '';
@@ -96,7 +96,8 @@ $(document).ready(function () {
         Export();
     });
 
-    
+
+    BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnCRMConfig');
 });
 
 function ShowOrderList() {

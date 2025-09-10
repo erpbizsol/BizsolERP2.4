@@ -1791,6 +1791,7 @@ function applyAlphaNumUppercase(selector) {
 
 // Apply to all inputs with this class
 applyAlphaNumUppercase(".alphanum-uppercase");
+BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnGateEntyConfiguration');
 
 window.GateEntyMode_GateEntry = GateEntyMode_GateEntry
 window.GateEntryGirdByDates = GateEntryGirdByDates

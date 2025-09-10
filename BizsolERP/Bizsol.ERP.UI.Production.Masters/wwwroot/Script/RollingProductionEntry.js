@@ -30,6 +30,10 @@ let IndxtbScrapAndRejectedItem_RejectedWeight = 3;
 let IndxtbScrapAndRejectedItem_RejectedWarehouse = 4;
 
 let DdlReceiveGodown = [];
+
+let maxDate = new Date().toISOString().slice(0, 10);
+let MinDate = new Date();
+let AllowNewEntriesForPreviousNoOfDays = 0;
 function Bind_ddlGodown() {
     RollingProductionService.Getddl('GetDdlGodown',0).then(function (resObj) {
 
@@ -335,6 +339,9 @@ function RollingProductionEnty_SaveIssueID(CallBy) {
         return;
 
     }
+    if (IsValidProductionDate(EntryDate) == false) {
+        return;
+    }
 
     let IssueIdPayload = [];
 
@@ -606,6 +613,7 @@ async function RollingProductionEnty_GatReceivedPlanDetail() {
             $('#paginator-tbItemToBeReceive').empty();
         }
         GetReceviedDetails();
+        TotalSizeORThikPC();
 
     });
 
@@ -684,6 +692,9 @@ async function RollingProductionEnty_AddReceveBundel(ele) {
         return;
     }
 
+    if (IsValidProductionDate(EntryDate) == false) {
+        return;
+    }
 
     let eleRow = $(ele).closest('tr')[0];
     let HideColObj = JSON.parse(eleRow.cells[indx_dtIssueSlitID_HideObj].innerHTML.trim());
@@ -910,6 +921,7 @@ async function RollingProductionEnty_AddReceveBundel(ele) {
                         
                         RollingProductionEnty_GatReceivedPlanDetail();
                         GetReceviedDetails();
+                        TotalSizeORThikPC();
                     }
                     else {
                         toastr.error(SaveRespone.Msg);
@@ -1181,12 +1193,96 @@ function LoadNavPlan() {
 
 
 }
+async function AllowProduectionEntriesForPreviousNoOfDays() {
+    
+    
+
+    $('#txtIssuePlanDate').attr('max', maxDate);
+    $('#txtIssueProductionDate').attr('max', maxDate);
+    $('#txtReceivePlanDate').attr('max', maxDate);
+    $('#txtReceiveProductionDate').attr('max', maxDate);
+
+    let AllowNewEntriesForPreviousNoOfDaysResopne = await RollingProductionService.Getddl('GetAllowNewEntriesForPreviousNoOfDays', 0);
+
+    if (AllowNewEntriesForPreviousNoOfDaysResopne.length > 0) {
+        AllowNewEntriesForPreviousNoOfDays = AllowNewEntriesForPreviousNoOfDaysResopne[0].AllowNewEntriesForPreviousNoOfDays
+        let allowMinDate = AllowNewEntriesForPreviousNoOfDays > 0 ? (AllowNewEntriesForPreviousNoOfDays - 1) : AllowNewEntriesForPreviousNoOfDays;
+
+        MinDate.setDate(MinDate.getDate() - allowMinDate);
+        MinDate = MinDate.toISOString().slice(0, 10);
+
+        $('#txtIssueProductionDate').attr('min', MinDate);
+        $('#txtReceiveProductionDate').attr('min', MinDate);
+        
+    }
+
+    
+
+
+
+
+}
+function IsValidProductionDate(ProducationDate) {
+   // ProducationDate = '2025-08-31'
+    let valid = true;
+
+    let d1 = new Date(ProducationDate);
+    let d2 = new Date();
+
+
+
+    let daydiff = (d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24);
+
+    if (daydiff < 0 || daydiff > AllowNewEntriesForPreviousNoOfDays) {
+        toastr.error('A production date lies within a range ' + MinDate + ' and ' + maxDate);
+        valid = false;
+    }
+    return valid;
+}
+
+function TotalSizeORThikPC() {
+    Showloader();
+    RollingProductionService.Getddl('GetReciveSummary', G_PVCProductionMaster_Code).then(function (response) {
+        HideLoader();
+
+
+
+        console.log(response);
+
+        const StringFilterColumn = [];
+        const NumericFilterColumn = [];
+        const DateFilterColumn = [];
+        const Button = false;
+        const showButtons = []
+        const StringdoubleFilterColumn = [];
+        const hiddenColumns = ["BundleNo", "WeightInCalculatedRange", "Mix"];
+        const ColumnAlignment = {
+            "Received PC": 'right',
+            "Received MT": 'right',
+            "Calculated WT": 'right'
+
+        };
+
+        if (response.length > 0) {
+            BizsolCustomFilterGrid.CreateDataTable("tbTotalSizeORThikPCHeder", "tbTotalSizeORThikPCBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false)
+            
+        } else {
+            $('#tbTotalSizeORThikPCHeder tr').empty()
+            $('#paginator-tbTotalSizeORThikPC').empty();
+        }
+
+
+    });
+}
+
+
 Bind_ddlGodown();
 Bind_ddlMachineNo();
 Bind_ddlShift();
 CurrentProductionDate();
 
 LoadNavPlan()
+AllowProduectionEntriesForPreviousNoOfDays()
 
 
 window.RollingProductionEnty_Back = RollingProductionEnty_Back;

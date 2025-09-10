@@ -14,6 +14,17 @@
         $('#' + Id).select2({
             width: '-webkit-fill-available'
         })
+    },
+    HideOrShowConfigurationSettingBtn: function HideOrShowConfigurationSettingBtn(Id) {
+        let userDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
+        if (userDetails.length>0 && userDetails[0].IsBizSolUser == 'Y') {
+            $('#' + Id).show();
+        }
+        else {
+            $('#' + Id).hide();
+        }
+
+        
     }
 }
 export { BizSolHelperFunction }
