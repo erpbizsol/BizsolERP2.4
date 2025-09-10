@@ -63,15 +63,20 @@ function EditData(Code, desp, Mode) {
         $('#txtExpenseDescription').val(desp);
         $('#newCreateForm input').prop('disabled', true);
         $('#newCreateFormExpenseHeadLimit').hide();
-        GetExpenseHeadMasterByCode(G_ExpenseHeadMaster);
+        GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, Mode);
+        $('.EditButtonLimitData').prop('disabled', true);
     }
      else {
         CreateNew_ExpenseHeadMaster();
+        $('#newCreateForm input').prop('disabled', false);
         $('#txtExpenseDescription').val(desp);
-        GetExpenseHeadMasterByCode(G_ExpenseHeadMaster);
+        GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, Mode);
     }
 }
-function GetExpenseHeadMasterByCode(G_ExpenseHeadMaster) {
+function GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, Mode) {
+    if (G_ExpenseHeadMaster == 0) {
+        return false;
+    }
     ExpenseHeadMasterService.GetExpenseHeadMasterByCode(G_ExpenseHeadMaster).then(function (response) {
         $("#tblExpenseHeadLimitDetails").show();
         if (response.length > 0) {
@@ -88,7 +93,7 @@ function GetExpenseHeadMasterByCode(G_ExpenseHeadMaster) {
                 "Effective From": 'center',
             };
             const updatedResponse = response.map(item => {
-                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit Limit" onclick="EditLimitData('${item?.["Expense Category"]}','${item?.["Effective From"]}','${item?.["Per Day Limit"]}')"><i class="fa fa-pencil"></i></button>&nbsp`;
+                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1 EditButtonLimitData" title="Edit Limit" onclick="EditLimitData('${item?.["Expense Category"]}','${item?.["Effective From"]}','${item?.["Per Day Limit"]}')"><i class="fa fa-pencil"></i></button>&nbsp`;
                 
                 return {
                     ...item,
@@ -98,18 +103,22 @@ function GetExpenseHeadMasterByCode(G_ExpenseHeadMaster) {
             });
 
             BizsolCustomFilterGrid.CreateDataTable("table-header-ExpenseHeadLimitDetails", "table-body-ExpenseHeadLimitDetails", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
-            if (data.DesignationName) {
-                BizSolHelperFunction.SelectOptionByText('txtDesignation', data.DesignationName);
-            }
+            //if (data.DesignationName) {
+            //    BizSolHelperFunction.SelectOptionByText('txtDesignation', data.DesignationName);
+            //}
 
-            if (data.EffectiveFrom) {
-                $('#txtEffectiveDate').val(data.EffectiveFrom);
-            }
+            //if (data.EffectiveFrom) {
+            //    $('#txtEffectiveDate').val(data.EffectiveFrom);
+            //}
 
-            if (data.PerDayLimit !== undefined && data.PerDayLimit !== null) {
-                $('#txtPerDayLimit').val(data.PerDayLimit);
-            }
+            //if (data.PerDayLimit !== undefined && data.PerDayLimit !== null) {
+            //    $('#txtPerDayLimit').val(data.PerDayLimit);
+            //}
+            if (Mode === 'V') {
+            $('.EditButtonLimitData').prop('disabled', true);
+
         }
+            }
         else {
             toastr.error('No Data Found');
             $("#tblExpenseHeadLimitDetails").hide();
@@ -131,6 +140,7 @@ function CreateNew_ExpenseHeadMaster() {
     $('#locateExpenseHeadMaster').hide();
     $('#newCreateForm').show();
     $('#newCreateFormExpenseHeadLimit').show();
+    $('#newCreateForm input').prop('disabled', false);
     GetDESIGNATIONAMEList();
     var today = new Date();
     const yyyy = today.getFullYear();
@@ -215,7 +225,7 @@ function submit_ExpenseHeadMaster() {
         .then(function (response) {
             if (response.Status === 'Y') {
                 toastr.success(response.Msg);
-               GetExpenseHeadMasterByCode(G_ExpenseHeadMaster);
+                GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, Mode);
 
                 ClearFormData();
             }
