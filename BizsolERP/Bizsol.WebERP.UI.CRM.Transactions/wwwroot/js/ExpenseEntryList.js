@@ -17,7 +17,6 @@ const Indx_Tbl = {
 }
 
 $(document).ready(function () {
-    //$('#tblRoutePlan').DataTable();
     $("#ERPHeading").text("Expense Entry");
     var today = new Date();
     const yyyy = today.getFullYear();
@@ -237,22 +236,41 @@ function CreateNew(Code) {
 }
 
 function DeleteData(Code) {
-    if (confirm("Are you sure you want to delete this record?")) {
-    ExpenseEntryService.DeleteExpenseEntryMaster(Code).then(function (response) {
+    $('#myModal').data('code', Code);
+    $('#myModal').modal({
+        backdrop: 'static',
+    });
+
+    $('#myModal').modal('show');
+}
+function DeleteModal() {
+    let reasonForDelete = $('#deleteReason').val();
+    let Code = $('#myModal').data('code');
+
+    if (!reasonForDelete) {
+        toastr.warning("Please Provide a Reason For Delete.");
+        return;
+    }
+    ExpenseEntryService.DeleteExpenseEntryMaster(Code, reasonForDelete).then(function (response) {
 
         if (response != '') {
             if (response.Status == 'Y') {
                 toastr.success(response.Msg);
+                CloseModal();
                 GetExpenseEntryList();
             } else {
                 toastr.error(response.Msg);
             }
 
         }
+    //}).catch(function (error) {
+    //    toastr.error(error.Msg || 'Error during Expense delete');
     });
-    } else {
-        toastr.info('Deletion cancelled by user.');
-    }
+}
+function CloseModal() {
+    $('#myModal').modal('hide');
+    $('#deleteReason').val('');
+
 }
 function setupDateInputFormatting() {
     $('#txtToDate').on('input', function () {
@@ -356,3 +374,5 @@ window.GetExpenseEntryList=GetExpenseEntryList;
 window.EditData = EditData;
 window.ViewData = ViewData;
 window.DeleteData = DeleteData;
+window.DeleteModal = DeleteModal;
+window.CloseModal = CloseModal;
