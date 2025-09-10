@@ -62,9 +62,9 @@ const PackingListFGService = {
             }
         );
     },
-    GetPendingOrderList: function GetPendingOrderList(mode, Name, BuyerPOMaster_Code, FromGodownCode) {
+    GetPendingOrderList: function GetPendingOrderList(mode, Name, BuyerPOMaster_Code, FromGodownCode, BuyerName) {
 
-        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetPendingOrderList?Mode=" + mode + "&Name=" + encodeURIComponent(Name) + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&FromGodownCode=" + FromGodownCode;
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetPendingOrderList?Mode=" + mode + "&Name=" + encodeURIComponent(Name) + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&FromGodownCode=" + FromGodownCode + "&BuyerName=" + encodeURIComponent(BuyerName);
         //alert(url);
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
