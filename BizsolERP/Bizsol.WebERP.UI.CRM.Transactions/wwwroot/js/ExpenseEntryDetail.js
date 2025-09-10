@@ -610,7 +610,7 @@ function ValidateData() {
     var FromDateRange = $('#txtFromDate').val();
     var ToDateRange = $('#txtToDate').val();
 
-    if (EntryDateRange <= FromDateRange || EntryDateRange <= ToDateRange) {
+    if (EntryDateRange < FromDateRange || EntryDateRange < ToDateRange) {
         toastr.warning("Entry Date must be greater than both From Date and To Date");
         return false;
     }
