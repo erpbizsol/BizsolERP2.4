@@ -25,6 +25,17 @@
         }
 
         
+    },
+    getFinancialYear: function getFinancialYear() {
+        let currentDate = new Date();
+        let currentMonth = currentDate.getMonth();
+
+        let startYear = currentDate.getFullYear();
+        if (currentMonth < 3) {
+            startYear = startYear - 1; 
+        }
+
+        return startYear + "-" + (startYear + 1);
     }
 }
 export { BizSolHelperFunction }

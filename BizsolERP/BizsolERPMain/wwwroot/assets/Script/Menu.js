@@ -1,6 +1,6 @@
 ﻿
 import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
-import { CRMDashboardService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/CRMDashboardService.js';
+
 $(document).ready(function () {
         bindMenu();
 });
@@ -9,7 +9,7 @@ function bindMenu() {
    // var baseUrl = `${window.location.protocol}//${window.location.host}`;
     var baseUrl = sessionStorage.getItem('AppBaseURL');
     //var baseUrl = window.AppBaseURL;
-    CRMDashboardService.GetUserDetails()
+    MenuService.GetUserDetails()
         .then(function (res) {
             sessionStorage.setItem('UserDetails', JSON.stringify(res));
             let UserDetailsobj = JSON.parse(sessionStorage.getItem('UserDetails'));

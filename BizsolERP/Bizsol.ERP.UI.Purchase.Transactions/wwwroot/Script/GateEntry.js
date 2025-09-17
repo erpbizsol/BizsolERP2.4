@@ -1,6 +1,7 @@
 ﻿import { GateEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GateEntryService.js';
 import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 
 $("#ERPHeading").text("Gate Entry");
 
@@ -30,33 +31,32 @@ function GateEntryGirdByDates() {
     let ddlVehiclesStatusInFectory = $('#ddlVehiclesStatusInFectory').val();
     let QueryCondition = ".";
     if (ddlVehiclesStatusInFectory === 'LIN') {
-        QueryCondition = " and TransactionType='LIN' and GateEntryOutDate is null"
+        QueryCondition = " and TransactionType='LIN' and GateEntryOutDate is not null"
 
     } else if (ddlVehiclesStatusInFectory === 'EIN'){
+        QueryCondition = " and TransactionType='EIN' and GateEntryOutDate is not null"
+    }
+    else if (ddlVehiclesStatusInFectory === 'PLIN') {
+        QueryCondition = " and TransactionType='LIN' and GateEntryOutDate is null"
+    }
+    else if (ddlVehiclesStatusInFectory === 'PEIN') {
         QueryCondition = " and TransactionType='EIN' and GateEntryOutDate is null"
+    }
+    else if (ddlVehiclesStatusInFectory === 'PAll') {
+        QueryCondition = " and GateEntryOutDate is null"
     }
 
     if (FromDate == "" && Todate == "") {
         return false;
     }
     GateEntryService.GateEntryDate(FromDate, Todate, QueryCondition).then(function (response) {
-        // + item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? 'Empty Out' : 'Loaded Out' +
-       // response = response.map((item) => ({ Code: item.Code, "Type In": item["Type In"], "Entry No.": item["Entry No."], "Date In Time": item["Date In Time"], "Date Out Time": item["Date Out Time"], "Vehicle No.": item["Vehicle No."], "Party name": item["Party name"], Action: '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + '_' + item.Code + '\')">mansojs</a>' }))
-        //console.log(response);
-        //response = response.map((item) => ({
-        //    Code: item.Code, "Type In": item["Type In"], "Entry No.": item["Entry No."], "Date In Time": item["Date In Time"], "Date Out Time": item["Date Out Time"], "Vehicle No.": item["Vehicle No."], "Party name": item["Party name"],
-        //    Action: item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>':item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
-        //}))
-        //response = response.map((item) => (
-        //    item["Action"] = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
-        //));
-
-        //response.forEach(item => {
-        //    item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
-        //});
+       
         console.log(response);
+        //response.forEach(item => {
+        //    item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] +' '+ item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] +' '+ item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] +' '+ item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') +'\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
+        //});
         response.forEach(item => {
-            item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] +' '+ item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] +' '+ item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] +' '+ item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') +'\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
+            item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'editFull_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
         });
         //console.log(response);
         const StringFilterColumn = ["Type In", "Party name", "Vehicle No"];
@@ -69,8 +69,21 @@ function GateEntryGirdByDates() {
         const ColumnAlignment = {};
         if (response.length > 0) {
             BizsolCustomFilterGrid.CreateDataTable("tbGateEntyViewHeader", "tbGateEntyViewBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+            let VehiclesRows = response;
+            let VehiclesRowsGroupedbyVehicles = VehiclesRows.reduce((acc, item) => {
+                // Use the category as the key
+                const key = item["Vehicle No"];
+                if (key && !acc.includes(key)) {
+                    acc.push(key);
+                }
+                // acc[key].push(item);
+                return acc;
+            }, [])
+
+            $('#spNoOfVehicles')[0].innerHTML = '<b>' + VehiclesRowsGroupedbyVehicles.length + '</b>';
         } else {
             $('#tbGateEntyView tr').empty()
+            $('#spNoOfVehicles')[0].innerHTML = '0';
         }
 
     });
@@ -82,7 +95,7 @@ GateEntryService.GetMinPending().then(function (response) {
     GateEntryGirdByDates();
     GetConfigGateEntry();
     LockDocumntFutureDate();
-    
+    LoadListDriverDetailsByVehicleNo();
 });
 
 function ViewAttachment_GateEntry(GateEntryMaster_Code, sourceDownloadFileName) {
@@ -94,13 +107,15 @@ function InitAttachmentControl(masterTableName, masterTableCode, detailTableName
     $('#GateEntry_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode, SourceDownloadFileName: sourceDownloadFileName });
 }
 function GateEntyMode_GateEntry(Mode,EntryType) {
-    ChangeMode(Mode);
+    //ChangeMode(Mode);
     GateEntryMaster_Code = 0;
     if (Mode === 'form' && EntryType === 'EmptyInNew') {
+        ChangeMode(Mode);
         ClearAllFrm();
         EmptyInNew(); 
     }
     else if (Mode === 'form' && EntryType === 'LoadedInNew') {
+        ChangeMode(Mode);
         ClearAllFrm();
         LoadedInNew();
     }
@@ -109,6 +124,7 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
         GateEntryMaster_Code = EntryType.split('_')[1];
         GateEntryService.GetGateEntryDetails(GateEntryMaster_Code).then(function (response) {
             //console.log(response);
+            ChangeMode(Mode);
             ClearEmptyOutOrLoadedOutFrm();
             UpdateLoadedIn_Emptyout(response);
         });
@@ -118,27 +134,55 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
         GateEntryMaster_Code = EntryType.split('_')[1];
         GateEntryService.GetGateEntryDetails(GateEntryMaster_Code).then(function (response) {
             //console.log(response);
+            ChangeMode(Mode);
             ClearEmptyOutOrLoadedOutFrm();
             UpdateEmptyIn_loadedout(response);
         });
         
     }
     else if (EntryType.includes('print') == true) {
+        ChangeMode(Mode);
         GateEntryMaster_Code = EntryType.split('_')[1];
         PrintGateEntry(GateEntryMaster_Code);
+    }
+    else if (EntryType.includes('edit') == true) {
+        
+        GateEntryMaster_Code = EntryType.split('_')[1];
+        GateEntryService.GetGateEntryDetails(GateEntryMaster_Code).then(function (response) {
+            // console.log(response);
+
+            var ModuleName = "Gate Entry",
+                ShowMsg = "Y",
+                FinYear = BizSolHelperFunction.getFinancialYear();
+            var OptionName = 'Edit';
+            MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (respCheck) {
+
+                if (respCheck.CheckModuleOptionRight == 'N') {
+                    toastr.error(respCheck.Msg);
+                    return false;
+                } else {
+                    ChangeMode(Mode);
+                    EditGateEntry(response, EntryType);
+                }
+            });
+
+        });
+
     }
     else if (EntryType.includes('view') == true) {
         GateEntryMaster_Code = EntryType.split('_')[1];
         GateEntryService.GetGateEntryDetails(GateEntryMaster_Code).then(function (response) {
-           // console.log(response);
+            // console.log(response);
+            ChangeMode(Mode);
             ViewGateEntry(response, EntryType);
         });
 
     }
     else if (Mode === 'grid') {
+        ChangeMode(Mode);
         ClearAllFrm();
     }
-    
+   
 }
 function ChangeMode(Mode) {
     if (Mode==='form') {
@@ -155,24 +199,30 @@ function LoadedInNew() {
     $('#RowfrmLoadedInWeightmentSlipNoLoaded').hide();
     $('#RowfrmLoadedInPOAccess').hide();
     $('#RowfrmLoadedInddlPurchaseOrder').hide();
+    
+    $('#DivLoadedInChassisNo').hide();
+    $('#DivLoadedInRCNo').hide();
+    $('#DivLoadedInRCExpiredDate').hide();
+    $('#DivLoadedInDriverLicenseNo').hide();
+    $('#DivLoadedInDriverLicenseExpiredDate').hide();
 
     $('#frmLoadedIn_txtDateIn').val(new Date().toISOString().slice(0, 10));
     $('#frmLoadedIn_txtVehicleInTime').val(`${new Date().getHours()}:${new Date().getMinutes()}`);
 
 
 
-    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'ReportingDatetimeApplicable').PeramaterValue === 'Y') {
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
         $('#frmLoadedIn_txtReportingDatetime').val('');
         $('#RowfrmLoadedInReportingDatetime').show();
     }
-    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'WeightApplicable').PeramaterValue === 'Y') {
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
         $('#frmLoadedIn_txtVehicleLoadedWeight').val('');
         $('#frmLoadedIn_txtWeightmentSlipNoLoaded').val('');
 
         $('#RowfrmLoadedInVehicleLoadedWeight').show();
         $('#RowfrmLoadedInWeightmentSlipNoLoaded').show();
     }
-    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'POWiseEntryMendatory').PeramaterValue === 'Y') {
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'POWiseEntryMendatory').PerameterValue === 'Y') {
         
         GateEntryService.GetPendingPONO().then(function (response) {
             //console.log(response);
@@ -189,6 +239,20 @@ function LoadedInNew() {
         WithPO();
      }
 
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
+        $('#frmLoadedIn_txtChassisNo').val('');
+        $('#frmLoadedIn_txtRCNo').val('');
+        $('#frmLoadedIn_txtRCExpiredDate').val('');
+        $('#frmLoadedIn_txtDriverLicenseNo').val('');
+        $('#frmLoadedIn_txtDriverLicenseExpiredDate').val('');
+
+        $('#DivLoadedInChassisNo').show();
+        $('#DivLoadedInRCNo').show();
+        $('#DivLoadedInRCExpiredDate').show();
+        $('#DivLoadedInDriverLicenseNo').show();
+        $('#DivLoadedInDriverLicenseExpiredDate').show();
+    }
+
     GateEntryService.GetTransportersNameList().then(function (response) {
         AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedIn_ddlTransporterName'), $('#frmLoadedIn_ddlTransporterName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
     });
@@ -196,7 +260,22 @@ function LoadedInNew() {
         AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedIn_txtVendorName'), $('#frmLoadedIn_txtVendorName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
     });
     GateEntryService.GetGoodDespList().then(function (response) {
-        AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedIn_txtGoodsDescription'), $('#frmLoadedIn_txtGoodsDescription_List'), response.map((item) => ({ Desp: item.GoodDesp })), 'StartWith');
+        // Map with UOM included for auto-suggestion
+        const goodsList = response.map((item) => ({ Desp: item.GoodDesp, UOM: item.UOM }));
+
+        // Setup auto-suggestion with selection callback to set UOM
+        AutoSuggestionControl.SetUpAutoSuggestion(
+            $('#frmLoadedIn_txtGoodsDescription'),
+            $('#frmLoadedIn_txtGoodsDescription_List'),
+            goodsList,
+            'StartWith',
+            true,
+            function(selectedItem) {
+                if (selectedItem && selectedItem.UOM) {
+                    $('#frmLoadedIn_txtUOM').val(selectedItem.UOM).trigger('change');
+                }
+            }
+        );
     });
 
     GateEntryService.GetUOMMasterList().then(function (response) {
@@ -217,6 +296,7 @@ function LoadedInNew() {
 
     });
     
+   
 
     $('#DivfrmEmptyOut').hide();
 }
@@ -234,6 +314,12 @@ function EmptyInNew() {
     $('#RowfrmEmptyInVehicleEmptyWeight').hide();
     $('#RowfrmEmptyInWeightmentSlipNoEmpty').hide();
 
+    $('#DivEmptyInChassisNo').hide();
+    $('#DivEmptyInRCNo').hide();
+    $('#DivEmptyInRCExpiredDate').hide();
+    $('#DivEmptyInDriverLicenseNo').hide();
+    $('#DivEmptyInDriverLicenseExpiredDate').hide();
+
     GateEntryService.GetTransportersNameList().then(function (response) {
         //console.log(response);
         //BindSelectList($('#frmEmptyIn_ddlTransporterName')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })));
@@ -243,18 +329,33 @@ function EmptyInNew() {
         AutoSuggestionControl.SetUpAutoSuggestion($('#frmEmptyIn_ddlTransporterName'), $('#frmEmptyIn_ddlTransporterName_List'), response.map((item) => ({ Desp: item.AccountDesp })),'StartWith');
     });
 
-    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'ReportingDatetimeApplicable').PeramaterValue === 'Y') {
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
         $('#frmEmptyIn_txtReportingDatetime').val('');
         $('#RowfrmEmptyInReportingDatetime').show();
     }
-    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'WeightApplicable').PeramaterValue === 'Y') {
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
         $('#frmEmptyIn_txtVehicleEmptyWeight').val('');
         $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val('');
 
         $('#RowfrmEmptyInVehicleEmptyWeight').show();
         $('#RowfrmEmptyInWeightmentSlipNoEmpty').show();
     }
-   
+
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
+        $('#frmEmptyIn_txtChassisNo').val('');
+        $('#frmEmptyIn_txtRCNo').val('');
+        $('#frmEmptyIn_txtRCExpiredDate').val('');
+        $('#frmEmptyIn_txtDriverLicenseNo').val('');
+        $('#frmEmptyIn_txtDriverLicenseExpiredDate').val('');
+              
+        $('#DivEmptyInChassisNo').show();
+        $('#DivEmptyInRCNo').show();
+        $('#DivEmptyInRCExpiredDate').show();
+        $('#DivEmptyInDriverLicenseNo').show();
+        $('#DivEmptyInDriverLicenseExpiredDate').show();
+    }
+
+    $('#DivfrmEmptyIn_fileVehiclePhoto').show();
 
     $('#DivfrmLoadedOut').hide();
 }
@@ -268,6 +369,11 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#RowfrmLoadedInddlPurchaseOrder').hide();
     $('#RowfrmEmptyOutVehicleEmptyWeight').hide();
     $('#RowfrmEmptyOutWeightmentSlipNoLoaded').hide();
+    $('#DivLoadedInChassisNo').hide();
+    $('#DivLoadedInRCNo').hide();
+    $('#DivLoadedInRCExpiredDate').hide();
+    $('#DivLoadedInDriverLicenseNo').hide();
+    $('#DivLoadedInDriverLicenseExpiredDate').hide();
 
     $('#frmEmptyOut_txtDateOut').val(new Date().toISOString().slice(0, 10));
     $('#frmEmptyOut_txtOutTime').val(`${new Date().getHours()}:${new Date().getMinutes()}`);
@@ -318,9 +424,12 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtEWayBillNo').val(gateEntryData[0].EwaybillNo);
     $('#frmLoadedIn_txtEWayBillDate').val(gateEntryData[0].EwaybillDate ==null?'': new Date(gateEntryData[0].EwaybillDate).toISOString().slice(0, 10));
     $('#frmLoadedIn_txtRemarks').val(gateEntryData[0].Remarks);
-    
+    $('#frmLoadedIn_txtChassisNo').val(gateEntryData[0].ChassisNo); 
+    $('#frmLoadedIn_txtRCNo').val(gateEntryData[0].RCNo);
+    $('#frmLoadedIn_txtRCExpiredDate').val(gateEntryData[0].RCExpiredDate == null ? '' : new Date(gateEntryData[0].RCExpiredDate).toISOString().slice(0, 10));
+    $('#frmLoadedIn_txtDriverLicenseNo').val(gateEntryData[0].DriverLicenseNo);
+    $('#frmLoadedIn_txtDriverLicenseExpiredDate').val(gateEntryData[0].DriverLicenseExpiredDate == null ? '' : new Date(gateEntryData[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
 
-    
 
 
     $('#frmLoadedIn_txtVehicleInTime').attr('readonly', 'readonly');
@@ -346,6 +455,12 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtEWayBillDate').attr('readonly', 'readonly');
     $('#frmLoadedIn_txtRemarks').attr('readonly', 'readonly');
 
+    $('#frmLoadedIn_txtChassisNo').attr('readonly', 'readonly');
+    $('#frmLoadedIn_txtRCNo').attr('readonly', 'readonly');
+    $('#frmLoadedIn_txtRCExpiredDate').attr('readonly', 'readonly');
+    $('#frmLoadedIn_txtDriverLicenseNo').attr('readonly', 'readonly');
+    $('#frmLoadedIn_txtDriverLicenseExpiredDate').attr('readonly', 'readonly');
+
     $('#DivfrmLoadedIn_fileVehiclePhoto').hide();
     $('#DivfrmLoadedIn_fileGoodsPhoto').hide();
     $('#DivfrmLoadedIn_fileInvoicePhoto').hide();
@@ -355,18 +470,33 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_btnSave').attr('disabled', 'disabled')
     $('#frmLoadedIn_btnCancel').attr('disabled', 'disabled')
 
-    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'ReportingDatetimeApplicable').PeramaterValue === 'Y') {
+    $('#frmLoadedIn_btnSave').removeAttr('onclick');
+    $('#frmLoadedIn_btnSave').attr('onclick', "GateEntry_SaveData('LoadedInSave')");
+
+    $('#frmEmptyOut_btnSave').removeAttr('onclick');
+    $('#frmEmptyOut_btnSave').attr('onclick', "GateEntry_SaveData('UpdateLoadedInSave')");
+
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
         
         $('#RowfrmLoadedInReportingDatetime').show();
     }
-    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'WeightApplicable').PeramaterValue === 'Y') {
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
         
         $('#RowfrmLoadedInVehicleLoadedWeight').show();
         $('#RowfrmLoadedInWeightmentSlipNoLoaded').show();
         $('#RowfrmEmptyOutVehicleEmptyWeight').show();
         $('#RowfrmEmptyOutWeightmentSlipNoLoaded').show();
     }
-    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'POWiseEntryMendatory').PeramaterValue === 'Y') {
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
+
+        $('#DivLoadedInChassisNo').show();
+        $('#DivLoadedInRCNo').show();
+        $('#DivLoadedInRCExpiredDate').show();
+        $('#DivLoadedInDriverLicenseNo').show();
+        $('#DivLoadedInDriverLicenseExpiredDate').show();
+    }
+
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'POWiseEntryMendatory').PerameterValue === 'Y') {
         GateEntryService.GetPendingPONO().then(function (response) {
                 console.log(response);
             console.log(gateEntryData[0].PurchaseOrderMaster_Code);
@@ -416,8 +546,10 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     else {
         jQuery('input:radio[name="rdPOAccess"]').filter('[value="withpo"]').attr('checked', true);
     }
-    $('#DivfrmEmptyOut').show();
-   
+      $('#DivfrmEmptyOut').show();
+      $('#RowfrmEmptyOut_fileVehiclePhoto').show();
+
+
 }
 
 function UpdateEmptyIn_loadedout(gateEntryData) {
@@ -435,6 +567,13 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#frmLoadedOut_txtDateOut').val(gateEntryData[0].GateEntryOutDate == null ? new Date().toISOString().slice(0, 10) : new Date(gateEntryData[0].GateEntryDate).toISOString().slice(0, 10));
     $('#frmLoadedOut_txtVehicleOutTime').val(gateEntryData[0].VehicleOutTime == '00:00' ? `${new Date().getHours()}:${new Date().getMinutes()}` : gateEntryData[0].VehicleOutTime);
 
+    $('#frmEmptyIn_txtChassisNo').val(gateEntryData[0].ChassisNo);
+    $('#frmEmptyIn_txtRCNo').val(gateEntryData[0].RCNo);
+    $('#frmEmptyIn_txtRCExpiredDate').val(new Date(gateEntryData[0].RCExpiredDate).toISOString().slice(0, 10));
+    $('#frmEmptyIn_txtDriverLicenseNo').val(gateEntryData[0].DriverLicenseNo);
+    $('#frmEmptyIn_txtDriverLicenseExpiredDate').val(new Date(gateEntryData[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
+
+
     $('#frmEmptyIn_txtVehicleNo').attr('readonly', 'readonly')
     $('#frmEmptyIn_txtDriverName').attr('readonly', 'readonly')
     $('#frmEmptyIn_txtDriverNo').attr('readonly', 'readonly')
@@ -443,19 +582,32 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#frmEmptyIn_txtVehicleEmptyWeight').attr('readonly', 'readonly')
     $('#frmEmptyIn_txtWeightmentSlipNoEmpty').attr('readonly', 'readonly')
     $('#frmEmptyIn_txtReportingDatetime').attr('readonly', 'readonly')
+    $('#frmEmptyIn_txtChassisNo').attr('readonly', 'readonly');
+    $('#frmEmptyIn_txtRCNo').attr('readonly', 'readonly');
+    $('#frmEmptyIn_txtRCExpiredDate').attr('readonly', 'readonly');
+    $('#frmEmptyIn_txtDriverLicenseNo').attr('readonly', 'readonly');
+    $('#frmEmptyIn_txtDriverLicenseExpiredDate').attr('readonly', 'readonly');
+
+    
     $('#DivfrmEmptyIn_fileVehiclePhoto').hide();
     $('#RowfrmEmptyInReportingDatetime').hide();
     $('#RowfrmEmptyInVehicleEmptyWeight').hide();
     $('#RowfrmEmptyInWeightmentSlipNoEmpty').hide();
     $('#RowfrmLoadedOutVehicleLoadedWeight').hide();
     $('#RowfrmLoadedOutWeightmentSlipNoLoadedOut').hide();
+
+    $('#DivEmptyInChassisNo').hide();
+    $('#DivEmptyInRCNo').hide();
+    $('#DivEmptyInRCExpiredDate').hide();
+    $('#DivEmptyInDriverLicenseNo').hide();
+    $('#DivEmptyInDriverLicenseExpiredDate').hide();
     
 
-    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'ReportingDatetimeApplicable').PeramaterValue === 'Y') {
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
         $('#RowfrmEmptyInReportingDatetime').show();
     }
     
-    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'WeightApplicable').PeramaterValue === 'Y') {
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
         $('#RowfrmEmptyInVehicleEmptyWeight').show();
         $('#RowfrmEmptyInWeightmentSlipNoEmpty').show();
         $('#RowfrmLoadedOutVehicleLoadedWeight').show();
@@ -466,7 +618,19 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
         AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedOut_txtCustomerName'), $('#frmLoadedOut_txtCustomerName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
     });
     GateEntryService.GetGoodDespList().then(function (response) {
-        AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedOut_txtGoodsDescription'), $('#frmLoadedOut_txtGoodsDescription_List'), response.map((item) => ({ Desp: item.GoodDesp })), 'StartWith');
+        const goodsList = response.map((item) => ({ Desp: item.GoodDesp, UOM: item.UOM }));
+        AutoSuggestionControl.SetUpAutoSuggestion(
+            $('#frmLoadedOut_txtGoodsDescription'),
+            $('#frmLoadedOut_txtGoodsDescription_List'),
+            goodsList,
+            'StartWith',
+            true,
+            function(selectedItem) {
+                if (selectedItem && selectedItem.UOM) {
+                    $('#frmLoadedOut_ddlUOM').val(selectedItem.UOM).trigger('change');
+                }
+            }
+        );
     });
 
     GateEntryService.GetUOMMasterList().then(function (response) {
@@ -491,10 +655,29 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     ////    width: '-webkit-fill-available'
     ////});
 
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
+        $('#DivEmptyInChassisNo').show();
+        $('#DivEmptyInRCNo').show();
+        $('#DivEmptyInRCExpiredDate').show();
+        $('#DivEmptyInDriverLicenseNo').show();
+        $('#DivEmptyInDriverLicenseExpiredDate').show();
+    }
+
+
     $('.nav-tabs button[data-bs-target="#EmptyInTab"]').tab('show')
     $('#frmEmptyIn_btnSave').attr('disabled', 'disabled')
     $('#frmEmptyIn_btnCancel').attr('disabled', 'disabled')
     $('#DivfrmLoadedOut').show();
+    $('#RowLoadedOut_fileVehiclePhoto').show();
+    $('#RowLoadedOut_fileGoodsPhoto').show();
+    $('#RowLoadedOut_fileInvoicePhoto').show();
+    $('#RowLoadedOut_fileOtherPhoto').show();
+
+    $('#frmEmptyIn_btnSave').removeAttr('onclick');
+    $('#frmEmptyIn_btnSave').attr('onclick', "GateEntry_SaveData('EmptyInSave')");
+
+    $('#frmLoadedOut_btnSave').removeAttr('onclick');
+    $('#frmLoadedOut_btnSave').attr('onclick', "GateEntry_SaveData('UpdateEmptyInSave')");
 }
 function BindSelectList(element, list) {
     let option = '<option value="0"></option>';
@@ -509,8 +692,8 @@ function ShowGateEntryConfigurationModal() {
 
         let option = '';
         $.each(response, function (key, val) {
-            let Checked = val.PeramaterValue.toLowerCase() === 'y'?'checked':''
-            option += `<div class="col-6"><input type="checkbox" class="box_border" ${Checked} onclick="setGateEntryParamater(this,'${val.PeramaterName}','${val.PeramaterValue}')" />&nbsp;<label>${BizSolHelperFunction.ToWithSpace(val.PeramaterName) }</label></div>`;
+            let Checked = val.PerameterValue.toLowerCase() === 'y'?'checked':''
+            option += `<div class="col-6"><input type="checkbox" class="box_border" ${Checked} onclick="setGateEntryParamater(this,'${val.PerameterName}','${val.PerameterValue}')" />&nbsp;<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName) }</label></div>`;
         });
 
 
@@ -524,12 +707,12 @@ function ShowGateEntryConfigurationModal() {
 
     
 }
-function setGateEntryParamater(element, PeramaterName, PeramaterValue) {
-    let SetPeramaterValue = 'N';
+function setGateEntryParamater(element, PerameterName, PerameterValue) {
+    let SetPerameterValue = 'N';
     if (element.checked == true) {
-        SetPeramaterValue = 'Y';
+        SetPerameterValue = 'Y';
     }
-    GateEntryService.UpdateConfigGateEntry(PeramaterName, SetPeramaterValue).then(function (response) {
+    GateEntryService.UpdateConfigGateEntry(PerameterName, SetPerameterValue).then(function (response) {
         if (response.Status === 'Y') {
             //alert(response.Msg)
             toastr.success(response.Msg);
@@ -626,10 +809,13 @@ function GateEntry_SaveData(Mode) {
     let ReportingDatetime = null;
     let POItemsData = "";
     let OutRemarks = "";
+    let ChassisNo = "";
+    let RCNo = "";
+    let RCExpiredDate = "";
+    let DriverLicenseNo = "";
+    let DriverLicenseExpiredDate = "";
 
-    
-
-    if (Mode === 'EmptyInSave') {
+    if (Mode === 'EmptyInSave' || Mode === 'emptyinedit') {
         let PhotoLenth = 0;
         Time = $('#frmEmptyIn_txtVehicleInTime').val();
         VehicleNo = $('#frmEmptyIn_txtVehicleNo').val();
@@ -646,7 +832,46 @@ function GateEntry_SaveData(Mode) {
             $('#frmEmptyIn_txtVehicleNo').focus();
             return;
         }
-        
+        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
+            ChassisNo = $('#frmEmptyIn_txtChassisNo').val();
+            RCNo = $('#frmEmptyIn_txtRCNo').val();
+            RCExpiredDate = $('#frmEmptyIn_txtRCExpiredDate').val();
+            DriverLicenseNo = $('#frmEmptyIn_txtDriverLicenseNo').val();
+            DriverLicenseExpiredDate = $('#frmEmptyIn_txtDriverLicenseExpiredDate').val();
+
+            if (typeof ChassisNo === 'undefined' || ChassisNo === '' || ChassisNo === null) {
+                valid = false;
+                toastr.error('Please Check! Chassis No can not be blank');
+                $('#frmEmptyIn_txtChassisNo').focus();
+                return;
+            }
+            if (typeof RCNo === 'undefined' || RCNo === '' || RCNo === null) {
+                valid = false;
+                toastr.error('Please Check! RC No can not be blank');
+                $('#frmEmptyIn_txtRCNo').focus();
+                return;
+            }
+            if (typeof RCExpiredDate === 'undefined' || RCExpiredDate === '' || RCExpiredDate === null) {
+                valid = false;
+                toastr.error('Please Check! RC Expired Date can not be blank');
+                $('#frmEmptyIn_txtRCExpiredDate').focus();
+                return;
+            }
+            if (typeof DriverLicenseNo === 'undefined' || DriverLicenseNo === '' || DriverLicenseNo === null) {
+                valid = false;
+                toastr.error('Please Check! Driver License No can not be blank');
+                $('#frmEmptyIn_txtDriverLicenseNo').focus();
+                return;
+            }
+            if (typeof DriverLicenseExpiredDate === 'undefined' || DriverLicenseExpiredDate === '' || DriverLicenseExpiredDate === null) {
+                valid = false;
+                toastr.error('Please Check! Driver License Expired Date can not be blank');
+                $('#frmEmptyIn_txtDriverLicenseExpiredDate').focus();
+                return;
+            }
+            
+        }
+
         if (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null) {
             valid = false;
             toastr.error('Please Check! Driver Name can not be blank');
@@ -673,7 +898,7 @@ function GateEntry_SaveData(Mode) {
             return;
         }
 
-        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'WeightApplicable').PeramaterValue === 'Y') {
+        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
             EmptyWeight = $('#frmEmptyIn_txtVehicleEmptyWeight').val();
             WeightmentSlipNumberIn = $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val();
 
@@ -691,14 +916,14 @@ function GateEntry_SaveData(Mode) {
             }
         }
 
-        if (typeof PhotoLenth === 'undefined' || PhotoLenth === 0) {
+        if (Mode === 'EmptyInSave' && (typeof PhotoLenth === 'undefined' || PhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Vehicle Photo can not be blank');
             $('#frmEmptyIn_fileVehiclePhoto').focus();
             return;
         }
 
-        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'ReportingDatetimeApplicable').PeramaterValue === 'Y') {
+        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
             ReportingDatetime = $('#frmEmptyIn_txtReportingDatetime').val();
 
             if (typeof ReportingDatetime === 'undefined' || ReportingDatetime === '' || ReportingDatetime === null) {
@@ -710,7 +935,7 @@ function GateEntry_SaveData(Mode) {
         }
 
     }
-    else if (Mode === 'UpdateEmptyInSave') {
+    else if (Mode === 'UpdateEmptyInSave' || Mode ==='emptyineditfull') {
         Time = $('#frmEmptyIn_txtVehicleInTime').val();
         VehicleNo = $('#frmEmptyIn_txtVehicleNo').val();
         DriverName = $('#frmEmptyIn_txtDriverName').val();
@@ -739,8 +964,15 @@ function GateEntry_SaveData(Mode) {
         let InvoicePhotoLenth = $('#frmLoadedOut_fileInvoicePhoto')[0].files.length;
         //let OtherPhotoLenth = $('#frmLoadedOut_fileOtherPhoto')[0].files.length;
         
+        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
+            ChassisNo = $('#frmEmptyIn_txtChassisNo').val();
+            RCNo = $('#frmEmptyIn_txtRCNo').val();
+            RCExpiredDate = $('#frmEmptyIn_txtRCExpiredDate').val();
+            DriverLicenseNo = $('#frmEmptyIn_txtDriverLicenseNo').val();
+            DriverLicenseExpiredDate = $('#frmEmptyIn_txtDriverLicenseExpiredDate').val();
+        }
 
-        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'WeightApplicable').PeramaterValue === 'Y') {
+        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
             LoadedWeight = $('#frmLoadedOut_txtVehicleLoadedWeight').val();
             WeightmentSlipNumberOut = $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val();
 
@@ -763,19 +995,19 @@ function GateEntry_SaveData(Mode) {
             }
         }
 
-        if (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0) {
+        if (Mode === 'UpdateEmptyInSave' && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Vehicle Photo can not be blank');
             $('#frmLoadedOut_fileVehiclePhoto').focus();
             return;
         }
-        if (typeof GoodsPhotoLenth === 'undefined' || GoodsPhotoLenth === 0) {
+        if (Mode === 'UpdateEmptyInSave' && (typeof GoodsPhotoLenth === 'undefined' || GoodsPhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Goods Photo can not be blank');
             $('#frmLoadedOut_fileGoodsPhoto').focus();
             return;
         }
-        if (typeof InvoicePhotoLenth === 'undefined' || InvoicePhotoLenth === 0) {
+        if (Mode === 'UpdateEmptyInSave' && (typeof InvoicePhotoLenth === 'undefined' || InvoicePhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Document Photo can not be blank');
             $('#frmLoadedOut_fileInvoicePhoto').focus();
@@ -829,7 +1061,7 @@ function GateEntry_SaveData(Mode) {
         }
        
     }
-    else if (Mode === 'LoadedInSave') {
+    else if (Mode === 'LoadedInSave' || Mode ==='loadedinedit') {
         Time = $('#frmLoadedIn_txtVehicleInTime').val();
         VehicleNo = $('#frmLoadedIn_txtVehicleNo').val();
         DriverName = $('#frmLoadedIn_txtDriverName').val();
@@ -865,6 +1097,45 @@ function GateEntry_SaveData(Mode) {
             $('#frmLoadedIn_txtVehicleNo').focus();
             return;
         }
+        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
+            ChassisNo = $('#frmLoadedIn_txtChassisNo').val();
+            RCNo = $('#frmLoadedIn_txtRCNo').val();
+            RCExpiredDate = $('#frmLoadedIn_txtRCExpiredDate').val();
+            DriverLicenseNo = $('#frmLoadedIn_txtDriverLicenseNo').val();
+            DriverLicenseExpiredDate = $('#frmLoadedIn_txtDriverLicenseExpiredDate').val();
+
+            if (typeof ChassisNo === 'undefined' || ChassisNo === '' || ChassisNo === null) {
+                valid = false;
+                toastr.error('Please Check! Chassis No can not be blank');
+                $('#frmLoadedIn_txtChassisNo').focus();
+                return;
+            }
+            if (typeof RCNo === 'undefined' || RCNo === '' || RCNo === null) {
+                valid = false;
+                toastr.error('Please Check! RC No can not be blank');
+                $('#frmLoadedIn_txtRCNo').focus();
+                return;
+            }
+            if (typeof RCExpiredDate === 'undefined' || RCExpiredDate === '' || RCExpiredDate === null) {
+                valid = false;
+                toastr.error('Please Check! RC Expired Date can not be blank');
+                $('#frmLoadedIn_txtRCExpiredDate').focus();
+                return;
+            }
+            if (typeof DriverLicenseNo === 'undefined' || DriverLicenseNo === '' || DriverLicenseNo === null) {
+                valid = false;
+                toastr.error('Please Check! Driver License No can not be blank');
+                $('#frmLoadedIn_txtDriverLicenseNo').focus();
+                return;
+            }
+            if (typeof DriverLicenseExpiredDate === 'undefined' || DriverLicenseExpiredDate === '' || DriverLicenseExpiredDate === null) {
+                valid = false;
+                toastr.error('Please Check! Driver License Expired Date can not be blank');
+                $('#frmLoadedIn_txtDriverLicenseExpiredDate').focus();
+                return;
+            }
+        }
+        
         if (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null) {
             valid = false;
             toastr.error('Please Check! Driver Name can not be blank');
@@ -891,7 +1162,7 @@ function GateEntry_SaveData(Mode) {
             $('#frmLoadedIn_ddlTransporterName').focus();
             return;
         }
-        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'WeightApplicable').PeramaterValue === 'Y') {
+        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
             LoadedWeight = $('#frmLoadedIn_txtVehicleLoadedWeight').val();
             WeightmentSlipNumberIn = $('#frmLoadedIn_txtWeightmentSlipNoLoaded').val();
 
@@ -910,28 +1181,24 @@ function GateEntry_SaveData(Mode) {
             }
         }
 
-        if (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0) {
+        if (Mode === 'LoadedInSave' && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Vehicle Photo can not be blank');
             $('#frmLoadedIn_fileVehiclePhoto').focus();
             return;
         }
-        if (typeof GoodsPhotoLenth === 'undefined' || GoodsPhotoLenth === 0) {
+        if (Mode === 'LoadedInSave' &&(typeof GoodsPhotoLenth === 'undefined' || GoodsPhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Goods Photo can not be blank');
             $('#frmLoadedIn_fileGoodsPhoto').focus();
             return;
         }
-        if (typeof InvoicePhotoLenth === 'undefined' || InvoicePhotoLenth === 0) {
+        if (Mode === 'LoadedInSave' &&(typeof InvoicePhotoLenth === 'undefined' || InvoicePhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Document Photo can not be blank');
             $('#frmLoadedIn_fileInvoicePhoto').focus();
             return;
         }
-
-        //if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'POWiseEntryMendatory').PeramaterValue === 'Y') {
-
-        //}
         
 
         if (IsWithPo == true) {
@@ -1013,7 +1280,7 @@ function GateEntry_SaveData(Mode) {
             return;
         }
 
-        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'ReportingDatetimeApplicable').PeramaterValue === 'Y') {
+        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
             ReportingDatetime = $('#frmLoadedIn_txtReportingDatetime').val();
 
             if (typeof ReportingDatetime === 'undefined' || ReportingDatetime === '' || ReportingDatetime === null) {
@@ -1025,7 +1292,7 @@ function GateEntry_SaveData(Mode) {
         }
 
     }
-    else if (Mode == 'UpdateLoadedInSave') {
+    else if (Mode == 'UpdateLoadedInSave' || Mode ==='loadedineditfull') {
         Time = $('#frmLoadedIn_txtVehicleInTime').val();
         VehicleNo = $('#frmLoadedIn_txtVehicleNo').val();
         DriverName = $('#frmLoadedIn_txtDriverName').val();
@@ -1054,8 +1321,14 @@ function GateEntry_SaveData(Mode) {
         OutRemarks = $('#frmEmptyOut_txtRemarks').val();
 
         let VehiclePhotoLenth = $('#frmEmptyOut_fileVehiclePhoto')[0].files.length;
-
-        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'WeightApplicable').PeramaterValue === 'Y') {
+        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
+            ChassisNo = $('#frmLoadedIn_txtChassisNo').val();
+            RCNo = $('#frmLoadedIn_txtRCNo').val();
+            RCExpiredDate = $('#frmLoadedIn_txtRCExpiredDate').val();
+            DriverLicenseNo = $('#frmLoadedIn_txtDriverLicenseNo').val();
+            DriverLicenseExpiredDate = $('#frmLoadedIn_txtDriverLicenseExpiredDate').val();
+        }
+        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
             EmptyWeight = $('#frmEmptyOut_txtVehicleEmptyWeight').val();
             WeightmentSlipNumberOut = $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val();
 
@@ -1078,11 +1351,11 @@ function GateEntry_SaveData(Mode) {
                 return;
             }
         }
-        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'ReportingDatetimeApplicable').PeramaterValue === 'Y') {
+        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
             ReportingDatetime = $('#frmLoadedIn_txtReportingDatetime').val();
         }
         
-        if (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0) {
+        if (Mode == 'UpdateLoadedInSave' &&(typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Vehicle Photo can not be blank');
             $('#frmEmptyOut_fileVehiclePhoto').focus();
@@ -1140,8 +1413,12 @@ function GateEntry_SaveData(Mode) {
                     ewaybillNo: EwaybillNo,
                     ewaybillDate: EwaybillDate,
                     reportingDatetime: ReportingDatetime,
-                    outRemarks: OutRemarks
-
+                    outRemarks: OutRemarks,
+                    chassisNo: ChassisNo,
+                    rCNo: RCNo,
+                    rCExpiredDate: RCExpiredDate,
+                    driverLicenseNo: DriverLicenseNo,
+                    driverLicenseExpiredDate: DriverLicenseExpiredDate
 
                 }
             ],
@@ -1164,6 +1441,7 @@ function GateEntry_SaveData(Mode) {
             }
             else {
                 toastr.error(response.Msg);
+                HideLoader();
             }
         });
 
@@ -1386,9 +1664,9 @@ $('#frmLoadedIn_fileOtherPhoto').bind('change', function () {
 
             ConvertFileToByteArry(blob).then(function (ByteArray) {
                 GateEntryImageDetail.push({
-                    imgVehicle: [],
-                    imgMaterial: [],
-                    imgDoc: [],
+                    imgVehicle: [], 
+                    imgMaterial: [], 
+                    imgDoc: [], 
                     ImgOther: ByteArray
                 });
             });
@@ -1398,7 +1676,6 @@ $('#frmLoadedIn_fileOtherPhoto').bind('change', function () {
         
     });
 });
-
 
 
 $('#frmEmptyOut_fileVehiclePhoto').bind('change', function () {
@@ -1419,7 +1696,6 @@ $('#frmEmptyOut_fileVehiclePhoto').bind('change', function () {
     });
 
     
-
 });
 
 
@@ -1509,6 +1785,11 @@ function ClearAllFrm() {
     $('#frmEmptyIn_fileVehiclePhoto').val('');
     $('#frmEmptyIn_txtReportingDatetime').val('');
     $('#frmEmptyIn_txtRemarks').val('');
+    $('#frmEmptyIn_txtChassisNo').val('');
+    $('#frmEmptyIn_txtRCNo').val('');
+    $('#frmEmptyIn_txtRCExpiredDate').val('');
+    $('#frmEmptyIn_txtDriverLicenseNo').val('');
+    $('#frmEmptyIn_txtDriverLicenseExpiredDate').val('');
 
     $('#frmLoadedOut_txtVehicleLoadedWeight').val('');
     $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val('');
@@ -1531,6 +1812,11 @@ function ClearAllFrm() {
     $('#frmEmptyIn_txtVehicleEmptyWeight').removeAttr('readonly')
     $('#frmEmptyIn_txtWeightmentSlipNoEmpty').removeAttr('readonly')
     $('#frmEmptyIn_txtReportingDatetime').removeAttr('readonly')
+    $('#frmEmptyIn_txtChassisNo').removeAttr('readonly');
+    $('#frmEmptyIn_txtRCNo').removeAttr('readonly');
+    $('#frmEmptyIn_txtRCExpiredDate').removeAttr('readonly');
+    $('#frmEmptyIn_txtDriverLicenseNo').removeAttr('readonly');
+    $('#frmEmptyIn_txtDriverLicenseExpiredDate').removeAttr('readonly');
     $('#frmEmptyIn_btnSave').removeAttr('disabled')
     $('#frmEmptyIn_btnCancel').removeAttr('disabled')
 
@@ -1572,6 +1858,11 @@ function ClearAllFrm() {
     $('#frmLoadedIn_txtEWayBillNo').val('');
     $('#frmLoadedIn_txtEWayBillDate').val('');
     $('#frmLoadedIn_txtRemarks').val('');
+    $('#frmLoadedIn_txtChassisNo').val('');
+    $('#frmLoadedIn_txtRCNo').val('');
+    $('#frmLoadedIn_txtRCExpiredDate').val('');
+    $('#frmLoadedIn_txtDriverLicenseNo').val('');
+    $('#frmLoadedIn_txtDriverLicenseExpiredDate').val('');
 
     $('#frmLoadedIn_txtVehicleNo').removeAttr('readonly');
     $('#frmLoadedIn_txtDriverName').removeAttr('readonly');
@@ -1593,6 +1884,11 @@ function ClearAllFrm() {
     $('#frmEmptyOut_txtVehicleEmptyWeight').removeAttr('readonly');
     $('#frmEmptyOut_txtWeightmentSlipNoLoaded').removeAttr('readonly');
     $('#frmEmptyOut_txtRemarks').removeAttr('readonly');
+    $('#frmLoadedIn_txtChassisNo').removeAttr('readonly');
+    $('#frmLoadedIn_txtRCNo').removeAttr('readonly');
+    $('#frmLoadedIn_txtRCExpiredDate').removeAttr('readonly');
+    $('#frmLoadedIn_txtDriverLicenseNo').removeAttr('readonly');
+    $('#frmLoadedIn_txtDriverLicenseExpiredDate').removeAttr('readonly');
 
     $('#DivfrmLoadedIn_fileVehiclePhoto').show();
     $('#DivfrmLoadedIn_fileGoodsPhoto').show();
@@ -1609,11 +1905,28 @@ function ClearAllFrm() {
 
     $('#tbGateEntyLoadedInPoItem tr').empty();
     $('#frmLoadedIn_txtVendorName').removeAttr('readonly');
-    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'POWiseEntryMendatory').PeramaterValue === 'Y') {
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'POWiseEntryMendatory').PerameterValue === 'Y') {
         IsWithPo = true;
     }
     WithPO();
     ClearEmptyOutOrLoadedOutFrm();
+
+
+    //Reset EmptyIn frmbtn
+    $('#frmEmptyIn_btnSave').removeAttr('onclick');
+    $('#frmEmptyIn_btnSave').attr('onclick', "GateEntry_SaveData('EmptyInSave')");
+
+    $('#frmLoadedOut_btnSave').removeAttr('onclick');
+    $('#frmLoadedOut_btnSave').attr('onclick', "GateEntry_SaveData('UpdateEmptyInSave')");
+
+    //Reset LoadedIN frmbtn
+    $('#frmLoadedIn_btnSave').removeAttr('onclick');
+    $('#frmLoadedIn_btnSave').attr('onclick', "GateEntry_SaveData('LoadedInSave')");
+
+    $('#frmEmptyOut_btnSave').removeAttr('onclick');
+    $('#frmEmptyOut_btnSave').attr('onclick', "GateEntry_SaveData('UpdateLoadedInSave')");
+    
+
 }
 function ClearEmptyOutOrLoadedOutFrm() {
     GateEntryImageDetail = [{
@@ -1668,12 +1981,15 @@ function ViewGateEntry(gateEntryData, EntryType) {
         $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val(gateEntryData[0].WeightmentSlipNumberOut);
         $('#frmEmptyOut_txtRemarks').val(gateEntryData[0].OutRemarks);
 
+        $('#RowfrmEmptyOut_fileVehiclePhoto').hide();
+
         $('#frmEmptyOut_txtVehicleEmptyWeight').attr('readonly', 'readonly');
         $('#frmEmptyOut_txtWeightmentSlipNoLoaded').attr('readonly', 'readonly');
         $('#frmEmptyOut_txtRemarks').attr('readonly', 'readonly');
         $('#frmEmptyOut_btnSave').attr('disabled', 'disabled')
         
-    } else if (mode.toLowerCase() === 'emptyinview') {
+    }
+    else if (mode.toLowerCase() === 'emptyinview') {
         ClearEmptyOutOrLoadedOutFrm();
         UpdateEmptyIn_loadedout(gateEntryData);
 
@@ -1710,6 +2026,11 @@ function ViewGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_txtEWayBillDate').val(gateEntryData[0].EwaybillDate);
         $('#frmLoadedOut_txtRemarks').val(gateEntryData[0].OutRemarks);
 
+        $('#RowLoadedOut_fileVehiclePhoto').hide();
+        $('#RowLoadedOut_fileGoodsPhoto').hide();
+        $('#RowLoadedOut_fileInvoicePhoto').hide();
+        $('#RowLoadedOut_fileOtherPhoto').hide();
+
         $('#frmLoadedOut_txtVehicleLoadedWeight').attr('readonly', 'readonly');
         $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').attr('readonly', 'readonly');
         $('#frmLoadedOut_txtGoodsDescription').attr('readonly', 'readonly');
@@ -1727,6 +2048,163 @@ function ViewGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_btnSave').attr('disabled', 'disabled')
     }
 
+}
+
+function EditGateEntry(gateEntryData, EntryType) {
+
+    let mode = EntryType.split('_')[0];
+    if (mode.toLowerCase() === 'loadedinedit') {
+        ClearEmptyOutOrLoadedOutFrm();
+        UpdateLoadedIn_Emptyout(gateEntryData);
+        EditLoaded();
+        
+        $('#frmLoadedIn_btnSave').removeAttr('disabled');
+        $('#frmLoadedIn_btnCancel').removeAttr('disabled');
+
+        $('#frmLoadedIn_btnSave').removeAttr('onclick');
+        $('#frmLoadedIn_btnSave').attr('onclick', "GateEntry_SaveData('loadedinedit')");
+        $('#DivfrmEmptyOut').hide();
+
+        
+    }
+    else if (mode.toLowerCase() === 'loadedineditfull') {
+        ClearEmptyOutOrLoadedOutFrm();
+        UpdateLoadedIn_Emptyout(gateEntryData);
+        EditLoaded();
+
+        $('#frmEmptyOut_txtDateOut').val(new Date(gateEntryData[0].GateEntryOutDate).toISOString().slice(0, 10));
+        $('#frmEmptyOut_txtOutTime').val(gateEntryData[0].VehicleOutTime);
+
+        $('#frmEmptyOut_txtVehicleEmptyWeight').val(gateEntryData[0].EmptyWeight);
+        $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val(gateEntryData[0].WeightmentSlipNumberOut);
+        $('#frmEmptyOut_txtRemarks').val(gateEntryData[0].OutRemarks);
+        $('#RowfrmEmptyOut_fileVehiclePhoto').hide();
+
+        $('#frmEmptyOut_txtVehicleEmptyWeight').removeAttr('readonly');
+        $('#frmEmptyOut_txtWeightmentSlipNoLoaded').removeAttr('readonly');
+        $('#frmEmptyOut_txtRemarks').removeAttr('readonly');
+        $('#frmEmptyOut_btnSave').removeAttr('disabled');
+
+        $('#frmEmptyOut_btnSave').removeAttr('onclick');
+        $('#frmEmptyOut_btnSave').attr('onclick', "GateEntry_SaveData('loadedineditfull')");
+
+    }
+    else if (mode.toLowerCase() === 'emptyinedit') {
+        ClearEmptyOutOrLoadedOutFrm();
+        UpdateEmptyIn_loadedout(gateEntryData);
+        EditEmptyIn();
+
+        $('#frmEmptyIn_btnSave').removeAttr('disabled');
+        $('#frmEmptyIn_btnCancel').removeAttr('disabled');
+
+
+        $('#frmEmptyIn_btnSave').removeAttr('onclick');
+        $('#frmEmptyIn_btnSave').attr('onclick', "GateEntry_SaveData('emptyinedit')");
+
+        $('#DivfrmLoadedOut').hide();
+
+    }
+    else if (mode.toLowerCase() === 'emptyineditfull') {
+        ClearEmptyOutOrLoadedOutFrm();
+        UpdateEmptyIn_loadedout(gateEntryData);
+        EditEmptyIn();
+
+        $('#frmLoadedOut_txtVehicleLoadedWeight').val(gateEntryData[0].LoadedWeight);
+        $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val(gateEntryData[0].WeightmentSlipNumberOut);
+        $('#frmLoadedOut_txtGoodsDescription').val(gateEntryData[0].GoodDescription);
+        $('#frmLoadedOut_txtQty').val(gateEntryData[0].Qty);
+        GateEntryService.GetUOMMasterList().then(function (response) {
+
+            BindSelectList($('#frmLoadedOut_ddlUOM')[0], response.map((item) => ({ Code: item.UOM, Desp: item.UOM, VendorName: '' })));
+            $('#frmLoadedOut_ddlUOM').val(gateEntryData[0].UOM);
+            $('#frmLoadedOut_ddlUOM').select2({
+                width: '-webkit-fill-available'
+            });
+
+        });
+
+
+        GateEntryService.GateEntryCategoryOut().then(function (response) {
+            BindSelectList($('#frmLoadedOut_ddlDocumentType')[0], response.map((item) => ({ Code: item.Desp, Desp: item.Desp, VendorName: '' })));
+            $('#frmLoadedOut_ddlDocumentType').val(gateEntryData[0].DocumentType);
+            $('#frmLoadedOut_ddlDocumentType').select2({
+                width: '-webkit-fill-available'
+            });
+            frmLoadedOut_ddlDocumentType('view');
+        });
+
+
+        $('#frmLoadedOut_txtCustomerName').val(gateEntryData[0].VendorName);
+
+        $('#frmLoadedOut_txtDocumentNo').val(gateEntryData[0].DocNo);
+        $('#frmLoadedOut_txtDocumentDate').val(new Date(gateEntryData[0].InvoiceDate).toISOString().slice(0, 10));
+        $('#frmLoadedOut_txtEWayBillNo').val(gateEntryData[0].EwaybillNo);
+        $('#frmLoadedOut_txtEWayBillDate').val(gateEntryData[0].EwaybillDate);
+        $('#frmLoadedOut_txtRemarks').val(gateEntryData[0].OutRemarks);
+
+
+        $('#RowLoadedOut_fileVehiclePhoto').hide();
+        $('#RowLoadedOut_fileGoodsPhoto').hide();
+        $('#RowLoadedOut_fileInvoicePhoto').hide();
+        $('#RowLoadedOut_fileOtherPhoto').hide();
+        
+
+        //$('#frmLoadedOut_btnSave').attr('disabled', 'disabled')
+        $('#frmLoadedOut_btnSave').removeAttr('disabled');
+
+        $('#frmLoadedOut_btnSave').removeAttr('onclick');
+        $('#frmLoadedOut_btnSave').attr('onclick', "GateEntry_SaveData('emptyineditfull')");
+    }
+}
+
+function EditLoaded() {
+    $('#frmLoadedIn_txtVehicleInTime').removeAttr('readonly');
+    $('#frmLoadedIn_txtVehicleNo').removeAttr('readonly');
+    $('#frmLoadedIn_txtDriverName').removeAttr('readonly');
+    $('#frmLoadedIn_txtDriverNo').removeAttr('readonly');
+    $('#frmLoadedIn_ddlTransporterName').removeAttr('readonly');
+
+    $('#frmLoadedIn_txtReportingDatetime').removeAttr('readonly');
+
+    $('#frmLoadedIn_txtWeightmentSlipNoLoaded').removeAttr('readonly');
+    $('#frmLoadedIn_txtVehicleLoadedWeight').removeAttr('readonly');
+    $('#frmLoadedIn_txtGoodsDescription').removeAttr('readonly');
+    $('#frmLoadedIn_txtQTY').removeAttr('readonly');
+    $('#frmLoadedIn_txtUOM').removeAttr('readonly');
+    //$('#frmLoadedIn_ddlDocumentType').removeAttr('readonly');
+
+    $('#frmLoadedIn_txtVendorName').removeAttr('readonly');
+
+    $('#frmLoadedIn_txtDocumentNo').removeAttr('readonly');
+    $('#frmLoadedIn_txtDocumentDate').removeAttr('readonly');
+    $('#frmLoadedIn_txtEWayBillNo').removeAttr('readonly');
+    $('#frmLoadedIn_txtEWayBillDate').removeAttr('readonly');
+    $('#frmLoadedIn_txtRemarks').removeAttr('readonly');
+
+    $('#frmLoadedIn_txtChassisNo').removeAttr('readonly');
+    $('#frmLoadedIn_txtRCNo').removeAttr('readonly');
+    $('#frmLoadedIn_txtRCExpiredDate').removeAttr('readonly');
+    $('#frmLoadedIn_txtDriverLicenseNo').removeAttr('readonly');
+    $('#frmLoadedIn_txtDriverLicenseExpiredDate').removeAttr('readonly');
+
+
+    $('#frmLoadedIn_ddlDocumentType').removeAttr('disabled');
+    $('#frmLoadedIn_txtUOM').removeAttr('disabled');
+}
+function EditEmptyIn() {
+    $('#frmEmptyIn_txtVehicleNo').removeAttr('readonly')
+    $('#frmEmptyIn_txtDriverName').removeAttr('readonly')
+    $('#frmEmptyIn_txtDriverNo').removeAttr('readonly')
+    $('#frmEmptyIn_ddlTransporterName').removeAttr('readonly')
+    $('#frmEmptyIn_txtRemarks').removeAttr('readonly')
+    $('#frmEmptyIn_txtVehicleEmptyWeight').removeAttr('readonly')
+    $('#frmEmptyIn_txtWeightmentSlipNoEmpty').removeAttr('readonly')
+    $('#frmEmptyIn_txtReportingDatetime').removeAttr('readonly')
+    $('#frmEmptyIn_txtChassisNo').removeAttr('readonly');
+    $('#frmEmptyIn_txtRCNo').removeAttr('readonly');
+    $('#frmEmptyIn_txtRCExpiredDate').removeAttr('readonly');
+    $('#frmEmptyIn_txtDriverLicenseNo').removeAttr('readonly');
+    $('#frmEmptyIn_txtDriverLicenseExpiredDate').removeAttr('readonly');
 }
 function LockDocumntFutureDate() {
     let maxDate = new Date().toISOString().slice(0, 10);
@@ -1755,7 +2233,7 @@ function GateEntry_InitSelectMachineToGetWeightControl(outputTextElementID) {
 
 }
 function EnableScaleWeight() {
-    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PeramaterName === 'WeightByScale').PeramaterValue === 'Y') {
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightByScale').PerameterValue === 'Y') {
         // Enable the scale weight button
         $('#btnScaleWeigh_frmEmptyIn_txtVehicleEmptyWeight').show();
         $('#btnScaleWeigh_frmLoadedOut_txtVehicleLoadedWeight').show();
@@ -1770,6 +2248,83 @@ function EnableScaleWeight() {
     
 }
 
+function LoadListDriverDetailsByVehicleNo() {
+
+    GateEntryService.GetDriverDetailsByVehicleNo("GETVEHICLENO", "0").then(function (response) {
+        const goodsList = response.map((item) => ({ Desp: item.VehicleNo }));
+        AutoSuggestionControl.SetUpAutoSuggestion(
+            $('#frmLoadedIn_txtVehicleNo'),
+            $('#frmLoadedIn_txtVehicleNo_List'),
+            goodsList,
+            'StartWith',
+            true,
+            function (selectedItem) {
+                if (selectedItem && selectedItem.Desp) {
+                    GateEntryService.GetDriverDetailsByVehicleNo("CHECKVEHICLEINSTATUS", selectedItem.Desp).then(function (RespCheckVehicleStatus) {
+                        if (RespCheckVehicleStatus[0].Status == 'Y') {
+                            GateEntryService.GetDriverDetailsByVehicleNo("DRIVERDETAILS", selectedItem.Desp).then(function (RespVehicleDetails) {
+                                if (RespVehicleDetails.length > 0) {
+                                    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
+                                        $('#frmLoadedIn_txtChassisNo').val(RespVehicleDetails[0].ChassisNo);
+                                        $('#frmLoadedIn_txtRCNo').val(RespVehicleDetails[0].RCNo);
+                                        $('#frmLoadedIn_txtRCExpiredDate').val(new Date(RespVehicleDetails[0].RCExpiredDate).toISOString().slice(0, 10));
+
+                                        $('#frmLoadedIn_txtDriverLicenseNo').val(RespVehicleDetails[0].DriverLicenseNo);
+                                        $('#frmLoadedIn_txtDriverLicenseExpiredDate').val(new Date(RespVehicleDetails[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
+
+                                    }
+                                    $('#frmLoadedIn_txtDriverName').val(RespVehicleDetails[0].DriverName);
+                                    $('#frmLoadedIn_txtDriverNo').val(RespVehicleDetails[0].DriverMobile);
+                                    $('#frmLoadedIn_ddlTransporterName').val(RespVehicleDetails[0].TransporterName);
+                                }
+                            });
+                        } else {
+                            toastr.error(RespCheckVehicleStatus[0].Msg);
+                        }
+
+                    });
+                }
+            }
+        );
+    });
+
+    GateEntryService.GetDriverDetailsByVehicleNo("GETVEHICLENO", "0").then(function (response) {
+        const goodsList = response.map((item) => ({ Desp: item.VehicleNo }));
+        AutoSuggestionControl.SetUpAutoSuggestion(
+            $('#frmEmptyIn_txtVehicleNo'),
+            $('#frmEmptyIn_txtVehicleNo_List'),
+            goodsList,
+            'StartWith',
+            true,
+            function (selectedItem) {
+                if (selectedItem && selectedItem.Desp) {
+                    GateEntryService.GetDriverDetailsByVehicleNo("CHECKVEHICLEINSTATUS", selectedItem.Desp).then(function (RespCheckVehicleStatus) {
+                        if (RespCheckVehicleStatus[0].Status == 'Y') {
+                            GateEntryService.GetDriverDetailsByVehicleNo("DRIVERDETAILS", selectedItem.Desp).then(function (RespVehicleDetails) {
+                                if (RespVehicleDetails.length > 0) {
+
+                                    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
+                                        $('#frmEmptyIn_txtChassisNo').val(RespVehicleDetails[0].ChassisNo);
+                                        $('#frmEmptyIn_txtRCNo').val(RespVehicleDetails[0].RCNo);
+                                        $('#frmEmptyIn_txtRCExpiredDate').val(new Date(RespVehicleDetails[0].RCExpiredDate).toISOString().slice(0, 10));
+                                        $('#frmEmptyIn_txtDriverLicenseNo').val(RespVehicleDetails[0].DriverLicenseNo);
+                                        $('#frmEmptyIn_txtDriverLicenseExpiredDate').val(new Date(RespVehicleDetails[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
+                                    }
+
+                                    $('#frmEmptyIn_txtDriverName').val(RespVehicleDetails[0].DriverName);
+                                    $('#frmEmptyIn_txtDriverNo').val(RespVehicleDetails[0].DriverMobile);
+                                    $('#frmEmptyIn_ddlTransporterName').val(RespVehicleDetails[0].TransporterName);
+                                }
+                            });
+                        } else {
+                            toastr.error(RespCheckVehicleStatus[0].Msg);
+                        }
+                    });
+                }
+            }
+        );
+    });
+}
 function applyAlphaNumUppercase(selector) {
     document.querySelectorAll(selector).forEach(input => {
 
