@@ -413,8 +413,8 @@ function Bind_AllDLL() {
     Bind_ddlGodownTo();
     Bind_ddlTransporterName();
 }
-function Bind_ddlOrderNo(Mode, Name) {
-    PackingListFGService.GetPendingOrderList(Mode, Name,0,0).then(function (response) {
+function Bind_ddlOrderNo(Mode, Name, BuyerName) {
+    PackingListFGService.GetPendingOrderList(Mode, Name, 0, 0, BuyerName).then(function (response) {
 
         if (response.length == 0) {
             let bName = Mode === "GetPendingOrderListByBuyerName" ? "Buyer Name: " : Mode === "GetPendingMRNListByPartyName" ? "Vendor Name:" : "Consignee Name: ";
@@ -439,7 +439,7 @@ function Bind_ddlOrderNo(Mode, Name) {
     });
 }
 function Bind_ddlOrderNoForEntryView(Mode, Name) {
-    PackingListFGService.GetPendingOrderList(Mode, Name, PackingListMaster_Code, 0).then(function (response) {
+    PackingListFGService.GetPendingOrderList(Mode, Name, PackingListMaster_Code, 0,'0').then(function (response) {
 
         //if (response.length == 0) {
         //    let bName = Mode === "GetPendingOrderListByBuyerName" ? "Buyer Name: " : Mode === "GetPendingMRNListByPartyName" ? "Vendor Name:" : "Consignee Name: ";
@@ -628,7 +628,7 @@ function EditMode(isView) {
                 if (InvoiceByOrder === 'Y') {
                     if (response[0][0].PackingType !== 'Stock Transfer') {
                         if (response[0][0].PackingType === 'Purchase Return') {
-                            Bind_ddlOrderNo("GetPendingMRNListByPartyName", response[0][0].ConsigneeName);
+                            Bind_ddlOrderNo("GetPendingMRNListByPartyName", response[0][0].ConsigneeName,'0');
                         }
                         else {
                            // Bind_ddlOrderNo("GetPendingOrderListByPartyName", response[0][0].ConsigneeName);
@@ -880,7 +880,7 @@ function PackingListFG_ShowDetailsModals(For) {
             return;
         }
 
-        PackingListFGService.GetPendingOrderList(For, ConsigneeName, Code, $('#ddlGodownFrom').val()).then(function (response) {
+        PackingListFGService.GetPendingOrderList(For, ConsigneeName, Code, $('#ddlGodownFrom').val(),'0').then(function (response) {
 
 
             console.log(response);
@@ -920,7 +920,7 @@ function PackingListFG_ShowDetailsModals(For) {
 
     }
     else if (For === 'ItemForRateUpdateDetail') {
-        PackingListFGService.GetPendingOrderList('ItemForRateUpdate', '0', PackingListMaster_Code, 0).then(function (response) {
+        PackingListFGService.GetPendingOrderList('ItemForRateUpdate', '0', PackingListMaster_Code, 0,'0').then(function (response) {
 
 
             console.log(response);
@@ -1083,11 +1083,14 @@ function PackingListFG_OnChangeddlClientNameORddlConsignee(element) {
             width: '-webkit-fill-available'
         });
         ddlClientNameMode = ddlClientNameMode === '' ? "GetPendingOrderListByBuyerName" : ddlClientNameMode;
-        Bind_ddlOrderNo(ddlClientNameMode, eleText);
+        //ddlClientNameMode = ddlClientNameMode === '' ? "GetPendingOrderListByPartyName" : ddlClientNameMode;
+        Bind_ddlOrderNo(ddlClientNameMode, eleText, eleText);
     }
     else {
+        let ddlClientName = document.getElementById("ddlClientName");
+        let ClientName = ddlClientName.options[ddlClientName.selectedIndex].text;
         ddlClientNameMode = ddlClientNameMode === '' ? "GetPendingOrderListByPartyName" : ddlClientNameMode;
-        Bind_ddlOrderNo(ddlClientNameMode, eleText);
+        Bind_ddlOrderNo(ddlClientNameMode, eleText, ClientName);
     }
 }
 

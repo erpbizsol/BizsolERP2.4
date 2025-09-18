@@ -169,6 +169,14 @@ const GateEntryService = {
             }
         );
     },
+    GetDriverDetailsByVehicleNo: function GetDriverDetailsByVehicleNo(Mode, VehicleNo) {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/GetDriverDetailsByVehicleNo?Mode=${Mode}&VehicleNo=${VehicleNo}`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    }
 
 }
 
