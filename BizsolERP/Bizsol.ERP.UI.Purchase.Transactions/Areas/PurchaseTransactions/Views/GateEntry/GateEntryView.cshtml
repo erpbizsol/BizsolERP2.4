@@ -44,8 +44,37 @@
                         </div>
                         <div class="col-8">
                             <input id="frmEmptyIn_txtVehicleNo" class="BizSolFormControl form-control form-control-sm alphanum-uppercase" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="10" autocomplete="off">
+                            <ul id="frmEmptyIn_txtVehicleNo_List" class="AutoSuggestion-list"></ul>
                         </div>
                     </div>
+
+                    <div class="row" id="DivEmptyInChassisNo">
+                        <div class="col-4">
+                            Chassis No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtChassisNo" class="BizSolFormControl form-control form-control-sm alphanum-uppercase" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="30" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="row" id="DivEmptyInRCNo">
+                        <div class="col-4">
+                            RC No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtRCNo" class="BizSolFormControl form-control form-control-sm alphanum-uppercase" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="30" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="row" id="DivEmptyInRCExpiredDate">
+                        <div class="col-4">
+                            RC Expired Date
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtRCExpiredDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-4">
                             Driver Name
@@ -54,6 +83,25 @@
                             <input id="frmEmptyIn_txtDriverName" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" autocomplete="off">
                         </div>
                     </div>
+
+                    <div class="row" id="DivEmptyInDriverLicenseNo">
+                        <div class="col-4">
+                            Driver License No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtDriverLicenseNo" class="BizSolFormControl form-control form-control-sm alphanum-uppercase" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="30" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="row" id="DivEmptyInDriverLicenseExpiredDate">
+                        <div class="col-4">
+                            Driver License Expiry
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtDriverLicenseExpiredDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-4">
                             Driver No.
@@ -100,12 +148,12 @@
                             <input id="frmEmptyIn_txtVehicleInTime" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" readonly autocomplete="off">
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" id="DivfrmEmptyIn_fileVehiclePhoto">
                         <div class="col-4">
                             Vehicle Photo
                         </div>
                         <div class="col-8">
-                            <div class="input-group" id="DivfrmEmptyIn_fileVehiclePhoto">
+                            <div class="input-group" >
                                 <span class=" input-group-text" onclick="document.getElementById('frmEmptyIn_fileVehiclePhoto').click()" style="cursor: pointer;height: 28px;">
                                     <i class="fa fa-camera"></i>
                                 </span>
@@ -176,7 +224,7 @@
                             <input id="frmLoadedOut_txtVehicleOutTime" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" readonly>
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" id="RowLoadedOut_fileVehiclePhoto">
                         <div class="col-4">
                             Vehicle Photo
                         </div>
@@ -190,7 +238,7 @@
 
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" id="RowLoadedOut_fileGoodsPhoto">
                         <div class="col-4">
                             Goods Photo
                         </div>
@@ -204,7 +252,7 @@
 
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" id="RowLoadedOut_fileInvoicePhoto">
                         <div class="col-4">
                             Document Photo
                         </div>
@@ -218,7 +266,7 @@
 
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" id="RowLoadedOut_fileOtherPhoto">
                         <div class="col-4">
                             Other Photo
                         </div>
@@ -346,6 +394,33 @@
                         </div>
                         <div class="col-8">
                             <input id="frmLoadedIn_txtVehicleNo" class="BizSolFormControl form-control form-control-sm alphanum-uppercase" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="10" autocomplete="off">
+                            <ul id="frmLoadedIn_txtVehicleNo_List" class="AutoSuggestion-list"></ul>
+                        </div>
+                    </div>
+                    <div class="row" id="DivLoadedInChassisNo">
+                        <div class="col-4">
+                            Chassis No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtChassisNo" class="BizSolFormControl form-control form-control-sm alphanum-uppercase" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="30" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="row" id="DivLoadedInRCNo">
+                        <div class="col-4">
+                            RC No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtRCNo" class="BizSolFormControl form-control form-control-sm alphanum-uppercase" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="30" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="row" id="DivLoadedInRCExpiredDate">
+                        <div class="col-4">
+                            RC Expired Date
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtRCExpiredDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
                         </div>
                     </div>
                     <div class="row">
@@ -354,6 +429,23 @@
                         </div>
                         <div class="col-8">
                             <input id="frmLoadedIn_txtDriverName" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row" id="DivLoadedInDriverLicenseNo">
+                        <div class="col-4">
+                            Driver License No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtDriverLicenseNo" class="BizSolFormControl form-control form-control-sm alphanum-uppercase" type="text" onkeypress="BizSolInputControl.OnChangeOnlyAlphaNumericTextBox(this)" maxlength="30" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="row" id="DivLoadedInDriverLicenseExpiredDate">
+                        <div class="col-4">
+                            Driver License Expiry
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtDriverLicenseExpiredDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
                         </div>
                     </div>
                     <div class="row">
@@ -400,12 +492,12 @@
                             <input id="frmLoadedIn_txtVehicleInTime" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off" readonly>
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" id="DivfrmLoadedIn_fileVehiclePhoto">
                         <div class="col-4">
                             Vehicle Photo
                         </div>
                         <div class="col-8">
-                            <div class="input-group" id="DivfrmLoadedIn_fileVehiclePhoto">
+                            <div class="input-group" >
                                 <span class="input-group-text" onclick="document.getElementById('frmLoadedIn_fileVehiclePhoto').click()" style="cursor: pointer;height: 28px;">
                                     <i class="fa fa-camera"></i>
                                 </span>
@@ -414,12 +506,12 @@
 
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" id="DivfrmLoadedIn_fileGoodsPhoto">
                         <div class="col-4">
                             Goods Photo
                         </div>
                         <div class="col-8">
-                            <div class="input-group" id="DivfrmLoadedIn_fileGoodsPhoto">
+                            <div class="input-group" >
                                 <span class=" input-group-text" onclick="document.getElementById('frmLoadedIn_fileGoodsPhoto').click()" style="cursor: pointer;height: 28px;">
                                     <i class="fa fa-camera"></i>
                                 </span>
@@ -428,12 +520,12 @@
 
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" id="DivfrmLoadedIn_fileInvoicePhoto">
                         <div class="col-4">
                             Document Photo
                         </div>
                         <div class="col-8">
-                            <div class="input-group" id="DivfrmLoadedIn_fileInvoicePhoto">
+                            <div class="input-group" >
                                 <span class=" input-group-text" onclick="document.getElementById('frmLoadedIn_fileInvoicePhoto').click()" style="cursor: pointer;height: 28px;">
                                     <i class="fa fa-camera"></i>
                                 </span>
@@ -442,12 +534,12 @@
 
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" id="DivfrmLoadedIn_fileOtherPhoto">
                         <div class="col-4">
                             Other Photo
                         </div>
                         <div class="col-8">
-                            <div class="input-group" id="DivfrmLoadedIn_fileOtherPhoto">
+                            <div class="input-group" >
                                 <span class=" input-group-text" onclick="document.getElementById('frmLoadedIn_fileOtherPhoto').click()" style="cursor: pointer;height: 28px;">
                                     <i class="fa fa-camera"></i>
                                 </span>
@@ -636,7 +728,7 @@
                             <input id="frmEmptyOut_txtOutTime" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off" readonly>
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" id="RowfrmEmptyOut_fileVehiclePhoto">
                         <div class="col-4">
                             Vehicle Photo
                         </div>
@@ -687,8 +779,11 @@
             <label for="to-date">Vehicles IN</label>
             <select class="form-control form-control-sm" id="ddlVehiclesStatusInFectory" >
                 <option value="all">All</option>
-                <option value="LIN">Loaded IN</option>
-                <option value="EIN">Empty IN</option>
+                <option value="LIN">Loaded IN (completed)</option>
+                <option value="EIN">Empty IN (completed) </option>
+                <option value="PLIN">Loaded IN (in progress)</option>
+                <option value="PEIN">Empty IN (in progress)</option>
+                <option value="PAll">All Vehicles in progress</option>
             </select>
         </div>
         <div class="col-sm-3 without-label-field text-end">
@@ -696,7 +791,7 @@
             <button type="button" class="btn btn-primary icon-height" onclick="GateEntryGirdByDates()">Show</button>
             <button type="button" class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','EmptyInNew')">CREATE NEW</button>
             &nbsp;
-            <i class="fa fa-gear" onclick="ShowGateEntryConfigurationModal()" style="cursor:pointer"></i>
+            <i class="fa fa-gear" id="btnGateEntyConfiguration" onclick="ShowGateEntryConfigurationModal()" style="cursor:pointer"></i>
 
         </div>
     </div>
@@ -709,6 +804,10 @@
         </table>
     </div>
     <div class="paginator" id="paginator-tbGateEntyView">
+    </div>
+
+    <div>
+        No of Vehicles: <span id="spNoOfVehicles">0</span>
     </div>
 </div>
 

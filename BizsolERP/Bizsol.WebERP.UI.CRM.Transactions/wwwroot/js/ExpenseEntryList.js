@@ -1,4 +1,5 @@
 ﻿import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
 const Indx_Tbl = {
@@ -14,8 +15,8 @@ const Indx_Tbl = {
     VerifyStatus: 9,
     Status: 10
 }
+
 $(document).ready(function () {
-    //$('#tblRoutePlan').DataTable();
     $("#ERPHeading").text("Expense Entry");
     var today = new Date();
     const yyyy = today.getFullYear();
@@ -32,7 +33,25 @@ $(document).ready(function () {
     }
 
      GetNestedMarketingManList();
-     DatePicker();
+    DatePicker();
+
+    var urlParams = getUrlVars();
+
+    var SalesPersonNameSave = decodeURIComponent(urlParams['MarketingMan_Name'] || "");
+    var FromDateSave = decodeURIComponent(urlParams['FromDate'] || "");
+    var ToDateSave = decodeURIComponent(urlParams['ToDate'] || "");
+
+    if (SalesPersonNameSave) {
+        $('#ddlMarketingMan').val(SalesPersonNameSave);
+    }
+
+    if (FromDateSave) {
+        $('#txtFromDate').val(FromDateSave);
+    }
+
+    if (ToDateSave) {
+        $('#txtToDate').val(ToDateSave);
+    }
 
    $('#txtFromDate').on('keydown', function (e) {
         if (e.key === "Enter") {
@@ -69,35 +88,58 @@ $(document).ready(function () {
      $("#btnAddExpenseEntry").click(function () {
         CreateNew(0);
     });
-    // var userName = JSON.parse(sessionStorage.getItem('UserDetails'))[0].UserID;
-    //$("#ddlMarketingMan").val(userName);
-
+    
     $('#btnExpenseEntryConfig').click(function (e) {
 
         window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseHeadMaster";
 
     });
  });
-
+function getUrlVars() {
+    var vars = {};
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for (var i = 0; i < hashes.length; i++) {
+        var hash = hashes[i].split('=');
+        vars[hash[0]] = hash[1];
+    }
+    return vars;
+}
 function GetNestedMarketingManList() {
     ExpenseEntryService.GetNestedMarketingManList().then(function (response) {
-        if (response.length > 0) {
-            $('#ddlSalesPersonList option').remove();
+        if (response && response.length > 0) {
+            $('#ddlSalesPersonList').empty();
 
-            var option = '<option text="0" value="" selected ></option>';
+            let options = '<option value="ALL" selected>ALL</option>';
+            let matchedPersonName = null;
 
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].PersonName + '" >' + response[i].PersonName + '</option>';
+            for (let i = 0; i < response.length; i++) {
+                const person = response[i];
+                let userMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+                // Check if UserMaster_Code matches
+                if (person.Usermaster_Code == userMaster_Code) {
+                    matchedPersonName = person.PersonName;
+                }
+
+                options += `<option value="${person.PersonName}">${person.PersonName}</option>`;
             }
 
-            $('#ddlSalesPersonList')[0].innerHTML = option;
+            $('#ddlSalesPersonList').html(options);
+
+            // Set the marketing man input or dropdown value
+            var urlParams = getUrlVars();
+            if (decodeURIComponent(urlParams['MarketingMan_Name'] || "") == '') {
+                if (matchedPersonName) {
+                    $('#ddlMarketingMan').val(matchedPersonName);
+                } else {
+                    $('#ddlMarketingMan').val("ALL");
+                }
+            }
+
         } else {
             toastr.error('No Data Found');
-            return false;
         }
     });
 }
-
 function convertDateFormat(dateString) {
     const [day, month, year] = dateString.split('-');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -182,7 +224,7 @@ function ViewData(Code,x){
     window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryDetail?Code=" + codes + "&Mode=" + Mode +"&MarketingMan_Name=" + MarketingPersonName;
 }
 function CreateNew(Code) {
-    if ($("#ddlMarketingMan").val() == 'undefined' || $("#ddlMarketingMan").val() == "" || $("#ddlMarketingMan").val() == "All") {
+    if ($("#ddlMarketingMan").val() == 'undefined' || $("#ddlMarketingMan").val() == "" || $("#ddlMarketingMan").val() == "ALL") {
         toastr.error('Please select a sales person name.');
         return false;
     }
@@ -194,21 +236,41 @@ function CreateNew(Code) {
 }
 
 function DeleteData(Code) {
-    
-    ExpenseEntryService.DeleteExpenseEntryMaster(Code).then(function (response) {
+    $('#myModal').data('code', Code);
+    $('#myModal').modal({
+        backdrop: 'static',
+    });
+
+    $('#myModal').modal('show');
+}
+function DeleteModal() {
+    let reasonForDelete = $('#deleteReason').val();
+    let Code = $('#myModal').data('code');
+
+    if (!reasonForDelete) {
+        toastr.warning("Please Provide a Reason For Delete.");
+        return;
+    }
+    ExpenseEntryService.DeleteExpenseEntryMaster(Code, reasonForDelete).then(function (response) {
 
         if (response != '') {
-            if (response.Status == 'N') {
-                toastr.error(response.Msg);
-            } else {
-
+            if (response.Status == 'Y') {
                 toastr.success(response.Msg);
-                window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
+                CloseModal();
+                GetExpenseEntryList();
+            } else {
+                toastr.error(response.Msg);
             }
 
         }
-
+    //}).catch(function (error) {
+    //    toastr.error(error.Msg || 'Error during Expense delete');
     });
+}
+function CloseModal() {
+    $('#myModal').modal('hide');
+    $('#deleteReason').val('');
+
 }
 function setupDateInputFormatting() {
     $('#txtToDate').on('input', function () {
@@ -312,3 +374,5 @@ window.GetExpenseEntryList=GetExpenseEntryList;
 window.EditData = EditData;
 window.ViewData = ViewData;
 window.DeleteData = DeleteData;
+window.DeleteModal = DeleteModal;
+window.CloseModal = CloseModal;
