@@ -66,7 +66,7 @@ function GateEntryGirdByDates() {
         const showButtons = []
         const StringdoubleFilterColumn = [];
         const hiddenColumns = ["Code","Hour"];
-        const ColumnAlignment = {};
+        const ColumnAlignment = { 'Action':';min-width:145px'};
         if (response.length > 0) {
             BizsolCustomFilterGrid.CreateDataTable("tbGateEntyViewHeader", "tbGateEntyViewBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
             let VehiclesRows = response;
@@ -1431,7 +1431,7 @@ function GateEntry_SaveData(Mode) {
         //alert('Save Alert!' + Mode + ' Post Data: ' + JSON.stringify(GateEntryPostdata));
 
         Showloader();
-        GateEntryService.SaveGateEntryMaster(JSON.stringify(GateEntryPostdata), POItemsData).then(function (response) {
+        GateEntryService.SaveGateEntryMaster(JSON.stringify(GateEntryPostdata), POItemsData, 'SAVEDATA').then(function (response) {
             if (response.Status === 'Y') {
                 HideLoader();
                 toastr.success(`Entry save success`);
