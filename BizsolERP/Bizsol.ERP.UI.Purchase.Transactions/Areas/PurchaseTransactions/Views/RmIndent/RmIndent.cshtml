@@ -1,0 +1,39 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/RmIndent.js"></script>
+
+<div id="locateIndentMaster">
+    <div class="card col-md-12">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-2">
+                    <label for="txtStatus" class="col-form-label-sm fw-bold">Status:<span class="text-danger">*</span></label>
+                    <select id="ddlStatus" name="ddlStatus" class="box_border form-control form-control-sm" required></select>
+                </div>
+                <div class="col-md-3" style="margin-top:2.1rem">
+                    <button type="button" onclick="ListStatus_Designation()" title="Show" class="btn btn-primary btn-height">Show</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<div class="row">
+    <div class="col-md-12">
+        <div id="tblRMIndent">
+            <div class="table-wrapper fixed-height-table">
+                <table id="RMIndent" class="fixed-width-table table">
+                    <thead id="table-header-RMIndent">
+                    </thead>
+                    <tbody id="table-body-RMIndent">
+                    </tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-RMIndent">
+            </div>
+        </div>
+    </div>
+</div>
+</div>

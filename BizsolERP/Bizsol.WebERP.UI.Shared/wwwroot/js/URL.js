@@ -99,6 +99,7 @@ let UrlService = {
     API_ENDPOINT_ExpenseHeadMaster: `${environment.BASE_URL}/ExpenseHeadMaster`,
     API_ENDPOINT_Weighment: `${environment.BASE_URL}/Weighment`,
     API_ENDPOINT_CommonSingleEntryForm: `${environment.BASE_URL}/CommonSingleEntryForm`,
+    API_ENDPOINT_RmIndent: `${environment.BASE_URL}/RmIndent`,
 }
 
 export { UrlService  }
