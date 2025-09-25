@@ -473,13 +473,17 @@
        if (authKey !== '') {
               sessionStorage.setItem('authKey', authKey);
               sessionStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
-              //window.AppBaseURL='@Html.Raw(ViewBag.AppBaseURL)';
-            // if (window.location.href.toLowerCase().includes('localhost') == false) {
-            //     window.location.href = '@Html.Raw(ViewBag.AppBaseURL)';
-            // }
-        }
-        // });
+               localStorage.setItem('authKey', authKey);
+               localStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
+             
+        }else{
+               let storedauthKey = localStorage.getItem('authKey');
+               let storedAppBaseURL = localStorage.getItem('AppBaseURL');
+                sessionStorage.setItem('authKey', storedauthKey);
+                sessionStorage.setItem('AppBaseURL', storedAppBaseURL);
 
+        }
+        
     </script>
     @* <script src="assets/js/pages/modal.init.js"></script>
 
