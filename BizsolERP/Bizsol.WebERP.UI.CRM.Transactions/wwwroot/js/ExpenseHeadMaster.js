@@ -192,6 +192,10 @@ function submit_ExpenseHeadMaster() {
     let G_Date = $('#txtEffectiveDate').val();
     let PerDayLimit = $('#txtPerDayLimit').val();
 
+    if (G_Date == '') {
+        toastr.warning('Please Fill The Expense EffectiveDate.');
+        return;
+    }
     if (!ExpenseDescription) {
         toastr.warning('Please Fill The Expense Description.');
         return;
