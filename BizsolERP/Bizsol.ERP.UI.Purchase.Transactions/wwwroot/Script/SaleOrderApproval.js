@@ -209,8 +209,9 @@ function SaleOrderApprovedlist(BCode) {
 
             return;
         }
-
+        Showloader();
         SaleOrderApprovalService.SaleOrderApproved(BCode, FrmAction, FrmType).then(function (resdata) {
+            HideLoader();
             if (resdata.Status === "Y") {
                 toastr.success(resdata.Msg);
                 GetSaleOrderApproval();
@@ -221,6 +222,7 @@ function SaleOrderApprovedlist(BCode) {
             }
         }).catch(function (error) {
             toastr.error("Error in Sale Order Approval: ", error);
+            HideLoader();
         });
 
     }).catch(error => {
