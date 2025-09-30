@@ -53,9 +53,9 @@ const GateEntryService = {
             }
         );
     },
-    SaveGateEntryMaster: function SaveGateEntryMaster(payload, POItemsData) {
+    SaveGateEntryMaster: function SaveGateEntryMaster(payload, POItemsData,Mode) {
         let CompanyCode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
-        let url = `${UrlService.API_ENDPOINT_GateEntryMaster}/SaveGateEntryMaster?CompanyCode=${CompanyCode}&POItemsData=${POItemsData}`;
+        let url = `${UrlService.API_ENDPOINT_GateEntryMaster}/SaveGateEntryMaster?CompanyCode=${CompanyCode}&Mode=${Mode}&POItemsData=${POItemsData}`;
         return promiseAjaxCallApi.CallAPI('POST', url, payload).then(
             function (value) {
                 return value;

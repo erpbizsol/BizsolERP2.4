@@ -531,8 +531,16 @@ const VisitOrderEntryService = {
                 return value;
             }
         );
-    }
+    },
+    GetLengthByItemSizeMasterCode: function GetLengthByItemSizeMasterCode(ItemSizeMaster_Code) {
 
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetLengthByItemSizeMasterCode?ItemSizeMaster_Code=${ItemSizeMaster_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VisitOrderEntryService }
