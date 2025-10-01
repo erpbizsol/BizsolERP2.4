@@ -222,7 +222,7 @@ function ShowHideVehicleOtherDetails() {
             
         }
 
-        GateEntryService.GetDriverDetailsByVehicleNo("GETVEHICLENO", "0").then(function (resVehicle) {
+        GateEntryService.GetDriverDetailsByVehicleNo("GETALLVEHICLENO", "0").then(function (resVehicle) {
             const goodsList = resVehicle.map((item) => ({ Desp: item.VehicleNo }));
             AutoSuggestionControl.SetUpAutoSuggestion(
                 $('#frmGateToken_txtVehicleNo'),

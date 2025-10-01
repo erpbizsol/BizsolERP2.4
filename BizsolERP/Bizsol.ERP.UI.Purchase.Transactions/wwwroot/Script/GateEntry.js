@@ -78,7 +78,13 @@ function GateEntryGirdByDates() {
             response.forEach(item => {
                 item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'editFull_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Out</a>'
             });
-        } 
+        }
+        else {
+            response.forEach(item => {
+                item.Action = `<a class="btn btn-info icon-height" onclick="GateEnty_PrintPreviewToken(${ item.Code})"> <i class="fa fa-print"></i></a>`;
+            });
+        }
+
         //console.log(response);
         const StringFilterColumn = ["Type In", "Party name", "Vehicle No"];
         const NumericFilterColumn = ["Entry No"];
@@ -412,7 +418,8 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmEmptyOut_txtDateOut').val(new Date().toISOString().slice(0, 10));
     $('#frmEmptyOut_txtOutTime').val(`${new Date().getHours()}:${new Date().getMinutes()}`);
     
-    $('#frmLoadedIn_txtDateIn').val(new Date(gateEntryData[0].GateEntryDate).toISOString().slice(0, 10));
+    //$('#frmLoadedIn_txtDateIn').val(new Date(gateEntryData[0].GateEntryDate).toISOString().slice(0, 10));
+    $('#frmLoadedIn_txtDateIn').val(gateEntryData[0].GateEntryDate.slice(0, 10));
     $('#frmLoadedIn_txtVehicleInTime').val(gateEntryData[0].TimeIO);
 
     $('#frmLoadedIn_txtVehicleNo').val(gateEntryData[0].VehicleNo);
@@ -596,7 +603,8 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
 
 function UpdateEmptyIn_loadedout(gateEntryData) {
 
-    $('#frmEmptyIn_txtDateIn').val(new Date(gateEntryData[0].GateEntryDate).toISOString().slice(0, 10));
+    //$('#frmEmptyIn_txtDateIn').val(new Date(gateEntryData[0].GateEntryDate).toISOString().slice(0, 10));
+    $('#frmEmptyIn_txtDateIn').val(gateEntryData[0].GateEntryDate.slice(0, 10));
     $('#frmEmptyIn_txtVehicleInTime').val(gateEntryData[0].TimeIO);
     $('#frmEmptyIn_txtVehicleNo').val(gateEntryData[0].VehicleNo); 
     $('#frmEmptyIn_txtDriverName').val(gateEntryData[0].DriverName);
@@ -606,7 +614,10 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#frmEmptyIn_txtVehicleEmptyWeight').val(gateEntryData[0].EmptyWeight);
     $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val(gateEntryData[0].WeightmentSlipNumberIn);
     $('#frmEmptyIn_txtReportingDatetime').val(gateEntryData[0].ReportingDatetime);
-    $('#frmLoadedOut_txtDateOut').val(gateEntryData[0].GateEntryOutDate == null ? new Date().toISOString().slice(0, 10) : new Date(gateEntryData[0].GateEntryDate).toISOString().slice(0, 10));
+    //$('#frmLoadedOut_txtDateOut').val(gateEntryData[0].GateEntryOutDate == null ? new Date().toISOString().slice(0, 10) : new Date(gateEntryData[0].GateEntryDate).toISOString().slice(0, 10));
+
+    $('#frmLoadedOut_txtDateOut').val(gateEntryData[0].GateEntryOutDate == null ? new Date().toISOString().slice(0, 10) : gateEntryData[0].GateEntryDate.slice(0, 10));
+
     $('#frmLoadedOut_txtVehicleOutTime').val(gateEntryData[0].VehicleOutTime == '00:00' ? `${new Date().getHours()}:${new Date().getMinutes()}` : gateEntryData[0].VehicleOutTime);
 
     $('#frmEmptyIn_txtChassisNo').val(gateEntryData[0].ChassisNo);
@@ -2080,7 +2091,8 @@ function ViewGateEntry(gateEntryData, EntryType) {
     if (mode.toLowerCase() === 'loadedinview') {
         ClearEmptyOutOrLoadedOutFrm();
         UpdateLoadedIn_Emptyout(gateEntryData);
-        $('#frmEmptyOut_txtDateOut').val(new Date(gateEntryData[0].GateEntryOutDate).toISOString().slice(0, 10));
+        //$('#frmEmptyOut_txtDateOut').val(new Date(gateEntryData[0].GateEntryOutDate).toISOString().slice(0, 10));
+        $('#frmEmptyOut_txtDateOut').val(gateEntryData[0].GateEntryOutDate.slice(0, 10));
         $('#frmEmptyOut_txtOutTime').val(gateEntryData[0].VehicleOutTime); 
 
         $('#frmEmptyOut_txtVehicleEmptyWeight').val(gateEntryData[0].EmptyWeight);
@@ -2189,7 +2201,8 @@ function EditGateEntry(gateEntryData, EntryType) {
         UpdateLoadedIn_Emptyout(gateEntryData);
         EditLoaded();
 
-        $('#frmEmptyOut_txtDateOut').val(new Date(gateEntryData[0].GateEntryOutDate).toISOString().slice(0, 10));
+        //$('#frmEmptyOut_txtDateOut').val(new Date(gateEntryData[0].GateEntryOutDate).toISOString().slice(0, 10));
+        $('#frmEmptyOut_txtDateOut').val(gateEntryData[0].GateEntryOutDate.slice(0, 10));
         $('#frmEmptyOut_txtOutTime').val(gateEntryData[0].VehicleOutTime);
 
         $('#frmEmptyOut_txtVehicleEmptyWeight').val(gateEntryData[0].EmptyWeight);
@@ -2570,6 +2583,129 @@ function applyAlphaNumUppercase(selector) {
     });
 }
 
+function GateEnty_PrintPreviewToken(Code) {
+    GateEntryService.GetGateEntryDetails(Code).then(function (response) {
+        if (!response || response.length === 0) {
+            toastr.error('No data found for this token');
+            return;
+        }
+
+        const data = response[0];
+        //const companyName = sessionStorage.getItem('CompanyName') || 'Vimla Novochem Private Limited';
+        const companyName = data.CompanyName || 'mVimla Novochem Private Limited';
+        //const companyAddress = sessionStorage.getItem('CompanyAddress') || 'Plot No:1059/2, 1178/4, 1178/5, 1178/6, 1180/1, 1180/2, 1180/3 and 1180/4,<br>Village–Bhothi, Tehsil–Khairagarh, Distt:Khairagarh, Chhukhadan Gandai, Chhattisgarh';
+        const companyAddress = data.CompanyAddress || 'mPlot No:1059/2, 1178/4, 1178/5, 1178/6, 1180/1, 1180/2, 1180/3 and 1180/4,<br>Village–Bhothi, Tehsil–Khairagarh, Distt:Khairagarh, Chhukhadan Gandai, Chhattisgarh';
+        
+        // Format dates
+        //const currentDate = new Date().toLocaleDateString('en-IN');
+        //const currentTime = new Date().toLocaleTimeString('en-IN', { hour12: false });
+        //
+        const currentDate = new Date(data.ReportingDatetime).toLocaleDateString('en-IN');
+        const currentTime = new Date(data.ReportingDatetime).toLocaleTimeString('en-IN', { hour12: false });
+
+        const rcExpiredDate = data.RCExpiredDate ? new Date(data.RCExpiredDate).toLocaleDateString('en-IN') : '';
+        const licenseExpiredDate = data.DriverLicenseExpiredDate ? new Date(data.DriverLicenseExpiredDate).toLocaleDateString('en-IN') : '';
+        
+        const html = `
+            <div style="border: 2px solid #000; padding: 20px; max-width: 800px; margin: 20px auto; font-family: Arial, sans-serif;">
+                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+                    <h2 style="margin: 0; font-size: 24px; font-weight: bold;">${companyName}</h2>
+                    <p style="margin: 5px 0; font-size: 12px;">${companyAddress}</p>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 20px;">Token Slip</h3>
+                        <p style="margin: 5px 0;"><strong>Token No:</strong> ${data.TokenNo || ''}</p>
+                    </div>
+                    <div style="flex: 1; text-align: right;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 20px;">Vehicle No: ${data.VehicleNo || ''}</h3>
+                        <p style="margin: 5px 0;"><strong>Date:</strong> ${currentDate} <strong>Time:</strong>${currentTime}</p>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <table style="width: 100%; font-size: 14px;">
+                        <tr>
+                            <td style="padding: 5px 0; width: 35%;"><strong>Chesis No:</strong></td>
+                            <td style="padding: 5px 0;">${data.ChassisNo || ''}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px 0;"><strong>RCNo:</strong></td>
+                            <td style="padding: 5px 0;">${data.RCNo || ''}</td>
+                            <td style="padding: 5px 0; text-align: right;"><strong>Expired Dt:</strong> ${rcExpiredDate}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px 0;"><strong>Driver Name:</strong></td>
+                            <td style="padding: 5px 0; font-weight: bold;">${data.DriverName || ''}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px 0;"><strong>Driver License:</strong></td>
+                            <td style="padding: 5px 0;">${data.DriverLicenseNo || ''}</td>
+                            <td style="padding: 5px 0; text-align: right;"><strong>Expired Dt:</strong> ${licenseExpiredDate}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px 0;"><strong>Driver Ph.No:</strong></td>
+                            <td style="padding: 5px 0;">${data.DriverMobile || ''}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px 0;"><strong>Transporter Name:</strong></td>
+                            <td style="padding: 5px 0;">${data.OtherTransporterName || ''}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div style="margin-top: 40px; padding-top: 15px; border-top: 1px solid #ccc;">
+                    <p style="margin: 5px 0; font-size: 12px;"><strong>Created By:</strong> ${JSON.parse(sessionStorage.getItem('UserDetails'))[0].UserID || 'User Name'}</p>
+                </div>
+            </div>
+        `;
+        
+        // Open print preview window
+        const printWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+        if (!printWindow) {
+            toastr.error('Please allow pop-ups for this site');
+            return;
+        }
+        
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Token Slip - ${data.TokenNo || ''}</title>
+                <style>
+                    @media print {
+                        body { margin: 0; padding: 10px; }
+                        @page { size: A4; margin: 10mm; }
+                    }
+                    body { 
+                        font-family: Arial, sans-serif; 
+                        margin: 0;
+                        padding: 0;
+                    }
+                </style>
+            </head>
+            <body>
+                ${html}
+                <script>
+                    window.onload = function() {
+                        window.focus();
+                        setTimeout(function() {
+                            window.print();
+                        }, 250);
+                    };
+                </script>
+            </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+    }).catch(function(error) {
+        console.error('Error fetching token details:', error);
+        toastr.error('Failed to load token details');
+    });
+}
 // Apply to all inputs with this class
 applyAlphaNumUppercase(".alphanum-uppercase");
 BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnGateEntyConfiguration');
@@ -2583,3 +2719,4 @@ window.GateEntry_rdPOAccess_onClick = GateEntry_rdPOAccess_onClick
 window.GateEntry_SaveData = GateEntry_SaveData
 window.GateEntry_frmLoadedIn_ddlPurchaseOrder_Change = GateEntry_frmLoadedIn_ddlPurchaseOrder_Change
 window.GateEntry_InitSelectMachineToGetWeightControl = GateEntry_InitSelectMachineToGetWeightControl
+window.GateEnty_PrintPreviewToken = GateEnty_PrintPreviewToken
