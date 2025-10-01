@@ -1,8 +1,7 @@
 import { RmIndentService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/RmIndentService.js';
 
-let currentIndentId = null;
-let isEditMode = false;
-
+let today = '';
+let G_IndentStatusType = [];
 $(document).ready(function () {
     var urlParams = getUrlVars();
     var menuValue = decodeURI(urlParams['menu']);
@@ -12,45 +11,100 @@ $(document).ready(function () {
     } else {
         $("#ERPHeading").text("Raw Material Indent Management");
     }
-    GetRMIndentListTable();
-    //loadIndentData();
-    //setCurrentDate();
+    setCurrentDate();
+    ListStatus_IndentMaster();
+    FillIndentStatusType();
 });
 
+//function setCurrentDate() {
+//    today = new Date().toISOString().split('T')[0];
+//    $('#txtFromDate').val(today);
+//    $('#txtToDate').val(today);
+//    $('#txtPurchasedDate').val(today);
+//}
 function setCurrentDate() {
-    const today = new Date().toISOString().split('T')[0];
-    $('#indentDate').val(today);
+    let today = new Date();
+    let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    // Format a date object as dd-mm-yyyy
+    function formatDate(date) {
+        let day = String(date.getDate()).padStart(2, '0');
+        let month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+        let year = date.getFullYear();
+        return `${year}-${month}-${day}`;
+    }
+
+    $('#txtFromDate').val(formatDate(firstOfMonth));  // first day of month in dd-mm-yyyy
+    $('#txtToDate').val(formatDate(today));           // today in dd-mm-yyyy
+    $('#txtPurchasedDate').val(formatDate(today));    // today in dd-mm-yyyy
 }
-function GetRMIndentListTable() {
-    //Showloader();
-    RmIndentService.GetRmIndentList().then(function (response) {
+
+
+function ListStatus_IndentMaster() {
+    let Status=$('#ddlStatus').val() || 0;
+    let DateType=$('#txtDateType').val();
+    let FromDate=$('#txtFromDate').val();
+    let ToDate=$('#txtToDate').val();
+    GetRMIndentListTable(Status, DateType, FromDate, ToDate);
+}
+function FillIndentStatusType() {
+    RmIndentService.GetRmIndentStatusType().then(function (response) {
         if (response && response.length > 0) {
-            //HideLoader();
+            BindSelectList2($('#ddlStatus')[0], response.map((item) => ({ Code: item.ShortDesp, Desp: item.Value })));
+
+            $('#ddlStatus').select2({
+                width: '-webkit-fill-available'
+            });
+        } else {
+            toastr.error('No data received or empty response');
+        }
+    }).catch(function (error) {
+        toastr.error('Error fetching user list:', error);
+    });
+}
+
+
+function GetRMIndentListTable(Status, DateType, FromDate, ToDate) {
+    RmIndentService.GetRmIndentList(Status, DateType, FromDate, ToDate).then(function (response) {
+        if (response && response.length > 0) {
+            FillIndentStatusTypeTable();
             $('#tblRMIndent').show();
-            const stringFilterColumn = [];
-            const numericFilterColumn = [];
-            const dateFilterColumn = [];
+            const stringFilterColumn = ["Item Name", "SizeDesp", "THICKNESS", "GRADE", "MAKE","WIDTH"];
+            const numericFilterColumn = ["Indent No", "Qty MT","Qty PC","Qty MTRS"];
+            const dateFilterColumn = ["Indent Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = [];
+            const hiddenColumns = ["Code","Purchased Date"];
             const columnAlignment = {
                 'Indent Date': 'center',
+                'THICKNESS': 'right',
+                'WIDTH': 'right',
+                'Qty MT': 'right',
+                'Qty PC': 'right',
+                'Qty MTRS': 'right',
+                'Status': ';width:150px',
+                'Purchased Date': ';width:150px',
             };
+            
             const updatedResponse = response.map((item, index) => {
-                let sourceInputHTML = `<button type="button" id="txtSource${index + 1}" class="btn btn-primary btn-height" title="Source" onclick="ShowModelVenderDetails(this);">Add Source</button>`;
-                let statusInputHTML = `<select id="ddlStatus${index + 1}" class="form-control form-control-sm box_border" name="ddlStatus"  autocomplete="off" onchange="OnChange_ddlStatus(this);" style="min-width: 70px;"><option>Purchased</option><option>Pending</option><option>Reject</option></select>`;
-                let purchaseDateInputHTML = `<input type="date" id="txtPurchaseDate${index + 1}" onkeypress="BizSolhandleEnterKey(event);" value="" class="BizSolFormControl box_border form-control form-control-sm" name="txtSource" placeholder="" autocomplete="off" onclick="$(this).val('')" style="min-width: 70px;" onchange="" required>`;
+                const isPurchased = (item.Status || '').toString().trim().toLowerCase() == 'c';
+                const buttonDisabled = isPurchased ? '' : 'disabled';
+                const buttonClass = isPurchased ? 'btn btn-primary btn-height' : 'btn btn-secondary btn-height';
+
+                let sourceInputHTML = `<button type="button" id="txtSource_${item.Code}" class="${buttonClass}" title="Source" onclick="ShowModelVenderDetails('${item.Code}','${item?.['Qty MT']}','${item?.['Qty PC']}','${item?.['Qty MTRS']}');" style="width: 70px;" ${buttonDisabled}>Add Source</button>`;
+                let statusInputHTML = ` <select class="box_border form-control form-control-sm ddlStatus1" data-current-status="${(item.Status || '').toString().trim()}" style="min-width: 70px;" required onchange="toggleSourceButton('${item.Code}', this.value)"></select>`;
+                //let purchaseDateInputHTML = `<input type="text" id="txtPurchaseDate_${item.Code}" onkeypress="BizSolhandleEnterKey(event);" value="${item["Purchased Date"]}" class="BizSolFormControl box_border form-control form-control-sm" name="txtSource" placeholder="" autocomplete="off" onclick="$(this).val('')" style="min-width: 70px;" readonly onchange="" required>`;
+
                 return {
                     ...item,
                     Source: sourceInputHTML,
                     Status: statusInputHTML,
-                    'Purchase Date': purchaseDateInputHTML,
+                    //'Purchased Date': purchaseDateInputHTML,
                 };
             });
-
             BizsolCustomFilterGrid.CreateDataTable("table-header-RMIndent", "table-body-RMIndent", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
-            
+            FillVendorNameList();
         } else {
             HideLoader();
             toastr.error('No Data Found');
@@ -61,523 +115,231 @@ function GetRMIndentListTable() {
             toastr.error(error.Msg || 'Error during RMIndent');
         });
 }
-function ShowModelVenderDetails() {
-
+function toggleSourceButton(itemCode, selectedStatus) {
+    
+    const button = document.getElementById(`txtSource_${itemCode}`);
+    if (button) {
+        if (selectedStatus.toLowerCase() === 'c') {
+            button.disabled = false;
+            button.className = 'btn btn-primary btn-height';
+            button.style.width = '70px';
+        } else {
+            button.disabled = true;
+            button.className = 'btn btn-secondary btn-height';
+            button.style.width = '70px';
+        }
+    }
+    UpdateStatus_IndentMaster(itemCode, selectedStatus);
 }
-function loadIndentData() {
-    ShowLoader();
-    RmIndentService.GetAllIndents().then(function (response) {
-        HideLoader();
+function FillIndentStatusTypeTable() {
+    RmIndentService.GetRmIndentStatusType().then(function (response) {
         if (response && response.length > 0) {
-            displayIndentData(response);
+            G_IndentStatusType = response;
+
+            //const options = (response || []).map((item) => ({ Code: item.ShortDesp, Desp: item.Value }));
+            //const $selects = $('.ddlStatus1');
+            //if ($selects.length === 0) return;
+
+            //$selects.each(function () {
+            //    const sel = this;
+            //    const $sel = $(sel);
+            //    const current = ($sel.data('current-status') || '').toString().trim();
+            //    BindSelectList(sel, options);
+            //    if (current) {
+            //        $sel.val(current);
+            //    }
+            //});
+
+            //$selects.select2({
+            //    width: '-webkit-fill-available'
+            //});
         } else {
-            toastr.info("No indent data found");
-            $("#RmIndentTable").hide();
+            toastr.error('No data received or empty response');
         }
-    }).catch(error => {
-        HideLoader();
-        console.error("Error loading indent data:", error);
-        toastr.error("Error loading indent data. Please try again or contact support if the problem persists.");
-        $("#RmIndentTable").hide();
+    }).catch(function (error) {
+        toastr.error('Error fetching user list:', error);
     });
 }
+function initilizeSelect() {
 
-function displayIndentData(data) {
-    const stringFilterColumn = ["Indent No", "Item Name", "Size", "Grade", "Make", "Source"];
-    const numericFilterColumn = ["QTY PC", "QTY MT", "QTY MTRS"];
-    const dateFilterColumn = ["Indent Date", "Purchased Date"];
-    const button = false;
-    const stringDoubleFilterColumn = [];
-    const showButtons = [];
-    const hiddenColumns = ["Id"];
-    const ColumnAlignment = {
-        "QTY PC": 'right',
-        "QTY MT": 'right',
-        "QTY MTRS": 'right',
-        "Indent Date": 'center',
-        "Purchased Date": 'center',
-        "Indent No": 'center'
-    };
+    if (G_IndentStatusType.length > 0) {
+        const options = (G_IndentStatusType || []).map((item) => ({ Code: item.ShortDesp, Desp: item.Value }));
+        const $selects = $('.ddlStatus1');
+        if ($selects.length === 0) return;
 
-    const updatedResponse = data.map(item => ({
-        ...item,
-        Status: getStatusBadge(item.Status),
-        Action: getActionButtons(item.Id, item.Status)
-    }));
-
-    BizsolCustomFilterGrid.CreateDataTable(
-        "table-header-RmIndentTable", 
-        "table-body-RmIndentTable", 
-        updatedResponse, 
-        button, 
-        showButtons, 
-        stringFilterColumn, 
-        numericFilterColumn, 
-        dateFilterColumn, 
-        stringDoubleFilterColumn, 
-        hiddenColumns, 
-        ColumnAlignment
-    );
-}
-
-function getStatusBadge(status) {
-    const statusClass = status.toLowerCase() === 'purchased' ? 'status-purchased' : 
-                       status.toLowerCase() === 'pending' ? 'status-pending' : 'status-reject';
-    return `<span class="status-badge ${statusClass}">${status}</span>`;
-}
-
-function getActionButtons(id, status) {
-    let buttons = `
-        <div class="action-buttons">
-            <button class="btn btn-info btn-sm" title="View Details" onclick="viewDetails(${id})">
-                <i class="fa fa-eye"></i>
-            </button>
-            <button class="btn btn-primary btn-sm" title="Edit" onclick="editIndent(${id})">
-                <i class="fa fa-edit"></i>
-            </button>
-            <button class="btn btn-info btn-sm" title="View History" onclick="viewHistory(${id})">
-                <i class="fa fa-history"></i>
-            </button>
-    `;
-    
-    if (status.toLowerCase() === 'pending') {
-        buttons += `
-            <button class="btn btn-success btn-sm" title="Approve" onclick="approveIndent(${id})">
-                <i class="fa fa-check"></i>
-            </button>
-            <button class="btn btn-warning btn-sm" title="Reject" onclick="showRejectModal(${id})">
-                <i class="fa fa-times"></i>
-            </button>
-        `;
-    }
-    
-    if (status.toLowerCase() === 'pending') {
-        buttons += `
-            <button class="btn btn-success btn-sm" title="Mark as Purchased" onclick="markAsPurchased(${id})">
-                <i class="fa fa-shopping-cart"></i>
-            </button>
-        `;
-    }
-    
-    buttons += `
-            <button class="btn btn-danger btn-sm" title="Delete" onclick="deleteIndent(${id})">
-                <i class="fa fa-trash"></i>
-            </button>
-        </div>
-    `;
-    
-    return buttons;
-}
-
-function showCreateModal() {
-    isEditMode = false;
-    currentIndentId = null;
-    $('#modalTitle').text('Create New Indent');
-    $('#indentForm')[0].reset();
-    setCurrentDate();
-    $('#indentModal').modal('show');
-}
-
-function editIndent(id) {
-    isEditMode = true;
-    currentIndentId = id;
-    $('#modalTitle').text('Edit Indent');
-    
-    ShowLoader();
-    RmIndentService.GetIndentById(id).then(function (response) {
-        HideLoader();
-        if (response) {
-            populateForm(response);
-            $('#indentModal').modal('show');
-        } else {
-            toastr.error("Indent not found");
-        }
-    }).catch(error => {
-        HideLoader();
-        toastr.error("Error loading indent data:", error);
-    });
-}
-
-function populateForm(data) {
-    $('#indentId').val(data.Id);
-    $('#indentNo').val(data.IndentNo);
-    $('#indentDate').val(data.IndentDate);
-    $('#itemName').val(data.ItemName);
-    $('#size').val(data.Size);
-    $('#thickness').val(data.Thickness);
-    $('#grade').val(data.Grade);
-    $('#make').val(data.Make);
-    $('#qtyPC').val(data.QtyPC);
-    $('#qtyMT').val(data.QtyMT);
-    $('#qtyMTRS').val(data.QtyMTRS);
-    $('#source').val(data.Source);
-    $('#status').val(data.Status);
-    $('#remark').val(data.Remark);
-}
-
-function saveIndent() {
-    if (!validateForm()) {
-        return;
-    }
-    
-    const formData = {
-        Id: $('#indentId').val() || 0,
-        IndentNo: $('#indentNo').val(),
-        IndentDate: $('#indentDate').val(),
-        ItemName: $('#itemName').val(),
-        Size: $('#size').val(),
-        Thickness: $('#thickness').val(),
-        Grade: $('#grade').val(),
-        Make: $('#make').val(),
-        QtyPC: parseFloat($('#qtyPC').val()) || 0,
-        QtyMT: parseFloat($('#qtyMT').val()) || 0,
-        QtyMTRS: parseFloat($('#qtyMTRS').val()) || 0,
-        Source: $('#source').val(),
-        Status: $('#status').val(),
-        Remark: $('#remark').val()
-    };
-    
-    ShowLoader();
-    
-    const serviceCall = isEditMode ? 
-        RmIndentService.UpdateIndent(currentIndentId, formData) : 
-        RmIndentService.CreateIndent(formData);
-    
-    serviceCall.then(function (response) {
-        HideLoader();
-        if (response && response.Status === "Y") {
-            toastr.success(response.Msg || "Indent saved successfully");
-            closeModal();
-            loadIndentData();
-        } else {
-            toastr.error(response.Msg || "Error saving indent");
-        }
-    }).catch(error => {
-        HideLoader();
-        toastr.error("Error saving indent:", error);
-    });
-}
-
-function validateForm() {
-    const requiredFields = ['indentNo', 'indentDate', 'itemName'];
-    let isValid = true;
-    let errorMessages = [];
-    
-    // Clear previous validation errors
-    $('.form-control').removeClass('is-invalid');
-    $('.invalid-feedback').remove();
-    
-    // Validate required fields
-    requiredFields.forEach(field => {
-        const value = $(`#${field}`).val().trim();
-        if (!value) {
-            $(`#${field}`).addClass('is-invalid');
-            $(`#${field}`).after(`<div class="invalid-feedback">${getFieldDisplayName(field)} is required</div>`);
-            errorMessages.push(`${getFieldDisplayName(field)} is required`);
-            isValid = false;
-        }
-    });
-    
-    // Validate date
-    const indentDate = $('#indentDate').val();
-    if (indentDate) {
-        const selectedDate = new Date(indentDate);
-        const today = new Date();
-        if (selectedDate > today) {
-            $('#indentDate').addClass('is-invalid');
-            $('#indentDate').after('<div class="invalid-feedback">Indent date cannot be in the future</div>');
-            errorMessages.push('Indent date cannot be in the future');
-            isValid = false;
-        }
-    }
-    
-    // Validate quantities
-    const qtyPC = parseFloat($('#qtyPC').val()) || 0;
-    const qtyMT = parseFloat($('#qtyMT').val()) || 0;
-    const qtyMTRS = parseFloat($('#qtyMTRS').val()) || 0;
-    
-    if (qtyPC < 0 || qtyMT < 0 || qtyMTRS < 0) {
-        errorMessages.push('Quantities cannot be negative');
-        isValid = false;
-    }
-    
-    if (qtyPC === 0 && qtyMT === 0 && qtyMTRS === 0) {
-        errorMessages.push('At least one quantity must be greater than zero');
-        isValid = false;
-    }
-    
-    // Validate indent number format
-    const indentNo = $('#indentNo').val().trim();
-    if (indentNo && !/^[A-Za-z0-9\-_]+$/.test(indentNo)) {
-        $('#indentNo').addClass('is-invalid');
-        $('#indentNo').after('<div class="invalid-feedback">Indent number can only contain letters, numbers, hyphens, and underscores</div>');
-        errorMessages.push('Invalid indent number format');
-        isValid = false;
-    }
-    
-    if (!isValid) {
-        toastr.error('Please fix the following errors:\n' + errorMessages.join('\n'));
-    }
-    
-    return isValid;
-}
-
-function getFieldDisplayName(field) {
-    const fieldNames = {
-        'indentNo': 'Indent Number',
-        'indentDate': 'Indent Date',
-        'itemName': 'Item Name'
-    };
-    return fieldNames[field] || field;
-}
-
-function viewDetails(id) {
-    ShowLoader();
-    RmIndentService.GetIndentById(id).then(function (response) {
-        HideLoader();
-        if (response) {
-            displayIndentDetails(response);
-            $('#detailsModal').modal('show');
-        } else {
-            toastr.error("Indent not found");
-        }
-    }).catch(error => {
-        HideLoader();
-        toastr.error("Error loading indent details:", error);
-    });
-}
-
-function displayIndentDetails(data) {
-    const detailsHtml = `
-        <div class="row">
-            <div class="col-md-6">
-                <table class="table table-bordered">
-                    <tr><th>Indent No:</th><td>${data.IndentNo || 'N/A'}</td></tr>
-                    <tr><th>Indent Date:</th><td>${data.IndentDate || 'N/A'}</td></tr>
-                    <tr><th>Item Name:</th><td>${data.ItemName || 'N/A'}</td></tr>
-                    <tr><th>Size:</th><td>${data.Size || 'N/A'}</td></tr>
-                    <tr><th>Thickness:</th><td>${data.Thickness || 'N/A'}</td></tr>
-                    <tr><th>Grade:</th><td>${data.Grade || 'N/A'}</td></tr>
-                </table>
-            </div>
-            <div class="col-md-6">
-                <table class="table table-bordered">
-                    <tr><th>Make:</th><td>${data.Make || 'N/A'}</td></tr>
-                    <tr><th>QTY PC:</th><td>${data.QtyPC || 'N/A'}</td></tr>
-                    <tr><th>QTY MT:</th><td>${data.QtyMT || 'N/A'}</td></tr>
-                    <tr><th>QTY MTRS:</th><td>${data.QtyMTRS || 'N/A'}</td></tr>
-                    <tr><th>Source:</th><td>${data.Source || 'N/A'}</td></tr>
-                    <tr><th>Status:</th><td>${getStatusBadge(data.Status)}</td></tr>
-                </table>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-12">
-                <table class="table table-bordered">
-                    <tr><th>Remark:</th><td>${data.Remark || 'N/A'}</td></tr>
-                    <tr><th>Purchased Date:</th><td>${data.PurchasedDate || 'N/A'}</td></tr>
-                </table>
-            </div>
-        </div>
-    `;
-    
-    $('#indentDetails').html(detailsHtml);
-}
-
-function viewHistory(id) {
-    ShowLoader();
-    RmIndentService.GetIndentHistory(id).then(function (response) {
-        HideLoader();
-        if (response && response.length > 0) {
-            displayHistoryData(response);
-            $('#historyModal').modal('show');
-        } else {
-            toastr.info("No history found for this indent");
-        }
-    }).catch(error => {
-        HideLoader();
-        toastr.error("Error loading indent history:", error);
-    });
-}
-
-function displayHistoryData(data) {
-    const stringFilterColumn = ["Action", "User"];
-    const numericFilterColumn = [];
-    const dateFilterColumn = ["Date"];
-    const button = false;
-    const showButtons = [];
-    const hiddenColumns = [];
-    const ColumnAlignment = {
-        "Date": 'center'
-    };
-
-    BizsolCustomFilterGrid.CreateDataTable(
-        "table-header-HistoryTable", 
-        "table-body-HistoryTable", 
-        data, 
-        button, 
-        showButtons, 
-        stringFilterColumn, 
-        numericFilterColumn, 
-        dateFilterColumn, 
-        [], 
-        hiddenColumns, 
-        ColumnAlignment
-    );
-    $('#paginator-HistoryTable').hide();
-}
-
-function approveIndent(id) {
-    if (confirm("Are you sure you want to approve this indent?")) {
-        ShowLoader();
-        RmIndentService.ApproveIndent(id).then(function (response) {
-            HideLoader();
-            if (response && response.Status === "Y") {
-                toastr.success(response.Msg || "Indent approved successfully");
-                loadIndentData();
-            } else {
-                toastr.error(response.Msg || "Error approving indent");
-            }
-        }).catch(error => {
-            HideLoader();
-            toastr.error("Error approving indent:", error);
-        });
-    }
-}
-
-function showRejectModal(id) {
-    currentIndentId = id;
-    $('#rejectReason').val('');
-    $('#rejectModal').modal('show');
-}
-
-function confirmReject() {
-    const reason = $('#rejectReason').val().trim();
-    if (!reason) {
-        toastr.error("Please provide a reason for rejection");
-        return;
-    }
-    
-    ShowLoader();
-    RmIndentService.RejectIndent(currentIndentId, reason).then(function (response) {
-        HideLoader();
-        if (response && response.Status === "Y") {
-            toastr.success(response.Msg || "Indent rejected successfully");
-            closeRejectModal();
-            loadIndentData();
-        } else {
-            toastr.error(response.Msg || "Error rejecting indent");
-        }
-    }).catch(error => {
-        HideLoader();
-        toastr.error("Error rejecting indent:", error);
-    });
-}
-
-function markAsPurchased(id) {
-    const purchasedDate = prompt("Enter purchased date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-    if (purchasedDate) {
-        ShowLoader();
-        RmIndentService.MarkAsPurchased(id, purchasedDate).then(function (response) {
-            HideLoader();
-            if (response && response.Status === "Y") {
-                toastr.success(response.Msg || "Indent marked as purchased successfully");
-                loadIndentData();
-            } else {
-                toastr.error(response.Msg || "Error marking indent as purchased");
-            }
-        }).catch(error => {
-            HideLoader();
-            toastr.error("Error marking indent as purchased:", error);
-        });
-    }
-}
-
-function deleteIndent(id) {
-    if (confirm("Are you sure you want to delete this indent? This action cannot be undone.")) {
-        ShowLoader();
-        RmIndentService.DeleteIndent(id).then(function (response) {
-            HideLoader();
-            if (response && response.Status === "Y") {
-                toastr.success(response.Msg || "Indent deleted successfully");
-                loadIndentData();
-            } else {
-                toastr.error(response.Msg || "Error deleting indent");
-            }
-        }).catch(error => {
-            HideLoader();
-            toastr.error("Error deleting indent:", error);
-        });
-    }
-}
-
-function filterByStatus() {
-    const status = $('#statusFilter').val();
-    if (status) {
-        ShowLoader();
-        RmIndentService.GetIndentsByStatus(status).then(function (response) {
-            HideLoader();
-            if (response && response.length > 0) {
-                displayIndentData(response);
-            } else {
-                toastr.info(`No indents found with status: ${status}`);
-                $("#RmIndentTable").hide();
-            }
-        }).catch(error => {
-            HideLoader();
-            toastr.error("Error filtering indents:", error);
-        });
-    } else {
-        loadIndentData();
-    }
-}
-
-function searchIndents() {
-    const searchTerm = $('#searchInput').val().trim();
-    if (searchTerm.length >= 2) {
-        const searchCriteria = {
-            searchTerm: searchTerm,
-            searchFields: ['IndentNo', 'ItemName', 'Size', 'Grade', 'Make']
-        };
         
-        ShowLoader();
-        RmIndentService.SearchIndents(searchCriteria).then(function (response) {
-            HideLoader();
-            if (response && response.length > 0) {
-                displayIndentData(response);
-            } else {
-                toastr.info("No indents found matching your search");
-                $("#RmIndentTable").hide();
+
+        $('.ddlStatus1').each(function () {
+            // Check if already initialized
+            if (!$(this).hasClass('select2-hidden-accessible')) {
+                $selects.each(function () {
+                    const sel = this;
+                    const $sel = $(sel);
+                    const current = ($sel.data('current-status') || '').toString().trim();
+                    BindSelectList(sel, options);
+                    if (current) {
+                        $sel.val(current);
+                    }
+                });
+
+                $(this).select2({
+                    width: '-webkit-fill-available'
+                });
             }
-        }).catch(error => {
-            HideLoader();
-            toastr.error("Error searching indents:", error);
         });
-    } else if (searchTerm.length === 0) {
-        loadIndentData();
+        //////$selects.select2({
+        //////    width: '-webkit-fill-available'
+        //////});
     }
+    
+} 
+function UpdateStatus_IndentMaster(Code,Status) {
+    RmIndentService.UpdateStatus_IndentMaster(Code, Status).then(function (response) {
+        if (response && response.Status === 'Y') {
+        } else {
+            toastr.error('No data received or empty response');
+        }
+    }).catch(function (error) {
+        toastr.error('Error fetching user list:', error);
+    });
 }
+function ShowModelVenderDetails(code, qtyMT, qtyPC, qtyMTRS) {
+    $('#hfCode').val(code);
+    $('#txtQtyMT').val(qtyMT || '');
+    $('#txtQtyPC').val(qtyPC || '');
+    $('#txtQtyMTRS').val(qtyMTRS || '');
+    $('#txtPurchasedDate').val(today);
 
-function refreshData() {
-    loadIndentData();
+    $('#myModal').data('code', code);
+    $('#myModal').modal({
+        backdrop: 'static',
+    });
+    $('#myModal').modal('show');
+
+    $('#ddlVenderName').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtQtyMT").focus();
+        }
+    });
+    $('#txtQtyMT').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtQtyPC").focus();
+        }
+    });
+    $('#txtQtyPC').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtQtyMTRS").focus();
+        }
+    });
+    $('#txtQtyMTRS').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtRate").focus();
+        }
+    });
+    $('#txtRate').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtPurchasedDate").focus();
+        }
+    });
+    $('#txtPurchasedDate').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtRemarks").focus();
+        }
+    });
 }
+function FillVendorNameList() {
+    RmIndentService.GetVendorList().then(function (response) {
+        if (response && response.length > 0) {
+            BindSelectList1($('#ddlVenderName')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })));
 
-function closeModal() {
-    $('#indentModal').modal('hide');
+            $('#ddlVenderName').select2({
+                width: '-webkit-fill-available'
+            });
+        } else {
+            toastr.error('No data received or empty response');
+        }
+    }).catch(function (error) {
+        toastr.error('Error fetching user list:', error);
+    });
 }
-
-function closeDetailsModal() {
-    $('#detailsModal').modal('hide');
+function validateDecimalInput(input) {
+    let value = input.value.replace(/[^0-9.]/g, '');
+    let parts = value.split('.');
+    if (parts.length > 3) {
+        value = parts[0] + '.' + parts[1];
+    }
+    if (value.length > 8) {
+        value = value.slice(0, 8);
+    }
+    if (parts[1] && parts[1].length > 3) {
+        value = parts[0] + '.' + parts[1].slice(0, 3);
+    }
+    input.value = value;
 }
-
-function closeHistoryModal() {
-    $('#historyModal').modal('hide');
+function validateDecimalRateInput(input) {
+    let value = input.value.replace(/[^0-9.]/g, '');
+    let parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts[0] + '.' + parts[1];
+    }
+    if (value.length > 8) {
+        value = value.slice(0, 8);
+    }
+    if (parts[1] && parts[1].length > 2) {
+        value = parts[0] + '.' + parts[1].slice(0, 2);
+    }
+    input.value = value;
 }
-
-function closeRejectModal() {
-    $('#rejectModal').modal('hide');
+function validateIntegerInput(input) {
+    let value = input.value.replace(/[^0-9]/g, '');
+    if (value.length > 5) {
+        value = value.slice(0, 5);
+    }
+    input.value = value;
 }
+function CloseModal_IndentMaster() {
+    $('#myModal').modal('hide');
+    ClearFormModal();
+}
+function SaveModal_IndentMaster() {
+    let VendorName = $('#ddlVenderName').val();
+    let QtyMT = $('#txtQtyMT').val();
+    let TransactionCode = $('#hfCode').val();
+    let QtyPC = $('#txtQtyPC').val();
+    let QtyMTRS = $('#txtQtyMTRS').val();
+    let Rate = $('#txtRate').val();
+    let PurchasedDate = $('#txtPurchasedDate').val();
+    let Remarks = $('#txtRemarks').val();
 
+    if (VendorName === '' || VendorName == '0' || QtyMT === '' || QtyPC === '' || QtyMTRS === '' || Rate === '' || PurchasedDate === '') {
+        toastr.warning("Fill All Fields");
+        return false;
+    }
+
+    let payLoadSaveIndentPriceComparisionDetails = {
+        Code: 0,
+        IndentTrans_Code: TransactionCode, 
+        VendorMaster_Code: VendorName,
+        Rate: parseFloat(Rate),
+        QtyMT: parseFloat(QtyMT),
+        QtyPC: parseInt(QtyPC),
+        QtyMTRS: parseFloat(QtyMTRS),
+        Remarks: Remarks, 
+        PurchasedDate: PurchasedDate
+    };
+
+    RmIndentService.SaveIndentPriceComparison(payLoadSaveIndentPriceComparisionDetails).then(function (response) {
+        if (response && response.Status === 'Y') {
+            toastr.success(response.Message);
+            CloseModal_IndentMaster();
+            ListStatus_IndentMaster();
+        } else {
+            toastr.error(response.Message || 'Error saving data');
+        }
+    }).catch(function (error) {
+        toastr.error('Error saving data: ' + error);
+    });
+}
 function getUrlVars() {
     var vars = {};
     var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
@@ -587,66 +349,40 @@ function getUrlVars() {
     }
     return vars;
 }
-
-// Error handling wrapper
-function handleServiceError(error, operation) {
-    console.error(`Error in ${operation}:`, error);
-    
-    let errorMessage = `Error in ${operation}. `;
-    
-    if (error.includes('404')) {
-        errorMessage += "The requested resource was not found.";
-    } else if (error.includes('500')) {
-        errorMessage += "Internal server error. Please try again later.";
-    } else if (error.includes('403')) {
-        errorMessage += "You don't have permission to perform this action.";
-    } else if (error.includes('timeout')) {
-        errorMessage += "Request timed out. Please check your connection and try again.";
-    } else {
-        errorMessage += "Please try again or contact support if the problem persists.";
-    }
-    
-    toastr.error(errorMessage);
+function ClearFormModal() {
+    $('#txtRate').val('');
+    $('#txtPurchasedDate').val('');
+    $('#txtRemarks').val('');
 }
-
-// Add retry mechanism for failed requests
-function retryOperation(operation, maxRetries = 3) {
-    return new Promise((resolve, reject) => {
-        let attempts = 0;
-        
-        function attempt() {
-            attempts++;
-            operation()
-                .then(resolve)
-                .catch(error => {
-                    if (attempts < maxRetries) {
-                        console.log(`Retry attempt ${attempts} for operation`);
-                        setTimeout(attempt, 1000 * attempts); // Exponential backoff
-                    } else {
-                        reject(error);
-                    }
-                });
-        }
-        
-        attempt();
+function BindSelectList(element, list) {
+    let option = '';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
     });
+    element.innerHTML = option;
+}
+function BindSelectList1(element, list) {
+    let option = '<option value="0">Select</option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
+function BindSelectList2(element, list) {
+    let option = '<option value="0">Select</option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
 }
 
-// Export functions for global access
-window.showCreateModal = showCreateModal;
-window.editIndent = editIndent;
-window.viewDetails = viewDetails;
-window.viewHistory = viewHistory;
-window.approveIndent = approveIndent;
-window.showRejectModal = showRejectModal;
-window.confirmReject = confirmReject;
-window.markAsPurchased = markAsPurchased;
-window.deleteIndent = deleteIndent;
-window.filterByStatus = filterByStatus;
-window.searchIndents = searchIndents;
-window.refreshData = refreshData;
-window.closeModal = closeModal;
-window.closeDetailsModal = closeDetailsModal;
-window.closeHistoryModal = closeHistoryModal;
-window.closeRejectModal = closeRejectModal;
-window.saveIndent = saveIndent;
+setInterval(initilizeSelect, 500);
+
+window.ListStatus_IndentMaster = ListStatus_IndentMaster;
+window.ShowModelVenderDetails = ShowModelVenderDetails;
+window.CloseModal_IndentMaster = CloseModal_IndentMaster;
+window.SaveModal_IndentMaster = SaveModal_IndentMaster;
+window.toggleSourceButton = toggleSourceButton;
+window.validateDecimalInput = validateDecimalInput;
+window.validateIntegerInput = validateIntegerInput;
+window.validateDecimalRateInput = validateDecimalRateInput;
