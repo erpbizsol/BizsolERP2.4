@@ -2333,9 +2333,7 @@ function ResetEnquiryFollowUp() {
     ClearFollowUpData();
 }
 function BackEnquiry() {
-    if ($("#ddlAssignSalesman").val() != '') {
-        SaveLeadEnquiryOnChange();
-    }
+    SaveLeadEnquiryOnChange();
     BackMaster();
 }
 
