@@ -1,0 +1,66 @@
+:root {
+    --baby-primary: #6f42c1; /* purple */
+    --baby-primary-dark: #59359a;
+    --baby-accent: #ff8ba7; /* soft pink */
+    --baby-bg: #f5f0ff; /* soft lavender */
+    --baby-muted: #e6dbff;
+    --baby-text: #2b2b2b;
+}
+
+html, body {
+    font-family: 'Poppins', Arial, sans-serif;
+    color: var(--baby-text);
+    background-color: #ffffff;
+}
+
+.PAGE .card.ps-2.p-1 {
+    background: var(--baby-primary);
+}
+
+.btn-primary {
+    background-color: var(--baby-primary);
+    border-color: var(--baby-primary);
+}
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--baby-primary-dark);
+    border-color: var(--baby-primary-dark);
+}
+
+.nav-tabs .nav-link.active, .tab.active {
+    background-color: var(--baby-primary-dark) !important;
+    color: #fff !important;
+}
+.nav-tabs .nav-link, .tab {
+    background-color: var(--baby-primary) !important;
+    color: #fff !important;
+}
+
+.badge-primary,
+.bg-primary {
+    background-color: var(--baby-primary) !important;
+}
+
+.header, .card-header-tabs {
+    background: var(--baby-bg) !important;
+}
+
+.customertype:has(input[type="radio"]) {
+    background: var(--baby-muted);
+    color: var(--baby-text);
+}
+.customertype:has(input[type="radio"]:checked) {
+    background: var(--baby-primary);
+    color: #fff;
+}
+
+.table thead th {
+    background: var(--baby-muted);
+}
+
+.link-primary, a {
+    color: var(--baby-primary);
+}
+.link-primary:hover, a:hover {
+    color: var(--baby-primary-dark);
+}
+
