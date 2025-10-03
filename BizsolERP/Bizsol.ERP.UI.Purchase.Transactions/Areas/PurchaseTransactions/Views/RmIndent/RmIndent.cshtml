@@ -1,0 +1,132 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/RmIndent.js"></script>
+<style>
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control, .form-select {
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+</style>
+<div id="locateIndentMaster">
+    <div class="card col-md-12">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-2">
+                    <label for="ddlStatus" class="col-form-label-sm fw-bold">Status:<span class="text-danger">*</span></label>
+                    <select id="ddlStatus" name="ddlStatus" class="box_border form-control form-control-sm" required></select>
+                </div>
+                <div class="col-md-2">
+                    <label for="txtDateType" class="col-form-label-sm fw-bold">Date Type:<span class="text-danger">*</span></label>
+                    <select id="txtDateType" name="txtDateType" class="box_border form-control form-control-sm" required>
+                        <option value="Purchased Date" >Purchased Date</option>
+                        <option value="Indent Date" selected>Indent Date</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="txtFromDate" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+                    <input type="date" id="txtFromDate" name="txtFromDate" class="box_border form-control form-control-sm" required />
+                </div>
+                <div class="col-md-2">
+                    <label for="txtToDate" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+                    <input type="date" id="txtToDate" name="txtToDate" class="box_border form-control form-control-sm" required />
+                </div>
+                <div class="col-md-2" style="margin-top:2.1rem">
+                    <button type="button" onclick="ListStatus_IndentMaster()" title="Show" class="btn btn-primary btn-height">Show</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<div class="row">
+    <div class="col-md-12">
+        <div id="tblRMIndent">
+            <div class="table-wrapper fixed-height-table">
+                <table id="RMIndent" class="fixed-width-table table">
+                    <thead id="table-header-RMIndent">
+                    </thead>
+                    <tbody id="table-body-RMIndent">
+                    </tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-RMIndent">
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-lg">
+            <div class="modal-header">
+                <h5 class="modal-title">Vender Entry Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                            <label for="ddlVenderName" class="col-form-label-sm fw-bold">Vender Name:<span class="text-danger">*</span></label>
+                            <select id="ddlVenderName" name="ddlVenderName" class="box_border form-control form-control-sm" required></select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                            <label for="txtQtyMT" class="col-form-label-sm fw-bold">Qty MT:<span class="text-danger">*</span></label>
+                            <input id="txtQtyMT" name="txtQtyMT" class="box_border form-control form-control-sm text-end" oninput="validateDecimalInput(this)" autocomplete="off" required />
+                            <input id="hfCode" type="hidden" name="txtQtyMT" class="box_border form-control form-control-sm" autocomplete="off" required />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                            <label for="txtQtyPC" class="col-form-label-sm fw-bold">Qty PC:<span class="text-danger">*</span></label>
+                            <input id="txtQtyPC" name="txtQtyPC" class="box_border form-control form-control-sm text-end" oninput="validateIntegerInput(this)" autocomplete="off" required />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                            <label for="txtQtyMTRS" class="col-form-label-sm fw-bold">Qty MTRS:<span class="text-danger">*</span></label>
+                            <input id="txtQtyMTRS" name="txtQtyMTRS" class="box_border form-control form-control-sm text-end" oninput="validateDecimalInput(this)" autocomplete="off" required />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="txtRate" class="col-form-label-sm fw-bold">Rate:<span class="text-danger">*</span></label>
+                            <input id="txtRate" name="txtRate" class="box_border form-control form-control-sm text-end" oninput="validateDecimalRateInput(this)" autocomplete="off" required />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                            <label for="txtPurchasedDate" class="col-form-label-sm fw-bold">Purchased Date:<span class="text-danger">*</span></label>
+                            <input id="txtPurchasedDate" type="date" name="txtPurchasedDate" class="box_border form-control form-control-sm" autocomplete="off" required />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                            <label for="txtRemarks" class="col-form-label-sm fw-bold">Remarks:<span class="text-danger">*</span></label>
+                            <input id="txtRemarks" name="txtRemarks" class="box_border form-control form-control-sm" autocomplete="off" required />
+                    </div>
+                </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveModal_IndentMaster()">Save</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal_IndentMaster()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>

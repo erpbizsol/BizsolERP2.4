@@ -302,14 +302,14 @@ const VisitOrderEntryService = {
             }
         );
     },
-    GetLatestPriceListByItemName: function GetLatestPriceListByItemName(ItemName) {
-        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetLatestPriceListByItemName?ItemName=${ItemName}`;
-        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
-            function (value) {
-                return value;
-            }
-        );
-    },
+    //GetLatestPriceListByItemName: function GetLatestPriceListByItemName(ItemName) {
+    //    let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetLatestPriceListByItemName?ItemName=${ItemName}`;
+    //    return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+    //        function (value) {
+    //            return value;
+    //        }
+    //    );
+    //},
     GetPaymentTermsMasterList: function GetPaymentTermsMasterList() {
         let url = UrlService.API_ENDPOINT_PAYMENT_TERMS_MASTER + `/GetPaymentTermsMasterList`;
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
@@ -531,8 +531,16 @@ const VisitOrderEntryService = {
                 return value;
             }
         );
-    }
+    },
+    GetLengthByItemSizeMasterCode: function GetLengthByItemSizeMasterCode(ItemSizeMaster_Code) {
 
+        let url = UrlService.API_ENDPOINT_VISIT_MASTER + `/GetLengthByItemSizeMasterCode?ItemSizeMaster_Code=${ItemSizeMaster_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VisitOrderEntryService }

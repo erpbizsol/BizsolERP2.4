@@ -84,6 +84,23 @@ let UrlService = {
     API_ENDPOINT_SlittingEntry: `${environment.BASE_URL}/SlittingEntry`,
     API_ENDPOINT_VisitorMaster: `${environment.BASE_URL}/VisitorMaster`,
     API_ENDPOINT_CoilProductionPlan: `${environment.BASE_URL}/CoilProductionPlan`,
+    API_ENDPOINT_AllowanceMaster: `${environment.BASE_URL}/AllowanceMaster`,
+    API_ENDPOINT_DesignationMaster: `${environment.BASE_URL}/Designation`,
+    API_ENDPOINT_Department: `${environment.BASE_URL}/Department`,
+    API_ENDPOINT_SubDepartment: `${environment.BASE_URL}/SubDepartment`,
+    API_ENDPOINT_DeductionMaster: `${environment.BASE_URL}/DeductionMaster`,
+    API_ENDPOINT_RollingProduction: `${environment.BASE_URL}/RollingProduction`,
+    API_ENDPOINT_LeaveMaster: `${environment.BASE_URL}/LeaveMaster`,
+    API_ENDPOINT_ValidateCreditLimits: `${environment.BASE_URL}/ValidateCreditLimit`,
+    API_ENDPOINT_SelectPrinterToPrint: `${environment.BASE_URL}/SelectPrinterToPrint`,
+    API_ENDPOINT_GeneratePassword: `${environment.BASE_URL}/GeneratePassword`,
+    API_ENDPOINT_QualityCheck: `${environment.BASE_URL}/QualityCheck`,
+    API_ENDPOINT_CollectionCommitment: `${environment.BASE_URL}/CollectionCommitment`,
+    API_ENDPOINT_ExpenseHeadMaster: `${environment.BASE_URL}/ExpenseHeadMaster`,
+    API_ENDPOINT_Weighment: `${environment.BASE_URL}/Weighment`,
+    API_ENDPOINT_CommonSingleEntryForm: `${environment.BASE_URL}/CommonSingleEntryForm`,
+    API_ENDPOINT_RmIndent: `${environment.BASE_URL}/RmIndent`,
+    API_ENDPOINT_RMStock: `${environment.BASE_URL}/RMStock`,
 }
 
 export { UrlService  }
