@@ -1,0 +1,215 @@
+.tabs {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.tab {
+    padding: 18px 20px;
+    border: none;
+    background: #6f42c1; /* new primary */
+    color: #ffffff;
+    margin-right: 5px;
+    cursor: pointer;
+    border-radius: 4px 4px 0 0;
+    font-weight: bold;
+    line-height: 0px;
+    font-size:12px;
+}
+
+.tab.active {
+    background: #59359a; /* darker active */
+}
+
+#dvTab1, #dvTab2, #dvTab3 {
+    scroll-margin-top: 90px;
+}
+
+.card-header-tabs {
+    position: fixed;
+    top: 72px;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    background: #f5f0ff; /* subtle header background */
+    width:95%;
+    padding-top:10px;
+}
+
+.customertype:has(input[type="radio"]:checked) {
+    background-color: #6f42c1;
+    color: #fff;
+    border-radius: 5px;
+    padding: 5px 10px;
+    display: inline-block;
+}
+
+.customertype:has(input[type="radio"]) {
+    background-color: #e6dbff;
+    color:#2b2b2b;
+    border-radius: 5px;
+    padding: 5px 10px;
+    display: inline-block;
+}
+
+.card {
+    margin-bottom: 0.5rem;
+}
+
+.dropdown-menu {
+    --bs-dropdown-zindex: 1000;
+    --bs-dropdown-min-width: 5rem;
+    --bs-dropdown-padding-x: 0;
+    --bs-dropdown-padding-y: 0.5rem;
+    --bs-dropdown-spacer: 0.125rem;
+    --bs-dropdown-font-size: 0.875rem;
+    --bs-dropdown-color: var(--bs-body-color);
+    --bs-dropdown-bg: var(--bs-secondary-bg);
+    --bs-dropdown-border-color: var(--bs-border-color);
+    --bs-dropdown-border-radius: var(--bs-border-radius);
+    --bs-dropdown-border-width: var(--bs-border-width);
+    --bs-dropdown-inner-border-radius: calc(var(--bs-border-radius) - var(--bs-border-width));
+    --bs-dropdown-divider-bg: var(--bs-border-color);
+    --bs-dropdown-divider-margin-y: 0.5rem;
+    --bs-dropdown-box-shadow: rgba(116, 120, 141, 0.1) 0px 5px 20px -6px;
+    --bs-dropdown-link-color: var(--bs-body-color);
+    --bs-dropdown-link-hover-color: var(--bs-body-color);
+    --bs-dropdown-link-hover-bg: var(--bs-tertiary-bg);
+    --bs-dropdown-link-active-color: var(--bs-body-color);
+    --bs-dropdown-link-active-bg: var(--bs-tertiary-bg);
+    --bs-dropdown-link-disabled-color: var(--bs-tertiary-color);
+    --bs-dropdown-item-padding-x: 1rem;
+    --bs-dropdown-item-padding-y: 0.35rem;
+    --bs-dropdown-header-color: #74788d;
+    --bs-dropdown-header-padding-x: 1rem;
+    --bs-dropdown-header-padding-y: 0.5rem;
+    position: absolute;
+    z-index: var(--bs-dropdown-zindex);
+    display: none;
+    min-width: var(--bs-dropdown-min-width);
+    padding: var(--bs-dropdown-padding-y) var(--bs-dropdown-padding-x);
+    margin: 0;
+    color: var(--bs-dropdown-color);
+    text-align: left;
+    list-style: none;
+    background-color: var(--bs-dropdown-bg);
+    background-clip: padding-box;
+    border: var(--bs-dropdown-border-width) solid var(--bs-dropdown-border-color);
+    border-radius: var(--bs-dropdown-border-radius)
+}
+
+/* Override: set Enquiry grid row height to 20px */
+.table tbody tr,
+.fixed-width-table tbody tr {
+    height: 15px;
+    font-size: 14px;
+}
+button, .icon-height {
+    border-radius: 4px;
+    height: 22px;
+    font-size: 7pt;
+    line-height: 0.6;
+    padding: 3px 10px;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 991.98px) {
+    .card-header-tabs {
+        gap: 6px;
+        padding: 6px;
+    }
+
+        .card-header-tabs .tab {
+            padding: 6px 8px;
+            font-size: 14px;
+        }
+
+    .form-grid .row > [class*='col-'] {
+        margin-bottom: 10px;
+    }
+    /* stack the columns for smaller screens */
+    .form-grid .row > [class*='col-'] {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+
+    .card {
+        border-radius: 8px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .card-header-tabs {
+        font-size: 11px;
+    }
+
+        .card-header-tabs .tab {
+            flex: 1 1 48%;
+            margin-bottom: 6px;
+            font-size: 8px;
+        }
+
+    .form-grid .row > [class*='col-'] {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* increase tap targets */
+    .box_border.form-control, .box_border.form-select {
+        padding: 8px 12px;
+        font-size: 15px;
+    }
+    .btn {
+        padding: 4px 12px;
+        font-size: 13px;
+    }
+    /* tables scroll horizontally */
+    .fixed-width-table.table {
+        min-width: 600px;
+    }
+
+    /* reduce paddings to fit smaller screens */
+    .card.ps-2.p-1 {
+        padding: 10px;
+    }
+
+    .card {
+        padding: 8px;
+    }
+
+    /* make labels inline-block and slightly smaller */
+    label.form-label {
+        font-size: 14px;
+    }
+}
+
+/* Accessibility: focus visible */
+.box_border.form-control:focus {
+    outline: 2px solid rgba(39,84,129,0.12);
+}
+
+/* Small helper: hide less important columns on very small screens (optional) */
+@media (max-width:420px) {
+    /* hide remarks column in product grid to save space */
+    #ProductDetailsGrid thead th:nth-child(5),
+    #ProductDetailsGrid tbody td:nth-child(5) {
+        display: none;
+    }
+    /* hide actions column label to save space but keep buttons visible */
+    #ProductDetailsGrid thead th:nth-child(6),
+    #ProductDetailsGrid tbody td:nth-child(6) {
+        min-width: 60px;
+    }
+}
+
+tbody, th, td, tr {
+    padding: 2px 5px !important;
+    border: 1px solid #ddd;
+    height: 16px !important;
+    vertical-align: middle;
+}
+
+.btn-height {
+    margin-top: 2px;
+    height: 9px;
+    font-size: 8pt;
+    line-height: 1px;
+}
