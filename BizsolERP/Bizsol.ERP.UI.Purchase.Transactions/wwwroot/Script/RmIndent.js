@@ -1,11 +1,12 @@
 import { RmIndentService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/RmIndentService.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 let today = '';
 let G_IndentStatusType = [];
 $(document).ready(function () {
     var urlParams = getUrlVars();
     var menuValue = decodeURI(urlParams['menu']);
-    
     if (menuValue && menuValue !== "undefined" && menuValue !== "") {
         $("#ERPHeading").text(menuValue);
     } else {
@@ -14,19 +15,31 @@ $(document).ready(function () {
     setCurrentDate();
     ListStatus_IndentMaster();
     FillIndentStatusType();
+    $('#ddlVenderName').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtQtyMT").focus();
+        }
+    });
+    $('#txtQtyMT').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#ddlGrade").focus();
+        }
+    });
+    $('#ddlGrade').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtRate").focus();
+        }
+    });
+    $('#txtRate').on('keydown', function (e) {
+        if (e.key === "Enter") {
+            $("#txtRemarks").focus();
+        }
+    });
+    GetGradeList();
 });
-
-//function setCurrentDate() {
-//    today = new Date().toISOString().split('T')[0];
-//    $('#txtFromDate').val(today);
-//    $('#txtToDate').val(today);
-//    $('#txtPurchasedDate').val(today);
-//}
 function setCurrentDate() {
     let today = new Date();
     let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-    // Format a date object as dd-mm-yyyy
     function formatDate(date) {
         let day = String(date.getDate()).padStart(2, '0');
         let month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based
@@ -35,11 +48,8 @@ function setCurrentDate() {
     }
 
     $('#txtFromDate').val(formatDate(firstOfMonth));  // first day of month in dd-mm-yyyy
-    $('#txtToDate').val(formatDate(today));           // today in dd-mm-yyyy
-    $('#txtPurchasedDate').val(formatDate(today));    // today in dd-mm-yyyy
+    $('#txtToDate').val(formatDate(today));
 }
-
-
 function ListStatus_IndentMaster() {
     let Status=$('#ddlStatus').val() || 0;
     let DateType=$('#txtDateType').val();
@@ -62,49 +72,44 @@ function FillIndentStatusType() {
         toastr.error('Error fetching user list:', error);
     });
 }
-
-
 function GetRMIndentListTable(Status, DateType, FromDate, ToDate) {
     RmIndentService.GetRmIndentList(Status, DateType, FromDate, ToDate).then(function (response) {
         if (response && response.length > 0) {
-            FillIndentStatusTypeTable();
             $('#tblRMIndent').show();
-            const stringFilterColumn = ["Item Name", "SizeDesp", "THICKNESS", "GRADE", "MAKE","WIDTH"];
-            const numericFilterColumn = ["Indent No", "Qty MT","Qty PC","Qty MTRS"];
+            let stringFilterColumn = [];
+            const numericFilterColumn = ["Indent No", "Qty MT"];
             const dateFilterColumn = ["Indent Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Code","Purchased Date"];
+            let hiddenColumns = [];
+            if (Status == 'U' || Status == '0') {
+                hiddenColumns = ["Code", "Purchased Date", "Qty PC", "Qty MTRS", "SizeDesp", "Verification", "Order No", "Order Size", "Order Item","ClientName"];
+                stringFilterColumn = ["Item Name", "THICKNESS", "GRADE", "MAKE", "WIDTH","Status"];
+            } else {
+                hiddenColumns = ["Code", "Purchased Date", "Qty PC", "Qty MTRS", "SizeDesp", "Action", "ClientName"];
+                stringFilterColumn = ["Item Name", "THICKNESS", "GRADE", "MAKE", "WIDTH", "Order No", "Order Size", "Order Item", "Status"];
+            }
             const columnAlignment = {
                 'Indent Date': 'center',
                 'THICKNESS': 'right',
                 'WIDTH': 'right',
                 'Qty MT': 'right',
-                'Qty PC': 'right',
-                'Qty MTRS': 'right',
-                'Status': ';width:150px',
-                'Purchased Date': ';width:150px',
+                'Action': ';width:100px',
             };
             
-            const updatedResponse = response.map((item, index) => {
-                const isPurchased = (item.Status || '').toString().trim().toLowerCase() == 'c';
-                const buttonDisabled = isPurchased ? '' : 'disabled';
-                const buttonClass = isPurchased ? 'btn btn-primary btn-height' : 'btn btn-secondary btn-height';
-
-                let sourceInputHTML = `<button type="button" id="txtSource_${item.Code}" class="${buttonClass}" title="Source" onclick="ShowModelVenderDetails('${item.Code}','${item?.['Qty MT']}','${item?.['Qty PC']}','${item?.['Qty MTRS']}');" style="width: 70px;" ${buttonDisabled}>Add Source</button>`;
-                let statusInputHTML = ` <select class="box_border form-control form-control-sm ddlStatus1" data-current-status="${(item.Status || '').toString().trim()}" style="min-width: 70px;" required onchange="toggleSourceButton('${item.Code}', this.value)"></select>`;
-                //let purchaseDateInputHTML = `<input type="text" id="txtPurchaseDate_${item.Code}" onkeypress="BizSolhandleEnterKey(event);" value="${item["Purchased Date"]}" class="BizSolFormControl box_border form-control form-control-sm" name="txtSource" placeholder="" autocomplete="off" onclick="$(this).val('')" style="min-width: 70px;" readonly onchange="" required>`;
-
-                return {
-                    ...item,
-                    Source: sourceInputHTML,
-                    Status: statusInputHTML,
-                    //'Purchased Date': purchaseDateInputHTML,
-                };
-            });
+			const updatedResponse = response.map((item, index) => {
+                const orderNo = item?.['ClientName'];
+                const orderNoWithTooltip = orderNo ? `<span title="${orderNo}">${item?.['Order No']}</span>` : (item?.['Order No'] || '');
+				let ActionHtml = `<button type="button" class='btn btn-success btn-height'  title="Verify" onclick="Verify('${item.Code}','${item?.['Qty MT']}','${item?.['GRADE']}');" >Verify</button>&nbsp;
+					<button type="button" class='btn btn-danger btn-height' title="Reject" onclick="Reject('${item.Code}')">Reject</button>`;
+				return {
+					...item,
+					'Order No': orderNoWithTooltip,
+					Action: ActionHtml,
+				};
+			});
             BizsolCustomFilterGrid.CreateDataTable("table-header-RMIndent", "table-body-RMIndent", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
-            FillVendorNameList();
         } else {
             HideLoader();
             toastr.error('No Data Found');
@@ -193,59 +198,59 @@ function initilizeSelect() {
     }
     
 } 
-function UpdateStatus_IndentMaster(Code,Status) {
-    RmIndentService.UpdateStatus_IndentMaster(Code, Status).then(function (response) {
-        if (response && response.Status === 'Y') {
+function Reject(Code) {
+    var ModuleName = "Indent (Raw Material)",
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
         } else {
-            toastr.error('No data received or empty response');
+            try {
+                var confirmed = window.confirm('Are you sure you want to reject this indent?');
+                if (!confirmed) return;
+            } catch (e) {
+            }
+
+            RmIndentService.UpdateStatus_IndentMaster(Code, 'R').then(function (response) {
+                if (response && response.Status === 'Y') {
+                    toastr.success('Rejected successfully');
+                    try { ListStatus_IndentMaster(); } catch (e) { }
+                } else {
+                    toastr.error('No data received or empty response');
+                }
+            }).catch(function (error) {
+                toastr.error('Error fetching user list:', error);
+            }); 
         }
-    }).catch(function (error) {
-        toastr.error('Error fetching user list:', error);
     });
 }
-function ShowModelVenderDetails(code, qtyMT, qtyPC, qtyMTRS) {
+function Verify(Code,qtyMT,Grade) {
+    var ModuleName = "Indent (Raw Material)",
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            ShowModelVenderDetails(Code, qtyMT,Grade)
+        }
+    });
+    FillVendorNameList();
+    
+}
+function ShowModelVenderDetails(code, qtyMT,Grade) {
     $('#hfCode').val(code);
     $('#txtQtyMT').val(qtyMT || '');
-    $('#txtQtyPC').val(qtyPC || '');
-    $('#txtQtyMTRS').val(qtyMTRS || '');
-    $('#txtPurchasedDate').val(today);
-
-    $('#myModal').data('code', code);
     $('#myModal').modal({
         backdrop: 'static',
     });
     $('#myModal').modal('show');
-
-    $('#ddlVenderName').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#txtQtyMT").focus();
-        }
-    });
-    $('#txtQtyMT').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#txtQtyPC").focus();
-        }
-    });
-    $('#txtQtyPC').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#txtQtyMTRS").focus();
-        }
-    });
-    $('#txtQtyMTRS').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#txtRate").focus();
-        }
-    });
-    $('#txtRate').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#txtPurchasedDate").focus();
-        }
-    });
-    $('#txtPurchasedDate').on('keydown', function (e) {
-        if (e.key === "Enter") {
-            $("#txtRemarks").focus();
-        }
-    });
+    BizSolHelperFunction.SelectOptionByText('ddlGrade',Grade);
 }
 function FillVendorNameList() {
     RmIndentService.GetVendorList().then(function (response) {
@@ -253,8 +258,26 @@ function FillVendorNameList() {
             BindSelectList1($('#ddlVenderName')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })));
 
             $('#ddlVenderName').select2({
+                dropdownParent: $('#myModal'),
                 width: '-webkit-fill-available'
             });
+        } else {
+            toastr.error('No data received or empty response');
+        }
+    }).catch(function (error) {
+        toastr.error('Error fetching user list:', error);
+    });
+}
+function GetGradeList() {
+    RmIndentService.GetGradeList().then(function (response) {
+        if (response && response.length > 0) {
+            BindSelectList1($('#ddlGrade')[0], response.map((item) => ({ Code: item.Code, Desp: item.Desp })));
+
+            $('#ddlGrade').select2({
+                dropdownParent: $('#myModal'),
+                width: '-webkit-fill-available'
+            });
+           
         } else {
             toastr.error('No data received or empty response');
         }
@@ -305,13 +328,11 @@ function SaveModal_IndentMaster() {
     let VendorName = $('#ddlVenderName').val();
     let QtyMT = $('#txtQtyMT').val();
     let TransactionCode = $('#hfCode').val();
-    let QtyPC = $('#txtQtyPC').val();
-    let QtyMTRS = $('#txtQtyMTRS').val();
     let Rate = $('#txtRate').val();
-    let PurchasedDate = $('#txtPurchasedDate').val();
+    let Grade = $('#ddlGrade').val();
     let Remarks = $('#txtRemarks').val();
 
-    if (VendorName === '' || VendorName == '0' || QtyMT === '' || QtyPC === '' || QtyMTRS === '' || Rate === '' || PurchasedDate === '') {
+    if (VendorName === '' || VendorName == '0' || QtyMT === '' || Grade === '' || Grade === '0' || Rate === '') {
         toastr.warning("Fill All Fields");
         return false;
     }
@@ -322,10 +343,8 @@ function SaveModal_IndentMaster() {
         VendorMaster_Code: VendorName,
         Rate: parseFloat(Rate),
         QtyMT: parseFloat(QtyMT),
-        QtyPC: parseInt(QtyPC),
-        QtyMTRS: parseFloat(QtyMTRS),
-        Remarks: Remarks, 
-        PurchasedDate: PurchasedDate
+        ItemParameterValueMaster_CodeGrade: Grade,
+        Remarks: Remarks
     };
 
     RmIndentService.SaveIndentPriceComparison(payLoadSaveIndentPriceComparisionDetails).then(function (response) {
@@ -351,7 +370,6 @@ function getUrlVars() {
 }
 function ClearFormModal() {
     $('#txtRate').val('');
-    $('#txtPurchasedDate').val('');
     $('#txtRemarks').val('');
 }
 function BindSelectList(element, list) {
@@ -377,6 +395,15 @@ function BindSelectList2(element, list) {
 }
 
 setInterval(initilizeSelect, 500);
+function getFinancialYear() {
+    var currentDate = new Date();
+    var currentMonth = currentDate.getMonth();
+    var startYear = currentDate.getFullYear();
+    if (currentMonth < 3) {
+        startYear = startYear - 1;
+    }
+    return startYear + "-" + (startYear + 1);
+}
 
 window.ListStatus_IndentMaster = ListStatus_IndentMaster;
 window.ShowModelVenderDetails = ShowModelVenderDetails;
@@ -386,3 +413,5 @@ window.toggleSourceButton = toggleSourceButton;
 window.validateDecimalInput = validateDecimalInput;
 window.validateIntegerInput = validateIntegerInput;
 window.validateDecimalRateInput = validateDecimalRateInput;
+window.Reject = Reject;
+window.Verify = Verify;

@@ -93,26 +93,14 @@
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                            <label for="txtQtyPC" class="col-form-label-sm fw-bold">Qty PC:<span class="text-danger">*</span></label>
-                            <input id="txtQtyPC" name="txtQtyPC" class="box_border form-control form-control-sm text-end" oninput="validateIntegerInput(this)" autocomplete="off" required />
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                            <label for="txtQtyMTRS" class="col-form-label-sm fw-bold">Qty MTRS:<span class="text-danger">*</span></label>
-                            <input id="txtQtyMTRS" name="txtQtyMTRS" class="box_border form-control form-control-sm text-end" oninput="validateDecimalInput(this)" autocomplete="off" required />
+                        <label for="ddlGrade" class="col-form-label-sm fw-bold">Grade:<span class="text-danger">*</span></label>
+                            <select id="ddlGrade" name="ddlGrade" class="box_border form-control form-control-sm"></select>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="txtRate" class="col-form-label-sm fw-bold">Rate:<span class="text-danger">*</span></label>
                             <input id="txtRate" name="txtRate" class="box_border form-control form-control-sm text-end" oninput="validateDecimalRateInput(this)" autocomplete="off" required />
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                            <label for="txtPurchasedDate" class="col-form-label-sm fw-bold">Purchased Date:<span class="text-danger">*</span></label>
-                            <input id="txtPurchasedDate" type="date" name="txtPurchasedDate" class="box_border form-control form-control-sm" autocomplete="off" required />
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -124,7 +112,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-success icon-height" onclick="SaveModal_IndentMaster()">Save</button>
+                <button type="button" class="btn btn-success icon-height" onclick="SaveModal_IndentMaster()">Verify</button>
                 <button type="button" class="btn btn-danger icon-height" onclick="CloseModal_IndentMaster()">Cancel</button>
             </div>
         </div>
