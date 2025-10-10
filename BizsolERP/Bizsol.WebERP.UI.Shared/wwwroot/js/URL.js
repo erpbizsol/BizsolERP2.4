@@ -100,6 +100,7 @@ let UrlService = {
     API_ENDPOINT_Weighment: `${environment.BASE_URL}/Weighment`,
     API_ENDPOINT_CommonSingleEntryForm: `${environment.BASE_URL}/CommonSingleEntryForm`,
     API_ENDPOINT_RmIndent: `${environment.BASE_URL}/RmIndent`,
+    API_ENDPOINT_RMStock: `${environment.BASE_URL}/RMStock`,
 }
 
 export { UrlService  }
