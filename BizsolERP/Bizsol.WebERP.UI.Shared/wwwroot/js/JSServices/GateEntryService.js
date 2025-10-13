@@ -176,6 +176,14 @@ const GateEntryService = {
                 return value;
             }
         );
+    },
+    getDll: function getDll(Mode) {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/getDll?Mode=${Mode}`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
     }
 
 }

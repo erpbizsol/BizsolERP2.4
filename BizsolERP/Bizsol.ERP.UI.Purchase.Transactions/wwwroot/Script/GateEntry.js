@@ -8,7 +8,8 @@ $("#ERPHeading").text("Gate Entry");
 let ConfigGateEntry = [];
 let IsWithPo = false;
 let GateEntryMaster_Code = 0;
-
+let LoginGodownMaster_Code = 0;
+let ExcelExportDataArry = [];
 let doctype = [
     { name: "Invoice" },
     { name: "Packing List" },
@@ -29,33 +30,44 @@ function GateEntryGirdByDates() {
 
     let FromDate = $('#txtFromDate').val(), Todate = $('#txtToDate').val();
     let ddlVehiclesStatusInFectory = $('#ddlVehiclesStatusInFectory').val();
+    let ddlGodownMaster_Code = $('#ddlGodown').val();
+    ddlGodownMaster_Code = ddlGodownMaster_Code ? ddlGodownMaster_Code : '0';
     let QueryCondition = ".";
     if (ddlVehiclesStatusInFectory === 'LIN') {
-        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and GateEntryOutDate is not null"
+        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and GateEntryOutDate is not null and GodownMaster_Code=" + ddlGodownMaster_Code
 
     } else if (ddlVehiclesStatusInFectory === 'EIN'){
-        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and GateEntryOutDate is not null"
+        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and GateEntryOutDate is not null and GodownMaster_Code=" + ddlGodownMaster_Code
     }
     else if (ddlVehiclesStatusInFectory === 'PLIN') {
-        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and GateEntryOutDate is null"
+        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and GateEntryOutDate is null and GodownMaster_Code=" + ddlGodownMaster_Code
     }
     else if (ddlVehiclesStatusInFectory === 'PEIN') {
-        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and GateEntryOutDate is null"
+        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and GateEntryOutDate is null and GodownMaster_Code=" + ddlGodownMaster_Code
     }
     else if (ddlVehiclesStatusInFectory === 'PAll') {
         QueryCondition = " and GateEntryNo>0 and GateEntryOutDate is null"
     }
     else if (ddlVehiclesStatusInFectory === 'RAll') {
-        QueryCondition = " and GateEntryNo>0 and (TransactionType='EIN' and OutType='EOUT') OR (TransactionType='LIN' and OutType='LOUT') "
+        QueryCondition = " and GateEntryNo>0 and (TransactionType='EIN' and OutType='EOUT') OR (TransactionType='LIN' and OutType='LOUT') and GodownMaster_Code=" + ddlGodownMaster_Code
+    }
+    else if (ddlVehiclesStatusInFectory === 'REOut') {
+        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and OutType='EOUT' and GodownMaster_Code=" + ddlGodownMaster_Code
+    }
+    else if (ddlVehiclesStatusInFectory === 'RLOut') {
+        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and OutType='LOUT' and GodownMaster_Code=" + ddlGodownMaster_Code
     }
     else if (ddlVehiclesStatusInFectory === 'TAll') {
-        QueryCondition = " and TokenNo<>''"
+        QueryCondition = " and TokenNo<>'' and GodownMaster_Code=" + ddlGodownMaster_Code
     }
     else if (ddlVehiclesStatusInFectory === 'TCon') {
-        QueryCondition = " and GateEntryNo>0 and TokenNo<>''"
+        QueryCondition = " and GateEntryNo>0 and TokenNo<>'' and GodownMaster_Code=" + ddlGodownMaster_Code
     }
     else if (ddlVehiclesStatusInFectory === 'TBal') {
-        QueryCondition = " and TokenNo<>'' and GateEntryNo=0"
+        QueryCondition = " and TokenNo<>'' and GateEntryNo=0 and GodownMaster_Code=" + ddlGodownMaster_Code
+    }
+    else if (ddlVehiclesStatusInFectory === 'all' && parseInt(ddlGodownMaster_Code) > 0) {
+        QueryCondition = " and GateEntryNo>0 and GodownMaster_Code=" + ddlGodownMaster_Code
     }
     else {
         QueryCondition = " and GateEntryNo>0"
@@ -75,8 +87,11 @@ function GateEntryGirdByDates() {
         //});
         if (ddlVehiclesStatusInFectory.includes('T') == false) {
 
+            //response.forEach(item => {
+            //    item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'editFull_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Out</a>'
+            //});
             response.forEach(item => {
-                item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'editFull_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Out</a>'
+                item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '_' + item.GodownMaster_Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'editFull_' + item.Code + '_' + item.GodownMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '_' + item.GodownMaster_Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '_' + item.GodownMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '_' + item.GodownMaster_Code + '\')" >Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '_' + item.GodownMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '_' + item.GodownMaster_Code + '\')" >Out</a>'
             });
         }
         else {
@@ -84,7 +99,7 @@ function GateEntryGirdByDates() {
                 item.Action = `<a class="btn btn-info icon-height" onclick="GateEnty_PrintPreviewToken(${ item.Code})"> <i class="fa fa-print"></i></a>`;
             });
         }
-
+        ExcelExportDataArry = response;
         //console.log(response);
         const StringFilterColumn = ["Type In", "Party name", "Vehicle No"];
         const NumericFilterColumn = ["Entry No"];
@@ -92,8 +107,14 @@ function GateEntryGirdByDates() {
         const Button = false;
         const showButtons = []
         const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["Code","Hour"];
-        const ColumnAlignment = { 'Action':';min-width:145px'};
+        const hiddenColumns = ["Code", "Hour","GodownMaster_Code"];
+        const ColumnAlignment = { 'Action': ';min-width:145px' };
+
+        if (ddlVehiclesStatusInFectory.includes('R') == false) {
+            hiddenColumns.push("Out Reason");
+        }
+
+
         if (response.length > 0) {
             BizsolCustomFilterGrid.CreateDataTable("tbGateEntyViewHeader", "tbGateEntyViewBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
             let VehiclesRows = response;
@@ -123,6 +144,8 @@ GateEntryService.GetMinPending().then(function (response) {
     GetConfigGateEntry();
     LockDocumntFutureDate();
     LoadListDriverDetailsByVehicleNo();
+    LoadListOutReason();
+    ddlGodown(); 
 });
 
 function ViewAttachment_GateEntry(GateEntryMaster_Code, sourceDownloadFileName) {
@@ -150,6 +173,11 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
     else if (Mode === 'form' && EntryType.includes('emptyout') == true) {
         
         GateEntryMaster_Code = EntryType.split('_')[1];
+        let EntryGodownMaster_Code = EntryType.split('_')[2];
+        if (EntryGodownMaster_Code != LoginGodownMaster_Code) {
+            toastr.error('Please Check! you out worng warehouse entry. you only out Login warehouse entry!');
+            return;
+        }
         GateEntryService.GetGateEntryDetails(GateEntryMaster_Code).then(function (response) {
             //console.log(response);
             ChangeMode(Mode);
@@ -160,6 +188,12 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
     }
     else if (Mode === 'form' && EntryType.includes('loadedout') == true) {
         GateEntryMaster_Code = EntryType.split('_')[1];
+        let EntryGodownMaster_Code = EntryType.split('_')[2];
+        if (EntryGodownMaster_Code != LoginGodownMaster_Code) {
+            toastr.error('Please Check! you out worng warehouse entry. you only out Login warehouse entry!');
+            return;
+        }
+
         GateEntryService.GetGateEntryDetails(GateEntryMaster_Code).then(function (response) {
             //console.log(response);
             ChangeMode(Mode);
@@ -176,6 +210,11 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
     else if (EntryType.includes('edit') == true) {
         
         GateEntryMaster_Code = EntryType.split('_')[1];
+        let EntryGodownMaster_Code = EntryType.split('_')[2];
+        if (EntryGodownMaster_Code != LoginGodownMaster_Code) {
+            toastr.error('Please Check! you edit worng warehouse entry. you only edit Login warehouse entry!');
+            return;
+        }
         GateEntryService.GetGateEntryDetails(GateEntryMaster_Code).then(function (response) {
             // console.log(response);
 
@@ -747,6 +786,14 @@ function BindSelectList(element, list) {
     });
     element.innerHTML = option;
 }
+
+function BindSelectList2(element, list) {
+    let option = '<option value="0">All</option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
 function ShowGateEntryConfigurationModal() {
     GateEntryService.GetConfigGateEntry().then(function (response) {
         //console.log(response);
@@ -788,6 +835,8 @@ function GetConfigGateEntry() {
     GateEntryService.GetConfigGateEntry().then(function (response) {
         ConfigGateEntry = response;
         EnableScaleWeight();
+        BindddlVehiclesStatusInFectory();
+
     });
 }
 
@@ -852,7 +901,7 @@ function GateEntry_SaveData(Mode) {
     let DriverMobile = '';
     let Uom = '';
     let TransporterName = '';
-    let GodownMaster_Code = 0;
+    
     let EmptyWeight = 0;
     let LoadedWeight = 0;
     let EmptyWeightDateTime = null;
@@ -1500,7 +1549,7 @@ function GateEntry_SaveData(Mode) {
                     table_Code: 0,
                     uom: Uom,
                     otherTransporterName: TransporterName,
-                    godownMaster_Code: GodownMaster_Code,
+                    godownMaster_Code: LoginGodownMaster_Code,
                     grossWeight: 0,
                     ticketNo: "",
                     emptyWeight: EmptyWeight,
@@ -2377,6 +2426,9 @@ function LockDocumntFutureDate() {
     $('#frmLoadedIn_txtDocumentDate').attr('min', MinDate);
     $('#frmLoadedIn_txtEWayBillDate').attr('min', MinDate);
     $('#frmLoadedOut_txtEWayBillDate').attr('min', MinDate);
+
+    $('#frmLoadedOut_txtDocumentDate').attr('value', maxDate);
+    $('#frmLoadedIn_txtDocumentDate').attr('value', maxDate);
 }
 function GateEntry_InitSelectMachineToGetWeightControl(outputTextElementID) {
     let url = baseUrl + '/CustomControl/SelectMachineToGetWeightControl';
@@ -2564,6 +2616,28 @@ function LoadListDriverDetailsByVehicleNo() {
         );
     });
 }
+function LoadListOutReason() {
+    GateEntryService.GetDriverDetailsByVehicleNo("GETOUTREASON", "0").then(function (response) {
+        const OutReasonList = response.map((item) => ({ Desp: item.OutReason }));
+        AutoSuggestionControl.SetUpAutoSuggestion(
+            $('#frmEmptyOut_txtOutReason'),
+            $('#frmEmptyOut_txtOutReason_List'),
+            OutReasonList,
+            'StartWith',
+            true
+        );
+    });
+    GateEntryService.GetDriverDetailsByVehicleNo("GETOUTREASON", "0").then(function (response) {
+        const OutReasonList = response.map((item) => ({ Desp: item.OutReason }));
+        AutoSuggestionControl.SetUpAutoSuggestion(
+            $('#frmLoadedOut_txtOutReason'),
+            $('#frmLoadedOut_txtOutReason_List'),
+            OutReasonList,
+            'StartWith',
+            true
+        );
+    });
+}
 function applyAlphaNumUppercase(selector) {
     document.querySelectorAll(selector).forEach(input => {
 
@@ -2706,8 +2780,108 @@ function GateEnty_PrintPreviewToken(Code) {
         toastr.error('Failed to load token details');
     });
 }
+function ddlGodown() {
+    $('#DivGodown').hide()
+    GateEntryService.getDll('GETGODOWN').then(function (response) {
+        BindSelectList2($('#ddlGodown')[0], response.map((item) => ({ Code: item.Code, Desp: item.GodownName})));
+
+        let loginGodownMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).WebERPLoginGodownMaster_Code;
+
+        LoginGodownMaster_Code = loginGodownMaster_Code;
+
+        $('#ddlGodown').val(LoginGodownMaster_Code);
+        
+        $('#ddlGodown').select2({
+            width: '-webkit-fill-available'
+        });
+
+        if (LoginGodownMaster_Code>0) {
+            $('#DivGodown').show();
+        }
+    });
+}
+function GateEntry_ExportExecl() {
+
+    if (!Array.isArray(ExcelExportDataArry) || ExcelExportDataArry.length === 0) {
+        alert("No data to export.");
+        return;
+    }
+
+    const hiddenFields = [
+        "Action", "Code", "GodownMaster_Code", "Hour","Out Reason"
+        // Add more field names to hide as needed
+    ];
+
+    // 3. Prepare export data by removing hidden fields
+    const exportData = ExcelExportDataArry.map(row => {
+        const newRow = {};
+        Object.keys(row).forEach(key => {
+            if (!hiddenFields.includes(key)) {
+                newRow[key] = row[key];
+            }
+        });
+        return newRow;
+    });
+
+   
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "GateEntry");
+
+   
+    XLSX.writeFile(wb, "GateEntry.xlsx");
+
+}
+function BindddlVehiclesStatusInFectory() {
+    let ddlVehiclesStatusInFectoryArray = [];
+    ddlVehiclesStatusInFectoryArray.push({ Code: "all", Desp: "All" });
+    ddlVehiclesStatusInFectoryArray.push({ Code: "LIN", Desp: "Loaded IN (completed)" });
+    ddlVehiclesStatusInFectoryArray.push({ Code: "EIN", Desp: "Empty IN (completed)" });
+    ddlVehiclesStatusInFectoryArray.push({ Code: "PLIN", Desp: "Loaded IN (in progress)" });
+    ddlVehiclesStatusInFectoryArray.push({ Code: "PEIN", Desp: "Empty IN (in progress)" });
+    ddlVehiclesStatusInFectoryArray.push({ Code: "PAll", Desp: "All Vehicles in progress" });
+    ddlVehiclesStatusInFectoryArray.push({ Code: "RAll", Desp: "All Reject" });
+    ddlVehiclesStatusInFectoryArray.push({ Code: "REOut", Desp: "Empty Out (Reject)" });
+    ddlVehiclesStatusInFectoryArray.push({ Code: "RLOut", Desp: "Loaded Out (Reject)" });
+
+
+
+
+
+    //<option value="all">All</option>
+    //<option value="LIN">Loaded IN (completed)</option>
+    //<option value="EIN">Empty IN (completed) </option>
+    //<option value="PLIN">Loaded IN (in progress)</option>
+    //<option value="PEIN">Empty IN (in progress)</option>
+    //<option value="PAll">All Vehicles in progress</option>
+    //<option value="RAll">All Reject</option>
+    //<option value="REOut">Empty Out (Reject)</option>
+    //<option value="RLOut">Loaded Out (Reject)</option>
+    //<option value="TAll">All Token Entry </option>
+    //<option value="TCon">Token Entry (Converted)</option>
+    //<option value="TBal">Token Entry (Balance)</option>
+
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'TokenApplicable').PerameterValue === 'Y') {
+        ddlVehiclesStatusInFectoryArray.push({ Code: "TAll", Desp: "All Token Entry" });
+        ddlVehiclesStatusInFectoryArray.push({ Code: "TCon", Desp: "Token Entry (Converted)" });
+        ddlVehiclesStatusInFectoryArray.push({ Code: "TBal", Desp: "Token Entry (Balance)" });
+    }
+
+
+    let option = '';
+    $.each(ddlVehiclesStatusInFectoryArray, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    $('#ddlVehiclesStatusInFectory')[0].innerHTML = option;
+
+
+    //$('#ddlGodown').select2({
+    //    width: '-webkit-fill-available'
+    //});
+}
 // Apply to all inputs with this class
 applyAlphaNumUppercase(".alphanum-uppercase");
+BindddlVehiclesStatusInFectory();
 BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnGateEntyConfiguration');
 
 window.GateEntyMode_GateEntry = GateEntyMode_GateEntry
@@ -2720,3 +2894,4 @@ window.GateEntry_SaveData = GateEntry_SaveData
 window.GateEntry_frmLoadedIn_ddlPurchaseOrder_Change = GateEntry_frmLoadedIn_ddlPurchaseOrder_Change
 window.GateEntry_InitSelectMachineToGetWeightControl = GateEntry_InitSelectMachineToGetWeightControl
 window.GateEnty_PrintPreviewToken = GateEnty_PrintPreviewToken
+window.GateEntry_ExportExecl = GateEntry_ExportExecl
