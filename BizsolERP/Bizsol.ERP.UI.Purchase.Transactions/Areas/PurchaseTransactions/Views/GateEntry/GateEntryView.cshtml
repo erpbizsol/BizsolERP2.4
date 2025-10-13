@@ -224,6 +224,7 @@
                         </div>
                         <div class="col-8">
                             <input id="frmLoadedOut_txtOutReason" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                            <ul id="frmLoadedOut_txtOutReason_List" class="AutoSuggestion-list"></ul>
                         </div>
                     </div>
 
@@ -758,6 +759,7 @@
                         </div>
                         <div class="col-8">
                             <input id="frmEmptyOut_txtOutReason" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                            <ul id="frmEmptyOut_txtOutReason_List" class="AutoSuggestion-list"></ul>
                         </div>
                     </div>
 
@@ -829,32 +831,31 @@
 
 <div id="DivGateEntryGrid">
     <div class="row">
-        <div class="col-sm-3">
+        <div class="col-sm-2">
             <label for="from-date">From Date</label>
             <input type="date" class="form-control form-control-sm" id="txtFromDate" onchange="GateEntryGirdByDates()">
         </div>
-        <div class="col-sm-3">
+        <div class="col-sm-2">
             <label for="to-date">To Date</label>
             <input type="date" class="form-control form-control-sm" id="txtToDate" onchange="GateEntryGirdByDates()">
         </div>
-        <div class="col-sm-3">
+        <div class="col-sm-2">
             <label for="to-date">Vehicles</label>
             <select class="form-control form-control-sm" id="ddlVehiclesStatusInFectory" >
-                <option value="all">All</option>
-                <option value="LIN">Loaded IN (completed)</option>
-                <option value="EIN">Empty IN (completed) </option>
-                <option value="PLIN">Loaded IN (in progress)</option>
-                <option value="PEIN">Empty IN (in progress)</option>
-                <option value="PAll">All Vehicles in progress</option>
-                <option value="RAll">All Reject</option>
-                <option value="TAll">All Token Entry </option>
-                <option value="TCon">Token Entry (Converted)</option>
-                <option value="TBal">Token Entry (Balance)</option>
+                
             </select>
         </div>
-        <div class="col-sm-3 without-label-field text-end">
+        <div class="col-sm-2" id="DivGodown">
+            <label for="to-date">Warehouse</label>
+            <select class="form-control form-control-sm" id="ddlGodown" >
+                
+            </select>
+        </div>
+        <div class="col-sm-4 without-label-field text-end">
             <label></label>
             <button type="button" class="btn btn-primary icon-height" onclick="GateEntryGirdByDates()">Show</button>
+            &nbsp;
+            <button type="button" class="btn btn-primary icon-height" onclick="GateEntry_ExportExecl()">Download</button>
             <button type="button" class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','EmptyInNew')">CREATE NEW</button>
             &nbsp;
             <i class="fa fa-gear" id="btnGateEntyConfiguration" onclick="ShowGateEntryConfigurationModal()" style="cursor:pointer"></i>
@@ -906,5 +907,6 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/OptimizeImage.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GateEntry.js"></script>
 
