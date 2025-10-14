@@ -2,6 +2,7 @@
 import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
+import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 
 $("#ERPHeading").text("Gate Entry");
 
@@ -2801,36 +2802,11 @@ function ddlGodown() {
     });
 }
 function GateEntry_ExportExecl() {
-
-    if (!Array.isArray(ExcelExportDataArry) || ExcelExportDataArry.length === 0) {
-        alert("No data to export.");
-        return;
-    }
-
     const hiddenFields = [
-        "Action", "Code", "GodownMaster_Code", "Hour","Out Reason"
+        "Action", "Code", "GodownMaster_Code", "Hour", "Out Reason"
         // Add more field names to hide as needed
     ];
-
-    // 3. Prepare export data by removing hidden fields
-    const exportData = ExcelExportDataArry.map(row => {
-        const newRow = {};
-        Object.keys(row).forEach(key => {
-            if (!hiddenFields.includes(key)) {
-                newRow[key] = row[key];
-            }
-        });
-        return newRow;
-    });
-
-   
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "GateEntry");
-
-   
-    XLSX.writeFile(wb, "GateEntry.xlsx");
-
+    ExportToExcelControl.ExportToExcel(ExcelExportDataArry, hiddenFields, "GateEntry");
 }
 function BindddlVehiclesStatusInFectory() {
     let ddlVehiclesStatusInFectoryArray = [];
