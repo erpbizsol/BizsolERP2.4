@@ -8,6 +8,8 @@ $(document).ready(function () {
 function bindMenu() {
    // var baseUrl = `${window.location.protocol}//${window.location.host}`;
     var baseUrl = sessionStorage.getItem('AppBaseURL');
+    let LoginGodownName = JSON.parse(sessionStorage.getItem('authKey')).WebERPLoginGodownName;
+        LoginGodownName = LoginGodownName ? `(${LoginGodownName})` : '';
     //var baseUrl = window.AppBaseURL;
     MenuService.GetUserDetails()
         .then(function (res) {
@@ -15,7 +17,7 @@ function bindMenu() {
             let UserDetailsobj = JSON.parse(sessionStorage.getItem('UserDetails'));
             GetWebNotificationList();
             $('#ERPUserName')[0].innerHTML = UserDetailsobj[0].UserID;
-            $('#ERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})`;
+            $('#ERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})${LoginGodownName}`;
 
             MenuService.GetMenuList(UserDetailsobj[0].UserID).then(function (value) {
                 var menuHtml = '';
