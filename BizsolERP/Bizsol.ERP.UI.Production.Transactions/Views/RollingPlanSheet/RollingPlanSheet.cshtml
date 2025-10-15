@@ -1,0 +1,104 @@
+    <style>
+        /* Tab design */
+        .nav-tabs { border-bottom: none; gap: 6px; }
+        .nav-tabs .nav-link {
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            background: #f8f9fa;
+            color: #495057;
+            font-weight: 600;
+            height: 31px;
+            padding: 0 .9rem;
+            transition: background .2s ease, color .2s ease, box-shadow .2s ease, border-color .2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+        }
+        .nav-tabs .nav-link:hover:not(.active) {
+            background: #eceaff;
+            color: #2d2a52;
+            border-color: #c9c5ff;
+        }
+        .nav-tabs .nav-link.active {
+            background: #558bc0;
+            color: #fff;
+            border-color: #578dc3;
+            box-shadow: 0 2px 6px rgb(83 135 188);
+        }
+        .nav-tabs .nav-link i { opacity: .9; }
+        #rmStockTabContent { margin-top: .5rem; }
+        
+        .table-wrapper.fixed-height-table {
+            overflow-x: auto;
+            overflow-y: auto;
+            width: 100%;
+            max-width: 100%;
+            height: 500px;         /* ensures enough height for scrolling */
+            min-height: 400px;
+        }
+        .fixed-width-table {
+            min-width: 100%;
+            width: max-content;
+            table-layout: auto;
+        }
+        .fixed-width-table th,
+        .fixed-width-table td {
+            white-space: nowrap;
+            min-width: 100px;
+            padding: 8px 12px;
+        }
+        .fixed-width-table thead th {
+            position: sticky;
+            top: 0;
+            background-color: #5c95ce;
+            z-index: 10;
+            background-clip: padding-box;
+        }
+        .fixed-width-table thead .totals-row th,
+        .fixed-width-table tbody .totals-row td {
+            position: static !important;
+            top: auto !important;
+            z-index: 1 !important;
+        }
+        .fixed-width-table th:nth-child(1), .fixed-width-table td:nth-child(1) { min-width: 20px; }
+        .fixed-width-table th:nth-child(2), .fixed-width-table td:nth-child(2) { min-width: 100px; }
+        .fixed-width-table th:nth-child(3), .fixed-width-table td:nth-child(3) { min-width: 80px; }
+        .fixed-width-table th:nth-child(4), .fixed-width-table td:nth-child(4) { min-width: 80px; }
+        .fixed-width-table th:nth-child(5), .fixed-width-table td:nth-child(5) { min-width: 80px; }
+        .fixed-width-table th:nth-child(6), .fixed-width-table td:nth-child(6) { min-width: 20px; }
+        .fixed-width-table th:nth-child(7), .fixed-width-table td:nth-child(7) { min-width: 20px; }
+        .fixed-width-table th:nth-child(8), .fixed-width-table td:nth-child(8) { min-width: 80px; }
+        .fixed-width-table th:nth-child(9), .fixed-width-table td:nth-child(9) { min-width: 20px; }
+        .fixed-width-table th:nth-child(10), .fixed-width-table td:nth-child(10) { min-width: 20px; }
+        .fixed-width-table th:nth-child(11), .fixed-width-table td:nth-child(11) { min-width: 20px; }
+        .fixed-width-table th:nth-child(12), .fixed-width-table td:nth-child(12) { min-width: 20px; }
+        .fixed-width-table th:nth-child(13), .fixed-width-table td:nth-child(13) { min-width: 20px; }
+        .fixed-width-table th:nth-child(14), .fixed-width-table td:nth-child(14) { min-width: 20px;}
+        .fixed-width-table th:nth-child(15), .fixed-width-table td:nth-child(15) { min-width: 20px; }
+        .fixed-width-table th:nth-child(16), .fixed-width-table td:nth-child(16) { min-width: 20px; }
+        .fixed-width-table th:nth-child(19), .fixed-width-table td:nth-child(19) { min-width: 20px; }
+        .totals-row {
+            background-color: #e8f4fd !important;
+            font-weight: bold !important;
+            border-bottom: 2px solid #5c95ce !important;
+        }
+        .totals-row th {
+            background-color: #e8f4fd !important;
+            font-weight: bold !important;
+            border: 1px solid #ddd !important;
+            padding: 4px 10px !important;
+            font-size: 8pt !important;
+            height: 16px !important;
+            vertical-align: middle !important;
+        }
+        .totals-row th:first-child {
+            background-color: #d5dde5 !important;
+            font-weight: bold !important;
+            text-align: center !important;
+        }
+        .totals-row th[style*="background-color: #fff2cc"] {
+            background-color: #fff2cc !important;
+            font-weight: bold !important;
+            text-align: right !important;
+        }
+    </style>

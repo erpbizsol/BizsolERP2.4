@@ -1,41 +1,97 @@
 import { RMStockService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/RMStockService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
-let today = '';
+let G_today = '';
+let G_FromDateValue = '';
+let G_ToDateValue = '';
 let G_IdentificationNo = '';
 let G_Code = 0;
 let G_SNo = 0;
+let G_Width = 0;
+let G_selectWidth = 0;
+let G_SlittingPlanMaster_Code = 0;
+let G_AppendedRowKeys = {};
 
 $(document).ready(function () {
     let isInitialLoad = true;
     var urlParams = getUrlVars();
     var menuValue = decodeURI(urlParams['menu']);
-    
+
     if (menuValue && menuValue !== "undefined" && menuValue !== "") {
         $("#ERPHeading").text(menuValue);
     } else {
         $("#ERPHeading").text("Raw Material Stock Management");
     }
-    setCurrentDate();
-    initializeTabs();
+
+    // initializeTabs();
     GetRMStockCurrentListTable();
     $('#exampleCheck').on("click", function () {
         GetRMStockCurrentListTable();
     });
 
-    $("#ddlSlitWidth").on('change', function () {
-        if (isInitialLoad) {
-            isInitialLoad = false; 
-            return;
+    // Delegate change handler for dynamically added row selects
+    $('#RMStockCurrentPlanned').on('change', '.ddlSlitWidthRow', function () {
+        var $row = $(this).closest('tr');
+        var rowId = $row.attr('id');
+
+        if ($('#PartingCase').is(':checked')) {
+            // compute for this row
+            calculateWeightPerSlit(rowId);
+        } else {
+            // reset only this row
+            var $no = $row.find('.txtNoOfSlitsRow');
+            var $wps = $row.find('.txtWeightPerSlitRow');
+            var $tw = $row.find('.txtTotalWeightRow');
+            $no.val(0);
+            $wps.val(0);
+            $tw.val(0);
+            GetRMStockNumericValueWidthForRow(rowId);
         }
-        calculateWeightPerSlit();
     });
+    $('#AllowManualWeight').off('change').on('change', function () {
+        if ($(this).is(':checked')) {
+            $('.txtWeightPerSlitRow').prop('disabled', false).removeClass('bg-light');
+        } else {
+            $('.txtWeightPerSlitRow').prop('disabled', true).addClass('bg-light');
+        }
+    });
+    $('#CopyFromPrevious').off('change').on('change', function () {
+        if ($(this).is(':checked')) {
+            copyFromPrevious();
+        }
+    });
+    $('#RMStockCurrentPlanned tbody').on('input', '.txtNoOfSlitsRow, .txtWeightPerSlitRow', function () {
+        var row = $(this).closest('tr');
+        var n = parseFloat(row.find('input.txtNoOfSlitsRow').val()) || 0;
+        var w = parseFloat(row.find('input.txtWeightPerSlitRow').val()) || 0;
+        var t = n * w;
+        row.find('input.txtTotalWeightRow').val(t.toFixed(3));
+    });
+    $('#txtNoOfSlits, #txtWeightPerSlit').on('input', function () {
+        calculateTotalWeight();
+    });
+
+    // Handle tab changes
+    $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+        var targetTab = $(e.target).attr('data-bs-target');
+        loadTabData(targetTab);
+    });
+
+    //// Individual tab click handlers for specific functionality
+    //$(document).on("click", "#unApproved-planned", function () {
+    //    // Clear any existing data first
+    //    $('#tblUnApproved_Planned').hide();
+
+    //    // Load the unapproved planned list
+    //    GetUnApprovedPlannedList();
+    //});
+
 });
 
+
 function setCurrentDate() {
-    today = new Date().toISOString().split('T')[0];
-    $('#txtFromDate').val(today);
-    $('#txtToDate').val(today);
-    $('#txtPurchasedDate').val(today);
+    G_today = new Date().toISOString().split('T')[0];
+    $('#txtDate').val(G_today);
 }
 function GetRMStockCurrentListTable() {
     Showloader();
@@ -43,34 +99,37 @@ function GetRMStockCurrentListTable() {
         if (response && response.length > 0) {
             HideLoader();
             $('#tblRMStockCurrent').show();
-            const stringFilterColumn = ["Invoice No", "Item Name", "Vendor", "Brand", "Challan Wt", "Thickness", "Grade", "Make", "Width", "Actual Wt", "Warehouse", "Remarks", "IdentificationNo","Grade"];
-            const numericFilterColumn = ["Qty MT","Qty PC","Qty MTRS"];
-            const dateFilterColumn = ["Receive Date","Invoice Date"];
+            const stringFilterColumn = ["Invoice No", "Item Name", "Vendor", "Brand", "Ch Wt", "Thickness", "Grade", "Make", "Width", "Ac Wt", "Warehouse", "Remarks", "IdentificationNo", "Grade"];
+            const numericFilterColumn = ["Qty MT", "Qty PC", "Qty MTRS"];
+            const dateFilterColumn = ["Receive Date", "Invoice Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             let hiddenColumns = []
             if ($('#exampleCheck').is(':checked')) {
-                hiddenColumns = ["Code"];
+                hiddenColumns = ["Code", "Numeric Value", "IsPlanned"];
             } else {
-                hiddenColumns = ["Code", "% E", "Hardness", "UTS", "YST", "BEND TEST"];
+                hiddenColumns = ["Code", "Numeric Value", "% E", "Hardness", "UTS", "YST", "BEND TEST", "IsPlanned"];
             }
             const columnAlignment = {
-                'Invoice Date': 'center', 'Receive Date': 'center', 'Thickness': 'right', 'Challan Wt': 'right', 'Width': 'right;min-width:45px','Actual Wt': 'right',
-                'Qty MT': 'right', 'Qty PC': 'right', 'Qty MTRS': 'right', '% E': 'right;min-width:50px', 'Hardness': 'right', 'UTS': 'right;min-width:70px', 'YST': 'right;min-width:70px','Status': ';width:150px',
+                'Invoice Date': 'center', 'Receive Date': 'center', 'Thickness': 'right', 'Ch Wt': 'right', 'Width': 'right;min-width:60px', 'Ac Wt': 'right',
+                'Qty MT': 'right', 'Qty PC': 'right', 'Qty MTRS': 'right', '% E': 'right;min-width:50px', 'Hardness': 'right', 'UTS': 'right;min-width:70px', 'YST': 'right;min-width:70px', 'Status': ';width:150px',
                 'Purchased Date': ';width:150px',
                 'Vendor': ';min-width:230px !important;',
                 'Item Name': ';min-width:100px !important;',
             };
             const updatedResponse = response.map((item, index) => {
-                let PlannedButtonInputHTML = `<button type="button" id="txtPlanned_${item.IdentificationNo}" class="btn btn-primary btn-height" title="Planned Button" onclick="ShowModelPlanned('${item.IdentificationNo}');" style="width: 70px;">Plan</button>`;
-                
+                const buttonText = item.IsPlanned ? "Planned" : "Plan";
+                let PlannedButtonInputHTML = `<button type="button" class="btn btn-primary btn-height" title="Planned Button" onclick='ShowModelPlanned(${JSON.stringify(item)})' style="width: 70px;">${buttonText}</button>`;
+
                 return {
                     ...item,
                     'Planned Button': PlannedButtonInputHTML,
                 };
             });
-            BizsolCustomFilterGrid.CreateDataTable("table-header-RMStockCurrent", "table-body-RMStockCurrent", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment,false);
+            // calculate footer totals for Ch Wt and Ac Wt
+            calculateRMStockCurrentFooterTotals(response);
+            BizsolCustomFilterGrid.CreateDataTable("table-header-RMStockCurrent", "table-body-RMStockCurrent", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
         } else {
             HideLoader();
             toastr.error('No Data Found');
@@ -83,105 +142,250 @@ function GetRMStockCurrentListTable() {
             $('#tblRMStockCurrent').hide();
         });
 }
-function ShowModelPlanned(IdentificationNo) {
-    G_IdentificationNo = IdentificationNo;
+
+//Calculate and render totals for "Ch Wt" and "Ac Wt" into footer placeholders if present
+function calculateRMStockCurrentFooterTotals(rows) {
+    try {
+        let totalChWt = 0;
+        let totalAcWt = 0;
+        if (rows && rows.length) {
+            rows.forEach(function (r) {
+                totalChWt += parseFloat(r['Ch Wt']) || 0;
+                totalAcWt += parseFloat(r['Ac Wt']) || 0;
+            });
+        }
+        // Write into footer elements if they exist
+        if ($('#totalChWt').length) {
+            $('#totalChWt').text(totalChWt.toFixed(3));
+        }
+        if ($('#totalAcWt').length) {
+            $('#totalAcWt').text(totalAcWt.toFixed(3));
+        }
+    } catch (e) {
+        // fail silently
+    }
+}
+function ShowModelPlanned(rowData) {
+    G_IdentificationNo = rowData.IdentificationNo;
+    G_Width = rowData?.['Numeric Value'];
     clearForm();
-    enableNewRowAddition();
-    $('#PlannedMyModal').data('IdentificationNo',IdentificationNo);
+    //enableNewRowAddition();
+    //$('#PlannedMyModal').data('IdentificationNo', G_IdentificationNo);
     $('#PlannedMyModal').modal({
         backdrop: 'static',
     });
     $('#PlannedMyModal').modal('show');
     ShowRMStockPlan();
-    GetRMStockWidthList();
-    GetRMStockItemNameList();
-    
-    // Initialize totals
+    //GetRMStockWidthList();
+    //GetRMStockItemNameList();
+    GetRMStockMachineNoList();
+    setCurrentDate();
     updateTableTotals();
-    
-    // Add checkbox event handler for manual weight
-    $('#AllowManualWeight').off('change').on('change', function() {
-        if ($(this).is(':checked')) {
-            $('#txtWeightPerSlit').prop('disabled', false).removeClass('bg-light');
-        } else {
-            $('#txtWeightPerSlit').prop('disabled', true).addClass('bg-light');
-        }
-    });
-    
-    // Add checkbox event handler for copy from previous
-    $('#CopyFromPrevious').off('change').on('change', function() {
-        if ($(this).is(':checked')) {
-            copyFromPrevious();
-        }
-    });
-    
-     
-     
+
 }
 function ShowRMStockPlan() {
     RMStockService.ShowRMStockData(G_IdentificationNo).then(function (response) {
-        if (response.length > 0) {
-            enableNewRowAddition();
-            fillTableWithExistingData(response);
-        } else {
-            enableNewRowAddition();
-        }
+        fillTableWithExistingData(response);
     });
 }
 
-// Fill table with existing data when response has data
 function fillTableWithExistingData(response) {
-    var tbody = $('#RMStockCurrentPlanned tbody');
-    tbody.empty();
-    
-    response.forEach(function(item) {
-        var existingRow = `
-            <tr>
-                <td>${item.ItemName || ''}</td>
-                <td >${item.Desp || ''}</td>
-                <td class="text-end">${item.NoofSlits || 0}</td>
-                <td class="text-end">${(item.Weight / item.NoofSlits || 0).toFixed(3)}</td>
-                <td class="text-end">${item.Weight || 0}</td>
-                <td>
-                    <button type="button" onclick="editRow(this,${item.SNo})" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i></button>
+    //GetRMStockItemNameList().then(function (itemNameList)
+    Promise.all([GetRMStockItemNameList(), GetRMStockWidthList()])
+        .then(function ([itemNameList, widthList]) {
+            var tbody = $('#RMStockCurrentPlanned tbody');
+            tbody.empty();
+
+            if (response.length > 0) {
+                G_AppendedRowKeys = {};
+                G_SlittingPlanMaster_Code = response[0].Code;
+                response.forEach(function (item, index) {
+                    var itemNameText = item.ItemName || '';
+                    var slitWidthText = item.Desp || '';
+                    var noOfSlitsVal = item.NoofSlits || 0;
+                    var weightVal = item.Weight || 0;
+                    var weightPerSlitVal = noOfSlitsVal ? (weightVal / noOfSlitsVal) : 0;
+
+                    var rowId = (item.SNo);
+                    var rowKey = [itemNameText, slitWidthText, noOfSlitsVal, weightVal].join('|');
+                    G_AppendedRowKeys[rowKey] = true;
+
+                    var interactiveRow = `
+                    <tr id="${rowId}">
+                        <td><select id="ddlItemName_${rowId}" class="box_border form-control form-control-sm ddlItemNameRow" required></select></td>
+                        <td><select id="ddlSlitWidth_${rowId}" class="box_border form-control form-control-sm ddlSlitWidthRow" required></select></td>
+                        <td><input id="txtNoOfSlits_${rowId}" class="box_border form-control form-control-sm text-end txtNoOfSlitsRow" autocomplete="off" required /></td>
+                        <td><input id="txtWeightPerSlit_${rowId}" class="box_border form-control form-control-sm text-end txtWeightPerSlitRow" autocomplete="off" required disabled /></td>
+                        <td><input id="txtTotalWeight_${rowId}" class="box_border form-control form-control-sm text-end txtTotalWeightRow" required readonly /></td>
+                        <td>
+                            <button type="button" class="btn btn-success btn-height" onclick='Save_PlannedSlitting(${item.SNo},${item.Code})' title="Edit" data-row-id="${rowId}"><i class="fas fa-pencil"></i></button>
                     <button type="button" onclick="deleteRow(this,${item.SNo},${item.Code})" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>
         `;
-        tbody.append(existingRow);
-    });
-    
-    updateTableTotals();
-    
+                    tbody.append(interactiveRow);
+
+                    var $row = $('#' + rowId);
+
+                    // Bind item name select
+                    BindSelectList1($row.find('select.ddlItemNameRow')[0], itemNameList);
+                    BindSelectList1($row.find('select.ddlSlitWidthRow')[0], widthList);
+
+                    // Preselect item
+                    BizSolHelperFunction.SelectOptionByText(`ddlItemName_${rowId}`, itemNameText);
+                    BizSolHelperFunction.SelectOptionByText(`ddlSlitWidth_${rowId}`, slitWidthText);
+
+                    // Handle rest of inputs
+                    $row.find('input.txtNoOfSlitsRow').val(noOfSlitsVal);
+                    $row.find('input.txtWeightPerSlitRow').val(weightPerSlitVal.toFixed(3));
+                    $row.find('input.txtTotalWeightRow').val(weightVal);
+                });
+                if ($('.ddlItemNameRow').length) {
+                    $('.ddlItemNameRow').select2({
+                        dropdownParent: $('#PlannedMyModal'),
+                        width: '-webkit-fill-available'
+                    });
+                }
+                if ($('.ddlSlitWidthRow').length) {
+                    $('.ddlSlitWidthRow').select2({
+                        dropdownParent: $('#PlannedMyModal'),
+                        width: '-webkit-fill-available'
+                    });
+                }
+                enableNewRowAddition();
+            } else {
+                enableNewRowAddition();
+                G_SlittingPlanMaster_Code = 0;
+            }
+        });
 }
 
-// Enable new row addition when no existing data
+
 function enableNewRowAddition() {
-    var tbody = $('#RMStockCurrentPlanned tbody');
-    tbody.empty(); 
-}
-function GetRMStockItemNameList() {
-    RMStockService.GetRMStockItemName().then(function (response) {
-        if (response && response.length > 0) {
-            BindSelectList1($('#ddlItemName')[0], response.map((item) => ({ Code: item.Code, Desp: item.itemName })));
+    const $tbody = $('#RMStockCurrentPlanned tbody');
+    const rowId = 0;
 
-            $('#ddlItemName').select2({
+    const newRowHtml = `
+        <tr id="${rowId}">
+            <td><select id="ddlItemName_${rowId}" class="box_border form-control form-control-sm ddlItemNameRow" required></select></td>
+            <td><select id="ddlSlitWidth_${rowId}" class="box_border form-control form-control-sm ddlSlitWidthRow" required></select></td>
+            <td><input id="txtNoOfSlits_${rowId}" class="box_border form-control form-control-sm text-end txtNoOfSlitsRow" oninput="validateIntegerInput(this)" autocomplete="off" required /></td>
+            <td><input id="txtWeightPerSlit_${rowId}" class="box_border form-control form-control-sm text-end txtWeightPerSlitRow" oninput="validateDecimalRateInput(this)" autocomplete="off" required disabled /></td>
+            <td><input id="txtTotalWeight_${rowId}" class="box_border form-control form-control-sm text-end txtTotalWeightRow" required readonly /></td>
+            <td>
+                <button type="button" onclick="Save_PlannedSlitting(0)" title="Save" class="btn btn-success btn-height"><i class="fas fa-save"></i></button>
+            </td>
+        </tr>
+    `;
+
+    $tbody.append(newRowHtml);
+    const $row = $('#' + rowId);
+    const $ddlItem = $row.find('select.ddlItemNameRow');
+    const $ddlWidth = $row.find('select.ddlSlitWidthRow');
+
+    $ddlItem.html($('#ddlItemName').html());
+    $ddlWidth.html($('#ddlSlitWidth').html());
+    $ddlItem.trigger('change');
+    $ddlWidth.trigger('change');
+
+    GetRMStockItemNameList().then(function (itemNameList) {
+        BindSelectList1($row.find('select.ddlItemNameRow')[0], itemNameList);
+        if ($('.ddlItemNameRow').length) {
+            $('.ddlItemNameRow').select2({
                 dropdownParent: $('#PlannedMyModal'),
                 width: '-webkit-fill-available'
             });
-        } else {
-            toastr.error('No data received or empty response');
         }
-    }).catch(function (error) {
-        toastr.error('Error fetching user list:', error);
+    });
+    GetRMStockWidthList().then(function (slitWidthList) {
+        BindSelectList1($row.find('select.ddlSlitWidthRow')[0], slitWidthList);
+        if ($('.ddlSlitWidthRow').length) {
+            $('.ddlSlitWidthRow').select2({
+                dropdownParent: $('#PlannedMyModal'),
+                width: '-webkit-fill-available'
+            });
+        }
     });
 }
-function GetRMStockWidthList() {
-    RMStockService.GetRMStockWidth().then(function (response) {
-        if (response && response.length > 0) {
-            BindSelectList1($('#ddlSlitWidth')[0], response.map((item) => ({ Code: item.Code, Desp: item.Desp })));
 
-            $('#ddlSlitWidth').select2({
+//function GetRMStockItemNameList() {
+//    Showloader();
+//    RMStockService.GetRMStockItemName().then(function (response) {
+//        if (response && response.length > 0) {
+//            HideLoader();
+//            const list = response.map((item) => ({ Code: item.Code, Desp: item.ItemName }));
+
+//            //if ($('#ddlItemName').length) {
+//            //    BindSelectList1($('#ddlItemName')[0], list);
+//            //    $('#ddlItemName').select2({
+//            //        dropdownParent: $('#PlannedMyModal'),
+//            //        width: '-webkit-fill-available'
+//            //    });
+//            //}
+
+//            $('.ddlItemNameRow').each(function () {
+//                BindSelectList1(this, list);
+
+//            });
+//            if ($('.ddlItemNameRow').length) {
+//                $('.ddlItemNameRow').select2({
+//                    dropdownParent: $('#PlannedMyModal'),
+//                    width: '-webkit-fill-available'
+//                });
+//            }
+//        } else {
+//            toastr.error('No data received or empty response');
+//            HideLoader();
+//        }
+//    }).catch(function (error) {
+//        toastr.error('Error fetching user list:', error);
+//        HideLoader();
+//    });
+//}
+
+function GetRMStockItemNameList() {
+    Showloader();
+    return RMStockService.GetRMStockItemName().then(function (response) {
+        HideLoader();
+        if (response && response.length > 0) {
+            const list = response.map((item) => ({ Code: item.Code, Desp: item.ItemName }));
+            return list;
+        } else {
+            toastr.error('No data received or empty response');
+            return [];
+        }
+    })
+        .catch(function (error) {
+            toastr.error('Error fetching item list');
+            HideLoader();
+            return [];
+        });
+}
+function GetRMStockWidthList() {
+    Showloader();
+    return RMStockService.GetRMStockWidth().then(function (response) {
+        HideLoader();
+        if (response && response.length > 0) {
+            const list = response.map((item) => ({ Code: item.Code, Desp: item.Desp }));
+            return list;
+        } else {
+            toastr.error('No data received or empty response');
+            return [];
+        }
+    })
+        .catch(function (error) {
+            toastr.error('Error fetching width list');
+            HideLoader();
+            return [];
+        });
+}
+
+function GetRMStockMachineNoList() {
+    RMStockService.GetRMStockMachineNo().then(function (response) {
+        if (response && response.length > 0) {
+            BindSelectList1($('#ddlMachineNo')[0], response.map((item) => ({ Code: item.Code, Desp: item.MachineNo })));
+
+            $('#ddlMachineNo').select2({
                 dropdownParent: $('#PlannedMyModal'),
                 width: '-webkit-fill-available'
             });
@@ -213,35 +417,111 @@ function validateDecimalRateInput(input) {
     }
     input.value = value;
 }
+function calculateWeightPerSlit(rowId) {
+    // Determine scope: header inputs (no rowId) or row-level inputs (with rowId)
+    var $row = rowId ? $('#' + rowId) : null;
+    var slitValue = rowId
+        ? ($row.find('#ddlSlitWidth_' + rowId).val() || $row.find('.ddlSlitWidthRow').first().val())
+        : $('#ddlSlitWidth').val();
 
- //Calculate total weight automatically
- function calculateWeightPerSlit() {
-     let modalSlitWidthValue = $('#ddlSlitWidth').val();
-     $('#txtNoOfSlits').val(0);
-     $('#txtWeightPerSlit').val(0);
-     $('#txtTotalWeight').val(0);
-     
-     let widthValue = parseFloat(modalSlitWidthValue);
-     if (isNaN(widthValue) || widthValue == 0) {
-         $('#txtWeightPerSlit').val('');
-         calculateTotalWeight();
-         return;
-     }
-     
-     RMStockService.GetRMStockCalculateWidth(G_IdentificationNo, widthValue).then(function (response) {
-         if (response && response.length > 0 && response[0].CalculatedSlitPerWidth !== undefined) {
-             $('#txtWeightPerSlit').val(response[0].CalculatedSlitPerWidth);
-             calculateTotalWeight();
-         } else {
-             $('#txtWeightPerSlit').val('');
-             calculateTotalWeight();
-         }
-     }).catch(function (error) {
-         toastr.error('Error calculating weight per slit: ' + (error.message || 'Unknown error'));
-         $('#txtWeightPerSlit').val('');
-         calculateTotalWeight();
-     });
- }
+    var $noOfSlits = rowId
+        ? ($row.find('#txtNoOfSlits_' + rowId).length ? $row.find('#txtNoOfSlits_' + rowId) : $row.find('.txtNoOfSlitsRow').first())
+        : $('#txtNoOfSlits');
+    var $weightPerSlit = rowId
+        ? ($row.find('#txtWeightPerSlit_' + rowId).length ? $row.find('#txtWeightPerSlit_' + rowId) : $row.find('.txtWeightPerSlitRow').first())
+        : $('#txtWeightPerSlit');
+    var $totalWeight = rowId
+        ? ($row.find('#txtTotalWeight_' + rowId).length ? $row.find('#txtTotalWeight_' + rowId) : $row.find('.txtTotalWeightRow').first())
+        : $('#txtTotalWeight');
+
+    // Reset fields
+    $noOfSlits.val(0);
+    $weightPerSlit.val(0);
+    $totalWeight.val(0);
+
+    var widthValue = parseFloat(slitValue);
+    if (isNaN(widthValue) || widthValue === 0) {
+        $weightPerSlit.val('');
+        // Recalculate total using appropriate scope
+        if (rowId) {
+            var n = parseFloat($noOfSlits.val()) || 0;
+            var w = parseFloat($weightPerSlit.val()) || 0;
+            $totalWeight.val((n * w).toFixed(3));
+        } else {
+            calculateTotalWeight();
+        }
+        return;
+    }
+
+    RMStockService.GetRMStockCalculateWidth(G_IdentificationNo, widthValue)
+        .then(function (response) {
+            if (response && response.length > 0 && response[0].CalculatedSlitPerWidth !== undefined) {
+                $weightPerSlit.val(response[0].CalculatedSlitPerWidth);
+            } else {
+                $weightPerSlit.val('');
+            }
+            // Recalculate total using appropriate scope
+            if (rowId) {
+                var n = parseFloat($noOfSlits.val()) || 0;
+                var w = parseFloat($weightPerSlit.val()) || 0;
+                $totalWeight.val((n * w).toFixed(3));
+            } else {
+                calculateTotalWeight();
+            }
+        })
+        .catch(function (error) {
+            toastr.error('Error calculating weight per slit: ' + (error.message || 'Unknown error'));
+            $weightPerSlit.val('');
+            if (rowId) {
+                var n = parseFloat($noOfSlits.val()) || 0;
+                var w = parseFloat($weightPerSlit.val()) || 0;
+                $totalWeight.val((n * w).toFixed(3));
+            } else {
+                calculateTotalWeight();
+            }
+        });
+}
+//function GetRMStockNumericValueWidth() {
+//    let modalSlitNumericWidthValue = parseFloat($('#ddlSlitWidth').val()) || 0;
+//    RMStockService.GetRMStockNumericValueWidth(modalSlitNumericWidthValue).then(function (response) {
+//        if (response && response.length > 0) {
+//            G_selectWidth = (response[0].NumericValue); 
+//            //let selectWidth = G_selectWidth;
+//            if (G_Width >= G_selectWidth) {
+//                //GetRMStockWidthList();
+//                calculateWeightPerSlit();
+//            }
+//            else {
+//                toastr.warning("Slit Width value is greater then Original Width");
+//                BizSolHelperFunction.SelectOptionByText('ddlSlitWidth', '');
+//                return false;
+//            }
+//        }
+//    });
+//}
+
+// Row-scoped numeric-width fetch and compute
+function GetRMStockNumericValueWidthForRow(rowId) {
+    var $row = $('#' + rowId);
+    var code = parseFloat($row.find('.ddlSlitWidthRow').val()) || 0;
+    RMStockService.GetRMStockNumericValueWidth(code).then(function (response) {
+        if (response && response.length > 0) {
+            var numericWidth = response[0].NumericValue;
+            if (G_Width >= numericWidth) {
+                calculateWeightPerSlit(rowId);
+            } else {
+                toastr.warning("Slit Width value is greater then Original Width");
+                // clear the select for this row
+                var $ddl = $row.find('.ddlSlitWidthRow');
+                if ($ddl.hasClass('select2-hidden-accessible')) {
+                    $ddl.val(null).trigger('change');
+                } else {
+                    $ddl.val('');
+                }
+            }
+        }
+    });
+}
 function calculateTotalWeight() {
     var noOfSlits = parseFloat($('#txtNoOfSlits').val()) || 0;
     var weightPerSlit = parseFloat($('#txtWeightPerSlit').val()) || 0;
@@ -249,92 +529,165 @@ function calculateTotalWeight() {
     $('#txtTotalWeight').val(totalWeight.toFixed(3));
 }
 
-// Add event listeners for automatic calculation
-$(document).ready(function() {
-    // Event listener for number of slits and weight per slit changes
-    $('#txtNoOfSlits, #txtWeightPerSlit').on('input', function() {
-        calculateTotalWeight();
-    });
-});
-
-// Copy from previous row functionality
 function copyFromPrevious() {
-    var tbody = $('#RMStockCurrentPlanned tbody');
-    var rows = tbody.find('tr');
-    
-    if (rows.length > 0) {
-        var lastRow = rows.last();
-        var lastItemName = lastRow.find('td:eq(0) select').val();
-        var lastSlitWidth = lastRow.find('td:eq(1) select').val();
-        var lastNoOfSlits = lastRow.find('td:eq(2) input').val();
-        var lastWeightPerSlit = lastRow.find('td:eq(3) input').val();
-        
-        $('#ddlItemName').val(lastItemName).trigger('change');
-        $('#ddlSlitWidth').val(lastSlitWidth).trigger('change');
-        $('#txtNoOfSlits').val(lastNoOfSlits);
-        $('#txtWeightPerSlit').val(lastWeightPerSlit);
-        calculateTotalWeight();
+    if (!$('#CopyFromPrevious').is(':checked')) {
+        return;
     }
+
+    if (!G_IdentificationNo) {
+        toastr.warning('Identification number not available.');
+        return;
+    }
+    Promise.all([GetRMStockItemNameList(), GetRMStockWidthList()])
+        .then(function ([itemNameList, widthList]) {
+            const $tbody = $('#RMStockCurrentPlanned tbody'); // used for appending
+            $tbody.empty();
+            RMStockService.CopyFromPreviousRMStockData(G_IdentificationNo).then(function (response) {
+                if (response && response.length > 0) {
+                    // Use first item to populate header form controls
+                    //var prev = response[0];
+                    //if (prev.ItemName) {
+                    //	BizSolHelperFunction.SelectOptionByText('ddlItemName', prev.ItemName);
+                    //}
+                    //if (prev.Desp) {
+                    //	BizSolHelperFunction.SelectOptionByText('ddlSlitWidth', prev.Desp);
+                    //}
+                    //if (prev.MachineNo) {
+                    //	BizSolHelperFunction.SelectOptionByText('ddlMachineNo', prev.MachineNo);
+                    //}
+                    //$('#txtNoOfSlits').val(prev.NoofSlits || '');
+                    //$('#txtWeightPerSlit').val(prev.Weight || '');
+                    //if (prev.SlittingDate) {
+                    //	$('#txtDate').val(prev.SlittingDate);
+                    //}
+                    //calculateTotalWeight();
+                    var tbody = $('#RMStockCurrentPlanned tbody');
+                    response.forEach(function (item, index) {
+                        var itemNameText = item.ItemName || '';
+                        var slitWidthText = item.Desp || '';
+                        var noOfSlitsVal = item.NoofSlits || 0;
+                        var weightVal = item.Weight || 0;
+                        var weightPerSlitVal = 0;
+                        BizSolHelperFunction.SelectOptionByText('ddlMachineNo', item.MachineNo);
+                        if (noOfSlitsVal && noOfSlitsVal !== 0) {
+                            weightPerSlitVal = weightVal / noOfSlitsVal;
+                        }
+                        var rowId = (index);
+                        var rowKey = [itemNameText, slitWidthText, noOfSlitsVal, weightVal].join('|');
+                        //if (G_AppendedRowKeys[rowKey]) {
+                        //	return;
+                        //}
+                        var newRow = `
+					<tr id="${rowId}">
+						<td><select id="ddlItemName_${rowId}" class="box_border form-control form-control-sm ddlItemNameRow" required></select></td>
+						<td><select id="ddlSlitWidth_${rowId}" class="box_border form-control form-control-sm ddlSlitWidthRow" required></select></td>
+						<td><input id="txtNoOfSlits_${rowId}" class="box_border form-control form-control-sm text-end txtNoOfSlitsRow" autocomplete="off" required /></td>
+						<td><input id="txtWeightPerSlit_${rowId}" class="box_border form-control form-control-sm text-end txtWeightPerSlitRow" autocomplete="off" required disabled /></td>
+						<td><input id="txtTotalWeight_${rowId}" class="box_border form-control form-control-sm text-end txtTotalWeightRow" required readonly/></td>
+						<td><button type="button" class="btn btn-success btn-height" onclick="Save_PlannedSlitting(0)" title="Save" data-row-id="${rowId}"><i class="fas fa-save"></i></button></td>
+					</tr>
+				`;
+                        tbody.append(newRow);
+                        G_AppendedRowKeys[rowKey] = true;
+                        //var $newRow = $('#' + rowId);
+                        //var $ddlItem = $newRow.find('select.ddlItemNameRow');
+                        //var $ddlWidth = $newRow.find('select.ddlSlitWidthRow');
+                        //$ddlItem.html($('#ddlItemName').html());
+                        //$ddlWidth.html($('#ddlSlitWidth').html());
+
+                        //$ddlItem.find('option').filter(function(){
+                        //	return $.trim($(this).text()) === $.trim(itemNameText);
+                        //}).prop('selected', true);
+
+                        //$ddlWidth.find('option').filter(function(){
+                        //	return $.trim($(this).text()) === $.trim(slitWidthText);
+                        //}).prop('selected', true);
+
+                        //$newRow.find('input.txtNoOfSlitsRow').val(noOfSlitsVal);
+                        //$newRow.find('input.txtWeightPerSlitRow').val(weightPerSlitVal.toFixed(3));
+                        //$newRow.find('input.txtTotalWeightRow').val(weightVal);
+
+                        //$ddlItem.trigger('change');
+                        //$ddlWidth.trigger('change');
+                        var $newRow = $('#' + rowId);
+                        var $ddlItem = $newRow.find('#ddlItemName_' + rowId);
+                        var $ddlWidth = $newRow.find('#ddlSlitWidth_' + rowId);
+
+                        //// Bind lists directly (do not clone from header)
+                        BindSelectList1($ddlItem[0], itemNameList);
+                        BindSelectList1($ddlWidth[0], widthList);
+
+                        // Select by text with your helper
+                        BizSolHelperFunction.SelectOptionByText('ddlItemName_' + rowId, itemNameText);
+                        BizSolHelperFunction.SelectOptionByText('ddlSlitWidth_' + rowId, slitWidthText);
+
+                        // Set inputs
+                        $newRow.find('#txtNoOfSlits_' + rowId).val(noOfSlitsVal);
+                        $newRow.find('#txtWeightPerSlit_' + rowId).val(weightPerSlitVal.toFixed(3));
+                        $newRow.find('#txtTotalWeight_' + rowId).val(weightVal);
+
+                        if ($('.ddlItemNameRow').length) {
+                            $('.ddlItemNameRow').select2({
+                                dropdownParent: $('#PlannedMyModal'),
+                                width: '-webkit-fill-available'
+                            });
+                        }
+                        if ($('.ddlSlitWidthRow').length) {
+                            $('.ddlSlitWidthRow').select2({
+                                dropdownParent: $('#PlannedMyModal'),
+                                width: '-webkit-fill-available'
+                            });
+                        }
+                        // Init Select2 after binding
+                        if ($.fn.select2) {
+                            try {
+                                $ddlItem.select2({ dropdownParent: $('#PlannedMyModal'), width: '-webkit-fill-available' });
+                                $ddlWidth.select2({ dropdownParent: $('#PlannedMyModal'), width: '-webkit-fill-available' });
+                            } catch (e) { }
+                        }
+                    });
+
+                    //updateTableTotals();
+                } else {
+                    toastr.info('No previous RM Stock data found.');
+                }
+            }).catch(function (error) {
+                toastr.error('Failed to copy previous data: ' + (error.message || 'Unknown error'));
+            });
+        });
 }
-
-// Add new row to table
-//function addNewRow() {
-//    var tbody = $('#RMStockCurrentPlanned tbody');
-//    var newRow = `
-//        <tr>
-//            <td>${$('#ddlItemName option:selected').text()}</td>
-//            <td>${$('#ddlSlitWidth option:selected').text()}</td>
-//            <td class="text-end">${$('#txtNoOfSlits').val()}</td>
-//            <td class="text-end">${$('#txtWeightPerSlit').val()}</td>
-//            <td class="text-end">${$('#txtTotalWeight').val()}</td>
-//            <td>
-//                <button type="button" onclick="editRow(this)" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i></button>
-//                <button type="button" onclick="deleteRow(this)" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
-//            </td>
-//        </tr>
-//    `;
-//    tbody.append(newRow);
-    
-//    // Update totals after adding row
-//    updateTableTotals();
-    
-//    // Clear form for next entry
-//    clearForm();
-//}
-
-// Clear form inputs
 function clearForm() {
     $('#ddlItemName').val('').trigger('change');
     $('#ddlSlitWidth').val('').trigger('change');
+    $('#ddlMachineNo').val('').trigger('change');
     $('#txtNoOfSlits').val('');
     $('#txtWeightPerSlit').val('');
     $('#txtTotalWeight').val('');
     G_SNo = 0;
+    $('#CopyFromPrevious').prop('checked', false);
+    $('#AllowManualWeight').prop('checked', false);
+    $('#PartingCase').prop('checked', false);
 }
+//function editRow(button, Code, SlittingMasterCode) {
+//    var row = $(button).closest('tr');
+//    var cells = row.find('td');
+//    G_SNo = Code;
+//    G_Code = SlittingMasterCode;
+//    RMStockService.EditRMStockData(G_Code, G_SNo).then(function (response) {
+//        BizSolHelperFunction.SelectOptionByText('ddlItemName', response[0].ItemName);
+//        BizSolHelperFunction.SelectOptionByText('ddlSlitWidth', response[0].Desp);
+//        BizSolHelperFunction.SelectOptionByText('ddlMachineNo', response[0].MachineNo);
+//        $('#txtNoOfSlits').val(response[0].NoofSlits);
+//        $('#txtWeightPerSlit').val(response[0].Weight);
+//        $('#txtDate').val(response[0].SlittingDate);
+//        $('#txtTotalWeight').val(cells.eq(4).text());
 
-// Edit row functionality
-function editRow(button,Code) {
-    var row = $(button).closest('tr');
-    var cells = row.find('td');
-    G_SNo = Code;
-    $('#ddlItemName').val($('#ddlItemName option').filter(function() {
-        return $(this).text() === cells.eq(0).text();
-    }).val()).trigger('change');
-    
-    $('#ddlSlitWidth').val($('#ddlSlitWidth option').filter(function() {
-        return $(this).text() === cells.eq(1).text();
-    }).val()).trigger('change');
-    
-    $('#txtNoOfSlits').val(cells.eq(2).text());
-    $('#txtWeightPerSlit').val(cells.eq(3).text());
-    $('#txtTotalWeight').val(cells.eq(4).text());
-    
-    row.remove();
-    updateTableTotals();
-}
+//    });
 
-// Delete row functionality
-function deleteRow(button, Code,SlittingMasterCode) {
+//    row.remove();
+//    updateTableTotals();
+//}
+function deleteRow(button, Code, SlittingMasterCode) {
     G_SNo = Code;
     G_Code = SlittingMasterCode;
     $('#myModalDelete').modal({
@@ -354,9 +707,9 @@ function DeleteModal() {
             if (response.Status == 'Y') {
                 toastr.success(response.Msg);
                 updateTableTotals();
-                CloseModal();
                 ShowRMStockPlan();
-                clearForm(); 
+                CloseModal();
+                clearForm();
             } else {
                 toastr.error(response.Msg);
             }
@@ -369,102 +722,112 @@ function CloseModal() {
     $('#deleteReason').val('');
 
 }
-// Update table totals
 function updateTableTotals() {
     var tbody = $('#RMStockCurrentPlanned tbody');
     var rows = tbody.find('tr');
-    
+
+    var totalWidthCount = 0;
     var totalNoOfSlits = 0;
     var totalWeightPerSlit = 0;
     var totalWeight = 0;
-    
-    rows.each(function() {
-        var noOfSlits = parseFloat($(this).find('td:eq(2)').text()) || 0;
-        var weightPerSlit = parseFloat($(this).find('td:eq(3)').text()) || 0;
-        var rowTotalWeight = parseFloat($(this).find('td:eq(4)').text()) || 0;
-        
+
+    if (rows.length === 0) {
+        $('#totalWidthCount').text('0');
+        $('#totalNoOfSlits').text('0');
+        $('#totalWeightPerSlit').text('0.000');
+        $('#totalWeight').text('0.000');
+        return;
+    }
+
+    rows.each(function () {
+        var noOfSlits = parseFloat($(this).find('input[id*="txtNoOfSlits"]').val()) || 0;
+        var weightPerSlit = parseFloat($(this).find('input[id*="txtWeightPerSlit"]').val()) || 0;
+        var rowTotalWeight = parseFloat($(this).find('input[id*="txtTotalWeight"]').val()) || 0;
+
+        var selectedWidthText = $(this).find('select[id*="ddlSlitWidth"] option:selected').text();
+        var WidthCount = parseFloat(selectedWidthText) || 0;
+
+        totalWidthCount += WidthCount;
         totalNoOfSlits += noOfSlits;
         totalWeightPerSlit += weightPerSlit;
         totalWeight += rowTotalWeight;
     });
-    
-    // Update footer totals
+
+    $('#totalWidthCount').text(totalWidthCount.toFixed(0));
     $('#totalNoOfSlits').text(totalNoOfSlits.toFixed(0));
     $('#totalWeightPerSlit').text(totalWeightPerSlit.toFixed(3));
     $('#totalWeight').text(totalWeight.toFixed(3));
 }
-
-// Save planned slitting data
-function Save_PlannedSlitting() {
-    // Validate required fields
-    let ItemMaster_Code = $('#ddlItemName').val();
-    let ItemMasterWidth_Code = $('#ddlSlitWidth').val();
-    let NoOfSlitsValue = $('#txtNoOfSlits').val();
+function Save_PlannedSlitting(SNo) {
+    let ItemMaster_Code = $('#ddlItemName_' + SNo).val();
+    let ItemMasterWidth_Code = $('#ddlSlitWidth_' + SNo).val();
+    let NoOfSlitsValue = $('#txtNoOfSlits_' + SNo).val();
     let IdentificationNo = G_IdentificationNo;
-    let TotalWeight = $('#txtTotalWeight').val();
+    let TotalWeight = $('#txtTotalWeight_' + SNo).val();
+    let MachineNo = $('#ddlMachineNo').val();
+    G_today = $('#txtDate').val();
+    let PartingCase = $('#PartingCase').is(':checked') ? 'Y' : 'N';
+    if (!ItemMaster_Code || ItemMaster_Code === '0') { toastr.error('Please select an item name'); return; }
+    if (!ItemMasterWidth_Code || ItemMasterWidth_Code === '0') { toastr.error('Please select a slit width'); return; }
+    let slitWidthValue = parseFloat(ItemMasterWidth_Code);
+    if (isNaN(slitWidthValue) || slitWidthValue <= 0) { toastr.error('Please select a valid slit width'); return; }
 
-    if (!$('#ddlItemName').val()) {
-        toastr.error('Please select an item name');
-        return;
+    let noOfSlitsNum = parseFloat(NoOfSlitsValue);
+    if (isNaN(noOfSlitsNum) || noOfSlitsNum <= 0) { toastr.error('Please enter number of slits'); return; }
+
+    let weightPerSlitVal = parseFloat($('#txtWeightPerSlit_' + SNo).val());
+    if (isNaN(weightPerSlitVal) || weightPerSlitVal <= 0) { toastr.error('Please enter weight per slit'); return; }
+
+    if (!MachineNo || MachineNo === '0') { toastr.error('Please enter Machine No'); return; }
+
+    let totalWeightNum = parseFloat(TotalWeight);
+    if (isNaN(totalWeightNum) || totalWeightNum <= 0) {
+        totalWeightNum = noOfSlitsNum * weightPerSlitVal;
+        $('#txtTotalWeight_' + SNo).val(totalWeightNum.toFixed(3));
     }
-    if (!$('#ddlSlitWidth').val()) {
-        toastr.error('Please select a slit width');
-        return;
-    }
-    if ($('#ddlItemName').val()==0) {
-        toastr.error('Please select an item name');
-        return;
-    }
-    if (!$('#ddlSlitWidth').val() || $('#ddlSlitWidth').val() == 0) {
-        toastr.error('Please select a slit width');
-        return;
-    }
-    
-    // Validate that the width value is a valid number
-    let slitWidthValue = parseFloat($('#ddlSlitWidth').val());
-    if (isNaN(slitWidthValue) || slitWidthValue <= 0) {
-        toastr.error('Please select a valid slit width');
-        return;
-    }
-    if (!$('#txtNoOfSlits').val()) {
-        toastr.error('Please enter number of slits');
-        return;
-    }
-    if (!$('#txtWeightPerSlit').val()) {
-        toastr.error('Please enter weight per slit');
-        return;
-    }
+
     let RMStockPayloadData = {
-        Code: G_SNo,
+        Code: SNo,
+        slittingPlanMaster_Code: G_SlittingPlanMaster_Code,
         itemMaster_Code: ItemMaster_Code,
         ItemParameterValueMaster_Code: ItemMasterWidth_Code,
-        noofSlit: NoOfSlitsValue,
+        noofSlit: noOfSlitsNum,
         identificationNo: IdentificationNo,
-        totalWeight: TotalWeight,
-        
-    }
+        totalWeight: totalWeightNum.toFixed(3),
+        machineNo: MachineNo,
+        date: G_today,
+        partingCase: PartingCase,
+    };
+
+    Showloader();
     RMStockService.SaveRMStockData(RMStockPayloadData).then(function (response) {
-        //addNewRow();
-        if (response.Status == 'Y') {
+        HideLoader();
+        if (response.Status === 'Y') {
             toastr.success(response.Message);
+            updateTableTotals();
             ShowRMStockPlan();
             clearForm();
+        } else {
+            toastr.error(response.Message || 'Save failed');
         }
-        else {
-            toastr.error(response.Message);
-        }
-        
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error((error && error.Message) || 'Error saving data');
     });
-    // Add the row to the table
-    
-    // If copy from previous is checked, copy data for next entry
+
     if ($('#CopyFromPrevious').is(':checked')) {
-        setTimeout(function() {
+        setTimeout(function () {
             copyFromPrevious();
         }, 100);
     }
 }
 function CloseModal_RMStock() {
+    GetRMStockCurrentListTable();
+    G_Code = 0;
+    G_SlittingPlanMaster_Code = 0;
+    $('#CopyFromPrevious').prop('checked', false);
+    $('#AllowManualWeight').prop('checked', false);
+    $('#PartingCase').prop('checked', false);
     $('#PlannedMyModal').modal('hide');
 }
 function BindSelectList1(element, list) {
@@ -474,6 +837,7 @@ function BindSelectList1(element, list) {
     });
     element.innerHTML = option;
 }
+
 function getUrlVars() {
     var vars = {};
     var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
@@ -491,43 +855,163 @@ function initializeTabs() {
     var triggerTabList = [].slice.call(document.querySelectorAll('#rmStockTabs button'));
     triggerTabList.forEach(function (triggerEl) {
         var tabTrigger = new bootstrap.Tab(triggerEl);
-        
+
         triggerEl.addEventListener('click', function (event) {
             event.preventDefault();
             tabTrigger.show();
-            
+
             // Load data for the active tab
             var targetTab = triggerEl.getAttribute('data-bs-target');
             loadTabData(targetTab);
         });
     });
 }
+function GetUnApprovedPlannedList() {
+    Showloader();
+    RMStockService.GetRMStockUNAPPROVEDPLANNED().then(function (response) {
+        HideLoader();
+        if (response.length > 0) {
+            $('#tblUnApproved_Planned').show();
+            const stringFilterColumn = ["Item Name", "Thickness", "Grade", "Make", "IdentificationNo", "Width"];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            let hiddenColumns = []
+            if ($('#exampleCheck').is(':checked')) {
+                hiddenColumns = ["Code", "MRN No", "Numeric Value", "IsPlanned", "Invoice No", "Vendor", "Brand", "Ch Wt", "Receive Date", "Invoice Date", "Ac Wt", "Warehouse", "Remarks", "Qty MT", "Qty PC", "Qty MTRS"];
+            } else {
+                hiddenColumns = ["Code", "MRN No", "Numeric Value", "% E", "Hardness", "UTS", "YST", "BEND TEST", "IsPlanned", "Invoice No", "Vendor", "Brand", "Ch Wt", "Receive Date", "Invoice Date", "Ac Wt", "Warehouse", "Remarks", "Qty MT", "Qty PC", "Qty MTRS"];
+            }
+            const columnAlignment = {
+                'Invoice Date': 'center', 'Receive Date': 'center', 'Thickness': 'right', 'Ch Wt': 'right', 'Width': 'right;min-width:60px', 'Ac Wt': 'right',
+                'Qty MT': 'right', 'Qty PC': 'right', 'Qty MTRS': 'right', '% E': 'right;min-width:50px', 'Hardness': 'right', 'UTS': 'right;min-width:70px', 'YST': 'right;min-width:70px', 'Status': ';width:150px',
+                'Purchased Date': ';width:150px',
+                'Vendor': ';min-width:230px !important;',
+                'Item Name': ';min-width:100px !important;',
+            };
+            //const updatedResponse = response.map((item, index) => {
+            //    const buttonText = item.IsPlanned ? "Planned" : "Plan";
+            //    let PlannedButtonInputHTML = `<button type="button" class="btn btn-primary btn-height" title="Planned Button" onclick='ShowModelPlanned(${JSON.stringify(item)})' style="width: 70px;">${buttonText}</button>`;
 
+            //    return {
+            //        ...item,
+            //        'Planned Button': PlannedButtonInputHTML,
+            //    };
+            //});
+            // calculate footer totals for Ch Wt and Ac Wt
+            calculateRMStockCurrentFooterTotals(response);
+            BizsolCustomFilterGrid.CreateDataTable("table-header-UnApproved_Planned", "table-body-UnApproved_Planned", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+        } else {
+            HideLoader();
+            toastr.error('No Data Found');
+            $('#tblUnApproved_Planned').hide();
+        }
+    })
+        .catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || 'Error during UnApproved_Planned');
+            $('#tblUnApproved_Planned').hide();
+
+        });
+}
 function loadTabData(tabId) {
-    switch(tabId) {
+    switch (tabId) {
         case '#current-stock':
             // Current stock data is already loaded by default
+            $('#current-stock').show();
+            $('#unApproved-planned').hide();
+            $('#dispatch').hide();
+            $('#checkBoxHideAndShow').show();
+            GetRMStockCurrentListTable();
+            break;
+        case '#unApproved-planned':
+            // Handle unapproved planned tab
+            $('#current-stock').hide();
+            $('#unApproved-planned').show();
+            $('#dispatch').hide();
+            $('#checkBoxHideAndShow').show();
+            $('#tblUnApproved_Planned').hide();
+            GetUnApprovedPlannedList();
             break;
         case '#dispatch':
-            loadDispatchData();
+            $('#current-stock').hide();
+            $('#unApproved-planned').hide();
+            $('#checkBoxHideAndShow').hide();
+            $('#tbldispatch').hide();
+            $('#dispatch').show();
+            setCurrentDateDispatch();
+            //loadDispatchData();
             break;
         case '#slitted':
+            $('#checkBoxHideAndShow').hide();
             loadSlittedData();
             break;
         case '#job-work':
+            $('#checkBoxHideAndShow').hide();
             loadJobWorkData();
             break;
         case '#stock-summary':
+            $('#checkBoxHideAndShow').hide();
             loadStockSummaryData();
+            break;
+        default:
             break;
     }
 }
+function setCurrentDateDispatch() {
+    let today = new Date();
+    let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-function loadDispatchData() {
-    // Load dispatch data for current month
-    console.log('Loading dispatch data...');
-    // Add your dispatch data loading logic here
-    // Example: RmIndentService.GetDispatchData().then(function(response) { ... });
+    function formatDate(date) {
+        let day = String(date.getDate()).padStart(2, '0');
+        let month = String(date.getMonth() + 1).padStart(2, '0');
+        let year = date.getFullYear();
+        return `${year}-${month}-${day}`;
+    }
+
+    $('#txtFromDate').val(formatDate(firstOfMonth));
+    $('#txtToDate').val(formatDate(today));
+    G_FromDateValue = $('#txtFromDate').val();
+    G_ToDateValue = $('#txtToDate').val();
+    loadDispatchData(G_FromDateValue, G_ToDateValue);
+}
+function ShowDispatchList() {
+    G_FromDateValue = $('#txtFromDate').val();
+    G_ToDateValue = $('#txtToDate').val();
+    loadDispatchData(G_FromDateValue, G_ToDateValue);
+}
+function loadDispatchData(G_FromDateValue, G_ToDateValue) {
+    Showloader();
+    RMStockService.GetRMStockDispatch(G_FromDateValue, G_ToDateValue).then(function (response) {
+        HideLoader();
+        if (response.length > 0) {
+            $('#tbldispatch').show();
+            const stringFilterColumn = ["Thickness", "Width", "Grade", "Make", "Identification No", "Client", "Item Name"];
+            const numericFilterColumn = [];
+            const dateFilterColumn = ["Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            let hiddenColumns = []
+            const columnAlignment = {
+                'Thickness': "right;min-width:20px", 'Width': "right;min-width:20px", 'Date': "center"
+            };
+
+            BizsolCustomFilterGrid.CreateDataTable("table-header-dispatch", "table-body-dispatch", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+        } else {
+            HideLoader();
+            toastr.error('No Data Found');
+            $('#tbldispatch').hide();
+        }
+    })
+        .catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || 'Error during dispatch');
+            $('#tbldispatch').hide();
+
+        });
 }
 
 function loadSlittedData() {
@@ -547,10 +1031,10 @@ function loadJobWorkData() {
 function loadStockSummaryData() {
     // Load stock summary data
     console.log('Loading stock summary data...');
-    
+
     // Calculate and display summary statistics
     calculateStockSummary();
-    
+
     // Add your stock summary data loading logic here
     // Example: RmIndentService.GetStockSummaryData().then(function(response) { ... });
 }
@@ -560,7 +1044,7 @@ function calculateStockSummary() {
     // This is a placeholder - implement your actual calculation logic
     $('#totalStockValue').text('₹ 0.00');
     $('#totalItems').text('0');
-    
+
     // Example calculation (replace with your actual logic):
     // let totalValue = 0;
     // let totalItems = 0;
@@ -611,7 +1095,7 @@ window.calculateTotalWeight = calculateTotalWeight;
 window.copyFromPrevious = copyFromPrevious;
 //window.addNewRow = addNewRow;
 window.clearForm = clearForm;
-window.editRow = editRow;
+//window.editRow = editRow;
 window.deleteRow = deleteRow;
 window.updateTableTotals = updateTableTotals;
 window.validateDecimalRateInput = validateDecimalRateInput;
@@ -619,3 +1103,5 @@ window.fillTableWithExistingData = fillTableWithExistingData;
 window.enableNewRowAddition = enableNewRowAddition;
 window.DeleteModal = DeleteModal;
 window.CloseModal = CloseModal;
+window.ShowDispatchList = ShowDispatchList;
+//window.ValidateWidthInput = ValidateWidthInput;

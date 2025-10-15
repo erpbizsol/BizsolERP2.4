@@ -26,6 +26,14 @@ const RmIndentService = {
             }
         );
     },
+    GetGradeList: function GetGradeList() {
+        var URL = UrlService.API_ENDPOINT_RmIndent + "/GetGradeList";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     SaveIndentPriceComparison: function SaveIndentPriceComparison(data) {
         var URL = UrlService.API_ENDPOINT_RmIndent + "/SaveIndentPriceComparison";
         return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(data)).then(
