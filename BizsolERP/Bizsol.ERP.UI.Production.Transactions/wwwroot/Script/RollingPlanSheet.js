@@ -1,7 +1,8 @@
 ﻿import { RollingPlanSheetService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RollingPlanSheetService.js';
+import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
+
 $(document).ready(function () {
     GetRollingPlanSheetList();
-    // Load Date & Mill Wise on tab click
     $(document).on('click', '#dispatch-tab', function () {
         clearTable();
         // Show date bar and default to today
@@ -16,8 +17,6 @@ $(document).ready(function () {
         }
         GetDateAndMillWiseReportList($('#rpToDate').val());
     });
-
-    // Load Order Wise Slitting Sheet on first tab click
     $(document).on('click', '#current-stock-tab', function () {
         clearTable();
         $('#date-filter-bar').hide();
@@ -26,8 +25,6 @@ $(document).ready(function () {
         $wrapper.css({ width: '100%'});
 
     });
-
-    // Show button handler
     $(document).on('click', '#btnShowDateMillReport', function () {
         const d = $('#rpToDate').val();
         if (!d) {
@@ -36,8 +33,6 @@ $(document).ready(function () {
         }
         GetDateAndMillWiseReportList(d);
     });
-
-    // Auto-fetch on date change
     $(document).on('change', '#rpToDate', function () {
         const d = $(this).val();
         if (d) {
@@ -432,3 +427,12 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
         addTotalsRow(totals, hiddenColumns);
     }, 300);
 });
+function ExportExecl() {
+    const hiddenFields = ["Code", "BuyerPoMaster_Code", "BuyerPoDetail_Code"];
+    RollingPlanSheetService.GetRollingPlanSheetList().then(function (response) {
+        ExportToExcelControl.ExportToExcel(response, hiddenFields, "RollingPlanSheet");
+    });
+    
+}
+
+window.ExportExecl = ExportExecl;

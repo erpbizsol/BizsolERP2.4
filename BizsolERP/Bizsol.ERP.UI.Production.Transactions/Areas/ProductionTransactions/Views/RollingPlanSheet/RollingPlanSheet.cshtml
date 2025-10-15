@@ -131,6 +131,11 @@
                     <i class="fas fa-truck"></i> Date Wise Mill Wise Report
                 </button>
             </div>
+            <div class="nav-item" role="presentation" id="btnDownload">
+                <button class="nav-link" id="Download" data-bs-toggle="tab" data-bs-target="#dispatch" type="button" role="tab" aria-controls="dispatch" aria-selected="false" onclick="ExportExecl();">
+                    Download
+                </button>
+            </div>
         </div>
         <div class="card p-1" id="rmStockTabContent">
             <div id="date-filter-bar" class="row mb-1" style="display:none">
@@ -141,13 +146,20 @@
                 <div class="col-md-2" style="margin-top:1.8rem">
                     <button type="button" id="btnShowDateMillReport" class="btn btn-primary btn-height">Show</button>
                 </div>
+                
+
+            </div> 
+            <div id="date-filter-bar" class="row mb-1" >
+                <div class="col-md-12" style="text-align:right">
+                    <button type="button" id="btn" class="btn btn-primary btn-height">Show</button>
+                </div> 
             </div>
             <div class="table-wrapper" style="min-height:400px;">
                 <table id="tblTable" class="fixed-width-table table">
                     <thead id="table-head">
                     </thead>
-                    <tbody id="table-body">
-                    </tbody>
+                    <tbody id="table-body"> 
+                    </tbody> 
                 </table>
             </div>
             <div class="paginator" id="paginator-tblTable">
@@ -155,3 +167,4 @@
         </div>
     </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
