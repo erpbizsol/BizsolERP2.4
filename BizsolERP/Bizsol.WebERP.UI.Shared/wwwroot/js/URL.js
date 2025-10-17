@@ -33,6 +33,7 @@ let UrlService = {
     API_DOCUMENT_AllowanceMaster: `${environment.BASE_URL}/AllowanceMaster`,
     API_DOCUMENT_DeductionMaster: `${environment.BASE_URL}/DeductionMaster`,
     API_DOCUMENT_LeaveMaster: `${environment.BASE_URL}/LeaveMaster`,
+    API_DOCUMENT_RollingPlanSheet: `${environment.BASE_URL}/RollingPlanSheet`,
 
     API_UserMODULE: `${environment.BASE_URL}/UserModule`,
 

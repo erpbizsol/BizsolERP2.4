@@ -72,7 +72,10 @@ function GateToken_SaveData() {
     let DriverLicenseExpiredDate = "";
 
     let GateEntryMaster_Code = 0;
+    
+    let loginGodownMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).WebERPLoginGodownMaster_Code;
 
+    GodownMaster_Code = loginGodownMaster_Code;
 
     ReportingDatetime = $('#frmGateToken_txtReportingDatetime').val();
     VehicleNo = $('#frmGateToken_txtVehicleNo').val().toUpperCase();
@@ -222,7 +225,7 @@ function ShowHideVehicleOtherDetails() {
             
         }
 
-        GateEntryService.GetDriverDetailsByVehicleNo("GETVEHICLENO", "0").then(function (resVehicle) {
+        GateEntryService.GetDriverDetailsByVehicleNo("GETALLVEHICLENO", "0").then(function (resVehicle) {
             const goodsList = resVehicle.map((item) => ({ Desp: item.VehicleNo }));
             AutoSuggestionControl.SetUpAutoSuggestion(
                 $('#frmGateToken_txtVehicleNo'),

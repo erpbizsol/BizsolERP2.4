@@ -90,7 +90,7 @@ function PackingListFG_ShowViewGrid() {
                 ["Qty " + G_QtyPC]: item.QtyPC,
                 ["Qty " + G_QtyMTR]: item.QtyMTRS,
                     Status: item.PKStatus,
-                    Action: item.LoadingStatus !== 'C' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Loading end" onclick="PackingListFG_EndLoadingOnGrid(\'' + item.Code + '\')"> <i class="fa fa-ban"></i></a>' : item.Verify === 'N' && item.AllowVerify == 'Y' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-success icon-height" title="Verify" onclick="PackingListFG_Verify(\'' + item.Code + '\')"><i class="fa fa-check"></i></a>': item.Verify === 'N' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>' : '<a class="btn btn-dark icon-height" title="View" onclick="PackingListFG_EditOrView(\'N\',\'' + item.Code + '\')"> <i class="fa fa-eye"></i></a>', 
+                Action: item.LoadingStatus !== 'C' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Loading end" onclick="PackingListFG_EndLoadingOnGrid(\'' + item.Code + '\')"> <i class="fa fa-ban"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Delete" onclick="PackingListFG_DeleteEntryOnGrid(\'' + item.Code + '\')"> <i class="fa fa-trash"></i></a>' : item.Verify === 'N' && item.AllowVerify == 'Y' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-success icon-height" title="Verify" onclick="PackingListFG_Verify(\'' + item.Code + '\')"><i class="fa fa-check"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Delete" onclick="PackingListFG_DeleteEntryOnGrid(\'' + item.Code + '\')"> <i class="fa fa-trash"></i></a>' : item.Verify === 'N' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Delete" onclick="PackingListFG_DeleteEntryOnGrid(\'' + item.Code + '\')"> <i class="fa fa-trash"></i></a>' : '<a class="btn btn-dark icon-height" title="View" onclick="PackingListFG_EditOrView(\'N\',\'' + item.Code + '\')"> <i class="fa fa-eye"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Delete" onclick="PackingListFG_DeleteEntryOnGrid(\'' + item.Code + '\')"> <i class="fa fa-trash"></i></a>', 
                     QtyMT: item.QtyMT, QtyPC: item.QtyPC, QtyMTRS: item.QtyMTRS
             }
         })
@@ -487,7 +487,8 @@ function Bind_PackingListTransactionGrid(isView) {
                 
                 return {
                     "Pallet No": item.PalletNo,
-                    [BatchORBundleDesp + "/ID"]: ApplicableBatchWiseStock == "Y" && item.BatchNo != "" ? item.BatchNo : BaleNoDesp != "" && item.BaleNo != "" ? item.BaleNo : item.IdentificationNo,
+                    //[BatchORBundleDesp + "/ID"]: ApplicableBatchWiseStock == "Y" && item.BatchNo != "" ? item.BatchNo : BaleNoDesp != "" && item.BaleNo != "" ? item.BaleNo : item.IdentificationNo,
+                    [BatchORBundleDesp + "/ID"]: item.BatchNo != "" ? item.BatchNo : BaleNoDesp != "" && item.BaleNo != "" ? item.BaleNo : item.SerialNo != "" ? item.SerialNo : item.IdentificationNo,
                     "Item Name": item.ItemName, "Size": item.SizeDesp,
                     ["Qty " + G_QtyMT]: item.QtyMT,
                     ["Qty " + G_QtyPC]: item.QtyPc,
@@ -1490,7 +1491,7 @@ function ClrFrm() {
     $('#btnUpdateRate').hide();
 }
 function ScanId() {
-   
+   console.log('scanid')
     let idno = $('#tbPackingListTransaction tbody')[0].innerHTML;
     let BundleOrId = $('#txtScanIdentification').val();
     let EntryDate = $('#txtPackingListDate').val();
@@ -1693,7 +1694,7 @@ $('#ddlReqNo').on('change', function () {
     //ScanIdDataList();
 
 });
-$('#txtScanIdentification').on('keyup keypress keydown', function (e) {
+$('#txtScanIdentification').on('keydown', function (e) {
     var keyCode = e.keyCode || e.which;
     if (keyCode === 13) {
         e.preventDefault();
@@ -1733,6 +1734,31 @@ function PackingListFG_CallbackScanQRCode() {
     $('#txtScanIdentification').focus()
 }
 
+function PackingListFG_DeleteEntryOnGrid(packingListMaster_Code) {
+    if (confirm("Do you want to delete this Packing List ?!") == true) {
+
+        Showloader();
+        PackingListFGService.RemovePackingListTransaction(packingListMaster_Code, 0, '0').then(function (response) {
+
+            if (response.Status == 'Y') {
+                toastr.success(response.Msg);
+                PackingListFG_ShowViewGrid();
+                HideLoader();
+            } else {
+                toastr.error(response.Msg);
+                HideLoader();
+            }
+        });
+        //PackingListFGService.LoadingEndPackingListBatchNo(packingListMaster_Code).then(function (response) {
+        //    if (response.Status == 'Y') {
+        //        toastr.success(response.Msg);
+        //        PackingListFG_ShowViewGrid();
+        //    } else {
+        //        toastr.error(response.Msg);
+        //    }
+        //});
+    }
+}
 
 PackingListFG_ShowViewGrid();
 getPackingListFGFixedParaMeters();
@@ -1757,4 +1783,5 @@ window.PackingListFG_LoadNoOfPallet = PackingListFG_LoadNoOfPallet;
 window.PackingListFG_EndLoadingOnGrid = PackingListFG_EndLoadingOnGrid;
 window.PackingListFG_btnScanQR = PackingListFG_btnScanQR;
 window.PackingListFG_CallbackScanQRCode = PackingListFG_CallbackScanQRCode;
+window.PackingListFG_DeleteEntryOnGrid = PackingListFG_DeleteEntryOnGrid;
 

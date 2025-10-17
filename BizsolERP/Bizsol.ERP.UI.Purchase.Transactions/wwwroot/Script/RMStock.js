@@ -16,7 +16,7 @@ $(document).ready(function () {
     let isInitialLoad = true;
     var urlParams = getUrlVars();
     var menuValue = decodeURI(urlParams['menu']);
-    
+
     if (menuValue && menuValue !== "undefined" && menuValue !== "") {
         $("#ERPHeading").text(menuValue);
     } else {
@@ -781,7 +781,7 @@ function Save_PlannedSlitting(SNo) {
     });
     
     if ($('#CopyFromPrevious').is(':checked')) {
-        setTimeout(function() {
+        setTimeout(function () {
             copyFromPrevious();
         }, 100);
     }
@@ -820,11 +820,11 @@ function initializeTabs() {
     var triggerTabList = [].slice.call(document.querySelectorAll('#rmStockTabs button'));
     triggerTabList.forEach(function (triggerEl) {
         var tabTrigger = new bootstrap.Tab(triggerEl);
-        
+
         triggerEl.addEventListener('click', function (event) {
             event.preventDefault();
             tabTrigger.show();
-            
+
             // Load data for the active tab
             var targetTab = triggerEl.getAttribute('data-bs-target');
             loadTabData(targetTab);
@@ -882,8 +882,10 @@ function GetUnApprovedPlannedList() {
        
     });
 }
+        });
+}
 function loadTabData(tabId) {
-    switch(tabId) {
+    switch (tabId) {
         case '#current-stock':
             $('#tblReport tbody').empty();
             $('#tblReport thead tr').empty();
@@ -1161,7 +1163,7 @@ function calculateStockSummary() {
     // This is a placeholder - implement your actual calculation logic
     $('#totalStockValue').text('₹ 0.00');
     $('#totalItems').text('0');
-    
+
     // Example calculation (replace with your actual logic):
     // let totalValue = 0;
     // let totalItems = 0;
