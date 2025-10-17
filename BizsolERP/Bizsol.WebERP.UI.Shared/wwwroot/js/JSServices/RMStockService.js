@@ -108,6 +108,30 @@ const RMStockService = {
             }
         );
     },
+    GetRMStockSlitted: function GetRMStockSlitted() {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockSlitted";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRMStockJobWorkData: function GetRMStockJobWorkData() {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockJobWorkData";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRMStockSummaryData: function GetRMStockSummaryData() {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockSummaryData";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { RMStockService }
