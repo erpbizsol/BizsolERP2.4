@@ -22,14 +22,16 @@ $(document).ready(function () {
     } else {
         $("#ERPHeading").text("Raw Material Stock Management");
     }
-
-    // initializeTabs();
+   
+    $('#current-stock').show();
+    $('#unApproved-planned').hide();
+    $('#dispatch').hide();
     GetRMStockCurrentListTable();
     $('#exampleCheck').on("click", function () {
         GetRMStockCurrentListTable();
+        GetUnApprovedPlannedList();
     });
 
-    // Delegate change handler for dynamically added row selects
     $('#RMStockCurrentPlanned').on('change', '.ddlSlitWidthRow', function () {
         var $row = $(this).closest('tr');
         var rowId = $row.attr('id');
@@ -71,21 +73,14 @@ $(document).ready(function () {
         calculateTotalWeight();
     });
 
-    // Handle tab changes
     $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
         var targetTab = $(e.target).attr('data-bs-target');
         loadTabData(targetTab);
     });
 
-    //// Individual tab click handlers for specific functionality
-    //$(document).on("click", "#unApproved-planned", function () {
-    //    // Clear any existing data first
-    //    $('#tblUnApproved_Planned').hide();
-
-    //    // Load the unapproved planned list
-    //    GetUnApprovedPlannedList();
-    //});
-
+    $('#btnDownload').click(function () {
+        Export();
+    });
 });
 
 
@@ -99,28 +94,30 @@ function GetRMStockCurrentListTable() {
         if (response && response.length > 0) {
             HideLoader();
             $('#tblRMStockCurrent').show();
-            const stringFilterColumn = ["Invoice No", "Item Name", "Vendor", "Brand", "Ch Wt", "Thickness", "Grade", "Make", "Width", "Ac Wt", "Warehouse", "Remarks", "IdentificationNo", "Grade"];
-            const numericFilterColumn = ["Qty MT", "Qty PC", "Qty MTRS"];
-            const dateFilterColumn = ["Receive Date", "Invoice Date"];
+            const stringFilterColumn = ["Invoice No", "Item Name", "Vendor", "Brand", "Ch Wt", "Thickness", "Grade", "Make", "Width", "Ac Wt", "Warehouse", "Remarks", "IdentificationNo","Grade"];
+            const numericFilterColumn = ["Qty MT","Qty PC","Qty MTRS"];
+            const dateFilterColumn = ["Receive Date","Invoice Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             let hiddenColumns = []
             if ($('#exampleCheck').is(':checked')) {
-                hiddenColumns = ["Code", "Numeric Value", "IsPlanned"];
+                hiddenColumns = ["Code", "Numeric Value","IsPlanned","Size"];
             } else {
-                hiddenColumns = ["Code", "Numeric Value", "% E", "Hardness", "UTS", "YST", "BEND TEST", "IsPlanned"];
+                hiddenColumns = ["Code", "Numeric Value", "% E", "Hardness", "UTS", "YST", "BEND TEST", "IsPlanned", "Size"];
             }
             const columnAlignment = {
-                'Invoice Date': 'center', 'Receive Date': 'center', 'Thickness': 'right', 'Ch Wt': 'right', 'Width': 'right;min-width:60px', 'Ac Wt': 'right',
-                'Qty MT': 'right', 'Qty PC': 'right', 'Qty MTRS': 'right', '% E': 'right;min-width:50px', 'Hardness': 'right', 'UTS': 'right;min-width:70px', 'YST': 'right;min-width:70px', 'Status': ';width:150px',
+                'Invoice Date': 'center', 'Receive Date': 'center', 'Thickness': 'right', 'Ch Wt': 'right', 'Width': 'right;min-width:60px','Ac Wt': 'right',
+                'Qty MT': 'right', 'Qty PC': 'right', 'Qty MTRS': 'right', '% E': 'right;min-width:50px', 'Hardness': 'right', 'UTS': 'right;min-width:70px', 'YST': 'right;min-width:70px','Status': ';width:150px',
                 'Purchased Date': ';width:150px',
                 'Vendor': ';min-width:230px !important;',
                 'Item Name': ';min-width:100px !important;',
             };
             const updatedResponse = response.map((item, index) => {
                 const buttonText = item.IsPlanned ? "Planned" : "Plan";
-                let PlannedButtonInputHTML = `<button type="button" class="btn btn-primary btn-height" title="Planned Button" onclick='ShowModelPlanned(${JSON.stringify(item)})' style="width: 70px;">${buttonText}</button>`;
+                const buttonClass = item.IsPlanned ? "btn btn-success" : "btn btn-primary";
+
+                let PlannedButtonInputHTML = `<button type="button" class="${buttonClass} btn-height" title="Planned Button" onclick='ShowModelPlanned(${JSON.stringify(item)})' style="width: 70px;">${buttonText}</button>`;
 
                 return {
                     ...item,
@@ -129,7 +126,8 @@ function GetRMStockCurrentListTable() {
             });
             // calculate footer totals for Ch Wt and Ac Wt
             calculateRMStockCurrentFooterTotals(response);
-            BizsolCustomFilterGrid.CreateDataTable("table-header-RMStockCurrent", "table-body-RMStockCurrent", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            BizsolCustomFilterGrid.CreateDataTable("table-header-RMStockCurrent", "table-body-RMStockCurrent", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment,false);
+            PopulateTableForPrint(response);
         } else {
             HideLoader();
             toastr.error('No Data Found');
@@ -143,13 +141,13 @@ function GetRMStockCurrentListTable() {
         });
 }
 
-//Calculate and render totals for "Ch Wt" and "Ac Wt" into footer placeholders if present
+ //Calculate and render totals for "Ch Wt" and "Ac Wt" into footer placeholders if present
 function calculateRMStockCurrentFooterTotals(rows) {
     try {
         let totalChWt = 0;
         let totalAcWt = 0;
         if (rows && rows.length) {
-            rows.forEach(function (r) {
+            rows.forEach(function(r){
                 totalChWt += parseFloat(r['Ch Wt']) || 0;
                 totalAcWt += parseFloat(r['Ac Wt']) || 0;
             });
@@ -161,11 +159,14 @@ function calculateRMStockCurrentFooterTotals(rows) {
         if ($('#totalAcWt').length) {
             $('#totalAcWt').text(totalAcWt.toFixed(3));
         }
-    } catch (e) {
+    } catch(e) {
         // fail silently
     }
 }
 function ShowModelPlanned(rowData) {
+    $('#txtIdentificationNo').val(rowData.IdentificationNo);
+    $('#txtWidth').val(rowData?.['Numeric Value']);
+    $('#despSize').text(rowData.Size);
     G_IdentificationNo = rowData.IdentificationNo;
     G_Width = rowData?.['Numeric Value'];
     clearForm();
@@ -181,41 +182,43 @@ function ShowModelPlanned(rowData) {
     GetRMStockMachineNoList();
     setCurrentDate();
     updateTableTotals();
-
+     
 }
 function ShowRMStockPlan() {
     RMStockService.ShowRMStockData(G_IdentificationNo).then(function (response) {
-        fillTableWithExistingData(response);
+            fillTableWithExistingData(response);
     });
 }
 
 function fillTableWithExistingData(response) {
     //GetRMStockItemNameList().then(function (itemNameList)
     Promise.all([GetRMStockItemNameList(), GetRMStockWidthList()])
-        .then(function ([itemNameList, widthList]) {
-            var tbody = $('#RMStockCurrentPlanned tbody');
-            tbody.empty();
+        .then(function ([itemNameList, widthList])
+        {
+    var tbody = $('#RMStockCurrentPlanned tbody');
+    tbody.empty();
+    
+        if (response.length > 0) {
+            G_AppendedRowKeys = {};
+            G_SlittingPlanMaster_Code = response[0].Code;
+            response.forEach(function (item, index) {
+                var itemNameText = item.ItemName || '';
+                var slitWidthText = item.Desp || '';
+                var noOfSlitsVal = item.NoofSlits || 0;
+                var weightVal = item.Weight || 0;
+                var weightPerSlitVal = noOfSlitsVal ? (weightVal / noOfSlitsVal) : 0;
+                BizSolHelperFunction.SelectOptionByText('ddlMachineNo', item.MachineNo);
 
-            if (response.length > 0) {
-                G_AppendedRowKeys = {};
-                G_SlittingPlanMaster_Code = response[0].Code;
-                response.forEach(function (item, index) {
-                    var itemNameText = item.ItemName || '';
-                    var slitWidthText = item.Desp || '';
-                    var noOfSlitsVal = item.NoofSlits || 0;
-                    var weightVal = item.Weight || 0;
-                    var weightPerSlitVal = noOfSlitsVal ? (weightVal / noOfSlitsVal) : 0;
+                var rowId = (item.SNo);
+                var rowKey = [itemNameText, slitWidthText, noOfSlitsVal, weightVal].join('|');
+                G_AppendedRowKeys[rowKey] = true;
 
-                    var rowId = (item.SNo);
-                    var rowKey = [itemNameText, slitWidthText, noOfSlitsVal, weightVal].join('|');
-                    G_AppendedRowKeys[rowKey] = true;
-
-                    var interactiveRow = `
+                var interactiveRow = `
                     <tr id="${rowId}">
                         <td><select id="ddlItemName_${rowId}" class="box_border form-control form-control-sm ddlItemNameRow" required></select></td>
                         <td><select id="ddlSlitWidth_${rowId}" class="box_border form-control form-control-sm ddlSlitWidthRow" required></select></td>
-                        <td><input id="txtNoOfSlits_${rowId}" class="box_border form-control form-control-sm text-end txtNoOfSlitsRow" autocomplete="off" required /></td>
-                        <td><input id="txtWeightPerSlit_${rowId}" class="box_border form-control form-control-sm text-end txtWeightPerSlitRow" autocomplete="off" required disabled /></td>
+                        <td><input id="txtNoOfSlits_${rowId}" class="box_border form-control form-control-sm text-end txtNoOfSlitsRow" oninput="validateIntegerInput(this)" autocomplete="off" required /></td>
+                        <td><input id="txtWeightPerSlit_${rowId}" class="box_border form-control form-control-sm text-end txtWeightPerSlitRow" oninput="validateDecimalRateInput(this)" autocomplete="off" required disabled /></td>
                         <td><input id="txtTotalWeight_${rowId}" class="box_border form-control form-control-sm text-end txtTotalWeightRow" required readonly /></td>
                         <td>
                             <button type="button" class="btn btn-success btn-height" onclick='Save_PlannedSlitting(${item.SNo},${item.Code})' title="Edit" data-row-id="${rowId}"><i class="fas fa-pencil"></i></button>
@@ -223,41 +226,41 @@ function fillTableWithExistingData(response) {
                 </td>
             </tr>
         `;
-                    tbody.append(interactiveRow);
+                tbody.append(interactiveRow);
 
-                    var $row = $('#' + rowId);
+                var $row = $('#' + rowId);
 
-                    // Bind item name select
-                    BindSelectList1($row.find('select.ddlItemNameRow')[0], itemNameList);
-                    BindSelectList1($row.find('select.ddlSlitWidthRow')[0], widthList);
+                // Bind item name select
+                BindSelectList1($row.find('select.ddlItemNameRow')[0], itemNameList);
+                BindSelectList1($row.find('select.ddlSlitWidthRow')[0], widthList);
+                
+                // Preselect item
+                BizSolHelperFunction.SelectOptionByText(`ddlItemName_${rowId}`, itemNameText);
+                BizSolHelperFunction.SelectOptionByText(`ddlSlitWidth_${rowId}`, slitWidthText);
 
-                    // Preselect item
-                    BizSolHelperFunction.SelectOptionByText(`ddlItemName_${rowId}`, itemNameText);
-                    BizSolHelperFunction.SelectOptionByText(`ddlSlitWidth_${rowId}`, slitWidthText);
-
-                    // Handle rest of inputs
-                    $row.find('input.txtNoOfSlitsRow').val(noOfSlitsVal);
-                    $row.find('input.txtWeightPerSlitRow').val(weightPerSlitVal.toFixed(3));
-                    $row.find('input.txtTotalWeightRow').val(weightVal);
+                // Handle rest of inputs
+                $row.find('input.txtNoOfSlitsRow').val(noOfSlitsVal);
+                $row.find('input.txtWeightPerSlitRow').val(weightPerSlitVal.toFixed(3));
+                $row.find('input.txtTotalWeightRow').val(weightVal);
+            });
+            if ($('.ddlItemNameRow').length) {
+                $('.ddlItemNameRow').select2({
+                    dropdownParent: $('#PlannedMyModal'),
+                    width: '-webkit-fill-available'
                 });
-                if ($('.ddlItemNameRow').length) {
-                    $('.ddlItemNameRow').select2({
-                        dropdownParent: $('#PlannedMyModal'),
-                        width: '-webkit-fill-available'
-                    });
-                }
-                if ($('.ddlSlitWidthRow').length) {
-                    $('.ddlSlitWidthRow').select2({
-                        dropdownParent: $('#PlannedMyModal'),
-                        width: '-webkit-fill-available'
-                    });
-                }
-                enableNewRowAddition();
-            } else {
-                enableNewRowAddition();
-                G_SlittingPlanMaster_Code = 0;
             }
-        });
+            if ($('.ddlSlitWidthRow').length) {
+                $('.ddlSlitWidthRow').select2({
+                    dropdownParent: $('#PlannedMyModal'),
+                    width: '-webkit-fill-available'
+                });
+            }
+            enableNewRowAddition();
+        } else {
+            enableNewRowAddition();
+            G_SlittingPlanMaster_Code = 0;
+        }
+    });
 }
 
 
@@ -282,7 +285,7 @@ function enableNewRowAddition() {
     const $row = $('#' + rowId);
     const $ddlItem = $row.find('select.ddlItemNameRow');
     const $ddlWidth = $row.find('select.ddlSlitWidthRow');
-
+    
     $ddlItem.html($('#ddlItemName').html());
     $ddlWidth.html($('#ddlSlitWidth').html());
     $ddlItem.trigger('change');
@@ -346,15 +349,15 @@ function enableNewRowAddition() {
 function GetRMStockItemNameList() {
     Showloader();
     return RMStockService.GetRMStockItemName().then(function (response) {
-        HideLoader();
-        if (response && response.length > 0) {
-            const list = response.map((item) => ({ Code: item.Code, Desp: item.ItemName }));
-            return list;
-        } else {
-            toastr.error('No data received or empty response');
-            return [];
-        }
-    })
+            HideLoader();
+            if (response && response.length > 0) {
+                const list = response.map((item) => ({ Code: item.Code, Desp: item.ItemName }));
+                return list; 
+            } else {
+                toastr.error('No data received or empty response');
+                return [];
+            }
+        })
         .catch(function (error) {
             toastr.error('Error fetching item list');
             HideLoader();
@@ -364,15 +367,15 @@ function GetRMStockItemNameList() {
 function GetRMStockWidthList() {
     Showloader();
     return RMStockService.GetRMStockWidth().then(function (response) {
-        HideLoader();
-        if (response && response.length > 0) {
-            const list = response.map((item) => ({ Code: item.Code, Desp: item.Desp }));
-            return list;
-        } else {
-            toastr.error('No data received or empty response');
-            return [];
-        }
-    })
+            HideLoader();
+            if (response && response.length > 0) {
+                const list = response.map((item) => ({ Code: item.Code, Desp: item.Desp }));
+                return list;
+            } else {
+                toastr.error('No data received or empty response');
+                return [];
+            }
+        })
         .catch(function (error) {
             toastr.error('Error fetching width list');
             HideLoader();
@@ -448,14 +451,14 @@ function calculateWeightPerSlit(rowId) {
             var w = parseFloat($weightPerSlit.val()) || 0;
             $totalWeight.val((n * w).toFixed(3));
         } else {
-            calculateTotalWeight();
+         calculateTotalWeight();
         }
-        return;
-    }
-
+         return;
+     }
+     
     RMStockService.GetRMStockCalculateWidth(G_IdentificationNo, widthValue)
         .then(function (response) {
-            if (response && response.length > 0 && response[0].CalculatedSlitPerWidth !== undefined) {
+         if (response && response.length > 0 && response[0].CalculatedSlitPerWidth !== undefined) {
                 $weightPerSlit.val(response[0].CalculatedSlitPerWidth);
             } else {
                 $weightPerSlit.val('');
@@ -465,19 +468,19 @@ function calculateWeightPerSlit(rowId) {
                 var n = parseFloat($noOfSlits.val()) || 0;
                 var w = parseFloat($weightPerSlit.val()) || 0;
                 $totalWeight.val((n * w).toFixed(3));
-            } else {
-                calculateTotalWeight();
-            }
+         } else {
+             calculateTotalWeight();
+         }
         })
         .catch(function (error) {
-            toastr.error('Error calculating weight per slit: ' + (error.message || 'Unknown error'));
+         toastr.error('Error calculating weight per slit: ' + (error.message || 'Unknown error'));
             $weightPerSlit.val('');
             if (rowId) {
                 var n = parseFloat($noOfSlits.val()) || 0;
                 var w = parseFloat($weightPerSlit.val()) || 0;
                 $totalWeight.val((n * w).toFixed(3));
             } else {
-                calculateTotalWeight();
+         calculateTotalWeight();
             }
         });
 }
@@ -520,8 +523,8 @@ function GetRMStockNumericValueWidthForRow(rowId) {
                 }
             }
         }
-    });
-}
+     });
+ }
 function calculateTotalWeight() {
     var noOfSlits = parseFloat($('#txtNoOfSlits').val()) || 0;
     var weightPerSlit = parseFloat($('#txtWeightPerSlit').val()) || 0;
@@ -530,13 +533,13 @@ function calculateTotalWeight() {
 }
 
 function copyFromPrevious() {
-    if (!$('#CopyFromPrevious').is(':checked')) {
-        return;
-    }
+	if (!$('#CopyFromPrevious').is(':checked')) {
+		return;
+	}
 
-    if (!G_IdentificationNo) {
-        toastr.warning('Identification number not available.');
-        return;
+	if (!G_IdentificationNo) {
+		toastr.warning('Identification number not available.');
+		return;
     }
     Promise.all([GetRMStockItemNameList(), GetRMStockWidthList()])
         .then(function ([itemNameList, widthList]) {
@@ -544,23 +547,6 @@ function copyFromPrevious() {
             $tbody.empty();
             RMStockService.CopyFromPreviousRMStockData(G_IdentificationNo).then(function (response) {
                 if (response && response.length > 0) {
-                    // Use first item to populate header form controls
-                    //var prev = response[0];
-                    //if (prev.ItemName) {
-                    //	BizSolHelperFunction.SelectOptionByText('ddlItemName', prev.ItemName);
-                    //}
-                    //if (prev.Desp) {
-                    //	BizSolHelperFunction.SelectOptionByText('ddlSlitWidth', prev.Desp);
-                    //}
-                    //if (prev.MachineNo) {
-                    //	BizSolHelperFunction.SelectOptionByText('ddlMachineNo', prev.MachineNo);
-                    //}
-                    //$('#txtNoOfSlits').val(prev.NoofSlits || '');
-                    //$('#txtWeightPerSlit').val(prev.Weight || '');
-                    //if (prev.SlittingDate) {
-                    //	$('#txtDate').val(prev.SlittingDate);
-                    //}
-                    //calculateTotalWeight();
                     var tbody = $('#RMStockCurrentPlanned tbody');
                     response.forEach(function (item, index) {
                         var itemNameText = item.ItemName || '';
@@ -574,9 +560,6 @@ function copyFromPrevious() {
                         }
                         var rowId = (index);
                         var rowKey = [itemNameText, slitWidthText, noOfSlitsVal, weightVal].join('|');
-                        //if (G_AppendedRowKeys[rowKey]) {
-                        //	return;
-                        //}
                         var newRow = `
 					<tr id="${rowId}">
 						<td><select id="ddlItemName_${rowId}" class="box_border form-control form-control-sm ddlItemNameRow" required></select></td>
@@ -589,26 +572,6 @@ function copyFromPrevious() {
 				`;
                         tbody.append(newRow);
                         G_AppendedRowKeys[rowKey] = true;
-                        //var $newRow = $('#' + rowId);
-                        //var $ddlItem = $newRow.find('select.ddlItemNameRow');
-                        //var $ddlWidth = $newRow.find('select.ddlSlitWidthRow');
-                        //$ddlItem.html($('#ddlItemName').html());
-                        //$ddlWidth.html($('#ddlSlitWidth').html());
-
-                        //$ddlItem.find('option').filter(function(){
-                        //	return $.trim($(this).text()) === $.trim(itemNameText);
-                        //}).prop('selected', true);
-
-                        //$ddlWidth.find('option').filter(function(){
-                        //	return $.trim($(this).text()) === $.trim(slitWidthText);
-                        //}).prop('selected', true);
-
-                        //$newRow.find('input.txtNoOfSlitsRow').val(noOfSlitsVal);
-                        //$newRow.find('input.txtWeightPerSlitRow').val(weightPerSlitVal.toFixed(3));
-                        //$newRow.find('input.txtTotalWeightRow').val(weightVal);
-
-                        //$ddlItem.trigger('change');
-                        //$ddlWidth.trigger('change');
                         var $newRow = $('#' + rowId);
                         var $ddlItem = $newRow.find('#ddlItemName_' + rowId);
                         var $ddlWidth = $newRow.find('#ddlSlitWidth_' + rowId);
@@ -649,6 +612,7 @@ function copyFromPrevious() {
 
                     //updateTableTotals();
                 } else {
+                    enableNewRowAddition();
                     toastr.info('No previous RM Stock data found.');
                 }
             }).catch(function (error) {
@@ -659,7 +623,7 @@ function copyFromPrevious() {
 function clearForm() {
     $('#ddlItemName').val('').trigger('change');
     $('#ddlSlitWidth').val('').trigger('change');
-    $('#ddlMachineNo').val('').trigger('change');
+    //$('#ddlMachineNo').val('').trigger('change');
     $('#txtNoOfSlits').val('');
     $('#txtWeightPerSlit').val('');
     $('#txtTotalWeight').val('');
@@ -668,6 +632,7 @@ function clearForm() {
     $('#AllowManualWeight').prop('checked', false);
     $('#PartingCase').prop('checked', false);
 }
+
 //function editRow(button, Code, SlittingMasterCode) {
 //    var row = $(button).closest('tr');
 //    var cells = row.find('td');
@@ -683,11 +648,11 @@ function clearForm() {
 //        $('#txtTotalWeight').val(cells.eq(4).text());
 
 //    });
-
+    
 //    row.remove();
 //    updateTableTotals();
 //}
-function deleteRow(button, Code, SlittingMasterCode) {
+function deleteRow(button, Code,SlittingMasterCode) {
     G_SNo = Code;
     G_Code = SlittingMasterCode;
     $('#myModalDelete').modal({
@@ -709,7 +674,7 @@ function DeleteModal() {
                 updateTableTotals();
                 ShowRMStockPlan();
                 CloseModal();
-                clearForm();
+                clearForm(); 
             } else {
                 toastr.error(response.Msg);
             }
@@ -725,12 +690,12 @@ function CloseModal() {
 function updateTableTotals() {
     var tbody = $('#RMStockCurrentPlanned tbody');
     var rows = tbody.find('tr');
-
+    
     var totalWidthCount = 0;
     var totalNoOfSlits = 0;
     var totalWeightPerSlit = 0;
     var totalWeight = 0;
-
+    
     if (rows.length === 0) {
         $('#totalWidthCount').text('0');
         $('#totalNoOfSlits').text('0');
@@ -738,21 +703,21 @@ function updateTableTotals() {
         $('#totalWeight').text('0.000');
         return;
     }
-
-    rows.each(function () {
+    
+    rows.each(function() {
         var noOfSlits = parseFloat($(this).find('input[id*="txtNoOfSlits"]').val()) || 0;
         var weightPerSlit = parseFloat($(this).find('input[id*="txtWeightPerSlit"]').val()) || 0;
         var rowTotalWeight = parseFloat($(this).find('input[id*="txtTotalWeight"]').val()) || 0;
-
+        
         var selectedWidthText = $(this).find('select[id*="ddlSlitWidth"] option:selected').text();
         var WidthCount = parseFloat(selectedWidthText) || 0;
-
+        
         totalWidthCount += WidthCount;
         totalNoOfSlits += noOfSlits;
         totalWeightPerSlit += weightPerSlit;
         totalWeight += rowTotalWeight;
     });
-
+    
     $('#totalWidthCount').text(totalWidthCount.toFixed(0));
     $('#totalNoOfSlits').text(totalNoOfSlits.toFixed(0));
     $('#totalWeightPerSlit').text(totalWeightPerSlit.toFixed(3));
@@ -804,7 +769,7 @@ function Save_PlannedSlitting(SNo) {
         HideLoader();
         if (response.Status === 'Y') {
             toastr.success(response.Message);
-            updateTableTotals();
+                updateTableTotals();
             ShowRMStockPlan();
             clearForm();
         } else {
@@ -814,7 +779,7 @@ function Save_PlannedSlitting(SNo) {
         HideLoader();
         toastr.error((error && error.Message) || 'Error saving data');
     });
-
+    
     if ($('#CopyFromPrevious').is(':checked')) {
         setTimeout(function () {
             copyFromPrevious();
@@ -880,9 +845,9 @@ function GetUnApprovedPlannedList() {
             const showButtons = [];
             let hiddenColumns = []
             if ($('#exampleCheck').is(':checked')) {
-                hiddenColumns = ["Code", "MRN No", "Numeric Value", "IsPlanned", "Invoice No", "Vendor", "Brand", "Ch Wt", "Receive Date", "Invoice Date", "Ac Wt", "Warehouse", "Remarks", "Qty MT", "Qty PC", "Qty MTRS"];
+                hiddenColumns = ["Code","MRN No", "Numeric Value", "IsPlanned", "Invoice No", "Vendor", "Brand", "Ch Wt", "Receive Date", "Invoice Date",  "Ac Wt", "Warehouse", "Remarks", "Qty MT", "Qty PC", "Qty MTRS"];
             } else {
-                hiddenColumns = ["Code", "MRN No", "Numeric Value", "% E", "Hardness", "UTS", "YST", "BEND TEST", "IsPlanned", "Invoice No", "Vendor", "Brand", "Ch Wt", "Receive Date", "Invoice Date", "Ac Wt", "Warehouse", "Remarks", "Qty MT", "Qty PC", "Qty MTRS"];
+                hiddenColumns = ["Code", "MRN No", "Numeric Value", "% E", "Hardness", "UTS", "YST", "BEND TEST", "IsPlanned", "Invoice No",  "Vendor", "Brand", "Ch Wt", "Receive Date", "Invoice Date", "Ac Wt", "Warehouse", "Remarks", "Qty MT", "Qty PC", "Qty MTRS"];
             }
             const columnAlignment = {
                 'Invoice Date': 'center', 'Receive Date': 'center', 'Thickness': 'right', 'Ch Wt': 'right', 'Width': 'right;min-width:60px', 'Ac Wt': 'right',
@@ -903,6 +868,7 @@ function GetUnApprovedPlannedList() {
             // calculate footer totals for Ch Wt and Ac Wt
             calculateRMStockCurrentFooterTotals(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-UnApproved_Planned", "table-body-UnApproved_Planned", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            PopulateTableForPrint(response);
         } else {
             HideLoader();
             toastr.error('No Data Found');
@@ -913,13 +879,16 @@ function GetUnApprovedPlannedList() {
             HideLoader();
             toastr.error(error.Msg || 'Error during UnApproved_Planned');
             $('#tblUnApproved_Planned').hide();
-
+       
+    });
+}
         });
 }
 function loadTabData(tabId) {
     switch (tabId) {
         case '#current-stock':
-            // Current stock data is already loaded by default
+            $('#tblReport tbody').empty();
+            $('#tblReport thead tr').empty();
             $('#current-stock').show();
             $('#unApproved-planned').hide();
             $('#dispatch').hide();
@@ -927,7 +896,8 @@ function loadTabData(tabId) {
             GetRMStockCurrentListTable();
             break;
         case '#unApproved-planned':
-            // Handle unapproved planned tab
+            $('#tblReport tbody').empty();
+            $('#tblReport thead tr').empty();
             $('#current-stock').hide();
             $('#unApproved-planned').show();
             $('#dispatch').hide();
@@ -936,24 +906,50 @@ function loadTabData(tabId) {
             GetUnApprovedPlannedList();
             break;
         case '#dispatch':
+            $('#tblReport tbody').empty();
+            $('#tblReport thead tr').empty();
             $('#current-stock').hide();
             $('#unApproved-planned').hide();
             $('#checkBoxHideAndShow').hide();
             $('#tbldispatch').hide();
             $('#dispatch').show();
             setCurrentDateDispatch();
-            //loadDispatchData();
             break;
         case '#slitted':
+            $('#tblReport tbody').empty();
+            $('#tblReport thead tr').empty();
+            $('#current-stock').hide();
+            $('#unApproved-planned').hide();
             $('#checkBoxHideAndShow').hide();
+            $('#dispatch').hide();
+            $('#tblSlitted').hide();
+            $('#slitted').show();
             loadSlittedData();
             break;
         case '#job-work':
+            $('#tblReport tbody').empty();
+            $('#tblReport thead tr').empty();
+            $('#current-stock').hide();
+            $('#unApproved-planned').hide();
             $('#checkBoxHideAndShow').hide();
+            $('#dispatch').hide();
+            $('#slitted').hide();
+            $('#stock-summary').hide();
+            $('#tblJobWorkData').hide();
+            $('#job-work').show();
             loadJobWorkData();
             break;
         case '#stock-summary':
+            $('#tblReport tbody').empty();
+            $('#tblReport thead tr').empty();
+            $('#current-stock').hide();
+            $('#unApproved-planned').hide();
             $('#checkBoxHideAndShow').hide();
+            $('#dispatch').hide();
+            $('#job-work').hide();
+            $('#slitted').hide();
+            $('#tblSummaryData').hide();
+            $('#stock-summary').show();
             loadStockSummaryData();
             break;
         default:
@@ -966,15 +962,15 @@ function setCurrentDateDispatch() {
 
     function formatDate(date) {
         let day = String(date.getDate()).padStart(2, '0');
-        let month = String(date.getMonth() + 1).padStart(2, '0');
+        let month = String(date.getMonth() + 1).padStart(2, '0'); 
         let year = date.getFullYear();
         return `${year}-${month}-${day}`;
     }
 
-    $('#txtFromDate').val(formatDate(firstOfMonth));
-    $('#txtToDate').val(formatDate(today));
-    G_FromDateValue = $('#txtFromDate').val();
-    G_ToDateValue = $('#txtToDate').val();
+     $('#txtFromDate').val(formatDate(firstOfMonth));  
+     $('#txtToDate').val(formatDate(today));    
+    G_FromDateValue = $('#txtFromDate').val();  
+    G_ToDateValue = $('#txtToDate').val();    
     loadDispatchData(G_FromDateValue, G_ToDateValue);
 }
 function ShowDispatchList() {
@@ -988,7 +984,7 @@ function loadDispatchData(G_FromDateValue, G_ToDateValue) {
         HideLoader();
         if (response.length > 0) {
             $('#tbldispatch').show();
-            const stringFilterColumn = ["Thickness", "Width", "Grade", "Make", "Identification No", "Client", "Item Name"];
+            const stringFilterColumn = ["Thickness", "Width", "Grade", "Make", "Identification No", "Client","Item Name"];
             const numericFilterColumn = [];
             const dateFilterColumn = ["Date"];
             const button = false;
@@ -996,10 +992,11 @@ function loadDispatchData(G_FromDateValue, G_ToDateValue) {
             const showButtons = [];
             let hiddenColumns = []
             const columnAlignment = {
-                'Thickness': "right;min-width:20px", 'Width': "right;min-width:20px", 'Date': "center"
+                'Thickness': "right;min-width:20px", 'Width': "right;min-width:20px",'Date':"center"
             };
-
+           
             BizsolCustomFilterGrid.CreateDataTable("table-header-dispatch", "table-body-dispatch", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            PopulateTableForPrint(response);
         } else {
             HideLoader();
             toastr.error('No Data Found');
@@ -1015,30 +1012,152 @@ function loadDispatchData(G_FromDateValue, G_ToDateValue) {
 }
 
 function loadSlittedData() {
-    // Load slitted data
-    console.log('Loading slitted data...');
-    // Add your slitted data loading logic here
-    // Example: RmIndentService.GetSlittedData().then(function(response) { ... });
+    Showloader();
+    RMStockService.GetRMStockSlitted().then(function (response) {
+        HideLoader();
+        if (response.length > 0) {
+            $('#tblSlitted').show();
+            const stringFilterColumn = ["Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %","Width Loss %"];
+            const numericFilterColumn = [];
+            const dateFilterColumn = ["Entry Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            let hiddenColumns = []
+            const columnAlignment = {
+                'Thickness': "right;min-width:20px", 'Width': "right;min-width:20px", 'Entry Date': "center",
+                'Weight': "right;min-width:20px", 'ACT WT': "right;min-width:20px", 'Output Weight': "right", "Scrap": "right", "Yield %":"right", "Width Loss %":"right"
+            };
+
+            BizsolCustomFilterGrid.CreateDataTable("table-header-Slitted", "table-body-Slitted", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            PopulateTableForPrint(response);
+        } else {
+            HideLoader();
+            toastr.error('No Data Found');
+            $('#tblSlitted').hide();
+        }
+    })
+        .catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || 'Error during Slitted');
+            $('#tblSlitted').hide();
+
+        });
 }
 
 function loadJobWorkData() {
-    // Load job work data
-    console.log('Loading job work data...');
-    // Add your job work data loading logic here
-    // Example: RmIndentService.GetJobWorkData().then(function(response) { ... });
+    Showloader();
+    RMStockService.GetRMStockJobWorkData().then(function (response) {
+        HideLoader();
+        if (response.length > 0) {
+            $('#tblJobWorkData').show();
+            const stringFilterColumn = ["Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %", "Width Loss %", "Party Name"];
+            const numericFilterColumn = [];
+            const dateFilterColumn = ["Entry Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            let hiddenColumns = []
+            const columnAlignment = {
+                'Thickness': "right;min-width:20px", 'Width': "right;min-width:20px", 'Entry Date': "center", "Party Name": "left;min-width:262px", "Warehouse":";min-width:110px",
+                'Weight': "right;min-width:20px", 'ACT WT': "right;min-width:20px", 'Output Weight': "right", "Scrap": "right", "Yield %": "right", "Width Loss %": "right"
+            };
+
+            BizsolCustomFilterGrid.CreateDataTable("table-header-JobWorkData", "table-body-JobWorkData", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            PopulateTableForPrint(response);
+        } else {
+            HideLoader();
+            toastr.error('No Data Found');
+            $('#tblJobWorkData').hide();
+        }
+    })
+        .catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || 'Error during JobWorkData');
+            $('#tblJobWorkData').hide();
+
+        });
 }
 
 function loadStockSummaryData() {
-    // Load stock summary data
-    console.log('Loading stock summary data...');
+    calculateStockSummary(); 
+    Showloader();
+    RMStockService.GetRMStockSummaryData().then(function (response) {
+        HideLoader();
+        if (response.length > 0) {
+            $('#tblSummaryData').show();
+            const stringFilterColumn = ["Item Name", "No OF PC/Coil", "Total Weight", "No OF PC","Weight"];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            let hiddenColumns = []
+            const columnAlignment = {
+                "Item Name":";width:20px",
+                "No OF PC/Coil":";width:20px",
+                "Total Weight":";width:20px",
+                "No OF PC":";width:20px",
+                "Weight":";width:20px",
+            };
 
-    // Calculate and display summary statistics
-    calculateStockSummary();
+            BizsolCustomFilterGrid.CreateDataTable("table-header-SummaryData", "table-body-SummaryData", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            PopulateTableForPrint(response);
+        } else {
+            HideLoader();
+            toastr.error('No Data Found');
+            $('#tblSummaryData').hide();
+        }
+    })
+        .catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || 'Error during SummaryData');
+            $('#tblSummaryData').hide();
 
-    // Add your stock summary data loading logic here
-    // Example: RmIndentService.GetStockSummaryData().then(function(response) { ... });
+        });
 }
+function Export() {
+    var ReportType = "RMStockReport";
+    var currentDate = new Date();
+    var dateString = currentDate.getFullYear() + "-" +
+        (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
+        currentDate.getDate().toString().padStart(2, "0") + "_" +
+        currentDate.getHours().toString().padStart(2, "0") + "-" +
+        currentDate.getMinutes().toString().padStart(2, "0") + "-" +
+        currentDate.getSeconds().toString().padStart(2, "0");
 
+    $("#tblReport").table2excel({
+        filename: ReportType + "_" + dateString,
+        fileext: ".xlsx"
+    });
+}
+function PopulateTableForPrint(data) {
+    const tableBody = document.querySelector('#tblReport tbody');
+    const tableHeader = document.querySelector('#tblReport thead tr');
+
+    //tableBody.empty();
+
+    const headers = Object.keys(data[0]);
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header.charAt(0).toUpperCase() + header.slice(1);
+        tableHeader.appendChild(th);
+    });
+
+    $('#tblReport th').css('font-weight', 'bold');
+    data.forEach(item => {
+        const row = document.createElement('tr');
+
+        headers.forEach(header => {
+            const td = document.createElement('td');
+            td.textContent = item[header];
+            row.appendChild(td);
+        });
+
+        tableBody.appendChild(row);
+    });
+
+}
 function calculateStockSummary() {
     // Calculate total stock value and items
     // This is a placeholder - implement your actual calculation logic

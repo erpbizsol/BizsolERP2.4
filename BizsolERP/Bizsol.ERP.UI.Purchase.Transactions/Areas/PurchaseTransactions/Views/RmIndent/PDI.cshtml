@@ -1,0 +1,55 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/PDI.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
+<div class="container-fluid">
+	<div class="card">
+		<div class="card-body">
+			<div class="row">
+				<div class="col-md-3">
+					<label for="txtEmail" class="col-form-label-sm fw-bold">Email <span class="text-danger">*</span></label>
+					<input id="txtEmail" type="email" class="form-control" placeholder="name@example.com" />
+					<div class="form-check mt-1">
+						<input id="chkRecordEmail" class="form-check-input" type="checkbox" />
+						<label class="form-check-label" for="chkRecordEmail">Record email in response</label>
+					</div>
+				</div>
+				<div class="col-md-3">
+					<label for="txtDate" class="col-form-label-sm fw-bold">Date <span class="text-danger">*</span></label>
+					<input id="txtDate" type="date" class="form-control" />
+				</div>
+				<div class="col-md-3">
+					<label for="txtOrderNo" class="col-form-label-sm fw-bold">Order No <span class="text-danger">*</span></label>
+					<input id="txtOrderNo" type="text" class="form-control" />
+				</div>
+				<div class="col-md-3">
+					<label for="txtTruckNo" class="col-form-label-sm fw-bold">Truck No <span class="text-danger">*</span></label>
+					<input id="txtTruckNo" type="text" class="form-control" />
+				</div>
+				<div class="col-md-3">
+					<label for="txtQty" class="col-form-label-sm fw-bold">Quantity in MT <span class="text-danger">*</span></label>
+					<input id="txtQty" type="number" min="0" step="0.001" class="form-control" />
+				</div>
+				<div class="col-md-3">
+					<label for="filePDIReport" class="col-form-label-sm fw-bold">Attach PDI Report <span class="text-danger">*</span></label>
+					<input id="filePDIReport" type="file" class="form-control" />
+					<small class="text-muted">Max 10 MB.</small>
+				</div>
+				<div class="col-3">
+					<label for="txtRemark" class="col-form-label-sm fw-bold">Remark</label>
+					<textarea id="txtRemark" class="form-control" rows="2"></textarea>
+				</div>
+				<div class="col-3">
+					<button id="btnSave" type="button" class="btn btn-primary icon-height" style="margin-top: 1.8rem !important;">Submit</button>
+				</div>
+			</div>
+		</div>
+		</div>
+</div>
+
+    

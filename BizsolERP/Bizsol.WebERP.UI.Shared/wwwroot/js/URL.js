@@ -102,6 +102,8 @@ let UrlService = {
     API_ENDPOINT_CommonSingleEntryForm: `${environment.BASE_URL}/CommonSingleEntryForm`,
     API_ENDPOINT_RmIndent: `${environment.BASE_URL}/RmIndent`,
     API_ENDPOINT_RMStock: `${environment.BASE_URL}/RMStock`,
+    API_ENDPOINT_FMSReport: `${environment.BASE_URL}/FMSReport`,
+    API_ENDPOINT_PDI: `${environment.BASE_URL}/PDI`,
 }
 
 export { UrlService  }
