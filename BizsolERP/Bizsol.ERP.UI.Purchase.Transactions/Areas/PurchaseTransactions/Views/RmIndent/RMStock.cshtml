@@ -5,7 +5,7 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/RMStock.js"></script>
-
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 <style>
     .nav-tabs .nav-link {
         border: 1px solid transparent;
@@ -61,7 +61,8 @@
 
     .card {
         border: none;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); 
+        margin-bottom: 0.3rem;
     }
 
     .card-header {
@@ -157,17 +158,24 @@
         font-weight: 600;
         color: #495057;
     }
+    .form-check-label1 {
+        font-weight: 200;
+        color: #495057;
+        background-color: #e9ecef;
+        border: 2px solid #6c757d;
+        border-radius: 4px;
+    }
 
-    .fixed-height-table {
-        height: 460px;
+    .fixed-height-table{
+        height:460px;
     }
 </style>
 
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-body">
+            @* <div class="card">
+                <div class="card-body"> *@
                     <div class="nav nav-tabs" id="rmStockTabs" role="tablist">
                         <div class="nav-item" role="presentation">
                             <button class="nav-link active" id="current-stock-tab" data-bs-toggle="tab" data-bs-target="#current-stock" type="button" role="tab" aria-controls="current-stock" aria-selected="true">
@@ -199,10 +207,11 @@
                                 <i class="fas fa-chart-bar"></i> Stock Summary
                             </button>
                         </div>
+                        <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download List"><i class="fa fa-download" aria-hidden="true"></i></button>
                     </div>
-                </div>
-            </div>
-            <div class="col-sm-2" id="checkBoxHideAndShow">
+            @*     </div>
+            </div> *@
+            <div class="col-sm-2 mt-2" id="checkBoxHideAndShow">
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="exampleCheck" />
                     <label class="form-check-label" for="exampleCheck">
@@ -219,23 +228,43 @@
                     <!-- Data Table -->
                     <div class="table-responsive">
                         <div id="tblRMStockCurrent">
-                            <div class="table-wrapper fixed-height-table">
+                            <div class="table-wrapper ">
                                 <table id="RMStockCurrent" class="fixed-width-table table ">
                                     <thead id="table-header-RMStockCurrent">
                                     </thead>
                                     <tbody id="table-body-RMStockCurrent">
                                     </tbody>
                                     <tfoot>
-                                    <th colspan="11" class="text-end">Totals</th>
-                                    <th id="totalChWt" class="text-end">0.000</th>
-                                    <th id="totalAcWt" class="text-end">0.000</th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
+                                        <th colspan="11" class="text-end">Totals</th>
+                                        <th id="totalChWt" class="text-end">0.000</th>
+                                        <th id="totalAcWt" class="text-end">0.000</th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
                                     </tfoot>
                                 </table>
                             </div>
                             <div class="paginator" id="paginator-RMStockCurrent">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+             </div>
+                <!-- UnApproved-Planned Tab -->
+                    <div class="card">
+                <div class="tab-pane fade show active" id="unApproved-planned" role="tabpanel" aria-labelledby="unApproved-planned-tab">
+                        <div class="table-responsive">
+                            <div id="tblUnApproved_Planned">
+                                <div class="table-wrapper">
+                                    <table id="UnApproved_Planned" class="fixed-width-table table ">
+                                        <thead id="table-header-UnApproved_Planned">
+                                        </thead>
+                                        <tbody id="table-body-UnApproved_Planned">
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="paginator" id="paginator-UnApproved_Planned">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -261,7 +290,7 @@
                 </div>
 
                 <!-- Dispatch Tab -->
-                <div class="tab-pane fade show active" id="dispatch" role="tabpanel" aria-labelledby="dispatch-tab">
+                    <div class="tab-pane fade show active" id="dispatch" role="tabpanel" aria-labelledby="dispatch-tab">
                     <div class="card col-md-12">
                         <div class="card-body">
                             <div class="row ">
@@ -279,147 +308,86 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Data Table -->
-                    <div class="table-responsive">
-                        <div id="tbldispatch">
-                            <div class="table-wrapper fixed-height-table">
-                                <table id="dispatch" class="fixed-width-table table ">
-                                    <thead id="table-header-dispatch">
-                                    </thead>
-                                    <tbody id="table-body-dispatch">
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="paginator" id="paginator-dispatch">
+                        <!-- Data Table -->
+                        <div class="table-responsive">
+                            <div id="tbldispatch">
+                                <div class="table-wrapper">
+                                    <table id="dispatch" class="fixed-width-table table ">
+                                        <thead id="table-header-dispatch">
+                                        </thead>
+                                        <tbody id="table-body-dispatch">
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="paginator" id="paginator-dispatch">
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
                 <!-- Slitted Tab -->
-                <div class="tab-pane fade" id="slitted" role="tabpanel" aria-labelledby="slitted-tab" style="display:none">
-                    @* <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-cut text-warning"></i> Slitted
-                            </h5>
-                        </div>
-                        <div class="card-body"> *@
-                    <div class="table-responsive">
-                        <table id="tblSlitted" class="table table-striped table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Slit No</th>
-                                    <th>Slit Date</th>
-                                    <th>Item Name</th>
-                                    <th>Size</th>
-                                    <th>Thickness</th>
-                                    <th>Grade</th>
-                                    <th>Make</th>
-                                    <th>Qty MT</th>
-                                    <th>Qty PC</th>
-                                    <th>Qty MTRS</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Slitted data will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-                    @*     </div>
-                    </div> *@
+                    <div class="card">
+                <div class="tab-pane fade " id="slitted" role="tabpanel" aria-labelledby="slitted-tab" style="display:none">
+                         <div class="table-responsive">
+                             <div id="tblSlitted">
+                                 <div class="table-wrapper">
+                                    <table id="Slitted" class="fixed-width-table table ">
+                                        <thead id="table-header-Slitted">
+                                         </thead>
+                                        <tbody id="table-body-Slitted">
+                                         </tbody>
+                                    </table>
+                                 </div>
+                                <div class="paginator" id="paginator-Slitted">
+                                 </div>
+                             </div>
+                         </div>
+                     </<div>
                 </div>
 
                 <!-- Job Work Tab -->
-                <div class="tab-pane fade" id="job-work" role="tabpanel" aria-labelledby="job-work-tab" style="display:none">
-                    @* <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-tools text-info"></i> Job Work
-                            </h5>
+                <div class="card">
+                    <div class="tab-pane fade" id="job-work" role="tabpanel" aria-labelledby="job-work-tab" style="display:none">
+                        <div class="table-responsive">
+                            <div id="tblJobWorkData">
+                                <div class="table-wrapper">
+                                    <table id="JobWorkData" class="fixed-width-table table ">
+                                        <thead id="table-header-JobWorkData">
+                                        </thead>
+                                        <tbody id="table-body-JobWorkData">
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="paginator" id="paginator-JobWorkData">
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body"> *@
-                    <div class="table-responsive">
-                        <table id="tblJobWork" class="table table-striped table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Job Work No</th>
-                                    <th>Job Work Date</th>
-                                    <th>Item Name</th>
-                                    <th>Size</th>
-                                    <th>Thickness</th>
-                                    <th>Grade</th>
-                                    <th>Make</th>
-                                    <th>Qty MT</th>
-                                    <th>Qty PC</th>
-                                    <th>Qty MTRS</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Job Work data will be populated here -->
-                            </tbody>
-                        </table>
                     </div>
-                    @*     </div>
-                    </div> *@
-                </div>
-
+                 </div>
                 <!-- Stock Summary Tab -->
-                <div class="tab-pane fade" id="stock-summary" role="tabpanel" aria-labelledby="stock-summary-tab" style="display:none">
-                    @* <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-chart-bar text-danger"></i> Stock Summary
-                            </h5>
-                        </div>
-                        <div class="card-body"> *@
-                    <div class="row">
+             <div class="card">
+                    <div class="tab-pane fade" id="stock-summary" role="tabpanel" aria-labelledby="stock-summary-tab" style="display:none">
                         <div class="col-md-6">
-                            <div class="card bg-light">
-                                <div class="card-body">
-                                    <h6 class="card-title">Total Stock Value</h6>
-                                    <h4 class="text-primary" id="totalStockValue">₹ 0.00</h4>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card bg-light">
-                                <div class="card-body">
-                                    <h6 class="card-title">Total Items</h6>
-                                    <h4 class="text-success" id="totalItems">0</h4>
+                            <div class="table-responsive">
+                                <div id="tblSummaryData">
+                                    <div class="table-wrapper">
+                                        <table id="SummaryData" class="fixed-width-table table" style="min-width:300px">
+                                            <thead id="table-header-SummaryData">
+                                            </thead>
+                                            <tbody id="table-body-SummaryData">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="paginator" id="paginator-SummaryData">
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="table-responsive mt-3">
-                        <table id="tblStockSummary" class="table table-striped table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Item Name</th>
-                                    <th>Size</th>
-                                    <th>Thickness</th>
-                                    <th>Grade</th>
-                                    <th>Make</th>
-                                    <th>Current Stock (MT)</th>
-                                    <th>Current Stock (PC)</th>
-                                    <th>Current Stock (MTRS)</th>
-                                    <th>Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Stock Summary data will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+             </div>
         </div>
     </div>
 </div>
-@*     </div>
-</div> *@
 
 <!-- Add Source Modal -->
 <div class="modal fade" id="PlannedMyModal" tabindex="-1" aria-labelledby="PlannedMyModal" aria-hidden="true">
@@ -431,16 +399,28 @@
             </div>
             <div class="modal-body">
                 <div class="row">
-                    <div class="col-sm-4">
+                    <div class="col-sm-3">
                         <div class="">
                             <label for="ddlMachineNo" class="col-form-label-sm fw-bold">Machine No:<span class="text-danger">*</span></label>
                             <select id="ddlMachineNo" name="ddlMachineNo" class="box_border form-control form-control-sm" required></select>
                         </div>
                     </div>
-                    <div class="col-sm-4">
+                    <div class="col-sm-3">
                         <div class="">
                             <label for="txtDate" class="col-form-label-sm fw-bold">Date:<span class="text-danger">*</span></label>
                             <input id="txtDate" type="date" name="txtDate" class="box_border form-control form-control-sm" autocomplete="off" required />
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="">
+                            <label for="txtIdentificationNo" class="col-form-label-sm fw-bold">Identification No:</label>
+                            <input id="txtIdentificationNo" name="txtIdentificationNo" class="box_border form-control form-control-sm" readonly/>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="">
+                            <label for="txtWidth" class="col-form-label-sm fw-bold">Width:</label>
+                            <input id="txtWidth" name="txtWidth" class="box_border form-control form-control-sm text-end" autocomplete="off" readonly />
                         </div>
                     </div>
                 </div>
@@ -461,12 +441,20 @@
                             </label>
                         </div>
                     </div>
-                    <div class="col-sm-3">
+                    <div class="col-sm-2">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="PartingCase" />
                             <label class="form-check-label" for="PartingCase">
                                 Parting Case
                             </label>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="form-check">
+                            <label class="form-check-label" for="despSize">
+                                Size:
+                            </label>
+                                    <span class="form-check-label1" id="despSize">{despSize}</span>
                         </div>
                     </div>
                     <div class="table-responsive">
@@ -521,4 +509,13 @@
             </div>
         </div>
     </div>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
 </div>
