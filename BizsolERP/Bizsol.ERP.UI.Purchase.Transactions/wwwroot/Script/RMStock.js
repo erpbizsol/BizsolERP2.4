@@ -49,6 +49,8 @@ $(document).ready(function () {
             $tw.val(0);
             GetRMStockNumericValueWidthForRow(rowId);
         }
+        // Update totals when width selection changes
+        updateTableTotals();
     });
     $('#AllowManualWeight').off('change').on('change', function () {
         if ($(this).is(':checked')) {
@@ -68,6 +70,8 @@ $(document).ready(function () {
         var w = parseFloat(row.find('input.txtWeightPerSlitRow').val()) || 0;
         var t = n * w;
         row.find('input.txtTotalWeightRow').val(t.toFixed(3));
+        // Update totals in real-time
+        updateTableTotals();
     });
     $('#txtNoOfSlits, #txtWeightPerSlit').on('input', function () {
         calculateTotalWeight();
@@ -186,7 +190,11 @@ function ShowModelPlanned(rowData) {
 }
 function ShowRMStockPlan() {
     RMStockService.ShowRMStockData(G_IdentificationNo).then(function (response) {
-            fillTableWithExistingData(response);
+        fillTableWithExistingData(response);
+        // Update totals after table is filled
+        setTimeout(function() {
+            updateTableTotals();
+        }, 100);
     });
 }
 
@@ -610,7 +618,10 @@ function copyFromPrevious() {
                         }
                     });
 
-                    //updateTableTotals();
+                    // Update totals after copying all rows
+                    setTimeout(function() {
+                        updateTableTotals();
+                    }, 200);
                 } else {
                     enableNewRowAddition();
                     toastr.info('No previous RM Stock data found.');
@@ -671,14 +682,13 @@ function DeleteModal() {
         if (response != '') {
             if (response.Status == 'Y') {
                 toastr.success(response.Msg);
-                updateTableTotals();
+                // Refresh table data - updateTableTotals will be called after refresh completes
                 ShowRMStockPlan();
                 CloseModal();
                 clearForm(); 
             } else {
                 toastr.error(response.Msg);
             }
-
         }
     });
 }
@@ -696,6 +706,7 @@ function updateTableTotals() {
     var totalWeightPerSlit = 0;
     var totalWeight = 0;
     
+    // If no rows exist, reset totals to zero
     if (rows.length === 0) {
         $('#totalWidthCount').text('0');
         $('#totalNoOfSlits').text('0');
@@ -704,20 +715,25 @@ function updateTableTotals() {
         return;
     }
     
+    // Calculate totals from all visible rows
     rows.each(function() {
-        var noOfSlits = parseFloat($(this).find('input[id*="txtNoOfSlits"]').val()) || 0;
-        var weightPerSlit = parseFloat($(this).find('input[id*="txtWeightPerSlit"]').val()) || 0;
-        var rowTotalWeight = parseFloat($(this).find('input[id*="txtTotalWeight"]').val()) || 0;
+        // Get values using class selectors for consistency
+        var noOfSlits = parseFloat($(this).find('.txtNoOfSlitsRow').val()) || 0;
+        var weightPerSlit = parseFloat($(this).find('.txtWeightPerSlitRow').val()) || 0;
+        var rowTotalWeight = parseFloat($(this).find('.txtTotalWeightRow').val()) || 0;
         
-        var selectedWidthText = $(this).find('select[id*="ddlSlitWidth"] option:selected').text();
-        var WidthCount = parseFloat(selectedWidthText) || 0;
+        // Get selected width text from dropdown
+        var selectedWidthText = $(this).find('.ddlSlitWidthRow option:selected').text().trim();
+        var widthCount = parseFloat(selectedWidthText) || 0;
         
-        totalWidthCount += WidthCount;
+        // Accumulate totals
+        totalWidthCount += widthCount;
         totalNoOfSlits += noOfSlits;
         totalWeightPerSlit += weightPerSlit;
         totalWeight += rowTotalWeight;
     });
     
+    // Update total display elements
     $('#totalWidthCount').text(totalWidthCount.toFixed(0));
     $('#totalNoOfSlits').text(totalNoOfSlits.toFixed(0));
     $('#totalWeightPerSlit').text(totalWeightPerSlit.toFixed(3));
@@ -769,7 +785,7 @@ function Save_PlannedSlitting(SNo) {
         HideLoader();
         if (response.Status === 'Y') {
             toastr.success(response.Message);
-                updateTableTotals();
+            // Refresh table data - updateTableTotals will be called after refresh completes
             ShowRMStockPlan();
             clearForm();
         } else {
@@ -882,8 +898,7 @@ function GetUnApprovedPlannedList() {
        
     });
 }
-        });
-}
+ 
 function loadTabData(tabId) {
     switch (tabId) {
         case '#current-stock':
@@ -893,6 +908,9 @@ function loadTabData(tabId) {
             $('#unApproved-planned').hide();
             $('#dispatch').hide();
             $('#checkBoxHideAndShow').show();
+            $('#slitted').hide();
+            $('#job-work').hide();
+            $('#stock-summary').hide();
             GetRMStockCurrentListTable();
             break;
         case '#unApproved-planned':
@@ -901,6 +919,9 @@ function loadTabData(tabId) {
             $('#current-stock').hide();
             $('#unApproved-planned').show();
             $('#dispatch').hide();
+            $('#stock-summary').hide();
+            $('#slitted').hide();
+            $('#job-work').hide();
             $('#checkBoxHideAndShow').show();
             $('#tblUnApproved_Planned').hide();
             GetUnApprovedPlannedList();
@@ -909,27 +930,35 @@ function loadTabData(tabId) {
             $('#tblReport tbody').empty();
             $('#tblReport thead tr').empty();
             $('#current-stock').hide();
+            $('#tblUnApproved_Planned').hide();
             $('#unApproved-planned').hide();
             $('#checkBoxHideAndShow').hide();
             $('#tbldispatch').hide();
             $('#dispatch').show();
+            $('#slitted').hide();
+            $('#job-work').hide();
+            $('#stock-summary').hide();
             setCurrentDateDispatch();
             break;
         case '#slitted':
             $('#tblReport tbody').empty();
             $('#tblReport thead tr').empty();
             $('#current-stock').hide();
+            $('#tblUnApproved_Planned').hide();
             $('#unApproved-planned').hide();
             $('#checkBoxHideAndShow').hide();
             $('#dispatch').hide();
             $('#tblSlitted').hide();
             $('#slitted').show();
+            $('#job-work').hide();
+            $('#stock-summary').hide();
             loadSlittedData();
             break;
         case '#job-work':
             $('#tblReport tbody').empty();
             $('#tblReport thead tr').empty();
             $('#current-stock').hide();
+            $('#tblUnApproved_Planned').hide();
             $('#unApproved-planned').hide();
             $('#checkBoxHideAndShow').hide();
             $('#dispatch').hide();
@@ -943,6 +972,7 @@ function loadTabData(tabId) {
             $('#tblReport tbody').empty();
             $('#tblReport thead tr').empty();
             $('#current-stock').hide();
+            $('#tblUnApproved_Planned').hide();
             $('#unApproved-planned').hide();
             $('#checkBoxHideAndShow').hide();
             $('#dispatch').hide();
