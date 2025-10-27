@@ -13,7 +13,7 @@
 			<div class="row">
 				<div class="col-md-3">
 					<label for="txtEmail" class="col-form-label-sm fw-bold">Email <span class="text-danger">*</span></label>
-					<input id="txtEmail" type="email" class="form-control" placeholder="name@example.com" />
+					@* <input id="txtEmail" type="email" class="form-control" placeholder="name@example.com" /> *@
 					<div class="form-check mt-1">
 						<input id="chkRecordEmail" class="form-check-input" type="checkbox" />
 						<label class="form-check-label" for="chkRecordEmail">Record email in response</label>
@@ -21,28 +21,27 @@
 				</div>
 				<div class="col-md-3">
 					<label for="txtDate" class="col-form-label-sm fw-bold">Date <span class="text-danger">*</span></label>
-					<input id="txtDate" type="date" class="form-control" />
+					<input id="txtDate" type="date" class="box_border form-control form-control-sm" />
 				</div>
 				<div class="col-md-3">
-					<label for="txtOrderNo" class="col-form-label-sm fw-bold">Order No <span class="text-danger">*</span></label>
-					<input id="txtOrderNo" type="text" class="form-control" />
+					<label for="ddlOrderNo" class="col-form-label-sm fw-bold">Order No <span class="text-danger">*</span></label>
+					<select id="ddlOrderNo" name="ddlOrderNo" class="box_border form-control form-control-sm" required></select>
 				</div>
 				<div class="col-md-3">
-					<label for="txtTruckNo" class="col-form-label-sm fw-bold">Truck No <span class="text-danger">*</span></label>
-					<input id="txtTruckNo" type="text" class="form-control" />
+					<label for="ddlTruckNo" class="col-form-label-sm fw-bold">Truck No <span class="text-danger">*</span></label>
+					<select id="ddlTruckNo" name="ddlTruckNo" class="box_border form-control form-control-sm" required></select>
 				</div>
 				<div class="col-md-3">
-					<label for="txtQty" class="col-form-label-sm fw-bold">Quantity in MT <span class="text-danger">*</span></label>
-					<input id="txtQty" type="number" min="0" step="0.001" class="form-control" />
+					<label for="ddlQty" class="col-form-label-sm fw-bold">Quantity in MT <span class="text-danger">*</span></label>
+					<select id="ddlQty" name="ddlQty" class="box_border form-control form-control-sm"></select>
 				</div>
 				<div class="col-md-3">
-					<label for="filePDIReport" class="col-form-label-sm fw-bold">Attach PDI Report <span class="text-danger">*</span></label>
-					<input id="filePDIReport" type="file" class="form-control" />
-					<small class="text-muted">Max 10 MB.</small>
+					<label for="txtAttachment" class="col-form-label-sm fw-bold">Attach PDI Report <span class="text-danger">*</span></label>
+					<button type="button" id="txtAttachment" onclick="ViewAttachment()" class="form-control form-control-sm box_border" style="background-color:#2c639b;color:white;">Upload PDI</button>
 				</div>
 				<div class="col-3">
 					<label for="txtRemark" class="col-form-label-sm fw-bold">Remark</label>
-					<textarea id="txtRemark" class="form-control" rows="2"></textarea>
+					<textarea id="txtRemark" class="box_border form-control form-control-sm" rows="2" maxlength="250"></textarea>
 				</div>
 				<div class="col-3">
 					<button id="btnSave" type="button" class="btn btn-primary icon-height" style="margin-top: 1.8rem !important;">Submit</button>
@@ -51,5 +50,7 @@
 		</div>
 		</div>
 </div>
+
+<div id="DespatchAdviceMaster_AttachmentControlmodal"></div>
 
     
