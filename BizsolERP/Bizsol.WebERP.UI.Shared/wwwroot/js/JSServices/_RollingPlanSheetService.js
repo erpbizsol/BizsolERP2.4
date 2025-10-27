@@ -18,6 +18,14 @@ const RollingPlanSheetService = {
             }
         );
     },
+    GetRollingPlanDetail: function GetRollingPlanDetail(Mode, BuyerPoMaster_Code) {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetRollingPlanDetail?Mode=" + Mode + "&BuyerPoMaster_Code=" + BuyerPoMaster_Code;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     Verify: function Verify(Code) {
         var URL = UrlService.API_DOCUMENT_RollingPlanSheet + `/Verify?Code=${Code}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
