@@ -128,7 +128,6 @@ function GetRMStockCurrentListTable() {
                     'Planned Button': PlannedButtonInputHTML,
                 };
             });
-            // calculate footer totals for Ch Wt and Ac Wt
             calculateRMStockCurrentFooterTotals(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-RMStockCurrent", "table-body-RMStockCurrent", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment,false);
             PopulateTableForPrint(response);
@@ -882,7 +881,7 @@ function GetUnApprovedPlannedList() {
             //    };
             //});
             // calculate footer totals for Ch Wt and Ac Wt
-            calculateRMStockCurrentFooterTotals(response);
+            //calculateRMStockCurrentFooterTotals(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-UnApproved_Planned", "table-body-UnApproved_Planned", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             PopulateTableForPrint(response);
         } else {
@@ -1058,7 +1057,7 @@ function loadSlittedData() {
                 'Thickness': "right;min-width:20px", 'Width': "right;min-width:20px", 'Entry Date': "center",
                 'Weight': "right;min-width:20px", 'ACT WT': "right;min-width:20px", 'Output Weight': "right", "Scrap": "right", "Yield %":"right", "Width Loss %":"right"
             };
-
+            calculateTotalFooterSlitted(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-Slitted", "table-body-Slitted", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             PopulateTableForPrint(response);
         } else {
@@ -1074,7 +1073,27 @@ function loadSlittedData() {
 
         });
 }
-
+function calculateTotalFooterSlitted(rows) {
+        try {
+            let totalWt = 0;
+            let totalActWt = 0;
+            if (rows && rows.length) {
+                rows.forEach(function (r) {
+                    totalWt += parseFloat(r['Weight']) || 0;
+                    totalActWt += parseFloat(r['ACT WT']) || 0;
+                });
+            }
+            // Write into footer elements if they exist
+            if ($('#totalWt').length) {
+                $('#totalWt').text(totalWt.toFixed(3));
+            }
+            if ($('#totalActWt').length) {
+                $('#totalActWt').text(totalActWt.toFixed(3));
+            }
+        } catch (e) {
+            // fail silently
+        }
+}
 function loadJobWorkData() {
     Showloader();
     RMStockService.GetRMStockJobWorkData().then(function (response) {
@@ -1092,7 +1111,7 @@ function loadJobWorkData() {
                 'Thickness': "right;min-width:20px", 'Width': "right;min-width:20px", 'Entry Date': "center", "Party Name": "left;min-width:262px", "Warehouse":";min-width:110px",
                 'Weight': "right;min-width:20px", 'ACT WT': "right;min-width:20px", 'Output Weight': "right", "Scrap": "right", "Yield %": "right", "Width Loss %": "right"
             };
-
+            calculateTotalFooterJobWork(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-JobWorkData", "table-body-JobWorkData", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             PopulateTableForPrint(response);
         } else {
@@ -1108,7 +1127,27 @@ function loadJobWorkData() {
 
         });
 }
-
+function calculateTotalFooterJobWork(rows) {
+    try {
+        let totalWeight = 0;
+        let totalActualWt = 0;
+        if (rows && rows.length) {
+            rows.forEach(function (r) {
+                totalWeight += parseFloat(r['Weight']) || 0;
+                totalActualWt += parseFloat(r['ACT WT']) || 0;
+            });
+        }
+        // Write into footer elements if they exist
+        if ($('#totalWeight').length) {
+            $('#totalWeight').text(totalWeight.toFixed(3));
+        }
+        if ($('#totalActualWt').length) {
+            $('#totalActualWt').text(totalActualWt.toFixed(3));
+        }
+    } catch (e) {
+        // fail silently
+    }
+}
 function loadStockSummaryData() {
     calculateStockSummary(); 
     Showloader();
@@ -1125,12 +1164,12 @@ function loadStockSummaryData() {
             let hiddenColumns = []
             const columnAlignment = {
                 "Item Name":";width:20px",
-                "No OF PC/Coil":";width:20px",
-                "Total Weight":";width:20px",
-                "No OF PC":";width:20px",
-                "Weight":";width:20px",
+                "No OF PC/Coil":"right;width:20px",
+                "Total Weight":"right;width:20px",
+                "No OF PC":"right;width:20px",
+                "Weight":"right;width:20px",
             };
-
+            calculateTotalFooterStockSummary(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-SummaryData", "table-body-SummaryData", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             PopulateTableForPrint(response);
         } else {
@@ -1145,6 +1184,27 @@ function loadStockSummaryData() {
             $('#tblSummaryData').hide();
 
         });
+}
+function calculateTotalFooterStockSummary(rows) {
+    try {
+        let totalWeightStock = 0;
+        let totalWtStock = 0;
+        if (rows && rows.length) {
+            rows.forEach(function (r) {
+                totalWeightStock += parseFloat(r['Total Weight']) || 0;
+                totalWtStock += parseFloat(r['Weight']) || 0;
+            });
+        }
+        // Write into footer elements if they exist
+        if ($('#totalWeightStock').length) {
+            $('#totalWeightStock').text(totalWeightStock.toFixed(3));
+        }
+        if ($('#totalWtStock').length) {
+            $('#totalWtStock').text(totalWtStock.toFixed(3));
+        }
+    } catch (e) {
+        // fail silently
+    }
 }
 function Export() {
     var ReportType = "RMStockReport";

@@ -336,6 +336,17 @@
                                          </thead>
                                         <tbody id="table-body-Slitted">
                                          </tbody>
+                                    <tfoot>
+                                    <th colspan="8" class="text-end">Totals</th>
+                                    <th id="totalWt" class="text-end">0.000</th>
+                                    <th id="totalActWt" class="text-end">0.000</th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    </tfoot>
                                     </table>
                                  </div>
                                 <div class="paginator" id="paginator-Slitted">
@@ -356,6 +367,17 @@
                                         </thead>
                                         <tbody id="table-body-JobWorkData">
                                         </tbody>
+                                            <tfoot>
+                                            <th colspan="9" class="text-end">Totals</th>
+                                            <th id="totalWeight" class="text-end">0.000</th>
+                                            <th id="totalActualWt" class="text-end">0.000</th>
+                                            <th></th>
+                                            <th></th>
+                                            <th></th>
+                                            <th></th>
+                                            <th></th>
+                                            <th></th>
+                                            </tfoot>
                                     </table>
                                 </div>
                                 <div class="paginator" id="paginator-JobWorkData">
@@ -365,26 +387,31 @@
                     </div>
                  </div>
                 <!-- Stock Summary Tab -->
-             <div class="card">
-                    <div class="tab-pane fade" id="stock-summary" role="tabpanel" aria-labelledby="stock-summary-tab" style="display:none">
-                        <div class="col-md-6">
-                            <div class="table-responsive">
+                    <div class="card" style="display: inline-block; width: auto; max-width: 100%;">
+                        <div class="tab-pane fade" id="stock-summary" role="tabpanel" aria-labelledby="stock-summary-tab" style="display:none;">
+                            <div class="table-responsive" style="width: auto;">
                                 <div id="tblSummaryData">
                                     <div class="table-wrapper">
-                                        <table id="SummaryData" class="fixed-width-table table" style="min-width:300px">
+                                        <table id="SummaryData" class="fixed-width-table table" style="min-width:300px; width: auto;">
                                             <thead id="table-header-SummaryData">
                                             </thead>
                                             <tbody id="table-body-SummaryData">
                                             </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="2" class="text-end">Totals</th>
+                                                    <th id="totalWeightStock" class="text-end">0.000</th>
+                                                    <th></th>
+                                                    <th id="totalWtStock" class="text-end">0.000</th>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
-                                    <div class="paginator" id="paginator-SummaryData">
-                                    </div>
+                                    <div class="paginator" id="paginator-SummaryData"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-             </div>
         </div>
     </div>
 </div>
