@@ -2,12 +2,42 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+<style>
+    /* Use CSS class instead of inline style to avoid linter warnings and ensure consistent behavior */
+    .chart-scroll {
+        overflow-x: auto;
+        width: 100%;
+    }
+        /* force canvas to be block so min-width applies reliably */
+        .chart-scroll canvas {
+            display: block;
+        }
+    /* sizes used by the regional charts (adjust min-width to your desired scroll threshold) */
+    .chart-minwide-600 {
+        min-width: 600px;
+    }
 
+    .chart-minwide-800 {
+        min-width: 800px;
+    }
+
+    /* Client table styling */
+    .client-table-container {
+        max-height: 320px;
+        overflow-y: auto;
+        border: 1px solid #e6e6e6;
+    }
+    .top-client {
+        font-size: 34px;
+        letter-spacing: 1px;
+    }
+</style>
 
 @* <div class="container-fluid mt-3"> *@
 <div class="d-flex justify-content-between align-items-center mb-2">
     <button class="btn btn-primary btn-height" type="button" data-bs-toggle="collapse" data-bs-target="#customerFilterCollapse" aria-expanded="true" aria-controls="customerFilterCollapse">
-        <i class="fa-solid fa-filter"></i>
+        <i class="fa-solid fa-filter"></i> Filters
     </button>
 
     <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width" onclick="CustomerDashboard_ShowReport()">Show</button>
@@ -27,94 +57,372 @@
             <select id="ddlDealerNamelist" class="form-control form-control-sm box_border">
             </select>
         </div>
-      @*   <div class="col-md-3 without-label-field text-end">
+        @*   <div class="col-md-3 without-label-field text-end">
             <label></label>
             
             <button type="button" id="btnDownload" class="btn btn-primary btn-height btn-width">Download</button>
         </div> *@
     </div>
 </div>
-   
-   
-    <br />
-    <ul class="nav nav-tabs" id="customerDashboardTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab" aria-controls="dashboard" aria-selected="true">
-                Dashboard
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="false">
-                Details
-            </button>
-        </li>
-    </ul>
 
-    <div class="tab-content pt-3" id="customerDashboardTabsContent">
-        <div class="tab-pane fade show active" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
-            <div class="row">
-                <!-- Left column: KPI Cards -->
-                <div class="col-lg-3">
-                    <div class="card mb-3">
-                        <div class="card-body text-center">
-                            <h6 class="text-muted">Current Year Sales</h6>
-                            <h3 id="kpi-selected-year" class="fw-bold">52.89</h3>
-                        </div>
+
+<br />
+<ul class="nav nav-tabs" id="customerDashboardTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="Sales-tab" data-bs-toggle="tab" data-bs-target="#Sales" type="button" role="tab" aria-controls="Sales" aria-selected="true">
+            Sales Analysis
+        </button>
+    </li>
+
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="regional-tab" data-bs-toggle="tab" data-bs-target="#regional" type="button" role="tab" aria-controls="regional" aria-selected="false">
+            Regional Analysis
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="client-tab" data-bs-toggle="tab" data-bs-target="#client" type="button" role="tab" aria-controls="client" aria-selected="false">
+            Client Analysis
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="target-growth-tab" data-bs-toggle="tab" data-bs-target="#target-growth" type="button" role="tab" aria-controls="target-growth" aria-selected="false">
+            Target and Growth Analysis
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="product-tab" data-bs-toggle="tab" data-bs-target="#product" type="button" role="tab" aria-controls="product" aria-selected="false">
+            Product Analysis
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="product-specification-tab" data-bs-toggle="tab" data-bs-target="#product-specification" type="button" role="tab" aria-controls="product-specification" aria-selected="false">
+            Product Specification Analysis
+        </button>
+    </li>
+</ul>
+
+
+
+<div class="tab-content pt-3" id="customerDashboardTabsContent">
+    <div class="tab-pane fade show active" id="Sales" role="tabpanel" aria-labelledby="Sales-tab">
+        <div class="row">
+            <!-- Left column: KPI Cards -->
+            <div class="col-lg-3">
+                <div class="card mb-3">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">Current Year Sales</h6>
+                        <h3 id="kpi-selected-year" class="fw-bold">0</h3>
                     </div>
+                </div>
 
-                    <div class="card mb-3">
-                        <div class="card-body text-center">
-                            <h6 class="text-muted">Best Month</h6>
-                            <h5 id="kpi-best-month">June</h5>
-                            <div id="kpi-best-month-amt" class="fw-bold">58.78</div>
-                        </div>
+                <div class="card mb-3">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">Best Month</h6>
+                        <h5 id="kpi-best-month"></h5>
+                        <div id="kpi-best-month-amt" class="fw-bold">0</div>
                     </div>
+                </div>
 
-                    <div class="card mb-3">
-                        <div class="card-body text-center">
-                            <h6 class="text-muted">Best Day</h6>
-                            <div id="kpi-best-day-date">11-06-2025</div>
-                            <div id="kpi-best-day-amt" class="fw-bold">99.43</div>
+                <div class="card mb-3">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">Best Day</h6>
+                        <div id="kpi-best-day-date"></div>
+                        <div id="kpi-best-day-amt" class="fw-bold">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right column: Charts with fixed horizontal scrolling -->
+            <div class="col-lg-9">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Current Year vs Previous Year Sales</h5>
+                        <div class="chart-scroll">
+                            <canvas id="barSalesChart" height="270" class="chart-minwide-800"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right column: Charts with fixed horizontal scrolling -->
-                <div class="col-lg-9">
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title">Current Year vs Previous Year Sales</h5>
-                            <div style="overflow-x: auto; width: 100%;">
-                                <canvas id="barSalesChart" height="200" style="min-width:600px;"></canvas>
-                            </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="regional" role="tabpanel" aria-labelledby="regional-tab">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card mb-3">
+                    <div class="card-body p-2">
+                        <h6 class="card-subtitle mb-2">Sales over Region</h6>
+                        <div id="regionalMap" style="height:520px; width:100%; border:1px solid #e6e6e6;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card mb-3">
+                    <div class="card-body text-center py-4">
+                        <small class="text-muted">State with Maximum Sales</small>
+                        <div id="regional-state-max" class="fw-bold" style="font-size:36px; margin-top:8px;">-</div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body text-center py-4">
+                        <small class="text-muted">City with Maximum Sales</small>
+                        <div id="regional-city-max" class="fw-bold" style="font-size:32px; margin-top:8px;">-</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Sales by Region</small>
+                        <div class="chart-scroll">
+                            <canvas id="regionSalesChart" height="120" class="chart-minwide-600"></canvas>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
 
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Sales over Time</h5>
-                            <div style="overflow-x: auto; width: 100%;">
-                                <canvas id="lineSalesChart" height="220" style="min-width:600px;"></canvas>
-                            </div>
+    <div class="tab-pane fade" id="client" role="tabpanel" aria-labelledby="client-tab">
+        <div class="mb-3">
+            <div class="card" style="border:1px solid #dcdcdc;">
+                <div class="card-body text-center p-3">
+                    <small class="text-muted">Top Client</small>
+                    <div id="top-client-name" class="fw-bold top-client mt-2">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <small class="text-muted">Client Wise Sales</small>
+                <div class="client-table-container mt-2">
+                    <table id="clientSalesTable" class="table table-sm table-striped mb-0 fixed-width-table" style="min-width:800px;">
+                        <thead class="table-secondary" id="clientSalesTableHeader">
+                            @* <tr>
+                                <th>Client Name</th>
+                                <th>Client's Growth (%)</th>
+                                <th class="text-end">Current Year Sales</th>
+                                <th class="text-end">Last Year Sales</th>
+                            </tr> *@
+                        </thead>
+                        <tbody id="clientSalesTableBody">
+                            <!-- populated by JS -->
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-clientSalesTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+       
+    </div>
+    <div class="tab-pane fade" id="target-growth" role="tabpanel" aria-labelledby="target-growth-tab">
+        <div class="row mb-3">
+            <div class="col-lg-6">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Best Marketing Man</small>
+                        <div id="best-marketing-man" class="fw-bold top-client mt-2">-</div>
+                        <div id="best-marketing-man-amt" class="mt-1">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Quantity Sold vs Target</small>
+                        <div class="chart-scroll">
+                            <canvas id="targetGaugeChart" height="45" class="chart-minwide-600"></canvas>
+                        </div>
+                        <div class="mt-2 text-muted small">0 &nbsp; <span id="gauge-center-label"></span> &nbsp; Target</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-lg-6">
+                
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Target Analysis</small>
+                        <div class="client-table-container mt-2">
+                            <table id="targetAnalysisTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>Marketing Man</th>
+                                        <th class="text-end">Current Year Sales</th>
+                                        <th class="text-end">Target</th>
+                                        <th class="text-center">Target Achieved</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Sales without Assigned Target</small>
+                        <div class="client-table-container mt-2">
+                            <table id="salesWithoutTargetTable" class="table table-sm table-striped mb-0" style="min-width:480px;">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>Marketing Man</th>
+                                        <th class="text-end">Sales</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Details</h5>
-                    <p class="mb-0">Additional details or filters can go here.</p>
+       
+        
+        <div class="card mt-3">
+            <div class="card-body">
+                <small class="text-muted">Marketing Men's Growth</small>
+                <div class="client-table-container mt-2">
+                    <table id="marketingGrowthTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Marketing Man</th>
+                                <th class="text-end">Marketing Man's Growth (%)</th>
+                                <th class="text-end">Current Year Sales</th>
+                                <th class="text-end">Last Year Sales</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
+    <div class="tab-pane fade" id="product" role="tabpanel" aria-labelledby="product-tab">
+        <div class="row mb-3">
+            <div class="col-lg-6">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Top Product by Sales</small>
+                        <div id="top-product-name" class="fw-bold top-client mt-2">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Top Group by Sales</small>
+                        <div id="top-group-name" class="fw-bold top-client mt-2">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Top 5 Products by Sales</small>
+                        <div class="chart-scroll">
+                            <canvas id="topProductsPie" height="220"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <small class="text-muted">Product Wise Sales</small>
+                <div class="client-table-container mt-2">
+                    <table id="productSalesTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
+                        <thead class="table-secondary" id="productSalesTableHeader">
+                            
+                        </thead>
+                        <tbody id="productSalesTableBody">
+
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-productSalesTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="product-specification" role="tabpanel" aria-labelledby="product-specification-tab">
+        <div class="row mb-3">
+            <div class="col-lg-6">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Top Thickness by Sales</small>
+                        <div id="top-thickness" class="fw-bold top-client mt-2">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Top Size by Sales</small>
+                        <div id="top-size" class="fw-bold top-client mt-2">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Top 5 Thickness by Sales</small>
+                        <div class="chart-scroll">
+                            <canvas id="thicknessPie" height="220"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Top 5 Sizes by Sales</small>
+                        <div class="chart-scroll">
+                            <canvas id="sizePie" height="220"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <small class="text-muted">Product Wise Sales</small>
+                <div class="client-table-container mt-2">
+                    <table id="productSpecTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
+                        <thead class="table-secondary" id="productSpecTableHeader">
+                           
+                        </thead>
+                        <tbody id="productSpecTableBody"></tbody>
+                    </table>
+                    <div class="paginator" id="paginator-productSpecTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @* </div> *@
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/CustomerDashboard.js"></script>
-
-
-
