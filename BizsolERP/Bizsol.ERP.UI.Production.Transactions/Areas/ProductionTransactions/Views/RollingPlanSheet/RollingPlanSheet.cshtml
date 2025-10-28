@@ -117,6 +117,13 @@
         font-weight: bold !important;
         text-align: right !important;
     }
+    /* Prevent background scroll when Bootstrap modal is open */
+    body.modal-open { overflow: hidden !important; }
+    .rps-detail-modal .modal-dialog { max-width: 760px; }
+    .rps-detail-modal .modal-header { padding: 8px 12px; background: #1f6fb2; color: #fff; }
+    .rps-detail-modal .modal-title { font-size: 13px; font-weight: 600; }
+    .rps-detail-modal .modal-body { padding: 8px 10px; max-height: 65vh; overflow: auto; }
+    .rps-detail-modal .modal-footer { padding: 6px 10px; }
 </style>
 <div class="row">
     <div class="col-sm-12">
@@ -141,17 +148,52 @@
                 <div class="col-md-2" style="margin-top:1.8rem">
                     <button type="button" id="btnShowDateMillReport" class="btn btn-primary btn-height">Show</button>
                 </div>
+                
+
+            </div> 
+            <div id="btnDownload" class="row mb-1" style="display:block" >
+                <div class="col-md-12" style="text-align:right">
+                    <button type="button" id="btn" class="btn btn-primary btn-height" onclick="ExportExcel();">Download</button>
+                </div> 
             </div>
             <div class="table-wrapper" style="min-height:400px;">
                 <table id="tblTable" class="fixed-width-table table">
                     <thead id="table-head">
                     </thead>
-                    <tbody id="table-body">
-                    </tbody>
+                    <tbody id="table-body"> 
+                    </tbody> 
                 </table>
             </div>
             <div class="paginator" id="paginator-tblTable">
             </div>
         </div>
     </div>
+    
 </div>
+<div class="modal fade rps-detail-modal" id="DetailModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper" style="max-height:400px;">
+                    <table id="DetailTable" class="fixed-width-table table">
+                        <thead id="DetailTable-head">
+                        </thead>
+                        <tbody id="DetailTable-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-DetailTable">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
