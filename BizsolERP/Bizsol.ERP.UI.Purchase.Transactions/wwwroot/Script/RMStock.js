@@ -1046,7 +1046,7 @@ function loadSlittedData() {
         HideLoader();
         if (response.length > 0) {
             $('#tblSlitted').show();
-            const stringFilterColumn = ["Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %","Width Loss %"];
+            const stringFilterColumn = ["Entry No","Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %","Width Loss %"];
             const numericFilterColumn = [];
             const dateFilterColumn = ["Entry Date"];
             const button = false;
