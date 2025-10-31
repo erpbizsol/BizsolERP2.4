@@ -3,9 +3,9 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const CustomerDashboardService = {
 
-    GetMachinesList: function GetMachinesList() {
+    GetCustomerDashboardData: function GetCustomerDashboardData(Mode,DealerCodes) {
 
-        let url = `${UrlService.API_ENDPOINT_Weighment}/GetMachinesList`;
+        let url = `${UrlService.API_ENDPOINT_CustomerDashboard}/GetCustomerDashboardData?Mode=${Mode}&DealerCodes=${DealerCodes}`;
 
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
@@ -13,6 +13,7 @@ const CustomerDashboardService = {
             }
         );
     }
+    
     
 }
 
