@@ -23,144 +23,167 @@ function loadChartDataLabelsPlugin(callback) {
     document.head.appendChild(script);
 }
 
-function renderBarChart(chartRows) {
-    // chartRows expected as array of objects:
-    // [{ MonthOrder:1, MonthName:'Apr', CurrentFYQty:5405.29, PrevFYQty:4697.70 }, ...]
-    if (typeof ChartDataLabels !== 'undefined') {
-        try { Chart.register(ChartDataLabels); } catch (e) { /* already registered */ }
+function renderBarChart() {
+
+    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+    selectedDealers = selectedDealers.join(',');
+    if (AreAllSelected('ddlDealerNamelist') === true) {
+        selectedDealers = '0';
     }
-
-    let canvas = document.getElementById('barSalesChart');
-    if (!canvas) return;
-
-    // If a previous chart instance exists, destroy it and replace the canvas element
-    if (window.barChartInstance) {
-        try { window.barChartInstance.destroy(); } catch (e) { /* ignore */ }
-
-        // Replace canvas with a fresh element to remove any leftover inline styles or event handlers
-        try {
-            const parent = canvas.parentNode;
-            const newCanvas = document.createElement('canvas');
-            newCanvas.id = canvas.id;
-            newCanvas.className = canvas.className || '';
-            // keep a sensible height for the chart area (adjust as needed)
-            newCanvas.style.width = '100%';
-            newCanvas.style.height = canvas.style.height || '320px';
-            parent.replaceChild(newCanvas, canvas);
-            canvas = newCanvas;
-        } catch (e) {
-            // fallback to using existing canvas if replacement fails
-            console.warn('Canvas replace failed, continuing with existing element', e);
+    if (selectedDealers == '') {
+        return;
+    }
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('SALESTAB', selectedDealers).then(function (response) {
+        HideLoader();
+        const chartRows = Array.isArray(response) ? response : (response && response.MonthlySales ? response.MonthlySales : []);
+        
+        // chartRows expected as array of objects:
+        // [{ MonthOrder:1, MonthName:'Apr', CurrentFYQty:5405.29, PrevFYQty:4697.70 }, ...]
+        if (typeof ChartDataLabels !== 'undefined') {
+            try { Chart.register(ChartDataLabels); } catch (e) { /* already registered */ }
         }
-    }
 
-    const ctx = canvas.getContext('2d');
+        let canvas = document.getElementById('barSalesChart');
+        if (!canvas) return;
 
-    // Convert input rows into arrays suitable for Chart.js
-    let monthLabels = [];
-    let currentFY = [];
-    let prevFY = [];
+        // If a previous chart instance exists, destroy it and replace the canvas element
+        if (window.barChartInstance) {
+            try { window.barChartInstance.destroy(); } catch (e) { /* ignore */ }
 
-    if (Array.isArray(chartRows) && chartRows.length > 0) {
-        // Ensure sorted by MonthOrder (Apr..Mar)
-        chartRows.sort((a, b) => (Number(a.MonthOrder) || 0) - (Number(b.MonthOrder) || 0));
-        monthLabels = chartRows.map(r => r.MonthName || '');
-        currentFY = chartRows.map(r => {
-            const v = r.CurrentFYQty;
-            return (v === null || v === undefined || v === '') ? 0 : Number(v);
-        });
-        prevFY = chartRows.map(r => {
-            const v = r.PrevFYQty;
-            return (v === null || v === undefined || v === '') ? 0 : Number(v);
-        });
-    } else {
-        // fallback to existing sample arrays (keeps backward compatibility)
-        monthLabels = labels;
-        currentFY = currentYearSales;
-        prevFY = previousYearSales;
-    }
+            // Replace canvas with a fresh element to remove any leftover inline styles or event handlers
+            try {
+                const parent = canvas.parentNode;
+                const newCanvas = document.createElement('canvas');
+                newCanvas.id = canvas.id;
+                newCanvas.className = canvas.className || '';
+                // keep a sensible height for the chart area (adjust as needed)
+                newCanvas.style.width = '100%';
+                newCanvas.style.height = canvas.style.height || '320px';
+                parent.replaceChild(newCanvas, canvas);
+                canvas = newCanvas;
+            } catch (e) {
+                // fallback to using existing canvas if replacement fails
+                console.warn('Canvas replace failed, continuing with existing element', e);
+            }
+        }
 
-    // Apply a sensible min-width so Chart area can horizontally scroll when many months exist,
-    // but clear it for small label counts to avoid unexpected scrolling.
-    if (monthLabels.length > 8) {
-        const minW = Math.min(Math.max(400, monthLabels.length * 60), 1400);
-        canvas.style.minWidth = minW + 'px';
-    } else {
-        canvas.style.minWidth = '';
-    }
+        const ctx = canvas.getContext('2d');
 
-    // Create bar chart comparing current and previous financial year month-wise
-    window.barChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: monthLabels,
-            datasets: [
-                {
-                    label: 'Current FY Sales',
-                    data: currentFY,
-                    backgroundColor: 'rgba(192,57,43,0.85)',
-                    borderColor: 'rgba(192,57,43,1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Previous FY Sales',
-                    data: prevFY,
-                    backgroundColor: 'rgba(24,67,135,0.95)',
-                    borderColor: 'rgba(24,67,135,1)',
-                    borderWidth: 1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: {
-                    callbacks: {
-                        label: function (ctx) {
-                            const val = ctx.raw;
-                            if (val === null || val === undefined) return '';
-                            return ctx.dataset.label + ': ' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        // Convert input rows into arrays suitable for Chart.js
+        let monthLabels = [];
+        let currentFY = [];
+        let prevFY = [];
+
+        if (Array.isArray(chartRows) && chartRows.length > 0) {
+            // Ensure sorted by MonthOrder (Apr..Mar)
+            chartRows.sort((a, b) => (Number(a.MonthOrder) || 0) - (Number(b.MonthOrder) || 0));
+            monthLabels = chartRows.map(r => r.MonthName || '');
+            currentFY = chartRows.map(r => {
+                const v = r.CurrentFYQty;
+                return (v === null || v === undefined || v === '') ? 0 : Number(v);
+            });
+            prevFY = chartRows.map(r => {
+                const v = r.PrevFYQty;
+                return (v === null || v === undefined || v === '') ? 0 : Number(v);
+            });
+        } else {
+            // fallback to existing sample arrays (keeps backward compatibility)
+            monthLabels = labels;
+            currentFY = currentYearSales;
+            prevFY = previousYearSales;
+        }
+
+        // Apply a sensible min-width so Chart area can horizontally scroll when many months exist,
+        // but clear it for small label counts to avoid unexpected scrolling.
+        if (monthLabels.length > 8) {
+            const minW = Math.min(Math.max(400, monthLabels.length * 60), 1400);
+            canvas.style.minWidth = minW + 'px';
+        } else {
+            canvas.style.minWidth = '';
+        }
+
+        // Create bar chart comparing current and previous financial year month-wise
+        window.barChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: monthLabels,
+                datasets: [
+                    {
+                        label: 'Current FY Sales',
+                        data: currentFY,
+                        backgroundColor: 'rgba(192,57,43,0.85)',
+                        borderColor: 'rgba(192,57,43,1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Previous FY Sales',
+                        data: prevFY,
+                        backgroundColor: 'rgba(24,67,135,0.95)',
+                        borderColor: 'rgba(24,67,135,1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                const val = ctx.raw;
+                                if (val === null || val === undefined) return '';
+                                return ctx.dataset.label + ': ' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            }
+                        }
+                    },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'end',
+                        offset: -6,
+                        color: '#222',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: function (value) {
+                            if (value === null || value === undefined) return '';
+                            return Number(value).toLocaleString('en-US', { maximumFractionDigits: 2 });
                         }
                     }
                 },
-                datalabels: {
-                    anchor: 'end',
-                    align: 'end',
-                    offset: -6,
-                    color: '#222',
-                    font: { weight: 'bold', size: 12 },
-                    formatter: function (value) {
-                        if (value === null || value === undefined) return '';
-                        return Number(value).toLocaleString('en-US', { maximumFractionDigits: 2 });
+                scales: {
+                    x: { grid: { display: false } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (value) {
+                                if (value === null || value === undefined) return '';
+                                return Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            }
+                        },
+                        title: { display: true, text: 'Sales' }
                     }
                 }
             },
-            scales: {
-                x: { grid: { display: false } },
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function (value) {
-                            if (value === null || value === undefined) return '';
-                            return Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        }
-                    },
-                    title: { display: true, text: 'Sales' }
-                }
-            }
-        },
-        plugins: (typeof ChartDataLabels !== 'undefined') ? [window.ChartDataLabels] : []
-    });
+            plugins: (typeof ChartDataLabels !== 'undefined') ? [window.ChartDataLabels] : []
+        });
 
-    // Ensure the chart is sized correctly after insertion
-    try { setTimeout(() => window.barChartInstance.resize(), 50); } catch (e) { /* ignore */ }
+        // Ensure the chart is sized correctly after insertion
+        try { setTimeout(() => window.barChartInstance.resize(), 50); } catch (e) { /* ignore */ }
 
-    setBestSaleDetils();
+        setBestSaleDetils();
+    })
+    
 }
 function setBestSaleDetils() {
-    const selectedDealers ='m';
+    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+    selectedDealers = selectedDealers.join(',');
+    if (AreAllSelected('ddlDealerNamelist') === true) {
+        selectedDealers = '0';
+    }
+    if (selectedDealers == '') {
+        return;
+    }
     Showloader();
     CustomerDashboardService.GetCustomerDashboardData('SALESTAB_BESTSALEDETAILS', selectedDealers).then(function (response) {
         HideLoader();
@@ -287,7 +310,7 @@ function GetSelectedValues(containerId) {
 
 /* Ensure datalabels plugin is loaded before rendering charts */
 loadChartDataLabelsPlugin(() => {
-    //renderBarChart();
+    renderBarChart();
     renderRegionalSection(); // initial render (will be a no-op if elements missing)
     renderClientSection();   // initial attempt to render client visuals
 });
@@ -545,6 +568,12 @@ function renderClientSection() {
 
 /* When client tab becomes visible, re-render charts to ensure proper sizing */
 document.addEventListener('DOMContentLoaded', function () {
+    const salesTabBtn = document.getElementById('Sales-tab');
+    if (salesTabBtn) {
+        salesTabBtn.addEventListener('shown.bs.tab', function () {
+            renderBarChart();
+        });
+    }
     const regionalTabBtn = document.getElementById('regional-tab');
     if (regionalTabBtn) {
         regionalTabBtn.addEventListener('shown.bs.tab', function () {
@@ -582,6 +611,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // In case page initially shows regional or client tab, ensure render called after short delay
     setTimeout(function () {
+        if (document.querySelector('#Sales') && document.querySelector('#Sales').classList.contains('show')) {
+            renderBarChart();
+        }
         if (document.querySelector('#regional') && document.querySelector('#regional').classList.contains('show')) {
             renderRegionalSection();
         }
@@ -803,200 +835,231 @@ const topGroupEl = document.getElementById('top-group-name');
 /* ===== Target & Growth rendering ===== */
 
 function renderTargetGrowthSection() {
-    // Placeholder data - replace with API calls
-    const best = { name: 'ABHISHEK BHALOTIA', amt: 24940.57 };
+    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+    selectedDealers = selectedDealers.join(',');
+    if (AreAllSelected('ddlDealerNamelist') === true) {
+        selectedDealers = '0';
+    }
+    if (selectedDealers == '') {
+        return;
+    }
 
-    const targetSummary = [
-        { man: 'ARJUN M', current: 100.00, target: 200.00 },
-        { man: 'PRAMOD KUMAR', current: 5700.68, target: 5000.00 },
-        { man: 'ABHISHEK BHALOTIA', current: 24940.57, target: 30000.00 }
-    ];
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('TARGETGROWTHTAB', selectedDealers).then(function (response) {
+        HideLoader();
 
-    const withoutTarget = [
-        { man: 'ABHISHEK BHALOTIA', sales: 24940.57 },
-        { man: 'ATULNEERU', sales: 284.28 },
-        { man: 'Dhanil', sales: 85.83 }
-    ];
-
-    // Best marketing man
-    const bestEl = document.getElementById('best-marketing-man');
-    const bestAmtEl = document.getElementById('best-marketing-man-amt');
-    if (bestEl) bestEl.textContent = best.name;
-    if (bestAmtEl) bestAmtEl.textContent = formatNumber(best.amt);
-
-    // Gauge (semi-doughnut) - quantity sold vs target (use first item as sample)
-    const sample = targetSummary[0];
-    const gaugeCanvas = document.getElementById('targetGaugeChart');
-    if (gaugeCanvas) {
-        const current = sample.current;
-        const target = sample.target;
-        // compute percentage of target achieved (cap at 100%)
-        const achievedPct = target > 0 ? Math.min((current / target) * 100, 100) : 0;
-        const remainingPct = Math.max(100 - achievedPct, 0);
-
-        if (window.targetGaugeChartInstance) {
-            try { window.targetGaugeChartInstance.destroy(); } catch (e) { }
+        if (!response || response.length === 0) {
+            console.warn('No target growth data received');
+            return;
         }
 
-        const ctx = gaugeCanvas.getContext('2d');
-        
-        // Helper function to format large numbers with K/M suffix
-        function formatCompactNumber(val) {
-            if (val >= 1000000) {
-                return (val / 1000000).toFixed(2) + 'M';
-            } else if (val >= 1000) {
-                return (val / 1000).toFixed(2) + 'K';
+        // Find best marketing man (highest Current Year Sales)
+        let best = { name: '-', amt: 0 };
+        if (response.length > 0) {
+            const sorted = response.slice().sort((a, b) => {
+                const aVal = Number(a['Current Year Sales'] || 0);
+                const bVal = Number(b['Current Year Sales'] || 0);
+                return bVal - aVal;
+            });
+            best.name = sorted[0]['Marketing Man'] || '-';
+            best.amt = Number(sorted[0]['Current Year Sales'] || 0);
+        }
+
+        // Best marketing man KPI
+        const bestEl = document.getElementById('best-marketing-man');
+        const bestAmtEl = document.getElementById('best-marketing-man-amt');
+        if (bestEl) bestEl.textContent = best.name;
+        if (bestAmtEl) bestAmtEl.textContent = formatNumber(best.amt);
+
+        // Gauge chart: Use first record or aggregate data for gauge visualization
+        const gaugeCanvas = document.getElementById('targetGaugeChart');
+        if (gaugeCanvas && response.length > 0) {
+            // Aggregate totals for gauge
+            let totalCurrent = 0;
+            let totalTarget = 0;
+            response.forEach(function (r) {
+                totalCurrent += Number(r['Current Year Sales'] || 0);
+                totalTarget += Number(r['Target'] || 0);
+            });
+
+            const achievedPct = totalTarget > 0 ? Math.min((totalCurrent / totalTarget) * 100, 100) : 0;
+            const remainingPct = Math.max(100 - achievedPct, 0);
+
+            if (window.targetGaugeChartInstance) {
+                try { window.targetGaugeChartInstance.destroy(); } catch (e) { }
             }
-            return formatNumber(val);
-        }
-        
-        // semicircle doughnut with custom styling to match image
-        window.targetGaugeChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Achieved', 'Remaining'],
-                datasets: [{
-                    // use percentage values so slices render consistently
-                    data: [achievedPct, remainingPct],
-                    backgroundColor: ['rgba(231, 76, 60, 0.8)', 'rgba(220, 220, 220, 0.4)'], // red/pink for achieved, light gray for remaining
-                    borderWidth: 0,
-                    borderRadius: 0
-                }]
-            },
-            options: {
-                rotation: -Math.PI,
-                circumference: Math.PI,
-                cutout: '78%',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function (ctx) {
-                                const idx = ctx.dataIndex;
-                                if (idx === 0) {
-                                    // show absolute and percent for achieved
-                                    return ctx.label + ': ' + formatNumber(current) + ' (' + achievedPct.toFixed(2) + '%)';
+
+            const ctx = gaugeCanvas.getContext('2d');
+
+            // Helper function to format large numbers with K/M suffix
+            function formatCompactNumber(val) {
+                if (val >= 1000000) {
+                    return (val / 1000000).toFixed(2) + 'M';
+                } else if (val >= 1000) {
+                    return (val / 1000).toFixed(2) + 'K';
+                }
+                return formatNumber(val);
+            }
+
+            window.targetGaugeChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Achieved', 'Remaining'],
+                    datasets: [{
+                        data: [achievedPct, remainingPct],
+                        backgroundColor: ['rgba(231, 76, 60, 0.8)', 'rgba(220, 220, 220, 0.4)'],
+                        borderWidth: 0,
+                        borderRadius: 0
+                    }]
+                },
+                options: {
+                    rotation: -Math.PI,
+                    circumference: Math.PI,
+                    cutout: '78%',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    const idx = ctx.dataIndex;
+                                    if (idx === 0) {
+                                        return ctx.label + ': ' + formatNumber(totalCurrent) + ' (' + achievedPct.toFixed(2) + '%)';
+                                    }
+                                    return ctx.label + ': ' + remainingPct.toFixed(2) + '%';
                                 }
-                                return ctx.label + ': ' + remainingPct.toFixed(2) + '%';
                             }
                         }
                     }
+                },
+                plugins: [{
+                    id: 'gaugeLabels',
+                    afterDatasetsDraw: function (chart) {
+                        const ctx = chart.ctx;
+                        const chartArea = chart.chartArea;
+                        const centerX = (chartArea.left + chartArea.right) / 2;
+                        const centerY = chartArea.bottom;
+
+                        const meta = chart._metasets[0];
+                        if (!meta || !meta.data || meta.data.length === 0) return;
+
+                        const arc = meta.data[0];
+                        const radius = arc.outerRadius;
+
+                        const leftX = centerX - radius - 10;
+                        const rightX = centerX + radius + 10;
+                        const bottomLabelY = centerY + 25;
+
+                        ctx.save();
+
+                        ctx.font = '14px Arial';
+                        ctx.fillStyle = '#666';
+                        ctx.textAlign = 'left';
+                        ctx.fillText('0', leftX, bottomLabelY);
+
+                        ctx.textAlign = 'center';
+                        ctx.font = 'bold 20px Arial';
+                        ctx.fillStyle = '#000';
+                        ctx.fillText(formatCompactNumber(totalCurrent), centerX, centerY - 15);
+
+                        ctx.textAlign = 'right';
+                        ctx.font = '14px Arial';
+                        ctx.fillStyle = '#666';
+                        ctx.fillText(formatNumber(totalTarget), rightX, bottomLabelY);
+
+                        ctx.font = '12px Arial';
+                        ctx.fillStyle = '#999';
+                        ctx.fillText('Target', rightX, bottomLabelY + 18);
+
+                        ctx.restore();
+                    }
+                }]
+            });
+
+            const centerLabel = document.getElementById('gauge-center-label');
+            if (centerLabel) centerLabel.textContent = formatNumber(totalCurrent);
+        }
+
+        // Separate data into two arrays: with target and without target
+        const withTarget = [];
+        const withoutTarget = [];
+
+        response.forEach(function (r) {
+            const target = Number(r['Target'] || 0);
+            if (target > 0) {
+                withTarget.push(r);
+            } else {
+                withoutTarget.push(r);
+            }
+        });
+
+        // Sales without target table
+        const tbodyNo = document.querySelector('#salesWithoutTargetTable tbody');
+        if (tbodyNo) {
+            tbodyNo.innerHTML = '';
+            withoutTarget.forEach(function (r) {
+                const marketingMan = escapeHtml(r['Marketing Man'] || '');
+                const sales = Number(r['Current Year Sales'] || 0);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${marketingMan}</td><td class="text-end">${formatNumber(sales)}</td>`;
+                tbodyNo.appendChild(tr);
+            });
+        }
+
+        // Target Analysis table (with Target Achieved column)
+        const tbodyT = document.querySelector('#targetAnalysisTable tbody');
+        if (tbodyT) {
+            tbodyT.innerHTML = '';
+            withTarget.forEach(function (r) {
+                const marketingMan = escapeHtml(r['Marketing Man'] || '');
+                const current = Number(r['Current Year Sales'] || 0);
+                const target = Number(r['Target'] || 0);
+                const targetAchieved = r['Target Achieved'] || 'No';
+                const achievedFlag = (targetAchieved.toString().toLowerCase() === 'yes' || targetAchieved === 'Y') ? 'Yes' : 'No';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${marketingMan}</td>
+            <td class="text-end">${formatNumber(current)}</td>
+     <td class="text-end">${formatNumber(target)}</td>
+                <td class="text-center" style="background:${achievedFlag === 'Yes' ? '#2ecc71' : 'transparent'}">${achievedFlag}</td>`;
+                tbodyT.appendChild(tr);
+            });
+        }
+
+        // Marketing Men's Growth table (use all records from response)
+        const mgTable = document.querySelector('#marketingGrowthTable tbody');
+        if (mgTable) {
+            mgTable.innerHTML = '';
+            response.forEach(function (r) {
+                const marketingMan = escapeHtml(r['Marketing Man'] || '');
+                const growthPct = r['Marketing Men Growth (%)'];
+                const current = Number(r['Current Year Sales'] || 0);
+                const last = Number(r['Last Year Sales'] || 0);
+
+                // Format growth percentage
+                let growthDisplay = '';
+                if (growthPct !== null && growthPct !== undefined && growthPct !== '') {
+                    growthDisplay = Number(growthPct).toFixed(2);
+                } else {
+                    growthDisplay = '-';
                 }
-            },
-            plugins: [{
-                id: 'gaugeLabels',
-                afterDatasetsDraw: function(chart) {
-                    const ctx = chart.ctx;
-                    const chartArea = chart.chartArea;
-                    const centerX = (chartArea.left + chartArea.right) / 2;
-                    const centerY = chartArea.bottom;
-                    
-                    // Get the actual arc data to find its radius
-                    const meta = chart._metasets[0];
-                    if (!meta || !meta.data || meta.data.length === 0) return;
-                    
-                    const arc = meta.data[0];
-                    const radius = arc.outerRadius;
 
-                    // Calculate positions for left (0) and right (target) labels
-                    const leftX = centerX - radius - 10;
-                    const rightX = centerX + radius + 10;
-                    const bottomLabelY = centerY + 25;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${marketingMan}</td>
+    <td class="text-end">${growthDisplay}</td>
+      <td class="text-end">${formatNumber(current)}</td>
+        <td class="text-end">${formatNumber(last)}</td>`;
+                mgTable.appendChild(tr);
+            });
+        }
 
-                    ctx.save();
-                    
-                    // Draw left value (0)
-                    ctx.font = '14px Arial';
-                    ctx.fillStyle = '#666';
-                    ctx.textAlign = 'left';
-                    ctx.fillText('0', leftX, bottomLabelY);
-
-                    // Draw center value (current) - larger and bold
-                    ctx.textAlign = 'center';
-                    ctx.font = 'bold 20px Arial';
-                    ctx.fillStyle = '#000';
-                    ctx.fillText(formatCompactNumber(current), centerX, centerY - 15);
-
-                    // Draw right value (target) with "Target" label below
-                    ctx.textAlign = 'right';
-                    ctx.font = '14px Arial';
-                    ctx.fillStyle = '#666';
-                    ctx.fillText(formatNumber(target), rightX, bottomLabelY);
-                    
-                    // Draw "Target" text below the right value
-                    ctx.font = '12px Arial';
-                    ctx.fillStyle = '#999';
-                    ctx.fillText('Target', rightX, bottomLabelY + 18);
-
-                    ctx.restore();
-                }
-            }]
-        });
-
-        // Update center label if it exists (fallback for HTML element)
-        const centerLabel = document.getElementById('gauge-center-label');
-        if (centerLabel) centerLabel.textContent = formatNumber(current);
-    }
-
-    // Sales without target table
-    const tbodyNo = document.querySelector('#salesWithoutTargetTable tbody');
-    if (tbodyNo) {
-        tbodyNo.innerHTML = '';
-        withoutTarget.forEach(function (r) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${escapeHtml(r.man)}</td><td class="text-end">${formatNumber(r.sales)}</td>`;
-            tbodyNo.appendChild(tr);
-        });
-    }
-
-    // Target Analysis table
-    const tbodyT = document.querySelector('#targetAnalysisTable tbody');
-    if (tbodyT) {
-        tbodyT.innerHTML = '';
-        targetSummary.forEach(function (r) {
-            const achievedFlag = (r.current >= r.target) ? 'Y' : 'N';
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${escapeHtml(r.man)}</td>
-                            <td class="text-end">${formatNumber(r.current)}</td>
-                            <td class="text-end">${formatNumber(r.target)}</td>
-                            <td class="text-center" style="background:${achievedFlag==='Y'?'#2ecc71':'transparent'}">${achievedFlag}</td>`;
-            tbodyT.appendChild(tr);
-        });
-    }
-
-    // Marketing Men's Growth table: combine targetSummary and withoutTarget into a list (placeholder)
-    const growthRows = [
-        { man: 'Pramod Kumar', current: 5700.68, last: 208.55 },
-        { man: 'ABHISHEK BHALOTIA', current: 24940.57, last: 7443.19 },
-        { man: 'NEERAJ', current: 2998.39, last: 9516.91 },
-        { man: 'ATULNEERU', current: 284.28, last: 934.23 },
-        { man: 'SANJAY', current: 1510.50, last: 5126.97 },
-        { man: 'ARJUN M', current: 461.67, last: 2043.42 },
-        { man: 'Dhanil', current: 85.83, last: 493.13 },
-        { man: 'RANEESH', current: 98.14, last: 654.04 },
-        { man: 'RAJU GEORGE', current: 2072.85, last: 17672.51 },
-        { man: 'ARUN KUMAR S', current: 0, last: 61.82 }
-    ];
-
-    const mgTable = document.querySelector('#marketingGrowthTable tbody');
-    if (mgTable) {
-        mgTable.innerHTML = '';
-        growthRows.forEach(function (r) {
-            const last = r.last || 0;
-            const growthPct = (last === 0) ? (r.current === 0 ? 0 : null) : ((r.current - last) / Math.abs(last) * 100);
-            const growthDisplay = (growthPct === null) ? 'N/A' : Number(growthPct.toFixed(2));
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${escapeHtml(r.man)}</td>
-                            <td class="text-end">${growthDisplay === 'N/A' ? '' : growthDisplay}</td>
-                            <td class="text-end">${formatNumber(r.current)}</td>
-                            <td class="text-end">${formatNumber(r.last)}</td>`;
-            mgTable.appendChild(tr);
-        });
-    }
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching target growth data:', err);
+    });
 }
-
+  
 /* ===== existing service calls to populate select lists ===== */
 CRMReportsServices.GetSalespersonList().then(function (response) {
     if (response && response.length > 0) {
@@ -1008,7 +1071,7 @@ CRMReportsServices.GetSalespersonList().then(function (response) {
                 root.removeEventListener('change', dllSalesPresonListChange);
                 root.addEventListener('change', dllSalesPresonListChange);
             }
-        } catch (e) { console.warn('Could not attach change handler to ddlSalesPersonlist', e); }
+        } catch (e) { console.warn('Could not attach change handler to ddlSalesPresonlist', e); }
     } else {
         const el = $('#ddlSalesPersonlist')[0];
         if (el) el.innerHTML = '';
@@ -1034,8 +1097,9 @@ function dllSalesPresonListChange() {
                 return Promise.resolve([]);
             }
         });
-
+        Showloader();
         Promise.all(promises).then(function (responses) {
+            HideLoader();
             // responses is array of arrays
             const merged = [];
             const seen = new Set();
@@ -1099,35 +1163,51 @@ function CustomerDashboard_ShowReport() {
     // For Dealer Name dropdown
     let selectedDealers = GetSelectedValues('ddlDealerNamelist');
     selectedDealers = selectedDealers.join(',');
+
     if (AreAllSelected('ddlDealerNamelist') === true) {
         selectedDealers = '0';
     }
-    Showloader();
-    CustomerDashboardService.GetCustomerDashboardData('SALESTAB', selectedDealers).then(function (response) {
-        HideLoader();
-        const rows = Array.isArray(response) ? response : (response && response.MonthlySales ? response.MonthlySales : []);
-        // renderBarChart expects array of { MonthOrder, MonthName, CurrentFYQty, PrevFYQty }
-        renderBarChart(rows);
-    })
 
-    
-    Showloader();
-    CustomerDashboardService.GetCustomerDashboardData('CLIENTTAB', selectedDealers).then(function (response) {
-        HideLoader();
-        const StringFilterColumn = [];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = [];
-        const Button = false;
-        const showButtons = []
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = [];
-        const ColumnAlignment = { 'Action': ';min-width:145px' };
+    if (selectedDealers == '') {
+        return;
+    }
+
+    if (document.querySelector('#Sales') && document.querySelector('#Sales').classList.contains('show')) {
+        renderBarChart();
+    }
+    if (document.querySelector('#regional') && document.querySelector('#regional').classList.contains('show')) {
+        renderRegionalSection();
+    }
+    if (document.querySelector('#client') && document.querySelector('#client').classList.contains('show')) {
+        renderClientSection();
+    }
+    if (document.querySelector('#target-growth') && document.querySelector('#target-growth').classList.contains('show')) {
+        renderTargetGrowthSection();
+    }
+    if (document.querySelector('#product') && document.querySelector('#product').classList.contains('show')) {
+        renderProductSection();
+    }
+    if (document.querySelector('#product-specification') && document.querySelector('#product-specification').classList.contains('show')) {
+        renderProductSpecificationSection();
+    }
+    //renderBarChart();
+    //Showloader();
+    //CustomerDashboardService.GetCustomerDashboardData('CLIENTTAB', selectedDealers).then(function (response) {
+    //    HideLoader();
+    //    const StringFilterColumn = [];
+    //    const NumericFilterColumn = [];
+    //    const DateFilterColumn = [];
+    //    const Button = false;
+    //    const showButtons = []
+    //    const StringdoubleFilterColumn = [];
+    //    const hiddenColumns = [];
+    //    const ColumnAlignment = { 'Action': ';min-width:145px' };
 
 
-        if (response.length > 0) {
-            BizsolCustomFilterGrid.CreateDataTable("clientSalesTableHeader", "clientSalesTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
-        }
-    })
+    //    if (response.length > 0) {
+    //        BizsolCustomFilterGrid.CreateDataTable("clientSalesTableHeader", "clientSalesTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+    //    }
+    //})
 
 }
 
