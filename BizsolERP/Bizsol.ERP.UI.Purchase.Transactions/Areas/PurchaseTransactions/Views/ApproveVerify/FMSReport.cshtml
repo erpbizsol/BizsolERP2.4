@@ -5,11 +5,11 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/FMSReport.js"></script>
 <style>
-    .modal-dialog {
-        max-width: 1100px;
+    .fixed-width-table th, .fixed-width-table td {
+        white-space: nowrap;
+        min-width: auto;
     }
 </style>
-
 <div class="table-wrapper ">
     <table id="FMSReport" class="fixed-width-table table">
         <thead id="table-header-FMSReport">
@@ -20,4 +20,3 @@
 </div>
 <div class="paginator" id="paginator-FMSReport">
 </div>
-<div id="FMSReport_AttachmentControlmodal"></div>
