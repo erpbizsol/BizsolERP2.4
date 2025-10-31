@@ -37,7 +37,7 @@ function renderBarChart() {
     CustomerDashboardService.GetCustomerDashboardData('SALESTAB', selectedDealers).then(function (response) {
         HideLoader();
         const chartRows = Array.isArray(response) ? response : (response && response.MonthlySales ? response.MonthlySales : []);
-        
+
         // chartRows expected as array of objects:
         // [{ MonthOrder:1, MonthName:'Apr', CurrentFYQty:5405.29, PrevFYQty:4697.70 }, ...]
         if (typeof ChartDataLabels !== 'undefined') {
@@ -173,7 +173,7 @@ function renderBarChart() {
 
         setBestSaleDetils();
     })
-    
+
 }
 function setBestSaleDetils() {
     let selectedDealers = GetSelectedValues('ddlDealerNamelist');
@@ -193,6 +193,13 @@ function setBestSaleDetils() {
             $('#kpi-best-month-amt')[0].innerHTML = response[0].BestMonthSale
             $('#kpi-best-day-date')[0].innerHTML = response[0].BestDayDate
             $('#kpi-best-day-amt')[0].innerHTML = response[0].BestDaySale
+        }
+        else {
+            $('#kpi-selected-year')[0].innerHTML = '0'
+            $('#kpi-best-month')[0].innerHTML = '-'
+            $('#kpi-best-month-amt')[0].innerHTML = '0'
+            $('#kpi-best-day-date')[0].innerHTML = '-'
+            $('#kpi-best-day-amt')[0].innerHTML = '0'
         }
     })
 }
@@ -318,7 +325,7 @@ loadChartDataLabelsPlugin(() => {
 /* ===== Regional charts + map rendering (existing) ===== */
 
 function renderRegionalSection() {
-    
+
     let selectedDealers = GetSelectedValues('ddlDealerNamelist');
     selectedDealers = selectedDealers.join(',');
     if (AreAllSelected('ddlDealerNamelist') === true) {
@@ -329,25 +336,39 @@ function renderRegionalSection() {
     }
 
     // placeholder summary used only if API doesn't return useful data
+    //const placeholder = {
+    //    stateMax: 'Maharashtra',
+    //    cityMax: 'Thane',
+    //    pareto: { labels: ['Maharashtra'], sales: [1.0], cumulative: [100] },
+    //    regionSales: { labels: ['Maharashtra'], data: [22299.43] },
+    //    polygon: [
+    //        [19.35, 72.85],
+    //        [19.40, 73.05],
+    //        [19.10, 73.10],
+    //        [19.00, 72.90],
+    //        [19.15, 72.80]
+    //    ],
+    //    center: [19.2183, 72.9781],
+    //    zoom: 11
+    //};
     const placeholder = {
-        stateMax: 'Maharashtra',
-        cityMax: 'Thane',
-        pareto: { labels: ['Maharashtra'], sales: [1.0], cumulative: [100] },
-        regionSales: { labels: ['Maharashtra'], data: [22299.43] },
+        stateMax: '-',
+        cityMax: '-',
+        pareto: { labels: ['-'], sales: [0], cumulative: [0] },
+        regionSales: { labels: ['-'], data: [0] },
         polygon: [
-            [19.35, 72.85],
-            [19.40, 73.05],
-            [19.10, 73.10],
-            [19.00, 72.90],
-            [19.15, 72.80]
+            //[19.35, 72.85],
+            //[19.40, 73.05],
+            //[19.10, 73.10],
+            //[19.00, 72.90],
+            //[19.15, 72.80]
         ],
-        center: [19.9993, 72.5408],
-        zoom: 10
+        center: [0, 0],
+        zoom: 11
     };
 
     Showloader();
-    // Use mode 'SALESTAB_REGIONAL' (adjust if your API expects a different Mode)
-    CustomerDashboardService.GetCustomerDashboardData('REGIONTAB', selectedDealers).then(function (response) {
+    CustomerDashboardService.GetCustomerDashboardData('REGIONTAB', selectedDealers).then(async function (response) {
         HideLoader();
 
         // Normalize response into a single "regionalSummary" object.
@@ -376,22 +397,25 @@ function renderRegionalSection() {
                 }
                 if (data.Zoom) regionalSummary.zoom = Number(data.Zoom);
 
-                // lookup city polygon/center if not already done
+                // lookup city polygon/center if not already provided
                 const cityName = data.ConsigneeCityName || data.CityName;
                 if (cityName) {
-                    // async call — ensure function containing this is async or use .then()
-                    getCityCenterAndPolygon(cityName).then(function(geo) {
+                    try {
+                        console.log('Fetching city geometry for:', cityName);
+                        const geo = await getCityCenterAndPolygon(cityName);
+                        console.log('Received city geometry:', geo);
+
                         if (geo) {
                             regionalSummary.center = geo.center || regionalSummary.center;
                             if (Array.isArray(geo.polygon) && geo.polygon.length > 0) {
                                 regionalSummary.polygon = geo.polygon;
+                                console.log('Updated polygon with', geo.polygon.length, 'points');
                             }
-                            // now render map/chart as usual using regionalSummary
-                            // (re-run the leaflet polygon/marker code)
                         }
-                    }).catch(e => console.warn('city geo lookup failed', e));
+                    } catch (e) {
+                        console.warn('city geo lookup failed', e);
+                    }
                 }
-
             }
         } catch (e) {
             console.warn('regional response mapping failed, using placeholder', e);
@@ -466,6 +490,8 @@ function renderRegionalSection() {
             if (typeof L !== 'undefined') {
                 let mapEl = document.getElementById('regionalMap');
                 if (mapEl) {
+                    console.log('Rendering map with center:', regionalSummary.center, 'polygon points:', regionalSummary.polygon ? regionalSummary.polygon.length : 0);
+
                     if (!window._regionalLeafletMap) {
                         window._regionalLeafletMap = L.map(mapEl).setView(regionalSummary.center, regionalSummary.zoom);
                         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -482,14 +508,24 @@ function renderRegionalSection() {
                         window._regionalLayerGroup = L.layerGroup().addTo(window._regionalLeafletMap);
                     }
 
-                    const polygon = L.polygon(regionalSummary.polygon, {
-                        color: '#992d2d',
-                        weight: 2,
-                        fillColor: '#992d2d',
-                        fillOpacity: 0.35
-                    }).addTo(window._regionalLeafletMap);
+                    // Only add polygon if we have valid data
+                    if (regionalSummary.polygon && Array.isArray(regionalSummary.polygon) && regionalSummary.polygon.length >= 3) {
+                        const polygon = L.polygon(regionalSummary.polygon, {
+                            color: '#c0392b',
+                            weight: 2,
+                            fillColor: '#e74c3c',
+                            fillOpacity: 0.25
+                        }).addTo(window._regionalLayerGroup);
 
-                    const marker = L.marker(regionalSummary.center).bindPopup(`${regionalSummary.cityMax}<br/>${regionalSummary.stateMax}`).addTo(window._regionalLeafletMap);
+                        // Fit map to polygon bounds
+                        try {
+                            window._regionalLeafletMap.fitBounds(polygon.getBounds(), { padding: [20, 20] });
+                        } catch (e) {
+                            console.warn('Could not fit bounds:', e);
+                        }
+                    }
+
+                    const marker = L.marker(regionalSummary.center).bindPopup(`${regionalSummary.cityMax}<br/>${regionalSummary.stateMax}`).addTo(window._regionalLayerGroup);
 
                     setTimeout(function () {
                         try {
@@ -506,9 +542,7 @@ function renderRegionalSection() {
         HideLoader();
         console.error('Error fetching regional summary', err);
         // If API failed, render placeholder UI using existing placeholder logic
-        // call itself with placeholder object to draw charts (simple fallback)
         try {
-            // reuse previous placeholder-render path by directly assigning placeholder values
             const stateEl = document.getElementById('regional-state-max');
             const cityEl = document.getElementById('regional-city-max');
             if (stateEl) stateEl.textContent = placeholder.stateMax || '-';
@@ -558,12 +592,12 @@ function renderClientSection() {
             if (topEl) topEl.textContent = topClient;
         }
     })
-    
 
-    
+
+
 
     // populate the table
-    
+
 }
 
 /* When client tab becomes visible, re-render charts to ensure proper sizing */
@@ -766,44 +800,44 @@ function renderProductSection() {
 
     Showloader();
     CustomerDashboardService.GetCustomerDashboardData('PRODUCTTAB', selectedDealers).then(function (response) {
-    HideLoader();
-        
+        HideLoader();
+
         if (!response || response.length === 0) {
             console.warn('No product data received');
-         return;
+            return;
         }
 
-   // Get top product and group from first record (assuming sorted by highest sales)
+        // Get top product and group from first record (assuming sorted by highest sales)
         const topProduct = response[0]['Products Name'] || '-';
         const topGroup = response[0]['Group Name'] || '-';
 
         // write top product/group
         const topProductEl = document.getElementById('top-product-name');
-const topGroupEl = document.getElementById('top-group-name');
+        const topGroupEl = document.getElementById('top-group-name');
         if (topProductEl) topProductEl.textContent = topProduct;
         if (topGroupEl) topGroupEl.textContent = topGroup;
 
         // Prepare data for top products pie chart (top 5)
-        const topProducts = response.slice(0, 5).map(function(item) {
+        const topProducts = response.slice(0, 5).map(function (item) {
             return {
-       name: item['Products Name'] || '',
-        value: Number(item['Current Year Sales'] || 0)
-    };
+                name: item['Products Name'] || '',
+                value: Number(item['Current Year Sales'] || 0)
+            };
         });
 
-      // Pie: top products
+        // Pie: top products
         const prodCanvas = document.getElementById('topProductsPie');
         if (prodCanvas && topProducts.length > 0) {
-      const labels = topProducts.map(p => p.name);
-       const data = topProducts.map(p => p.value);
-     if (window.topProductsPieInstance) try { window.topProductsPieInstance.destroy(); } catch (e) { }
-          // compute min width based on label count to avoid huge chart stretching
-         const minW = Math.min(Math.max(400, labels.length * 70), 1000);
-     prodCanvas.style.minWidth = minW + 'px';
+            const labels = topProducts.map(p => p.name);
+            const data = topProducts.map(p => p.value);
+            if (window.topProductsPieInstance) try { window.topProductsPieInstance.destroy(); } catch (e) { }
+            // compute min width based on label count to avoid huge chart stretching
+            const minW = Math.min(Math.max(400, labels.length * 70), 1000);
+            prodCanvas.style.minWidth = minW + 'px';
             const ctx = prodCanvas.getContext('2d');
             window.topProductsPieInstance = new Chart(ctx, {
-        type: 'pie',
-       data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#c0392b','#e74c3c','#d35400','#f39c12','#3498db'] }] },
+                type: 'pie',
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#c0392b', '#e74c3c', '#d35400', '#f39c12', '#3498db'] }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
             });
             try { window.topProductsPieInstance.resize(); window.topProductsPieInstance.update(); } catch (e) { }
@@ -824,9 +858,9 @@ const topGroupEl = document.getElementById('top-group-name');
         };
 
         BizsolCustomFilterGrid.CreateDataTable("productSalesTableHeader", "productSalesTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false)
-        
 
-    }).catch(function(err) {
+
+    }).catch(function (err) {
         HideLoader();
         console.error('Error fetching product data:', err);
     });
@@ -1059,7 +1093,7 @@ function renderTargetGrowthSection() {
         console.error('Error fetching target growth data:', err);
     });
 }
-  
+
 /* ===== existing service calls to populate select lists ===== */
 CRMReportsServices.GetSalespersonList().then(function (response) {
     if (response && response.length > 0) {
@@ -1085,8 +1119,8 @@ function dllSalesPresonListChange() {
     try {
         const vals = GetSelectedValues('ddlSalesPersonlist');
         if (!vals || vals.length === 0) {
-           // alert('No SalesPerson selected');
-           // return;
+            // alert('No SalesPerson selected');
+            // return;
         }
 
         // Fetch dealer list for each selected salesperson and merge unique results
@@ -1157,7 +1191,7 @@ CRMReportsServices.GetDealerList().then(function (response) {
     if (el) el.innerHTML = '';
 });
 
-function CustomerDashboard_ShowReport() { 
+function CustomerDashboard_ShowReport() {
     // For Sales Person dropdown
     //const selectedSalesPersons = GetSelectedValues('ddlSalesPersonlist');
     // For Dealer Name dropdown
@@ -1239,6 +1273,15 @@ function AreAllSelected(containerId) {
 
 
 
+/*
+async function testGeo() {
+    const res = await getCityCenterAndPolygon('Pune');
+    console.log('Geo result:', res);
+}
+
+testGeo();
+*/
+
 // Cache for city geo data
 
 
@@ -1252,86 +1295,252 @@ async function getCityCenterAndPolygon(cityName) {
     const key = cityName.trim().toLowerCase();
     if (_cityGeoCache.has(key)) return _cityGeoCache.get(key);
 
-    // Try Nominatim first (returns geojson polygon sometimes)
+    // Helper to validate coordinates
+    function isValidCoord(lat, lon) {
+        return !isNaN(lat) && !isNaN(lon) &&
+            lat >= -90 && lat <= 90 &&
+            lon >= -180 && lon <= 180;
+    }
+
+    // Helper to close polygon if needed
+    function ensureClosedPolygon(coords) {
+        if (!coords || coords.length < 3) return coords;
+        const first = coords[0];
+        const last = coords[coords.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+            coords.push([first[0], first[1]]);
+        }
+        return coords;
+    }
+
+    console.log(`Fetching geo data for city: ${cityName}`);
+
+    // Try Nominatim first with detailed polygon
     try {
-        const email = 'your@email.example'; // replace with contact email per Nominatim policy
-        const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&polygon_geojson=1&q=${encodeURIComponent(cityName)}&email=${encodeURIComponent(email)}`;
-        const nomRes = await fetch(nominatimUrl, { method: 'GET', headers: { 'Accept': 'application/json' } });
+        const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&polygon_geojson=1&addressdetails=1&q=${encodeURIComponent(cityName)}`;
+
+        const nomRes = await fetch(nominatimUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'BizSol-WebERP/1.0 (support@bizsol.com)'
+            }
+        });
+
         if (nomRes.ok) {
             const nomData = await nomRes.json();
+            console.log('Nominatim response:', nomData);
+
             if (Array.isArray(nomData) && nomData.length > 0) {
                 const item = nomData[0];
-                const center = [Number(item.lat), Number(item.lon)];
+                const lat = Number(item.lat);
+                const lon = Number(item.lon);
+
+                if (!isValidCoord(lat, lon)) {
+                    console.warn('Invalid coordinates from Nominatim:', lat, lon);
+                    throw new Error('Invalid coordinates');
+                }
+
+                const center = [lat, lon];
                 let polygon = null;
-                if (item.geojson && (item.geojson.type === 'Polygon' || item.geojson.type === 'MultiPolygon')) {
-                    // normalize to one polygon (outer ring)
-                    if (item.geojson.type === 'Polygon') {
-                        polygon = item.geojson.coordinates[0].map(coord => [coord[1], coord[0]]); // [lat,lon]
-                    } else if (item.geojson.type === 'MultiPolygon') {
-                        polygon = item.geojson.coordinates[0][0].map(coord => [coord[1], coord[0]]);
+
+                if (item.geojson) {
+                    try {
+                        console.log('Processing geojson:', item.geojson.type);
+
+                        if (item.geojson.type === 'Polygon' && Array.isArray(item.geojson.coordinates)) {
+                            const coords = item.geojson.coordinates[0];
+                            polygon = coords
+                                .map(coord => [Number(coord[1]), Number(coord[0])]) // [lat, lon]
+                                .filter(coord => isValidCoord(coord[0], coord[1]));
+                            polygon = ensureClosedPolygon(polygon);
+                            console.log(`Extracted ${polygon.length} polygon points from Nominatim`);
+                        }
+                        else if (item.geojson.type === 'MultiPolygon' && Array.isArray(item.geojson.coordinates)) {
+                            // Find the largest polygon
+                            let largestPoly = [];
+                            for (const poly of item.geojson.coordinates) {
+                                if (poly[0] && poly[0].length > largestPoly.length) {
+                                    largestPoly = poly[0];
+                                }
+                            }
+                            if (largestPoly.length > 0) {
+                                polygon = largestPoly
+                                    .map(coord => [Number(coord[1]), Number(coord[0])]) // [lat, lon]
+                                    .filter(coord => isValidCoord(coord[0], coord[1]));
+                                polygon = ensureClosedPolygon(polygon);
+                                console.log(`Extracted ${polygon.length} polygon points from MultiPolygon`);
+                            }
+                        }
+                    } catch (polyErr) {
+                        console.warn('Failed to parse polygon from Nominatim:', polyErr);
+                        polygon = null;
                     }
                 }
+
+                // If no polygon from geojson, try using boundingbox to create one
+                if (!polygon && item.boundingbox && Array.isArray(item.boundingbox) && item.boundingbox.length === 4) {
+                    const [minLat, maxLat, minLon, maxLon] = item.boundingbox.map(Number);
+                    if (isValidCoord(minLat, minLon) && isValidCoord(maxLat, maxLon)) {
+                        polygon = [
+                            [minLat, minLon],
+                            [maxLat, minLon],
+                            [maxLat, maxLon],
+                            [minLat, maxLon],
+                            [minLat, minLon]  // close the rectangle
+                        ];
+                        console.log('Created rectangle polygon from bounding box');
+                    }
+                }
+
                 const out = { center, polygon };
                 _cityGeoCache.set(key, out);
+                console.log('Cached result:', out);
                 return out;
             }
         }
     } catch (e) {
-        console.warn('Nominatim lookup failed', e);
+        console.warn('Nominatim lookup failed:', e);
     }
 
-    // Fallback: Overpass API to fetch administrative boundary relation geometry
+    // Fallback: Overpass API with improved query for Indian cities
     try {
-        // Query for relation with this name and admin boundary (admin_level can vary by country)
-        // Uses out geom to get coordinates
+        console.log('Trying Overpass API...');
         const overpassQuery = `[out:json][timeout:25];
-relation["name"="${cityName}"]["boundary"="administrative"];
+(
+  relation["name"="${cityName}"]["boundary"="administrative"]["admin_level"~"^(5|6|7|8)$"];
+  relation["name"="${cityName}"]["place"~"city|town"];
+);
 out geom;`;
+
         const overpassUrl = 'https://overpass-api.de/api/interpreter';
         const res = await fetch(overpassUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
             body: overpassQuery
         });
+
         if (res.ok) {
             const json = await res.json();
+            console.log('Overpass response:', json);
+
             if (json.elements && json.elements.length > 0) {
-                // pick first relation element with geometry
-                const rel = json.elements.find(e => e.type === 'relation' && Array.isArray(e.members) === false ? false : true) || json.elements[0];
-                // Overpass sometimes returns geometry on relation.members or on ways. Easiest: build polygon from rel.geometry if exists
-                if (rel && rel.geometry && Array.isArray(rel.geometry) && rel.geometry.length > 0) {
-                    const polygon = rel.geometry.map(g => [g.lat, g.lon]);
-                    // center as average of polygon vertices (simple centroid fallback)
-                    const lat = polygon.reduce((s, p) => s + p[0], 0) / polygon.length;
-                    const lon = polygon.reduce((s, p) => s + p[1], 0) / polygon.length;
-                    const out = { center: [lat, lon], polygon };
+                for (const elem of json.elements) {
+                    let centerLat, centerLon;
+
+                    // Get center from bounds or center property
+                    if (elem.bounds) {
+                        centerLat = (elem.bounds.minlat + elem.bounds.maxlat) / 2;
+                        centerLon = (elem.bounds.minlon + elem.bounds.maxlon) / 2;
+                    } else if (elem.center) {
+                        centerLat = elem.center.lat;
+                        centerLon = elem.center.lon;
+                    } else {
+                        continue;
+                    }
+
+                    if (!isValidCoord(centerLat, centerLon)) continue;
+
+                    let polygon = null;
+
+                    // Try to extract polygon from members
+                    if (elem.members && Array.isArray(elem.members)) {
+                        const outerWays = elem.members.filter(m => m.role === 'outer' && m.geometry);
+                        if (outerWays.length > 0) {
+                            const allCoords = [];
+                            outerWays.forEach(way => {
+                                if (Array.isArray(way.geometry)) {
+                                    way.geometry.forEach(pt => {
+                                        if (isValidCoord(pt.lat, pt.lon)) {
+                                            allCoords.push([Number(pt.lat), Number(pt.lon)]);
+                                        }
+                                    });
+                                }
+                            });
+                            if (allCoords.length >= 3) {
+                                polygon = ensureClosedPolygon(allCoords);
+                                console.log(`Extracted ${polygon.length} polygon points from Overpass`);
+                            }
+                        }
+                    }
+
+                    // Fallback to bounding box rectangle if no polygon
+                    if (!polygon && elem.bounds) {
+                        const b = elem.bounds;
+                        polygon = [
+                            [b.minlat, b.minlon],
+                            [b.maxlat, b.minlon],
+                            [b.maxlat, b.maxlon],
+                            [b.minlat, b.maxlon],
+                            [b.minlat, b.minlon]
+                        ];
+                        console.log('Created rectangle from Overpass bounds');
+                    }
+
+                    const out = { center: [centerLat, centerLon], polygon };
                     _cityGeoCache.set(key, out);
+                    console.log('Cached Overpass result:', out);
                     return out;
                 }
             }
         }
     } catch (e) {
-        console.warn('Overpass lookup failed', e);
+        console.warn('Overpass lookup failed:', e);
     }
 
-    // Final fallback: try a simple nominatim search (without polygon) for center only
+    // Final fallback: Simple Nominatim search with bounding box
     try {
-        const nomUrl2 = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(cityName)}`;
-        const r = await fetch(nomUrl2);
+        console.log('Trying final fallback...');
+        const nomUrl2 = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&q=${encodeURIComponent(cityName)}`;
+        const r = await fetch(nomUrl2, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'BizSol-WebERP/1.0 (support@bizsol.com)'
+            }
+        });
+
         if (r.ok) {
             const j = await r.json();
+            console.log('Fallback Nominatim response:', j);
+
             if (Array.isArray(j) && j.length > 0) {
-                const center = [Number(j[0].lat), Number(j[0].lon)];
-                const out = { center, polygon: null };
-                _cityGeoCache.set(key, out);
-                return out;
+                const lat = Number(j[0].lat);
+                const lon = Number(j[0].lon);
+
+                if (isValidCoord(lat, lon)) {
+                    const center = [lat, lon];
+                    let polygon = null;
+
+                    // Try to create polygon from bounding box
+                    if (j[0].boundingbox && Array.isArray(j[0].boundingbox) && j[0].boundingbox.length === 4) {
+                        const [minLat, maxLat, minLon, maxLon] = j[0].boundingbox.map(Number);
+                        if (isValidCoord(minLat, minLon) && isValidCoord(maxLat, maxLon)) {
+                            polygon = [
+                                [minLat, minLon],
+                                [maxLat, minLon],
+                                [maxLat, maxLon],
+                                [minLat, maxLon],
+                                [minLat, minLon]
+                            ];
+                            console.log('Created fallback rectangle from bounding box');
+                        }
+                    }
+
+
+                    const out = { center, polygon };
+                    _cityGeoCache.set(key, out);
+                    console.log('Cached fallback result:', out);
+                    return out;
+                }
             }
         }
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+        console.warn('Final fallback failed:', e);
+    }
 
+    console.warn(`No geo data found for ${cityName}`);
     _cityGeoCache.set(key, null);
     return null;
 }
-
 window.CustomerDashboard_ShowReport = CustomerDashboard_ShowReport;
 
