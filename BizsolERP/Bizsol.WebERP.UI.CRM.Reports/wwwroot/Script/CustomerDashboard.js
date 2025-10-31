@@ -4,6 +4,10 @@ import { CRMReportsServices } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/
 
 BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
+// Global cache for dealer list response
+let G_ddlDealerNameList = [];
+const _cityGeoCache = new Map();
+
 const labels = ['Apr', 'May', 'Jun', 'Jul'];
 const previousYearSales = [55, 87, 59, 52];
 const currentYearSales = [41, 9, 28, 51];
@@ -20,143 +24,184 @@ function loadChartDataLabelsPlugin(callback) {
 }
 
 function renderBarChart() {
-    if (typeof ChartDataLabels !== 'undefined') {
-        try { Chart.register(ChartDataLabels); } catch (e) { }
+
+    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+    selectedDealers = selectedDealers.join(',');
+    if (AreAllSelected('ddlDealerNamelist') === true) {
+        selectedDealers = '0';
     }
-    const canvas = document.getElementById('barSalesChart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (window.barChartInstance) {
-        try { window.barChartInstance.destroy(); } catch (e) { }
+    if (selectedDealers == '') {
+        return;
     }
-    window.barChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Current Year Sales',
-                    data: previousYearSales,
-                    backgroundColor: 'rgba(192,57,43,0.85)',
-                    borderColor: 'rgba(192,57,43,1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Last Year Sales',
-                    data: currentYearSales,
-                    backgroundColor: 'rgba(24,67,135,0.95)',
-                    borderColor: 'rgba(24,67,135,1)',
-                    borderWidth: 1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: { enabled: true },
-                datalabels: {
-                    anchor: 'end',
-                    align: 'end',
-                    offset: -6,
-                    color: '#222',
-                    font: { weight: 'bold', size: 13 },
-                    formatter: function (value) {
-                        return value;
-                    }
-                }
-            },
-            scales: {
-                x: { grid: { display: false } },
-                y: {
-                    beginAtZero: true,
-                    ticks: { precision: 0 },
-                    title: { display: true, text: 'Sales' }
-                }
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('SALESTAB', selectedDealers).then(function (response) {
+        HideLoader();
+        const chartRows = Array.isArray(response) ? response : (response && response.MonthlySales ? response.MonthlySales : []);
+
+        // chartRows expected as array of objects:
+        // [{ MonthOrder:1, MonthName:'Apr', CurrentFYQty:5405.29, PrevFYQty:4697.70 }, ...]
+        if (typeof ChartDataLabels !== 'undefined') {
+            try { Chart.register(ChartDataLabels); } catch (e) { /* already registered */ }
+        }
+
+        let canvas = document.getElementById('barSalesChart');
+        if (!canvas) return;
+
+        // If a previous chart instance exists, destroy it and replace the canvas element
+        if (window.barChartInstance) {
+            try { window.barChartInstance.destroy(); } catch (e) { /* ignore */ }
+
+            // Replace canvas with a fresh element to remove any leftover inline styles or event handlers
+            try {
+                const parent = canvas.parentNode;
+                const newCanvas = document.createElement('canvas');
+                newCanvas.id = canvas.id;
+                newCanvas.className = canvas.className || '';
+                // keep a sensible height for the chart area (adjust as needed)
+                newCanvas.style.width = '100%';
+                newCanvas.style.height = canvas.style.height || '320px';
+                parent.replaceChild(newCanvas, canvas);
+                canvas = newCanvas;
+            } catch (e) {
+                // fallback to using existing canvas if replacement fails
+                console.warn('Canvas replace failed, continuing with existing element', e);
             }
-        },
-        plugins: [window.ChartDataLabels]
-    });
-}
+        }
 
-function renderLineChart() {
-    // Register chartjs-plugin-datalabels if available
-    if (typeof ChartDataLabels !== 'undefined') {
-        try { Chart.register(ChartDataLabels); } catch (e) { }
-    }
-    const canvas = document.getElementById('lineSalesChart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (window.lineChartInstance) {
-        try { window.lineChartInstance.destroy(); } catch (e) { }
-    }
-    const areaGradient = ctx.createLinearGradient(0, 0, 0, 300);
-    areaGradient.addColorStop(0, 'rgba(192,57,43,0.28)');
-    areaGradient.addColorStop(1, 'rgba(192,57,43,0.02)');
+        const ctx = canvas.getContext('2d');
 
-    window.lineChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Sales',
-                    data: currentYearSales,
-                    fill: true,
-                    backgroundColor: areaGradient,
-                    borderColor: 'rgba(192,57,43,0.9)',
-                    tension: 0.35,
-                    pointRadius: 4,
-                    pointBackgroundColor: 'rgba(192,57,43,1)',
-                    pointBorderColor: '#fff',
-                    pointHoverRadius: 6,
+        // Convert input rows into arrays suitable for Chart.js
+        let monthLabels = [];
+        let currentFY = [];
+        let prevFY = [];
+
+        if (Array.isArray(chartRows) && chartRows.length > 0) {
+            // Ensure sorted by MonthOrder (Apr..Mar)
+            chartRows.sort((a, b) => (Number(a.MonthOrder) || 0) - (Number(b.MonthOrder) || 0));
+            monthLabels = chartRows.map(r => r.MonthName || '');
+            currentFY = chartRows.map(r => {
+                const v = r.CurrentFYQty;
+                return (v === null || v === undefined || v === '') ? 0 : Number(v);
+            });
+            prevFY = chartRows.map(r => {
+                const v = r.PrevFYQty;
+                return (v === null || v === undefined || v === '') ? 0 : Number(v);
+            });
+        } else {
+            // fallback to existing sample arrays (keeps backward compatibility)
+            monthLabels = labels;
+            currentFY = currentYearSales;
+            prevFY = previousYearSales;
+        }
+
+        // Apply a sensible min-width so Chart area can horizontally scroll when many months exist,
+        // but clear it for small label counts to avoid unexpected scrolling.
+        if (monthLabels.length > 8) {
+            const minW = Math.min(Math.max(400, monthLabels.length * 60), 1400);
+            canvas.style.minWidth = minW + 'px';
+        } else {
+            canvas.style.minWidth = '';
+        }
+
+        // Create bar chart comparing current and previous financial year month-wise
+        window.barChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: monthLabels,
+                datasets: [
+                    {
+                        label: 'Current FY Sales',
+                        data: currentFY,
+                        backgroundColor: 'rgba(192,57,43,0.85)',
+                        borderColor: 'rgba(192,57,43,1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Previous FY Sales',
+                        data: prevFY,
+                        backgroundColor: 'rgba(24,67,135,0.95)',
+                        borderColor: 'rgba(24,67,135,1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                const val = ctx.raw;
+                                if (val === null || val === undefined) return '';
+                                return ctx.dataset.label + ': ' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            }
+                        }
+                    },
                     datalabels: {
                         anchor: 'end',
-                        align: 'top',
+                        align: 'end',
+                        offset: -6,
                         color: '#222',
-                        font: { weight: 'bold', size: 13 },
+                        font: { weight: 'bold', size: 12 },
                         formatter: function (value) {
-                            return value;
+                            if (value === null || value === undefined) return '';
+                            return Number(value).toLocaleString('en-US', { maximumFractionDigits: 2 });
                         }
                     }
                 },
-                {
-                    label: 'Target (dashed)',
-                    data: Array(labels.length).fill(20),
-                    type: 'line',
-                    borderColor: 'rgba(54, 162, 235, 0.6)',
-                    borderDash: [6, 6],
-                    pointRadius: 0,
-                    tension: 0,
-                    datalabels: { display: false }
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: { mode: 'index', intersect: false },
-                datalabels: {
-                    display: true
+                scales: {
+                    x: { grid: { display: false } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (value) {
+                                if (value === null || value === undefined) return '';
+                                return Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            }
+                        },
+                        title: { display: true, text: 'Sales' }
+                    }
                 }
             },
-            scales: {
-                x: {
-                    title: { display: true, text: 'Month' },
-                    grid: { display: false }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: { display: true, text: 'Sales' },
-                    ticks: { precision: 0 }
-                }
-            }
-        },
-        plugins: [window.ChartDataLabels]
-    });
+            plugins: (typeof ChartDataLabels !== 'undefined') ? [window.ChartDataLabels] : []
+        });
+
+        // Ensure the chart is sized correctly after insertion
+        try { setTimeout(() => window.barChartInstance.resize(), 50); } catch (e) { /* ignore */ }
+
+        setBestSaleDetils();
+    })
+
+}
+function setBestSaleDetils() {
+    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+    selectedDealers = selectedDealers.join(',');
+    if (AreAllSelected('ddlDealerNamelist') === true) {
+        selectedDealers = '0';
+    }
+    if (selectedDealers == '') {
+        return;
+    }
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('SALESTAB_BESTSALEDETAILS', selectedDealers).then(function (response) {
+        HideLoader();
+        if (response.length > 0) {
+            $('#kpi-selected-year')[0].innerHTML = response[0].TotalCurrentSales
+            $('#kpi-best-month')[0].innerHTML = response[0].BestMonthName
+            $('#kpi-best-month-amt')[0].innerHTML = response[0].BestMonthSale
+            $('#kpi-best-day-date')[0].innerHTML = response[0].BestDayDate
+            $('#kpi-best-day-amt')[0].innerHTML = response[0].BestDaySale
+        }
+        else {
+            $('#kpi-selected-year')[0].innerHTML = '0'
+            $('#kpi-best-month')[0].innerHTML = '-'
+            $('#kpi-best-month-amt')[0].innerHTML = '0'
+            $('#kpi-best-day-date')[0].innerHTML = '-'
+            $('#kpi-best-day-amt')[0].innerHTML = '0'
+        }
+    })
 }
 
 /* ===== NEW: Checkbox multi-select rendering utility ===== */
@@ -172,15 +217,7 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
-/*
- BindSelectList(element, list)
- - element: the DOM element passed in (could be a <select> or a container <div>)
- - list: array of objects { Code: ..., Desp: ... }
- Behavior:
- - If element is a <select>, replace it with a <div> (keeps same id).
- - Render a search box, a "Select All" checkbox, and a list of checkbox items.
- - Add event handlers for search, select all toggle, and individual checkbox change.
-*/
+
 function BindSelectList(element, list) {
     if (!element) return;
 
@@ -210,7 +247,7 @@ function BindSelectList(element, list) {
         `    <input type="text" id="${searchId}" placeholder="Search..." style="width:100%;padding:6px;border:1px solid #ccc;border-radius:3px;" />`,
         `  </div>`,
         `  <div class="multi-checkbox-selectall" style="margin-bottom:6px;">`,
-        `    <label style="cursor:pointer;"><input type="checkbox" id="${allId}" style="margin-right:6px;" /> Select All</label>`,
+        `    <label style="cursor:pointer;"><input type="checkbox" id="${allId}" style="margin-right:6px;" checked /> Select All</label>`,
         `  </div>`,
         `  <div id="${listId}" class="multi-checkbox-list" style="max-height:150px;overflow:auto;border:1px solid #e6e6e6;padding:6px;border-radius:3px;background:#fff;"></div>`,
         `</div>`
@@ -227,7 +264,7 @@ function BindSelectList(element, list) {
         const itemId = `${container.id}_chk_${val}`;
         const itemHtml =
             `<div class="checkbox-item" style="padding:4px 2px;">` +
-            `  <label for="${itemId}" style="cursor:pointer;"><input type="checkbox" id="${itemId}" class="${container.id}_chk" value="${val}" style="margin-right:6px;" /> ${text}</label>` +
+            `  <label for="${itemId}" style="cursor:pointer;"><input type="checkbox" id="${itemId}" class="${container.id}_chk" value="${val}" style="margin-right:6px;" checked/> ${text}</label>` +
             `</div>`;
         listDiv.insertAdjacentHTML('beforeend', itemHtml);
     });
@@ -268,7 +305,7 @@ function BindSelectList(element, list) {
     });
 }
 
-/* Helper: retrieve selected values for a given container id (if needed elsewhere) */
+
 function GetSelectedValues(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return [];
@@ -281,54 +318,1229 @@ function GetSelectedValues(containerId) {
 /* Ensure datalabels plugin is loaded before rendering charts */
 loadChartDataLabelsPlugin(() => {
     renderBarChart();
-    renderLineChart();
+    renderRegionalSection(); // initial render (will be a no-op if elements missing)
+    renderClientSection();   // initial attempt to render client visuals
 });
 
-CRMReportsServices.GetSalespersonList().then(function (response) {
-    if (response.length > 0) {
-        // Bind as checkbox list (list of { Code, PersonName })
-        BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })));
-        // Removed select2 initialization - replaced with checkbox multi-select with search & select-all.
-    } else {
-        // If no response, remove/clear container
-        const el = $('#ddlSalesPersonlist')[0];
-        if (el) {
-            if (el.tagName && el.tagName.toLowerCase() === 'select') {
-                el.innerHTML = '';
-            } else {
-                el.innerHTML = '';
+/* ===== Regional charts + map rendering (existing) ===== */
+
+function renderRegionalSection() {
+
+    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+    selectedDealers = selectedDealers.join(',');
+    if (AreAllSelected('ddlDealerNamelist') === true) {
+        selectedDealers = '0';
+    }
+    if (selectedDealers == '') {
+        return;
+    }
+
+    // placeholder summary used only if API doesn't return useful data
+    //const placeholder = {
+    //    stateMax: 'Maharashtra',
+    //    cityMax: 'Thane',
+    //    pareto: { labels: ['Maharashtra'], sales: [1.0], cumulative: [100] },
+    //    regionSales: { labels: ['Maharashtra'], data: [22299.43] },
+    //    polygon: [
+    //        [19.35, 72.85],
+    //        [19.40, 73.05],
+    //        [19.10, 73.10],
+    //        [19.00, 72.90],
+    //        [19.15, 72.80]
+    //    ],
+    //    center: [19.2183, 72.9781],
+    //    zoom: 11
+    //};
+    const placeholder = {
+        stateMax: '-',
+        cityMax: '-',
+        pareto: { labels: ['-'], sales: [0], cumulative: [0] },
+        regionSales: { labels: ['-'], data: [0] },
+        polygon: [
+            //[19.35, 72.85],
+            //[19.40, 73.05],
+            //[19.10, 73.10],
+            //[19.00, 72.90],
+            //[19.15, 72.80]
+        ],
+        center: [0, 0],
+        zoom: 11
+    };
+
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('REGIONTAB', selectedDealers).then(async function (response) {
+        HideLoader();
+
+        // Normalize response into a single "regionalSummary" object.
+        let regionalSummary = Object.assign({}, placeholder);
+
+        try {
+            if (response) {
+                // If API returns array, prefer first element
+                const data = Array.isArray(response) && response.length > 0 ? response[0] : response;
+
+                // map commonly returned field names to our shape (be tolerant)
+                regionalSummary.stateMax = data.ConsigneeStateName || regionalSummary.stateMax;
+                regionalSummary.cityMax = data.ConsigneeCityName || regionalSummary.cityMax;
+
+                if (data.ConsigneeStateName && data.CurrentYearSales) {
+                    regionalSummary.regionSales.labels = Array.isArray(data.RegionLabels) ? data.RegionLabels : String(data.ConsigneeStateName).split(',');
+                    regionalSummary.regionSales.data = Array.isArray(data.RegionSalesData) ? data.RegionSalesData.map(Number) : String(data.CurrentYearSales).split(',').map(Number);
+                }
+
+                // If API provides polygon or center coordinates use them
+                if (data.Polygon && Array.isArray(data.Polygon) && data.Polygon.length > 0) {
+                    regionalSummary.polygon = data.Polygon;
+                }
+                if ((data.CenterLat && data.CenterLon) || (data.Center && Array.isArray(data.Center))) {
+                    regionalSummary.center = data.Center && Array.isArray(data.Center) ? data.Center : [Number(data.CenterLat || data.Latitude || regionalSummary.center[0]), Number(data.CenterLon || data.Longitude || regionalSummary.center[1])];
+                }
+                if (data.Zoom) regionalSummary.zoom = Number(data.Zoom);
+
+                // lookup city polygon/center if not already provided
+                const cityName = data.ConsigneeCityName || data.CityName;
+                if (cityName) {
+                    try {
+                        console.log('Fetching city geometry for:', cityName);
+                        const geo = await getCityCenterAndPolygon(cityName);
+                        console.log('Received city geometry:', geo);
+
+                        if (geo) {
+                            regionalSummary.center = geo.center || regionalSummary.center;
+                            if (Array.isArray(geo.polygon) && geo.polygon.length > 0) {
+                                regionalSummary.polygon = geo.polygon;
+                                console.log('Updated polygon with', geo.polygon.length, 'points');
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('city geo lookup failed', e);
+                    }
+                }
             }
+        } catch (e) {
+            console.warn('regional response mapping failed, using placeholder', e);
+            regionalSummary = Object.assign({}, placeholder);
         }
+
+        // write summary text
+        const stateEl = document.getElementById('regional-state-max');
+        const cityEl = document.getElementById('regional-city-max');
+        if (stateEl) stateEl.textContent = regionalSummary.stateMax || '-';
+        if (cityEl) cityEl.textContent = regionalSummary.cityMax || '-';
+
+        // Region sales horizontal bar
+        try {
+            const regionCanvas = document.getElementById('regionSalesChart');
+            if (regionCanvas) {
+                regionCanvas.style.minWidth = regionCanvas.style.minWidth || '600px';
+
+                const ctx2 = regionCanvas.getContext('2d');
+                if (window.regionSalesChartInstance) {
+                    try { window.regionSalesChartInstance.destroy(); } catch (e) { }
+                }
+                window.regionSalesChartInstance = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: regionalSummary.regionSales.labels,
+                        datasets: [{
+                            label: 'Sales',
+                            data: regionalSummary.regionSales.data,
+                            backgroundColor: 'rgba(24,67,135,0.95)',
+                            borderColor: 'rgba(24,67,135,1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'right',
+                                color: '#fff',
+                                formatter: function (value) {
+                                    if (value === null || value === undefined) return '';
+                                    return value.toLocaleString('en-US', { maximumFractionDigits: 2 });
+                                },
+                                font: { weight: 'bold' }
+                            },
+                            tooltip: { enabled: true }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Sales' }
+                            },
+                            y: { grid: { display: false } }
+                        }
+                    },
+                    plugins: [window.ChartDataLabels]
+                });
+
+                try { window.regionSalesChartInstance.resize(); window.regionSalesChartInstance.update(); } catch (e) { }
+            }
+        } catch (e) {
+            console.warn('region sales chart failed', e);
+        }
+
+        // Leaflet map render (if coordinates available)
+        try {
+            if (typeof L !== 'undefined') {
+                let mapEl = document.getElementById('regionalMap');
+                if (mapEl) {
+                    console.log('Rendering map with center:', regionalSummary.center, 'polygon points:', regionalSummary.polygon ? regionalSummary.polygon.length : 0);
+
+                    if (!window._regionalLeafletMap) {
+                        window._regionalLeafletMap = L.map(mapEl).setView(regionalSummary.center, regionalSummary.zoom);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 18,
+                            attribution: '&copy; OpenStreetMap contributors'
+                        }).addTo(window._regionalLeafletMap);
+                    } else {
+                        window._regionalLeafletMap.setView(regionalSummary.center, regionalSummary.zoom);
+                    }
+
+                    if (window._regionalLayerGroup) {
+                        window._regionalLayerGroup.clearLayers();
+                    } else {
+                        window._regionalLayerGroup = L.layerGroup().addTo(window._regionalLeafletMap);
+                    }
+
+                    // Only add polygon if we have valid data
+                    if (regionalSummary.polygon && Array.isArray(regionalSummary.polygon) && regionalSummary.polygon.length >= 3) {
+                        const polygon = L.polygon(regionalSummary.polygon, {
+                            color: '#c0392b',
+                            weight: 2,
+                            fillColor: '#e74c3c',
+                            fillOpacity: 0.25
+                        }).addTo(window._regionalLayerGroup);
+
+                        // Fit map to polygon bounds
+                        try {
+                            window._regionalLeafletMap.fitBounds(polygon.getBounds(), { padding: [20, 20] });
+                        } catch (e) {
+                            console.warn('Could not fit bounds:', e);
+                        }
+                    }
+
+                    const marker = L.marker(regionalSummary.center).bindPopup(`${regionalSummary.cityMax}<br/>${regionalSummary.stateMax}`).addTo(window._regionalLayerGroup);
+
+                    setTimeout(function () {
+                        try {
+                            window._regionalLeafletMap.invalidateSize();
+                        } catch (e) { }
+                    }, 250);
+                }
+            }
+        } catch (e) {
+            console.warn('Leaflet not available or map render failed', e);
+        }
+
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching regional summary', err);
+        // If API failed, render placeholder UI using existing placeholder logic
+        try {
+            const stateEl = document.getElementById('regional-state-max');
+            const cityEl = document.getElementById('regional-city-max');
+            if (stateEl) stateEl.textContent = placeholder.stateMax || '-';
+            if (cityEl) cityEl.textContent = placeholder.cityMax || '-';
+        } catch (e) { /* ignore */ }
+    });
+}
+
+/* ===== NEW: Client charts + table rendering ===== */
+
+function formatNumber(v) {
+    if (v === null || v === undefined) return '';
+    return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function renderClientSection() {
+    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+    selectedDealers = selectedDealers.join(',');
+    if (AreAllSelected('ddlDealerNamelist') === true) {
+        selectedDealers = '0';
+    }
+    if (selectedDealers == '') {
+        return;
+    }
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('CLIENTTAB', selectedDealers).then(function (response) {
+        HideLoader();
+        const StringFilterColumn = [];
+        const NumericFilterColumn = [];
+        const DateFilterColumn = [];
+        const Button = false;
+        const showButtons = []
+        const StringdoubleFilterColumn = [];
+        const hiddenColumns = [];
+        const ColumnAlignment = {
+            'Growth (%)': 'right',
+            'Current Year Sales': 'right',
+            'Last Year Sales': 'right'
+        };
+
+
+        if (response.length > 0) {
+            BizsolCustomFilterGrid.CreateDataTable("clientSalesTableHeader", "clientSalesTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false)
+            // Top client
+            const topClient = response[0]["Client Name"] || '-';
+            const topEl = document.getElementById('top-client-name');
+            if (topEl) topEl.textContent = topClient;
+        }
+    })
+
+
+
+
+    // populate the table
+
+}
+
+/* When client tab becomes visible, re-render charts to ensure proper sizing */
+document.addEventListener('DOMContentLoaded', function () {
+    const salesTabBtn = document.getElementById('Sales-tab');
+    if (salesTabBtn) {
+        salesTabBtn.addEventListener('shown.bs.tab', function () {
+            renderBarChart();
+        });
+    }
+    const regionalTabBtn = document.getElementById('regional-tab');
+    if (regionalTabBtn) {
+        regionalTabBtn.addEventListener('shown.bs.tab', function () {
+            renderRegionalSection();
+        });
+    }
+
+    const clientTabBtn = document.getElementById('client-tab');
+    if (clientTabBtn) {
+        clientTabBtn.addEventListener('shown.bs.tab', function () {
+            renderClientSection();
+        });
+    }
+
+    const targetTabBtn = document.getElementById('target-growth-tab');
+    if (targetTabBtn) {
+        targetTabBtn.addEventListener('shown.bs.tab', function () {
+            renderTargetGrowthSection();
+        });
+    }
+
+    const productTabBtn = document.getElementById('product-tab');
+    if (productTabBtn) {
+        productTabBtn.addEventListener('shown.bs.tab', function () {
+            renderProductSection();
+        });
+    }
+
+    const productSpecTabBtn = document.getElementById('product-specification-tab');
+    if (productSpecTabBtn) {
+        productSpecTabBtn.addEventListener('shown.bs.tab', function () {
+            renderProductSpecificationSection();
+        });
+    }
+
+    // In case page initially shows regional or client tab, ensure render called after short delay
+    setTimeout(function () {
+        if (document.querySelector('#Sales') && document.querySelector('#Sales').classList.contains('show')) {
+            renderBarChart();
+        }
+        if (document.querySelector('#regional') && document.querySelector('#regional').classList.contains('show')) {
+            renderRegionalSection();
+        }
+        if (document.querySelector('#client') && document.querySelector('#client').classList.contains('show')) {
+            renderClientSection();
+        }
+        if (document.querySelector('#target-growth') && document.querySelector('#target-growth').classList.contains('show')) {
+            renderTargetGrowthSection();
+        }
+        if (document.querySelector('#product') && document.querySelector('#product').classList.contains('show')) {
+            renderProductSection();
+        }
+        if (document.querySelector('#product-specification') && document.querySelector('#product-specification').classList.contains('show')) {
+            renderProductSpecificationSection();
+        }
+    }, 300);
+});
+
+/* ===== Product Specification rendering ===== */
+function renderProductSpecificationSection() {
+    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+    selectedDealers = selectedDealers.join(',');
+    if (AreAllSelected('ddlDealerNamelist') === true) {
+        selectedDealers = '0';
+    }
+    if (selectedDealers == '') {
+        return;
+    }
+
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('PRODUCTSPECIFICATIONTAB', selectedDealers).then(function (response) {
+        HideLoader();
+
+        if (!response || response.length === 0) {
+            console.warn('No product specification data received');
+            return;
+        }
+
+        // Get top thickness and size from first record (assuming sorted by highest sales)
+        const topThickness = response[0]['Thickness'] || '-';
+        const topSize = response[0]['Size'] || '-';
+
+        // KPI values
+        const topThicknessEl = document.getElementById('top-thickness');
+        const topSizeEl = document.getElementById('top-size');
+        if (topThicknessEl) topThicknessEl.textContent = topThickness;
+        if (topSizeEl) topSizeEl.textContent = topSize;
+
+        // Prepare data for thickness pie chart - aggregate by Thickness
+        const thicknessMap = new Map();
+        response.forEach(item => {
+            const thickness = item['Thickness'] || '';
+            const sales = Number(item['Current Year Sales'] || 0);
+            if (thickness && thickness !== '') {
+                if (thicknessMap.has(thickness)) {
+                    thicknessMap.set(thickness, thicknessMap.get(thickness) + sales);
+                } else {
+                    thicknessMap.set(thickness, sales);
+                }
+            }
+        });
+
+        // Convert to array and sort by sales descending, take top 5
+        const thicknessData = Array.from(thicknessMap.entries())
+            .map(([label, value]) => ({ label, value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
+
+        // Thickness pie chart
+        const thicknessCanvas = document.getElementById('thicknessPie');
+        if (thicknessCanvas && thicknessData.length > 0) {
+            const labels = thicknessData.map(d => d.label);
+            const data = thicknessData.map(d => d.value);
+            if (window.thicknessPieInstance) try { window.thicknessPieInstance.destroy(); } catch (e) { }
+            const ctx = thicknessCanvas.getContext('2d');
+            window.thicknessPieInstance = new Chart(ctx, {
+                type: 'pie',
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#8e44ad', '#c0392b', '#e74c3c', '#f39c12', '#d35400'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            });
+        }
+
+        // Prepare data for size pie chart - aggregate by Size
+        const sizeMap = new Map();
+        response.forEach(item => {
+            const size = item['Size'] || '';
+            const sales = Number(item['Current Year Sales'] || 0);
+            if (size && size !== '') {
+                if (sizeMap.has(size)) {
+                    sizeMap.set(size, sizeMap.get(size) + sales);
+                } else {
+                    sizeMap.set(size, sales);
+                }
+            }
+        });
+
+        // Convert to array and sort by sales descending, take top 5
+        const sizeData = Array.from(sizeMap.entries())
+            .map(([label, value]) => ({ label, value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
+
+        // Size pie chart
+        const sizeCanvas = document.getElementById('sizePie');
+        if (sizeCanvas && sizeData.length > 0) {
+
+            const labels = sizeData.map(d => d.label);
+            const data = sizeData.map(d => d.value);
+            if (window.sizePieInstance) try { window.sizePieInstance.destroy(); } catch (e) { }
+            const ctx2 = sizeCanvas.getContext('2d');
+            window.sizePieInstance = new Chart(ctx2, {
+                type: 'pie',
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#3498db', '#2c3e50', '#e67e22', '#9b59b6', '#e74c3c'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            });
+        }
+
+        // Product specification table using BizsolCustomFilterGrid
+        const StringFilterColumn = [];
+        const NumericFilterColumn = [];
+        const DateFilterColumn = [];
+        const Button = false;
+        const showButtons = [];
+        const StringdoubleFilterColumn = [];
+        const hiddenColumns = [];
+        const ColumnAlignment = {
+            'Products Growth (%)': 'right',
+            'Current Year Sales': 'right',
+            'Last Year Sales': 'right'
+        };
+
+        BizsolCustomFilterGrid.CreateDataTable("productSpecTableHeader", "productSpecTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching product specification data:', err);
+    });
+}
+
+/* ===== Product rendering ===== */
+function renderProductSection() {
+    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+    selectedDealers = selectedDealers.join(',');
+    if (AreAllSelected('ddlDealerNamelist') === true) {
+        selectedDealers = '0';
+    }
+    if (selectedDealers == '') {
+        return;
+    }
+
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('PRODUCTTAB', selectedDealers).then(function (response) {
+        HideLoader();
+
+        if (!response || response.length === 0) {
+            console.warn('No product data received');
+            return;
+        }
+
+        // Get top product and group from first record (assuming sorted by highest sales)
+        const topProduct = response[0]['Products Name'] || '-';
+        const topGroup = response[0]['Group Name'] || '-';
+
+        // write top product/group
+        const topProductEl = document.getElementById('top-product-name');
+        const topGroupEl = document.getElementById('top-group-name');
+        if (topProductEl) topProductEl.textContent = topProduct;
+        if (topGroupEl) topGroupEl.textContent = topGroup;
+
+        // Prepare data for top products pie chart (top 5)
+        const topProducts = response.slice(0, 5).map(function (item) {
+            return {
+                name: item['Products Name'] || '',
+                value: Number(item['Current Year Sales'] || 0)
+            };
+        });
+
+        // Pie: top products
+        const prodCanvas = document.getElementById('topProductsPie');
+        if (prodCanvas && topProducts.length > 0) {
+            const labels = topProducts.map(p => p.name);
+            const data = topProducts.map(p => p.value);
+            if (window.topProductsPieInstance) try { window.topProductsPieInstance.destroy(); } catch (e) { }
+            // compute min width based on label count to avoid huge chart stretching
+            const minW = Math.min(Math.max(400, labels.length * 70), 1000);
+            prodCanvas.style.minWidth = minW + 'px';
+            const ctx = prodCanvas.getContext('2d');
+            window.topProductsPieInstance = new Chart(ctx, {
+                type: 'pie',
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#c0392b', '#e74c3c', '#d35400', '#f39c12', '#3498db'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            });
+            try { window.topProductsPieInstance.resize(); window.topProductsPieInstance.update(); } catch (e) { }
+        }
+
+
+        const StringFilterColumn = [];
+        const NumericFilterColumn = [];
+        const DateFilterColumn = [];
+        const Button = false;
+        const showButtons = []
+        const StringdoubleFilterColumn = [];
+        const hiddenColumns = [];
+        const ColumnAlignment = {
+            'Products Growth (%)': 'right',
+            'Current Year Sales': 'right',
+            'Last Year Sales': 'right'
+        };
+
+        BizsolCustomFilterGrid.CreateDataTable("productSalesTableHeader", "productSalesTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false)
+
+
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching product data:', err);
+    });
+}
+
+/* ===== Target & Growth rendering ===== */
+
+function renderTargetGrowthSection() {
+    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+    selectedDealers = selectedDealers.join(',');
+    if (AreAllSelected('ddlDealerNamelist') === true) {
+        selectedDealers = '0';
+    }
+    if (selectedDealers == '') {
+        return;
+    }
+
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('TARGETGROWTHTAB', selectedDealers).then(function (response) {
+        HideLoader();
+
+        if (!response || response.length === 0) {
+            console.warn('No target growth data received');
+            return;
+        }
+
+        // Find best marketing man (highest Current Year Sales)
+        let best = { name: '-', amt: 0 };
+        if (response.length > 0) {
+            const sorted = response.slice().sort((a, b) => {
+                const aVal = Number(a['Current Year Sales'] || 0);
+                const bVal = Number(b['Current Year Sales'] || 0);
+                return bVal - aVal;
+            });
+            best.name = sorted[0]['Marketing Man'] || '-';
+            best.amt = Number(sorted[0]['Current Year Sales'] || 0);
+        }
+
+        // Best marketing man KPI
+        const bestEl = document.getElementById('best-marketing-man');
+        const bestAmtEl = document.getElementById('best-marketing-man-amt');
+        if (bestEl) bestEl.textContent = best.name;
+        if (bestAmtEl) bestAmtEl.textContent = formatNumber(best.amt);
+
+        // Gauge chart: Use first record or aggregate data for gauge visualization
+        const gaugeCanvas = document.getElementById('targetGaugeChart');
+        if (gaugeCanvas && response.length > 0) {
+            // Aggregate totals for gauge
+            let totalCurrent = 0;
+            let totalTarget = 0;
+            response.forEach(function (r) {
+                totalCurrent += Number(r['Current Year Sales'] || 0);
+                totalTarget += Number(r['Target'] || 0);
+            });
+
+            const achievedPct = totalTarget > 0 ? Math.min((totalCurrent / totalTarget) * 100, 100) : 0;
+            const remainingPct = Math.max(100 - achievedPct, 0);
+
+            if (window.targetGaugeChartInstance) {
+                try { window.targetGaugeChartInstance.destroy(); } catch (e) { }
+            }
+
+            const ctx = gaugeCanvas.getContext('2d');
+
+            // Helper function to format large numbers with K/M suffix
+            function formatCompactNumber(val) {
+                if (val >= 1000000) {
+                    return (val / 1000000).toFixed(2) + 'M';
+                } else if (val >= 1000) {
+                    return (val / 1000).toFixed(2) + 'K';
+                }
+                return formatNumber(val);
+            }
+
+            window.targetGaugeChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Achieved', 'Remaining'],
+                    datasets: [{
+                        data: [achievedPct, remainingPct],
+                        backgroundColor: ['rgba(231, 76, 60, 0.8)', 'rgba(220, 220, 220, 0.4)'],
+                        borderWidth: 0,
+                        borderRadius: 0
+                    }]
+                },
+                options: {
+                    rotation: -Math.PI,
+                    circumference: Math.PI,
+                    cutout: '78%',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    const idx = ctx.dataIndex;
+                                    if (idx === 0) {
+                                        return ctx.label + ': ' + formatNumber(totalCurrent) + ' (' + achievedPct.toFixed(2) + '%)';
+                                    }
+                                    return ctx.label + ': ' + remainingPct.toFixed(2) + '%';
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'gaugeLabels',
+                    afterDatasetsDraw: function (chart) {
+                        const ctx = chart.ctx;
+                        const chartArea = chart.chartArea;
+                        const centerX = (chartArea.left + chartArea.right) / 2;
+                        const centerY = chartArea.bottom;
+
+                        const meta = chart._metasets[0];
+                        if (!meta || !meta.data || meta.data.length === 0) return;
+
+                        const arc = meta.data[0];
+                        const radius = arc.outerRadius;
+
+                        const leftX = centerX - radius - 10;
+                        const rightX = centerX + radius + 10;
+                        const bottomLabelY = centerY + 25;
+
+                        ctx.save();
+
+                        ctx.font = '14px Arial';
+                        ctx.fillStyle = '#666';
+                        ctx.textAlign = 'left';
+                        ctx.fillText('0', leftX, bottomLabelY);
+
+                        ctx.textAlign = 'center';
+                        ctx.font = 'bold 20px Arial';
+                        ctx.fillStyle = '#000';
+                        ctx.fillText(formatCompactNumber(totalCurrent), centerX, centerY - 15);
+
+                        ctx.textAlign = 'right';
+                        ctx.font = '14px Arial';
+                        ctx.fillStyle = '#666';
+                        ctx.fillText(formatNumber(totalTarget), rightX, bottomLabelY);
+
+                        ctx.font = '12px Arial';
+                        ctx.fillStyle = '#999';
+                        ctx.fillText('Target', rightX, bottomLabelY + 18);
+
+                        ctx.restore();
+                    }
+                }]
+            });
+
+            const centerLabel = document.getElementById('gauge-center-label');
+            if (centerLabel) centerLabel.textContent = formatNumber(totalCurrent);
+        }
+
+        // Separate data into two arrays: with target and without target
+        const withTarget = [];
+        const withoutTarget = [];
+
+        response.forEach(function (r) {
+            const target = Number(r['Target'] || 0);
+            if (target > 0) {
+                withTarget.push(r);
+            } else {
+                withoutTarget.push(r);
+            }
+        });
+
+        // Sales without target table
+        const tbodyNo = document.querySelector('#salesWithoutTargetTable tbody');
+        if (tbodyNo) {
+            tbodyNo.innerHTML = '';
+            withoutTarget.forEach(function (r) {
+                const marketingMan = escapeHtml(r['Marketing Man'] || '');
+                const sales = Number(r['Current Year Sales'] || 0);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${marketingMan}</td><td class="text-end">${formatNumber(sales)}</td>`;
+                tbodyNo.appendChild(tr);
+            });
+        }
+
+        // Target Analysis table (with Target Achieved column)
+        const tbodyT = document.querySelector('#targetAnalysisTable tbody');
+        if (tbodyT) {
+            tbodyT.innerHTML = '';
+            withTarget.forEach(function (r) {
+                const marketingMan = escapeHtml(r['Marketing Man'] || '');
+                const current = Number(r['Current Year Sales'] || 0);
+                const target = Number(r['Target'] || 0);
+                const targetAchieved = r['Target Achieved'] || 'No';
+                const achievedFlag = (targetAchieved.toString().toLowerCase() === 'yes' || targetAchieved === 'Y') ? 'Yes' : 'No';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${marketingMan}</td>
+            <td class="text-end">${formatNumber(current)}</td>
+     <td class="text-end">${formatNumber(target)}</td>
+                <td class="text-center" style="background:${achievedFlag === 'Yes' ? '#2ecc71' : 'transparent'}">${achievedFlag}</td>`;
+                tbodyT.appendChild(tr);
+            });
+        }
+
+        // Marketing Men's Growth table (use all records from response)
+        const mgTable = document.querySelector('#marketingGrowthTable tbody');
+        if (mgTable) {
+            mgTable.innerHTML = '';
+            response.forEach(function (r) {
+                const marketingMan = escapeHtml(r['Marketing Man'] || '');
+                const growthPct = r['Marketing Men Growth (%)'];
+                const current = Number(r['Current Year Sales'] || 0);
+                const last = Number(r['Last Year Sales'] || 0);
+
+                // Format growth percentage
+                let growthDisplay = '';
+                if (growthPct !== null && growthPct !== undefined && growthPct !== '') {
+                    growthDisplay = Number(growthPct).toFixed(2);
+                } else {
+                    growthDisplay = '-';
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${marketingMan}</td>
+    <td class="text-end">${growthDisplay}</td>
+      <td class="text-end">${formatNumber(current)}</td>
+        <td class="text-end">${formatNumber(last)}</td>`;
+                mgTable.appendChild(tr);
+            });
+        }
+
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching target growth data:', err);
+    });
+}
+
+/* ===== existing service calls to populate select lists ===== */
+CRMReportsServices.GetSalespersonList().then(function (response) {
+    if (response && response.length > 0) {
+        BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })));
+        // Wire change event to root container so dllSalesPresonListChange fires when checkboxes change
+        try {
+            const root = document.getElementById('ddlSalesPersonlist');
+            if (root) {
+                root.removeEventListener('change', dllSalesPresonListChange);
+                root.addEventListener('change', dllSalesPresonListChange);
+            }
+        } catch (e) { console.warn('Could not attach change handler to ddlSalesPresonlist', e); }
+    } else {
+        const el = $('#ddlSalesPersonlist')[0];
+        if (el) el.innerHTML = '';
     }
 }).catch(function (error) {
     console.error('Error fetching salesperson list:', error);
 });
 
-CRMReportsServices.GetDealerList().then(function (response) {
-    if (response.length > 0) {
-        // Bind as checkbox list (list of { Code, AccountDesp })
-        BindSelectList($('#ddlDealerNamelist')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })));
-        // Removed select2 initialization - replaced with checkbox multi-select with search & select-all.
-    } else {
-        const el = $('#ddlDealerNamelist')[0];
-        if (el) {
-            el.innerHTML = '';
+// Fires when the sales person multi-checkbox list changes. Alerts selected values.
+function dllSalesPresonListChange() {
+    try {
+        const vals = GetSelectedValues('ddlSalesPersonlist');
+        if (!vals || vals.length === 0) {
+            // alert('No SalesPerson selected');
+            // return;
         }
+
+        // Fetch dealer list for each selected salesperson and merge unique results
+        const promises = vals.map(function (code) {
+            try {
+                return CRMReportsServices.GetDealerList(code);
+            } catch (e) {
+                return Promise.resolve([]);
+            }
+        });
+        Showloader();
+        Promise.all(promises).then(function (responses) {
+            HideLoader();
+            // responses is array of arrays
+            const merged = [];
+            const seen = new Set();
+            responses.forEach(function (resp) {
+                if (Array.isArray(resp)) {
+                    resp.forEach(function (d) {
+                        const key = String(d.Code);
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            merged.push(d);
+                        }
+                    });
+                }
+            });
+
+            if (merged.length > 0) {
+                G_ddlDealerNameList = merged.slice();
+                try {
+                    BindSelectList($('#ddlDealerNamelist')[0], merged.map(function (item) { return { Code: item.Code, Desp: item.AccountDesp }; }));
+                } catch (e) {
+                    console.error('Error binding dealer list after salesperson change', e);
+                }
+            } else {
+                G_ddlDealerNameList = [];
+                const el = $('#ddlDealerNamelist')[0];
+                if (el) el.innerHTML = '';
+            }
+        }).catch(function (err) {
+            console.error('Error fetching dealer lists for selected salespersons', err);
+            G_ddlDealerNameList = [];
+            const el = $('#ddlDealerNamelist')[0];
+            if (el) el.innerHTML = '';
+        });
+    } catch (e) {
+        console.error('dllSalesPresonListChange error', e);
+    }
+}
+
+CRMReportsServices.GetDealerList().then(function (response) {
+    if (response && response.length > 0) {
+        // cache full response globally
+        G_ddlDealerNameList = response.slice();
+        BindSelectList($('#ddlDealerNamelist')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })));
+    } else {
+        // clear cache and UI
+        G_ddlDealerNameList = [];
+        const el = $('#ddlDealerNamelist')[0];
+        if (el) el.innerHTML = '';
     }
 }).catch(function (error) {
     console.error('Error fetching salesperson list:', error);
     const el = $('#ddlDealerNamelist')[0];
+    // on error clear cache
+    G_ddlDealerNameList = [];
     if (el) el.innerHTML = '';
 });
 
-function CustomerDashboard_ShowReport() { 
-// For Sales Person dropdown
-const selectedSalesPersons = GetSelectedValues('ddlSalesPersonlist');
+function CustomerDashboard_ShowReport() {
+    // For Sales Person dropdown
+    //const selectedSalesPersons = GetSelectedValues('ddlSalesPersonlist');
+    // For Dealer Name dropdown
+    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+    selectedDealers = selectedDealers.join(',');
 
-// For Dealer Name dropdown
-const selectedDealers = GetSelectedValues('ddlDealerNamelist');
+    if (AreAllSelected('ddlDealerNamelist') === true) {
+        selectedDealers = '0';
+    }
 
-console.log(selectedSalesPersons); // Array of selected codes
-    console.log(selectedDealers);      // Array of selected codes
+    if (selectedDealers == '') {
+        return;
+    }
+
+    if (document.querySelector('#Sales') && document.querySelector('#Sales').classList.contains('show')) {
+        renderBarChart();
+    }
+    if (document.querySelector('#regional') && document.querySelector('#regional').classList.contains('show')) {
+        renderRegionalSection();
+    }
+    if (document.querySelector('#client') && document.querySelector('#client').classList.contains('show')) {
+        renderClientSection();
+    }
+    if (document.querySelector('#target-growth') && document.querySelector('#target-growth').classList.contains('show')) {
+        renderTargetGrowthSection();
+    }
+    if (document.querySelector('#product') && document.querySelector('#product').classList.contains('show')) {
+        renderProductSection();
+    }
+    if (document.querySelector('#product-specification') && document.querySelector('#product-specification').classList.contains('show')) {
+        renderProductSpecificationSection();
+    }
+    //renderBarChart();
+    //Showloader();
+    //CustomerDashboardService.GetCustomerDashboardData('CLIENTTAB', selectedDealers).then(function (response) {
+    //    HideLoader();
+    //    const StringFilterColumn = [];
+    //    const NumericFilterColumn = [];
+    //    const DateFilterColumn = [];
+    //    const Button = false;
+    //    const showButtons = []
+    //    const StringdoubleFilterColumn = [];
+    //    const hiddenColumns = [];
+    //    const ColumnAlignment = { 'Action': ';min-width:145px' };
+
+
+    //    if (response.length > 0) {
+    //        BizsolCustomFilterGrid.CreateDataTable("clientSalesTableHeader", "clientSalesTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+    //    }
+    //})
+
+}
+
+
+function AreAllSelected(containerId) {
+    try {
+        if (!containerId) return false;
+        const container = document.getElementById(containerId);
+        if (!container) return false;
+
+        // If "Select All" checkbox exists, use its state as a quick answer
+        const selectAllId = containerId + '_all';
+        const selectAllEl = container.querySelector('#' + selectAllId);
+        if (selectAllEl && selectAllEl instanceof HTMLInputElement && selectAllEl.type === 'checkbox') {
+            return !!selectAllEl.checked;
+        }
+
+        // Fallback: evaluate all item checkboxes directly
+        const itemSelector = 'input[type="checkbox"].' + containerId + '_chk';
+        const inputs = Array.from(container.querySelectorAll(itemSelector));
+        if (inputs.length === 0) return false;
+
+        return inputs.every(function (chk) { return chk.checked === true; });
+    } catch (e) {
+        console.error('AreAllSelected error', e);
+        return false;
+    }
+}
+
+
+
+/*
+async function testGeo() {
+    const res = await getCityCenterAndPolygon('Pune');
+    console.log('Geo result:', res);
+}
+
+testGeo();
+*/
+
+// Cache for city geo data
+
+
+/**
+ * Get center and polygon boundary for a city name.
+ * Returns: { center: [lat, lon], polygon: [ [lat, lon], ... ] | null }
+ * NOTE: Nominatim and Overpass have rate limits. Cache results and consider server-side proxy for production.
+ */
+async function getCityCenterAndPolygon(cityName) {
+    if (!cityName) return null;
+    const key = cityName.trim().toLowerCase();
+    if (_cityGeoCache.has(key)) return _cityGeoCache.get(key);
+
+    // Helper to validate coordinates
+    function isValidCoord(lat, lon) {
+        return !isNaN(lat) && !isNaN(lon) &&
+            lat >= -90 && lat <= 90 &&
+            lon >= -180 && lon <= 180;
+    }
+
+    // Helper to close polygon if needed
+    function ensureClosedPolygon(coords) {
+        if (!coords || coords.length < 3) return coords;
+        const first = coords[0];
+        const last = coords[coords.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+            coords.push([first[0], first[1]]);
+        }
+        return coords;
+    }
+
+    console.log(`Fetching geo data for city: ${cityName}`);
+
+    // Try Nominatim first with detailed polygon
+    try {
+        const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&polygon_geojson=1&addressdetails=1&q=${encodeURIComponent(cityName)}`;
+
+        const nomRes = await fetch(nominatimUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'BizSol-WebERP/1.0 (support@bizsol.com)'
+            }
+        });
+
+        if (nomRes.ok) {
+            const nomData = await nomRes.json();
+            console.log('Nominatim response:', nomData);
+
+            if (Array.isArray(nomData) && nomData.length > 0) {
+                const item = nomData[0];
+                const lat = Number(item.lat);
+                const lon = Number(item.lon);
+
+                if (!isValidCoord(lat, lon)) {
+                    console.warn('Invalid coordinates from Nominatim:', lat, lon);
+                    throw new Error('Invalid coordinates');
+                }
+
+                const center = [lat, lon];
+                let polygon = null;
+
+                if (item.geojson) {
+                    try {
+                        console.log('Processing geojson:', item.geojson.type);
+
+                        if (item.geojson.type === 'Polygon' && Array.isArray(item.geojson.coordinates)) {
+                            const coords = item.geojson.coordinates[0];
+                            polygon = coords
+                                .map(coord => [Number(coord[1]), Number(coord[0])]) // [lat, lon]
+                                .filter(coord => isValidCoord(coord[0], coord[1]));
+                            polygon = ensureClosedPolygon(polygon);
+                            console.log(`Extracted ${polygon.length} polygon points from Nominatim`);
+                        }
+                        else if (item.geojson.type === 'MultiPolygon' && Array.isArray(item.geojson.coordinates)) {
+                            // Find the largest polygon
+                            let largestPoly = [];
+                            for (const poly of item.geojson.coordinates) {
+                                if (poly[0] && poly[0].length > largestPoly.length) {
+                                    largestPoly = poly[0];
+                                }
+                            }
+                            if (largestPoly.length > 0) {
+                                polygon = largestPoly
+                                    .map(coord => [Number(coord[1]), Number(coord[0])]) // [lat, lon]
+                                    .filter(coord => isValidCoord(coord[0], coord[1]));
+                                polygon = ensureClosedPolygon(polygon);
+                                console.log(`Extracted ${polygon.length} polygon points from MultiPolygon`);
+                            }
+                        }
+                    } catch (polyErr) {
+                        console.warn('Failed to parse polygon from Nominatim:', polyErr);
+                        polygon = null;
+                    }
+                }
+
+                // If no polygon from geojson, try using boundingbox to create one
+                if (!polygon && item.boundingbox && Array.isArray(item.boundingbox) && item.boundingbox.length === 4) {
+                    const [minLat, maxLat, minLon, maxLon] = item.boundingbox.map(Number);
+                    if (isValidCoord(minLat, minLon) && isValidCoord(maxLat, maxLon)) {
+                        polygon = [
+                            [minLat, minLon],
+                            [maxLat, minLon],
+                            [maxLat, maxLon],
+                            [minLat, maxLon],
+                            [minLat, minLon]  // close the rectangle
+                        ];
+                        console.log('Created rectangle polygon from bounding box');
+                    }
+                }
+
+                const out = { center, polygon };
+                _cityGeoCache.set(key, out);
+                console.log('Cached result:', out);
+                return out;
+            }
+        }
+    } catch (e) {
+        console.warn('Nominatim lookup failed:', e);
+    }
+
+    // Fallback: Overpass API with improved query for Indian cities
+    try {
+        console.log('Trying Overpass API...');
+        const overpassQuery = `[out:json][timeout:25];
+(
+  relation["name"="${cityName}"]["boundary"="administrative"]["admin_level"~"^(5|6|7|8)$"];
+  relation["name"="${cityName}"]["place"~"city|town"];
+);
+out geom;`;
+
+        const overpassUrl = 'https://overpass-api.de/api/interpreter';
+        const res = await fetch(overpassUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: overpassQuery
+        });
+
+        if (res.ok) {
+            const json = await res.json();
+            console.log('Overpass response:', json);
+
+            if (json.elements && json.elements.length > 0) {
+                for (const elem of json.elements) {
+                    let centerLat, centerLon;
+
+                    // Get center from bounds or center property
+                    if (elem.bounds) {
+                        centerLat = (elem.bounds.minlat + elem.bounds.maxlat) / 2;
+                        centerLon = (elem.bounds.minlon + elem.bounds.maxlon) / 2;
+                    } else if (elem.center) {
+                        centerLat = elem.center.lat;
+                        centerLon = elem.center.lon;
+                    } else {
+                        continue;
+                    }
+
+                    if (!isValidCoord(centerLat, centerLon)) continue;
+
+                    let polygon = null;
+
+                    // Try to extract polygon from members
+                    if (elem.members && Array.isArray(elem.members)) {
+                        const outerWays = elem.members.filter(m => m.role === 'outer' && m.geometry);
+                        if (outerWays.length > 0) {
+                            const allCoords = [];
+                            outerWays.forEach(way => {
+                                if (Array.isArray(way.geometry)) {
+                                    way.geometry.forEach(pt => {
+                                        if (isValidCoord(pt.lat, pt.lon)) {
+                                            allCoords.push([Number(pt.lat), Number(pt.lon)]);
+                                        }
+                                    });
+                                }
+                            });
+                            if (allCoords.length >= 3) {
+                                polygon = ensureClosedPolygon(allCoords);
+                                console.log(`Extracted ${polygon.length} polygon points from Overpass`);
+                            }
+                        }
+                    }
+
+                    // Fallback to bounding box rectangle if no polygon
+                    if (!polygon && elem.bounds) {
+                        const b = elem.bounds;
+                        polygon = [
+                            [b.minlat, b.minlon],
+                            [b.maxlat, b.minlon],
+                            [b.maxlat, b.maxlon],
+                            [b.minlat, b.maxlon],
+                            [b.minlat, b.minlon]
+                        ];
+                        console.log('Created rectangle from Overpass bounds');
+                    }
+
+                    const out = { center: [centerLat, centerLon], polygon };
+                    _cityGeoCache.set(key, out);
+                    console.log('Cached Overpass result:', out);
+                    return out;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Overpass lookup failed:', e);
+    }
+
+    // Final fallback: Simple Nominatim search with bounding box
+    try {
+        console.log('Trying final fallback...');
+        const nomUrl2 = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&q=${encodeURIComponent(cityName)}`;
+        const r = await fetch(nomUrl2, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'BizSol-WebERP/1.0 (support@bizsol.com)'
+            }
+        });
+
+        if (r.ok) {
+            const j = await r.json();
+            console.log('Fallback Nominatim response:', j);
+
+            if (Array.isArray(j) && j.length > 0) {
+                const lat = Number(j[0].lat);
+                const lon = Number(j[0].lon);
+
+                if (isValidCoord(lat, lon)) {
+                    const center = [lat, lon];
+                    let polygon = null;
+
+                    // Try to create polygon from bounding box
+                    if (j[0].boundingbox && Array.isArray(j[0].boundingbox) && j[0].boundingbox.length === 4) {
+                        const [minLat, maxLat, minLon, maxLon] = j[0].boundingbox.map(Number);
+                        if (isValidCoord(minLat, minLon) && isValidCoord(maxLat, maxLon)) {
+                            polygon = [
+                                [minLat, minLon],
+                                [maxLat, minLon],
+                                [maxLat, maxLon],
+                                [minLat, maxLon],
+                                [minLat, minLon]
+                            ];
+                            console.log('Created fallback rectangle from bounding box');
+                        }
+                    }
+
+
+                    const out = { center, polygon };
+                    _cityGeoCache.set(key, out);
+                    console.log('Cached fallback result:', out);
+                    return out;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Final fallback failed:', e);
+    }
+
+    console.warn(`No geo data found for ${cityName}`);
+    _cityGeoCache.set(key, null);
+    return null;
 }
 window.CustomerDashboard_ShowReport = CustomerDashboard_ShowReport;
+

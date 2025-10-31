@@ -104,6 +104,7 @@ let UrlService = {
     API_ENDPOINT_RMStock: `${environment.BASE_URL}/RMStock`,
     API_ENDPOINT_FMSReport: `${environment.BASE_URL}/FMSReport`,
     API_ENDPOINT_PDI: `${environment.BASE_URL}/PDI`,
+    API_ENDPOINT_CustomerDashboard: `${environment.BASE_URL}/CustomerDashboard`,
 }
 
 export { UrlService  }
