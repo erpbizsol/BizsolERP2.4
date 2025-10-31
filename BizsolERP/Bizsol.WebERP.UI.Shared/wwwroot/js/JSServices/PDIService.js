@@ -26,6 +26,14 @@ const PDIService = {
             }
         );
     },
+    GetPDIImage: function GetPDIImage(code) {
+        var URL = UrlService.API_ENDPOINT_PDI + "/GetPDIImage?code=" + code;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { PDIService }
