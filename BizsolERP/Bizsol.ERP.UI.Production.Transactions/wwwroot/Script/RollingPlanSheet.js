@@ -24,7 +24,7 @@ $(document).ready(function () {
         $('#btnDownload').show();
         GetRollingPlanSheetList();
         const $wrapper = $('.table-wrapper');
-        $wrapper.css({ width: '100%'});
+        $wrapper.css({ width: '100%' });
 
     });
     $(document).on('click', '#btnShowDateMillReport', function () {
@@ -47,21 +47,21 @@ function GetRollingPlanSheetList() {
     RollingPlanSheetService.GetRollingPlanSheetList().then(function (response) {
         if (response && response.length > 0) {
             HideLoader();
-            
-            const stringFilterColumn = ["Order No", "Item Name", "Size", "Thk", "Mkt_Man","Status"];
+
+            const stringFilterColumn = ["Order No", "Item Name", "Size", "Thk", "Mkt_Man", "Status"];
             const numericFilterColumn = [
                 "Ord Qty", "Ord Bal Qty", "Rld Qty", "Pld Qty", "Pld Bal Qty", "Rld Bal Qty",
                 "Dispatch Qty", "Available stock for dispatch", "Availiable stock for dispatch", "Balance Dispatch Qty"
             ];
-            const dateFilterColumn = ["Order Date","Dispatch Date"];
+            const dateFilterColumn = ["Order Date", "Dispatch Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code","Qty MR","Bal Qty Pc","SizeDesp","Dispatch Qty_raw","Pld Qty_raw","Rld Qty_raw"];
-            
-			const totals = calculateTotals(response);
-			
-			const formattedResponse = formatRowsByColumns(response, numericFilterColumn).map(r => {
+            const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw"];
+
+            const totals = calculateTotals(response);
+
+            const formattedResponse = formatRowsByColumns(response, numericFilterColumn).map(r => {
                 const row = formatQuantityFields(r);
                 // Add tooltips for Size and Thickness columns
                 if (row["Size"] && row["SizeDesp"]) {
@@ -92,7 +92,7 @@ function GetRollingPlanSheetList() {
                 }
                 return row;
             });
-            
+
             const columnAlignment = {
                 "Ord Qty": "right;",
                 "Ord Bal Qty": "right;",
@@ -108,8 +108,8 @@ function GetRollingPlanSheetList() {
                 "Status": ";width:15px;"
             };
 
-			BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", formattedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment,false);
-            
+            BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", formattedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+
             setTimeout(() => {
                 addTotalsRow(totals, hiddenColumns);
                 adjustFilterDropdownPosition();
@@ -199,7 +199,7 @@ function renderDateAndMillWiseReportTable(response, reportDate) {
     $('#paginator-tblTable').empty();
 
     // Adjust container width based on number of mills
-    (function adjustWidthByMillCount(count){
+    (function adjustWidthByMillCount(count) {
         const isMobile = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
         let pct = '100%';
         if (!isMobile) {
@@ -235,27 +235,27 @@ function calculateTotals(data) {
         availableStockForDispatch: 0, // Available stock for dispatch
         balanceDispatchQty: 0 // Balance Dispatch Qty
     };
-    
-    
+
+
     data.forEach((item, index) => {
-        
-        
+
+
         const totalQty = Number(item["Ord Qty"] ?? item["OrdQty"] ?? item["Ord_Qty"] ?? 0);
         const orderBalQty = Number(item["Ord Bal Qty"] ?? item["OrdBalQty"] ?? item["Ord_Bal_Qty"] ?? 0);
-        
+
         const rolledQty = Number(item["Rld Qty_raw"] ?? item["Rld Qty"] ?? item["RldQty"] ?? item["Rld_Qty"] ?? 0);
         const plannedQty = Number(item["Pld Qty_raw"] ?? item["Pld Qty"] ?? item["PldQty"] ?? item["Pld_Qty"] ?? 0);
-        
+
         const balQty = Number(item["Pld Bal Qty"] ?? item["PldBalQty"] ?? item["Pld_Bal_Qty"] ?? 0);
         const rldplannedQty = Number(item["Rld Bal Qty"] ?? item["RldBalQty"] ?? item["Rld_Bal_Qty"] ?? 0);
-        
+
         const dispatchQty = Number(item["Dispatch Qty_raw"] ?? item["Dispatch Qty"] ?? item["DispatchQty"] ?? item["Dispatch_Qty"] ?? 0);
-        
+
         const availableStockForDispatch = Number(
             item["Available stock for dispatch"] ?? item["Availiable stock for dispatch"] ?? item["AvailableStockForDispatch"] ?? item["Avail_Stock_For_Dispatch"] ?? 0
         );
         const balanceDispatchQty = Number(item["Balance Dispatch Qty"] ?? item["BalanceDispatchQty"] ?? item["Bal_Dispatch_Qty"] ?? 0);
-        
+
         if (!isNaN(totalQty)) totals.totalQty += totalQty;
         if (!isNaN(orderBalQty)) totals.orderBalQty += orderBalQty;
         if (!isNaN(rolledQty)) totals.rolledQty += rolledQty;
@@ -265,16 +265,16 @@ function calculateTotals(data) {
         if (!isNaN(dispatchQty)) totals.dispatchQty += dispatchQty;
         if (!isNaN(availableStockForDispatch)) totals.availableStockForDispatch += availableStockForDispatch;
         if (!isNaN(balanceDispatchQty)) totals.balanceDispatchQty += balanceDispatchQty;
-        
+
     });
-    
+
     return totals;
 }
 function formatQuantityFields(row) {
     const clone = { ...row };
     const qtyFields = [
-        "Ord Qty","Ord Bal Qty","Rld Qty","Pld Qty"	
-        ,"Pld Bal Qty","Rld Bal Qty","Dispatch Qty","Available stock for dispatch","Availiable stock for dispatch","Balance Dispatch Qty"
+        "Ord Qty", "Ord Bal Qty", "Rld Qty", "Pld Qty"
+        , "Pld Bal Qty", "Rld Bal Qty", "Dispatch Qty", "Available stock for dispatch", "Availiable stock for dispatch", "Balance Dispatch Qty"
     ];
     qtyFields.forEach(k => {
         if (k in clone && clone[k] != null && clone[k] !== '') {
@@ -331,20 +331,20 @@ function addTotalsRow(totals, hiddenColumns = []) {
         cell.style.height = '16px';
         cell.style.verticalAlign = 'middle';
         cell.style.whiteSpace = 'nowrap';
-        
+
         const headerText = firstHeaderRow.children[i].textContent.trim();
-       
-        
-        const isHidden = hiddenColumns.some(hiddenCol => 
-            headerText.includes(hiddenCol) || 
+
+
+        const isHidden = hiddenColumns.some(hiddenCol =>
+            headerText.includes(hiddenCol) ||
             hiddenCol.includes(headerText) ||
             headerText.toLowerCase().includes(hiddenCol.toLowerCase()) ||
             hiddenCol.toLowerCase().includes(headerText.toLowerCase())
         );
-        
+
         // Special case: Show Status column in totals row even if it's hidden
         const isStatusColumn = headerText.includes('Status') || headerText.includes('Plan Status');
-        
+
         if (isHidden && !isStatusColumn) {
             cell.textContent = '';
             cell.style.backgroundColor = '#e8f4fd';
@@ -395,11 +395,11 @@ function addTotalsRow(totals, hiddenColumns = []) {
                 cell.style.textAlign = 'right';
                 cell.style.backgroundColor = '#fff2cc';
                 cell.style.fontWeight = 'bold';
-             } else if (headerText.includes('Plan Status') || headerText.includes('PlanStatus') || headerText.includes('planStatus')) {
-                 cell.textContent = '';
-                 cell.style.fontWeight = 'bold';
-                 cell.style.backgroundColor = '#d5dde5';
-                 cell.style.textAlign = 'center';
+            } else if (headerText.includes('Plan Status') || headerText.includes('PlanStatus') || headerText.includes('planStatus')) {
+                cell.textContent = '';
+                cell.style.fontWeight = 'bold';
+                cell.style.backgroundColor = '#d5dde5';
+                cell.style.textAlign = 'center';
             } else if (i === 2) {
                 cell.textContent = 'Total';
                 cell.style.fontWeight = 'bold';
@@ -416,19 +416,19 @@ function addTotalsRow(totals, hiddenColumns = []) {
                 cell.style.backgroundColor = '#d5dde5';
                 cell.style.textAlign = 'Right';
             } else {
-                 cell.textContent = '';
-                 cell.style.backgroundColor = '#e8f4fd';
-             }
+                cell.textContent = '';
+                cell.style.backgroundColor = '#e8f4fd';
+            }
         }
-        
+
         totalsRow.appendChild(cell);
     }
-    
+
     tableHead.insertBefore(totalsRow, tableHead.firstChild);
-    
-    
+
+
     totalsRow.offsetHeight;
-    
+
     setTimeout(() => {
         const allRows = tableHead.querySelectorAll('tr');
         allRows.forEach(row => {
@@ -445,7 +445,7 @@ function addTotalsRow(totals, hiddenColumns = []) {
     }, 100);
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     setInterval(ChangecolorTr, 1000); // Slower interval for better performance
 });
 function ChangecolorTr() {
@@ -484,7 +484,7 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
     setTimeout(() => {
         const filteredData = window['filteredData_tblTable'] || [];
         const totals = calculateTotals(filteredData);
-        const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc","SizeDesp","Dispatch Qty_raw","Pld Qty_raw","Rld Qty_raw"];
+        const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw"];
         addTotalsRow(totals, hiddenColumns);
         adjustFilterDropdownPosition();
     }, 300);
@@ -494,28 +494,28 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
     setTimeout(() => {
         const filteredData = window['filteredData_tblTable'] || [];
         const totals = calculateTotals(filteredData);
-        const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc","SizeDesp","Dispatch Qty_raw","Pld Qty_raw","Rld Qty_raw"];
+        const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw"];
         addTotalsRow(totals, hiddenColumns);
         adjustFilterDropdownPosition();
     }, 300);
 });
 
 function adjustFilterDropdownPosition() {
-    // Add CSS to position filter dropdowns for last columns to the left
+    // Add CSS to position filter dropdowns for last 5 columns to the left
     const style = document.createElement('style');
     style.id = 'filter-dropdown-position-fix';
-    
+
     // Remove existing style if present
     const existingStyle = document.getElementById('filter-dropdown-position-fix');
     if (existingStyle) {
         existingStyle.remove();
     }
-    
+
     style.innerHTML = `
-        #table-head th:nth-last-child(-n+3) .filter-dropdown,
-        #table-head th:nth-last-child(-n+3) .dropdown-menu,
-        #table-head th:nth-last-child(-n+3) [class*="filter"],
-        #table-head th:nth-last-child(-n+3) [class*="dropdown"] {
+        #table-head th:nth-last-child(-n+5) .filter-dropdown,
+        #table-head th:nth-last-child(-n+5) .dropdown-menu,
+        #table-head th:nth-last-child(-n+5) [class*="filter"],
+        #table-head th:nth-last-child(-n+5) [class*="dropdown"] {
             right: 0 !important;
             left: auto !important;
         }
@@ -530,33 +530,37 @@ function adjustFilterDropdownPosition() {
             position: relative;
         }
         
-        /* Adjust any filter popups/dropdowns in last columns */
+        /* Adjust any filter popups/dropdowns in last 5 columns */
         #table-head th:last-child .filter-popup,
         #table-head th:last-child .filter-container,
         #table-head th:nth-last-child(2) .filter-popup,
         #table-head th:nth-last-child(2) .filter-container,
         #table-head th:nth-last-child(3) .filter-popup,
-        #table-head th:nth-last-child(3) .filter-container {
+        #table-head th:nth-last-child(3) .filter-container,
+        #table-head th:nth-last-child(4) .filter-popup,
+        #table-head th:nth-last-child(4) .filter-container,
+        #table-head th:nth-last-child(5) .filter-popup,
+        #table-head th:nth-last-child(5) .filter-container {
             right: 0 !important;
             left: auto !important;
             transform: translateX(0) !important;
         }
     `;
-    
+
     document.head.appendChild(style);
-    
+
     // Also dynamically adjust filter elements if they exist
     setTimeout(() => {
         const tableHead = document.getElementById('table-head');
         if (tableHead) {
             const headerCells = tableHead.querySelectorAll('th');
             const totalCells = headerCells.length;
-            
-            // Apply to last 3 columns
+
+            // Apply to last 5 columns
             headerCells.forEach((cell, index) => {
-                if (index >= totalCells - 3) {
+                if (index >= totalCells - 5) {
                     cell.style.position = 'relative';
-                    
+
                     // Find any filter-related elements and adjust their positioning
                     const filterElements = cell.querySelectorAll('[class*="filter"], [class*="dropdown"]');
                     filterElements.forEach(elem => {
@@ -568,16 +572,16 @@ function adjustFilterDropdownPosition() {
         }
     }, 100);
 }
+
 function ExportExcel() {
-    const hiddenFields = ["Code", "BuyerPoMaster_Code", "BuyerPoDetail_Code","SizeDesp"];
+    const hiddenFields = ["Code", "BuyerPoMaster_Code", "BuyerPoDetail_Code", "SizeDesp"];
     RollingPlanSheetService.GetRollingPlanSheetList().then(function (response) {
         ExportToExcelControl.ExportToExcel(response, hiddenFields, "RollingPlanSheet");
     });
-    
+
 }
 
-window.ExportExcel = ExportExcel;
-function OpenModal(Mode,BuyerPoMaster_Code) {
+function OpenModal(Mode, BuyerPoMaster_Code) {
     const titleMap = {
         'INVOICEDETAIL': 'Invoice Details',
         'ROLLINGPLAN': 'Rolling Plan Details',
@@ -602,7 +606,7 @@ function GetRollingPlanDetail(Mode, BuyerPoMaster_Code) {
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = [];
-            
+
             const columnAlignment = {
             };
 
@@ -623,6 +627,7 @@ function CloseModal() {
     $('#DetailModal').modal('hide');
 }
 
+window.ExportExcel = ExportExcel;
 window.OpenModal = OpenModal;
 window.CloseModal = CloseModal;
 
