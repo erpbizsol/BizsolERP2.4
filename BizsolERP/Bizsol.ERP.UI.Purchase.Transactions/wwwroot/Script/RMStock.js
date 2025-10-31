@@ -98,7 +98,7 @@ function GetRMStockCurrentListTable() {
         if (response && response.length > 0) {
             HideLoader();
             $('#tblRMStockCurrent').show();
-            const stringFilterColumn = ["Invoice No", "Item Name", "Vendor", "Brand", "Ch Wt", "Thickness", "Grade", "Make", "Width", "Ac Wt", "Warehouse", "Remarks", "IdentificationNo","Grade"];
+            const stringFilterColumn = ["MRN No","Invoice No", "Item Name", "Vendor", "Brand", "Ch Wt", "Thickness", "Grade", "Make", "Width", "Ac Wt", "Warehouse", "Remarks", "IdentificationNo","Grade"];
             const numericFilterColumn = ["Qty MT","Qty PC","Qty MTRS"];
             const dateFilterColumn = ["Receive Date","Invoice Date"];
             const button = false;
@@ -149,6 +149,7 @@ function calculateRMStockCurrentFooterTotals(rows) {
     try {
         let totalChWt = 0;
         let totalAcWt = 0;
+        const rowCount = Array.isArray(rows) ? rows.length : 0;
         if (rows && rows.length) {
             rows.forEach(function(r){
                 totalChWt += parseFloat(r['Ch Wt']) || 0;
@@ -156,6 +157,17 @@ function calculateRMStockCurrentFooterTotals(rows) {
             });
         }
         // Write into footer elements if they exist
+        // Prefer explicit row count cell if present
+        const $rowCountCell = $('#RowCountValue');
+        if ($rowCountCell.length) {
+            $rowCountCell.text('Row Count:' + rowCount);
+        } else {
+            // Fallback: Set the first footer th text to include row count
+            const $footerFirstTh = $('#RMStockCurrent tfoot th').first();
+            if ($footerFirstTh.length) {
+                $footerFirstTh.text('Totals (' + rowCount + ')');
+            }
+        }
         if ($('#totalChWt').length) {
             $('#totalChWt').text(totalChWt.toFixed(3));
         }
@@ -168,7 +180,7 @@ function calculateRMStockCurrentFooterTotals(rows) {
 }
 function ShowModelPlanned(rowData) {
     $('#txtIdentificationNo').val(rowData.IdentificationNo);
-    $('#txtWidth').val(rowData?.['Numeric Value']);
+    $('#txtWidth').val(rowData?.['Ac Wt']);
     $('#despSize').text(rowData.Size);
     G_IdentificationNo = rowData.IdentificationNo;
     G_Width = rowData?.['Numeric Value'];
@@ -697,7 +709,9 @@ function CloseModal() {
 
 }
 function updateTableTotals() {
-    var tbody = $('#RMStockCurrentPlanned tbody');
+    // Scope to modal to avoid duplicate IDs on the page
+    var $container = $('#PlannedMyModal');
+    var tbody = $container.find('#RMStockCurrentPlanned tbody');
     var rows = tbody.find('tr');
     
     var totalWidthCount = 0;
@@ -705,38 +719,36 @@ function updateTableTotals() {
     var totalWeightPerSlit = 0;
     var totalWeight = 0;
     
-    // If no rows exist, reset totals to zero
     if (rows.length === 0) {
-        $('#totalWidthCount').text('0');
-        $('#totalNoOfSlits').text('0');
-        $('#totalWeightPerSlit').text('0.000');
-        $('#totalWeight').text('0.000');
+        $container.find('#totalWidthCount').text('0');
+        $container.find('#totalNoOfSlits').text('0');
+        $container.find('#totalWeightPerSlit').text('0.000');
+        $container.find('#totalWeight').text('0.000');
         return;
     }
     
-    // Calculate totals from all visible rows
     rows.each(function() {
-        // Get values using class selectors for consistency
-        var noOfSlits = parseFloat($(this).find('.txtNoOfSlitsRow').val()) || 0;
-        var weightPerSlit = parseFloat($(this).find('.txtWeightPerSlitRow').val()) || 0;
-        var rowTotalWeight = parseFloat($(this).find('.txtTotalWeightRow').val()) || 0;
-        
-        // Get selected width text from dropdown
-        var selectedWidthText = $(this).find('.ddlSlitWidthRow option:selected').text().trim();
+        var $row = $(this);
+        var noOfSlits = parseFloat($row.find('.txtNoOfSlitsRow').val()) || 0;
+        var weightPerSlit = parseFloat($row.find('.txtWeightPerSlitRow').val()) || 0;
+        var rowTotalWeight = parseFloat($row.find('.txtTotalWeightRow').val());
+        if (isNaN(rowTotalWeight) || rowTotalWeight <= 0) {
+            rowTotalWeight = noOfSlits * weightPerSlit;
+        }
+
+        var selectedWidthText = $row.find('.ddlSlitWidthRow option:selected').text().trim();
         var widthCount = parseFloat(selectedWidthText) || 0;
         
-        // Accumulate totals
         totalWidthCount += widthCount;
         totalNoOfSlits += noOfSlits;
         totalWeightPerSlit += weightPerSlit;
         totalWeight += rowTotalWeight;
     });
     
-    // Update total display elements
-    $('#totalWidthCount').text(totalWidthCount.toFixed(0));
-    $('#totalNoOfSlits').text(totalNoOfSlits.toFixed(0));
-    $('#totalWeightPerSlit').text(totalWeightPerSlit.toFixed(3));
-    $('#totalWeight').text(totalWeight.toFixed(3));
+    $container.find('#totalWidthCount').text(totalWidthCount.toFixed(0));
+    $container.find('#totalNoOfSlits').text(totalNoOfSlits.toFixed(0));
+    $container.find('#totalWeightPerSlit').text(totalWeightPerSlit.toFixed(3));
+    $container.find('#totalWeight').text(totalWeight.toFixed(3));
 }
 function Save_PlannedSlitting(SNo) {
     let ItemMaster_Code = $('#ddlItemName_' + SNo).val();
@@ -765,6 +777,18 @@ function Save_PlannedSlitting(SNo) {
         totalWeightNum = noOfSlitsNum * weightPerSlitVal;
         $('#txtTotalWeight_' + SNo).val(totalWeightNum.toFixed(3));
     }
+    // Ensure totals are current and read from the Planned modal footer
+    updateTableTotals();
+    var totalWeightText = $('#PlannedMyModal').find('#totalWeight').text();
+    var actualWeightText = $('#txtWidth').val();
+    var TotalWeightInput = parseFloat(totalWeightText) || 0;
+    var ActualWeightInput = parseFloat(actualWeightText) || 0;
+
+    if (TotalWeightInput > ActualWeightInput) {
+        toastr.warning('Slit Weight is Less than Total Weight');
+        return;
+    }
+
 
     let RMStockPayloadData = {
         Code: SNo,
@@ -1100,7 +1124,7 @@ function loadJobWorkData() {
         HideLoader();
         if (response.length > 0) {
             $('#tblJobWorkData').show();
-            const stringFilterColumn = ["Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %", "Width Loss %", "Party Name"];
+            const stringFilterColumn = ["Entry No","Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %", "Width Loss %", "Party Name"];
             const numericFilterColumn = [];
             const dateFilterColumn = ["Entry Date"];
             const button = false;
