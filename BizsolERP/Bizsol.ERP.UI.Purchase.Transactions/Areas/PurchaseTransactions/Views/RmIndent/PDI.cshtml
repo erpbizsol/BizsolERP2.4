@@ -1,0 +1,76 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/PDI.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <!-- Card limited to col-md-4 -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="txtDate" class="col-form-label-sm fw-bold">
+                                Date <span class="text-danger">*</span>
+                            </label>
+                            <input id="txtDate" type="date" class="box_border form-control form-control-sm" />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="ddlOrderNo" class="col-form-label-sm fw-bold">
+                                Order No <span class="text-danger">*</span>
+                            </label>
+                            <select id="ddlOrderNo" name="ddlOrderNo" class="box_border form-control form-control-sm" required></select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="ddlTruckNo" class="col-form-label-sm fw-bold">
+                                Truck No <span class="text-danger">*</span>
+                            </label>
+                            <select id="ddlTruckNo" name="ddlTruckNo" class="box_border form-control form-control-sm" required></select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="ddlQty" class="col-form-label-sm fw-bold">
+                                Quantity in MT <span class="text-danger">*</span>
+                            </label>
+                            <select id="ddlQty" name="ddlQty" class="box_border form-control form-control-sm" disabled></select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtAttachment" class="col-form-label-sm fw-bold">
+                                Attach PDI Report <span class="text-danger">*</span>
+                            </label>
+                            <button type="button" id="txtAttachment" onclick="ViewAttachment()"
+                                    class="form-control form-control-sm box_border text-white"
+                                    style="background-color:#2c639b;">
+                                Upload PDI
+                            </button>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtRemark" class="col-form-label-sm fw-bold">Remark</label>
+                            <textarea id="txtRemark" class="box_border form-control form-control-sm" rows="2" maxlength="250"></textarea>
+                        </div>
+
+                        <div class="col-12 text-end">
+                            <button id="btnSave" type="button" class="btn btn-primary icon-height mt-3">
+                                Submit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="DespatchAdviceMaster_AttachmentControlmodal"></div>
+
+    

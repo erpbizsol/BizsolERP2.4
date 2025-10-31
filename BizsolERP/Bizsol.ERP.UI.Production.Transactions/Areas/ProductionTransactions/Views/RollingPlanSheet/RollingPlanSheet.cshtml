@@ -1,0 +1,199 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/RollingPlanSheet.js"></script>
+
+<style>
+    /* Tab design */
+    .nav-tabs { border-bottom: none; gap: 6px; }
+    .nav-tabs .nav-link {
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        background: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        height: 31px;              /* fixed height for tab button */
+        padding: 0 .9rem;          /* no vertical padding, only horizontal */
+        transition: background .2s ease, color .2s ease, box-shadow .2s ease, border-color .2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+    }
+    .nav-tabs .nav-link:hover:not(.active) {
+        background: #eceaff;
+        color: #2d2a52;
+        border-color: #c9c5ff;
+    }
+
+    .nav-tabs .nav-link.active {
+        background: #558bc0;
+        color: #fff;
+        border-color: #578dc3;
+        box-shadow: 0 2px 6px rgb(83 135 188);
+    }
+    .nav-tabs .nav-link i { opacity: .9; }
+    #rmStockTabContent { margin-top: .5rem; }
+    
+    .table-wrapper.fixed-height-table {
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .fixed-width-table {
+        min-width: 100%;
+        width: max-content;
+        table-layout: auto;
+    }
+    
+    .fixed-width-table th,
+    .fixed-width-table td {
+        white-space: nowrap;
+        min-width: 100px;
+        padding: 8px 12px;
+    }
+    
+    .fixed-width-table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #5c95ce;
+        z-index: 10;
+    }
+    
+    .fixed-width-table th:nth-child(1), .fixed-width-table td:nth-child(1) { min-width: 20px; } /* SNo */
+    .fixed-width-table th:nth-child(2), .fixed-width-table td:nth-child(2) { min-width: 100px; } /* Order No */
+    .fixed-width-table th:nth-child(3), .fixed-width-table td:nth-child(3) { min-width: 80px; } /* Order Date */
+    .fixed-width-table th:nth-child(4), .fixed-width-table td:nth-child(4) { min-width: 80px; } /* Dispatch Date */
+    .fixed-width-table th:nth-child(5), .fixed-width-table td:nth-child(5) { min-width: 80px; } /* Item Name */
+    .fixed-width-table th:nth-child(6), .fixed-width-table td:nth-child(6) { min-width: 20px; } /* Size */
+    .fixed-width-table th:nth-child(7), .fixed-width-table td:nth-child(7) { min-width: 20px; } /* Thickness */
+    .fixed-width-table th:nth-child(8), .fixed-width-table td:nth-child(8) { min-width: 80px; } /* Marketing Man */
+    .fixed-width-table th:nth-child(9), .fixed-width-table td:nth-child(9) { min-width: 20px; } /* Total Qty */
+    .fixed-width-table th:nth-child(10), .fixed-width-table td:nth-child(10) { min-width: 20px; } /* Order Bal Qty */
+    .fixed-width-table th:nth-child(11), .fixed-width-table td:nth-child(11) { min-width: 20px; } /* Rolled Qty */
+    .fixed-width-table th:nth-child(12), .fixed-width-table td:nth-child(12) { min-width: 20px; } /* Bal Qty */
+    .fixed-width-table th:nth-child(13), .fixed-width-table td:nth-child(13) { min-width: 20px; } /* Planned Qty */
+    .fixed-width-table th:nth-child(14), .fixed-width-table td:nth-child(14) { min-width: 20px;}/* Plan St */
+        .fixed-width-table th:nth-child(15), .fixed-width-table td:nth-child(15) {
+            min-width: 20px;
+        }
+        /* Plan St */
+        .fixed-width-table th:nth-child(16), .fixed-width-table td:nth-child(16) {
+            min-width: 20px;
+        }
+    /* Plan St */
+        .fixed-width-table th:nth-child(19), .fixed-width-table td:nth-child(19) {
+            min-width: 20px;
+        }
+
+    .totals-row {
+        background-color: #e8f4fd !important;
+        font-weight: bold !important;
+        border-bottom: 2px solid #5c95ce !important;
+    }
+    
+    .totals-row th {
+        background-color: #e8f4fd !important;
+        font-weight: bold !important;
+        border: 1px solid #ddd !important;
+        padding: 4px 10px !important;
+        font-size: 8pt !important;
+        height: 16px !important;
+        vertical-align: middle !important;
+    }
+    
+    .totals-row th:first-child {
+        background-color: #d5dde5 !important;
+        font-weight: bold !important;
+        text-align: center !important;
+    }
+    
+    .totals-row th[style*="background-color: #fff2cc"] {
+        background-color: #fff2cc !important;
+        font-weight: bold !important;
+        text-align: right !important;
+    }
+    /* Prevent background scroll when Bootstrap modal is open */
+    body.modal-open { overflow: hidden !important; }
+    .rps-detail-modal .modal-dialog { max-width: 760px; }
+    .rps-detail-modal .modal-header { padding: 8px 12px; background: #1f6fb2; color: #fff; }
+    .rps-detail-modal .modal-title { font-size: 13px; font-weight: 600; }
+    .rps-detail-modal .modal-body { padding: 8px 10px; max-height: 65vh; overflow: auto; }
+    .rps-detail-modal .modal-footer { padding: 6px 10px; }
+</style>
+<div class="row">
+    <div class="col-sm-12">
+        <div class="nav nav-tabs">
+            <div class="nav-item" role="presentation">
+                <button class="nav-link active" id="current-stock-tab" data-bs-toggle="tab" data-bs-target="#current-stock" type="button" role="tab" aria-controls="current-stock" aria-selected="true">
+                    <i class="fa fa-file-text" aria-hidden="true"></i> Order Wise Slitting Sheet
+                </button>
+            </div>
+            <div class="nav-item" role="presentation">
+                <button class="nav-link" id="dispatch-tab" data-bs-toggle="tab" data-bs-target="#dispatch" type="button" role="tab" aria-controls="dispatch" aria-selected="false">
+                    <i class="fas fa-truck"></i> Date Wise Mill Wise Report
+                </button>
+            </div>
+        </div>
+        <div class="card p-1" id="rmStockTabContent">
+            <div id="date-filter-bar" class="row mb-1" style="display:none">
+                <div class="col-md-3">
+                    <label for="rpToDate" class="form-label">Date</label>
+                    <input type="date" id="rpToDate" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-2" style="margin-top:1.8rem">
+                    <button type="button" id="btnShowDateMillReport" class="btn btn-primary btn-height">Show</button>
+                </div>
+                
+
+            </div> 
+            <div id="btnDownload" class="row mb-1" style="display:block" >
+                <div class="col-md-12" style="text-align:right">
+                    <button type="button" id="btn" class="btn btn-primary btn-height" onclick="ExportExcel();">Download</button>
+                </div> 
+            </div>
+            <div class="table-wrapper" style="min-height:400px;">
+                <table id="tblTable" class="fixed-width-table table">
+                    <thead id="table-head">
+                    </thead>
+                    <tbody id="table-body"> 
+                    </tbody> 
+                </table>
+            </div>
+            <div class="paginator" id="paginator-tblTable">
+            </div>
+        </div>
+    </div>
+    
+</div>
+<div class="modal fade rps-detail-modal" id="DetailModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper" style="max-height:400px;">
+                    <table id="DetailTable" class="fixed-width-table table">
+                        <thead id="DetailTable-head">
+                        </thead>
+                        <tbody id="DetailTable-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-DetailTable">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
