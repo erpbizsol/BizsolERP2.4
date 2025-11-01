@@ -6058,7 +6058,7 @@ button,
 
 .table > tbody > tr:nth-of-type(odd) > * {
     --bs-table-color-type: var(--bs-table-striped-color);
-    --bs-table-bg-type: var(--bs-table-striped-bg);
+    /*--bs-table-bg-type: var(--bs-table-striped-bg);*/
 }
 
 .table .form-control-sm {

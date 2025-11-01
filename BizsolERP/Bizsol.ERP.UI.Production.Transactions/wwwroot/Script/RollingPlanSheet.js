@@ -50,14 +50,14 @@ function GetRollingPlanSheetList() {
 
             const stringFilterColumn = ["Order No", "Item Name", "Size", "Thk", "Mkt_Man", "Status"];
             const numericFilterColumn = [
-                "Ord Qty", "Ord Bal Qty", "Rld Qty", "Pld Qty", "Pld Bal Qty", "Rld Bal Qty",
-                "Dispatch Qty", "Available stock for dispatch", "Availiable stock for dispatch", "Balance Dispatch Qty"
+                "Ord Qty", "Rld Qty", "Pld Qty", "Pld Bal Qty", "Rld Bal Qty",
+                "Dispatch Qty", "Avl stock for dispatch",  "Bal Dispatch Qty"
             ];
             const dateFilterColumn = ["Order Date", "Dispatch Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw"];
+            const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
 
             const totals = calculateTotals(response);
 
@@ -69,6 +69,9 @@ function GetRollingPlanSheetList() {
                 }
                 if (row["Thk"] && row["SizeDesp"]) {
                     row["Thk"] = `<span title="${escapeHtml(row["SizeDesp"])}">${row["Thk"]}</span>`;
+                }
+                if (row["Order No"] && row["PartyName"]) {
+                    row["Order No"] = `<span title="${escapeHtml(row["PartyName"])}">${row["Order No"]}</span>`;
                 }
                 // Make qty cells clickable to open a small modal
                 // Store raw numeric values before converting to HTML
@@ -101,9 +104,9 @@ function GetRollingPlanSheetList() {
                 "Pld Qty": "right;",
                 "Rld Bal Qty": "right;",
                 "Dispatch Qty": "right;",
-                "Available stock for dispatch": "right;",
+                "Avl stock for dispatch": "right;",
                 "Availiable stock for dispatch": "right;",
-                "Balance Dispatch Qty": "right;",
+                "Bal Dispatch Qty": "right;",
                 "SNo": ";width:15px;",
                 "Status": ";width:15px;"
             };
@@ -232,8 +235,8 @@ function calculateTotals(data) {
         plannedQty: 0,      // Pld Qty
         rldplannedQty: 0,   // Rld Bal Qty
         dispatchQty: 0,     // Dispatch Qty
-        availableStockForDispatch: 0, // Available stock for dispatch
-        balanceDispatchQty: 0 // Balance Dispatch Qty
+        availableStockForDispatch: 0, // Avl stock for dispatch
+        balanceDispatchQty: 0 // Bal Dispatch Qty
     };
 
 
@@ -252,9 +255,9 @@ function calculateTotals(data) {
         const dispatchQty = Number(item["Dispatch Qty_raw"] ?? item["Dispatch Qty"] ?? item["DispatchQty"] ?? item["Dispatch_Qty"] ?? 0);
 
         const availableStockForDispatch = Number(
-            item["Available stock for dispatch"] ?? item["Availiable stock for dispatch"] ?? item["AvailableStockForDispatch"] ?? item["Avail_Stock_For_Dispatch"] ?? 0
+            item["Avl stock for dispatch"] ?? item["Availiable stock for dispatch"] ?? item["AvailableStockForDispatch"] ?? item["Avail_Stock_For_Dispatch"] ?? 0
         );
-        const balanceDispatchQty = Number(item["Balance Dispatch Qty"] ?? item["BalanceDispatchQty"] ?? item["Bal_Dispatch_Qty"] ?? 0);
+        const balanceDispatchQty = Number(item["Bal Dispatch Qty"] ?? item["BalanceDispatchQty"] ?? item["Bal_Dispatch_Qty"] ?? 0);
 
         if (!isNaN(totalQty)) totals.totalQty += totalQty;
         if (!isNaN(orderBalQty)) totals.orderBalQty += orderBalQty;
@@ -274,7 +277,7 @@ function formatQuantityFields(row) {
     const clone = { ...row };
     const qtyFields = [
         "Ord Qty", "Ord Bal Qty", "Rld Qty", "Pld Qty"
-        , "Pld Bal Qty", "Rld Bal Qty", "Dispatch Qty", "Available stock for dispatch", "Availiable stock for dispatch", "Balance Dispatch Qty"
+        , "Pld Bal Qty", "Rld Bal Qty", "Dispatch Qty", "Avl stock for dispatch", "Availiable stock for dispatch", "Bal Dispatch Qty"
     ];
     qtyFields.forEach(k => {
         if (k in clone && clone[k] != null && clone[k] !== '') {
@@ -380,7 +383,7 @@ function addTotalsRow(totals, hiddenColumns = []) {
                 cell.style.textAlign = 'right';
                 cell.style.backgroundColor = '#fff2cc';
                 cell.style.fontWeight = 'bold';
-            } else if (headerText.includes('Balance Dispatch Qty')) {
+            } else if (headerText.includes('Bal Dispatch Qty')) {
                 cell.textContent = totals.balanceDispatchQty.toFixed(3);
                 cell.style.textAlign = 'right';
                 cell.style.backgroundColor = '#fff2cc';
@@ -390,7 +393,7 @@ function addTotalsRow(totals, hiddenColumns = []) {
                 cell.style.textAlign = 'right';
                 cell.style.backgroundColor = '#fff2cc';
                 cell.style.fontWeight = 'bold';
-            } else if (headerText.includes('Available stock for dispatch') || headerText.includes('Availiable stock for dispatch')) {
+            } else if (headerText.includes('Avl stock for dispatch') || headerText.includes('Availiable stock for dispatch')) {
                 cell.textContent = totals.availableStockForDispatch.toFixed(3);
                 cell.style.textAlign = 'right';
                 cell.style.backgroundColor = '#fff2cc';
@@ -484,7 +487,7 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
     setTimeout(() => {
         const filteredData = window['filteredData_tblTable'] || [];
         const totals = calculateTotals(filteredData);
-        const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw"];
+        const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         addTotalsRow(totals, hiddenColumns);
         adjustFilterDropdownPosition();
     }, 300);
@@ -494,12 +497,11 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
     setTimeout(() => {
         const filteredData = window['filteredData_tblTable'] || [];
         const totals = calculateTotals(filteredData);
-        const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw"];
+        const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         addTotalsRow(totals, hiddenColumns);
         adjustFilterDropdownPosition();
     }, 300);
 });
-
 function adjustFilterDropdownPosition() {
     // Add CSS to position filter dropdowns for last 5 columns to the left
     const style = document.createElement('style');
@@ -572,15 +574,13 @@ function adjustFilterDropdownPosition() {
         }
     }, 100);
 }
-
 function ExportExcel() {
-    const hiddenFields = ["Code", "BuyerPoMaster_Code", "BuyerPoDetail_Code", "SizeDesp"];
+    const hiddenFields = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
     RollingPlanSheetService.GetRollingPlanSheetList().then(function (response) {
         ExportToExcelControl.ExportToExcel(response, hiddenFields, "RollingPlanSheet");
     });
 
 }
-
 function OpenModal(Mode, BuyerPoMaster_Code) {
     const titleMap = {
         'INVOICEDETAIL': 'Invoice Details',

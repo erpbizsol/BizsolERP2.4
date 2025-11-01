@@ -7,6 +7,10 @@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/RMStock.js"></script>
 <script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 <style>
+    .fixed-width-table th, .fixed-width-table td {
+        white-space: nowrap;
+        min-width: auto;
+    }
     .nav-tabs .nav-link {
         border: 1px solid transparent;
         border-top-left-radius: 0.375rem;
@@ -235,7 +239,8 @@
                                     <tbody id="table-body-RMStockCurrent">
                                     </tbody>
                                     <tfoot>
-                                        <th colspan="11" class="text-end">Totals</th>
+                                        <th id="RowCountValue" class="text-end">Row Count:</th>
+                                        <th colspan="10" class="text-end">Totals</th>
                                         <th id="totalChWt" class="text-end">0.000</th>
                                         <th id="totalAcWt" class="text-end">0.000</th>
                                         <th></th>
@@ -456,7 +461,7 @@
                     </div>
                     <div class="col-sm-3">
                         <div class="">
-                            <label for="txtWidth" class="col-form-label-sm fw-bold">Width:</label>
+                            <label for="txtWidth" class="col-form-label-sm fw-bold">Actual Weight:</label>
                             <input id="txtWidth" name="txtWidth" class="box_border form-control form-control-sm text-end" autocomplete="off" readonly />
                         </div>
                     </div>
