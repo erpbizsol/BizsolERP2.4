@@ -34,7 +34,7 @@
     }
 </style>
 
-@* <div class="container-fluid mt-3"> *@
+
 <div class="d-flex justify-content-between align-items-center mb-2">
     <button class="btn btn-primary btn-height" type="button" data-bs-toggle="collapse" data-bs-target="#customerFilterCollapse" aria-expanded="true" aria-controls="customerFilterCollapse">
         <i class="fa-solid fa-filter"></i> Filters
@@ -94,11 +94,7 @@
             Product Analysis
         </button>
     </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="product-specification-tab" data-bs-toggle="tab" data-bs-target="#product-specification" type="button" role="tab" aria-controls="product-specification" aria-selected="false">
-            Product Specification Analysis
-        </button>
-    </li>
+   
 </ul>
 
 
@@ -310,7 +306,7 @@
     </div>
     <div class="tab-pane fade" id="product" role="tabpanel" aria-labelledby="product-tab">
         <div class="row mb-3">
-            <div class="col-lg-6">
+            <div class="col-lg-3">
                 <div class="card" style="border:1px solid #dcdcdc;">
                     <div class="card-body text-center p-3">
                         <small class="text-muted">Top Product by Sales</small>
@@ -318,11 +314,27 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6">
+            <div class="col-lg-3">
                 <div class="card" style="border:1px solid #dcdcdc;">
                     <div class="card-body text-center p-3">
                         <small class="text-muted">Top Group by Sales</small>
                         <div id="top-group-name" class="fw-bold top-client mt-2">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Top Thickness by Sales</small>
+                        <div id="top-thickness" class="fw-bold top-client mt-2">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Top Size by Sales</small>
+                        <div id="top-size" class="fw-bold top-client mt-2">-</div>
                     </div>
                 </div>
             </div>
@@ -334,49 +346,12 @@
                     <div class="card-body">
                         <small class="text-muted">Top 5 Products by Sales</small>
                         <div class="chart-scroll">
-                            <canvas id="topProductsPie" height="220"></canvas>
+                            <canvas id="topProductsPie" height="260"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="card">
-            <div class="card-body">
-                <small class="text-muted">Product Wise Sales</small>
-                <div class="client-table-container mt-2">
-                    <table id="productSalesTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
-                        <thead class="table-secondary" id="productSalesTableHeader">
-                            
-                        </thead>
-                        <tbody id="productSalesTableBody">
-
-                        </tbody>
-                    </table>
-                    <div class="paginator" id="paginator-productSalesTable">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="tab-pane fade" id="product-specification" role="tabpanel" aria-labelledby="product-specification-tab">
-        <div class="row mb-3">
-            <div class="col-lg-6">
-                <div class="card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-3">
-                        <small class="text-muted">Top Thickness by Sales</small>
-                        <div id="top-thickness" class="fw-bold top-client mt-2">-</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-3">
-                        <small class="text-muted">Top Size by Sales</small>
-                        <div id="top-size" class="fw-bold top-client mt-2">-</div>
-                    </div>
-                </div>
-            </div>
+            
         </div>
 
         <div class="row mb-3">
@@ -401,25 +376,49 @@
                 </div>
             </div>
         </div>
-
-        <div class="card">
-            <div class="card-body">
-                <small class="text-muted">Product Wise Sales</small>
-                <div class="client-table-container mt-2">
-                    <table id="productSpecTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
-                        <thead class="table-secondary" id="productSpecTableHeader">
-                           
-                        </thead>
-                        <tbody id="productSpecTableBody"></tbody>
-                    </table>
-                    <div class="paginator" id="paginator-productSpecTable">
+        <div class="row mb-3">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Product Wise Sales</small>
+                        <div class="client-table-container mt-2">
+                            <table id="productSalesTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
+                                <thead class="table-secondary" id="productSalesTableHeader">
+                                </thead>
+                                <tbody id="productSalesTableBody">
+                                </tbody>
+                            </table>
+                            <div class="paginator" id="paginator-productSalesTable">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Product Wise Sales (Sizes and Thickness)</small>
+                        <div class="client-table-container mt-2">
+                            <table id="productSpecTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
+                                <thead class="table-secondary" id="productSpecTableHeader">
+                                </thead>
+                                <tbody id="productSpecTableBody"></tbody>
+                            </table>
+                            <div class="paginator" id="paginator-productSpecTable">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        
+
+        
     </div>
+   
 </div>
-@* </div> *@
+
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
