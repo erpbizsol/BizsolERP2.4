@@ -1,0 +1,57 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/ProspectiveCustomer.js"></script>
+<style>
+    .fixed-width-table th, .fixed-width-table td {
+        white-space: nowrap;
+        min-width: auto;
+    }
+</style>
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="userName" class="form-label">Sales Person <span class="text-danger">*</span></label>
+                <input list="ddlSalesPersonList" id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" onclick="$(this).val('');" placeholder="Sales Person" autocomplete="off" required>
+                <datalist id="ddlSalesPersonList"></datalist>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlThikness" class="form-label">Thikness <span class="text-danger">*</span></label>
+                <select id="ddlThikness" name="ddlThikness" class="form-control form-control-sm box_border" placeholder="Thikness" autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlSize" class="form-label">Size <span class="text-danger">*</span></label>
+                <select list="ddlSize" id="ddlSize" name="ddlSize" class="form-control form-control-sm box_border" placeholder="Size" autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlGrade" class="form-label">Grade <span class="text-danger">*</span></label>
+                <select id="ddlGrade" name="ddlGrade" class="form-control form-control-sm box_border" placeholder="Grade" autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlISCode" class="form-label">IS Code <span class="text-danger">*</span></label>
+                <select id="ddlISCode" name="ddlISCode" class="form-control form-control-sm box_border" placeholder="IS Code" autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="txtStatus" class="form-label">Status <span class="text-danger">*</span></label>
+                <input id="txtStatus" name="txtStatus" class="form-control form-control-sm box_border" placeholder="Status" value="Active" autocomplete="off" required readonly/>
+            </div>
+
+            <div class="col-md-3 without-label-field">
+                <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-wrapper ">
+    <table id="ProspectiveCustomer" class="fixed-width-table table">
+        <thead id="table-header-ProspectiveCustomer">
+        </thead>
+        <tbody id="table-body-ProspectiveCustomer">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-ProspectiveCustomer">
+</div>
