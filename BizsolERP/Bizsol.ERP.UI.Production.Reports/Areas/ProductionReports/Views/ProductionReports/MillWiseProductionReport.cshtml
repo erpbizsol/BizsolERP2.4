@@ -26,6 +26,23 @@
     .btn-height {
         height: 30px;
     }
+    
+    /* Fix for filter dropdown positioning */
+    .table-wrapper {
+        overflow-x: auto;
+        overflow-y: visible !important;
+        position: relative;
+    }
+    
+    .column-filter-dropdown {
+        position: fixed !important;
+        z-index: 10000 !important;
+    }
+    
+    /* Ensure table header cells with filters have proper positioning context */
+    #tblMillWiseProduction thead th {
+        position: relative;
+    }
 </style>
 <div class="row">
     <div class="col-sm-12">
@@ -47,9 +64,10 @@
                     <select id="txtSizeParameter" class="form-control form-control-sm box_border" multiple style="width: 300px;" placeholder="Select..">
                     </select>
                 </div>
-                <div class="col-md-2" style="margin-top: 1.6rem;">
-                    <input type="checkbox" id="chkShowMachineWise" class="form-check-input" />
-                    <label for="chkShowMachineWise" class="form-label filter-label">Show Machine Wise</label>
+                <div class="col-md-3">
+                    <label for="ddlMachineNo" class="form-label filter-label">Machine No</label>
+                    <select id="ddlMachineNo" class="form-control form-control-sm box_border" multiple style="width: 300px;">
+                    </select>
                 </div>
                 <div class="col-md-1" style="margin-top: 1.6rem;">
                     <button type="button" id="btnSearch" class="btn btn-primary btn-height">

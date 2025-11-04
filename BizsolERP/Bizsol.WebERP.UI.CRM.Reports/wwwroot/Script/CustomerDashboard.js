@@ -79,6 +79,7 @@ function renderBarChart() {
             // Ensure sorted by MonthOrder (Apr..Mar)
             chartRows.sort((a, b) => (Number(a.MonthOrder) || 0) - (Number(b.MonthOrder) || 0));
             monthLabels = chartRows.map(r => r.MonthName || '');
+
             currentFY = chartRows.map(r => {
                 const v = r.CurrentFYQty;
                 return (v === null || v === undefined || v === '') ? 0 : Number(v);
@@ -87,6 +88,7 @@ function renderBarChart() {
                 const v = r.PrevFYQty;
                 return (v === null || v === undefined || v === '') ? 0 : Number(v);
             });
+
         } else {
             // fallback to existing sample arrays (keeps backward compatibility)
             monthLabels = labels;
@@ -335,34 +337,12 @@ function renderRegionalSection() {
         return;
     }
 
-    // placeholder summary used only if API doesn't return useful data
-    //const placeholder = {
-    //    stateMax: 'Maharashtra',
-    //    cityMax: 'Thane',
-    //    pareto: { labels: ['Maharashtra'], sales: [1.0], cumulative: [100] },
-    //    regionSales: { labels: ['Maharashtra'], data: [22299.43] },
-    //    polygon: [
-    //        [19.35, 72.85],
-    //        [19.40, 73.05],
-    //        [19.10, 73.10],
-    //        [19.00, 72.90],
-    //        [19.15, 72.80]
-    //    ],
-    //    center: [19.2183, 72.9781],
-    //    zoom: 11
-    //};
     const placeholder = {
         stateMax: '-',
         cityMax: '-',
         pareto: { labels: ['-'], sales: [0], cumulative: [0] },
         regionSales: { labels: ['-'], data: [0] },
-        polygon: [
-            //[19.35, 72.85],
-            //[19.40, 73.05],
-            //[19.10, 73.10],
-            //[19.00, 72.90],
-            //[19.15, 72.80]
-        ],
+        polygon: [],
         center: [0, 0],
         zoom: 11
     };
@@ -371,62 +351,46 @@ function renderRegionalSection() {
     CustomerDashboardService.GetCustomerDashboardData('REGIONTAB', selectedDealers).then(async function (response) {
         HideLoader();
 
-        // Normalize response into a single "regionalSummary" object.
-        let regionalSummary = Object.assign({}, placeholder);
+        // Normalize response - expect array of city records
+        let regionalData = [];
 
         try {
-            if (response) {
-                // If API returns array, prefer first element
-                const data = Array.isArray(response) && response.length > 0 ? response[0] : response;
-
-                // map commonly returned field names to our shape (be tolerant)
-                regionalSummary.stateMax = data.ConsigneeStateName || regionalSummary.stateMax;
-                regionalSummary.cityMax = data.ConsigneeCityName || regionalSummary.cityMax;
-
-                if (data.ConsigneeStateName && data.CurrentYearSales) {
-                    regionalSummary.regionSales.labels = Array.isArray(data.RegionLabels) ? data.RegionLabels : String(data.ConsigneeStateName).split(',');
-                    regionalSummary.regionSales.data = Array.isArray(data.RegionSalesData) ? data.RegionSalesData.map(Number) : String(data.CurrentYearSales).split(',').map(Number);
-                }
-
-                // If API provides polygon or center coordinates use them
-                if (data.Polygon && Array.isArray(data.Polygon) && data.Polygon.length > 0) {
-                    regionalSummary.polygon = data.Polygon;
-                }
-                if ((data.CenterLat && data.CenterLon) || (data.Center && Array.isArray(data.Center))) {
-                    regionalSummary.center = data.Center && Array.isArray(data.Center) ? data.Center : [Number(data.CenterLat || data.Latitude || regionalSummary.center[0]), Number(data.CenterLon || data.Longitude || regionalSummary.center[1])];
-                }
-                if (data.Zoom) regionalSummary.zoom = Number(data.Zoom);
-
-                // lookup city polygon/center if not already provided
-                const cityName = data.ConsigneeCityName || data.CityName;
-                if (cityName) {
-                    try {
-                        console.log('Fetching city geometry for:', cityName);
-                        const geo = await getCityCenterAndPolygon(cityName);
-                        console.log('Received city geometry:', geo);
-
-                        if (geo) {
-                            regionalSummary.center = geo.center || regionalSummary.center;
-                            if (Array.isArray(geo.polygon) && geo.polygon.length > 0) {
-                                regionalSummary.polygon = geo.polygon;
-                                console.log('Updated polygon with', geo.polygon.length, 'points');
-                            }
-                        }
-                    } catch (e) {
-                        console.warn('city geo lookup failed', e);
-                    }
-                }
+            if (response && Array.isArray(response) && response.length > 0) {
+                regionalData = response;
+            } else {
+                console.warn('No regional data received or unexpected format');
+                regionalData = [];
             }
         } catch (e) {
-            console.warn('regional response mapping failed, using placeholder', e);
-            regionalSummary = Object.assign({}, placeholder);
+            console.warn('regional response parsing failed', e);
+            regionalData = [];
+        }
+
+        // Extract first row for KPIs
+        let stateMax = '-';
+        let cityMax = '-';
+        if (regionalData.length > 0) {
+            stateMax = regionalData[0].ConsigneeStateName || '-';
+            cityMax = regionalData[0].ConsigneeCityName || '-';
         }
 
         // write summary text
         const stateEl = document.getElementById('regional-state-max');
         const cityEl = document.getElementById('regional-city-max');
-        if (stateEl) stateEl.textContent = regionalSummary.stateMax || '-';
-        if (cityEl) cityEl.textContent = regionalSummary.cityMax || '-';
+        if (stateEl) stateEl.textContent = stateMax;
+        if (cityEl) cityEl.textContent = cityMax;
+
+        // Build region sales chart data from all rows
+        const regionLabels = [];
+        const regionSalesData = [];
+        regionalData.forEach(function (item) {
+            const cityName = item.ConsigneeCityName || '';
+            const sales = Number(item.CurrentYearSales || 0);
+            if (cityName) {
+                regionLabels.push(cityName);
+                regionSalesData.push(sales);
+            }
+        });
 
         // Region sales horizontal bar
         try {
@@ -438,16 +402,22 @@ function renderRegionalSection() {
                 if (window.regionSalesChartInstance) {
                     try { window.regionSalesChartInstance.destroy(); } catch (e) { }
                 }
+
+                // Ensure datalabels plugin is registered globally so labels render
+                if (typeof ChartDataLabels !== 'undefined') {
+                    try { Chart.register(ChartDataLabels); } catch (e) { /* already registered */ }
+                }
+
                 window.regionSalesChartInstance = new Chart(ctx2, {
                     type: 'bar',
                     data: {
-                        labels: regionalSummary.regionSales.labels,
+                        labels: regionLabels.length >0 ? regionLabels : ['-'],
                         datasets: [{
                             label: 'Sales',
-                            data: regionalSummary.regionSales.data,
+                            data: regionSalesData.length >0 ? regionSalesData : [0],
                             backgroundColor: 'rgba(24,67,135,0.95)',
                             borderColor: 'rgba(24,67,135,1)',
-                            borderWidth: 1
+                            borderWidth:1
                         }]
                     },
                     options: {
@@ -456,13 +426,15 @@ function renderRegionalSection() {
                         maintainAspectRatio: false,
                         plugins: {
                             legend: { display: false },
+                            // Configure datalabels here (works if plugin registered)
                             datalabels: {
-                                anchor: 'end',
-                                align: 'right',
+                                display: true,
+                                anchor: 'center',
+                                align: 'center',
                                 color: '#fff',
                                 formatter: function (value) {
                                     if (value === null || value === undefined) return '';
-                                    return value.toLocaleString('en-US', { maximumFractionDigits: 2 });
+                                    return Number(value).toLocaleString('en-US', { maximumFractionDigits:2 });
                                 },
                                 font: { weight: 'bold' }
                             },
@@ -476,7 +448,8 @@ function renderRegionalSection() {
                             y: { grid: { display: false } }
                         }
                     },
-                    plugins: [window.ChartDataLabels]
+                    // If plugin variable exists, also add to chart plugins array to be safe
+                    plugins: (typeof ChartDataLabels !== 'undefined') ? [ChartDataLabels] : []
                 });
 
                 try { window.regionSalesChartInstance.resize(); window.regionSalesChartInstance.update(); } catch (e) { }
@@ -485,47 +458,114 @@ function renderRegionalSection() {
             console.warn('region sales chart failed', e);
         }
 
-        // Leaflet map render (if coordinates available)
+        // Fetch polygon and center for each city and render map
         try {
-            if (typeof L !== 'undefined') {
+            if (typeof L !== 'undefined' && regionalData.length > 0) {
                 let mapEl = document.getElementById('regionalMap');
                 if (mapEl) {
-                    console.log('Rendering map with center:', regionalSummary.center, 'polygon points:', regionalSummary.polygon ? regionalSummary.polygon.length : 0);
+                    console.log('Rendering map with', regionalData.length, 'cities');
 
+                    // Initialize map if not already created
                     if (!window._regionalLeafletMap) {
-                        window._regionalLeafletMap = L.map(mapEl).setView(regionalSummary.center, regionalSummary.zoom);
+                        // Use a default center (will be updated after adding layers)
+                        window._regionalLeafletMap = L.map(mapEl).setView([20.5937, 78.9629], 5); // Default: center of India
                         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                             maxZoom: 18,
                             attribution: '&copy; OpenStreetMap contributors'
                         }).addTo(window._regionalLeafletMap);
-                    } else {
-                        window._regionalLeafletMap.setView(regionalSummary.center, regionalSummary.zoom);
                     }
 
+                    // Clear existing layers
                     if (window._regionalLayerGroup) {
                         window._regionalLayerGroup.clearLayers();
                     } else {
                         window._regionalLayerGroup = L.layerGroup().addTo(window._regionalLeafletMap);
                     }
 
-                    // Only add polygon if we have valid data
-                    if (regionalSummary.polygon && Array.isArray(regionalSummary.polygon) && regionalSummary.polygon.length >= 3) {
-                        const polygon = L.polygon(regionalSummary.polygon, {
-                            color: '#c0392b',
-                            weight: 2,
-                            fillColor: '#e74c3c',
-                            fillOpacity: 0.25
-                        }).addTo(window._regionalLayerGroup);
+                    // Fetch geo data for each city
+                    const geoPromises = regionalData.map(async function (item) {
+                        const cityName = item.ConsigneeCityName;
+                        const stateName = item.ConsigneeStateName;
+                        const sales = item.CurrentYearSales;
 
-                        // Fit map to polygon bounds
+                        if (!cityName) return null;
+
                         try {
-                            window._regionalLeafletMap.fitBounds(polygon.getBounds(), { padding: [20, 20] });
+                            const geo = await getCityCenterAndPolygon(cityName);
+                            return {
+                                city: cityName,
+                                state: stateName,
+                                sales: sales,
+                                geo: geo
+                            };
+                        } catch (e) {
+                            console.warn('Failed to fetch geo for', cityName, e);
+                            return null;
+                        }
+                    });
+
+                    const geoResults = await Promise.all(geoPromises);
+
+                    // Track combined bounds
+                    let combinedBounds = null;
+
+                    // Add polygons and markers for each city
+                    geoResults.forEach(function (result) {
+                        if (!result || !result.geo) return;
+
+                        const { city, state, sales, geo } = result;
+
+                        // Add polygon if available
+                        if (geo.polygon && Array.isArray(geo.polygon) && geo.polygon.length >= 3) {
+                            try {
+                                const polygon = L.polygon(geo.polygon, {
+                                    color: '#c0392b',
+                                    weight: 2,
+                                    fillColor: '#e74c3c',
+                                    fillOpacity: 0.25
+                                }).addTo(window._regionalLayerGroup);
+
+                                // Bind popup with city info
+                                polygon.bindPopup(`<strong>${city}</strong><br/>${state}<br/>Sales: ${formatNumber(sales)}`);
+
+                                // Update combined bounds
+                                if (!combinedBounds) {
+                                    combinedBounds = polygon.getBounds();
+                                } else {
+                                    combinedBounds.extend(polygon.getBounds());
+                                }
+                            } catch (e) {
+                                console.warn('Failed to add polygon for', city, e);
+                            }
+                        }
+
+                        // Add marker at center
+                        if (geo.center && Array.isArray(geo.center) && geo.center.length === 2) {
+                            try {
+                                const marker = L.marker(geo.center)
+                                    .bindPopup(`<strong>${city}</strong><br/>${state}<br/>Sales: ${formatNumber(sales)}`)
+                                    .addTo(window._regionalLayerGroup);
+
+                                // Update combined bounds
+                                if (!combinedBounds) {
+                                    combinedBounds = L.latLngBounds([geo.center, geo.center]);
+                                } else {
+                                    combinedBounds.extend(marker.getLatLng());
+                                }
+                            } catch (e) {
+                                console.warn('Failed to add marker for', city, e);
+                            }
+                        }
+                    });
+
+                    // Fit map to show all added layers
+                    if (combinedBounds) {
+                        try {
+                            window._regionalLeafletMap.fitBounds(combinedBounds, { padding: [20, 20] });
                         } catch (e) {
                             console.warn('Could not fit bounds:', e);
                         }
                     }
-
-                    const marker = L.marker(regionalSummary.center).bindPopup(`${regionalSummary.cityMax}<br/>${regionalSummary.stateMax}`).addTo(window._regionalLayerGroup);
 
                     setTimeout(function () {
                         try {
@@ -541,12 +581,12 @@ function renderRegionalSection() {
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching regional summary', err);
-        // If API failed, render placeholder UI using existing placeholder logic
+        // If API failed, render placeholder UI
         try {
             const stateEl = document.getElementById('regional-state-max');
             const cityEl = document.getElementById('regional-city-max');
-            if (stateEl) stateEl.textContent = placeholder.stateMax || '-';
-            if (cityEl) cityEl.textContent = placeholder.cityMax || '-';
+            if (stateEl) stateEl.textContent = '-';
+            if (cityEl) cityEl.textContent = '-';
         } catch (e) { /* ignore */ }
     });
 }
@@ -633,15 +673,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (productTabBtn) {
         productTabBtn.addEventListener('shown.bs.tab', function () {
             renderProductSection();
-        });
-    }
-
-    const productSpecTabBtn = document.getElementById('product-specification-tab');
-    if (productSpecTabBtn) {
-        productSpecTabBtn.addEventListener('shown.bs.tab', function () {
             renderProductSpecificationSection();
         });
     }
+
+    
 
     // In case page initially shows regional or client tab, ensure render called after short delay
     setTimeout(function () {
@@ -659,10 +695,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (document.querySelector('#product') && document.querySelector('#product').classList.contains('show')) {
             renderProductSection();
-        }
-        if (document.querySelector('#product-specification') && document.querySelector('#product-specification').classList.contains('show')) {
             renderProductSpecificationSection();
         }
+        
     }, 300);
 });
 
@@ -726,7 +761,34 @@ function renderProductSpecificationSection() {
             window.thicknessPieInstance = new Chart(ctx, {
                 type: 'pie',
                 data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#8e44ad', '#c0392b', '#e74c3c', '#f39c12', '#d35400'] }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 20,
+                            bottom: 20,
+                            left: 20,
+                            right: 20
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'right' },
+                        datalabels: {
+                            anchor: 'center',
+                            align: 'end',
+                            offset: 45,
+                            color: '#818181',
+                            font: { weight: 'bold', size: 12 },
+                            formatter: function (value) {
+                                if (value === null || value === undefined) return '';
+                                return formatNumber(value);
+                            },
+                            clip: false
+                        }
+                    }
+                },
+                plugins: [window.ChartDataLabels]
             });
         }
 
@@ -761,7 +823,34 @@ function renderProductSpecificationSection() {
             window.sizePieInstance = new Chart(ctx2, {
                 type: 'pie',
                 data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#3498db', '#2c3e50', '#e67e22', '#9b59b6', '#e74c3c'] }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 20,
+                            bottom: 20,
+                            left: 20,
+                            right: 20
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'right' },
+                        datalabels: {
+                            anchor: 'center',
+                            align: 'end',
+                            offset: 45,
+                            color: '#818181',
+                            font: { weight: 'bold', size: 12 },
+                            formatter: function (value) {
+                                if (value === null || value === undefined) return '';
+                                return formatNumber(value);
+                            },
+                            clip: false
+                        }
+                    }
+                },
+                plugins: [window.ChartDataLabels]
             });
         }
 
@@ -826,23 +915,86 @@ function renderProductSection() {
         });
 
         // Pie: top products
-        const prodCanvas = document.getElementById('topProductsPie');
+        let prodCanvas = document.getElementById('topProductsPie');
         if (prodCanvas && topProducts.length > 0) {
+            // Destroy previous chart instance
+            if (window.topProductsPieInstance) {
+                try {
+                    window.topProductsPieInstance.destroy();
+                } catch (e) {
+                    console.warn('Error destroying topProductsPie chart:', e);
+                }
+            }
+
+            // Replace canvas with a fresh element to remove any leftover inline styles or event handlers
+            try {
+                const parent = prodCanvas.parentNode;
+                const newCanvas = document.createElement('canvas');
+                newCanvas.id = prodCanvas.id;
+                newCanvas.className = prodCanvas.className || '';
+                newCanvas.style.width = '100%';
+                newCanvas.style.height = prodCanvas.style.height || '250px';
+                parent.replaceChild(newCanvas, prodCanvas);
+                prodCanvas = newCanvas;
+            } catch (e) {
+                console.warn('Canvas replace failed, continuing with existing element', e);
+            }
+
             const labels = topProducts.map(p => p.name);
             const data = topProducts.map(p => p.value);
-            if (window.topProductsPieInstance) try { window.topProductsPieInstance.destroy(); } catch (e) { }
-            // compute min width based on label count to avoid huge chart stretching
-            const minW = Math.min(Math.max(400, labels.length * 70), 1000);
-            prodCanvas.style.minWidth = minW + 'px';
+
             const ctx = prodCanvas.getContext('2d');
             window.topProductsPieInstance = new Chart(ctx, {
                 type: 'pie',
-                data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#c0392b', '#e74c3c', '#d35400', '#f39c12', '#3498db'] }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#c0392b', '#e74c3c', '#d35400', '#f39c12', '#3498db']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 20,
+                            bottom: 20,
+                            left: 20,
+                            right: 20
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'right' },
+                        datalabels: {
+                            anchor: 'center',
+                            align: 'end',
+                            offset: 55,
+                            color: '#818181',
+                            font: { weight: 'bold', size: 12 },
+                            formatter: function (value) {
+                                if (value === null || value === undefined) return '';
+                                return formatNumber(value);
+                            },
+                            clip: false
+                        }
+                    }
+                },
+                plugins: [window.ChartDataLabels]
             });
-            try { window.topProductsPieInstance.resize(); window.topProductsPieInstance.update(); } catch (e) { }
-        }
 
+            // Ensure the chart is sized correctly after insertion
+            try {
+                setTimeout(() => {
+                    if (window.topProductsPieInstance) {
+                        window.topProductsPieInstance.resize();
+                        window.topProductsPieInstance.update();
+                    }
+                }, 50);
+            } catch (e) {
+                console.warn('Error resizing chart:', e);
+            }
+        }
 
         const StringFilterColumn = [];
         const NumericFilterColumn = [];
@@ -1220,28 +1372,9 @@ function CustomerDashboard_ShowReport() {
     }
     if (document.querySelector('#product') && document.querySelector('#product').classList.contains('show')) {
         renderProductSection();
-    }
-    if (document.querySelector('#product-specification') && document.querySelector('#product-specification').classList.contains('show')) {
         renderProductSpecificationSection();
     }
-    //renderBarChart();
-    //Showloader();
-    //CustomerDashboardService.GetCustomerDashboardData('CLIENTTAB', selectedDealers).then(function (response) {
-    //    HideLoader();
-    //    const StringFilterColumn = [];
-    //    const NumericFilterColumn = [];
-    //    const DateFilterColumn = [];
-    //    const Button = false;
-    //    const showButtons = []
-    //    const StringdoubleFilterColumn = [];
-    //    const hiddenColumns = [];
-    //    const ColumnAlignment = { 'Action': ';min-width:145px' };
-
-
-    //    if (response.length > 0) {
-    //        BizsolCustomFilterGrid.CreateDataTable("clientSalesTableHeader", "clientSalesTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
-    //    }
-    //})
+    
 
 }
 

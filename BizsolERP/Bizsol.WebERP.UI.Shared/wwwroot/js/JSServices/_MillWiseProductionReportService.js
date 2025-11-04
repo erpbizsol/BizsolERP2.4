@@ -19,6 +19,14 @@ const MillWiseProductionReport = {
             }
         );
     },
+    GetMachineNo: function GetMachineNo() {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + `/GetMachineNo`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { MillWiseProductionReport }

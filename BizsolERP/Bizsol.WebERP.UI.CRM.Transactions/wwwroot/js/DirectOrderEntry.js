@@ -1009,6 +1009,7 @@ function OnChange_ddlItemSizeMaster(x, tbItemConsumeRowNo) {
     GetSelectedItemSizeMasterCode(tbItemConsumeRowNo);
     SetWeightInMTByPC(x, tbItemConsumeRowNo);
     //SetPCandWeightByLengthInMR(x, tbItemConsumeRowNo);
+    ShowStockValueByItemSizeThk(x, tbItemConsumeRowNo);
 }
 function OnChange_RateUnit(x, tbItemConsumeRowNo) {
     GetBasicRateExtraCharges(x, tbItemConsumeRowNo);
@@ -5469,9 +5470,15 @@ function ShowStockValueByItemSizeThk(x,RowNo) {
             var filteredResponse = response.filter(function (record) {
                 return record.BalanceQty > 0 && record.SIZE === Size && record.THICKNESS === (Thicknessdesp + ' MM');
             });
+            let filteredResponseBySizeDesp = response.filter(function (record) {
+                return record.BalanceQty > 0 && record.SizeDesp === SizeDesp;
+            });
             if (filteredResponse.length > 0) {
                 ObjCurrRow.find('td:eq(' + Indx_TblOrder.Stock + ')')[0].getElementsByTagName('input')[0].value = filteredResponse[0].BalanceQty;
-            } else {
+            } else if (filteredResponseBySizeDesp.length > 0 && StockDependOnParameters == 'NA') {
+                ObjCurrRow.find('td:eq(' + Indx_TblOrder.Stock + ')')[0].getElementsByTagName('input')[0].value = filteredResponseBySizeDesp[0].BalanceQty;
+            }
+            else {
                 ObjCurrRow.find('td:eq(' + Indx_TblOrder.Stock + ')')[0].getElementsByTagName('input')[0].value = 0;
             }
            
