@@ -173,6 +173,7 @@ i:hover {
     overflow-x: auto;
     overflow-y: auto;
     border: 1px solid #ddd;
+    min-height:400px;
 }
 
 .fixed-width-table {

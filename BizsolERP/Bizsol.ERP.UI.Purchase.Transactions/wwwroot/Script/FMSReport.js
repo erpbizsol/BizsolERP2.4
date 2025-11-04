@@ -21,22 +21,22 @@ $(document).ready(function () {
 function unApprovedFMSReport() {
     FMSReportService.GetUnApprovedFMSReport(FrmAction, FrmType).then(function (response) {
         if (response && response.length > 0) {
-            const stringFilterColumn = ["Indent No", "Item Name", "Qty", "UOM", "Current Stock", "LMC", "Delivery Days", "Unit Price", "Total Amount","Created by"];
-            const numericFilterColumn = [];
+            const stringFilterColumn = [ "Item Name", "Qty", "UOM", "Curr. Stk.", "Last Mon Con.", "Dlry Days", "Unit Price", "Total Amount","Created by"];
+            const numericFilterColumn = ["Ind No"];
             const dateFilterColumn = ["Indent Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = ["Code"];
             const ColumnAlignment = {
-                "Total Amount": 'right', "Unit Price": 'right', "Delivery Days": 'right', "LMC": 'right;min-width:99px;', "Current Stock": 'right;min-width:99px;',
-                "Qty": 'right;', "Indent Date": 'center', 'Item Name': ';min-width:230px !important;',"Indent No":";min-width:70px;"
+                "Total Amount": 'right', "Unit Price": 'right', "Dlry Days": 'right', "Last Mon Con.": 'right', "Curr. Stk.": 'right;',
+                "Qty": 'right;', "Indent Date": 'center'
             };
             const updatedResponse = response.map(item => ({
                 ...item,
                 //"Qty": item["Qty"] ? parseFloat(item["Qty"]).toFixed(3) : "0.000",
-                "Current Stock": item["Current Stock"] ? parseFloat(item["Current Stock"]).toFixed(3) : "0.000",
-                "LMC": item["LMC"] ? parseFloat(item["LMC"]).toFixed(3) : "0.000",
+                "Curr. Stk.": item["Curr. Stk."] ? parseFloat(item["Curr. Stk."]).toFixed(3) : "0.000",
+                "Last Mon Con.": item["Last Mon Con."] ? parseFloat(item["Last Mon Con."]).toFixed(3) : "0.000",
                 Action: `<button class="btn btn-success icon-height mb-1" title="${FrmAction}" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>`
                 }));
 
