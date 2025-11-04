@@ -1,0 +1,220 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Sales.Transactions/Script/VerifyDispatchPlan.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+    .filter-card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .filter-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #5c95ce;
+    }
+
+    .btn-height {
+        height: 30px;
+    }
+
+    /* Fix for filter dropdown positioning */
+    .table-wrapper {
+        overflow-x: auto;
+        overflow-y: visible !important;
+        position: relative;
+    }
+
+    .column-filter-dropdown {
+        position: fixed !important;
+        z-index: 10000 !important;
+    }
+
+    /* Ensure table header cells with filters have proper positioning context */
+    #tblMillWiseProduction thead th {
+        position: relative;
+    }
+
+    .fixed-width-table th:nth-child(1), .fixed-width-table td:nth-child(1) {
+        min-width: 20px;
+    }
+    /* SNo */
+    .fixed-width-table th:nth-child(2), .fixed-width-table td:nth-child(2) {
+        min-width: 20px;
+    }
+
+    .fixed-width-table th:nth-child(3), .fixed-width-table td:nth-child(3) {
+        min-width: 20px;
+    }
+
+    .fixed-width-table th:nth-child(4), .fixed-width-table td:nth-child(4) {
+        min-width: 20px;
+    }
+
+    .fixed-width-table th:nth-child(5), .fixed-width-table td:nth-child(5) {
+        min-width: 20px;
+    }
+    /* Order No */
+    .fixed-width-table th:nth-child(13), .fixed-width-table td:nth-child(13) {
+        min-width: 80px;
+    }
+    /* Order Date */
+    .fixed-width-table th:nth-child(14), .fixed-width-table td:nth-child(14) {
+        min-width: 80px;
+    }
+    /* Dispatch Date */
+    .fixed-width-table th:nth-child(15), .fixed-width-table td:nth-child(15) {
+        min-width: 80px;
+    }
+    /* Item Name */
+    .fixed-width-table th:nth-child(16), .fixed-width-table td:nth-child(16) {
+        min-width: 20px;
+    }
+    /* Size */
+    .fixed-width-table th:nth-child(17), .fixed-width-table td:nth-child(17) {
+        min-width: 20px;
+    }
+    /* Thickness */
+    .fixed-width-table th:nth-child(18), .fixed-width-table td:nth-child(18) {
+        min-width: 80px;
+    }
+    /* Marketing Man */
+    .fixed-width-table th:nth-child(19), .fixed-width-table td:nth-child(19) {
+        min-width: 20px;
+    }
+    /* Total Qty */
+    .fixed-width-table th:nth-child(20), .fixed-width-table td:nth-child(20) {
+        min-width: 20px;
+    }
+    /* Order Bal Qty */
+    .fixed-width-table th:nth-child(21), .fixed-width-table td:nth-child(21) {
+        min-width: 20px;
+    }
+    /* Rolled Qty */
+    .fixed-width-table th:nth-child(22), .fixed-width-table td:nth-child(22) {
+        min-width: 20px;
+    }
+    /* Bal Qty */
+    .fixed-width-table th:nth-child(23), .fixed-width-table td:nth-child(23) {
+        min-width: 20px;
+    }
+    /* Planned Qty */
+    .fixed-width-table th:nth-child(24), .fixed-width-table td:nth-child(24) {
+        min-width: 20px;
+    }
+    /* Plan St */
+    /* Planned Qty */
+    .fixed-width-table th:nth-child(25), .fixed-width-table td:nth-child(25) {
+        min-width: 20px;
+    }
+    /* Planned Qty */
+    .fixed-width-table th:nth-child(26), .fixed-width-table td:nth-child(26) {
+        min-width: 20px;
+    }
+    /* Planned Qty */
+    .fixed-width-table th:nth-child(27), .fixed-width-table td:nth-child(27) {
+        min-width: 20px;
+    }
+    /* Planned Qty */
+    .fixed-width-table th:nth-child(28), .fixed-width-table td:nth-child(28) {
+        min-width: 20px;
+    }
+    /* Planned Qty */
+    .fixed-width-table th:nth-child(29), .fixed-width-table td:nth-child(29) {
+        min-width: 20px;
+    }
+    /* Planned Qty */
+    .fixed-width-table th:nth-child(30), .fixed-width-table td:nth-child(30) {
+        min-width: 20px;
+    }
+    /* Planned Qty */
+    .fixed-width-table th:nth-child(31), .fixed-width-table td:nth-child(31) {
+        min-width: 20px;
+    }
+    /* Planned Qty */
+    .fixed-width-table th:nth-child(33), .fixed-width-table td:nth-child(33) {
+        min-width: 20px;
+    }
+
+    .fixed-width-table th:nth-child(34), .fixed-width-table td:nth-child(34) {
+        min-width: 20px;
+    }
+
+    .fixed-width-table th:nth-child(35), .fixed-width-table td:nth-child(35) {
+        min-width: 20px;
+    }
+
+    .fixed-width-table th:nth-child(36), .fixed-width-table td:nth-child(36) {
+        min-width: 20px;
+    }
+
+    .fixed-width-table th:nth-child(37), .fixed-width-table td:nth-child(37) {
+        min-width: 20px;
+    }
+
+    .fixed-width-table th:nth-child(38), .fixed-width-table td:nth-child(38) {
+        min-width: 20px;
+    }
+
+    .fixed-width-table th:nth-child(39), .fixed-width-table td:nth-child(39) {
+        min-width: 20px;
+    }
+
+    .fixed-width-table th:nth-child(40), .fixed-width-table td:nth-child(40) {
+        min-width: 20px;
+    }
+
+    .fixed-width-table th:nth-child(41), .fixed-width-table td:nth-child(41) {
+        min-width: 20px;
+    }
+
+    .fixed-width-table th:nth-child(42), .fixed-width-table td:nth-child(42) {
+        min-width: 20px;
+    }
+</style>
+<div class="row">
+    <div class="col-sm-12">
+        <div class="filter-card">
+            <div class="filter-title">
+                <i class="fas fa-filter"></i> Dispatch Plan Filter
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="ddlStatus" class="form-label filter-label">Status</label><span class="text-danger">*</span>
+                    <select id="ddlStatus" class="form-control form-control-sm box_border">
+                        <option value="M">Pending For Approval (Marketing Man)</option>
+                        <option value="P">Pending For Approval (PPC)</option>
+                        <option value="D">Pending For Approval (Dispatch)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="card p-1" id="dvTableDispatch" style="display:none;">
+            <div id="btnDownload" class="row mb-1">
+                <div class="col-md-12" style="text-align:right">
+                    <button type="button" id="btnExportExcel" class="btn btn-primary btn-height" onclick="ExportExcel();">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+            </div>
+            <div class="table-wrapper" id="tableWrapper" style="min-height:400px;">
+                <table id="tblDispatchPlan" class="fixed-width-table table table-bordered">
+                    <thead id="table-head">
+                    </thead>
+                    <tbody id="table-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>

@@ -51,8 +51,9 @@ function GetRollingPlanSheetList() {
             const stringFilterColumn = ["Order No", "Item Name", "Size", "Thk", "Mkt_Man", "Status"];
             const numericFilterColumn = [
                 "Ord Qty", "Rld Qty", "Pld Qty", "Pld Bal Qty", "Rld Bal Qty",
-                "Dispatch Qty", "Avl stock for dispatch",  "Bal Dispatch Qty"
+                "Dispatch Qty", "Avl stock for dispatch", "Bal Dispatch Qty"
             ];
+
             const dateFilterColumn = ["Order Date", "Dispatch Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
@@ -63,16 +64,7 @@ function GetRollingPlanSheetList() {
 
             const formattedResponse = formatRowsByColumns(response, numericFilterColumn).map(r => {
                 const row = formatQuantityFields(r);
-                // Add tooltips for Size and Thickness columns
-                if (row["Size"] && row["SizeDesp"]) {
-                    row["Size"] = `<span title="${escapeHtml(row["SizeDesp"])}">${row["Size"]}</span>`;
-                }
-                if (row["Thk"] && row["SizeDesp"]) {
-                    row["Thk"] = `<span title="${escapeHtml(row["SizeDesp"])}">${row["Thk"]}</span>`;
-                }
-                if (row["Order No"] && row["PartyName"]) {
-                    row["Order No"] = `<span title="${escapeHtml(row["PartyName"])}">${row["Order No"]}</span>`;
-                }
+                // Keep raw text in data to preserve filtering; tooltips applied post-render
                 // Make qty cells clickable to open a small modal
                 // Store raw numeric values before converting to HTML
                 if (row["Dispatch Qty"]) {
@@ -116,6 +108,7 @@ function GetRollingPlanSheetList() {
             setTimeout(() => {
                 addTotalsRow(totals, hiddenColumns);
                 adjustFilterDropdownPosition();
+                applyTooltipsToGridCells();
             }, 500);
         } else {
             HideLoader();
@@ -301,6 +294,7 @@ function formatRowsByColumns(rows, numericColumns) {
         return clone;
     });
 }
+// (reverted) numeric inference removed
 function addTotalsRow(totals, hiddenColumns = []) {
     const tableHead = document.getElementById('table-head');
     if (!tableHead) {
@@ -321,9 +315,9 @@ function addTotalsRow(totals, hiddenColumns = []) {
     totalsRow.style.fontWeight = 'bold';
     totalsRow.style.borderBottom = '2px solid #5c95ce';
     totalsRow.style.position = 'sticky';
+    const firstHeaderRow = tableHead.children[0];
     totalsRow.style.top = '0';
     totalsRow.style.zIndex = '15';
-    const firstHeaderRow = tableHead.children[0];
     const columnCount = firstHeaderRow.children.length;
     for (let i = 0; i < columnCount; i++) {
         const cell = document.createElement('th');
@@ -427,6 +421,7 @@ function addTotalsRow(totals, hiddenColumns = []) {
         totalsRow.appendChild(cell);
     }
 
+    // Insert totals at the top (original behavior)
     tableHead.insertBefore(totalsRow, tableHead.firstChild);
 
 
@@ -490,6 +485,7 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
         const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         addTotalsRow(totals, hiddenColumns);
         adjustFilterDropdownPosition();
+        applyTooltipsToGridCells();
     }, 300);
 });
 
@@ -500,8 +496,56 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
         const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         addTotalsRow(totals, hiddenColumns);
         adjustFilterDropdownPosition();
+        applyTooltipsToGridCells();
     }, 300);
 });
+function applyTooltipsToGridCells() {
+    try {
+        const head = document.getElementById('table-head');
+        const body = document.getElementById('table-body');
+        if (!head || !body) return;
+
+        // Determine the actual header row (skip totals row if present)
+        const headerRows = Array.from(head.querySelectorAll('tr'));
+        if (!headerRows.length) return;
+        let headerRow = headerRows[0];
+        const targetNames = ['Size', 'Thk', 'Thickness', 'Order No'];
+        const found = headerRows.find(r => targetNames.some(n => (r.textContent || '').includes(n)));
+        if (found) headerRow = found;
+
+        // Build column index map from the detected header row (fuzzy by includes)
+        const headerCells = Array.from(headerRow.children);
+        const lowerHeaderByIndex = headerCells.map(th => ((th.textContent || '').trim().toLowerCase()));
+        const findIndex = (needleArr) => {
+            for (let i = 0; i < lowerHeaderByIndex.length; i++) {
+                const h = lowerHeaderByIndex[i];
+                if (needleArr.some(n => h.includes(n))) return i;
+            }
+            return null;
+        };
+
+        const sizeIdx = findIndex(['size']);
+        const thkIdx = findIndex(['thk', 'thickness']);
+        const orderNoIdx = findIndex(['order no', 'orderno']);
+        const sizeDespIdx = findIndex(['sizedesp', 'size desp']);
+        const partyNameIdx = findIndex(['partyname', 'party name']);
+
+        if (sizeIdx == null && thkIdx == null && orderNoIdx == null) return;
+
+        const rows = Array.from(body.querySelectorAll('tr'));
+        rows.forEach(tr => {
+            const tds = tr.children;
+            const sizeDesp = sizeDespIdx != null && tds[sizeDespIdx] ? (tds[sizeDespIdx].textContent || '').trim() : '';
+            const partyName = partyNameIdx != null && tds[partyNameIdx] ? (tds[partyNameIdx].textContent || '').trim() : '';
+
+            if (sizeIdx != null && tds[sizeIdx] && sizeDesp) tds[sizeIdx].title = sizeDesp;
+            if (thkIdx != null && tds[thkIdx] && sizeDesp) tds[thkIdx].title = sizeDesp;
+            if (orderNoIdx != null && tds[orderNoIdx] && partyName) tds[orderNoIdx].title = partyName;
+        });
+    } catch (e) {
+        // swallow errors to avoid breaking grid interactions
+    }
+}
 function adjustFilterDropdownPosition() {
     // Add CSS to position filter dropdowns for last 5 columns to the left
     const style = document.createElement('style');
@@ -574,6 +618,7 @@ function adjustFilterDropdownPosition() {
         }
     }, 100);
 }
+
 function ExportExcel() {
     const hiddenFields = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
     RollingPlanSheetService.GetRollingPlanSheetList().then(function (response) {
@@ -608,9 +653,15 @@ function GetRollingPlanDetail(Mode, BuyerPoMaster_Code) {
             const hiddenColumns = [];
 
             const columnAlignment = {
+                Qty: 'right',
+                "Planned Qty": 'right',
+                "Rolled QTY": 'right'
             };
 
-            BizsolCustomFilterGrid.CreateDataTable("DetailTable-head", "DetailTable-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            // Ensure numeric columns are fixed to three decimals in the detail modal (specific columns)
+            const formattedDetailRows = formatRowsByColumns(response, ["Qty", "Planned Qty", "Rolled QTY"]);
+
+            BizsolCustomFilterGrid.CreateDataTable("DetailTable-head", "DetailTable-body", formattedDetailRows, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             HideLoader();
             $('#DetailModal').modal({ backdrop: 'static' });
             $('#DetailModal').modal('show');
