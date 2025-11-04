@@ -209,9 +209,18 @@ function triggerFileInputClick() {
 function FileUploadChange(event) {
     const target = event.target;
     files = target.files;
-    fileName = files?.[0]?.name;
+    var originalFileName = files?.[0]?.name || '';
     if (files && files.length > 0) {
-        console.log('File selected:', fileName);
+        // Extract extension from original file name
+        var fileExtension = '';
+        var lastDotIndex = originalFileName.lastIndexOf('.');
+        if (lastDotIndex > 0 && lastDotIndex < originalFileName.length - 1) {
+            fileExtension = originalFileName.substring(lastDotIndex);
+        }
+        // Set fileName to "PDI" + extension
+        fileName = 'PDI' + fileExtension;
+        console.log('File selected:', originalFileName);
+        console.log('File name set to:', fileName);
         OptimizeImage.reduceFileSize(files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
             console.log('Image optimized, size:', blob.size);
             ConvertFileToByteArry(blob).then(function (ByteArray) {
