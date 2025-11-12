@@ -108,16 +108,16 @@ const RMStockService = {
             }
         );
     },
-    GetRMStockSlitted: function GetRMStockSlitted() {
-        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockSlitted";
+    GetRMStockSlitted: function GetRMStockSlitted(FromDate, ToDate) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockSlitted?FromDate=" + FromDate + "&ToDate=" + ToDate;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
             }
         );
     },
-    GetRMStockJobWorkData: function GetRMStockJobWorkData() {
-        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockJobWorkData";
+    GetRMStockJobWorkData: function GetRMStockJobWorkData(FromDate, ToDate) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockJobWorkData?FromDate=" + FromDate + "&ToDate=" + ToDate;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -126,6 +126,14 @@ const RMStockService = {
     },
     GetRMStockSummaryData: function GetRMStockSummaryData() {
         var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockSummaryData";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetSlittedCoilStockData: function GetSlittedCoilStockData(FromDate, ToDate) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetSlittedCoilStockData?FromDate=" + FromDate + "&ToDate=" + ToDate;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

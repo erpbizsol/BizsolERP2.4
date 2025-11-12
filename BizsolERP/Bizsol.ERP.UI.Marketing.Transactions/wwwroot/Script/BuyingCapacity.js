@@ -4,16 +4,15 @@ import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFun
 let G_BuyingCapacityRows = [];
 
 $(document).ready(function () {
-    var urlParams = getUrlVars();
-    var menuValue = decodeURI(urlParams['menu']);
+    BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
-    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
-        $("#ERPHeading").text(menuValue);
-    }
-    else {
-        $("#ERPHeading").text("Buying Capacity");
-    }
 
+    //var ObjUserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
+    //var SalesPersonNameSave = decodeURIComponent(urlParams['MarketingMan_Name'] || "");
+    
+    //if (SalesPersonNameSave) {
+    //    $('#ddlMarketingMan').val(SalesPersonNameSave);
+    //}
     GetNestedMarketingManList();
     //GetBuyingCapacityList();
     //FillBuyingFrequency();
@@ -78,6 +77,7 @@ async function GetBuyingCapacityList() {
 
     try {
         const response = await BuyingCapacityService.GetBuyingCapacityList(MarketingPersonName);
+        $('#BuyingCapacity').show();
         if (response && response.length > 0) {
             G_BuyingCapacityRows = response;
             const StringFilterColumn = ["Person Name"];
@@ -138,10 +138,12 @@ async function GetBuyingCapacityList() {
             } catch(e) { }
         }
         else {
+            $('#BuyingCapacity').hide();
             toastr.error('No Data Found');
         }
     } catch (error) {
         HideLoader();
+        $('#BuyingCapacity').hide();
         toastr.error('Error loading buying capacity data');
     }
 }

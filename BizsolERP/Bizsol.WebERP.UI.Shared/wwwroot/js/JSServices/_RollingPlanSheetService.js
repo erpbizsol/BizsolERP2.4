@@ -43,6 +43,22 @@ const RollingPlanSheetService = {
             }
         );
     },
+    GetPipeStockRollingPlanList: function GetPipeStockRollingPlanList() {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetPipeStockRollingPlanList";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetPendingPlansReportList: function GetPendingPlansReportList(FromDate, ToDate) {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetPendingPlansReportList?FromDate=" + FromDate + "&ToDate=" + ToDate;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { RollingPlanSheetService }
