@@ -1152,8 +1152,23 @@ function ShowSlittedList() {
 function loadSlittedData(G_FromDateValueSlitted, G_ToDateValueSlitted) {
     Showloader();
     RMStockService.GetRMStockSlitted(G_FromDateValueSlitted, G_ToDateValueSlitted).then(function (response) {
-        HideLoader();
         if (response.length > 0) {
+            response = response.map(item => {
+                if (item["Yield %"] !== undefined && item["Yield %"] !== null && !isNaN(item["Yield %"])) {
+                    item["Yield %"] = parseFloat(item["Yield %"]).toFixed(2);
+                }
+                if (item["Width Loss %"] !== undefined && item["Width Loss %"] !== null && !isNaN(item["Width Loss %"])) {
+                    item["Width Loss %"] = parseFloat(item["Width Loss %"]).toFixed(2);
+                }
+                if (item["Output Weight"] !== undefined && item["Output Weight"] !== null && !isNaN(item["Output Weight"])) {
+                    item["Output Weight"] = parseFloat(item["Output Weight"]).toFixed(3);
+                }
+                if (item["Scrap"] !== undefined && item["Scrap"] !== null && !isNaN(item["Scrap"])) {
+                    item["Scrap"] = parseFloat(item["Scrap"]).toFixed(3);
+                }
+                return item;
+            });
+
             $('#tblSlitted').show();
             const stringFilterColumn = ["Entry No", "Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %","Width Loss %"];
             const numericFilterColumn = [];
@@ -1168,6 +1183,7 @@ function loadSlittedData(G_FromDateValueSlitted, G_ToDateValueSlitted) {
             };
             calculateTotalFooterSlitted(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-Slitted", "table-body-Slitted", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            HideLoader();
             PopulateTableForPrint(response);
         } else {
             HideLoader();
