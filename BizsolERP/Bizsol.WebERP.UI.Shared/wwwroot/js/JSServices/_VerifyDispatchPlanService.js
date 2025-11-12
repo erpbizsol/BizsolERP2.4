@@ -20,6 +20,38 @@ const VerifyDispatchPlanService = {
             }
         );
     },
+    AllTransporterRateList: function AllTransporterRateList(Code) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/AllTransporterRateList?Code=${Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    TransporterList: function TransporterList() {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/TransporterList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    UpdateTransporter: function UpdateTransporter(Codes) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/UpdateTransporter?Codes=${Codes}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SendMailToTransporter: function SendMailToTransporter(TransporterCodes,Codes) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/SendMailToTransporter?TransporterCodes=${TransporterCodes}&Codes=${Codes}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VerifyDispatchPlanService }

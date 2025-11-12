@@ -1,6 +1,8 @@
 ﻿import { VerifyDispatchPlanService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_VerifyDispatchPlanService.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
-
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+let G_DispatchPlanlist = [];
+let G_DispatchAdviceNo = 0;
 $(document).ready(function () {
     GetDispatchAdvicePlanList($("#ddlStatus").val());
     $("#ddlStatus").change(function(){
@@ -11,17 +13,18 @@ function GetDispatchAdvicePlanList(Status) {
     Showloader();
     VerifyDispatchPlanService.GetDispatchAdvicePlanList(Status).then(function (response) {
         if (response && response.length > 0) {
+            G_DispatchPlanlist = response;
             $("#dvTableDispatch").show();
             HideLoader();
-            const stringFilterColumn = ["DO No", "Vehicle No", "Client Name", "Consignee Name", "City", "State", "Buyer PO No", "Ord No","Item Name","Size/Particular"];
-            const numericFilterColumn = [
+            const stringFilterColumn = ["Marketing Man","PinCode", "Vehicle No", "Client Name", "Consignee Name", "City", "State", "Buyer PO No", "Ord No","Item Name","Size/Particular"];
+            const numericFilterColumn = ["DO No",
                 "Ord Qty Pc","Ord Qty MT","OrdQty MTRS","Bal Qty Pc","Bal Qty MT","BalQty MTRS","Pld Qty Pc","Pld Qty MT","PldQty MTRS","OutStanding Amt","Over due Amt","Credit Days","Credit Limit","AvailableLimit"
             ];
             const dateFilterColumn = ["Ord Date", "Dispatch Date", "DO Date","Buyer PO Date","Delivery Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code","Verified","VarifyMarketing","CheckedPPC"];
+            const hiddenColumns = ["Code","AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code","Verified","VarifyMarketing","CheckedPPC"];
             const columnAlignment = {
                 "Ord Qty Pc": "right;max-width:30px;",
                 "Ord Qty MT": "right",
@@ -41,16 +44,19 @@ function GetDispatchAdvicePlanList(Status) {
                 "Credit Limit": "right",
                 "AvailableLimit": "right"
             };
-            
-            // Format data rows with correct decimal places
             const updatedResponse = response.map(item => {
-                const Action = `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["DO No"]})"><i class="fa fa-check"></i></button>`;
-                const formattedItem = {
+                const Action = Status == 'C' ?`<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>`:`<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["DO No"]})"><i class="fa fa-check"></i></button>`;
+                const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Send Mail" onclick="SendMail(${item["DO No"]})">Send Mail</button>`:'';
+                let formattedItem = {}
+                formattedItem = Status == 'D' ? {
+                    ...item,
+                    Action: Action,
+                    Other: Other
+                } : {
                     ...item,
                     Action: Action
                 };
-                
-                // Format PC columns - 0 decimals
+
                 if (formattedItem["Ord Qty Pc"] != null && formattedItem["Ord Qty Pc"] !== '') {
                     const val = Number(formattedItem["Ord Qty Pc"]);
                     if (!isNaN(val)) formattedItem["Ord Qty Pc"] = val.toFixed(0);
@@ -133,7 +139,7 @@ function GetDispatchAdvicePlanList(Status) {
             BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
 
             setTimeout(() => {
-                const filteredData = window['filteredData_tblDispatchPlan'] || updatedResponse;
+                const filteredData = updatedResponse;
                 const totals = calculateTotals(filteredData);
                 const domTotals = calculateTotalsFromDOM();
                 totals.ordQtyPc = domTotals.ordQtyPc;
@@ -160,10 +166,12 @@ function GetDispatchAdvicePlanList(Status) {
             HideLoader();
             $("#dvTableDispatch").hide();
             toastr.error('No Data Found');
+            G_DispatchPlanlist = [];
         }
     }).catch(function (error) {
         toastr.error(error.Msg || 'Error During Get Dispatch Advice Plan List ');
         $("#dvTableDispatch").hide();
+        G_DispatchPlanlist = [];
     });
 }
 function calculateTotalsFromDOM() {
@@ -451,12 +459,13 @@ function addTotalsRow(totals, hiddenColumns = []) {
         const headerText = firstHeaderRow.children[i].textContent.trim();
 
 
-        const isHidden = hiddenColumns.some(hiddenCol =>
-            headerText.includes(hiddenCol) ||
-            hiddenCol.includes(headerText) ||
-            headerText.toLowerCase().includes(hiddenCol.toLowerCase()) ||
-            hiddenCol.toLowerCase().includes(headerText.toLowerCase())
-        );
+        // Normalize both sides and only hide on exact normalized equality.
+        // This prevents generic entries like "Code" from hiding columns such as "Pin Code".
+        const normalizedHeader = headerText.replace(/\s+/g, '').toLowerCase();
+        const isHidden = hiddenColumns.some(hiddenCol => {
+            const normalizedHidden = String(hiddenCol).replace(/\s+/g, '').toLowerCase();
+            return normalizedHeader === normalizedHidden;
+        });
 
         // Special case: Show Status column in totals row even if it's hidden
         const isStatusColumn = headerText.includes('Status') || headerText.includes('Plan Status');
@@ -643,6 +652,7 @@ function ChangecolorTr() {
     // Determine indices dynamically
     let statusColIndex = 21; // fallback
     let doNoColIndex = -1;
+    let actionColIndex = -1; // color should not apply to Action only
     // Find the actual header (skip totals row if present)
     const allHeadRows = Array.from(tableHead.querySelectorAll('tr'));
     let headerRow = allHeadRows.find(r => !r.classList.contains('totals-row')) || allHeadRows[0] || null;
@@ -653,6 +663,7 @@ function ChangecolorTr() {
             const normNoSpace = norm.replace(/\s+/g, '');
             if (doNoColIndex === -1 && (norm.includes('do no') || normNoSpace.includes('dono'))) doNoColIndex = idx;
             if (norm.includes('plan status') || norm === 'status' || normNoSpace.includes('planstatus')) statusColIndex = idx;
+            if (actionColIndex === -1 && (norm === 'action' || normNoSpace === 'action')) actionColIndex = idx;
         });
     }
     // If still not found, bail to avoid coloring all rows the same
@@ -695,7 +706,10 @@ function ChangecolorTr() {
         const groupColor = groupColors[groupIndex % groupColors.length];
         for (let k = i; k < j; k++) {
             const cells = rows[k].querySelectorAll('td');
-            cells.forEach(td => td.style.backgroundColor = groupColor);
+            // Color all cells, including Action
+            Array.from(cells).forEach(td => {
+                td.style.backgroundColor = groupColor;
+            });
         }
         groupIndex++;
 
@@ -781,17 +795,35 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
     }, 300);
 });
 function ExportExcel() {
-    const hiddenFields = ["AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
+    const hiddenFields = ["Code","AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
     VerifyDispatchPlanService.GetDispatchAdvicePlanList($("#ddlStatus").val()).then(function (response) {
         ExportToExcelControl.ExportToExcel(response, hiddenFields, "DispatchAdvicePlan");
     });
 
 }
 function Verify(DispatchAdviceNo) {
+    var ModuleName = "Despatch Plan Marketing Person Wise",
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+        MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            VerifyDispatch(DispatchAdviceNo)
+        }
+    });
+
+}
+function VerifyDispatch(DispatchAdviceNo) {
     if (confirm("Are you sure you want to verify ?")) {
         Showloader();
         var Status = $("#ddlStatus").val();
-        VerifyDispatchPlanService.Verify(DispatchAdviceNo, Status).then(function (response) {
+        var code = G_DispatchPlanlist.filter(x => x["DO No"] === DispatchAdviceNo).map(x => x.Code);
+        var uniqueCodes = [...new Set(code)];
+        var codes = uniqueCodes.join(",");
+        VerifyDispatchPlanService.Verify(codes, Status).then(function (response) {
             if (response[0].Status = 'Y') {
                 toastr.success(response[0].Msg);
                 GetDispatchAdvicePlanList($("#ddlStatus").val());
@@ -806,8 +838,210 @@ function Verify(DispatchAdviceNo) {
         });
     }
 }
+function getFinancialYear() {
+    var currentDate = new Date();
+    var currentMonth = currentDate.getMonth();
+    var startYear = currentDate.getFullYear();
+    if (currentMonth < 3) {
+        startYear = startYear - 1;
+    }
+    return startYear + "-" + (startYear + 1);
+}
+function ViewAll(Code) {
+    Showloader();
+    VerifyDispatchPlanService.AllTransporterRateList(Code).then(function (response) {
+        if (response && response.length > 0) {
+            const stringFilterColumn = [];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+
+            const columnAlignment = {
+                Rate: 'right',
+            };
+            BizsolCustomFilterGrid.CreateDataTable("AllTable-head", "AllTable-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            HideLoader();
+            $('#AllModal').modal({ backdrop: 'static' });
+            $('#AllModal').modal('show');
+        } else {
+            HideLoader();
+            toastr.error('No Data Found');
+        }
+    }).catch(function (error) {
+        HideLoader();
+    });
+}
+function TransporterList() {
+    Showloader();
+    VerifyDispatchPlanService.TransporterList().then(function (response) {
+        HideLoader();
+        const $tbody = $('#transporterGridBody');
+        const $selectAll = $('#selectAll');
+        if ($tbody.length === 0 || $selectAll.length === 0) {
+            return;
+        }
+
+        const previouslySelected = new Set(GetEmpCodes());
+        $tbody.empty();
+
+        if (response && response.length > 0) {
+            response.forEach(function (item) {
+                const code = item["Code"];
+                const name = item["AccountDesp"];
+                const nature = item["AccountNature"];
+                if (!code && !name) return;
+                const isChecked = previouslySelected.has(String(code)) || nature === 'Registered Transporter';
+                const showUpdateBtn = nature !== 'Registered Transporter';
+                const rowHtml = `
+                    <tr>
+                        <td style="text-align:center;">
+                            <input type="checkbox"
+                                   class="option"
+                                   value="${code}"
+                                   data-name="${name ? name.replace(/"/g, '&quot;') : ''}"
+                                   ${isChecked ? 'checked' : ''}>
+                        </td>
+                        <td>${name || ''}</td>
+                        <td style="text-align:center;">
+                            ${showUpdateBtn ? `<button type="button" class="btn btn-primary btn-sm transporter-update" data-code="${code}">Update</button>` : ''}
+                        </td>
+                    </tr>`;
+                $tbody.append(rowHtml);
+            });
+        } else {
+            toastr.error('No Data Found');
+        }
+
+        // Refresh select-all state after rendering rows
+        updateSelected();
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error During Get Transporter List');
+    });
+}
+function SendMail(Code) {
+    G_DispatchAdviceNo = Code;
+    $('#Transporter').modal({ backdrop: 'static' });
+    $('#Transporter').modal('show');
+    TransporterList();
+}
+function CloseModal() {
+    $('#AllModal').modal('hide');
+}
+function CloseTransporter() {
+    $('#Transporter').modal('hide');
+}
+function GetEmpCodes() {
+    const selectedCodes = [];
+    $('.option:checked').each(function () {
+        selectedCodes.push(String($(this).val()));
+    });
+    return selectedCodes;
+}
+function updateSelected() {
+    const totalOptions = $('.option').length;
+    const totalChecked = $('.option:checked').length;
+    $('#selectAll').prop('checked', totalOptions > 0 && totalChecked === totalOptions);
+}
+
+// Dropdown input removed – grid is now always visible inside the container
+
+$(document).on('change', '#selectAll', function () {
+    const isChecked = $(this).is(':checked');
+    $('.option').prop('checked', isChecked);
+    updateSelected();
+    if (typeof GetGenerateTaskTicketDateList === 'function') {
+        GetGenerateTaskTicketDateList('Get');
+    }
+});
+
+$(document).on('change', '.option', function () {
+    updateSelected();
+});
+$(document).on('click', '.transporter-update', function () {
+    const code = $(this).data('code');
+    const $cb = $('.option[value="' + code + '"]');
+    if ($cb.length) {
+        $cb.prop('checked', true);
+    }
+    updateSelected();
+    UpdateTransporter();
+});
+function UpdateTransporter() {
+    var ModuleName = "Despatch Plan Marketing Person Wise",
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            Update()
+        }
+    });
+}
+function Update() {
+    let codes = GetEmpCodes();
+    if (codes == '') {
+        toastr.error('Please select at least one transporter.');
+        return;
+    }
+    if (confirm("Are you sure you want to update ?")) {
+        Showloader();
+        VerifyDispatchPlanService.UpdateTransporter(codes).then(function (response) {
+            if (response[0].Status = 'Y') {
+                toastr.success(response[0].Msg);
+                HideLoader();
+                CloseTransporter();
+            } else {
+                toastr.error(response[0].Msg);
+                HideLoader();
+            }
+        }).catch(function (error) {
+            HideLoader();
+        });
+    }
+}
+function SendMailToTransporter() {
+    let TranporterCodes = GetEmpCodes();
+    if (TranporterCodes == '') {
+        toastr.error('Please select at least one transporter.');
+        return;
+    }
+    var code = G_DispatchPlanlist.filter(x => x["DO No"] === G_DispatchAdviceNo).map(x => x.Code);
+    var uniqueCodes = [...new Set(code)];
+    var codes = uniqueCodes.join(",");
+    if (confirm("Are you sure you want to send mail ?")) {
+        Showloader();
+        VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes,codes).then(function (response) {
+            if (response[0].Status = 'Y') {
+                toastr.success(response[0].Msg);
+                HideLoader();
+                CloseTransporter();
+            } else {
+                toastr.error(response[0].Msg);
+                HideLoader();
+            }
+        }).catch(function (error) {
+            HideLoader();
+        });
+    }
+}
+window.ViewAll = ViewAll;
 window.Verify = Verify;
 window.ExportExcel = ExportExcel;
+window.CloseModal = CloseModal;
+window.SendMail = SendMail;
+window.CloseTransporter = CloseTransporter;
+window.TransporterList = TransporterList;
+window.GetEmpCodes = GetEmpCodes;
+window.updateSelected = updateSelected;
+window.UpdateTransporter = UpdateTransporter;
+window.SendMailToTransporter = SendMailToTransporter;
 
 
 
