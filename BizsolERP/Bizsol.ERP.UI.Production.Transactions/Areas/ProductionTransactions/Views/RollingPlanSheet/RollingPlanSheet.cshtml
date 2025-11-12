@@ -68,7 +68,49 @@
 
    
     
-  
+    .totals-row th {
+        background-color: #e8f4fd !important;
+        font-weight: bold !important;
+        border: 1px solid #ddd !important;
+        padding: 4px 10px !important;
+        font-size: 8pt !important;
+        height: 16px !important;
+        vertical-align: middle !important;
+    }
+    
+    .totals-row th:first-child {
+        background-color: #d5dde5 !important;
+        font-weight: bold !important;
+        text-align: center !important;
+    }
+    
+    .totals-row th[style*="background-color: #fff2cc"] {
+        background-color: #fff2cc !important;
+        font-weight: bold !important;
+        text-align: right !important;
+    }
+    /* Prevent background scroll when Bootstrap modal is open */
+    body.modal-open { overflow: hidden !important; }
+    .rps-detail-modal .modal-dialog { max-width: 760px; }
+    .rps-detail-modal .modal-header { padding: 8px 12px; background: #1f6fb2; color: #fff; }
+    .rps-detail-modal .modal-title { font-size: 13px; font-weight: 600; }
+    .rps-detail-modal .modal-body { padding: 8px 10px; max-height: 65vh; overflow: auto; }
+    .rps-detail-modal .modal-footer { padding: 6px 10px; }
+
+    .form-check-input {
+        background-color: #e9ecef;
+        border: 2px solid #6c757d;
+        border-radius: 4px;
+    }
+
+        .form-check-input:focus {
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+        }
+
+    .form-check-label {
+        font-weight: 600;
+        color: #495057;
+    }
 
 </style>
 <div class="row">
@@ -84,6 +126,16 @@
                     <i class="fas fa-truck"></i> Date Wise Mill Wise Report
                 </button>
             </div>
+            <div class="nav-item" role="presentation">
+                <button class="nav-link" id="pipe-stock-tab" data-bs-toggle="tab" data-bs-target="#pipe-stock" type="button" role="tab" aria-controls="pipe-stock" aria-selected="false">
+                    <i class="fas fa-truck"></i> Pipe Stock
+                </button>
+            </div>
+            <div class="nav-item" role="presentation">
+                <button class="nav-link" id="pending-plans-tab" data-bs-toggle="tab" data-bs-target="#pending-plans" type="button" role="tab" aria-controls="pending-plans" aria-selected="false">
+                    <i class="fas fa-truck"></i> Pending Plans
+                </button>
+            </div>
         </div>
         <div class="card p-1" id="rmStockTabContent">
             <div id="date-filter-bar" class="row mb-1" style="display:none">
@@ -95,6 +147,28 @@
                     <button type="button" id="btnShowDateMillReport" class="btn btn-primary btn-height">Show</button>
                 </div>
             </div> 
+            <div id="from-date-to-date-filter-bar" class="row mb-1" style="display:none">
+                <div class="col-md-3">
+                    <label for="fromDate" class="form-label">From Date</label>
+                    <input type="date" id="fromDate" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-3">
+                    <label for="toDate" class="form-label">To Date</label>
+                    <input type="date" id="toDate" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-1" style="margin-top:1.8rem">
+                    <button type="button" id="btnShowDatePendingPlansReport" class="btn btn-primary btn-height">Show</button>
+                </div>
+                @* <div class="col-md-4" style="margin-top:1.8rem">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="exampleCheckPendingPlan" />
+                        <label class="form-check-label" for="exampleCheckPendingPlan">
+                            Show Pending Plans Production is Not Done
+                        </label>
+                    </div>
+                </div> *@
+            </div> 
+
             <div id="btnDownload" class="row mb-1" style="display:block" >
                 <div class="col-md-12" style="text-align:right">
                     <button type="button" id="btn" class="btn btn-primary btn-height" onclick="ExportExcel();">Download</button>

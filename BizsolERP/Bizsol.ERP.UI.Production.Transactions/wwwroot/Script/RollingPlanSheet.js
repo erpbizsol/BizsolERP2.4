@@ -1,6 +1,8 @@
 ﻿import { RollingPlanSheetService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RollingPlanSheetService.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 
+let G_FromDate = '';
+let G_ToDate = '';
 $(document).ready(function () {
     GetRollingPlanSheetList();
     $(document).on('click', '#dispatch-tab', function () {
@@ -8,6 +10,7 @@ $(document).ready(function () {
         // Show date bar and default to today
         $('#date-filter-bar').show();
         $('#btnDownload').hide();
+        $('#from-date-to-date-filter-bar').hide();
         const today = new Date();
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -21,8 +24,30 @@ $(document).ready(function () {
     $(document).on('click', '#current-stock-tab', function () {
         clearTable();
         $('#date-filter-bar').hide();
+        $('#from-date-to-date-filter-bar').hide();
         $('#btnDownload').show();
         GetRollingPlanSheetList();
+        const $wrapper = $('.table-wrapper');
+        $wrapper.css({ width: '100%' });
+
+    });
+    $(document).on('click', '#pipe-stock-tab', function () {
+        clearTable();
+        $('#date-filter-bar').hide();
+        $('#from-date-to-date-filter-bar').hide();
+        $('#btnDownload').show();
+        GetPipeStockRollingPlanList();
+        const $wrapper = $('.table-wrapper');
+        $wrapper.css({ width: '100%' });
+
+    });
+    $(document).on('click', '#pending-plans-tab', function () {
+        clearTable();
+        $('#date-filter-bar').hide();
+        $('#btnDownload').show();
+        $('#from-date-to-date-filter-bar').show();
+        setCurrentDatePendingPlans()
+        //GetPipeStockRollingPlanList(G_FromDate, G_ToDate);
         const $wrapper = $('.table-wrapper');
         $wrapper.css({ width: '100%' });
 
@@ -34,6 +59,11 @@ $(document).ready(function () {
             return;
         }
         GetDateAndMillWiseReportList(d);
+    });
+    $(document).on('click', '#btnShowDatePendingPlansReport', function () {
+        G_FromDate = $('#fromDate').val();
+        G_ToDate = $('#toDate').val();
+        GetPendingPlansReportList(G_FromDate, G_ToDate);
     });
     $(document).on('change', '#rpToDate', function () {
         const d = $(this).val();
@@ -479,6 +509,10 @@ function countTableTr() {
 }
 
 $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
+    // Skip totals row for Pipe Stock tab
+    if ($('#pipe-stock-tab').hasClass('active')) {
+        return;
+    }
     setTimeout(() => {
         const filteredData = window['filteredData_tblTable'] || [];
         const totals = calculateTotals(filteredData);
@@ -490,6 +524,10 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
 });
 
 $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"], [id^="nextBtn-"], [id^="lastBtn-"]', function () {
+    // Skip totals row for Pipe Stock tab
+    if ($('#pipe-stock-tab').hasClass('active')) {
+        return;
+    }
     setTimeout(() => {
         const filteredData = window['filteredData_tblTable'] || [];
         const totals = calculateTotals(filteredData);
@@ -620,10 +658,19 @@ function adjustFilterDropdownPosition() {
 }
 
 function ExportExcel() {
-    const hiddenFields = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
-    RollingPlanSheetService.GetRollingPlanSheetList().then(function (response) {
-        ExportToExcelControl.ExportToExcel(response, hiddenFields, "RollingPlanSheet");
-    });
+    const isPipeStockTabActive = $('#pipe-stock-tab').hasClass('active');
+    
+    if (isPipeStockTabActive) {
+        const hiddenFields = [];
+        RollingPlanSheetService.GetPipeStockRollingPlanList().then(function (response) {
+            ExportToExcelControl.ExportToExcel(response, hiddenFields, "PipeStockRollingPlan");
+        });
+    } else {
+        const hiddenFields = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
+        RollingPlanSheetService.GetRollingPlanSheetList().then(function (response) {
+            ExportToExcelControl.ExportToExcel(response, hiddenFields, "RollingPlanSheet");
+        });
+    }
 
 }
 function OpenModal(Mode, BuyerPoMaster_Code) {
@@ -676,6 +723,96 @@ function GetRollingPlanDetail(Mode, BuyerPoMaster_Code) {
 }
 function CloseModal() {
     $('#DetailModal').modal('hide');
+}
+function GetPipeStockRollingPlanList() {
+    Showloader();
+    RollingPlanSheetService.GetPipeStockRollingPlanList().then(function (response) {
+        if (response && response.length > 0) {
+            response = response.map(item => {
+                if (item["Qty MT"] !== undefined && item["Qty MT"] !== null && !isNaN(item["Qty MT"])) {
+                    item["Qty MT"] = parseFloat(item["Qty MT"]).toFixed(3);
+                }
+                if (item["KG_Pipe"] !== undefined && item["KG_Pipe"] !== null && !isNaN(item["KG_Pipe"])) {
+                    item["KG_Pipe"] = parseFloat(item["KG_Pipe"]).toFixed(3);
+                }
+                return item;
+            });
+            const stringFilterColumn = ["ItemName", "Size", "Thickness", "Length", "Stamp", "GRADE", "Qty PC", "KG_Pipe","Qty MT"];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+
+            const columnAlignment = {
+                "KG_Pipe": 'right', "Qty PC": 'right', "Qty MT": 'right', "Size": 'right', "Thickness": 'right',"Length":'right'
+            };
+
+            BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            $('.totals-row').remove();
+            HideLoader();
+        } else {
+            HideLoader();
+            toastr.error('No Data Found');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error During Get Rolling Plan Sheet');
+    });
+}
+function setCurrentDatePendingPlans() {
+    let today = new Date();
+    let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    function formatDate(date) {
+        let day = String(date.getDate()).padStart(2, '0');
+        let month = String(date.getMonth() + 1).padStart(2, '0');
+        let year = date.getFullYear();
+        return `${year}-${month}-${day}`;
+    }
+
+    $('#fromDate').val(formatDate(firstOfMonth));
+    $('#toDate').val(formatDate(today));
+    G_FromDate = $('#fromDate').val();
+    G_ToDate = $('#toDate').val();
+}
+function GetPendingPlansReportList(G_FromDate, G_ToDate) {
+    Showloader();
+    RollingPlanSheetService.GetPendingPlansReportList(G_FromDate, G_ToDate).then(function (response) {
+        if (response && response.length > 0) {
+            response = response.map(item => {
+                if (item["Qty MT"] !== undefined && item["Qty MT"] !== null && !isNaN(item["Qty MT"])) {
+                    item["Qty MT"] = parseFloat(item["Qty MT"]).toFixed(3);
+                }
+                if (item["KG_Pipe"] !== undefined && item["KG_Pipe"] !== null && !isNaN(item["KG_Pipe"])) {
+                    item["KG_Pipe"] = parseFloat(item["KG_Pipe"]).toFixed(3);
+                }
+                return item;
+            });
+            const stringFilterColumn = ["ItemName", "Size", "Thickness", "Length", "Stamp", "GRADE", "Qty PC", "KG_Pipe","Qty MT"];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+
+            const columnAlignment = {
+                "KG_Pipe": 'right', "Qty PC": 'right', "Qty MT": 'right', "Size": 'right', "Thickness": 'right',"Length":'right'
+            };
+
+            BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            $('.totals-row').remove();
+            HideLoader();
+        } else {
+            HideLoader();
+            toastr.error('No Data Found');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error During Get Pending Plan Sheet');
+    });
 }
 
 window.ExportExcel = ExportExcel;

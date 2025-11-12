@@ -7,12 +7,12 @@ $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
 
-    var ObjUserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
-    var SalesPersonNameSave = decodeURIComponent(urlParams['MarketingMan_Name'] || "");
+    //var ObjUserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
+    //var SalesPersonNameSave = decodeURIComponent(urlParams['MarketingMan_Name'] || "");
     
-    if (SalesPersonNameSave) {
-        $('#ddlMarketingMan').val(SalesPersonNameSave);
-    }
+    //if (SalesPersonNameSave) {
+    //    $('#ddlMarketingMan').val(SalesPersonNameSave);
+    //}
     GetNestedMarketingManList();
     //GetBuyingCapacityList();
     //FillBuyingFrequency();
