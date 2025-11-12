@@ -37,32 +37,8 @@
     .nav-tabs .nav-link i { opacity: .9; }
     #rmStockTabContent { margin-top: .5rem; }
     
-    .table-wrapper.fixed-height-table {
-        overflow-x: auto !important;
-        overflow-y: auto !important;
-        width: 100%;
-        max-width: 100%;
-    }
     
-    .fixed-width-table {
-        min-width: 100%;
-        width: max-content;
-        table-layout: auto;
-    }
     
-    .fixed-width-table th,
-    .fixed-width-table td {
-        white-space: nowrap;
-        min-width: 100px;
-        padding: 8px 12px;
-    }
-    
-    .fixed-width-table thead th {
-        position: sticky;
-        top: 0;
-        background-color: #5c95ce;
-        z-index: 10;
-    }
     
     .fixed-width-table th:nth-child(1), .fixed-width-table td:nth-child(1) { min-width: 20px; } /* SNo */
     .fixed-width-table th:nth-child(2), .fixed-width-table td:nth-child(2) { min-width: 100px; } /* Order No */
@@ -90,40 +66,10 @@
             min-width: 20px;
         }
 
-    .totals-row {
-        background-color: #e8f4fd !important;
-        font-weight: bold !important;
-        border-bottom: 2px solid #5c95ce !important;
-    }
+   
     
-    .totals-row th {
-        background-color: #e8f4fd !important;
-        font-weight: bold !important;
-        border: 1px solid #ddd !important;
-        padding: 4px 10px !important;
-        font-size: 8pt !important;
-        height: 16px !important;
-        vertical-align: middle !important;
-    }
-    
-    .totals-row th:first-child {
-        background-color: #d5dde5 !important;
-        font-weight: bold !important;
-        text-align: center !important;
-    }
-    
-    .totals-row th[style*="background-color: #fff2cc"] {
-        background-color: #fff2cc !important;
-        font-weight: bold !important;
-        text-align: right !important;
-    }
-    /* Prevent background scroll when Bootstrap modal is open */
-    body.modal-open { overflow: hidden !important; }
-    .rps-detail-modal .modal-dialog { max-width: 760px; }
-    .rps-detail-modal .modal-header { padding: 8px 12px; background: #1f6fb2; color: #fff; }
-    .rps-detail-modal .modal-title { font-size: 13px; font-weight: 600; }
-    .rps-detail-modal .modal-body { padding: 8px 10px; max-height: 65vh; overflow: auto; }
-    .rps-detail-modal .modal-footer { padding: 6px 10px; }
+  
+
 </style>
 <div class="row">
     <div class="col-sm-12">
@@ -148,8 +94,6 @@
                 <div class="col-md-2" style="margin-top:1.8rem">
                     <button type="button" id="btnShowDateMillReport" class="btn btn-primary btn-height">Show</button>
                 </div>
-                
-
             </div> 
             <div id="btnDownload" class="row mb-1" style="display:block" >
                 <div class="col-md-12" style="text-align:right">

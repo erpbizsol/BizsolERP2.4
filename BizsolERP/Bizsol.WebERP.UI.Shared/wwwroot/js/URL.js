@@ -107,6 +107,7 @@ let UrlService = {
     API_ENDPOINT_CustomerDashboard: `${environment.BASE_URL}/CustomerDashboard`,
     API_ENDPOINT_BuyingCapacity: `${environment.BASE_URL}/BuyingCapacity`,
     API_ENDPOINT_ProspectiveCustomer: `${environment.BASE_URL}/ProspectiveCustomer`,
+    API_DOCUMENT_DispatchAdvicePlan: `${environment.BASE_URL}/VerifyDispatchAdvice`,
 }
 
 export { UrlService  }
