@@ -45,8 +45,8 @@ function GetDispatchAdvicePlanList(Status) {
                 "AvailableLimit": "right"
             };
             const updatedResponse = response.map(item => {
-                const Action = Status == 'C' ?`<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>`:`<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["DO No"]})"><i class="fa fa-check"></i></button>`;
-                const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Send Mail" onclick="SendMail(${item["DO No"]})">Send Mail</button>`:'';
+                const Action = Status == 'C' ?`<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>`:`<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["Code"]})"><i class="fa fa-check"></i></button>`;
+                const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Send Mail" onclick="SendMail(${item["Code"]})">Send Mail</button>`:'';
                 let formattedItem = {}
                 formattedItem = Status == 'D' ? {
                     ...item,
@@ -814,16 +814,12 @@ function Verify(DispatchAdviceNo) {
             VerifyDispatch(DispatchAdviceNo)
         }
     });
-
 }
-function VerifyDispatch(DispatchAdviceNo) {
+function VerifyDispatch(Code) {
     if (confirm("Are you sure you want to verify ?")) {
         Showloader();
         var Status = $("#ddlStatus").val();
-        var code = G_DispatchPlanlist.filter(x => x["DO No"] === DispatchAdviceNo).map(x => x.Code);
-        var uniqueCodes = [...new Set(code)];
-        var codes = uniqueCodes.join(",");
-        VerifyDispatchPlanService.Verify(codes, Status).then(function (response) {
+        VerifyDispatchPlanService.Verify(Code, Status).then(function (response) {
             if (response[0].Status = 'Y') {
                 toastr.success(response[0].Msg);
                 GetDispatchAdvicePlanList($("#ddlStatus").val());
@@ -947,8 +943,6 @@ function updateSelected() {
     $('#selectAll').prop('checked', totalOptions > 0 && totalChecked === totalOptions);
 }
 
-// Dropdown input removed – grid is now always visible inside the container
-
 $(document).on('change', '#selectAll', function () {
     const isChecked = $(this).is(':checked');
     $('.option').prop('checked', isChecked);
@@ -1012,12 +1006,9 @@ function SendMailToTransporter() {
         toastr.error('Please select at least one transporter.');
         return;
     }
-    var code = G_DispatchPlanlist.filter(x => x["DO No"] === G_DispatchAdviceNo).map(x => x.Code);
-    var uniqueCodes = [...new Set(code)];
-    var codes = uniqueCodes.join(",");
     if (confirm("Are you sure you want to send mail ?")) {
         Showloader();
-        VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes,codes).then(function (response) {
+        VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo).then(function (response) {
             if (response[0].Status = 'Y') {
                 toastr.success(response[0].Msg);
                 HideLoader();
