@@ -3,7 +3,13 @@ import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFun
 
 let G_today = '';
 let G_FromDateValue = '';
+let G_FromDateValueSlitted = '';
+let G_FromDateValueJobWork = '';
+let G_FromDateSlittedCoilStockValue = '';
 let G_ToDateValue = '';
+let G_ToDateValueSlitted = '';
+let G_ToDateValueJobWork = '';
+let G_ToDateSlittedCoilStockValue = '';
 let G_IdentificationNo = '';
 let G_Code = 0;
 let G_SNo = 0;
@@ -26,6 +32,10 @@ $(document).ready(function () {
     $('#current-stock').show();
     $('#unApproved-planned').hide();
     $('#dispatch').hide();
+    $('#slitted').hide();
+    $('#job-work').hide();
+    $('#stock-summary').hide();
+    $('#slitted-coil-stock').hide();
     GetRMStockCurrentListTable();
     $('#exampleCheck').on("click", function () {
         GetRMStockCurrentListTable();
@@ -112,10 +122,8 @@ function GetRMStockCurrentListTable() {
             }
             const columnAlignment = {
                 'Invoice Date': 'center', 'Receive Date': 'center', 'Thickness': 'right', 'Ch Wt': 'right', 'Width': 'right;min-width:60px','Ac Wt': 'right',
-                'Qty MT': 'right', 'Qty PC': 'right', 'Qty MTRS': 'right', '% E': 'right;min-width:50px', 'Hardness': 'right', 'UTS': 'right;min-width:70px', 'YST': 'right;min-width:70px','Status': ';width:150px',
-                'Purchased Date': ';width:150px',
-                'Vendor': ';min-width:230px !important;',
-                'Item Name': ';min-width:100px !important;',
+                'Qty MT': 'right', 'Qty PC': 'right', 'Qty MTRS': 'right', '% E': 'right;min-width:50px', 'Hardness': 'right', 'UTS': 'right;min-width:70px', 'YST': 'right;min-width:70px',
+                
             };
             const updatedResponse = response.map((item, index) => {
                 const buttonText = item.IsPlanned ? "Planned" : "Plan";
@@ -160,7 +168,7 @@ function calculateRMStockCurrentFooterTotals(rows) {
         // Prefer explicit row count cell if present
         const $rowCountCell = $('#RowCountValue');
         if ($rowCountCell.length) {
-            $rowCountCell.text('Row Count:' + rowCount);
+            $rowCountCell.text('Count:' + rowCount);
         } else {
             // Fallback: Set the first footer th text to include row count
             const $footerFirstTh = $('#RMStockCurrent tfoot th').first();
@@ -650,9 +658,9 @@ function clearForm() {
     $('#txtWeightPerSlit').val('');
     $('#txtTotalWeight').val('');
     G_SNo = 0;
-    $('#CopyFromPrevious').prop('checked', false);
-    $('#AllowManualWeight').prop('checked', false);
-    $('#PartingCase').prop('checked', false);
+    //$('#CopyFromPrevious').prop('checked', false);
+    //$('#AllowManualWeight').prop('checked', false);
+    //$('#PartingCase').prop('checked', false);
 }
 
 //function editRow(button, Code, SlittingMasterCode) {
@@ -805,8 +813,8 @@ function Save_PlannedSlitting(SNo) {
 
     Showloader();
     RMStockService.SaveRMStockData(RMStockPayloadData).then(function (response) {
-        HideLoader();
         if (response.Status === 'Y') {
+        HideLoader();
             toastr.success(response.Message);
             // Refresh table data - updateTableTotals will be called after refresh completes
             ShowRMStockPlan();
@@ -855,7 +863,6 @@ function getUrlVars() {
 
 // Tab Management Functions
 function initializeTabs() {
-    // Initialize Bootstrap tabs
     var triggerTabList = [].slice.call(document.querySelectorAll('#rmStockTabs button'));
     triggerTabList.forEach(function (triggerEl) {
         var tabTrigger = new bootstrap.Tab(triggerEl);
@@ -864,7 +871,6 @@ function initializeTabs() {
             event.preventDefault();
             tabTrigger.show();
 
-            // Load data for the active tab
             var targetTab = triggerEl.getAttribute('data-bs-target');
             loadTabData(targetTab);
         });
@@ -895,17 +901,7 @@ function GetUnApprovedPlannedList() {
                 'Vendor': ';min-width:230px !important;',
                 'Item Name': ';min-width:100px !important;',
             };
-            //const updatedResponse = response.map((item, index) => {
-            //    const buttonText = item.IsPlanned ? "Planned" : "Plan";
-            //    let PlannedButtonInputHTML = `<button type="button" class="btn btn-primary btn-height" title="Planned Button" onclick='ShowModelPlanned(${JSON.stringify(item)})' style="width: 70px;">${buttonText}</button>`;
-
-            //    return {
-            //        ...item,
-            //        'Planned Button': PlannedButtonInputHTML,
-            //    };
-            //});
-            // calculate footer totals for Ch Wt and Ac Wt
-            //calculateRMStockCurrentFooterTotals(response);
+          
             BizsolCustomFilterGrid.CreateDataTable("table-header-UnApproved_Planned", "table-body-UnApproved_Planned", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             PopulateTableForPrint(response);
         } else {
@@ -921,14 +917,64 @@ function GetUnApprovedPlannedList() {
        
     });
 }
+function ShowSlittedCoilStockList() {
+    G_FromDateSlittedCoilStockValue = $('#txtFromDateSlittedCoilStock').val();
+    G_ToDateSlittedCoilStockValue = $('#txtToDateSlittedCoilStock').val();
+    GetSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlittedCoilStockValue);
+}
+function GetSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlittedCoilStockValue) {
+    Showloader();
+    RMStockService.GetSlittedCoilStockData(G_FromDateSlittedCoilStockValue, G_ToDateSlittedCoilStockValue).then(function (response) {
+        HideLoader();
+        if (response.length > 0) {
+            $('#tblSlitted_Coil_Stock').show();
+            const stringFilterColumn = ["Item Name", "IdentificationNo", "Qty PC", "Qty MT","Qty MTRS"];
+            const numericFilterColumn = [];
+            const dateFilterColumn = ["Create Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            let hiddenColumns = ["Code"];
+            const columnAlignment = { "Qty PC": 'right', "Qty MT": 'right', "Qty MTRS": 'right',"Create Date":'center'};
+          
+            BizsolCustomFilterGrid.CreateDataTable("table-header-Slitted_Coil_Stock", "table-body-Slitted_Coil_Stock", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            PopulateTableForPrint(response);
+        } else {
+            HideLoader();
+            toastr.error('No Data Found');
+            $('#tblSlitted_Coil_Stock').hide();
+        }
+    })
+        .catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || 'Error during Slitted_Coil_Stock');
+            $('#tblSlitted_Coil_Stock').hide();
+       
+    });
+}
  
 function loadTabData(tabId) {
+    $('#RMStockCurrent tbody').empty();
+    $('#RMStockCurrent thead tr').empty();
+    $('#UnApproved_Planned tbody').empty();
+    $('#UnApproved_Planned thead tr').empty();
+    $('#Slitted_Coil_Stock tbody').empty();
+    $('#Slitted_Coil_Stock thead tr').empty();
+    $('#dispatch tbody').empty();
+    $('#dispatch thead tr').empty();
+    $('#Slitted tbody').empty();
+    $('#Slitted thead tr').empty();
+    $('#JobWorkData tbody').empty();
+    $('#JobWorkData thead tr').empty();
+    $('#SummaryData tbody').empty();
+    $('#SummaryData thead tr').empty();
     switch (tabId) {
         case '#current-stock':
             $('#tblReport tbody').empty();
             $('#tblReport thead tr').empty();
             $('#current-stock').show();
             $('#unApproved-planned').hide();
+            $('#slitted-coil-stock').hide();
             $('#dispatch').hide();
             $('#checkBoxHideAndShow').show();
             $('#slitted').hide();
@@ -941,6 +987,7 @@ function loadTabData(tabId) {
             $('#tblReport thead tr').empty();
             $('#current-stock').hide();
             $('#unApproved-planned').show();
+            $('#slitted-coil-stock').hide();
             $('#dispatch').hide();
             $('#stock-summary').hide();
             $('#slitted').hide();
@@ -949,12 +996,28 @@ function loadTabData(tabId) {
             $('#tblUnApproved_Planned').hide();
             GetUnApprovedPlannedList();
             break;
+        case '#slitted-coil-stock':
+            $('#tblReport tbody').empty();
+            $('#tblReport thead tr').empty();
+            $('#current-stock').hide();
+            $('#unApproved-planned').show();
+            $('#dispatch').hide();
+            $('#stock-summary').hide();
+            $('#slitted').hide();
+            $('#job-work').hide();
+            $('#checkBoxHideAndShow').hide();
+            $('#tblUnApproved_Planned').hide();
+            $('#slitted-coil-stock').show();
+            setCurrentDateDispatch();
+            ShowSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlittedCoilStockValue);
+            break;
         case '#dispatch':
             $('#tblReport tbody').empty();
             $('#tblReport thead tr').empty();
             $('#current-stock').hide();
             $('#tblUnApproved_Planned').hide();
             $('#unApproved-planned').hide();
+            $('#slitted-coil-stock').hide();
             $('#checkBoxHideAndShow').hide();
             $('#tbldispatch').hide();
             $('#dispatch').show();
@@ -962,6 +1025,7 @@ function loadTabData(tabId) {
             $('#job-work').hide();
             $('#stock-summary').hide();
             setCurrentDateDispatch();
+            loadDispatchData(G_FromDateValue, G_ToDateValue);
             break;
         case '#slitted':
             $('#tblReport tbody').empty();
@@ -969,13 +1033,15 @@ function loadTabData(tabId) {
             $('#current-stock').hide();
             $('#tblUnApproved_Planned').hide();
             $('#unApproved-planned').hide();
+            $('#slitted-coil-stock').hide();
             $('#checkBoxHideAndShow').hide();
             $('#dispatch').hide();
             $('#tblSlitted').hide();
             $('#slitted').show();
             $('#job-work').hide();
             $('#stock-summary').hide();
-            loadSlittedData();
+            setCurrentDateDispatch();
+            loadSlittedData(G_FromDateValueSlitted, G_ToDateValueSlitted);
             break;
         case '#job-work':
             $('#tblReport tbody').empty();
@@ -983,13 +1049,15 @@ function loadTabData(tabId) {
             $('#current-stock').hide();
             $('#tblUnApproved_Planned').hide();
             $('#unApproved-planned').hide();
+            $('#slitted-coil-stock').hide();
             $('#checkBoxHideAndShow').hide();
             $('#dispatch').hide();
             $('#slitted').hide();
             $('#stock-summary').hide();
             $('#tblJobWorkData').hide();
             $('#job-work').show();
-            loadJobWorkData();
+            setCurrentDateDispatch();
+            loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork);
             break;
         case '#stock-summary':
             $('#tblReport tbody').empty();
@@ -997,6 +1065,7 @@ function loadTabData(tabId) {
             $('#current-stock').hide();
             $('#tblUnApproved_Planned').hide();
             $('#unApproved-planned').hide();
+            $('#slitted-coil-stock').hide();
             $('#checkBoxHideAndShow').hide();
             $('#dispatch').hide();
             $('#job-work').hide();
@@ -1021,10 +1090,22 @@ function setCurrentDateDispatch() {
     }
 
      $('#txtFromDate').val(formatDate(firstOfMonth));  
+     $('#txtFromDateSlitted').val(formatDate(firstOfMonth));  
+     $('#txtFromDateJobWork').val(formatDate(firstOfMonth));  
+     $('#txtFromDateSlittedCoilStock').val(formatDate(firstOfMonth));  
      $('#txtToDate').val(formatDate(today));    
+     $('#txtToDateSlitted').val(formatDate(today));    
+     $('#txtToDateJobWork').val(formatDate(today));    
+     $('#txtToDateSlittedCoilStock').val(formatDate(today));    
     G_FromDateValue = $('#txtFromDate').val();  
+    G_FromDateValueSlitted = $('#txtFromDateSlitted').val();  
+    G_FromDateValueJobWork = $('#txtFromDateJobWork').val();  
+    G_FromDateSlittedCoilStockValue = $('#txtFromDateSlittedCoilStock').val();  
     G_ToDateValue = $('#txtToDate').val();    
-    loadDispatchData(G_FromDateValue, G_ToDateValue);
+    G_ToDateValueSlitted = $('#txtToDateSlitted').val();    
+    G_ToDateValueJobWork = $('#txtToDateJobWork').val();    
+    G_ToDateSlittedCoilStockValue = $('#txtToDateSlittedCoilStock').val();
+    
 }
 function ShowDispatchList() {
     G_FromDateValue = $('#txtFromDate').val();
@@ -1063,14 +1144,33 @@ function loadDispatchData(G_FromDateValue, G_ToDateValue) {
 
         });
 }
-
-function loadSlittedData() {
+function ShowSlittedList() {
+    G_FromDateValueSlitted = $('#txtFromDateSlitted').val();
+    G_ToDateValueSlitted = $('#txtToDateSlitted').val();
+    loadSlittedData(G_FromDateValueSlitted, G_ToDateValueSlitted);
+}
+function loadSlittedData(G_FromDateValueSlitted, G_ToDateValueSlitted) {
     Showloader();
-    RMStockService.GetRMStockSlitted().then(function (response) {
-        HideLoader();
+    RMStockService.GetRMStockSlitted(G_FromDateValueSlitted, G_ToDateValueSlitted).then(function (response) {
         if (response.length > 0) {
+            response = response.map(item => {
+                if (item["Yield %"] !== undefined && item["Yield %"] !== null && !isNaN(item["Yield %"])) {
+                    item["Yield %"] = parseFloat(item["Yield %"]).toFixed(2);
+                }
+                if (item["Width Loss %"] !== undefined && item["Width Loss %"] !== null && !isNaN(item["Width Loss %"])) {
+                    item["Width Loss %"] = parseFloat(item["Width Loss %"]).toFixed(2);
+                }
+                if (item["Output Weight"] !== undefined && item["Output Weight"] !== null && !isNaN(item["Output Weight"])) {
+                    item["Output Weight"] = parseFloat(item["Output Weight"]).toFixed(3);
+                }
+                if (item["Scrap"] !== undefined && item["Scrap"] !== null && !isNaN(item["Scrap"])) {
+                    item["Scrap"] = parseFloat(item["Scrap"]).toFixed(3);
+                }
+                return item;
+            });
+
             $('#tblSlitted').show();
-            const stringFilterColumn = ["Entry No","Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %","Width Loss %"];
+            const stringFilterColumn = ["Entry No", "Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %","Width Loss %"];
             const numericFilterColumn = [];
             const dateFilterColumn = ["Entry Date"];
             const button = false;
@@ -1083,6 +1183,7 @@ function loadSlittedData() {
             };
             calculateTotalFooterSlitted(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-Slitted", "table-body-Slitted", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            HideLoader();
             PopulateTableForPrint(response);
         } else {
             HideLoader();
@@ -1115,14 +1216,33 @@ function calculateTotalFooterSlitted(rows) {
                 $('#totalActWt').text(totalActWt.toFixed(3));
             }
         } catch (e) {
-            // fail silently
         }
 }
-function loadJobWorkData() {
+function ShowJobWorkList() {
+    G_FromDateValueJobWork = $('#txtFromDateJobWork').val();
+    G_ToDateValueJobWork = $('#txtToDateJobWork').val();
+    loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork);
+}
+function loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork) {
     Showloader();
-    RMStockService.GetRMStockJobWorkData().then(function (response) {
+    RMStockService.GetRMStockJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork).then(function (response) {
         HideLoader();
         if (response.length > 0) {
+            response = response.map(item => {
+                if (item["Yield %"] !== undefined && item["Yield %"] !== null && !isNaN(item["Yield %"])) {
+                    item["Yield %"] = parseFloat(item["Yield %"]).toFixed(2);
+                }
+                if (item["Width Loss %"] !== undefined && item["Width Loss %"] !== null && !isNaN(item["Width Loss %"])) {
+                    item["Width Loss %"] = parseFloat(item["Width Loss %"]).toFixed(2);
+                }
+                if (item["Output Weight"] !== undefined && item["Output Weight"] !== null && !isNaN(item["Output Weight"])) {
+                    item["Output Weight"] = parseFloat(item["Output Weight"]).toFixed(3);
+                }
+                if (item["Scrap"] !== undefined && item["Scrap"] !== null && !isNaN(item["Scrap"])) {
+                    item["Scrap"] = parseFloat(item["Scrap"]).toFixed(3);
+                }
+                return item;
+            });
             $('#tblJobWorkData').show();
             const stringFilterColumn = ["Entry No","Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %", "Width Loss %", "Party Name"];
             const numericFilterColumn = [];
@@ -1212,10 +1332,14 @@ function loadStockSummaryData() {
 function calculateTotalFooterStockSummary(rows) {
     try {
         let totalWeightStock = 0;
+        let totalNoOFPC = 0;
+        let totalNoOFPCCoil = 0;
         let totalWtStock = 0;
         if (rows && rows.length) {
             rows.forEach(function (r) {
                 totalWeightStock += parseFloat(r['Total Weight']) || 0;
+                totalNoOFPCCoil += parseFloat(r['No OF PC/Coil']) || 0;
+                totalNoOFPC += parseFloat(r['No OF PC']) || 0;
                 totalWtStock += parseFloat(r['Weight']) || 0;
             });
         }
@@ -1225,6 +1349,12 @@ function calculateTotalFooterStockSummary(rows) {
         }
         if ($('#totalWtStock').length) {
             $('#totalWtStock').text(totalWtStock.toFixed(3));
+        }
+        if ($('#totalNoOFPCCoil').length) {
+            $('#totalNoOFPCCoil').text(totalNoOFPCCoil);
+        }
+        if ($('#totalNoOFPC').length) {
+            $('#totalNoOFPC').text(totalNoOFPC);
         }
     } catch (e) {
         // fail silently
@@ -1337,4 +1467,6 @@ window.enableNewRowAddition = enableNewRowAddition;
 window.DeleteModal = DeleteModal;
 window.CloseModal = CloseModal;
 window.ShowDispatchList = ShowDispatchList;
-//window.ValidateWidthInput = ValidateWidthInput;
+window.ShowSlittedList = ShowSlittedList;
+window.ShowJobWorkList = ShowJobWorkList;
+window.ShowSlittedCoilStockList = ShowSlittedCoilStockList;
