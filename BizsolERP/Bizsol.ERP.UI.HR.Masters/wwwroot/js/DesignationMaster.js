@@ -114,7 +114,7 @@ function GetDesignationMasterListTable() {
         }
     })
         .catch(function (error) {
-            toastr.error(error.Msg || 'Error during Allowance transfer');
+            toastr.error(error.Msg || 'Error during Designation transfer');
         });
 }
 function ChangeBackgroundColor() {

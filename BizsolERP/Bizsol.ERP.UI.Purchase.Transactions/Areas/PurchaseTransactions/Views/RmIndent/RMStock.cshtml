@@ -173,19 +173,18 @@
     .fixed-height-table{
         height:460px;
     }
-
-    thead th {
-        background: #f2f2f2;
-        position: sticky; /* make header sticky */
-        z-index: 2;
-        top: 0; /* header at top */
-    }
-
-    tfoot th {
-        background: #f2f2f2;
-        position: sticky; /* make footer sticky */
-        z-index: 1;
-        bottom: 0; /* footer at bottom */
+    #RMStockCurrent tfoot td,
+    #RMStockCurrent tfoot th,
+    #Slitted tfoot td,
+    #Slitted tfoot th,
+    #JobWorkData tfoot td,
+    #JobWorkData tfoot th,
+    #SummaryData tfoot td,
+    #SummaryData tfoot th{
+        color: #fff !important;
+        background-color: #5c95ce !important;
+        border-color: #5c95ce !important;
+        font-weight: 600;
     }
 </style>
 
@@ -259,13 +258,13 @@
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td id="RowCountValue" class="text-end">Count:</td>
-                                            <td colspan="10" class="text-end">Totals</td>
-                                            <td id="totalChWt" class="text-end">0.000</td>
-                                            <td id="totalAcWt" class="text-end">0.000</td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
+                                        <td id="RowCountValue" class="text-end">Count:</td>
+                                        <td colspan="10" class="text-end">Totals</td>
+                                        <td id="totalChWt" class="text-end">0.000</td>
+                                        <td id="totalAcWt" class="text-end">0.000</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -299,7 +298,7 @@
             <!-- Slitted-Coil-Stock Tab -->
             <div class="card">
                 <div class="tab-pane fade show active" id="slitted-coil-stock" role="tabpanel" aria-labelledby="slitted-coil-stock-tab">
-                    <div class="card col-md-12">
+                    @* <div class="card col-md-12">
                         <div class="card-body">
                             <div class="row ">
                                 <div class="col-auto">
@@ -315,7 +314,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> *@
                     <div class="table-responsive">
                         <div id="tblSlitted_Coil_Stock">
                             <div class="table-wrapper">
@@ -398,15 +397,17 @@
                                         <tbody id="table-body-Slitted">
                                          </tbody>
                                     <tfoot>
-                                    <td colspan="8" class="text-end">Totals</td>
-                                    <td id="totalWt" class="text-end">0.000</td>
-                                    <td id="totalActWt" class="text-end">0.000</td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
+                                       <tr>
+                                            <td colspan="8" class="text-end">Totals</td>
+                                            <td id="totalWt" class="text-end">0.000</td>
+                                            <td id="totalActWt" class="text-end">0.000</td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
                                     </tfoot>
                                     </table>
                                  </div>
@@ -446,17 +447,17 @@
                                         <tbody id="table-body-JobWorkData">
                                         </tbody>
                                             <tfoot>
-                                            <tr>
-                                            <td colspan="9" class="text-end">Totals</td>
-                                            <td id="totalWeight" class="text-end">0.000</td>
-                                            <td id="totalActualWt" class="text-end">0.000</td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                             </tr>
+                                                <tr>
+                                                    <td colspan="9" class="text-end">Totals</td>
+                                                    <td id="totalWeight" class="text-end">0.000</td>
+                                                    <td id="totalActualWt" class="text-end">0.000</td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
                                             </tfoot>
                                     </table>
                                 </div>
@@ -496,7 +497,7 @@
         </div>
     </div>
 </div>
-    </div>
+</div>
 </div>
 
 <!-- Add Source Modal -->

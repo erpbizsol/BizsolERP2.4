@@ -11,59 +11,143 @@ var options = {
     maximumAge: 0
 };
 
-const Indx_TblOrder = {
-    Consignee: 0,
-    DeliveryAddress: 1,
-    ItemName: 2,
-    Size: 3,
-    Thickness: 4,
-    SizeDesp: 5,
-    UOM: 6,
-    Stock: 7,
-    OrderQtyPC: 8,
-    OrderQtyMT: 9,
-    OrderQtyMTR: 10,
-    RateUnit: 11,
-    OrderUOM: 12,
-    OrderQTY: 13,
-    Tolerance: 14,
-    BasicRate: 15,
-    ExtraCharges: 16,
-    DiscountType: 17,
-    Discount: 18,
-    OrderRate: 19,
-    //RateUnit: 19,
-    DiscountType_AfterRate: 20,
-    Discount_AfterRate: 21,
-    Amount: 22,
-    DeliveryDate: 23,
-    ZonePriceListCode: 24,
-    DealerName: 25,
-    Remarks: 26,
-    Delete: 27,
-    VisitDetailsCode: 28,
-    IsNewRow: 29,
-    SizeApplicable: 30,
-    ThkApplicable: 31,
-    LenApplicable: 32,
-    ItemMasterCode: 33,
-    UOMDecimalUnit: 34
+//const Indx_TblOrder = {
+//    Consignee: 0,
+//    DeliveryAddress: 1,
+//    ItemName: 2,
+//    Size: 3,
+//    Thickness: 4,
+//    SizeDesp: 5,
+//    UOM: 6,
+//    Stock: 7,
+//    OrderQtyBags:8,
+//    OrderQtyPC: 9,
+//    OrderQtyMT: 10,
+//    OrderQtyMTR: 11,
+//    RateUnit: 12,
+//    OrderUOM: 13,
+//    OrderQTY: 14,
+//    Tolerance: 15,
+//    BasicRate: 16,
+//    ExtraCharges: 17,
+//    DiscountType: 18,
+//    Discount: 19,
+//    OrderRate: 20,
+//    //RateUnit: 19,
+//    DiscountType_AfterRate: 21,
+//    Discount_AfterRate: 22,
+//    Amount: 23,
+//    DeliveryDate: 24,
+//    ZonePriceListCode: 25,
+//    DealerName: 26,
+//    Remarks: 27,
+//    Delete: 28,
+//    VisitDetailsCode: 29,
+//    IsNewRow: 30,
+//    SizeApplicable: 31,
+//    ThkApplicable: 32,
+//    LenApplicable: 33,
+//    ItemMasterCode: 34,
+//    UOMDecimalUnit: 35
 
+//}
+//const Indx_Stock = {
+//    Code: 0,
+//    ItemMaster_Code: 1,
+//    ItemName: 2,
+//    Size: 3,
+//    Thickness: 4,
+//    PhysicalStock: 5,
+//    SaleOrderQty:6,
+//    PendingCRMOrder: 7,
+//    RollingForcast: 8,
+//    MinimumQty: 9,
+//    BalQty: 10,
+//    Qty:11
+//}
+
+
+// Define columns in order - indices are auto-generated
+const TblOrderColumns = [
+    'Consignee',
+    'DeliveryAddress',
+    'ItemName',
+    'Size',
+    'Thickness',
+    'SizeDesp',
+    'UOM',
+    'Stock',
+    'OrderQtyBags',
+    'OrderQtyPC',
+    'OrderQtyMT',
+    'OrderQtyMTR',
+    'RateUnit',
+    'OrderUOM',
+    'OrderQTY',
+    'Tolerance',
+    'BasicRate',
+    'ExtraCharges',
+    'DiscountType',
+    'Discount',
+    'OrderRate',
+    'DiscountType_AfterRate',
+    'Discount_AfterRate',
+    'Amount',
+    'DeliveryDate',
+    'ZonePriceListCode',
+    'DealerName',
+    'Remarks',
+    'Delete',
+    'VisitDetailsCode',
+    'IsNewRow',
+    'SizeApplicable',
+    'ThkApplicable',
+    'LenApplicable',
+    'ItemMasterCode',
+    'UOMDecimalUnit'
+];
+
+// Auto-generate the index object
+const Indx_TblOrder = TblOrderColumns.reduce((acc, col, index) => {
+    acc[col] = index;
+    return acc;
+}, {});
+
+// Validation helper function to check for duplicate indices (optional, for debugging)
+function validateIndices(indexObj) {
+    const values = Object.values(indexObj);
+    const uniqueValues = new Set(values);
+    if (values.length !== uniqueValues.size) {
+        console.error('Duplicate indices found in Indx_TblOrder!');
+    }
+    console.log('Total columns:', values.length);
 }
-const Indx_Stock = {
-    Code: 0,
-    ItemMaster_Code: 1,
-    ItemName: 2,
-    Size: 3,
-    Thickness: 4,
-    PhysicalStock: 5,
-    SaleOrderQty:6,
-    PendingCRMOrder: 7,
-    RollingForcast: 8,
-    MinimumQty: 9,
-    BalQty: 10,
-    Qty:11
-}
+
+// Validate indices on load (optional)
+validateIndices(Indx_TblOrder);
+
+// Define Stock columns in order - indices are auto-generated
+const StockColumns = [
+    'Code',
+    'ItemMaster_Code',
+    'ItemName',
+    'Size',
+    'Thickness',
+    'PhysicalStock',
+    'SaleOrderQty',
+    'PendingCRMOrder',
+    'RollingForcast',
+    'MinimumQty',
+    'BalQty',
+    'Qty'
+];
+
+// Auto-generate the stock index object
+const Indx_Stock = StockColumns.reduce((acc, col, index) => {
+    acc[col] = index;
+    return acc;
+}, {});
+
 
 let arrayList_NestedDealer = [];
 let arrayList_ItemMaster = [];
@@ -865,6 +949,7 @@ function AddNewRow() {
     var SizeDesp = row.insertCell(Indx_TblOrder.SizeDesp);
     var UOM = row.insertCell(Indx_TblOrder.UOM);
     var Stock = row.insertCell(Indx_TblOrder.Stock);
+    var OrderQtyBags = row.insertCell(Indx_TblOrder.OrderQtyBags);
     var OrderQtyPC = row.insertCell(Indx_TblOrder.OrderQtyPC);
     var OrderQtyMT = row.insertCell(Indx_TblOrder.OrderQtyMT);
     var OrderQtyMTR = row.insertCell(Indx_TblOrder.OrderQtyMTR);
@@ -936,6 +1021,7 @@ function AddNewRow() {
 
 
     Stock.innerHTML = '<input type="text"  id="txtStock' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm text-end" name="txtStock" placeholder="" autocomplete="off" onclick="$(this).val(\'\')" style="min-width: 70px;" onchange="" required>';
+    OrderQtyBags.innerHTML = '<input type="number"  id="txtOrderQtyBags' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm text-end" name="txtOrderQtyBags" placeholder=""  autocomplete="off"  maxlength="6"  onchange="SetMTRByPacking(this,' + tbItemConsumeRowNo + ');CalculateAmount(this);" required>';
     OrderQtyPC.innerHTML = '<input type="number"  id="txtOrderQtyPC' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm text-end" name="txtOrderQtyPC" placeholder=""  autocomplete="off"  maxlength="6"  onchange="SetWeightInMTByPC(this,' + tbItemConsumeRowNo + ');CalculateAmount(this);" required>';
     OrderQtyMT.innerHTML = '<input type="number"  id="txtOrderQtyMT' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm text-end" name="txtOrderQtyMT" placeholder=""  autocomplete="off"  maxlength="6"  onchange="SetPCByWeightInMT(this,' + tbItemConsumeRowNo + ');CalculateAmount(this);" required>';
     OrderQtyMTR.innerHTML = '<input type="number"  id="txtOrderQtyMTR' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm  text-end" name="txtOrderQtyMTR" placeholder=""  autocomplete="off"  maxlength="6"  onchange="SetPCandWeightByLengthInMR(this,' + tbItemConsumeRowNo + ');CalculateAmount(this);" required>';
@@ -1304,6 +1390,7 @@ function ValidateData() {
         var ZonePriceListCode = '';
         var Remarks = '';
         var rowNo = index + 1;
+        var QtyBags = 0;
         var QtyPC = 0;
         var QtyMTR = 0;
         var DealerCode = 0;
@@ -1327,6 +1414,7 @@ function ValidateData() {
         //ZonePriceListCode = $(this).find('td:eq(' + Indx_TblOrder.ZonePriceListCode + ')')[0].getElementsByTagName('input')[0].value;
         ZonePriceListCode = $(this).find('td:eq(' + Indx_TblOrder.ZonePriceListCode + ') select option:selected').text();
         Remarks = $(this).find('td:eq(' + Indx_TblOrder.Remarks + ')')[0].getElementsByTagName('input')[0].value;
+        QtyBags = $(this).find('td:eq(' + Indx_TblOrder.OrderQtyBags + ')')[0].getElementsByTagName('input')[0].value;
         QtyPC = $(this).find('td:eq(' + Indx_TblOrder.OrderQtyPC + ')')[0].getElementsByTagName('input')[0].value;
         QtyMTR = $(this).find('td:eq(' + Indx_TblOrder.OrderQtyMTR + ')')[0].getElementsByTagName('input')[0].value;
         DealerCode = $(this).find('td:eq(' + Indx_TblOrder.DealerName + ')')[0].getElementsByTagName('input')[0].value;
@@ -1722,6 +1810,7 @@ function SaveData() {
         var VisitDetailsCode = 0;
         var ZonePriceListCode = '';
         var UOM = '';
+        var QtyBags = 0;
         var QtyPC = 0;
         var QtyMTR = 0;
         var DealerCode = 0;
@@ -1739,7 +1828,7 @@ function SaveData() {
         var Thickness = '';
         var SizeCode = 0;
         var ThicknessCode = 0;
-
+        
 
         //ItemName = $(this).find('td:eq(' + Indx_TblOrder.ItemName + ')')[0].getElementsByTagName('input')[0].value;
         var ItemName = $(this).find('td:eq(' + Indx_TblOrder.ItemName + ') select option:selected').text();
@@ -1756,6 +1845,7 @@ function SaveData() {
         UOM = $(this).find('td:eq(' + Indx_TblOrder.UOM + ') select option:selected').text();
         QtyMTR = $(this).find('td:eq(' + Indx_TblOrder.OrderQtyMTR + ')')[0].getElementsByTagName('input')[0].value;
         DealerCode = $(this).find('td:eq(' + Indx_TblOrder.DealerName + ')')[0].getElementsByTagName('input')[0].value;
+        QtyBags = $(this).find('td:eq(' + Indx_TblOrder.OrderQtyBags + ')')[0].getElementsByTagName('input')[0].value;
         QtyPC = $(this).find('td:eq(' + Indx_TblOrder.OrderQtyPC + ')')[0].getElementsByTagName('input')[0].value;
         ExtraCharges = $(this).find('td:eq(' + Indx_TblOrder.ExtraCharges + ')')[0].getElementsByTagName('input')[0].value;
         
@@ -1793,6 +1883,7 @@ function SaveData() {
         var OrderUOM = $(this).find('td:eq(' + Indx_TblOrder.OrderUOM + ')')[0].getElementsByTagName('input')[0].value;
     
         QtyMT = QtyMT == undefined || QtyMT == '' ? 0 : QtyMT;
+        QtyBags = QtyBags == undefined || QtyBags == '' ? 0 : QtyBags;
         QtyPC = QtyPC == undefined || QtyPC == '' ? 0 : QtyPC;
         QtyMTR = QtyMTR == undefined || QtyMTR == '' ? 0 : QtyMTR;
         Discount = Discount == undefined || Discount == '' ? 0 : Discount;
@@ -1886,6 +1977,7 @@ function SaveData() {
             rowData["DiscountLV2UpdatedBy"] = 0;
             rowData["DiscountLV1UpdatedOn"] = new Date().toISOString().split("T")[0];
             rowData["DiscountLV2UpdatedOn"] = new Date().toISOString().split("T")[0];
+            rowData["QtyBags"] = QtyBags;
             
 
             visitOrderDetailsData.push(rowData);
@@ -2726,7 +2818,7 @@ function SetOrderBookingTableHeaderAsPerConfig() {
         $("#tblorderbooking tfoot tr:first-child td:nth-child(" + (Indx_TblOrder.OrderQtyMT + 1) + ")").css('display', '');
     }
 
-    if (Qty_Config_Unit == 'NA') {
+    if (Qty_Config_Unit == 'NA' || Qty_Config_Unit == 'As Per Master') {//For LOf India hide UOM
         $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.UOM + 1) + ")").css('display', 'none');
         $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.UOM + 1) + ")").css('display', 'none');
         $("#tblorderbooking tfoot tr:first-child td:nth-child(" + (Indx_TblOrder.UOM + 1) + ")").css('display', 'none');
@@ -2738,6 +2830,18 @@ function SetOrderBookingTableHeaderAsPerConfig() {
 
     if (Qty_Config_Unit == 'As Per Master' && ShowExtraColumnOrderQtyAndUnit == 'Y') {
         $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQtyMT + 1) + ")").text('Item Qty');
+    }
+
+    if (Qty_Config_Unit == 'As Per Master') {
+        
+        $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQtyBags + 1) + ")").text('QTY CRATE');
+        $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQtyBags + 1) + ")").css('display', '');
+        $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.OrderQtyBags + 1) + ")").css('display', '');
+        $("#tblorderbooking tfoot tr:first-child td:nth-child(" + (Indx_TblOrder.OrderQtyBags + 1) + ")").css('display', '');
+    } else {
+        $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQtyBags + 1) + ")").css('display', 'none');
+        $("#tblorderbooking tbody tr td:nth-child(" + (Indx_TblOrder.OrderQtyBags + 1) + ")").css('display', 'none');
+        $("#tblorderbooking tfoot tr:first-child td:nth-child(" + (Indx_TblOrder.OrderQtyBags + 1) + ")").css('display', 'none');
     }
 
     if (ShowZone == 'N') {
@@ -3391,6 +3495,7 @@ function PopulateOrderBookingTable(data) {
         var td_UOM = '<select id="ddlUOM' + tbItemConsumeRowNo + '" class="form-control form-control-sm box_border" name="ddlUOM"  autocomplete="off" ></select>';
 
         var td_Stock = `<input type="text"  id="txtStock` + tbItemConsumeRowNo + `" onkeypress="BizSolhandleEnterKey(event);"  value=""  class="BizSolFormControl box_border form-control form-control-sm  text-end" name="txtStock" placeholder="" autocomplete="off" onclick="$(this).val(\'\')" style="min-width: 70px;" onchange="" required>`;
+        var td_OrderQtyBags = `<input type="number"  id="txtOrderQtyBags` + tbItemConsumeRowNo + `" onkeypress="BizSolhandleEnterKey(event);"  value="${item.QtyBags}"  class="BizSolFormControl box_border form-control form-control-sm  text-end" name="txtOrderQtyBags" placeholder=""  autocomplete="off"  onchange="SetMTRByPacking(this,${tbItemConsumeRowNo});CalculateAmount(this);" required>`;
         var td_OrderQtyPC = `<input type="number"  id="txtOrderQtyPC` + tbItemConsumeRowNo + `" onkeypress="BizSolhandleEnterKey(event);"  value="${item.QtyPC}"  class="BizSolFormControl box_border form-control form-control-sm  text-end" name="txtOrderQtyPC" placeholder=""  autocomplete="off"   onchange="" required>`;
         var td_OrderQtyMT = `<input type = "number"  id = "txtOrderQtyMT` + tbItemConsumeRowNo + `"  value="${item.OrderQty}"  onkeypress = "BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm  text-end" name = "txtOrderQtyMT" placeholder = ""  autocomplete = "off"   onchange = "CalculateAmount(this);" required >`;
         var td_OrderQtyMTR = `<input type="number"  id="txtOrderQtyMTR` + tbItemConsumeRowNo + `"  value="${item.QtyMR}"  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm text-end" name="txtOrderQtyMTR" placeholder=""  autocomplete="off"   onchange="CalculateAmount(this);" required>`;
@@ -3441,6 +3546,7 @@ function PopulateOrderBookingTable(data) {
         <td  style="display:none">${td_SizeDesp}   </td>
         <td>${td_UOM} </td>
         <td  style="display:none">${td_Stock}   </td>
+        <td  style="display:none">${td_OrderQtyBags}   </td>
         <td  style="display:none">${td_OrderQtyPC}   </td>
         <td>${td_OrderQtyMT}</td>
         <td  style="display:none">${td_OrderQtyMTR}   </td>
@@ -4681,6 +4787,7 @@ function SelectStockRows() {
                 var td_SizeDesp = row.insertCell(Indx_TblOrder.SizeDesp);
                 var td_UOM = row.insertCell(Indx_TblOrder.UOM);
                 var td_Stock = row.insertCell(Indx_TblOrder.Stock);
+                var td_OrderQtyBags = row.insertCell(Indx_TblOrder.OrderQtyBags);
                 var td_OrderQtyPC = row.insertCell(Indx_TblOrder.OrderQtyPC);
                 var td_OrderQtyMT = row.insertCell(Indx_TblOrder.OrderQtyMT);
                 var td_OrderQtyMTR = row.insertCell(Indx_TblOrder.OrderQtyMTR);
@@ -4752,6 +4859,7 @@ function SelectStockRows() {
                 }
                 td_UOM.innerHTML = '<select id="ddlUOM' + tbItemConsumeRowNo + '" class="form-control form-control-sm box_border" name="ddlUOM"  autocomplete="off" ></select>';
                 td_Stock.innerHTML = '<input type="text"  id="txtStock' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" value="' + BalanceQty + '" class="BizSolFormControl box_border form-control form-control-sm text-end" name="txtStock" placeholder="" autocomplete="off" onclick="$(this).val(\'\')" style="min-width: 70px;" onchange="" required>';
+                td_OrderQtyBags.innerHTML = '<input type="number"  id="txtOrderQtyBags' + tbItemConsumeRowNo + '"  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm text-end" name="txtOrderQtyBags" placeholder="" maxlength="6" autocomplete="off"   onchange="SetMTRByPacking(this,' + tbItemConsumeRowNo + ');CalculateAmount(this);" required>';
                 td_OrderQtyPC.innerHTML = '<input type="number"  id="txtOrderQtyPC' + tbItemConsumeRowNo + '"  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm text-end" name="txtOrderQtyPC" placeholder="" maxlength="6" autocomplete="off"   onchange="SetWeightInMTByPC(this,' + tbItemConsumeRowNo + ');CalculateAmount(this);" required>';
                 td_OrderQtyMT.innerHTML = '<input type="number"  id="txtOrderQtyMT' + tbItemConsumeRowNo + '" value="' + Qty + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm text-end" name="txtOrderQtyMT" maxlength="6" placeholder=""  autocomplete="off"   onchange="SetPCByWeightInMT(this,' + tbItemConsumeRowNo + ');CalculateAmount(this);" required>';
                 td_OrderQtyMTR.innerHTML = '<input type="number"  id="txtOrderQtyMTR' + tbItemConsumeRowNo + '"  onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm  text-end" name="txtOrderQtyMTR" placeholder="" maxlength="6"  autocomplete="off"   onchange="SetPCandWeightByLengthInMR(this,' + tbItemConsumeRowNo + ');CalculateAmount(this);" required>';
@@ -5870,6 +5978,8 @@ async function SizeCallBack() {
         BindSelect2FromDataList($('#ddlItemSizeMaster' + RowNo), response1, "FirstItemZero", "100%");
 
         BizSolHelperFunction.SelectOptionByText('ddlItemSizeMaster' + RowNo, SizeControl_NewSizeDesp);
+
+        ShowStockValueByItemSizeThk('x', RowNo);
     }
 
     VisitOrderEntryService.GetBasicRateExtraCharges(ItemName, "", "", CustomerName, SizeControl_NewSizeMaster_Code, BasicRateUOM).then(function (response) {
@@ -6358,6 +6468,42 @@ async function SetPCandWeightByLengthInMR(x, RowNo) {
 
 }
 
+function SetMTRByPacking(x, RowNo) {
+
+    var ObjCurrRow = $(x).closest('tr');
+    var QtyBags = ObjCurrRow.find('td:eq(' + Indx_TblOrder.OrderQtyBags + ')')[0].getElementsByTagName('input')[0].value;
+
+
+    if (QtyBags == undefined || QtyBags == '') {
+        QtyBags = 0;
+    }
+
+
+    var Qty = 0;
+    //let ItemSizeMaster_Code = 4594;
+
+    let ItemMaster_Code = 0;
+
+    let ItemMasterTable = JSON.parse(sessionStorage.getItem('ItemMasterTable'));
+    ItemMaster_Code = $('#ddlItemName' + RowNo + ' option:selected').val();
+    
+    let ItemSelectedObj = ItemMasterTable.find(x => x.Code === parseInt(ItemMaster_Code));
+    if (typeof ItemSelectedObj !== "undefined") {
+        let Packing = parseInt(ItemSelectedObj.Packing);
+        Qty = Packing * QtyBags
+    }
+
+
+    
+
+    
+
+    if (Qty > 0) {
+        ObjCurrRow.find('td:eq(' + Indx_TblOrder.OrderQtyMTR + ')')[0].getElementsByTagName('input')[0].value = Qty;
+    }
+
+}
+
 let sellogicaltableColumnstimer = setInterval(SetLogicalStockTableColumns, 100);
 window.GetAccountMasterDetails = GetAccountMasterDetails;
 window.BizSolhandleEnterKey = BizSolhandleEnterKey;
@@ -6419,3 +6565,4 @@ window.SetWeightInMTByPC = SetWeightInMTByPC;
 window.SetPCByWeightInMT = SetPCByWeightInMT;
 window.GetDefaultItemSizeMasterCode = GetDefaultItemSizeMasterCode;
 window.SetPCandWeightByLengthInMR = SetPCandWeightByLengthInMR;
+window.SetMTRByPacking = SetMTRByPacking;

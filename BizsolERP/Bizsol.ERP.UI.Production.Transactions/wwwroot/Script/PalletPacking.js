@@ -898,7 +898,7 @@ function PalletPacking_Print(Mode,isDownload) {
             
             for (let i = 1; i < rows.length; i++) {
                 let tbPackingListUpdateRow = rows[i];
-                let chkId = tbPackingListUpdateRow.cells[11]?.getElementsByTagName('input')[0];
+                let chkId = tbPackingListUpdateRow.cells[15]?.getElementsByTagName('input')[0];
                 let PalletNo = tbPackingListUpdateRow.cells[0]?.innerHTML.trim();
 
                 if (chkId && chkId.checked == true) {
