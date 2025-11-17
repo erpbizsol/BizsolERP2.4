@@ -47,7 +47,7 @@ $(document).ready(function () {
         $('#btnDownload').show();
         $('#from-date-to-date-filter-bar').show();
         setCurrentDatePendingPlans()
-        //GetPipeStockRollingPlanList(G_FromDate, G_ToDate);
+        GetPendingPlansReportList(G_FromDate, G_ToDate);
         const $wrapper = $('.table-wrapper');
         $wrapper.css({ width: '100%' });
 
@@ -166,6 +166,7 @@ function clearTable() {
     $('#table-head').empty();
     $('#table-body').empty();
     $('#paginator-tblTable').empty();
+    $('#table-foot').empty();
     // Also clear any existing totals row
     $('.totals-row').remove();
 }
@@ -659,16 +660,48 @@ function adjustFilterDropdownPosition() {
 
 function ExportExcel() {
     const isPipeStockTabActive = $('#pipe-stock-tab').hasClass('active');
+    const isPendingPlansTabActive = $('#pending-plans-tab').hasClass('active');
     
     if (isPipeStockTabActive) {
         const hiddenFields = [];
         RollingPlanSheetService.GetPipeStockRollingPlanList().then(function (response) {
-            ExportToExcelControl.ExportToExcel(response, hiddenFields, "PipeStockRollingPlan");
+            if (response && response.length > 0) {
+                ExportToExcelControl.ExportToExcel(response, hiddenFields, "PipeStockRollingPlan");
+            } else {
+                toastr.error('No Data Found');
+            }
+        }).catch(function (error) {
+            toastr.error(error.Msg || 'Error During Export Pipe Stock Data');
+        });
+    } else if (isPendingPlansTabActive) {
+        const fromDate = $('#fromDate').val();
+        const toDate = $('#toDate').val();
+        
+        if (!fromDate || !toDate) {
+            toastr.warning('Please select From Date and To Date');
+            return;
+        }
+        
+        const hiddenFields = [];
+        RollingPlanSheetService.GetPendingPlansReportList(fromDate, toDate).then(function (response) {
+            if (response && response.length > 0) {
+                ExportToExcelControl.ExportToExcel(response, hiddenFields, "PendingPlansRollingPlan");
+            } else {
+                toastr.error('No Data Found');
+            }
+        }).catch(function (error) {
+            toastr.error(error.Msg || 'Error During Export Pending Plans Data');
         });
     } else {
         const hiddenFields = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         RollingPlanSheetService.GetRollingPlanSheetList().then(function (response) {
-            ExportToExcelControl.ExportToExcel(response, hiddenFields, "RollingPlanSheet");
+            if (response && response.length > 0) {
+                ExportToExcelControl.ExportToExcel(response, hiddenFields, "RollingPlanSheet");
+            } else {
+                toastr.error('No Data Found');
+            }
+        }).catch(function (error) {
+            toastr.error(error.Msg || 'Error During Export Rolling Plan Sheet Data');
         });
     }
 
@@ -677,7 +710,7 @@ function OpenModal(Mode, BuyerPoMaster_Code) {
     const titleMap = {
         'INVOICEDETAIL': 'Invoice Details',
         'ROLLINGPLAN': 'Rolling Plan Details',
-        'PRODUCTION': 'Production Details'
+        'PRODUCTION': 'Production Details',
     };
     const title = document.getElementById('detail-modal-title');
     if (title) title.textContent = titleMap[Mode] || (Mode || 'Details');
@@ -705,7 +738,6 @@ function GetRollingPlanDetail(Mode, BuyerPoMaster_Code) {
                 "Rolled QTY": 'right'
             };
 
-            // Ensure numeric columns are fixed to three decimals in the detail modal (specific columns)
             const formattedDetailRows = formatRowsByColumns(response, ["Qty", "Planned Qty", "Rolled QTY"]);
 
             BizsolCustomFilterGrid.CreateDataTable("DetailTable-head", "DetailTable-body", formattedDetailRows, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
@@ -728,6 +760,20 @@ function GetPipeStockRollingPlanList() {
     Showloader();
     RollingPlanSheetService.GetPipeStockRollingPlanList().then(function (response) {
         if (response && response.length > 0) {
+            let totalQtyMT = 0;
+            let totalQtyPC = 0;
+            let totalKG_Pipe = 0;
+            
+            response.forEach(function(item) {
+                const qtyMT = parseFloat(item["Qty MT"]) || 0;
+                const qtyPC = parseFloat(item["Qty PC"]) || 0;
+                const kgPipe = parseFloat(item["KG_Pipe"]) || 0;
+                
+                totalQtyMT += qtyMT;
+                totalQtyPC += qtyPC;
+                totalKG_Pipe += kgPipe;
+            });
+            
             response = response.map(item => {
                 if (item["Qty MT"] !== undefined && item["Qty MT"] !== null && !isNaN(item["Qty MT"])) {
                     item["Qty MT"] = parseFloat(item["Qty MT"]).toFixed(3);
@@ -751,6 +797,11 @@ function GetPipeStockRollingPlanList() {
 
             BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             $('.totals-row').remove();
+            
+            setTimeout(function() {
+                addPipeStockFooter(totalQtyMT, totalQtyPC, totalKG_Pipe);
+            }, 300);
+            
             HideLoader();
         } else {
             HideLoader();
@@ -760,6 +811,65 @@ function GetPipeStockRollingPlanList() {
         HideLoader();
         toastr.error(error.Msg || 'Error During Get Rolling Plan Sheet');
     });
+}
+function addPipeStockFooter(totalQtyMT, totalQtyPC, totalKG_Pipe) {
+    const tfoot = document.getElementById('table-foot');
+    const thead = document.getElementById('table-head');
+    
+    if (!tfoot || !thead) {
+        return;
+    }
+    
+    tfoot.innerHTML = '';
+    
+    const headerRow = thead.querySelector('tr');
+    if (!headerRow) {
+        return;
+    }
+    
+    const columnCount = headerRow.children.length;
+    const footerRow = document.createElement('tr');
+    
+    let qtyMTIndex = -1;
+    let qtyPCIndex = -1;
+    let kgPipeIndex = -1;
+    
+    for (let i = 0; i < headerRow.children.length; i++) {
+        const headerText = headerRow.children[i].textContent.trim();
+        if (headerText.includes('Qty MT') || headerText.includes('QtyMT')) {
+            qtyMTIndex = i;
+        }
+        if (headerText.includes('Qty PC') || headerText.includes('QtyPC')) {
+            qtyPCIndex = i;
+        }
+        if (headerText.includes('KG_Pipe') || headerText.includes('KG/Pipe')) {
+            kgPipeIndex = i;
+        }
+    }
+    
+    for (let i = 0; i < columnCount; i++) {
+        const cell = document.createElement('td');
+        
+        if (i === 0) {
+            cell.textContent = 'Total';
+            cell.style.textAlign = 'center';
+        } else if (i === qtyMTIndex) {
+            cell.textContent = totalQtyMT.toFixed(3);
+            cell.style.textAlign = 'right';
+        } else if (i === qtyPCIndex) {
+            cell.textContent = totalQtyPC;
+            cell.style.textAlign = 'right';
+        } else if (i === kgPipeIndex) {
+            cell.textContent = totalKG_Pipe.toFixed(3);
+            cell.style.textAlign = 'right';
+        } else {
+            cell.textContent = '';
+        }
+        
+        footerRow.appendChild(cell);
+    }
+    
+    tfoot.appendChild(footerRow);
 }
 function setCurrentDatePendingPlans() {
     let today = new Date();
@@ -781,16 +891,147 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
     Showloader();
     RollingPlanSheetService.GetPendingPlansReportList(G_FromDate, G_ToDate).then(function (response) {
         if (response && response.length > 0) {
+            let totalOrderQty = 0;
+            let totalPlannedQty = 0;
+            let totalRolledQty = 0;
+            let totalBalanceQty = 0;
+            
+            response.forEach(function(item) {
+                const orderQty = parseFloat(item["Order Qty"]) || 0;
+                const plannedQty = parseFloat(item["Planned Qty"]) || 0;
+                const rolledQty = parseFloat(item["Rolled Qty"]) || 0;
+                const balanceQty = parseFloat(item["Balance Qty"]) || 0;
+                
+                totalOrderQty += orderQty;
+                totalPlannedQty += plannedQty;
+                totalRolledQty += rolledQty;
+                totalBalanceQty += balanceQty;
+            });
+            
             response = response.map(item => {
-                if (item["Qty MT"] !== undefined && item["Qty MT"] !== null && !isNaN(item["Qty MT"])) {
-                    item["Qty MT"] = parseFloat(item["Qty MT"]).toFixed(3);
+                if (item["Planned Qty"] !== undefined && item["Planned Qty"] !== null && !isNaN(item["Planned Qty"])) {
+                    item["Planned Qty"] = parseFloat(item["Planned Qty"]).toFixed(3);
+                } 
+                if (item["Rolled Qty"] !== undefined && item["Rolled Qty"] !== null && !isNaN(item["Rolled Qty"])) {
+                    item["Rolled Qty"] = parseFloat(item["Rolled Qty"]).toFixed(3);
                 }
-                if (item["KG_Pipe"] !== undefined && item["KG_Pipe"] !== null && !isNaN(item["KG_Pipe"])) {
-                    item["KG_Pipe"] = parseFloat(item["KG_Pipe"]).toFixed(3);
+                if (item["Balance Qty"] !== undefined && item["Balance Qty"] !== null && !isNaN(item["Balance Qty"])) {
+                    item["Balance Qty"] = parseFloat(item["Balance Qty"]).toFixed(3);
+                }
+                
+                if (item["Plan No"]) {
+                    const rawValue = item["Plan No"];
+                    item["Plan No"] = `<a href="javascript:void(0)" onclick="GetRollingPlanNoDetail('${escapeHtml(item['Plan No'])}')">${rawValue}</a>`;
                 }
                 return item;
             });
-            const stringFilterColumn = ["ItemName", "Size", "Thickness", "Length", "Stamp", "GRADE", "Qty PC", "KG_Pipe","Qty MT"];
+            const stringFilterColumn = ["Order No", "Item Name", "Size Desp", "Order Qty", "Planned Qty", "Rolled Qty", "Balance Qty"];
+            const numericFilterColumn = [];
+            const dateFilterColumn = ["Plan Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = ["Code"];
+            const columnAlignment = {
+                "Plan Date": 'center', "Order Qty": 'right', "Planned Qty": 'right', "Rolled Qty": 'right', "Balance Qty": 'right'
+            };
+
+            BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            $('.totals-row').remove();
+            
+            setTimeout(function() {
+                addPendingPlansFooter(totalOrderQty,totalPlannedQty, totalRolledQty, totalBalanceQty);
+            }, 300);
+            
+            HideLoader();
+        } else {
+            HideLoader();
+            clearTable();
+            toastr.error('No Data Found');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        clearTable();
+        toastr.error(error.Msg || 'Error During Get Pending Plan Sheet');
+    });
+}
+function addPendingPlansFooter(totalOrderQty,totalPlannedQty, totalRolledQty, totalBalanceQty) {
+    const tfoot = document.getElementById('table-foot');
+    const thead = document.getElementById('table-head');
+    
+    if (!tfoot || !thead) {
+        return;
+    }
+    
+    tfoot.innerHTML = '';
+    
+    const headerRow = thead.querySelector('tr');
+    if (!headerRow) {
+        return;
+    }
+    
+    const columnCount = headerRow.children.length;
+    const footerRow = document.createElement('tr');
+    
+    let orderQtyIndex = -1;
+    let plannedQtyIndex = -1;
+    let rolledQtyIndex = -1;
+    let balanceQtyIndex = -1;
+    
+    for (let i = 0; i < headerRow.children.length; i++) {
+        const headerText = headerRow.children[i].textContent.trim();
+        if (headerText.includes('Order Qty') || headerText.includes('OrderQty')) {
+            orderQtyIndex = i;
+        }
+        if (headerText.includes('Planned Qty') || headerText.includes('PlannedQty')) {
+            plannedQtyIndex = i;
+        }
+        if (headerText.includes('Rolled Qty') || headerText.includes('RolledQty')) {
+            rolledQtyIndex = i;
+        }
+        if (headerText.includes('Balance Qty') || headerText.includes('BalanceQty')) {
+            balanceQtyIndex = i;
+        }
+    }
+    
+    for (let i = 0; i < columnCount; i++) {
+        const cell = document.createElement('td');
+        
+        if (i === 0) {
+            cell.textContent = 'Total';
+            cell.style.textAlign = 'center';
+        } else if (i === orderQtyIndex) {
+            cell.textContent = totalOrderQty;
+            cell.style.textAlign = 'right';
+        } else if (i === plannedQtyIndex) {
+            cell.textContent = totalPlannedQty.toFixed(3);
+            cell.style.textAlign = 'right';
+        } else if (i === rolledQtyIndex) {
+            cell.textContent = totalRolledQty.toFixed(3);
+            cell.style.textAlign = 'right';
+        } else if (i === balanceQtyIndex) {
+            cell.textContent = totalBalanceQty.toFixed(3);
+            cell.style.textAlign = 'right';
+        } else {
+            cell.textContent = '';
+        }
+        
+        footerRow.appendChild(cell);
+    }
+    
+    tfoot.appendChild(footerRow);
+}
+function GetRollingPlanNoDetail(PlanNo) {
+    Showloader();
+    RollingPlanSheetService.GetRollingPlanNoDetail(PlanNo).then(function (response) {
+        if (response && response.length > 0) {
+            let totalWeight = 0;
+            response.forEach(function(item) {
+                const weight = parseFloat(item["Issue Id Weight"]) || 0;
+                totalWeight += weight;
+            });
+
+            const stringFilterColumn = [];
             const numericFilterColumn = [];
             const dateFilterColumn = [];
             const button = false;
@@ -799,24 +1040,86 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
             const hiddenColumns = [];
 
             const columnAlignment = {
-                "KG_Pipe": 'right', "Qty PC": 'right', "Qty MT": 'right', "Size": 'right', "Thickness": 'right',"Length":'right'
+                "Issue Id Weight": 'right'
             };
 
-            BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
-            $('.totals-row').remove();
+            const formattedDetailRows = formatRowsByColumns(response, ["Issue Id Weight"]);
+
+            BizsolCustomFilterGrid.CreateDataTable("PlanNoDetailTable-head", "PlanNoDetailTable-body", formattedDetailRows, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            
+            setTimeout(function() {
+                addPlanNoDetailFooter(totalWeight);
+            }, 300);
+            
             HideLoader();
+            $('#planNoDetails').modal({ backdrop: 'static' });
+            $('#planNoDetails').modal('show');
         } else {
             HideLoader();
             toastr.error('No Data Found');
         }
     }).catch(function (error) {
         HideLoader();
-        toastr.error(error.Msg || 'Error During Get Pending Plan Sheet');
+        toastr.error(error.Msg || 'Error During Get Rolling Plan No Details');
     });
+}
+function addPlanNoDetailFooter(totalWeight) {
+    const tfoot = document.getElementById('PlanNoDetailTable-foot');
+    const thead = document.getElementById('PlanNoDetailTable-head');
+    
+    if (!tfoot || !thead) {
+        return;
+    }
+    
+    tfoot.innerHTML = '';
+    
+    const headerRow = thead.querySelector('tr');
+    if (!headerRow) {
+        return;
+    }
+    
+    const columnCount = headerRow.children.length;
+    const footerRow = document.createElement('tr');
+    
+    let issueIdWeightIndex = -1;
+    for (let i = 0; i < headerRow.children.length; i++) {
+        const headerText = headerRow.children[i].textContent.trim();
+        if (headerText.includes('Issue Id Weight') || headerText.includes('Weight')) {
+            issueIdWeightIndex = i;
+            break;
+        }
+    }
+    
+    for (let i = 0; i < columnCount; i++) {
+        const cell = document.createElement('td');
+        
+        if (i === 0) {
+            cell.textContent = 'Total';
+            cell.style.textAlign = 'center';
+        } else if (i === issueIdWeightIndex) {
+            cell.textContent = totalWeight.toFixed(3);
+            cell.style.textAlign = 'right';
+        } else {
+            cell.textContent = '';
+        }
+        
+        footerRow.appendChild(cell);
+    }
+    
+    tfoot.appendChild(footerRow);
+}
+function PlanNoCloseModal() {
+    const tfoot = document.getElementById('PlanNoDetailTable-foot');
+    if (tfoot) {
+        tfoot.innerHTML = '';
+    }
+    $('#planNoDetails').modal('hide');
 }
 
 window.ExportExcel = ExportExcel;
 window.OpenModal = OpenModal;
 window.CloseModal = CloseModal;
+window.GetRollingPlanNoDetail = GetRollingPlanNoDetail;
+window.PlanNoCloseModal = PlanNoCloseModal;
 
 

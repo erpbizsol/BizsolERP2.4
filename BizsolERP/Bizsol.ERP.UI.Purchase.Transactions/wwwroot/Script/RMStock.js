@@ -20,14 +20,7 @@ let G_AppendedRowKeys = {};
 
 $(document).ready(function () {
     let isInitialLoad = true;
-    var urlParams = getUrlVars();
-    var menuValue = decodeURI(urlParams['menu']);
-
-    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
-        $("#ERPHeading").text(menuValue);
-    } else {
-        $("#ERPHeading").text("Raw Material Stock Management");
-    }
+    BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
    
     $('#current-stock').show();
     $('#unApproved-planned').hide();
@@ -917,24 +910,30 @@ function GetUnApprovedPlannedList() {
        
     });
 }
-function ShowSlittedCoilStockList() {
-    G_FromDateSlittedCoilStockValue = $('#txtFromDateSlittedCoilStock').val();
-    G_ToDateSlittedCoilStockValue = $('#txtToDateSlittedCoilStock').val();
-    GetSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlittedCoilStockValue);
-}
+//function ShowSlittedCoilStockList() {
+//    G_FromDateSlittedCoilStockValue = $('#txtFromDateSlittedCoilStock').val();
+//    G_ToDateSlittedCoilStockValue = $('#txtToDateSlittedCoilStock').val();
+//    GetSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlittedCoilStockValue);
+//}
 function GetSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlittedCoilStockValue) {
     Showloader();
     RMStockService.GetSlittedCoilStockData(G_FromDateSlittedCoilStockValue, G_ToDateSlittedCoilStockValue).then(function (response) {
         HideLoader();
         if (response.length > 0) {
+            response = response.map(item => {
+                if (item["Qty MT"] !== undefined && item["Qty MT"] !== null && !isNaN(item["Qty MT"])) {
+                    item["Qty MT"] = parseFloat(item["Qty MT"]).toFixed(3);
+                }
+                return item;
+            });
             $('#tblSlitted_Coil_Stock').show();
-            const stringFilterColumn = ["Item Name", "IdentificationNo", "Qty PC", "Qty MT","Qty MTRS"];
+            const stringFilterColumn = ["Item Name", "IdentificationNo", "Qty PC", "Qty MT"];
             const numericFilterColumn = [];
             const dateFilterColumn = ["Create Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            let hiddenColumns = ["Code"];
+            let hiddenColumns = ["Code","Qty MTRS"];
             const columnAlignment = { "Qty PC": 'right', "Qty MT": 'right', "Qty MTRS": 'right',"Create Date":'center'};
           
             BizsolCustomFilterGrid.CreateDataTable("table-header-Slitted_Coil_Stock", "table-body-Slitted_Coil_Stock", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
@@ -1009,7 +1008,7 @@ function loadTabData(tabId) {
             $('#tblUnApproved_Planned').hide();
             $('#slitted-coil-stock').show();
             setCurrentDateDispatch();
-            ShowSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlittedCoilStockValue);
+            GetSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlittedCoilStockValue);
             break;
         case '#dispatch':
             $('#tblReport tbody').empty();
@@ -1469,4 +1468,4 @@ window.CloseModal = CloseModal;
 window.ShowDispatchList = ShowDispatchList;
 window.ShowSlittedList = ShowSlittedList;
 window.ShowJobWorkList = ShowJobWorkList;
-window.ShowSlittedCoilStockList = ShowSlittedCoilStockList;
+//window.ShowSlittedCoilStockList = ShowSlittedCoilStockList;
