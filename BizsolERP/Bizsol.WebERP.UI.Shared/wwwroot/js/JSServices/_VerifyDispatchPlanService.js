@@ -52,6 +52,14 @@ const VerifyDispatchPlanService = {
             }
         );
     },
+    ApprovedQuotation: function ApprovedQuotation(Code, Transporter_Code) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/ApprovedQuotation?Code=" + encodeURIComponent(Code) + "&Transporter_Code=" + encodeURIComponent(Transporter_Code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VerifyDispatchPlanService }

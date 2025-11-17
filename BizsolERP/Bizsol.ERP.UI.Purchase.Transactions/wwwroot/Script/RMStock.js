@@ -1,5 +1,6 @@
 import { RMStockService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/RMStockService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 
 let G_today = '';
 let G_FromDateValue = '';
@@ -89,8 +90,6 @@ $(document).ready(function () {
         Export();
     });
 });
-
-
 function setCurrentDate() {
     G_today = new Date().toISOString().split('T')[0];
     $('#txtDate').val(G_today);
@@ -101,8 +100,8 @@ function GetRMStockCurrentListTable() {
         if (response && response.length > 0) {
             HideLoader();
             $('#tblRMStockCurrent').show();
-            const stringFilterColumn = ["MRN No","Invoice No", "Item Name", "Vendor", "Brand", "Ch Wt", "Thickness", "Grade", "Make", "Width", "Ac Wt", "Warehouse", "Remarks", "IdentificationNo","Grade"];
-            const numericFilterColumn = ["Qty MT","Qty PC","Qty MTRS"];
+            const stringFilterColumn = ["Invoice No", "Item Name", "Vendor", "Brand", "Ch Wt", "Thickness", "Grade", "Make", "Width", "Ac Wt", "Warehouse", "Remarks", "IdentificationNo","Grade"];
+            const numericFilterColumn = ["MRN No", "Qty MT","Qty PC","Qty MTRS"];
             const dateFilterColumn = ["Receive Date","Invoice Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
@@ -144,8 +143,6 @@ function GetRMStockCurrentListTable() {
             $('#tblRMStockCurrent').hide();
         });
 }
-
- //Calculate and render totals for "Ch Wt" and "Ac Wt" into footer placeholders if present
 function calculateRMStockCurrentFooterTotals(rows) {
     try {
         let totalChWt = 0;
@@ -209,7 +206,6 @@ function ShowRMStockPlan() {
         }, 100);
     });
 }
-
 function fillTableWithExistingData(response) {
     //GetRMStockItemNameList().then(function (itemNameList)
     Promise.all([GetRMStockItemNameList(), GetRMStockWidthList()])
@@ -282,8 +278,6 @@ function fillTableWithExistingData(response) {
         }
     });
 }
-
-
 function enableNewRowAddition() {
     const $tbody = $('#RMStockCurrentPlanned tbody');
     const rowId = 0;
@@ -365,7 +359,6 @@ function enableNewRowAddition() {
 //        HideLoader();
 //    });
 //}
-
 function GetRMStockItemNameList() {
     Showloader();
     return RMStockService.GetRMStockItemName().then(function (response) {
@@ -402,7 +395,6 @@ function GetRMStockWidthList() {
             return [];
         });
 }
-
 function GetRMStockMachineNoList() {
     RMStockService.GetRMStockMachineNo().then(function (response) {
         if (response && response.length > 0) {
@@ -551,7 +543,6 @@ function calculateTotalWeight() {
     var totalWeight = noOfSlits * weightPerSlit;
     $('#txtTotalWeight').val(totalWeight.toFixed(3));
 }
-
 function copyFromPrevious() {
 	if (!$('#CopyFromPrevious').is(':checked')) {
 		return;
@@ -842,7 +833,6 @@ function BindSelectList1(element, list) {
     });
     element.innerHTML = option;
 }
-
 function getUrlVars() {
     var vars = {};
     var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
@@ -852,9 +842,6 @@ function getUrlVars() {
     }
     return vars;
 }
-
-
-// Tab Management Functions
 function initializeTabs() {
     var triggerTabList = [].slice.call(document.querySelectorAll('#rmStockTabs button'));
     triggerTabList.forEach(function (triggerEl) {
@@ -875,18 +862,13 @@ function GetUnApprovedPlannedList() {
         HideLoader();
         if (response.length > 0) {
             $('#tblUnApproved_Planned').show();
-            const stringFilterColumn = ["Item Name", "Thickness", "Grade", "Make", "IdentificationNo", "Width"];
-            const numericFilterColumn = [];
-            const dateFilterColumn = [];
+            const stringFilterColumn = ["Item Name", "Thickness", "Grade", "Make", "Identification No"];
+            const numericFilterColumn = ["Plan No", "Width"];
+            const dateFilterColumn = ["Plan Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            let hiddenColumns = []
-            if ($('#exampleCheck').is(':checked')) {
-                hiddenColumns = ["Code","MRN No", "Numeric Value", "IsPlanned", "Invoice No", "Vendor", "Brand", "Ch Wt", "Receive Date", "Invoice Date",  "Ac Wt", "Warehouse", "Remarks", "Qty MT", "Qty PC", "Qty MTRS"];
-            } else {
-                hiddenColumns = ["Code", "MRN No", "Numeric Value", "% E", "Hardness", "UTS", "YST", "BEND TEST", "IsPlanned", "Invoice No",  "Vendor", "Brand", "Ch Wt", "Receive Date", "Invoice Date", "Ac Wt", "Warehouse", "Remarks", "Qty MT", "Qty PC", "Qty MTRS"];
-            }
+            let hiddenColumns = ["Code"];
             const columnAlignment = {
                 'Invoice Date': 'center', 'Receive Date': 'center', 'Thickness': 'right', 'Ch Wt': 'right', 'Width': 'right;min-width:60px', 'Ac Wt': 'right',
                 'Qty MT': 'right', 'Qty PC': 'right', 'Qty MTRS': 'right', '% E': 'right;min-width:50px', 'Hardness': 'right', 'UTS': 'right;min-width:70px', 'YST': 'right;min-width:70px', 'Status': ';width:150px',
@@ -894,8 +876,15 @@ function GetUnApprovedPlannedList() {
                 'Vendor': ';min-width:230px !important;',
                 'Item Name': ';min-width:100px !important;',
             };
-          
-            BizsolCustomFilterGrid.CreateDataTable("table-header-UnApproved_Planned", "table-body-UnApproved_Planned", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            const updatedResponse = response.map(item => {
+                const Action = `<button class="btn btn-success icon-height mb-1" ${item["Action"]=='Verified'?'disabled':''}  title="${item["Action"]}" onclick="Verify(${item["Code"]},'${item["Action"]}')">${item["Action"]}</button>`;
+                let formattedItem = {
+                    ...item,
+                    Action: Action
+                }
+                return formattedItem;
+            });
+            BizsolCustomFilterGrid.CreateDataTable("table-header-UnApproved_Planned", "table-body-UnApproved_Planned", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             PopulateTableForPrint(response);
         } else {
             HideLoader();
@@ -951,7 +940,6 @@ function GetSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlitte
        
     });
 }
- 
 function loadTabData(tabId) {
     $('#RMStockCurrent tbody').empty();
     $('#RMStockCurrent thead tr').empty();
@@ -991,7 +979,7 @@ function loadTabData(tabId) {
             $('#stock-summary').hide();
             $('#slitted').hide();
             $('#job-work').hide();
-            $('#checkBoxHideAndShow').show();
+            $('#checkBoxHideAndShow').hide();
             $('#tblUnApproved_Planned').hide();
             GetUnApprovedPlannedList();
             break;
@@ -1414,29 +1402,71 @@ function calculateStockSummary() {
     // $('#totalStockValue').text('₹ ' + totalValue.toFixed(2));
     // $('#totalItems').text(totalItems);
 }
-
-// Tab-specific data loading functions
 function refreshCurrentStock() {
     ListStatus_IndentMaster();
 }
-
 function refreshDispatch() {
     loadDispatchData();
 }
-
 function refreshSlitted() {
     loadSlittedData();
 }
-
 function refreshJobWork() {
     loadJobWorkData();
 }
-
 function refreshStockSummary() {
     loadStockSummaryData();
 }
+function Verify(Code,Level) {
+    var ModuleName = "Slitting Plan",
+        OptionName = "Verified",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
 
-// Global functions for tab management
+    if (Level === 'Verify L1') {
+        OptionName = "Verify Level1";
+    } else if (Level === 'Verify L2') {
+        OptionName = "Verify Level2";
+    } else if (Level === 'Verified') {
+        OptionName = "Verified";
+    }
+
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            VerifyPlan(Code, Level)
+        }
+    });
+}
+function VerifyPlan(Code, Level) {
+    if (confirm("Are you sure you want to verify ?")) {
+        Showloader();
+        RMStockService.VerifySlittingPlan(Code, Level).then(function (response) {
+            if (response[0].Status = 'Y') {
+                toastr.success(response[0].Msg);
+                GetUnApprovedPlannedList();
+                HideLoader();
+            } else {
+                toastr.error(response[0].Msg);
+                HideLoader();
+            }
+        }).catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || 'Error During Verify ');
+        });
+    }
+}
+function getFinancialYear() {
+    var currentDate = new Date();
+    var currentMonth = currentDate.getMonth();
+    var startYear = currentDate.getFullYear();
+    if (currentMonth < 3) {
+        startYear = startYear - 1;
+    }
+    return startYear + "-" + (startYear + 1);
+}
 window.initializeTabs = initializeTabs;
 window.loadTabData = loadTabData;
 window.loadDispatchData = loadDispatchData;
@@ -1468,4 +1498,5 @@ window.CloseModal = CloseModal;
 window.ShowDispatchList = ShowDispatchList;
 window.ShowSlittedList = ShowSlittedList;
 window.ShowJobWorkList = ShowJobWorkList;
-//window.ShowSlittedCoilStockList = ShowSlittedCoilStockList;
+window.ShowSlittedCoilStockList = ShowSlittedCoilStockList;
+window.Verify = Verify;
