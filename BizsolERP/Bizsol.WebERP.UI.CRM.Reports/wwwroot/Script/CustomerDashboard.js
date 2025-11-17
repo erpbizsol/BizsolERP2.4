@@ -1,42 +1,119 @@
-import { CustomerDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CustomerDashboardService.js';
+﻿import { CustomerDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CustomerDashboardService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { CRMReportsServices } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CRMReportsService.js';
+import { DateRangeControl } from '../../Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.js';
 
 BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
 // Global cache for dealer list response
 let G_ddlDealerNameList = [];
 const _cityGeoCache = new Map();
+let fromDate = '0';
+let toDate = '0';
+
+// DateRangeControl wiring
+function initDateRangeControl() {
+ const dr = document.querySelector('date-range-control#dateRange');
+ if (!dr) return;
+
+ // Initialize placeholders and default range (today)
+ const todayISO = new Date().toISOString().slice(0,10);
+ // If you want default from/to to be today, uncomment:
+ // dr.setRange({ fromDate: todayISO, toDate: todayISO });
+
+ // --- Set default to current financial year (Apr1 - Mar31) ---
+ try {
+ const now = new Date();
+ const month = now.getMonth() +1; //1-12
+ const year = now.getFullYear();
+ const fyStartYear = (month >=4) ? year : (year -1);
+ const fyEndYear = fyStartYear +1;
+ const fyFrom = fyStartYear + '-04-01';
+ const fyTo = fyEndYear + '-03-31';
+
+ // Try to set the webcomponent range (some implementations expose setRange)
+ try { dr.setRange({ fromDate: fyFrom, toDate: fyTo }); } catch (e) { /* ignore if not available */ }
+
+ // Sync legacy hidden inputs immediately
+ try {
+ const legacyFrom = document.getElementById('txtFromDate');
+ const legacyTo = document.getElementById('txtToDate');
+ if (legacyFrom) legacyFrom.value = fyFrom;
+ if (legacyTo) legacyTo.value = fyTo;
+ } catch (e) { }
+
+ // Update module-level variables so initial requests use FY by default
+ try { fromDate = fyFrom; toDate = fyTo; } catch (e) { }
+ } catch (e) {
+ console.warn('Failed to initialize financial year default range', e);
+ }
+ // --- end FY default ---
+
+ // Keep hidden legacy inputs in sync
+ function syncToLegacyInputs(detail) {
+ const from = detail.fromDate || '';
+ const to = detail.toDate || '';
+ const legacyFrom = document.getElementById('txtFromDate');
+ const legacyTo = document.getElementById('txtToDate');
+ if (legacyFrom) legacyFrom.value = from;
+ if (legacyTo) legacyTo.value = to;
+ }
+
+ // On change event from the webcomponent
+ dr.addEventListener('daterangechange', function (e) {
+ try {
+ syncToLegacyInputs(e.detail);
+ } catch (err) {
+ console.warn('DateRangeControl sync error', err);
+ }
+ });
+
+ // Expose a small helper for older code to programmatically set dates
+ window.SetDateRange = function (fromIso, toIso) {
+ dr.setRange({ fromDate: fromIso, toDate: toIso });
+ };
+}
+
+// Call init early
+if (document.readyState === 'loading') {
+ document.addEventListener('DOMContentLoaded', initDateRangeControl);
+} else {
+    initDateRangeControl();
+    
+}
+
+// Existing chart data and functions follow
 
 const labels = ['Apr', 'May', 'Jun', 'Jul'];
-const previousYearSales = [55, 87, 59, 52];
-const currentYearSales = [41, 9, 28, 51];
+const previousYearSales = [55,87,59,52];
+const currentYearSales = [41,9,28,51];
 
 function loadChartDataLabelsPlugin(callback) {
-    if (window.ChartDataLabels) {
-        callback();
-        return;
-    }
-    const script = document.createElement('script');
-    script.src = "https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js";
-    script.onload = callback;
-    document.head.appendChild(script);
+ if (window.ChartDataLabels) {
+ callback();
+ return;
+ }
+ const script = document.createElement('script');
+ script.src = "https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js";
+ script.onload = callback;
+ document.head.appendChild(script);
 }
 
 function renderBarChart() {
-
-    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
-    selectedDealers = selectedDealers.join(',');
-    if (AreAllSelected('ddlDealerNamelist') === true) {
-        selectedDealers = '0';
+ 
+ let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+ selectedDealers = selectedDealers.join(',');
+ if (AreAllSelected('ddlDealerNamelist') === true) {
+ selectedDealers = '0';
+ }
+ if (selectedDealers == '') {
+ return;
     }
-    if (selectedDealers == '') {
-        return;
-    }
-    Showloader();
-    CustomerDashboardService.GetCustomerDashboardData('SALESTAB', selectedDealers).then(function (response) {
-        HideLoader();
-        const chartRows = Array.isArray(response) ? response : (response && response.MonthlySales ? response.MonthlySales : []);
+ GetDateRange();
+ Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('SALESTAB', selectedDealers, fromDate, toDate).then(function (response) {
+ HideLoader();
+ const chartRows = Array.isArray(response) ? response : (response && response.MonthlySales ? response.MonthlySales : []);
 
         // chartRows expected as array of objects:
         // [{ MonthOrder:1, MonthName:'Apr', CurrentFYQty:5405.29, PrevFYQty:4697.70 }, ...]
@@ -75,18 +152,18 @@ function renderBarChart() {
         let currentFY = [];
         let prevFY = [];
 
-        if (Array.isArray(chartRows) && chartRows.length > 0) {
+        if (Array.isArray(chartRows) && chartRows.length >0) {
             // Ensure sorted by MonthOrder (Apr..Mar)
-            chartRows.sort((a, b) => (Number(a.MonthOrder) || 0) - (Number(b.MonthOrder) || 0));
+            chartRows.sort((a, b) => (Number(a.MonthOrder) ||0) - (Number(b.MonthOrder) ||0));
             monthLabels = chartRows.map(r => r.MonthName || '');
 
             currentFY = chartRows.map(r => {
                 const v = r.CurrentFYQty;
-                return (v === null || v === undefined || v === '') ? 0 : Number(v);
+                return (v === null || v === undefined || v === '') ?0 : Number(v);
             });
             prevFY = chartRows.map(r => {
                 const v = r.PrevFYQty;
-                return (v === null || v === undefined || v === '') ? 0 : Number(v);
+                return (v === null || v === undefined || v === '') ?0 : Number(v);
             });
 
         } else {
@@ -98,8 +175,8 @@ function renderBarChart() {
 
         // Apply a sensible min-width so Chart area can horizontally scroll when many months exist,
         // but clear it for small label counts to avoid unexpected scrolling.
-        if (monthLabels.length > 8) {
-            const minW = Math.min(Math.max(400, monthLabels.length * 60), 1400);
+        if (monthLabels.length >8) {
+            const minW = Math.min(Math.max(400, monthLabels.length *60),1400);
             canvas.style.minWidth = minW + 'px';
         } else {
             canvas.style.minWidth = '';
@@ -116,14 +193,14 @@ function renderBarChart() {
                         data: currentFY,
                         backgroundColor: 'rgba(192,57,43,0.85)',
                         borderColor: 'rgba(192,57,43,1)',
-                        borderWidth: 1
+                        borderWidth:1
                     },
                     {
                         label: 'Previous FY Sales',
                         data: prevFY,
                         backgroundColor: 'rgba(24,67,135,0.95)',
                         borderColor: 'rgba(24,67,135,1)',
-                        borderWidth: 1
+                        borderWidth:1
                     }
                 ]
             },
@@ -137,7 +214,7 @@ function renderBarChart() {
                             label: function (ctx) {
                                 const val = ctx.raw;
                                 if (val === null || val === undefined) return '';
-                                return ctx.dataset.label + ': ' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                return ctx.dataset.label + ': ' + Number(val).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
                             }
                         }
                     },
@@ -146,10 +223,10 @@ function renderBarChart() {
                         align: 'end',
                         offset: -6,
                         color: '#222',
-                        font: { weight: 'bold', size: 12 },
+                        font: { weight: 'bold', size:12 },
                         formatter: function (value) {
                             if (value === null || value === undefined) return '';
-                            return Number(value).toLocaleString('en-US', { maximumFractionDigits: 2 });
+                            return Number(value).toLocaleString('en-US', { maximumFractionDigits:2 });
                         }
                     }
                 },
@@ -160,7 +237,7 @@ function renderBarChart() {
                         ticks: {
                             callback: function (value) {
                                 if (value === null || value === undefined) return '';
-                                return Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                return Number(value).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
                             }
                         },
                         title: { display: true, text: 'Sales' }
@@ -171,7 +248,7 @@ function renderBarChart() {
         });
 
         // Ensure the chart is sized correctly after insertion
-        try { setTimeout(() => window.barChartInstance.resize(), 50); } catch (e) { /* ignore */ }
+        try { setTimeout(() => window.barChartInstance.resize(),50); } catch (e) { /* ignore */ }
 
         setBestSaleDetils();
     })
@@ -187,7 +264,7 @@ function setBestSaleDetils() {
         return;
     }
     Showloader();
-    CustomerDashboardService.GetCustomerDashboardData('SALESTAB_BESTSALEDETAILS', selectedDealers).then(function (response) {
+    CustomerDashboardService.GetCustomerDashboardData('SALESTAB_BESTSALEDETAILS', selectedDealers, fromDate, toDate).then(function (response) {
         HideLoader();
         if (response.length > 0) {
             $('#kpi-selected-year')[0].innerHTML = response[0].TotalCurrentSales
@@ -322,6 +399,7 @@ loadChartDataLabelsPlugin(() => {
     renderBarChart();
     renderRegionalSection(); // initial render (will be a no-op if elements missing)
     renderClientSection();   // initial attempt to render client visuals
+    renderSegmentSection();  // initial attempt to render segment visuals
 });
 
 /* ===== Regional charts + map rendering (existing) ===== */
@@ -336,7 +414,7 @@ function renderRegionalSection() {
     if (selectedDealers == '') {
         return;
     }
-
+    GetDateRange();
     const placeholder = {
         stateMax: '-',
         cityMax: '-',
@@ -348,7 +426,7 @@ function renderRegionalSection() {
     };
 
     Showloader();
-    CustomerDashboardService.GetCustomerDashboardData('REGIONTAB', selectedDealers).then(async function (response) {
+    CustomerDashboardService.GetCustomerDashboardData('REGIONTAB', selectedDealers, fromDate, toDate).then(async function (response) {
         HideLoader();
 
         // Normalize response - expect array of city records
@@ -607,8 +685,9 @@ function renderClientSection() {
     if (selectedDealers == '') {
         return;
     }
+    GetDateRange();
     Showloader();
-    CustomerDashboardService.GetCustomerDashboardData('CLIENTTAB', selectedDealers).then(function (response) {
+    CustomerDashboardService.GetCustomerDashboardData('CLIENTTAB', selectedDealers, fromDate, toDate).then(function (response) {
         HideLoader();
         const StringFilterColumn = [];
         const NumericFilterColumn = [];
@@ -677,7 +756,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    
+    const segmentTabBtn = document.getElementById('segment-tab');
+    if (segmentTabBtn) {
+        segmentTabBtn.addEventListener('shown.bs.tab', function () {
+            renderSegmentSection();
+        });
+    }
 
     // In case page initially shows regional or client tab, ensure render called after short delay
     setTimeout(function () {
@@ -697,6 +781,9 @@ document.addEventListener('DOMContentLoaded', function () {
             renderProductSection();
             renderProductSpecificationSection();
         }
+        if (document.querySelector('#segment') && document.querySelector('#segment').classList.contains('show')) {
+            renderSegmentSection();
+        }
         
     }, 300);
 });
@@ -711,9 +798,9 @@ function renderProductSpecificationSection() {
     if (selectedDealers == '') {
         return;
     }
-
+    GetDateRange();
     Showloader();
-    CustomerDashboardService.GetCustomerDashboardData('PRODUCTSPECIFICATIONTAB', selectedDealers).then(function (response) {
+    CustomerDashboardService.GetCustomerDashboardData('PRODUCTSPECIFICATIONTAB', selectedDealers, fromDate, toDate).then(function (response) {
         HideLoader();
 
         if (!response || response.length === 0) {
@@ -723,7 +810,7 @@ function renderProductSpecificationSection() {
 
         // Get top thickness and size from first record (assuming sorted by highest sales)
         const topThickness = response[0]['Thickness'] || '-';
-        const topSize = response[0]['Size'] || '-';
+        const topSize = response[0]['Size'] || '-' ;
 
         // KPI values
         const topThicknessEl = document.getElementById('top-thickness');
@@ -886,9 +973,9 @@ function renderProductSection() {
     if (selectedDealers == '') {
         return;
     }
-
+    GetDateRange();
     Showloader();
-    CustomerDashboardService.GetCustomerDashboardData('PRODUCTTAB', selectedDealers).then(function (response) {
+    CustomerDashboardService.GetCustomerDashboardData('PRODUCTTAB', selectedDealers, fromDate, toDate).then(function (response) {
         HideLoader();
 
         if (!response || response.length === 0) {
@@ -898,7 +985,7 @@ function renderProductSection() {
 
         // Get top product and group from first record (assuming sorted by highest sales)
         const topProduct = response[0]['Products Name'] || '-';
-        const topGroup = response[0]['Group Name'] || '-';
+        const topGroup = response[0]['Group Name'] || '-' ;
 
         // write top product/group
         const topProductEl = document.getElementById('top-product-name');
@@ -1029,9 +1116,9 @@ function renderTargetGrowthSection() {
     if (selectedDealers == '') {
         return;
     }
-
+    GetDateRange();
     Showloader();
-    CustomerDashboardService.GetCustomerDashboardData('TARGETGROWTHTAB', selectedDealers).then(function (response) {
+    CustomerDashboardService.GetCustomerDashboardData('TARGETGROWTHTAB', selectedDealers, fromDate, toDate).then(function (response) {
         HideLoader();
 
         if (!response || response.length === 0) {
@@ -1246,11 +1333,79 @@ function renderTargetGrowthSection() {
     });
 }
 
+/* ===== NEW: Segment rendering ===== */
+function renderSegmentSection() {
+ let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+ selectedDealers = selectedDealers.join(',');
+ if (AreAllSelected('ddlDealerNamelist') === true) {
+ selectedDealers = '0';
+ }
+ if (selectedDealers == '') {
+ return;
+ }
+ GetDateRange();
+ Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('SEGMENTTAB', selectedDealers, fromDate, toDate).then(function (response) {
+ HideLoader();
+
+ if (!response || response.length ===0) {
+ // Clear UI if no data
+ const segOverviewEl = document.getElementById('segment-overview');
+ if (segOverviewEl) segOverviewEl.textContent = '-';
+ const tbody = document.getElementById('segmentSalesTableBody');
+ if (tbody) tbody.innerHTML = '';
+ return;
+ }
+
+ // Set top segment KPI (assume response sorted by sales desc)
+ const topSegment = response[0]['Segment'] || response[0]['IndustryType'] || '-';
+ const segOverviewEl = document.getElementById('segment-overview');
+ if (segOverviewEl) segOverviewEl.textContent = topSegment;
+
+ // Use BizsolCustomFilterGrid if available to create table
+ try {
+ const StringFilterColumn = [];
+ const NumericFilterColumn = [];
+ const DateFilterColumn = [];
+ const Button = false;
+ const showButtons = [];
+ const StringdoubleFilterColumn = [];
+ const hiddenColumns = [];
+ const ColumnAlignment = {
+ 'Growth (%)': 'right',
+ 'Current Year Sales': 'right',
+ 'Last Year Sales': 'right'
+ };
+
+ BizsolCustomFilterGrid.CreateDataTable("segmentSalesTableHeader", "segmentSalesTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false);
+ } catch (e) {
+ console.warn('Segment CreateDataTable failed, falling back to manual table render', e);
+ const tbody = document.getElementById('segmentSalesTableBody');
+ if (tbody) {
+ tbody.innerHTML = '';
+ response.forEach(function (r) {
+ const seg = escapeHtml(r['Segment'] || r['IndustryType'] || '-');
+ const cur = Number(r['Current Year Sales'] ||0);
+ const last = Number(r['Last Year Sales'] ||0);
+ const growth = r['Growth (%)'] || r['Segment Growth (%)'] || '-';
+ const tr = document.createElement('tr');
+ tr.innerHTML = `<td>${seg}</td><td class="text-end">${formatNumber(cur)}</td><td class="text-end">${formatNumber(last)}</td><td class="text-end">${escapeHtml(growth)}</td>`;
+ tbody.appendChild(tr);
+ });
+ }
+ }
+
+ }).catch(function (err) {
+ HideLoader();
+ console.error('Error fetching segment data:', err);
+ });
+}
+
 /* ===== existing service calls to populate select lists ===== */
 CRMReportsServices.GetSalespersonList().then(function (response) {
     if (response && response.length > 0) {
         BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })));
-        // Wire change event to root container so dllSalesPresonListChange fires when checkboxes change
+        // Wire change event to root container so ddlSalesPresonListChange fires when checkboxes change
         try {
             const root = document.getElementById('ddlSalesPersonlist');
             if (root) {
@@ -1343,39 +1498,108 @@ CRMReportsServices.GetDealerList().then(function (response) {
     if (el) el.innerHTML = '';
 });
 
-function CustomerDashboard_ShowReport() {
-    // For Sales Person dropdown
-    //const selectedSalesPersons = GetSelectedValues('ddlSalesPersonlist');
-    // For Dealer Name dropdown
-    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
-    selectedDealers = selectedDealers.join(',');
-
-    if (AreAllSelected('ddlDealerNamelist') === true) {
-        selectedDealers = '0';
+CustomerDashboardService.GetCustomerDashboardData('DDL_CITIESNAMELIST', '0','0','0').then(function (response) {
+    if (response && response.length > 0) {
+        
+        BindSelectList($('#ddlCitiesNamelist')[0], response.map((item) => ({ Code: item.CityName, Desp: item.CityName })));
+    } else {
+        // clear cache and UI
+        const el = $('#ddlCitiesNamelist')[0];
+        if (el) el.innerHTML = '';
     }
-
-    if (selectedDealers == '') {
-        return;
-    }
-
-    if (document.querySelector('#Sales') && document.querySelector('#Sales').classList.contains('show')) {
-        renderBarChart();
-    }
-    if (document.querySelector('#regional') && document.querySelector('#regional').classList.contains('show')) {
-        renderRegionalSection();
-    }
-    if (document.querySelector('#client') && document.querySelector('#client').classList.contains('show')) {
-        renderClientSection();
-    }
-    if (document.querySelector('#target-growth') && document.querySelector('#target-growth').classList.contains('show')) {
-        renderTargetGrowthSection();
-    }
-    if (document.querySelector('#product') && document.querySelector('#product').classList.contains('show')) {
-        renderProductSection();
-        renderProductSpecificationSection();
-    }
+}).catch(function (error) {
+    console.error('Error fetching salesperson list:', error);
+    const el = $('#ddlCitiesNamelist')[0];
+    // on error clear cache
     
+    if (el) el.innerHTML = '';
+});
 
+CustomerDashboardService.GetCustomerDashboardData('DDL_STATUSNAME', '0','0','0').then(function (response) {
+    if (response && response.length > 0) {
+
+        BindSelectList($('#ddlStatusNamelist')[0], response.map((item) => ({ Code: item.StatusName, Desp: item.StatusName })));
+    } else {
+        // clear cache and UI
+        const el = $('#ddlStatusNamelist')[0];
+        if (el) el.innerHTML = '';
+    }
+}).catch(function (error) {
+    console.error('Error fetching salesperson list:', error);
+    const el = $('#ddlStatusNamelist')[0];
+    // on error clear cache
+
+    if (el) el.innerHTML = '';
+});
+CustomerDashboardService.GetCustomerDashboardData('DDL_GPLIST', '0','0','0').then(function (response) {
+    if (response && response.length > 0) {
+
+        BindSelectList($('#ddlGPlist')[0], response.map((item) => ({ Code: item.GP, Desp: item.GP })));
+    } else {
+        // clear cache and UI
+        const el = $('#ddlGPlist')[0];
+        if (el) el.innerHTML = '';
+    }
+}).catch(function (error) {
+    console.error('Error fetching salesperson list:', error);
+    const el = $('#ddlGPlist')[0];
+    // on error clear cache
+
+    if (el) el.innerHTML = '';
+});
+CustomerDashboardService.GetCustomerDashboardData('DDL_INDUSTRYTYPELIST', '0','0','0').then(function (response) {
+    if (response && response.length > 0) {
+
+        BindSelectList($('#ddlIndustryTypelist')[0], response.map((item) => ({ Code: item.IndustryType, Desp: item.IndustryType })));
+    } else {
+        // clear cache and UI
+        const el = $('#ddlIndustryTypelist')[0];
+        if (el) el.innerHTML = '';
+    }
+}).catch(function (error) {
+    console.error('Error fetching salesperson list:', error);
+    const el = $('#ddlIndustryTypelist')[0];
+    // on error clear cache
+
+    if (el) el.innerHTML = '';
+});
+
+function CustomerDashboard_ShowReport() {
+ 
+
+ // For Sales Person dropdown
+ //const selectedSalesPersons = GetSelectedValues('ddlSalesPersonlist');
+ // For Dealer Name dropdown
+ let selectedDealers = GetSelectedValues('ddlDealerNamelist');
+ selectedDealers = selectedDealers.join(',');
+
+ if (AreAllSelected('ddlDealerNamelist') === true) {
+ selectedDealers = '0';
+ }
+
+ if (selectedDealers == '') {
+ return;
+ }
+
+ if (document.querySelector('#Sales') && document.querySelector('#Sales').classList.contains('show')) {
+ renderBarChart();
+ }
+ if (document.querySelector('#regional') && document.querySelector('#regional').classList.contains('show')) {
+ renderRegionalSection();
+ }
+ if (document.querySelector('#client') && document.querySelector('#client').classList.contains('show')) {
+ renderClientSection();
+ }
+ if (document.querySelector('#target-growth') && document.querySelector('#target-growth').classList.contains('show')) {
+ renderTargetGrowthSection();
+ }
+ if (document.querySelector('#product') && document.querySelector('#product').classList.contains('show')) {
+ renderProductSection();
+ renderProductSpecificationSection();
+ }
+ if (document.querySelector('#segment') && document.querySelector('#segment').classList.contains('show')) {
+ renderSegmentSection();
+ }
 }
 
 
@@ -1610,6 +1834,7 @@ out geom;`;
                         console.log('Created rectangle from Overpass bounds');
                     }
 
+                    //const out = { center: centerLat, polygon };
                     const out = { center: [centerLat, centerLon], polygon };
                     _cityGeoCache.set(key, out);
                     console.log('Cached Overpass result:', out);
@@ -1674,6 +1899,18 @@ out geom;`;
     console.warn(`No geo data found for ${cityName}`);
     _cityGeoCache.set(key, null);
     return null;
+}
+
+function GetDateRange() {
+    // Read date range using shared helper and show in alert
+    try {
+        const drange = DateRangeControl.getDateRangeFromControl('dateRange');
+        fromDate = drange.fromDate || '0';
+        toDate = drange.toDate || '0';
+        // alert('Date Range - From: ' + fromDate + '\nTo: ' + toDate);
+    } catch (e) {
+        console.warn('Could not read date range control via helper:', e);
+    }
 }
 window.CustomerDashboard_ShowReport = CustomerDashboard_ShowReport;
 

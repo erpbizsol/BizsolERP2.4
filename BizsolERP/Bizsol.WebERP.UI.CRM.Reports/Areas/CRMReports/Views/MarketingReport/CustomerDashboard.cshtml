@@ -3,6 +3,7 @@
 }
 
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.css" rel="stylesheet" />
 <style>
     /* Use CSS class instead of inline style to avoid linter warnings and ensure consistent behavior */
     .chart-scroll {
@@ -45,6 +46,16 @@
 <div class="collapse " id="customerFilterCollapse">
     <div class="row">
         <div class="col-md-3">
+            @* <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Date</label> *@
+
+            <!-- New DateRangeControl component - visible and accessible -->
+            <date-range-control id="dateRange"></date-range-control>
+
+            <!-- Hidden legacy inputs retained for compatibility with existing JS that references these IDs -->
+            @* <input type="hidden" id="txtFromDate" />
+            <input type="hidden" id="txtToDate" /> *@
+        </div>
+        <div class="col-md-3">
             <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Sales Person</label>
 
             <select id="ddlSalesPersonlist" class="form-control form-control-sm box_border">
@@ -55,6 +66,30 @@
             <label for="txtDealerName" class="col-form-label-sm fw-bold">Dealer Name</label>
 
             <select id="ddlDealerNamelist" class="form-control form-control-sm box_border">
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="txtCitiesName" class="col-form-label-sm fw-bold">Location</label>
+
+            <select id="ddlCitiesNamelist" class="form-control form-control-sm box_border">
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="txtStatusName" class="col-form-label-sm fw-bold">Status</label>
+
+            <select id="ddlStatusNamelist" class="form-control form-control-sm box_border">
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="txtGP" class="col-form-label-sm fw-bold">GP</label>
+
+            <select id="ddlGPlist" class="form-control form-control-sm box_border">
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="txtIndustryType" class="col-form-label-sm fw-bold">Segment</label>
+
+            <select id="ddlIndustryTypelist" class="form-control form-control-sm box_border">
             </select>
         </div>
         @*   <div class="col-md-3 without-label-field text-end">
@@ -94,7 +129,11 @@
             Product Analysis
         </button>
     </li>
-   
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="segment-tab" data-bs-toggle="tab" data-bs-target="#segment" type="button" role="tab" aria-controls="segment" aria-selected="false">
+            Segment Analysis
+        </button>
+    </li>
 </ul>
 
 
@@ -416,7 +455,37 @@
 
         
     </div>
-   
+    <div class="tab-pane fade" id="segment" role="tabpanel" aria-labelledby="segment-tab">
+        <div class="row mb-3">
+            <div class="col-lg-12">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Segment Overview</small>
+                        <div id="segment-overview" class="fw-bold top-client mt-2">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <small class="text-muted">Segment Wise Sales</small>
+                <div class="client-table-container mt-2">
+                    <table id="segmentSalesTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Segment</th>
+                                <th class="text-end">Current Year Sales</th>
+                                <th class="text-end">Last Year Sales</th>
+                                <th class="text-end">Growth (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="segmentSalesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 
@@ -424,4 +493,5 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/CustomerDashboard.js"></script>
