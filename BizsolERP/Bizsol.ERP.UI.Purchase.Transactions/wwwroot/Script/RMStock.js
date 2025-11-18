@@ -1579,5 +1579,4 @@ window.CloseModal = CloseModal;
 window.ShowDispatchList = ShowDispatchList;
 window.ShowSlittedList = ShowSlittedList;
 window.ShowJobWorkList = ShowJobWorkList;
-window.ShowSlittedCoilStockList = ShowSlittedCoilStockList;
 window.Verify = Verify;

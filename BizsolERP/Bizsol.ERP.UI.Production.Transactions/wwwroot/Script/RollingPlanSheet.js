@@ -783,8 +783,8 @@ function GetPipeStockRollingPlanList() {
                 }
                 return item;
             });
-            const stringFilterColumn = ["ItemName", "Size", "Thickness", "Length", "Stamp", "GRADE", "Qty PC", "KG_Pipe","Qty MT"];
-            const numericFilterColumn = [];
+            const stringFilterColumn = ["ItemName", "Size", "Thickness", "Length", "Stamp", "GRADE", "KG_Pipe","Qty MT","Type"];
+            const numericFilterColumn = ["Qty PC"];
             const dateFilterColumn = [];
             const button = false;
             const stringDoubleFilterColumn = [];
