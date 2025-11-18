@@ -140,6 +140,15 @@ const RMStockService = {
             }
         );
     },
+    VerifySlittingPlan: function VerifySlittingPlan(Code, Level) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/VerifySlittingPlan?Code=" + encodeURIComponent(Code) + "&VerifyLevel=" + encodeURIComponent(Level);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    
 }
 
 export { RMStockService }

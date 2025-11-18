@@ -59,6 +59,14 @@ const RollingPlanSheetService = {
             }
         );
     },
+    GetRollingPlanNoDetail: function GetRollingPlanNoDetail(PlanNo) {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetRollingPlanNoDetail?PlanNo=" + PlanNo;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { RollingPlanSheetService }

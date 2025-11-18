@@ -1,9 +1,29 @@
 ﻿import { VerifyDispatchPlanService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_VerifyDispatchPlanService.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+
 let G_DispatchPlanlist = [];
 let G_DispatchAdviceNo = 0;
+let G_DispatchMaster_Code = 0;
+let G_AccountMaster_Code = 0;
 $(document).ready(function () {
+    //BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+    var urlParams = BizSolHelperFunction.getUrlVars();
+    var menuValue = decodeURI(urlParams['ModuleDesp']);
+    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
+        $("#ERPHeading").text(menuValue);
+    } else {
+        $("#ERPHeading").text("Despatch Plan Marketing Person Wise");
+    }
+    if (decodeURI(urlParams['FrmAction']) == 'Verify PPC') {
+        $("#ddlStatus").val('P');
+    } else if (decodeURI(urlParams['FrmAction']) == 'Verify') {
+        $("#ddlStatus").val('D');
+    } else {
+        $("#ddlStatus").val('M');
+    }
+
     GetDispatchAdvicePlanList($("#ddlStatus").val());
     $("#ddlStatus").change(function(){
         GetDispatchAdvicePlanList($(this).val());
@@ -24,7 +44,7 @@ function GetDispatchAdvicePlanList(Status) {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Code","AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code","Verified","VarifyMarketing","CheckedPPC"];
+            const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
             const columnAlignment = {
                 "Ord Qty Pc": "right;max-width:30px;",
                 "Ord Qty MT": "right",
@@ -45,17 +65,29 @@ function GetDispatchAdvicePlanList(Status) {
                 "AvailableLimit": "right"
             };
             const updatedResponse = response.map(item => {
-                const Action = Status == 'C' ?`<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>`:`<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["Code"]})"><i class="fa fa-check"></i></button>`;
-                const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Send Mail" onclick="SendMail(${item["Code"]})">Send Mail</button>`:'';
-                let formattedItem = {}
-                formattedItem = Status == 'D' ? {
-                    ...item,
-                    Action: Action,
-                    Other: Other
-                } : {
-                    ...item,
-                    Action: Action
-                };
+                const Action = Status == 'C' ? `<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>` : `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["Code"]})"><i class="fa fa-check"></i></button>`;
+                const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Send Mail" onclick="SendMail(${item["Code"]})">Send Mail</button>` : '';
+                let formattedItem;
+                if (Status == 'D') {
+                    formattedItem = {
+                        ...item,
+                        Action: Action,
+                        Other: Other
+                    };
+                } else if (Status == 'C') { 
+                    formattedItem = {
+                        ...item,
+                        Action: Action,
+                        LV1_Transporter: item.LV1_Transporter == '' ? '' : `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.Code},${item.LV1_TransporterCode})">${item.LV1_Transporter}</a>`,
+                        LV2_Transporter: item.LV2_Transporter == '' ? '' : `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.Code},${item.LV2_TransporterCode})">${item.LV2_Transporter}</a>`,
+                        LV3_Transporter: item.LV3_Transporter == '' ? '' : `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.Code},${item.LV3_TransporterCode})">${item.LV3_Transporter}</a>`
+                    };
+                } else{
+                    formattedItem = {
+                        ...item,
+                        Action: Action
+                    };
+                }
 
                 if (formattedItem["Ord Qty Pc"] != null && formattedItem["Ord Qty Pc"] !== '') {
                     const val = Number(formattedItem["Ord Qty Pc"]);
@@ -763,7 +795,7 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
         totals.creditDays = domTotals.creditDays;
         totals.creditLimit = domTotals.creditLimit;
         totals.availableLimit = domTotals.availableLimit;
-        const hiddenColumns = ["AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
+        const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
         addTotalsRow(totals, hiddenColumns);
         applyFixedWidthsByIndex();
     }, 300);
@@ -773,7 +805,6 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
     setTimeout(() => {
         const filteredData = window['filteredData_tblDispatchPlan'] || [];
         const totals = calculateTotals(filteredData);
-        // Merge with DOM-based calculation for new columns (more accurate)
         const domTotals = calculateTotalsFromDOM();
         totals.ordQtyPc = domTotals.ordQtyPc;
         totals.ordQtyMT = domTotals.ordQtyMT;
@@ -789,7 +820,7 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
         totals.creditDays = domTotals.creditDays;
         totals.creditLimit = domTotals.creditLimit;
         totals.availableLimit = domTotals.availableLimit;
-        const hiddenColumns = ["AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
+        const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
         addTotalsRow(totals, hiddenColumns);
         applyFixedWidthsByIndex();
     }, 300);
@@ -805,8 +836,18 @@ function Verify(DispatchAdviceNo) {
     var ModuleName = "Despatch Plan Marketing Person Wise",
         OptionName = "Verify",
         ShowMsg = "Y",
-        FinYear = getFinancialYear();
-        MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        FinYear = getFinancialYear(),
+        status = $("#ddlStatus").val();
+
+    if (status === 'M') {
+        OptionName = "Verify Marketing";
+    } else if (status === 'P') {
+        OptionName = "Verify PPC";
+    } else if (status === 'D') {
+        OptionName = "Verify";
+    }
+
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
         if (response.CheckModuleOptionRight == 'N') {
             toastr.error(response.Msg);
             return false;
@@ -820,7 +861,7 @@ function VerifyDispatch(Code) {
         Showloader();
         var Status = $("#ddlStatus").val();
         VerifyDispatchPlanService.Verify(Code, Status).then(function (response) {
-            if (response[0].Status = 'Y') {
+            if (response[0].Status == 'Y') {
                 toastr.success(response[0].Msg);
                 GetDispatchAdvicePlanList($("#ddlStatus").val());
                 HideLoader();
@@ -853,12 +894,19 @@ function ViewAll(Code) {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = [];
+            const hiddenColumns = ["DespatchAdviceMaster_Code","AccountMaster_Code"];
 
             const columnAlignment = {
                 Rate: 'right',
             };
-            BizsolCustomFilterGrid.CreateDataTable("AllTable-head", "AllTable-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            const updatedResponse = response.map(item => {
+                const formattedItem = {
+                    ...item,
+                    'Transporter Name': `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.AccountMaster_Code},${item.DespatchAdviceMaster_Code})">${item['Transporter Name']}</a>`,
+                };
+                return formattedItem;
+            });
+            BizsolCustomFilterGrid.CreateDataTable("AllTable-head", "AllTable-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             HideLoader();
             $('#AllModal').modal({ backdrop: 'static' });
             $('#AllModal').modal('show');
@@ -987,7 +1035,7 @@ function Update() {
     if (confirm("Are you sure you want to update ?")) {
         Showloader();
         VerifyDispatchPlanService.UpdateTransporter(codes).then(function (response) {
-            if (response[0].Status = 'Y') {
+            if (response[0].Status == 'Y') {
                 toastr.success(response[0].Msg);
                 HideLoader();
                 CloseTransporter();
@@ -1009,7 +1057,7 @@ function SendMailToTransporter() {
     if (confirm("Are you sure you want to send mail ?")) {
         Showloader();
         VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo).then(function (response) {
-            if (response[0].Status = 'Y') {
+            if (response[0].Status == 'Y') {
                 toastr.success(response[0].Msg);
                 HideLoader();
                 CloseTransporter();
@@ -1022,10 +1070,39 @@ function SendMailToTransporter() {
         });
     }
 }
+function ApprovedTransporter() {
+    Showloader();
+    VerifyDispatchPlanService.ApprovedQuotation(G_DispatchMaster_Code, G_AccountMaster_Code).then(function (response) {
+        if (response[0].Status == 'Y') {
+            toastr.success(response[0].Msg);
+            GetDispatchAdvicePlanList($("#ddlStatus").val());
+            CloseApprovedModal();
+            HideLoader();
+        } else {
+            toastr.error(response[0].Msg);
+            HideLoader();
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error During Approved Quotation ');
+    });
+}
+function ApprovedQuotstion(Code, TransporterCode) {
+    G_DispatchMaster_Code = Code;
+    G_AccountMaster_Code = TransporterCode;
+    $('#dvApproved').modal({ backdrop: 'static' });
+    $('#dvApproved').modal('show');
+    CloseModal();
+}
+function CloseApprovedModal() {
+    $('#dvApproved').modal('hide');
+}
+
 window.ViewAll = ViewAll;
 window.Verify = Verify;
 window.ExportExcel = ExportExcel;
 window.CloseModal = CloseModal;
+window.CloseApprovedModal = CloseApprovedModal;
 window.SendMail = SendMail;
 window.CloseTransporter = CloseTransporter;
 window.TransporterList = TransporterList;
@@ -1033,6 +1110,8 @@ window.GetEmpCodes = GetEmpCodes;
 window.updateSelected = updateSelected;
 window.UpdateTransporter = UpdateTransporter;
 window.SendMailToTransporter = SendMailToTransporter;
+window.ApprovedQuotstion = ApprovedQuotstion;
+window.ApprovedTransporter = ApprovedTransporter;
 
 
 

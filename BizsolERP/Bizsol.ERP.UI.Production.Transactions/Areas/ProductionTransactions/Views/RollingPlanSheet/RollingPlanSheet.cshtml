@@ -112,6 +112,22 @@
         color: #495057;
     }
 
+    #PlanNoDetailTable tfoot th,
+    #PlanNoDetailTable tfoot td {
+        color: #fff !important;
+        background-color: #5c95ce !important;
+        border-color: #5c95ce !important;
+        font-weight: 600;
+    }
+
+    #tblTable tfoot th,
+    #tblTable tfoot td {
+        color: #fff !important;
+        background-color: #5c95ce !important;
+        border-color: #5c95ce !important;
+        font-weight: 600;
+    }
+
 </style>
 <div class="row">
     <div class="col-sm-12">
@@ -128,12 +144,12 @@
             </div>
             <div class="nav-item" role="presentation">
                 <button class="nav-link" id="pipe-stock-tab" data-bs-toggle="tab" data-bs-target="#pipe-stock" type="button" role="tab" aria-controls="pipe-stock" aria-selected="false">
-                    <i class="fas fa-truck"></i> Pipe Stock
+                    <i class="fas fa-industry"></i> Pipe Stock
                 </button>
             </div>
             <div class="nav-item" role="presentation">
                 <button class="nav-link" id="pending-plans-tab" data-bs-toggle="tab" data-bs-target="#pending-plans" type="button" role="tab" aria-controls="pending-plans" aria-selected="false">
-                    <i class="fas fa-truck"></i> Pending Plans
+                    <i class="fas fa-clipboard-list"></i> Rolling Plan Details
                 </button>
             </div>
         </div>
@@ -179,7 +195,9 @@
                     <thead id="table-head">
                     </thead>
                     <tbody id="table-body"> 
-                    </tbody> 
+                    </tbody>
+                    <tfoot id="table-foot">
+                    </tfoot>
                 </table>
             </div>
             <div class="paginator" id="paginator-tblTable">
@@ -213,5 +231,31 @@
         </div>
     </div>
 </div>
-
+<div class="modal fade" id="planNoDetails" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" >
+        <div class="modal-content modal-content-width-sm" style="min-width:550px">
+            <div class="modal-header">
+                <h5 class="modal-title">Plan No Issue Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper">
+                    <table id="PlanNoDetailTable" class="fixed-width-table table">
+                        <thead id="PlanNoDetailTable-head">
+                        </thead>
+                        <tbody id="PlanNoDetailTable-body">
+                        </tbody>
+                        <tfoot id="PlanNoDetailTable-foot">
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-PlanNoDetailTable">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger icon-height" onclick="PlanNoCloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
