@@ -62,9 +62,9 @@ const PackingListFGService = {
             }
         );
     },
-    GetPendingOrderList: function GetPendingOrderList(mode, Name, BuyerPOMaster_Code) {
+    GetPendingOrderList: function GetPendingOrderList(mode, Name, BuyerPOMaster_Code, FromGodownCode, BuyerName) {
 
-        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetPendingOrderList?Mode=" + mode + "&Name=" + encodeURIComponent(Name) + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code;
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetPendingOrderList?Mode=" + mode + "&Name=" + encodeURIComponent(Name) + "&BuyerPOMaster_Code=" + BuyerPOMaster_Code + "&FromGodownCode=" + FromGodownCode + "&BuyerName=" + encodeURIComponent(BuyerName);
         //alert(url);
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
@@ -142,17 +142,36 @@ const PackingListFGService = {
             }
         );
     },
-    LoadNoofPalletInPackingList: function LoadNoofPalletInPackingList(payload) {
+    LoadNoofPalletInPackingList: function LoadNoofPalletInPackingList(payload, showAllStockasPerSize) {
 
-        let url = UrlService.API_ENDPOINT_PackingListFG + "/LoadNoofPalletInPackingList";
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/LoadNoofPalletInPackingList?ShowAllStockasPerSize=" + showAllStockasPerSize;
         //alert(url);
         return promiseAjaxCallApi.CallAPI('POST', url, payload).then(
             function (value) {
                 return value;
             }
         );
-    }
-    
+    },
+    GetNotfoundScanInfoInPackingList: function GetNotfoundScanInfoInPackingList(BundleOrIdOrBatch) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetNotfoundScanInfoInPackingList?BundleOrIdOrBatch="+BundleOrIdOrBatch;
+
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    UpdateRate: function UpdateRate(PackingListMaster_Code, ItemMaster_Code, Rate) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/UpdateRate?PackingListMaster_Code=" + PackingListMaster_Code + "&ItemMaster_Code=" + ItemMaster_Code + "&Rate=" + Rate;
+        //alert(url);
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 

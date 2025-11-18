@@ -28,6 +28,16 @@
         <input class="BizSolFormControl form-control" type="text" placeholder="URL text" onchange="BizSolInputControl.OnChangeURLTextBox(this)" onkeypress="BizSolhandleEnterKey(event)">
         
     </div>
+
+    <div class="col-8">
+        <div class="input-group">
+            <span class="input-group-text" onclick="document.getElementById('frmEmptyOut_fileVehiclePhoto').click()" style="cursor: pointer;height: 28px;">
+                <i class="fa fa-camera"></i>
+            </span>
+            <input id="frmEmptyOut_fileVehiclePhoto" asp-for="Attachment" type="file" accept=".jpg, .png, .jpeg" class="form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" />
+        </div>
+
+    </div>
 </div>
 
 <div id="DivSizeControlmodal"></div>
@@ -49,6 +59,7 @@
 
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script> 
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/OptimizeImage.js"></script> 
  
 @* D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Production.Test\wwwroot\js\site.js *@
 @* <script src="~/js/site.js"></script> *@
@@ -102,6 +113,32 @@
         $('#DivAttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode,DetailTableName:detailTableName,DetailTableCode:detailTableCode,EntryNo:entryNo,EntryDate:entryDate,CallBackFunctionName: callBackFunctionName });
 
     }
+
+    $('#frmEmptyOut_fileVehiclePhoto').change(function () {
+        // If file size > 500kB, resize such that width <= 1000, quality = 0.9
+        OptimizeImage.reduceFileSize(this.files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+            let body = new FormData();
+            body.set('file', blob, blob.name || "file.jpg");
+
+            const url = window.URL.createObjectURL(blob);
+             window.open(url, '_blank');
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            
+            a.download = "file.jpg";
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+       
+        
+            // fetch('/upload-image', { method: 'POST', body }).then(
+            
+            // );
+        });
+    });
+
+       
 </script>
 
 

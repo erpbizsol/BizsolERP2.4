@@ -1,8 +1,20 @@
 ﻿import { StockTransferReceiveService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/StockTransferReceiveService.js';
+import { PalletPackingService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PalletPackingService.js';
 
 let PartyName = '';
 let PackingListNo = 0;
-$(document).ready(function () {
+let G_QtyMT = 'MT';
+let G_QtyPC = 'PC';
+let G_QtyMTR = 'MTRS';
+$(document).ready(async function () {
+    let FixedParameterQtyConfiguration = await PalletPackingService.FixedParameterQtyConfiguration();
+
+    if (FixedParameterQtyConfiguration.length > 0) {
+        G_QtyMT = FixedParameterQtyConfiguration[0].QtyMT
+        G_QtyPC = FixedParameterQtyConfiguration[0].QtyPC
+        G_QtyMTR = FixedParameterQtyConfiguration[0].QtyMR
+    }
+
     $("#ERPHeading").text("Actual Dispatch");
     getPartyNamePendingPackingListActualDespatch();
     $('#btnExport').click(function () {
@@ -39,53 +51,6 @@ function getPartyNamePendingPackingListActualDespatch() {
         toastr.error('Error fetching warehouse data:', error);
     });
 }
-//function getPendingPackingListPalletsActualDespatch(PartyName) {
-//    StockTransferReceiveService.GetPendingPackingListPalletsActualDespatch(PartyName).then(function (response) {
-//        const datalist = $('#ddlPalletNoList');
-//        datalist.empty();
-//        if (response && response.length > 0) {
-//            response.forEach(function (item) {
-//                const option = $('<option>').val(item.PalletNo).text(item.PalletNo);
-//                datalist.append(option);
-//            });
-//        } else {
-//            toastr.error('No data received or empty response');
-//        }
-//    }).catch(function (error) {
-//        toastr.error('Error fetching user list:', error);
-//    });
-//}
-//function PackingActualPalletIDDispatch() {
-//    let PalletNo = $("#ddlPalletNo").val();
-//    PartyName = $("#ddlPartyName").val();
-//    if (PalletNo == "") {
-//        return;
-//    }
-//    StockTransferReceiveService.PackingActualPalletIDDispatch(PalletNo, PartyName).then(function (response) {
-//        $("#ddlPalletNo ").val("");
-//        toastr.success(response.Msg);
-//        StockTransferReceiveService.GetPalletActualDespatchDetails(PalletNo, PartyName).then(function (results) {
-//            if (results && Array.isArray(results) && results.length > 0) {
-//                const stringFilterColumn = [];
-//                const numericFilterColumn = [];
-//                const dateFilterColumn = [];
-//                const button = false;
-//                const stringDoubleFilterColumn = [];
-//                const showButtons = [];
-//                const hiddenColumns = [];
-//                const ColumnAlignment = {};
-//                BizsolCustomFilterGrid.CreateDataTable("table-header-ActualDispatch", "table-body-ActualDispatch", results, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
-//            }
-//            else {
-//                toastr.error('No Data Found');
-//            }
-//        }).catch(error => {
-//            toastr.error(error.Msg);
-//        });
-
-
-//    });
-//}
 function onPartyNameSelectGrid() {
     PartyName = $("#ddlPartyName").val();
     if (PartyName == "") {
@@ -103,17 +68,17 @@ function onPartyNameSelectGrid() {
             const showButtons = [];
             const hiddenColumns = ["PackingListMaster_Code","Party Name"];
             const ColumnAlignment = {
-                "Qty PC": 'right',
-                "Qty KG": 'right',
-                "Qty SQM": 'right',
                 "Bal No of Pallet": 'right',
-                "Bal Qty PC": 'right',
-                "Bal Qty KG": 'right',
-                "Bal Qty SQM": 'right',
                 "Date": 'center',
                 "Packing List No": 'center',
                 "No of Pallet":'right',
             };
+            ColumnAlignment[`Qty ${G_QtyMT}`] = "right";
+            ColumnAlignment["Qty " + G_QtyPC] = "right";
+            ColumnAlignment["Qty " + G_QtyMTR] = "right";
+            ColumnAlignment["Bal Qty " + G_QtyMT] = "right";
+            ColumnAlignment["Bal Qty " + G_QtyPC] = "right";
+            ColumnAlignment["Bal Qty " + G_QtyMTR] = "right";
             const updatedResponse = response.map(item => {
                 
                 let Action = `<button class="btn btn-success icon-height mb-1" title="Update All" onclick="updateAll(${item?.PackingListMaster_Code})"><i class="fa fa-check-circle"></i></button>
@@ -178,11 +143,10 @@ function GetPendingPackingListActualDespatchDetails(PackingListMaster_Code, Pack
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = [];
-            const ColumnAlignment = {
-                "Qty PC": 'right',
-                "Qty KG": 'right',
-                "Qty SQM": 'right',
-            };
+            const ColumnAlignment = {};
+            ColumnAlignment["Qty " + G_QtyMT] = "right";
+            ColumnAlignment["Qty " + G_QtyPC] = "right";
+            ColumnAlignment["Qty " + G_QtyMTR] = "right";
             const updatedResponse = response.map(item => {
                 let PalletNo = item["Pallet No"] || item["Identification No"];
                 let Action = `<input type="checkbox" onchange="toggleSelection('${PalletNo}')">`;
@@ -256,16 +220,17 @@ function updateFooter(data) {
             totalQtyBalMTWeightTotal += parseFloat(row.find("td:nth-child(14)").text()) || 0;
             totalQtyBalMTRSWeightTotal += parseFloat(row.find("td:nth-child(15)").text()) || 0;
         });
+        
         data.forEach(row => {
             totalNoOFPallets += parseFloat(row["No of Pallet"]);
-            totalQtyBalWeight += parseFloat(row["Qty PC"]);
-            totalQtyMTWeight += parseFloat(row["Qty KG"]);
-            totalQtyMTRSWeight += parseFloat(row["Qty SQM"]);
+            totalQtyBalWeight += parseFloat(row["Qty " + G_QtyPC]);
+            totalQtyMTWeight += parseFloat(row["Qty " + G_QtyMT]);
+            totalQtyMTRSWeight += parseFloat(row["Qty " + G_QtyMTR]);
 
             totalBalNoOfPallet += parseFloat(row["Bal No of Pallet"]);
-            totalQtyBalPCWeight += parseFloat(row["Bal Qty PC"]);
-            totalQtyBalMTWeight += parseFloat(row["Bal Qty KG"]);
-            totalQtyBalMTRSWeight += parseFloat(row["Bal Qty SQM"]);
+            totalQtyBalPCWeight += parseFloat(row["Bal Qty " + G_QtyPC]);
+            totalQtyBalMTWeight += parseFloat(row["Bal Qty " + G_QtyMT]);
+            totalQtyBalMTRSWeight += parseFloat(row["Bal Qty " + G_QtyMTR]);
         });
         totalQtyMTWeight = totalQtyMTWeight.toFixed(3);
         totalQtyMTRSWeight = totalQtyMTRSWeight.toFixed(3);
@@ -394,13 +359,13 @@ function updateFooterPrint(data){
 
         data.forEach(row => {
             totalNoOFPallets += parseFloat(row["No of Pallet"]);
-            totalQtyBalWeight += parseFloat(row["Qty PC"]);
-            totalQtyMTWeight += parseFloat(row["Qty KG"]);
-            totalQtyMTRSWeight += parseFloat(row["Qty SQM"]);
+            totalQtyBalWeight += parseFloat(row["Qty " + G_QtyPC]);
+            totalQtyMTWeight += parseFloat(row["Qty " + G_QtyMT]);
+            totalQtyMTRSWeight += parseFloat(row["Qty " + G_QtyMTR]);
             totalBalNoOfPallet += parseFloat(row["Bal No of Pallet"]);
-            totalQtyBalPCWeight += parseFloat(row["Bal Qty PC"]);
-            totalQtyBalMTWeight += parseFloat(row["Bal Qty KG"]);
-            totalQtyBalMTRSWeight += parseFloat(row["Bal Qty SQM"]);
+            totalQtyBalPCWeight += parseFloat(row["Bal Qty " + G_QtyPC]);
+            totalQtyBalMTWeight += parseFloat(row["Bal Qty " + G_QtyMT]);
+            totalQtyBalMTRSWeight += parseFloat(row["Bal Qty " + G_QtyMTR]);
         });
         totalQtyMTWeight = totalQtyMTWeight.toFixed(3);
         totalQtyMTRSWeight = totalQtyMTRSWeight.toFixed(3);

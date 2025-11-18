@@ -1,0 +1,128 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.HR.Masters/js/EmployeeDeductionMaster.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/bizsolpbcontrols.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+<style>
+    .modal-dialog {
+        max-width: 350px;
+    }
+
+    .fixed-height-table {
+        height: 460px;
+    }
+</style>
+
+<div id="locateEmployeeDeduction">
+    <div class="card col-md-9">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-12 text-end">
+                    <button type="button" onclick="CreateNew_EmployeeDeduction()" title="Create New" class="btn btn-primary btn-height">Create New</button>
+                    <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download List"><i class="fa fa-download" aria-hidden="true"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-9">
+            <div id="tblEmployeeDeductionMaster">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="EmployeeDeduction" class="fixed-width-table table">
+                        <thead id="table-header-EmployeeDeduction">
+                        </thead>
+                        <tbody id="table-body-EmployeeDeduction">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-EmployeeDeduction">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="newCreateForm" class="card" style="display:none">
+    <form class="card-body">
+        <div class="row">
+            <input type="hidden" name="Code" id="Code" class="form-control" value="0">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtDeductionDesp" class="col-form-label-sm fw-bold">Deduction Description:<span class="text-danger">*</span></label>
+                    <input id="txtDeductionDesp" name="txtSubDepartmentName" class="box_border form-control form-control-sm" autocomplete="off" maxlength="100" required />
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtCondition" class="col-form-label-sm fw-bold">Condition:<span class="text-danger">*</span></label>
+                    <select id="txtCondition" class="form-control form-control-sm box_border" onchange="updateFormFields()" required>
+                        <option value="F" selected>Fixed</option>
+                        <option value="%">%</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-3" >
+                <div class="form-group">
+                    <label for="txtPercentage" id="lblPercentage" class="col-form-label-sm fw-bold">Percentage:<span class="text-danger">*</span></label>
+                    <input id="txtPercentage" name="txtPercentage" oninput="validateDecimalInput(this)" class="box_border form-control form-control-sm" autocomplete="off" maxlength="40" required />
+                </div>
+            </div>
+
+            <div class="col-md-3" id="divPercentageOf">
+                <div class="form-group">
+                    <label for="txtPercentageOf" class="col-form-label-sm fw-bold">
+                        Percentage Of:<span class="text-danger">*</span>
+                    </label>
+                    <select id="txtPercentageOf" name="txtPercentageOf"
+                            class="form-control form-control-sm box_border" required>
+                        <option value="Basic" selected>Basic</option>
+                        <option value="DA">DA</option>
+                        <option value="CAN">CAN</option>
+                        <option value="HRA">HRA</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-12 text-end">
+                <button type="button" onclick="submit_EmployeeDeductionMaster()" id="saveEmployeeDeductionButton" title="Save" class="btn btn-primary btn-height">Save</button>
+                <button type="button" class="btn btn-primary btn-height" title="Back" onclick="EmployeeDeduction_Back()">Back</button>
+            </div>
+        </div>
+    </form>
+    @* <div id="PBControls" class="mb-2"></div> *@
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="reasonForDeleteInput" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveModal_EmployeeDeductionDelete()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal_EmployeeDeductionDelete()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,278 @@
+﻿<div class="row">
+    <div class="modal fade" id="CheckCreditLimitsModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Check Credit Limits<span id="lblModalTitle"></span></h5>
+                    <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+                </div>
+                <div class="modal-body row">
+                     <div class="table-wrapper col-6" id="divCreditLimitAmountBaseTable">
+                        <table id="CreditLimitAmountBaseTable" class="table">
+                            <thead id="table-header-CreditLimitAmountBaseTable">
+                            </thead>
+                            <tbody id="table-body-CreditLimitAmountBaseTable">
+                            </tbody>
+                        </table>
+                    </div>
+                <div class="paginator" id="paginator-CreditLimitAmountBaseTable" >
+                </div>
+                    <div class="table-wrapper col-6" id="divCreditLimitDayBaseTable">
+                        <table id="CreditLimitDayBaseTable" class=" table">
+                            <thead id="table-header-CreditLimitDayBaseTable">
+                            </thead>
+                            <tbody id="table-body-CreditLimitDayBaseTable">
+                            </tbody>
+                        </table>
+                    </div>
+                <div class="paginator" id="paginator-CreditLimitDayBaseTable">
+                </div>
+                    <div id="divtxtOTP" class="col-12">
+                        <label for="txtOTP" class="col-form-label-sm fw-bold">Enter Authorization Code:</label>
+                        <input type="text" id="txtOTP" placeholder="Enter The OTP" autocomplete="off" maxlength="6" class="box_border form-control form-control-sm" />
+                    </div>
+                    <div id="divtxtRemark" class="col-12">
+                        <label for="txtRemark" class="col-form-label-sm fw-bold">Enter remark:</label>
+                        <input type="text" id="txtRemark" placeholder="Enter The Remark" autocomplete="off" maxlength="250" class="box_border form-control form-control-sm" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                   @*  <button type="button" class="btn btn-primary btn-sm " onclick="">AUTHENTICATION REQUEST NOTIFICATION </button> *@
+                    <button type="button" class="btn btn-primary btn-sm " onclick="ValidateOTP()">OK</button>
+                    <a class="btn btn-danger btn-sm " data-bs-dismiss="modal" aria-label="Close">Close</a>
+
+                    <input type="hidden" value="@ViewBag.AccountMaster_Code" id="hfAccountMaster_Code" name="AccountMaster_Code"   />
+                    <input type="hidden" value="@ViewBag.Amount" id="hfTotalOrderAmount" name="TotalOrderAmount"   />
+                    <input type="hidden" value="@ViewBag.PreviousAmount" id="hfPreviousAmount" name="PreviousAmount"   />
+                    <input type="hidden" value="@ViewBag.Source" id="hfSource" name="Source"   />
+                    <input type="hidden" value="@ViewBag.PasswordsCodeRs" id="hfPasswordsCodeRs" name="PasswordsCodeRs"   />
+                    <input type="hidden" value="@ViewBag.PasswordsCodeDays" id="hfPasswordsCodeDays" name="PasswordsCodeDays"   />
+                    <input type="hidden" value="@ViewBag.ShowFormDialog" id="hfShowFormDialog" name="ShowFormDialog"   />
+                    <input type="hidden" value="@ViewBag.LedgerClosing" id="hfLedgerClosing" name="LedgerClosing"   />
+                    <input type="hidden" value="@ViewBag.OverDueAmount" id="hfOverDueAmount" name="OverDueAmount"   />
+                    <input type="hidden" value="@ViewBag.ShowOnlyOutstandingInfo" id="hfShowOnlyOutstandingInfo" name="ShowOnlyOutstandingInfo"   />
+                    <input type="hidden" value="@ViewBag.Log_OnLineVerification_Code" id="hfLog_OnLineVerification_Code" name="Log_OnLineVerification_Code"   />
+                    <input type="hidden" value="@ViewBag.OnlyCheckCreditLimit" id="hfOnlyCheckCreditLimit" name="ShowFormDialog"   />
+                    <input type="hidden" value="@ViewBag.CheckBillingWithoutAdvance" id="hfCheckBillingWithoutAdvance" name="LedgerClosing"   />
+                    <input type="hidden" value="@ViewBag.AdvancePayPercentage" id="hfAdvancePayPercentage" name="AdvancePayPercentage"   />
+                    <input type="hidden" value="@ViewBag.EntryDesp" id="hfEntryNo" name="EntryNo"   />
+                    <input type="hidden" value="@ViewBag.MasterTableCode" id="hfMasterTableCode" name="MasterTableCode"   />
+                    <input type="hidden" value="@ViewBag.BuyerPOMaster_Code" id="hfBuyerPOMaster_Code" name="BuyerPOMaster_Code"   />         
+                    <input type="hidden" value="@ViewBag.CallBackFunctionName_btnDone" id="hfCallBackFunctionName_btnDone" name="CallBackFunctionName_btnDone" />
+                    <input type="hidden" value="@ViewBag.Code" id="hfCode" name="Code" />
+                    <input type="hidden" value="@ViewBag.Mode" id="hfMode" name="Mode" />
+                    <input type="hidden" value="@ViewBag.AskPassword" id="hfAskPassword" name="AskPassword" />
+                    <input type="hidden" value="@ViewBag.AskRemark" id="hfAskRemark" name="AskRemark" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    
+</script>
+<script type="module">
+
+    import { CheckCreditLimitsService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/_CheckCreditLimitsService.js'
+
+    let CheckCreditLimitsControl_PasswordCode = 0;
+    let CheckCreditLimitsControl_Code=0;
+    let CheckCreditLimitsControl_Mode='';
+    let CheckCreditLimitsControl_Remark='';
+    let AskPassword=$('#hfAskPassword').val();
+    let AskRemark=$('#hfAskRemark').val();
+    $(document).ready(function () {
+
+         var AccountMaster_Code=$('#hfAccountMaster_Code').val();
+         var Amount=$('#hfTotalOrderAmount').val();
+         var PreviousAmount=$('#hfPreviousAmount').val();
+         var Source=$('#hfSource').val();
+         var PasswordsCodeRs=$('#hfPasswordsCodeRs').val();
+         var PasswordsCodeDays=$('#hfPasswordsCodeDays').val();
+         var ShowFormDialog=$('#hfShowFormDialog').val();
+         var LedgerClosing=$('#hfLedgerClosing').val();
+         var OverDueAmount=$('#hfOverDueAmount').val();
+         var ShowOnlyOutstandingInfo=$('#hfShowOnlyOutstandingInfo').val();
+         var Log_OnLineVerification_Code=$('#hfLog_OnLineVerification_Code').val();
+         var OnlyCheckCreditLimit=$('#hfOnlyCheckCreditLimit').val();
+         var CheckBillingWithoutAdvance=$('#hfCheckBillingWithoutAdvance').val();
+         var AdvancePayPercentage=$('#hfAdvancePayPercentage').val();
+         var EntryDesp=$('#hfEntryNo').val();
+         var MasterTableCode=$('#hfMasterTableCode').val();
+         var BuyerPOMaster_Code=$('#hfBuyerPOMaster_Code').val();
+         
+
+
+         CheckCreditLimitsService.CheckCreditLimits(AccountMaster_Code, Amount, PreviousAmount, Source, PasswordsCodeRs , PasswordsCodeDays , ShowFormDialog , LedgerClosing
+                                                      , OverDueAmount , ShowOnlyOutstandingInfo , Log_OnLineVerification_Code , OnlyCheckCreditLimit , CheckBillingWithoutAdvance
+                                                      , AdvancePayPercentage , EntryDesp , MasterTableCode , BuyerPOMaster_Code).then(function (response) {
+
+                let CheckCreditLimit = 'Y';
+               
+              if (response.length > 0) {
+                   if ((response[0].length > 0 && response[0][0].CheckCreditLimitAmountBase === "N") || (response[1].length > 0 && response[1][0].CheckCreditLimitDaysBase === "N")) {
+                            CheckCreditLimit = 'N';
+
+                   }
+                    if(CheckCreditLimit === 'N'){
+                
+                         $("#CheckCreditLimitsModal").modal({
+                                backdrop: 'static',
+
+                          });
+                            $("#CheckCreditLimitsModal").modal('show');
+
+                            let CreditLimitAmountBase = [];
+                            let CreditLimitDayBase = [];
+
+                             CreditLimitAmountBase = response[0];
+                            CreditLimitDayBase = response[1];
+                            CreditLimitAmountBase = CreditLimitAmountBase.map((item) => ({
+                            "Credit Limit (Rs.)": parseFloat(item.txtCreditLimit).toFixed(2),
+                            "Ledger Closing": item.txtLedgerClosing,
+                            "Un Booked Sale": item.txtUnBookSale,
+                            "Pending DO": item.txtPendingDO,
+                            "Available Limit": item.txtAvailableLimit,
+                            "Order Amount": item.txtDoAmount,
+                            "Balance": item.txtBalance
+
+                        }))
+
+                        CreditLimitAmountBase = Object.keys(CreditLimitAmountBase[0]).map((item) => ({
+                            Particular: item,
+                            Value: CreditLimitAmountBase[0][item]
+                        }))
+           
+                        CreditLimitDayBase = CreditLimitDayBase.map((item) => ({
+                            "Credit Days": item.TxtCreditDays,
+                            "Grace Period": item.TxtGracePeriod,
+                            "Out Standing": item.txtOutStanding,
+                            "Gen Credit Limit OverDue": item.objGenCreditLimitOverDue,
+                        }))
+                        CreditLimitDayBase = Object.keys(CreditLimitDayBase[0]).map((item) => ({
+                            Particular: item,
+                            Value: CreditLimitDayBase[0][item]
+                        }))
+
+            
+
+                            const StringFilterColumn = [];
+                            const NumericFilterColumn = [];
+                            const DateFilterColumn = [];
+                            const Button = false;
+                            const showButtons = [];
+                            const StringdoubleFilterColumn = [];
+                            const hiddenColumns = [];
+                        const ColumnAlignment = {};
+                        BizsolCustomFilterGrid.CreateDataTable("table-header-CreditLimitAmountBaseTable", "table-body-CreditLimitAmountBaseTable", CreditLimitAmountBase, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false);
+                        BizsolCustomFilterGrid.CreateDataTable("table-header-CreditLimitDayBaseTable", "table-body-CreditLimitDayBaseTable", CreditLimitDayBase, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false);
+
+                        $('#paginator-CreditLimitAmountBaseTable').hide();
+                        $('#paginator-CreditLimitAmountBaseTable').empty();
+                        $('#paginator-CreditLimitDayBaseTable').hide();
+                        $('#paginator-CreditLimitDayBaseTable').empty();
+                        if(response[0].length > 0 && response[0][0].CheckCreditLimitAmountBase === "Y"){
+                            $('#divCreditLimitAmountBaseTable').hide();
+                        }
+                        if(response[1].length > 0 && response[1][0].CheckCreditLimitDaysBase === "Y"){
+                            $('#divCreditLimitDayBaseTable').hide();
+                        }
+
+                        if(AskPassword==='N'){
+                            $('#divtxtOTP').hide();
+                        }
+                        if(AskRemark==='N'){
+                            $('#divtxtRemark').hide();
+                        }
+                       
+                    }
+                    else{
+                        CheckCreditLimitsControl_PasswordCode=0;
+                       
+                        window.CheckCreditLimitsControl_PasswordCode=CheckCreditLimitsControl_PasswordCode;
+                        window.CheckCreditLimitsControl_Remark=CheckCreditLimitsControl_Remark;
+                        window[$('#hfCallBackFunctionName_btnDone').val()]();
+                    }
+                }else{
+                    CheckCreditLimitsControl_PasswordCode=0;
+                        window.CheckCreditLimitsControl_PasswordCode=CheckCreditLimitsControl_PasswordCode;
+                        window.CheckCreditLimitsControl_Remark=CheckCreditLimitsControl_Remark;
+                        window[$('#hfCallBackFunctionName_btnDone').val()]();
+                    }
+            });
+
+    
+       
+    });
+
+    function ValidateOTP(){
+        
+        var Password=$('#txtOTP').val();
+        var Remark=$('#txtRemark').val();
+
+        
+       
+
+
+
+       
+
+        if(AskPassword==='Y' && (Password==undefined || Password=='')){
+            toastr.error('Please enter OTP!');
+            return false;
+        }
+        if(AskRemark==='Y' && (Remark==undefined || Remark=='')){
+            toastr.error('Please enter Remark!');
+            return false;
+        }
+        
+        // only askRemark
+        if(AskRemark==='Y' && AskPassword==='N'){
+            window.CheckCreditLimitsControl_Code=$('#hfCode').val();
+            window.CheckCreditLimitsControl_Mode=$('#hfMode').val();
+            CheckCreditLimitsControl_PasswordCode=0;
+            window.CheckCreditLimitsControl_PasswordCode=CheckCreditLimitsControl_PasswordCode;
+            window.CheckCreditLimitsControl_Remark=Remark;
+            window[$('#hfCallBackFunctionName_btnDone').val()]();
+            $("#CheckCreditLimitsModal").modal('hide');
+            return false;
+        }
+
+       if(AskPassword==='N'){
+            window.CheckCreditLimitsControl_Code=$('#hfCode').val();
+            window.CheckCreditLimitsControl_Mode=$('#hfMode').val();
+            CheckCreditLimitsControl_PasswordCode=0;
+            window.CheckCreditLimitsControl_PasswordCode=CheckCreditLimitsControl_PasswordCode;
+            window.CheckCreditLimitsControl_Remark=CheckCreditLimitsControl_Remark;
+            window[$('#hfCallBackFunctionName_btnDone').val()]();
+            $("#CheckCreditLimitsModal").modal('hide');
+            return false;
+        }
+
+         CheckCreditLimitsService.ValidateOTP(Password).then(function (response) {
+        
+                if (response !== undefined && response !== '') {
+            
+                    if(response.Status=='Y'){
+                        toastr.success(response.Msg);
+                        window.CheckCreditLimitsControl_Code=$('#hfCode').val();
+                        window.CheckCreditLimitsControl_Mode=$('#hfMode').val();
+                        CheckCreditLimitsControl_PasswordCode=response.Code;
+                        window.CheckCreditLimitsControl_PasswordCode=CheckCreditLimitsControl_PasswordCode;
+                        window.CheckCreditLimitsControl_Remark=Remark;
+                        window[$('#hfCallBackFunctionName_btnDone').val()]();
+                        $("#CheckCreditLimitsModal").modal('hide');
+                    }else{
+                        toastr.error(response.Msg);
+                    }
+
+           
+                }
+            });
+    }
+
+    window.ValidateOTP = ValidateOTP;
+    window.CheckCreditLimitsControl_PasswordCode=CheckCreditLimitsControl_PasswordCode;
+    window.CheckCreditLimitsControl_Remark=CheckCreditLimitsControl_Remark;
+</script>

@@ -1,0 +1,5 @@
+/* Basic styles for DateRangeControl - can be imported or left as shadow styles are included in the component */
+.date-range-control { display:flex; gap:12px; align-items:center; }
+.date-range-control label { font-size:13px; color:#333; }
+.date-range-control input[type="date"] { padding:8px36px8px12px; border:1px solid #ddd; border-radius:6px; height:38px; font-size:14px; }
+.date-range-control .icon { width:18px; height:18px; opacity:0.7; pointer-events:none; }

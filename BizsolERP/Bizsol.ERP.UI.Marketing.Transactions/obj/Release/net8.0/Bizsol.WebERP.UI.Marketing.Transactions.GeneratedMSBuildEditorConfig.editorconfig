@@ -3,8 +3,8 @@ build_property.TargetFramework = net8.0
 build_property.TargetFramework = net8.0
 build_property.TargetPlatformMinVersion = 
 build_property.TargetPlatformMinVersion = 
-build_property.UsingMicrosoftNETSdkWeb = true
-build_property.UsingMicrosoftNETSdkWeb = true
+build_property.UsingMicrosoftNETSdkWeb = 
+build_property.UsingMicrosoftNETSdkWeb = 
 build_property.ProjectTypeGuids = 
 build_property.ProjectTypeGuids = 
 build_property.InvariantGlobalization = 
@@ -15,17 +15,37 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.TargetFrameworkIdentifier = .NETCoreApp
+build_property.TargetFrameworkVersion = v8.0
 build_property.RootNamespace = Bizsol.WebERP.UI.Marketing.Transactions
 build_property.RootNamespace = Bizsol.WebERP.UI.Marketing.Transactions
-build_property.ProjectDir = D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Marketing.Transactions\
+build_property.ProjectDir = D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Marketing.Transactions\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = true
-build_property.MSBuildProjectDirectory = D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Marketing.Transactions
+build_property.MSBuildProjectDirectory = D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Marketing.Transactions
 build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 8.0
+build_property.EnableCodeStyleSeverity = 
 
-[D:/All Project/BizsolERP2.4/BizsolERP/Bizsol.ERP.UI.Marketing.Transactions/Areas/MarketingTransactions/Views/VisitorEntry/VisitorEntry.cshtml]
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Marketing.Transactions/Areas/MarketingTransactions/Views/BuyingCapacity/BuyingCapacity.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcTWFya2V0aW5nVHJhbnNhY3Rpb25zXFZpZXdzXEJ1eWluZ0NhcGFjaXR5XEJ1eWluZ0NhcGFjaXR5LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Marketing.Transactions/Areas/MarketingTransactions/Views/BuyingCapacity/ProspectiveCustomer.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcTWFya2V0aW5nVHJhbnNhY3Rpb25zXFZpZXdzXEJ1eWluZ0NhcGFjaXR5XFByb3NwZWN0aXZlQ3VzdG9tZXIuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Marketing.Transactions/Areas/MarketingTransactions/Views/CollectionCommitment/CollectionCommitment.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcTWFya2V0aW5nVHJhbnNhY3Rpb25zXFZpZXdzXENvbGxlY3Rpb25Db21taXRtZW50XENvbGxlY3Rpb25Db21taXRtZW50LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Marketing.Transactions/Areas/MarketingTransactions/Views/CollectionCommitment/CollectionCommitmentReport.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcTWFya2V0aW5nVHJhbnNhY3Rpb25zXFZpZXdzXENvbGxlY3Rpb25Db21taXRtZW50XENvbGxlY3Rpb25Db21taXRtZW50UmVwb3J0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Marketing.Transactions/Areas/MarketingTransactions/Views/VisitorEntry/VisitorEntry.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcTWFya2V0aW5nVHJhbnNhY3Rpb25zXFZpZXdzXFZpc2l0b3JFbnRyeVxWaXNpdG9yRW50cnkuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 

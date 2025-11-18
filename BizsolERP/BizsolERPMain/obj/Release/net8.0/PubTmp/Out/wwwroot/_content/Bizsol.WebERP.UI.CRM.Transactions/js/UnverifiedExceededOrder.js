@@ -601,7 +601,7 @@ function AdminVerifyLv2(Code, element) {
 function VerifyForAll(Code, Mode) {
     const alertCls = confirm("Are you sure you want to Verify this Visit?");
     if (alertCls) {
-        VisitOrderEntryService.VerifyVisitOrder(Code, Mode).then(function (response) {
+        VisitOrderEntryService.VerifyVisitOrder(Code, Mode,0,'0').then(function (response) {
             if (response.Status === 'Y') {
                 toastr.success(response.Msg);
                 GetOrderVerifyData();

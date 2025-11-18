@@ -142,7 +142,7 @@
         BreakDownService.IsBreakDownRunning($('#hfProcessMaster_Code').val(),$('#hfMachineMaster_Code').val(),$('#hfGodownMaster_Code').val()).then(function (respone) {
 
             if(respone.Status === 'N'){
-               BreakDownService.StartBreakDown($('#hfEntryDate').val(),$('#hfProcessMaster_Code').val(),$('#hfMachineMaster_Code').val(),$('#hfShiftMaster_Code').val(),ReasonMasterCode,txtBrkStartTime,txtBrkRemark,DepartmentMasterCode,OperatorName_Code,$('#hfShiftMaster_Code').val()).then(function (respone1) {
+               BreakDownService.StartBreakDown($('#hfEntryDate').val(),$('#hfProcessMaster_Code').val(),$('#hfMachineMaster_Code').val(),$('#hfShiftMaster_Code').val(),ReasonMasterCode,txtBrkStartTime,txtBrkRemark,DepartmentMasterCode,OperatorName_Code,$('#hfGodownMaster_Code').val()).then(function (respone1) {
 
                     if(respone1.Status === 'Y'){
                         toastr.success(respone1.Msg);

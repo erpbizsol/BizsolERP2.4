@@ -3,8 +3,27 @@
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/OptimizeImage.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/StockTransferWarehouse.js"></script>
-
+<style>
+    input[switch] + label {
+        font-size: 1em;
+        line-height: 1;
+        width: 65px;
+        height: 24px;
+        background-color: #00BCD4;
+        background-image: none;
+        border-radius: 2rem;
+        padding: .16667rem;
+        cursor: pointer;
+        display: inline-block;
+        text-align: center;
+        position: relative;
+        font-weight: 500;
+        -webkit-transition: all .1s ease-in-out;
+        transition: all .1s ease-in-out;
+    }
+</style>
 <div class="tab-section">
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
@@ -13,27 +32,38 @@
 
                 <div class="row">
                     <!-- Warehouse Field -->
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-3 form-group">
                         <label for="ddlWarehouse" class="form-label">Warehouse <span class="text-danger">*</span></label>
                         <select id="ddlWarehouse" class="form-control form-control-sm box_border"></select>
                     </div>
 
                     <!-- Attachment Field -->
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-3 form-group">
                         <label for="attachment" class="form-label">Attachment <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <span class="input-group-text" onclick="triggerFileInputClick()" style="cursor: pointer; height:28px">
                                 <i class="fa fa-camera"></i>
                             </span>
-                            <input type="file" accept=".jpg, .png, .jpeg" onchange="FileUploadChange(event)" class="form-control form-control-sm box_border" id="fileInput" />
+                        <input type="file" accept=".jpg, .png, .jpeg" capture="camera" onchange="FileUploadChange(event)" class="form-control form-control-sm box_border" id="fileInput" />
                         </div>
                     </div>
 
                     <!-- Roll Id No Field -->
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-3 form-group">
                         <label for="ddlRollIdNo" class="form-label">Roll Id No <span class="text-danger">*</span></label>
                         <input type="text" id="ddlRollIdNo" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" autocomplete="off" />
                         <ul id="ddlRollIdNoList" class="AutoSuggestion-list"></ul>
+                    </div>
+                <div id="DivIsReceivedPallet" class="col-md-1 form-group without-label-field">
+                    <input type="checkbox" id="chkShowPallets" switch="success" onclick="StrockTransferWarehouse_ShowPallets()" />
+                    <label data-on-label="Pallet" data-off-label="ID" for="chkShowPallets"></label>
+                </div>
+                <div class="col-md-1 form-group without-label-field">
+                        <a class="btn btn-secondary btn-height" id="btnScanQR" onclick="StrockTransferWarehouse_btnScanQR()">
+                            Scan QR
+                        </a>
+
+                        
                     </div>
                 </div>
         </div>
@@ -78,3 +108,5 @@
         </div>
     </div>
 </div>
+
+<div id="DivScanQRCodeByCameraControlModal"></div>

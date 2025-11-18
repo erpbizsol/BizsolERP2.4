@@ -14,10 +14,10 @@ const CRMReportsServices = {
         );
 
     },
-    GetDealerList: function GetDealerList() {
+    GetDealerList: function GetDealerList(MarketingManMaster_Code=0) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_ACCOUNT_MASTER + `/GetNestedDealerList?UserMaster_Code=` + userMasterCode;
+        var URL = UrlService.API_ENDPOINT_ACCOUNT_MASTER + `/GetNestedDealerList?UserMaster_Code=${userMasterCode}&MarketingManMaster_Code=${MarketingManMaster_Code}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -83,7 +83,24 @@ const CRMReportsServices = {
             }
         );
     },
-
+    GetOrderReport: function GetOrderReport(fromDate, toDate, strCondition, reportType, AccountMaster_Code, MarketingManMaster_Code, OtherParameters) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = `${UrlService.API_ENDPOINT_CRMReports}/GetOrderReport` +
+            `?FromDate=${encodeURIComponent(fromDate)}` +
+            `&ToDate=${encodeURIComponent(toDate)}` +
+            `&StrCondition=${encodeURIComponent(strCondition)}` +
+            `&ReportType=${encodeURIComponent(reportType)}` +
+            `&AccountMaster_Code=${encodeURIComponent(AccountMaster_Code)}` +
+            `&MarketingManMaster_Code=${encodeURIComponent(MarketingManMaster_Code)}` +
+            `&OtherParameters=${encodeURIComponent(OtherParameters)}` +
+            `&UserMaster_Code=${encodeURIComponent(userMasterCode)}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
      GetReportTypelist: function GetReportTypelist(ModuleDesc) {
          var URL = UrlService.API_ENDPOINT_CRMReports + `/GetReportType?ModuleDesc=Web Stock Report`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
@@ -123,6 +140,15 @@ const CRMReportsServices = {
         );
 
     },
+    GetDisplayNameForOrderReport: function GetDisplayNameForOrderReport(ReportType) {
+        var URL = UrlService.API_ENDPOINT_CRMReports + `/GetDisplayNameForReportType?ReportName=${ReportType}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+
+    },
     Getcheckinoutlist: function Getcheckinoutlist(fromDate, toDate, salesperson, reportType) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
@@ -153,6 +179,14 @@ const CRMReportsServices = {
 
         var URL = UrlService.API_ENDPOINT_QTY_CONFIG + `/GetFixedParameterQtyConfig`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetUserList: function GetUserList() {
+        let url = UrlService.API_UserMODULE + `/GetUserList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
                 return value;
             }

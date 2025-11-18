@@ -57,7 +57,7 @@ function GetSalespersonList() {
 
             BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })), 'FirstItemAll');
             $('#ddlSalesPersonlist').select2({
-                allowClear: true,
+                // allowClear: true,
                 matcher: function (params, data) {
                     // If there's no search term, return all data
                     if ($.trim(params.term) === '') {
@@ -105,7 +105,7 @@ function BindSelectList(element, list, FirstItem) {
 }
 
 function BindDashBoard() {
-    marketingManMaster_Code = $('#ddlSalesPersonlist option:selected').val();
+   var marketingManMaster_Code = $('#ddlSalesPersonlist option:selected').val();
     
     CRMDashboardService.GetCRMDashboardDatalist(DetailKey, marketingManMaster_Code, AccountDesp = "All", OnlyToday)
         .then(function (response) {
@@ -121,7 +121,7 @@ function BindDashBoard() {
         });
 }
 function bindDashboardDatalist() {
-    marketingManMaster_Code = $('#ddlSalesPersonlist select option:selected').val();
+  var  marketingManMaster_Code = $('#ddlSalesPersonlist  option:selected').val();
    
 
     CRMDashboardService.GetCRMDashboardDetailDatalist(DetailKey = "Marketing Man Wise dealer wise Overdue", marketingManMaster_Code, AccountDesp = "All", OnlyToday)
@@ -149,7 +149,7 @@ function bindDashboardDatalist() {
 
 }
 function bindDashboardDatalistOutstanding() {
-    marketingManMaster_Code = $('#ddlSalesPersonlist select option:selected').val();
+   var marketingManMaster_Code = $('#ddlSalesPersonlist option:selected').val();
     
     CRMDashboardService.GetCRMDashboardDetailDatalist(DetailKey = "Marketing Man wise dealer wise current month Outstanding", marketingManMaster_Code, AccountDesp = "All", OnlyToday)
         .then(function (resdata) {

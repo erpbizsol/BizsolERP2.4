@@ -9,7 +9,7 @@ function PBControls() {
     <div class="row mt-3">
         <div class="col-md-12" style="margin: 0 auto">
             <div class="row">
-                <div class="col-md-6 col-sm-6 mt-1 toolbar toolbar1">
+                <div class="col-md-6 col-sm-6 mt-1 toolbar toolbar1" style="display:none;">
                     <button data-toggle="tooltip" data-placement="top" title="FIRST" id="First" onclick="First()" class="icon-height btn btn-success nav-btn">
                         <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true" width="24" height="24" class="svg-icon">
                             <path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z"></path>

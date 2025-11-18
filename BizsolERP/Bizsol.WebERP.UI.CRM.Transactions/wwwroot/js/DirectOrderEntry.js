@@ -11,66 +11,13 @@ var options = {
     maximumAge: 0
 };
 
-//const Indx_TblOrder = {
-//    Consignee: 0,
-//    DeliveryAddress: 1,
-//    ItemName: 2,
-//    Size: 3,
-//    Thickness: 4,
-//    SizeDesp: 5,
-//    UOM: 6,
-//    Stock: 7,
-//    OrderQtyBags:8,
-//    OrderQtyPC: 9,
-//    OrderQtyMT: 10,
-//    OrderQtyMTR: 11,
-//    RateUnit: 12,
-//    OrderUOM: 13,
-//    OrderQTY: 14,
-//    Tolerance: 15,
-//    BasicRate: 16,
-//    ExtraCharges: 17,
-//    DiscountType: 18,
-//    Discount: 19,
-//    OrderRate: 20,
-//    //RateUnit: 19,
-//    DiscountType_AfterRate: 21,
-//    Discount_AfterRate: 22,
-//    Amount: 23,
-//    DeliveryDate: 24,
-//    ZonePriceListCode: 25,
-//    DealerName: 26,
-//    Remarks: 27,
-//    Delete: 28,
-//    VisitDetailsCode: 29,
-//    IsNewRow: 30,
-//    SizeApplicable: 31,
-//    ThkApplicable: 32,
-//    LenApplicable: 33,
-//    ItemMasterCode: 34,
-//    UOMDecimalUnit: 35
-
-//}
-//const Indx_Stock = {
-//    Code: 0,
-//    ItemMaster_Code: 1,
-//    ItemName: 2,
-//    Size: 3,
-//    Thickness: 4,
-//    PhysicalStock: 5,
-//    SaleOrderQty:6,
-//    PendingCRMOrder: 7,
-//    RollingForcast: 8,
-//    MinimumQty: 9,
-//    BalQty: 10,
-//    Qty:11
-//}
 
 
 // Define columns in order - indices are auto-generated
 const TblOrderColumns = [
     'Consignee',
     'DeliveryAddress',
+    'DealerName',
     'ItemName',
     'Size',
     'Thickness',
@@ -95,7 +42,7 @@ const TblOrderColumns = [
     'Amount',
     'DeliveryDate',
     'ZonePriceListCode',
-    'DealerName',
+    //'DealerName',
     'Remarks',
     'Delete',
     'VisitDetailsCode',
@@ -941,44 +888,90 @@ function AddNewRow() {
     var row = tbody.insertRow(rowNO);
     tbItemConsumeRowNo = rowNO + 1;
 
-    var Consignee = row.insertCell(Indx_TblOrder.Consignee);
-    var DeliveryAddress = row.insertCell(Indx_TblOrder.DeliveryAddress);
-    var ItemName = row.insertCell(Indx_TblOrder.ItemName);
-    var Size = row.insertCell(Indx_TblOrder.Size);
-    var Thickness = row.insertCell(Indx_TblOrder.Thickness);
-    var SizeDesp = row.insertCell(Indx_TblOrder.SizeDesp);
-    var UOM = row.insertCell(Indx_TblOrder.UOM);
-    var Stock = row.insertCell(Indx_TblOrder.Stock);
-    var OrderQtyBags = row.insertCell(Indx_TblOrder.OrderQtyBags);
-    var OrderQtyPC = row.insertCell(Indx_TblOrder.OrderQtyPC);
-    var OrderQtyMT = row.insertCell(Indx_TblOrder.OrderQtyMT);
-    var OrderQtyMTR = row.insertCell(Indx_TblOrder.OrderQtyMTR);
-    var RateUnit = row.insertCell(Indx_TblOrder.RateUnit);
-    var OrderUOM = row.insertCell(Indx_TblOrder.OrderUOM);
-    var OrderQTY = row.insertCell(Indx_TblOrder.OrderQTY);
-    var Tolerance = row.insertCell(Indx_TblOrder.Tolerance);
-    var BasicRate = row.insertCell(Indx_TblOrder.BasicRate);
-    var ExtraCharges = row.insertCell(Indx_TblOrder.ExtraCharges);
-    var DiscountType = row.insertCell(Indx_TblOrder.DiscountType);
-    var Discount = row.insertCell(Indx_TblOrder.Discount);
-    var OrderRate = row.insertCell(Indx_TblOrder.OrderRate);
+    // Create all cells sequentially first
+    var cells = [];
+    for (let i = 0; i < TblOrderColumns.length; i++) {
+        cells.push(row.insertCell(i));
+    }
+
+
+    //var Consignee = row.insertCell(Indx_TblOrder.Consignee);
+    //var DeliveryAddress = row.insertCell(Indx_TblOrder.DeliveryAddress);
+    //var ItemName = row.insertCell(Indx_TblOrder.ItemName);
+    //var Size = row.insertCell(Indx_TblOrder.Size);
+    //var Thickness = row.insertCell(Indx_TblOrder.Thickness);
+    //var SizeDesp = row.insertCell(Indx_TblOrder.SizeDesp);
+    //var UOM = row.insertCell(Indx_TblOrder.UOM);
+    //var Stock = row.insertCell(Indx_TblOrder.Stock);
+    //var OrderQtyBags = row.insertCell(Indx_TblOrder.OrderQtyBags);
+    //var OrderQtyPC = row.insertCell(Indx_TblOrder.OrderQtyPC);
+    //var OrderQtyMT = row.insertCell(Indx_TblOrder.OrderQtyMT);
+    //var OrderQtyMTR = row.insertCell(Indx_TblOrder.OrderQtyMTR);
+    //var RateUnit = row.insertCell(Indx_TblOrder.RateUnit);
+    //var OrderUOM = row.insertCell(Indx_TblOrder.OrderUOM);
+    //var OrderQTY = row.insertCell(Indx_TblOrder.OrderQTY);
+    //var Tolerance = row.insertCell(Indx_TblOrder.Tolerance);
+    //var BasicRate = row.insertCell(Indx_TblOrder.BasicRate);
+    //var ExtraCharges = row.insertCell(Indx_TblOrder.ExtraCharges);
+    //var DiscountType = row.insertCell(Indx_TblOrder.DiscountType);
+    //var Discount = row.insertCell(Indx_TblOrder.Discount);
+    //var OrderRate = row.insertCell(Indx_TblOrder.OrderRate);
     
-    var DiscountType_AfterRate = row.insertCell(Indx_TblOrder.DiscountType_AfterRate);
-    var Discount_AfterRate = row.insertCell(Indx_TblOrder.Discount_AfterRate);
-    var Amount = row.insertCell(Indx_TblOrder.Amount);
-    var DeliveryDate = row.insertCell(Indx_TblOrder.DeliveryDate);
-    var ZonePriceListCode = row.insertCell(Indx_TblOrder.ZonePriceListCode);
-    var DealerNameList = row.insertCell(Indx_TblOrder.DealerName);
-    var Remarks = row.insertCell(Indx_TblOrder.Remarks);
-    var Delete = row.insertCell(Indx_TblOrder.Delete);
+    //var DiscountType_AfterRate = row.insertCell(Indx_TblOrder.DiscountType_AfterRate);
+    //var Discount_AfterRate = row.insertCell(Indx_TblOrder.Discount_AfterRate);
+    //var Amount = row.insertCell(Indx_TblOrder.Amount);
+    //var DeliveryDate = row.insertCell(Indx_TblOrder.DeliveryDate);
+    //var ZonePriceListCode = row.insertCell(Indx_TblOrder.ZonePriceListCode);
+    //var DealerNameList = row.insertCell(Indx_TblOrder.DealerName);
+    //var Remarks = row.insertCell(Indx_TblOrder.Remarks);
+    //var Delete = row.insertCell(Indx_TblOrder.Delete);
     
-    var VisitDetailsCode = row.insertCell(Indx_TblOrder.VisitDetailsCode);
-    var IsNewRow = row.insertCell(Indx_TblOrder.IsNewRow);
-    var SizeApplicable = row.insertCell(Indx_TblOrder.SizeApplicable);
-    var ThkApplicable = row.insertCell(Indx_TblOrder.ThkApplicable);
-    var LenApplicable = row.insertCell(Indx_TblOrder.LenApplicable);
-    var ItemMasterCode = row.insertCell(Indx_TblOrder.ItemMasterCode);
-    var UOMDecimalUnit = row.insertCell(Indx_TblOrder.UOMDecimalUnit);
+    //var VisitDetailsCode = row.insertCell(Indx_TblOrder.VisitDetailsCode);
+    //var IsNewRow = row.insertCell(Indx_TblOrder.IsNewRow);
+    //var SizeApplicable = row.insertCell(Indx_TblOrder.SizeApplicable);
+    //var ThkApplicable = row.insertCell(Indx_TblOrder.ThkApplicable);
+    //var LenApplicable = row.insertCell(Indx_TblOrder.LenApplicable);
+    //var ItemMasterCode = row.insertCell(Indx_TblOrder.ItemMasterCode);
+    //var UOMDecimalUnit = row.insertCell(Indx_TblOrder.UOMDecimalUnit);
+
+    var Consignee = cells[Indx_TblOrder.Consignee];
+    var DeliveryAddress = cells[Indx_TblOrder.DeliveryAddress];
+    var ItemName = cells[Indx_TblOrder.ItemName];
+    var Size = cells[Indx_TblOrder.Size];
+    var Thickness = cells[Indx_TblOrder.Thickness];
+    var SizeDesp = cells[Indx_TblOrder.SizeDesp];
+    var UOM = cells[Indx_TblOrder.UOM];
+    var Stock = cells[Indx_TblOrder.Stock];
+    var OrderQtyBags = cells[Indx_TblOrder.OrderQtyBags];
+    var OrderQtyPC = cells[Indx_TblOrder.OrderQtyPC];
+    var OrderQtyMT = cells[Indx_TblOrder.OrderQtyMT];
+    var OrderQtyMTR = cells[Indx_TblOrder.OrderQtyMTR];
+    var RateUnit = cells[Indx_TblOrder.RateUnit];
+    var OrderUOM = cells[Indx_TblOrder.OrderUOM];
+    var OrderQTY = cells[Indx_TblOrder.OrderQTY];
+    var Tolerance = cells[Indx_TblOrder.Tolerance];
+    var BasicRate = cells[Indx_TblOrder.BasicRate];
+    var ExtraCharges = cells[Indx_TblOrder.ExtraCharges];
+    var DiscountType = cells[Indx_TblOrder.DiscountType];
+    var Discount = cells[Indx_TblOrder.Discount];
+    var OrderRate = cells[Indx_TblOrder.OrderRate];
+    
+    var DiscountType_AfterRate = cells[Indx_TblOrder.DiscountType_AfterRate];
+    var Discount_AfterRate = cells[Indx_TblOrder.Discount_AfterRate];
+    var Amount = cells[Indx_TblOrder.Amount];
+    var DeliveryDate = cells[Indx_TblOrder.DeliveryDate];
+    var ZonePriceListCode = cells[Indx_TblOrder.ZonePriceListCode];
+    var DealerNameList = cells[Indx_TblOrder.DealerName];
+    var Remarks = cells[Indx_TblOrder.Remarks];
+    var Delete = cells[Indx_TblOrder.Delete];
+    
+    var VisitDetailsCode = cells[Indx_TblOrder.VisitDetailsCode];
+    var IsNewRow = cells[Indx_TblOrder.IsNewRow];
+    var SizeApplicable = cells[Indx_TblOrder.SizeApplicable];
+    var ThkApplicable = cells[Indx_TblOrder.ThkApplicable];
+    var LenApplicable = cells[Indx_TblOrder.LenApplicable];
+    var ItemMasterCode = cells[Indx_TblOrder.ItemMasterCode];
+    var UOMDecimalUnit = cells[Indx_TblOrder.UOMDecimalUnit];
 
 
     VisitDetailsCode.style["display"] = "none";
@@ -2088,6 +2081,16 @@ function GetCRMFixedParameterConfig() {
 
                 }
             });
+
+            let CRM_Config1 = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
+            let ShowDashboard = "Y";
+            ShowDashboard = CRM_Config1.ShowDashboard;
+            if (ShowDashboard == "Y") {
+                $('#divSecDashboard').show();
+            } else {
+                $('#divSecDashboard').hide();
+            }
+
         }
     });
 }
@@ -2748,6 +2751,7 @@ function htmlDecode(input) {
 
 
 function SetOrderBookingTableHeaderAsPerConfig() {
+    GenerateTableHeaders();
     var CRM_Config = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
     var Qty_Config = JSON.parse(sessionStorage.getItem('QtyConfig'));
     var QtyPCHeader = Qty_Config.QtyPC;
@@ -3448,13 +3452,15 @@ function GetAccountDeliveryLocationDetails(x,RowNo) {
 
 
 function PopulateOrderBookingTable(data) {
-    var tbody = $('#tblorderbooking tbody');
+    //var tbody = $('#tblorderbooking tbody');
+    var tbody = $('#tblorderbooking tbody')[0]
     var OtherCharges = 0;
     console.log(data);
     var ShowToggleSize = false;
 
     // Clear any existing rows
-    tbody.empty();
+    //tbody.empty();
+    //tbody.remove();
     //SetOrderBookingTableHeaderAsPerConfig();
 
     // Loop through the data and append rows
@@ -3535,50 +3541,145 @@ function PopulateOrderBookingTable(data) {
         var td_ItemMasterCode = `<input type="text" id="txtItemMasterCode` + tbItemConsumeRowNo + `"  value="${item.ItemMaster_code}"  name="txtItemMasterCode" placeholder="" autocomplete="off" onclick="$(this).val(\'\')" onchange="" required>`;
         var td_UOMDecimalUnit = `<input type="text" id="txtUOMDecimalUnit` + tbItemConsumeRowNo + `" name="UOMDecimalUnit" placeholder="" autocomplete="off" onclick="$(this).val(\'\')" onchange="" required>`;
 
+        var row = tbody.insertRow(index);
 
-        var row = `
-      <tr>
-        <td  style="display:none">${td_Consignee}   </td>
-        <td  style="display:none">${td_DeliveryAddress}   </td>
-        <td>${td_ItemName}</td>
-        <td  style="display:none">${td_Size}   </td>
-        <td  style="display:none">${td_Thickness}   </td>
-        <td  style="display:none">${td_SizeDesp}   </td>
-        <td>${td_UOM} </td>
-        <td  style="display:none">${td_Stock}   </td>
-        <td  style="display:none">${td_OrderQtyBags}   </td>
-        <td  style="display:none">${td_OrderQtyPC}   </td>
-        <td>${td_OrderQtyMT}</td>
-        <td  style="display:none">${td_OrderQtyMTR}   </td>
-        <td>${td_RateUnit}   </td>
-        <td  style="display:none">${td_OrderUOM}   </td>
-        <td  style="display:none">${td_OrderQTY}   </td>
-        <td>${td_Tolerance}   </td>
-        <td>${td_BasicRate}   </td>
-        <td  style="display:none">${td_ExtraCharges}   </td>
-        <td>${td_DiscountType}   </td>
-        <td>${td_Discount}   </td>
-        <td  style="display:none">${td_OrderRate}   </td>
-        
-         <td>${td_DiscountType_AfterRate}   </td>
-        <td>${td_Discount_AfterRate}   </td>
-        <td>${td_Amount}   </td>
-        <td>${td_DeliveryDate}   </td>
-        <td>${td_ZonePriceListCode}   </td>
-        <td>${td_DealerName}   </td>
-        <td>${td_Remarks}   </td>
-        <td>${td_Delete}   </td>
-        
-        <td  style="display:none">${td_VisitDetailsCode}   </td>
-        <td  style="display:none">${td_IsNewRow}   </td>
-        <td  style="display:none">${td_SizeApplicable}   </td>
-        <td  style="display:none">${td_ThkApplicable}   </td>
-        <td  style="display:none">${td_LenApplicable}   </td>
-        <td  style="display:none"> ${td_ItemMasterCode}   </td>
-       
-      </tr>
-    `;
-        tbody.append(row);
+        var cells = [];
+        for (let i = 0; i < TblOrderColumns.length; i++) {
+            cells.push(row.insertCell(i));
+        }
+
+        var Consignee = cells[Indx_TblOrder.Consignee];
+        var DeliveryAddress = cells[Indx_TblOrder.DeliveryAddress];
+        var ItemName = cells[Indx_TblOrder.ItemName];
+        var Size = cells[Indx_TblOrder.Size];
+        var Thickness = cells[Indx_TblOrder.Thickness];
+        var SizeDesp = cells[Indx_TblOrder.SizeDesp];
+        var UOM = cells[Indx_TblOrder.UOM];
+        var Stock = cells[Indx_TblOrder.Stock];
+        var OrderQtyBags = cells[Indx_TblOrder.OrderQtyBags];
+        var OrderQtyPC = cells[Indx_TblOrder.OrderQtyPC];
+        var OrderQtyMT = cells[Indx_TblOrder.OrderQtyMT];
+        var OrderQtyMTR = cells[Indx_TblOrder.OrderQtyMTR];
+        var RateUnit = cells[Indx_TblOrder.RateUnit];
+        var OrderUOM = cells[Indx_TblOrder.OrderUOM];
+        var OrderQTY = cells[Indx_TblOrder.OrderQTY];
+        var Tolerance = cells[Indx_TblOrder.Tolerance];
+        var BasicRate = cells[Indx_TblOrder.BasicRate];
+        var ExtraCharges = cells[Indx_TblOrder.ExtraCharges];
+        var DiscountType = cells[Indx_TblOrder.DiscountType];
+        var Discount = cells[Indx_TblOrder.Discount];
+        var OrderRate = cells[Indx_TblOrder.OrderRate];
+
+        var DiscountType_AfterRate = cells[Indx_TblOrder.DiscountType_AfterRate];
+        var Discount_AfterRate = cells[Indx_TblOrder.Discount_AfterRate];
+        var Amount = cells[Indx_TblOrder.Amount];
+        var DeliveryDate = cells[Indx_TblOrder.DeliveryDate];
+        var ZonePriceListCode = cells[Indx_TblOrder.ZonePriceListCode];
+        var DealerNameList = cells[Indx_TblOrder.DealerName];
+        var Remarks = cells[Indx_TblOrder.Remarks];
+        var Delete = cells[Indx_TblOrder.Delete];
+
+        var VisitDetailsCode = cells[Indx_TblOrder.VisitDetailsCode];
+        var IsNewRow = cells[Indx_TblOrder.IsNewRow];
+        var SizeApplicable = cells[Indx_TblOrder.SizeApplicable];
+        var ThkApplicable = cells[Indx_TblOrder.ThkApplicable];
+        var LenApplicable = cells[Indx_TblOrder.LenApplicable];
+        var ItemMasterCode = cells[Indx_TblOrder.ItemMasterCode];
+        var UOMDecimalUnit = cells[Indx_TblOrder.UOMDecimalUnit];
+
+
+        VisitDetailsCode.style["display"] = "none";
+        IsNewRow.style["display"] = "none";
+        SizeApplicable.style["display"] = "none";
+        ThkApplicable.style["display"] = "none";
+        LenApplicable.style["display"] = "none";
+        ItemMasterCode.style["display"] = "none";
+        UOMDecimalUnit.style["display"] = "none";
+        //if (DistributorDealerApplicableInOrder == 'N') {
+            DealerNameList.style["display"] = "none";
+        //}
+
+        Consignee.innerHTML = td_Consignee;
+        DeliveryAddress.innerHTML = td_DeliveryAddress;
+        ItemName.innerHTML = td_ItemName;
+        Size.innerHTML = td_Size;
+        Thickness.innerHTML = td_Thickness;
+        SizeDesp.innerHTML = td_SizeDesp;
+        UOM.innerHTML = td_UOM;
+        Stock.innerHTML = td_Stock;
+        OrderQtyBags.innerHTML = td_OrderQtyBags;
+        OrderQtyPC.innerHTML = td_OrderQtyPC;
+        OrderQtyMT.innerHTML = td_OrderQtyMT;
+        OrderQtyMTR.innerHTML = td_OrderQtyMTR;
+        RateUnit.innerHTML = td_RateUnit;
+        OrderUOM.innerHTML = td_OrderUOM;
+        OrderQTY.innerHTML = td_OrderQTY;
+        Tolerance.innerHTML = td_Tolerance;
+        BasicRate.innerHTML = td_BasicRate;
+        ExtraCharges.innerHTML = td_ExtraCharges;
+        DiscountType.innerHTML = td_DiscountType;
+        Discount.innerHTML = td_Discount;
+        OrderRate.innerHTML = td_OrderRate;
+        DiscountType_AfterRate.innerHTML = td_DiscountType_AfterRate;
+        Discount_AfterRate.innerHTML = td_Discount_AfterRate;
+        Amount.innerHTML = td_Amount;
+        DeliveryDate.innerHTML = td_DeliveryDate;
+        ZonePriceListCode.innerHTML = td_ZonePriceListCode;
+        DealerNameList.innerHTML = td_DealerName;
+        Remarks.innerHTML = td_Remarks;
+        Delete.innerHTML = td_Delete;
+        VisitDetailsCode.innerHTML = td_VisitDetailsCode;
+        IsNewRow.innerHTML = td_IsNewRow;
+        SizeApplicable.innerHTML = td_SizeApplicable;
+        ThkApplicable.innerHTML = td_ThkApplicable;
+        LenApplicable.innerHTML = td_LenApplicable;
+        ItemMasterCode.innerHTML = td_ItemMasterCode;
+        //UOMDecimalUnit.innerHTML = td_UOMDecimalUnit;
+
+    //    var row = `
+    //  <tr>
+    //    <td  style="display:none">${td_Consignee}   </td>
+    //    <td  style="display:none">${td_DeliveryAddress}   </td>
+    //    <td>${td_ItemName}</td>
+    //    <td  style="display:none">${td_Size}   </td>
+    //    <td  style="display:none">${td_Thickness}   </td>
+    //    <td  style="display:none">${td_SizeDesp}   </td>
+    //    <td>${td_UOM} </td>
+    //    <td  style="display:none">${td_Stock}   </td>
+    //    <td  style="display:none">${td_OrderQtyBags}   </td>
+    //    <td  style="display:none">${td_OrderQtyPC}   </td>
+    //    <td>${td_OrderQtyMT}</td>
+    //    <td  style="display:none">${td_OrderQtyMTR}   </td>
+    //    <td>${td_RateUnit}   </td>
+    //    <td  style="display:none">${td_OrderUOM}   </td>
+    //    <td  style="display:none">${td_OrderQTY}   </td>
+    //    <td>${td_Tolerance}   </td>
+    //    <td>${td_BasicRate}   </td>
+    //    <td  style="display:none">${td_ExtraCharges}   </td>
+    //    <td>${td_DiscountType}   </td>
+    //    <td>${td_Discount}   </td>
+    //    <td  style="display:none">${td_OrderRate}   </td>
+
+    //     <td>${td_DiscountType_AfterRate}   </td>
+    //    <td>${td_Discount_AfterRate}   </td>
+    //    <td>${td_Amount}   </td>
+    //    <td>${td_DeliveryDate}   </td>
+    //    <td>${td_ZonePriceListCode}   </td>
+    //    <td>${td_DealerName}   </td>
+    //    <td>${td_Remarks}   </td>
+    //    <td>${td_Delete}   </td>
+
+    //    <td  style="display:none">${td_VisitDetailsCode}   </td>
+    //    <td  style="display:none">${td_IsNewRow}   </td>
+    //    <td  style="display:none">${td_SizeApplicable}   </td>
+    //    <td  style="display:none">${td_ThkApplicable}   </td>
+    //    <td  style="display:none">${td_LenApplicable}   </td>
+    //    <td  style="display:none"> ${td_ItemMasterCode}   </td>
+
+    //  </tr>
+    //`;
+        // tbody.append(row);
+
         OtherCharges = item.OtherCharges;
         BindSelect2FromDataList($('#ddlItemName' + tbItemConsumeRowNo), arrayList_ItemMaster, "FirstItemZero", "100%");
         BindSelect2FromDataList($('#ddlZonePriceList' + tbItemConsumeRowNo), arrayList_Zone, "FirstItemZero", "100%");
@@ -4779,44 +4880,88 @@ function SelectStockRows() {
                 var row = tbody.insertRow(rowNO);
                 tbItemConsumeRowNo = rowNO + 1;
 
-                var td_Consignee = row.insertCell(Indx_TblOrder.Consignee);
-                var td_DeliveryAddress = row.insertCell(Indx_TblOrder.DeliveryAddress);
-                var td_ItemName = row.insertCell(Indx_TblOrder.ItemName);
-                var td_Size = row.insertCell(Indx_TblOrder.Size);
-                var td_Thickness = row.insertCell(Indx_TblOrder.Thickness);
-                var td_SizeDesp = row.insertCell(Indx_TblOrder.SizeDesp);
-                var td_UOM = row.insertCell(Indx_TblOrder.UOM);
-                var td_Stock = row.insertCell(Indx_TblOrder.Stock);
-                var td_OrderQtyBags = row.insertCell(Indx_TblOrder.OrderQtyBags);
-                var td_OrderQtyPC = row.insertCell(Indx_TblOrder.OrderQtyPC);
-                var td_OrderQtyMT = row.insertCell(Indx_TblOrder.OrderQtyMT);
-                var td_OrderQtyMTR = row.insertCell(Indx_TblOrder.OrderQtyMTR);
-                var td_RateUnit = row.insertCell(Indx_TblOrder.RateUnit);
-                var td_OrderUOM = row.insertCell(Indx_TblOrder.OrderUOM);
-                var td_OrderQTY = row.insertCell(Indx_TblOrder.OrderQTY);
-                var td_Tolerance = row.insertCell(Indx_TblOrder.Tolerance);
-                var td_BasicRate = row.insertCell(Indx_TblOrder.BasicRate);
-                var td_ExtraCharges = row.insertCell(Indx_TblOrder.ExtraCharges);
-                var td_DiscountType = row.insertCell(Indx_TblOrder.DiscountType);
-                var td_Discount = row.insertCell(Indx_TblOrder.Discount);
-                var td_OrderRate = row.insertCell(Indx_TblOrder.OrderRate);
+                var cells = [];
+                for (let i = 0; i < TblOrderColumns.length; i++) {
+                    cells.push(row.insertCell(i));
+                }
 
-                var td_DiscountType_AfterRate = row.insertCell(Indx_TblOrder.DiscountType_AfterRate);
-                var td_Discount_AfterRate = row.insertCell(Indx_TblOrder.Discount_AfterRate);
-                var td_Amount = row.insertCell(Indx_TblOrder.Amount);
-                var td_DeliveryDate = row.insertCell(Indx_TblOrder.DeliveryDate);
-                var td_ZonePriceListCode = row.insertCell(Indx_TblOrder.ZonePriceListCode);
-                var td_DealerNameList = row.insertCell(Indx_TblOrder.DealerName);
-                var td_Remarks = row.insertCell(Indx_TblOrder.Remarks);
-                var td_Delete = row.insertCell(Indx_TblOrder.Delete);
+                //var td_Consignee = row.insertCell(Indx_TblOrder.Consignee);
+                //var td_DeliveryAddress = row.insertCell(Indx_TblOrder.DeliveryAddress);
+                //var td_ItemName = row.insertCell(Indx_TblOrder.ItemName);
+                //var td_Size = row.insertCell(Indx_TblOrder.Size);
+                //var td_Thickness = row.insertCell(Indx_TblOrder.Thickness);
+                //var td_SizeDesp = row.insertCell(Indx_TblOrder.SizeDesp);
+                //var td_UOM = row.insertCell(Indx_TblOrder.UOM);
+                //var td_Stock = row.insertCell(Indx_TblOrder.Stock);
+                //var td_OrderQtyBags = row.insertCell(Indx_TblOrder.OrderQtyBags);
+                //var td_OrderQtyPC = row.insertCell(Indx_TblOrder.OrderQtyPC);
+                //var td_OrderQtyMT = row.insertCell(Indx_TblOrder.OrderQtyMT);
+                //var td_OrderQtyMTR = row.insertCell(Indx_TblOrder.OrderQtyMTR);
+                //var td_RateUnit = row.insertCell(Indx_TblOrder.RateUnit);
+                //var td_OrderUOM = row.insertCell(Indx_TblOrder.OrderUOM);
+                //var td_OrderQTY = row.insertCell(Indx_TblOrder.OrderQTY);
+                //var td_Tolerance = row.insertCell(Indx_TblOrder.Tolerance);
+                //var td_BasicRate = row.insertCell(Indx_TblOrder.BasicRate);
+                //var td_ExtraCharges = row.insertCell(Indx_TblOrder.ExtraCharges);
+                //var td_DiscountType = row.insertCell(Indx_TblOrder.DiscountType);
+                //var td_Discount = row.insertCell(Indx_TblOrder.Discount);
+                //var td_OrderRate = row.insertCell(Indx_TblOrder.OrderRate);
 
-                var td_VisitDetailsCode = row.insertCell(Indx_TblOrder.VisitDetailsCode);
-                var td_IsNewRow = row.insertCell(Indx_TblOrder.IsNewRow);
-                var td_SizeApplicable = row.insertCell(Indx_TblOrder.SizeApplicable);
-                var td_ThkApplicable = row.insertCell(Indx_TblOrder.ThkApplicable);
-                var td_LenApplicable = row.insertCell(Indx_TblOrder.LenApplicable);
-                var td_ItemMasterCode = row.insertCell(Indx_TblOrder.ItemMasterCode);
-                var td_UOMDecimalUnit = row.insertCell(Indx_TblOrder.UOMDecimalUnit);
+                //var td_DiscountType_AfterRate = row.insertCell(Indx_TblOrder.DiscountType_AfterRate);
+                //var td_Discount_AfterRate = row.insertCell(Indx_TblOrder.Discount_AfterRate);
+                //var td_Amount = row.insertCell(Indx_TblOrder.Amount);
+                //var td_DeliveryDate = row.insertCell(Indx_TblOrder.DeliveryDate);
+                //var td_ZonePriceListCode = row.insertCell(Indx_TblOrder.ZonePriceListCode);
+                //var td_DealerNameList = row.insertCell(Indx_TblOrder.DealerName);
+                //var td_Remarks = row.insertCell(Indx_TblOrder.Remarks);
+                //var td_Delete = row.insertCell(Indx_TblOrder.Delete);
+
+                //var td_VisitDetailsCode = row.insertCell(Indx_TblOrder.VisitDetailsCode);
+                //var td_IsNewRow = row.insertCell(Indx_TblOrder.IsNewRow);
+                //var td_SizeApplicable = row.insertCell(Indx_TblOrder.SizeApplicable);
+                //var td_ThkApplicable = row.insertCell(Indx_TblOrder.ThkApplicable);
+                //var td_LenApplicable = row.insertCell(Indx_TblOrder.LenApplicable);
+                //var td_ItemMasterCode = row.insertCell(Indx_TblOrder.ItemMasterCode);
+                //var td_UOMDecimalUnit = row.insertCell(Indx_TblOrder.UOMDecimalUnit);
+
+                var td_Consignee = cells[Indx_TblOrder.Consignee];
+                var td_DeliveryAddress = cells[Indx_TblOrder.DeliveryAddress];
+                var td_ItemName = cells[Indx_TblOrder.ItemName];
+                var td_Size = cells[Indx_TblOrder.Size];
+                var td_Thickness = cells[Indx_TblOrder.Thickness];
+                var td_SizeDesp = cells[Indx_TblOrder.SizeDesp];
+                var td_UOM = cells[Indx_TblOrder.UOM];
+                var td_Stock = cells[Indx_TblOrder.Stock];
+                var td_OrderQtyBags = cells[Indx_TblOrder.OrderQtyBags];
+                var td_OrderQtyPC = cells[Indx_TblOrder.OrderQtyPC];
+                var td_OrderQtyMT = cells[Indx_TblOrder.OrderQtyMT];
+                var td_OrderQtyMTR = cells[Indx_TblOrder.OrderQtyMTR];
+                var td_RateUnit = cells[Indx_TblOrder.RateUnit];
+                var td_OrderUOM = cells[Indx_TblOrder.OrderUOM];
+                var td_OrderQTY = cells[Indx_TblOrder.OrderQTY];
+                var td_Tolerance = cells[Indx_TblOrder.Tolerance];
+                var td_BasicRate = cells[Indx_TblOrder.BasicRate];
+                var td_ExtraCharges = cells[Indx_TblOrder.ExtraCharges];
+                var td_DiscountType = cells[Indx_TblOrder.DiscountType];
+                var td_Discount = cells[Indx_TblOrder.Discount];
+                var td_OrderRate = cells[Indx_TblOrder.OrderRate];
+
+                var td_DiscountType_AfterRate = cells[Indx_TblOrder.DiscountType_AfterRate];
+                var td_Discount_AfterRate = cells[Indx_TblOrder.Discount_AfterRate];
+                var td_Amount = cells[Indx_TblOrder.Amount];
+                var td_DeliveryDate = cells[Indx_TblOrder.DeliveryDate];
+                var td_ZonePriceListCode = cells[Indx_TblOrder.ZonePriceListCode];
+                var td_DealerNameList = cells[Indx_TblOrder.DealerName];
+                var td_Remarks = cells[Indx_TblOrder.Remarks];
+                var td_Delete = cells[Indx_TblOrder.Delete];
+
+                var td_VisitDetailsCode = cells[Indx_TblOrder.VisitDetailsCode];
+                var td_IsNewRow = cells[Indx_TblOrder.IsNewRow];
+                var td_SizeApplicable = cells[Indx_TblOrder.SizeApplicable];
+                var td_ThkApplicable = cells[Indx_TblOrder.ThkApplicable];
+                var td_LenApplicable = cells[Indx_TblOrder.LenApplicable];
+                var td_ItemMasterCode = cells[Indx_TblOrder.ItemMasterCode];
+                var td_UOMDecimalUnit = cells[Indx_TblOrder.UOMDecimalUnit];
 
 
                 td_VisitDetailsCode.style["display"] = "none";
@@ -6502,6 +6647,19 @@ function SetMTRByPacking(x, RowNo) {
         ObjCurrRow.find('td:eq(' + Indx_TblOrder.OrderQtyMTR + ')')[0].getElementsByTagName('input')[0].value = Qty;
     }
 
+}
+
+function GenerateTableHeaders() {
+    var thead = $('#tblorderbooking thead tr');
+    thead.empty();
+
+    TblOrderColumns.forEach(function (columnName) {
+        // Skip hidden columns or add logic to determine display
+        if (['VisitDetailsCode', 'IsNewRow', 'SizeApplicable', 'ThkApplicable',
+            'LenApplicable', 'ItemMasterCode', 'UOMDecimalUnit'].indexOf(columnName) === -1) {
+            thead.append('<th>' + BizSolHelperFunction.ToWithSpace(columnName)  + '</th>');
+        }
+    });
 }
 
 let sellogicaltableColumnstimer = setInterval(SetLogicalStockTableColumns, 100);

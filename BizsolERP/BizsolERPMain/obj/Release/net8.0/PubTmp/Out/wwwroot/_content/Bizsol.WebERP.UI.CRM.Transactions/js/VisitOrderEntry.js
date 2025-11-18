@@ -1044,7 +1044,7 @@ function SaveData() {
 
     var Data = JSON.stringify(allTablesData);
 
-    VisitOrderEntryService.SaveVisit(allTablesData).then(function (response) {
+    VisitOrderEntryService.SaveVisit(allTablesData, 0, '0').then(function (response) {
 
         if (response != '') {
             if (response.Status == 'N') {

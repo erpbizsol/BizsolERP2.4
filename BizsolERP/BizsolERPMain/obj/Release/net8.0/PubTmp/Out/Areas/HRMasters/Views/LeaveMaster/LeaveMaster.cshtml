@@ -1,0 +1,147 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.HR.Masters/js/LeaveMaster.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/bizsolpbcontrols.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+<style>
+    .modal-dialog {
+        max-width: 350px;
+    }
+
+    .fixed-height-table {
+        height: 460px;
+    }
+</style>
+
+<div id="locateLeaveMaster">
+    <div class="card col-md-9">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-12 text-end">
+                    <button type="button" onclick="CreateNew_LeaveMaster()" title="Create New" class="btn btn-primary btn-height">Create New</button>
+                    <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download List"><i class="fa fa-download" aria-hidden="true"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-9">
+            <div id="tblLeaveMaster">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="LeaveMaster" class="fixed-width-table table">
+                        <thead id="table-header-LeaveMaster">
+                        </thead>
+                        <tbody id="table-body-LeaveMaster">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-LeaveMaster">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="newCreateForm" class="card" style="display:none">
+    <form class="card-body">
+        <div class="row">
+            <input type="hidden" name="Code" id="Code" class="form-control" value="0">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtLeaveDesp" class="col-form-label-sm fw-bold">Leave Description:<span class="text-danger">*</span></label>
+                    <input id="txtLeaveDesp" name="txtLeaveDesp" class="box_border form-control form-control-sm" autocomplete="off" maxlength="15" required />
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtShortDesp" class="col-form-label-sm fw-bold">Short Description:<span class="text-danger">*</span></label>
+                    <input id="txtShortDesp" name="txtShortDesp" class="box_border form-control form-control-sm" autocomplete="off" maxlength="4" required />
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtDefaultValue" class="col-form-label-sm fw-bold">No Of Leave:<span class="text-danger">*</span></label>
+                    <input id="txtDefaultValue" name="txtDefaultValue" oninput="validateIntegerInput(this)" class="box_border form-control form-control-sm" autocomplete="off" maxlength="4" required />
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtHalfApplicable" class="col-form-label-sm fw-bold">Half Applicable:<span class="text-danger">*</span></label>
+                    <select id="txtHalfApplicable" name="txtHalfApplicable" class="form-control form-control-sm box_border" required>
+                        <option value="Y" selected>Yes</option>
+                        <option value="N">No</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtHalfLeaveDesp" class="col-form-label-sm fw-bold">Half Leave Description:<span class="text-danger">*</span></label>
+                    <input id="txtHalfLeaveDesp" name="txtHalfLeaveDesp" class="box_border form-control form-control-sm" autocomplete="off" maxlength="10" required />
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtApplicability" class="col-form-label-sm fw-bold">Applicability:<span class="text-danger">*</span></label>
+                    <select id="txtApplicability" name="txtApplicability" class="form-control form-control-sm box_border" required>
+                        <option value="Y" selected>Year</option>
+                        <option value="M">Month</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtCarryForwordApplicable" class="col-form-label-sm fw-bold">Carry Forword Applicable:<span class="text-danger">*</span></label>
+                    <select id="txtCarryForwordApplicable" name="txtCarryForwordApplicable" class="form-control form-control-sm box_border" required>
+                        <option value="Y" selected>Yes</option>
+                        <option value="N">No</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-12 text-end">
+                <button type="button" onclick="submit_LeaveMaster()" id="saveLeaveMasterButton" title="Save" class="btn btn-primary btn-height">Save</button>
+                <button type="button" class="btn btn-primary btn-height" title="Back" onclick="LeaveMaster_Back()">Back</button>
+            </div>
+        </div>
+    </form>
+    @* <div id="PBControls" class="mb-2"></div> *@
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="reasonForDeleteInput" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveModal_LeaveMasterDelete()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal_LeaveMasterDelete()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
+</div>
