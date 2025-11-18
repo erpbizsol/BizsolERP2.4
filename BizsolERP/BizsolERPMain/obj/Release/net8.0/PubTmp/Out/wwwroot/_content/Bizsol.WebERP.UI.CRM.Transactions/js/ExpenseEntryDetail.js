@@ -14,6 +14,8 @@ const Indx_Tbl = {
     ExpenseEntryDetail_Code: 9,
     ExpenseHeadMaster_Code: 10
 }
+var MarketingPersonName = param_MarketingMan_Name;
+var MarketingManMaster_Code = 0;
 
 $(document).ready(function () {
     $("#ERPHeading").text("Expense Entry Details");
@@ -28,7 +30,7 @@ $(document).ready(function () {
     $('#txtEntryDate').val(currentDate);
     DatePicker();
 
-
+    $('#txtMarketingManName').val(MarketingPersonName);
     $('#txtFromDate').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#txtToDate").focus();
@@ -39,12 +41,32 @@ $(document).ready(function () {
 
         }
     });
+    $('#ExpenseEntryDetails').on('keydown', '.txtExpendedAmount', function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            $(this).closest('tr').find('.txtRemarks').focus();
+        }
+    });
 
+    $('#ExpenseEntryDetails').on('keydown', '.txtRemarks', function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            var nextRow = $(this).closest('tr').next();
+            if (nextRow.length) {
+                nextRow.find('.txtExpendedAmount').focus();
+            }
+        }
+    });
     PopulateExpenseHeadDetails(param_ExpenseEntryMaster_Code);
 
     $('#btnBack').click(function (e) {
-        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
+        let MarketingPersonName = encodeURIComponent($("#txtMarketingManName").val());
+        let FromDate = encodeURIComponent($("#txtFromDate").val());
+        let ToDate = encodeURIComponent($("#txtToDate").val());
+
+        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList?MarketingMan_Name=" + MarketingPersonName + "&FromDate=" + FromDate + "&ToDate=" + ToDate;
     });
+
 
     $('#btnSubmit').click(function (e) {
         SaveData();
@@ -60,8 +82,9 @@ $(document).ready(function () {
 function DisableControls() {
     if (param_Mode == 'View' && param_ExpenseEntryMaster_Code > 0) {
         $('input, textarea').prop('disabled', true);
-        $('a').addClass('disabled');
+        //$('a').addClass('disabled');
         $("#btnBack").prop("disabled", false);
+        $("#btnVerify").prop("disabled", true);
 
     }
     if (param_ExpenseEntryMaster_Code > 0) {
@@ -69,15 +92,22 @@ function DisableControls() {
         $("#ExpenseEntryDetails tbody tr td:nth-child(" + (Indx_Tbl.Attachment + 1) + ")").css('display', '');
         $("#ExpenseEntryDetails tfoot tr td:nth-child(" + (Indx_Tbl.Attachment + 1) + ")").css('display', '');
     } else {
-
+        $("#ExpenseEntryDetails tbody tr").each(function () {
+            var input = $(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ') input');
+            input.prop('disabled', true);
+        });
         $("#ExpenseEntryDetails thead tr th:nth-child(" + (Indx_Tbl.Attachment + 1) + ")").css('display', 'none');
         $("#ExpenseEntryDetails tbody tr td:nth-child(" + (Indx_Tbl.Attachment + 1) + ")").css('display', 'none');
         $("#ExpenseEntryDetails tfoot tr td:nth-child(" + (Indx_Tbl.Attachment + 1) + ")").css('display', 'none');
     }
 }
 function PopulateExpenseHeadDetails(Code) {
-    var MarketingPersonName = param_MarketingMan_Name;
-
+    let valid = ""
+    ExpenseEntryService.ExpenseEntry_ValidateMarketingPersonSenior(param_ExpenseEntryMaster_Code).then(function (response) {
+        if (response && response.length > 0) {
+            valid = response[0].Valid == 'N' ? "disabled":"";
+        }
+    });
     ExpenseEntryService.GetExpenseEntryDetails(MarketingPersonName, Code).then(function (response) {
         if (response.ExpenseEntryDetail.length > 0) {
             const StringFilterColumn = [];
@@ -86,20 +116,22 @@ function PopulateExpenseHeadDetails(Code) {
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Designation Name", "Per Day Limit", "VerifyStatus", "ExpenseEntryDetail_Code", "ExpenseHeadMaster_Code","Attachment"];
+            const hiddenColumns = ["Designation Name", "Per Day Limit", "VerifyStatus", "ExpenseEntryDetail_Code", "ExpenseHeadMaster_Code", "Attachment","Effective From"];
             const ColumnAlignment = {
-                "Allowed Amount": "right",
-                "Approved Amount": "right",
+                "Allowed Amount": "center",
+                "Approved Amount": "center",
                 "Effective From": "center",
-                "Expense Amount": "right"
+                "Expense Amount": "center",
+                "Remarks" : "center"
             };
             response.ExpenseEntryDetail.forEach((item, index) => {
-                item["Per Day Limit"] = `<input type="number" id="txtPerDay" data-index="${index}" value="${item["Per Day Limit"] || 0}" class="bal-mt-input" readonly="readonly" autocomplete="off">`;
-                item["Allowed Amount"] = `<input type="number" id="txtAllowedAmount" data-index="${index}" value="${item["Allowed Amount"] || 0}" class="bal-mt-input" readonly="readonly" autocomplete="off">`;
-                item["Expense Amount"] = `<input type="number" id="txtExpendedAmount" data-index="${index}" value="${item["Expense Amount"] || 0}" class="bal-mt-input" onfocusout="CalculateApprovedAmount(this);" autocomplete="off">`;
-                item["Approved Amount"] = `<input type="number" id="txtApprovedAmount" data-index="${index}" value="${item["Approved Amount"] || 0}" class="bal-pc-input" autocomplete="off">`;
-                item["Remarks"] = `<input type="text" id="txtRemarks" data-index="${index}" value="${item["Remarks"]}" class="bal-mtrs-input" autocomplete="off">`;
-                item["Attachment"] = `<a id="btnAttachment" class="btn btn-success icon-height mb-1" title="Attachment" onclick="ViewAttachment(this)"><i class="fa fa-paperclip" aria-hidden="true"></i></a>`;
+                item["ExpenseHeadMaster_Code"] = `<input type="hidden" class="hdnExpenseHeadMasterCode" value="${item.ExpenseHeadMaster_Code}" />`;
+                item["Per Day Limit"] = `<input type="number" id="txtPerDay" data-index="${index}" value="${item["Per Day Limit"] || 0}" class="bal-mt-input txtPerDay" readonly="readonly" autocomplete="off">`;
+                item["Allowed Amount"] = `<input type="number" id="txtAllowedAmount" data-index="${index}" value="${item["Allowed Amount"] || 0}" class="bal-mt-input txtAllowedAmount" readonly="readonly" autocomplete="off" style="text-align: right;">`;
+                item["Expense Amount"] = `<input type="number" id="txtExpendedAmount" data-index="${index}" value="${item["Expense Amount"] || 0}" class="bal-mt-input txtExpendedAmount" onfocusout="CalculateApprovedAmount(this);" autocomplete="off" style="text-align: right;"  oninput="limitInputLength(this, 8);">`;
+                item["Approved Amount"] = `<input type="number" ${valid} id="txtApprovedAmount" data-index="${index}" value="${item["Approved Amount"] || 0}" class="bal-pc-input txtApprovedAmount" onfocusout="ApprovedAmountIncrease(this);" autocomplete="off" style="text-align: right;"  oninput="limitInputLength(this, 8);">`;
+                item["Remarks"] = `<input type="text" id="txtRemarks" data-index="${index}" value="${item["Remarks"]}" class="bal-mtrs-input txtRemarks" autocomplete="off" maxlength="16">`;
+                item["Attachment"] = `<a id="btnAttachment}" class="btn btn-success icon-height mb-1" title="Attachment" onclick="ViewAttachment(this)"><i class="fa fa-paperclip" aria-hidden="true"></i></a>`;
             });
             BizsolCustomFilterGrid.CreateDataTable("ExpenseEntryDetails-header", "ExpenseEntryDetails-body", response.ExpenseEntryDetail, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
         }
@@ -109,7 +141,8 @@ function PopulateExpenseHeadDetails(Code) {
             $('#txtFromDate').val(response.ExpenseEntryMaster[0].FromDate);
             $('#txtToDate').val(response.ExpenseEntryMaster[0].ToDate);
             //$('#txtTotalDays').val(1);
-            CalculateTotalDays();
+            MarketingManMaster_Code = (response.ExpenseEntryMaster[0].MarketingManMaster_Code);
+            CalculateTotalDays(MarketingManMaster_Code);
 
         }
 
@@ -120,11 +153,23 @@ function PopulateExpenseHeadDetails(Code) {
     });
 
 }
+function limitInputLength(elem, maxLength) {
+    let value = elem.value;
+    value = value.replace(/-/g, 0);
+    if (value.length > maxLength) {
+        value = value.slice(0, maxLength);
+    }
+    if (value.trim() === '') {
+        value = '0';
+    }
+    elem.value = value;
+}
 
 function ViewAttachment(x) {
     var ObjCurrRow = $(x).closest('tr');
+    var mode = param_Mode || "all";
     var ExpenseEntryDetail_Code = ObjCurrRow.find('td:eq(' + Indx_Tbl.ExpenseEntryDetail_Code + ')')[0].innerHTML.trim();
-    InitAttachmentControl('ExpenseEntryMaster',param_ExpenseEntryMaster_Code , 'ExpenseEntryDetail', ExpenseEntryDetail_Code, 0, '', "all");
+    InitAttachmentControl('ExpenseEntryMaster',param_ExpenseEntryMaster_Code , 'ExpenseEntryDetail', ExpenseEntryDetail_Code, 0, '', mode);
 }
 
 function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode) {
@@ -142,7 +187,32 @@ function CalculateApprovedAmount(x) {
         ApprovedAmount = AllowedAmount;
     }
     ObjCurrRow.find('#txtApprovedAmount').val(ApprovedAmount);
+
+    if (parseFloat(AllowedAmount) < parseFloat(ExpendedAmount)) {
+        let ExpendedAmountGreater = confirm("The amount exceeds the allowed amount! Do you want to proceed with this !");
+        if (ExpendedAmountGreater) {
+            if (parseFloat(AllowedAmount) < parseFloat(ExpendedAmount)) {
+                ApprovedAmount = AllowedAmount;
+            }
+            ObjCurrRow.find('#txtApprovedAmount').val(ApprovedAmount);
+        }
+        else {
+            ObjCurrRow.find('#txtApprovedAmount').val(AllowedAmount);
+        }
+    }
+    
 }
+function ApprovedAmountIncrease(x) {
+    var ObjCurrRow = $(x).closest('tr');
+    var allowedAmountIncrease = parseFloat(ObjCurrRow.find('#txtApprovedAmount').val()) || 0;
+    var expendedAmountIncrease = parseFloat(ObjCurrRow.find('#txtExpendedAmount').val()) || 0;
+
+    if (allowedAmountIncrease > expendedAmountIncrease) {
+        ObjCurrRow.find('#txtApprovedAmount').val(expendedAmountIncrease);
+        toastr.warning("Approved amount should be Less than Expended amount.");
+    }
+}
+
 
 function setupDateInputFormatting() {
     $('#txtToDate').on('input', function () {
@@ -240,7 +310,7 @@ function DatePicker() {
         format: 'dd-mm-yyyy',
         autoclose: true,
     }).on('change', function () {
-        CalculateTotalDays();
+        CalculateTotalDays(MarketingManMaster_Code);
 
     });
 
@@ -250,30 +320,52 @@ function parseDate(dateStr) {
     // Ensure the date is in dd-mm-yyyy format and create a new Date object
     return new Date(parts[2], parts[1] - 1, parts[0]);
 }
-function CalculateTotalDays() {
+function CalculateTotalDays(MarketingManMaster_Code) {
     var fromDate = $('#txtFromDate').val();
     var toDate = $('#txtToDate').val();
 
-    // Check if both dates are entered
     if (fromDate && toDate) {
-        // Convert the date strings into Date objects
         var fromDateObj = parseDate(fromDate);
         var toDateObj = parseDate(toDate);
 
-        // Calculate the difference in time (milliseconds)
         var timeDiff = toDateObj - fromDateObj;
-
-        // Calculate the total days by dividing the time difference by the number of milliseconds in a day
         var totalDays = (timeDiff / (1000 * 3600 * 24)) + 1;
 
-        // Show the total days (if the result is positive)
         if (totalDays >= 0) {
             $('#txtTotalDays').val(totalDays);
-            $('#ExpenseEntryDetails tbody tr').each(function () {
-                var value = parseFloat($(this).find('#txtPerDay').val()) * totalDays;
-                $(this).find('#txtAllowedAmount').val(value);
 
+            // Call service once and apply allowed amount to each row
+            ExpenseEntryService.CalculateAllowedAmount(
+                MarketingManMaster_Code,
+                convertDateFormat1(fromDate),
+                convertDateFormat1(toDate)
+            ).then(function (response) {
+                if (response && response.length > 0) {
+                    $('#ExpenseEntryDetails tbody tr').each(function () {
+                        const $row = $(this);
+
+                        // Get ExpenseHeadMaster_Code from hidden input or a reliable source
+                        const rowCode = parseInt($row.find('.hdnExpenseHeadMasterCode').val(), 10);
+
+                        // Find matching item from response
+                        const matchedItem = response.find(function (item) {
+                            return item.ExpenseHeadMaster_Code === rowCode;
+                        });
+
+                        if (matchedItem) {
+                            $row.find('.txtAllowedAmount').val(matchedItem.TotalExpense);
+                        } else {
+                            $row.find('.txtAllowedAmount').val("0");
+                        }
+                    });
+                } else {
+                    console.warn('No allowed amounts found from API');
+                }
+            }).catch(function (err) {
+                console.error("Error fetching allowed amounts:", err);
+                toastr.error("Could not load allowed amounts.");
             });
+
         } else {
             toastr.error("Please select a valid range of dates.");
         }
@@ -282,10 +374,16 @@ function CalculateTotalDays() {
     }
 }
 
+
 function VerifyExpenseEntryMaster() {
     if (ValidateVerifyData() == false) {
         return false;
     }
+    if (param_ExpenseEntryMaster_Code == 0) {
+        toastr.warning("Oops! Please save your data first, then verify.");
+        return false;
+    }
+    
     var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
     var UserMaster_Code = authKeyData.UserMaster_Code;
     var MarketingManMaster_Code = 0;
@@ -333,7 +431,8 @@ function VerifyExpenseEntryMaster() {
             Remarks = $(this).find('td:eq(' + Indx_Tbl.Remarks + ')')[0].getElementsByTagName('input')[0].value;
             Attachment = '';// $(this).find('td:eq(' + Indx_Tbl.Attachment + ')')[0].getElementsByTagName('input')[0].value;
             ExpenseEntryDetail_Code = $(this).find('td:eq(' + Indx_Tbl.ExpenseEntryDetail_Code + ')')[0].innerHTML.trim();
-            ExpenseHeadMaster_Code = $(this).find('td:eq(' + Indx_Tbl.ExpenseHeadMaster_Code + ')')[0].innerHTML.trim();
+            //ExpenseHeadMaster_Code = $(this).find('td:eq(' + Indx_Tbl.ExpenseHeadMaster_Code + ')')[0].innerHTML.trim();
+            ExpenseHeadMaster_Code = $(this).find('.hdnExpenseHeadMasterCode').val();
 
             var rowData = {};
 
@@ -388,9 +487,6 @@ function VerifyExpenseEntryMaster() {
 
     });
 
-    
-
-
 }
 
 function SaveData() {
@@ -444,7 +540,8 @@ function SaveData() {
                 Remarks = $(this).find('td:eq(' + Indx_Tbl.Remarks + ')')[0].getElementsByTagName('input')[0].value;
                 Attachment = '';// $(this).find('td:eq(' + Indx_Tbl.Attachment + ')')[0].getElementsByTagName('input')[0].value;
                 ExpenseEntryDetail_Code = $(this).find('td:eq(' + Indx_Tbl.ExpenseEntryDetail_Code + ')')[0].innerHTML.trim();
-                ExpenseHeadMaster_Code = $(this).find('td:eq(' + Indx_Tbl.ExpenseHeadMaster_Code + ')')[0].innerHTML.trim();
+                //ExpenseHeadMaster_Code = $(this).find('td:eq(' + Indx_Tbl.ExpenseHeadMaster_Code + ')')[0].innerHTML.trim();
+                ExpenseHeadMaster_Code = $(this).find('.hdnExpenseHeadMasterCode').val();
 
 
                 var rowData = {};
@@ -499,44 +596,50 @@ function SaveData() {
                         }, 2000); // 2 seconds delay before redirect
                        
                     }
-
                 }
-
             });
-
-
-
         }
-
     });
-
-   
-
 }
 function ValidateData() {
     var TotalDays = $('#txtTotalDays').val();
     var TotalAllowed = 0;
+    var TotalApproved = 0;
     var TotalExp = 0;
+    var EntryDateRange = $('#txtEntryDate').val();
+    var FromDateRange = $('#txtFromDate').val();
+    var ToDateRange = $('#txtToDate').val();
 
-    if (TotalDays < 1) {
+    if (EntryDateRange < FromDateRange || EntryDateRange < ToDateRange) {
+        toastr.warning("Entry Date must be greater than both From Date and To Date");
+        return false;
+    }
+
+    if (TotalDays < 0) {
         toastr.error("Please select a valid range of dates.");
         return false;
     }
-
+    
     $("#ExpenseEntryDetails tbody tr").each(function (index, row) {
         var AllowedAmount = $(this).find('td:eq(' + Indx_Tbl.AllowedAmount + ')')[0].getElementsByTagName('input')[0].value;
         var ExpenseAmount = $(this).find('td:eq(' + Indx_Tbl.ExpenseAmount + ')')[0].getElementsByTagName('input')[0].value;
+        var ApprovedAmount = $(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')')[0].getElementsByTagName('input')[0].value;
 
         TotalAllowed += parseFloat(AllowedAmount);
         TotalExp += parseFloat(ExpenseAmount);
+        TotalApproved += parseFloat(ApprovedAmount);
 
     });
-    if (TotalAllowed <= 0) {
+    if (TotalAllowed < 0) {
         toastr.error("Invalid Allowed Amount.");
         return false;
     }
-    if (TotalExp <= 0) {
+    if (TotalExp < 0) {
         toastr.error("Invalid Expense Amount.");
+        return false;
+    }
+    if (TotalApproved > TotalExp) {
+        toastr.warning("Approved amount can not greater then expended amount");
         return false;
     }
     return true;
@@ -564,30 +667,35 @@ function convertDateFormat(dateString) {
     const monthAbbreviation = monthNames[parseInt(month) - 1];
     return `${year}-${monthAbbreviation}-${day}`;
 }
+function convertDateFormat1(dateString) {
+    const [day, month, year] = dateString.split('-');
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthAbbreviation = monthNames[parseInt(month) - 1];
+    return `${day}-${monthAbbreviation}-${year}`;
+}
 function ValidateMarketingPersonSenior() {
-    ExpenseEntryService.ExpenseEntry_ValidateMarketingPersonSenior(param_MarketingMan_Name).then(function (response) {
+ExpenseEntryService.ExpenseEntry_ValidateMarketingPersonSenior(param_ExpenseEntryMaster_Code).then(function (response) {
+    if (parseInt(param_ExpenseEntryMaster_Code) === 0) {
+        $('#btnVerify').prop('disabled', true);
+        return;
+    }
 
-        if (response != '') {
-            if (response[0].Valid == true && param_Mode != 'View') {
-                $("#ExpenseEntryDetails tbody tr").each(function (index, row) {
-                    var txtApprovedAmount = $(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')')[0].getElementsByTagName('input')[0];
-                    $(txtApprovedAmount).prop('disabled', false);
-                });
-                $('#btnVerify').prop('disabled', false);
-            } else {
-                $("#ExpenseEntryDetails tbody tr").each(function (index, row) {
-                    var txtApprovedAmount = $(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')')[0].getElementsByTagName('input')[0];
-                    $(txtApprovedAmount).prop('disabled', true);
-                });
-                $('#btnVerify').prop('disabled', true);
-            }
-
+    if (response && response.length > 0) {
+        if (response[0].Valid == "Y") {
+            $('#btnVerify').prop('disabled', false);
+        } else {
+            $('#btnVerify').prop('disabled', true);
         }
-
-    });
+    }
+    if (param_Mode == 'View' && param_ExpenseEntryMaster_Code > 0) {
+        $("#btnVerify").prop("disabled", true);
+    }
+});
 }
 
 window.ViewAttachment = ViewAttachment;
 window.CalculateApprovedAmount = CalculateApprovedAmount;
+window.ApprovedAmountIncrease = ApprovedAmountIncrease;
 window.SaveData = SaveData;
 window.VerifyExpenseEntryMaster = VerifyExpenseEntryMaster;
+window.limitInputLength = limitInputLength;

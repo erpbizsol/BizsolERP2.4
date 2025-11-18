@@ -1,14 +1,14 @@
-﻿
-const AutoSuggestionControl = {
-    SetUpAutoSuggestion: function SetUpAutoSuggestion(AutoSuggestionInputElement, AutoSuggestionListElement, data,serachMode) {
+﻿const AutoSuggestionControl = {
+    SetUpAutoSuggestion: function SetUpAutoSuggestion(AutoSuggestionInputElement, AutoSuggestionListElement, data, serachMode, IsEnableBizSolhandleEnterKey=true, onSelect) {
         populateAutoSuggestionList(data, AutoSuggestionListElement);
-        setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListElement);
+        setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListElement, IsEnableBizSolhandleEnterKey, data, onSelect);
     }
 }   
 
 export { AutoSuggestionControl }
 
 var AutoSuggestionListId = '';
+
 function populateAutoSuggestionList(data, AutoSuggestionListElement) {
     const AutoSuggestionList = AutoSuggestionListElement;
     AutoSuggestionList.empty();
@@ -26,7 +26,7 @@ function populateAutoSuggestionList(data, AutoSuggestionListElement) {
     AutoSuggestionListId = AutoSuggestionListElement[0].id;
 }
 
-function setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListElement) {
+function setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListElement, IsEnableBizSolhandleEnterKey = true, data = [], onSelect) {
     const AutoSuggestionInput = AutoSuggestionInputElement;
     const AutoSuggestionList = AutoSuggestionListElement;
     let currentIndex = -1;
@@ -91,24 +91,31 @@ function setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListEleme
             }
         } else if (event.key === 'Enter') {
             event.preventDefault(); // Prevent form submission
-            if (currentIndex > -1 && itemCount>0) {
-                const selectedItem = items.eq(currentIndex).text();
-                AutoSuggestionInput.val(selectedItem);
+            if (currentIndex > -1 && itemCount > 0) {
+                const selectedText = items.eq(currentIndex).text();
+                AutoSuggestionInput.val(selectedText);
                 AutoSuggestionList.hide(); // Hide dropdown after selection
                 currentIndex = -1;
-                BizSolhandleEnterKey(event);
+                if (typeof onSelect === 'function') {
+                    // Find the full data object by Desp
+                    const selectedObj = data.find(x => x.Desp === selectedText);
+                    onSelect(selectedObj);
+                }
+                if (IsEnableBizSolhandleEnterKey == true) { BizSolhandleEnterKey(event); }
             }
-            
-           
         }
     });
 
     // Handle item click
-    $(document).on('click', '#' + AutoSuggestionListId+' li', function () {
-        const selectedItem = $(this).text();
-        AutoSuggestionInput.val(selectedItem);
+    $(document).on('click', '#' + AutoSuggestionListId + ' li', function () {
+        const selectedText = $(this).text();
+        AutoSuggestionInput.val(selectedText);
         AutoSuggestionList.hide();
         currentIndex = -1;
+        if (typeof onSelect === 'function') {
+            const selectedObj = data.find(x => x.Desp === selectedText);
+            onSelect(selectedObj);
+        }
     });
 
     // Hide dropdown if clicked outside
@@ -120,7 +127,7 @@ function setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListEleme
 
     // Highlight the currently selected item
     function highlightItem(item) {
-        const items = $('#'+ AutoSuggestionListId+' li');
+        const items = $('#' + AutoSuggestionListId + ' li');
         items.removeClass('AutoSuggestion-list-highlighted');
         item.addClass('AutoSuggestion-list-highlighted');
 

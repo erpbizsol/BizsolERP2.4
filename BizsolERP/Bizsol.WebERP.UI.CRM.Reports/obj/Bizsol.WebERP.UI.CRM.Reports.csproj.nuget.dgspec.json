@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\All Project\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\Bizsol.WebERP.UI.CRM.Reports.csproj": {}
+    "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\Bizsol.WebERP.UI.CRM.Reports.csproj": {}
   },
   "projects": {
-    "D:\\All Project\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\Bizsol.WebERP.UI.CRM.Reports.csproj": {
+    "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\Bizsol.WebERP.UI.CRM.Reports.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\All Project\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\Bizsol.WebERP.UI.CRM.Reports.csproj",
+        "projectUniqueName": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\Bizsol.WebERP.UI.CRM.Reports.csproj",
         "projectName": "Bizsol.WebERP.UI.CRM.Reports",
-        "projectPath": "D:\\All Project\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\Bizsol.WebERP.UI.CRM.Reports.csproj",
-        "packagesPath": "C:\\Users\\Meetu\\.nuget\\packages\\",
-        "outputPath": "D:\\All Project\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\obj\\",
+        "projectPath": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\Bizsol.WebERP.UI.CRM.Reports.csproj",
+        "packagesPath": "C:\\Users\\manoj\\.nuget\\packages\\",
+        "outputPath": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Meetu\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\manoj\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -26,15 +26,14 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\All Project\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
-                "projectPath": "D:\\All Project\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
+              "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+                "projectPath": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
               }
             }
           }
@@ -48,12 +47,17 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.Extensions.FileProviders.Embedded": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
               "version": "[8.0.7, )"
@@ -71,31 +75,28 @@
           "assetTargetFallback": true,
           "warn": true,
           "frameworkReferences": {
-            "Microsoft.AspNetCore.App": {
-              "privateAssets": "none"
-            },
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.400/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "D:\\All Project\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+    "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\All Project\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj",
+        "projectUniqueName": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj",
         "projectName": "Bizsol.WebERP.UI.Shared",
-        "projectPath": "D:\\All Project\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj",
-        "packagesPath": "C:\\Users\\Meetu\\.nuget\\packages\\",
-        "outputPath": "D:\\All Project\\BizsolERP2.4\\BizsolERP\\Bizsol.WebERP.UI.Shared\\obj\\",
+        "projectPath": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj",
+        "packagesPath": "C:\\Users\\manoj\\.nuget\\packages\\",
+        "outputPath": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.Shared\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Meetu\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\manoj\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -104,7 +105,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -122,7 +122,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net8.0": {
@@ -131,6 +132,10 @@
             "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
               "target": "Package",
               "version": "[8.0.10, )"
+            },
+            "Microsoft.Extensions.FileProviders.Embedded": {
+              "target": "Package",
+              "version": "[8.0.0, )"
             },
             "Newtonsoft.Json": {
               "target": "Package",
@@ -149,14 +154,11 @@
           "assetTargetFallback": true,
           "warn": true,
           "frameworkReferences": {
-            "Microsoft.AspNetCore.App": {
-              "privateAssets": "none"
-            },
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.400/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

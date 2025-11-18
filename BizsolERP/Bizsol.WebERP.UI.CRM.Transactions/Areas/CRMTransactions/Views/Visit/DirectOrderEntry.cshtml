@@ -144,7 +144,7 @@
     <div class="col-md-12">
        
 
-        <div class="tab-section">
+        <div class="tab-section" id="divSecDashboard">
             <ul class="nav nav-tabs" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard"
@@ -368,6 +368,7 @@
                                         <tr role="row">
                                             <th class="lead-Date width_cust" role="columnheader">Consignee</th>
                                             <th class="lead-Date width_cust" role="columnheader">Delivery Address</th>
+                                            <th class="lead-text width_cust" role="columnheader">Dealer</th> 
                                             <th class="lead-text width_cust" role="columnheader">Item Name</th>
                                             <th class="lead-text width_cust" role="columnheader" style="width: 154px;">Size</th>
                                             <th class="lead-text width_cust" role="columnheader">Thickness</th>
@@ -393,7 +394,7 @@
                                             <th class="lead-text width_cust digit10" role="columnheader">Amount</th>
                                             <th class="lead-text width_cust" role="columnheader">Delivery Date</th>
                                             <th class="lead-text width_cust digit13" role="columnheader">Price List</th>
-                                            <th class="lead-text width_cust" role="columnheader">Dealer</th>
+                                           @*  <th class="lead-text width_cust" role="columnheader">Dealer</th> *@
                                             <th class="lead-text width_cust digit10" role="columnheader">Remarks</th>
                                             <th class="lead-text width_cust" role="columnheader">Delete</th>
                                             
@@ -404,6 +405,7 @@
                                     <tfoot>
                                         <tr role="row" id="trTotal" class="text-sm-center ">
 
+                                            <td style="text-align: right;"></td>
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: center;"><b>Total</b></td>

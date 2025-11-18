@@ -104,9 +104,10 @@ const PalletPackingService = {
     },
     Print: function Print(PalletNosToPrint,IsDownload) {
         let CompanyCode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
-        let url = `${UrlService.API_ENDPOINT_CRYSTAL}/Printpallet?PalletNo=${PalletNosToPrint}&IsDownload=${IsDownload}`;
+        //let url = `${UrlService.API_ENDPOINT_CRYSTAL}/Printpallet?PalletNo=${PalletNosToPrint}&IsDownload=${IsDownload}`;
+        let url = `${UrlService.API_ENDPOINT_CRYSTAL}/Printpallet?IsDownload=${IsDownload}`;
 
-        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+        return promiseAjaxCallApi.CallAPI('POST', url, PalletNosToPrint).then(
             function (value) {
                 return value;
             }
@@ -131,6 +132,14 @@ const PalletPackingService = {
     },
     ViewInIDPallet: function ViewInIDPallet(PalletNo) {
         var URL = UrlService.API_ENDPOINT_PalletPacking + "/ViewInIDPallet?PalletNo=" + PalletNo + "";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    FixedParameterQtyConfiguration: function FixedParameterQtyConfiguration() {
+        var URL = UrlService.API_ENDPOINT_PalletPacking + "/FixedParameterQtyConfiguration";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

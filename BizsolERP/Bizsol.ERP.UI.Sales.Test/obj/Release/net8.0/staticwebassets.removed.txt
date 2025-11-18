@@ -1,0 +1,3 @@
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Sales.Test\wwwroot\css\site.css
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Sales.Test\wwwroot\favicon.ico
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Sales.Test\wwwroot\js\site.js

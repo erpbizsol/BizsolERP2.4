@@ -1,5 +1,5 @@
 ﻿import { OrderEntryListService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/OrderEntryListService.js';
-
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 let fixedParaMeterConfigurationList = [];
 let QtyMTHeader = '';
@@ -34,27 +34,9 @@ $(document).ready(function () {
     });
 
     $('#btnShow').on('click', function () {
-        let FromDate = convertDateFormat($('#txtFromDate').val());
-        let ToDate = convertDateFormat($('#txtToDate').val());
-        //let UserName = $('#ddlUserName').val();
-        //let OrderStatus = $('#ddlOrderStatus').val();
-        let UserName = $('#ddlUserNameList option:selected').val();
-        let OrderStatus = $('#ddlOrderStatusList option:selected').val();
-        if (OrderStatus === 'All') {
-            OrderStatus = '';
-        }
-        if (typeof $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null) {
-            $('#txtFromDate').focus();
-        }else if (typeof $('#txtToDate').val() === 'undefined' || $('#txtToDate').val() === '' || $('#txtToDate').val() === null) {
-            $('#txtToDate').focus();
-        //}else if ($('#ddlUserName').val() === '') {
-        //    $('#ddlUserName').focus();
-        //}else if ($('#ddlOrderStatus').val() === '') {
-        //    $('#ddlOrderStatus').focus();
-        }else {
-            GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus);
-        }
+        ShowOrderList();
     });
+   
     $('#txtFromDate').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#txtToDate").focus();
@@ -113,7 +95,35 @@ $(document).ready(function () {
     $('#btnDownload').click(function () {
         Export();
     });
+
+
+    BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnCRMConfig');
 });
+
+function ShowOrderList() {
+    let FromDate = convertDateFormat($('#txtFromDate').val());
+    let ToDate = convertDateFormat($('#txtToDate').val());
+    //let UserName = $('#ddlUserName').val();
+    //let OrderStatus = $('#ddlOrderStatus').val();
+    let UserName = $('#ddlUserNameList option:selected').val();
+    let OrderStatus = $('#ddlOrderStatusList option:selected').val();
+    if (OrderStatus === 'All') {
+        OrderStatus = '';
+    }
+    if (typeof $('#txtFromDate').val() === 'undefined' || $('#txtFromDate').val() === '' || $('#txtFromDate').val() === null) {
+        $('#txtFromDate').focus();
+    } else if (typeof $('#txtToDate').val() === 'undefined' || $('#txtToDate').val() === '' || $('#txtToDate').val() === null) {
+        $('#txtToDate').focus();
+        //}else if ($('#ddlUserName').val() === '') {
+        //    $('#ddlUserName').focus();
+        //}else if ($('#ddlOrderStatus').val() === '') {
+        //    $('#ddlOrderStatus').focus();
+    } else {
+        GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus);
+    }
+}
+
+
 function manageEditButton(order) {
     const isEnabled = order.Status === 'UnVerified';
     $('#editButton').prop('disabled', !isEnabled);
@@ -171,6 +181,7 @@ function GetOrderListForDate() {
                 }
             });
             highlightSelectedDates();
+            
         }
         else {
             toastr.error('No Data Found')
@@ -404,7 +415,7 @@ function GetOrderStatusList() {
 
             BindSelectList($('#ddlOrderStatusList')[0], response.map((item) => ({ Code: item.VerifyStatus, Desp: item.VerifyStatus })), 'FirstItemAll');
             $('#ddlOrderStatusList').select2({
-                allowClear: true,
+                // allowClear: true,
                 matcher: function (params, data) {
                     // If there's no search term, return all data
                     if ($.trim(params.term) === '') {
@@ -442,7 +453,7 @@ function GetUserNameList() {
 
         BindSelectList($('#ddlUserNameList')[0], result.map((item) => ({ Code: item.UserName, Desp: item.UserName })), 'FirstItemSelected');
         $('#ddlUserNameList').select2({
-            allowClear: true,
+            // allowClear: true,
            
                 matcher: function (params, data) {
                     // If there's no search term, return all data
@@ -589,7 +600,7 @@ function GetFixedParameterConfiguration() {
         QtyMTHeader = fixedParaMeterConfigurationList[0].QtyMT;
         QtyPCHeader = fixedParaMeterConfigurationList[0].QtyPC;
         QtyMTRHeader = fixedParaMeterConfigurationList[0].QtyMR;
-
+       
     });
 }
 
@@ -769,3 +780,4 @@ window.Delete = Delete;
 window.DeleteModal = DeleteModal;
 window.CloseModal = CloseModal;
 window.GetFixedParameterConfiguration = GetFixedParameterConfiguration;
+window.ShowOrderList = ShowOrderList;
