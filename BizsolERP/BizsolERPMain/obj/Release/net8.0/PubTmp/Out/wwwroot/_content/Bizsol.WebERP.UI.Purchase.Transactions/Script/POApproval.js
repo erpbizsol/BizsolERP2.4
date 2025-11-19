@@ -26,13 +26,13 @@ function unApprovedPO() {
             const showButtons = [];
             const hiddenColumns = ["Code"];
             const ColumnAlignment = {
-                "Total PO Amount": 'right',
+                "Total Bill Amount": 'right',
                 "PO Date": 'center',
                 "PO No": 'center',
             };
             const updatedResponse = response.map(item => ({
                 ...item,
-                Action: `<button class="btn btn-success icon-height mb-1" title="Approve" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
+                Action: `<button class="btn btn-success icon-height mb-1" title="${FrmAction}" onclick="Approval('${item.Code}')"><i class="fa fa-check-circle" aria-hidden="true"></i></button>
                 <button class="btn btn-primary icon-height mb-1" title="View Detail" onclick="ViewData('${item.Code}')"><i class="fa fa-folder-open" aria-hidden="true"></i></button>
                 <button class="btn btn-info icon-height mb-1" title="Attchment" onclick="AttchmentFile('${item.Code}')"><i class="fa-solid fa-paperclip"></i></button>`
                 //<button class="btn btn-primary icon-height mb-1" title="Preview" onclick="ViewData('${item.Code}')"><i class="fa fa-eye" aria-hidden="true"></i></button>`
@@ -94,6 +94,8 @@ function ViewData(Code) {
                 }; 
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header-PoapprovalModal", "table-body-PoapprovalModal", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            $('#paginator-PoapprovalModal').hide();
+
         } else {
             toastr.error("No valid data found:", response);
         }
@@ -117,7 +119,7 @@ function PODeliveryTermsDetails(Code) {
             const showButtons = [];
             const hiddenColumns = [];
             const ColumnAlignment = {};
-            BizsolCustomFilterGrid.CreateDataTable("table-header-PoapprovalModal", "table-body-PoapprovalModal", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            BizsolCustomFilterGrid.CreateDataTable("table-header-PoapprovalDeliveryTerms", "table-body-PoapprovalDeliveryTerms", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
             $('#paginator-PoapprovalDeliveryTerms').hide();
         } else {
             toastr.error("No valid data found:", response);

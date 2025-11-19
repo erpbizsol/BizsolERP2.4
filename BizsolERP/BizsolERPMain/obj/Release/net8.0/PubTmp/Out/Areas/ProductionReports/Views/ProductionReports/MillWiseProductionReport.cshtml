@@ -1,0 +1,103 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Reports/Script/MillWiseProductionReport.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+    .filter-card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .filter-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #5c95ce;
+    }
+
+    .btn-height {
+        height: 30px;
+    }
+    
+    /* Fix for filter dropdown positioning */
+    .table-wrapper {
+        overflow-x: auto;
+        overflow-y: visible !important;
+        position: relative;
+    }
+    
+    .column-filter-dropdown {
+        position: fixed !important;
+        z-index: 10000 !important;
+    }
+    
+    /* Ensure table header cells with filters have proper positioning context */
+    #tblMillWiseProduction thead th {
+        position: relative;
+    }
+</style>
+<div class="row">
+    <div class="col-sm-12">
+        <div class="filter-card">
+            <div class="filter-title">
+                <i class="fas fa-filter"></i> Mill Wise Production Report Filters
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="fromDate" class="form-label filter-label">From Date</label>
+                    <input type="date" id="txtFromDate" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-3">
+                    <label for="toDate" class="form-label filter-label">To Date</label>
+                    <input type="date" id="txtToDate" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-3">
+                    <label for="txtSizeParameter" class="form-label filter-label">Size Parameters</label>
+                    <select id="txtSizeParameter" class="form-control form-control-sm box_border" multiple style="width: 300px;" placeholder="Select..">
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlMachineNo" class="form-label filter-label">Machine No</label>
+                    <select id="ddlMachineNo" class="form-control form-control-sm box_border" multiple style="width: 300px;">
+                    </select>
+                </div>
+                <div class="col-md-1" style="margin-top: 1.6rem;">
+                    <button type="button" id="btnSearch" class="btn btn-primary btn-height">
+                        <i class="fas fa-search"></i> Show
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card p-1">
+            <div id="btnDownload" class="row mb-1" style="display:none">
+                <div class="col-md-12" style="text-align:right">
+                    <button type="button" id="btnExportExcel" class="btn btn-primary btn-height" onclick="ExportExcel();">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+            </div>
+            <div class="table-wrapper" id="tableWrapper" style="min-height:400px;">
+                <table id="tblMillWiseProduction" class="fixed-width-table table table-bordered">
+                    <thead id="table-head">
+                    </thead>
+                    <tbody id="table-body">
+                        <tr>
+                            <td colspan="100" class="text-center text-muted">
+                                <i class="fas fa-info-circle"></i> Please select filters and click "Show" to generate the report
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+

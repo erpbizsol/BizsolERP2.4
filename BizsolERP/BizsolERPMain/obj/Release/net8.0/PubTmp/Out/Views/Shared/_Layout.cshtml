@@ -51,7 +51,7 @@
                 <div class="d-flex">
                     <!-- LOGO -->
                     <div class="navbar-brand-box">
-                        <a href="#" class="logo logo-dark" target="_blank">
+                        <a  class="logo logo-dark" >
                             <span class="logo-sm">
                                 <img src="~/assets/images/logo-full.jpeg" alt="" height="30">
                             </span>
@@ -60,7 +60,7 @@
                             </span>
                         </a>
 
-                        <a href="#" class="logo logo-light">
+                        <a  class="logo logo-light">
                             <span class="logo-sm">
                                 <img src="~/assets/images/logo-sm.svg" alt="" height="24">
                             </span>
@@ -473,13 +473,17 @@
        if (authKey !== '') {
               sessionStorage.setItem('authKey', authKey);
               sessionStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
-              //window.AppBaseURL='@Html.Raw(ViewBag.AppBaseURL)';
-            if (window.location.href.toLowerCase().includes('localhost') == false) {
-                window.location.href = '@Html.Raw(ViewBag.AppBaseURL)';
-            }
-        }
-        // });
+               localStorage.setItem('authKey', authKey);
+               localStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
+             
+        }else{
+               let storedauthKey = localStorage.getItem('authKey');
+               let storedAppBaseURL = localStorage.getItem('AppBaseURL');
+                sessionStorage.setItem('authKey', storedauthKey);
+                sessionStorage.setItem('AppBaseURL', storedAppBaseURL);
 
+        }
+        
     </script>
     @* <script src="assets/js/pages/modal.init.js"></script>
 

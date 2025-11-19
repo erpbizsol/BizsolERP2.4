@@ -90,7 +90,7 @@
                     <label for="txtdate" class="col-form-label-sm fw-bold">Pallet Date:<span class="text-danger">*</span></label>
                     <input id="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" required />
                 </div>
-                <div class="col-md-4 without-label-field ">
+                <div class="col-md-10 without-label-field ">
                     <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" /> &nbsp;
                     <input type="button" onclick="PalletPacking_Print('Grid','N')" class="btn btn-primary btn-height" value="Print" />&nbsp;
                     <input type="button" onclick="PalletPacking_Print('Grid','Y')" class="btn btn-primary btn-height" value="Print Download" />&nbsp;
@@ -190,16 +190,21 @@
             <div class="col-md-3">
                 <div class="form-group">
                     <label class="col-form-label-sm fw-bold required"><b>Scan Identification No:</b><span class="text-danger">*</span></label>
-                    <input type="text" id="txtScanIdentificationNo" name="txtCheckInTime" class="box_border BizSolFormControl form-control form-control-sm" value="" autocomplete="off" />
+                    <input type="text" id="txtScanIdentificationNo" name="txtScanIdentificationNo" class="box_border form-control form-control-sm" autocomplete="off" />
                     <ul id="txtScanIdentificationNoList" class="AutoSuggestion-list"></ul>
                 </div>
-
-                <div class="row">
-                    <div class="col-md-12 mb-2 text-end">
-                        <button type="button" title="Print" onclick="PalletPacking_Print('Single','N')" class="btn btn-primary btn-height">Print</button>
-                        <button type="button" onclick="CreateNew()" title="Create New" class="btn btn-primary btn-height">Create New</button>
-                        <button type="button" class="btn btn-primary btn-height" title="Back" onclick="Close()">BACK</button>
-                    </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 mb-2 text-start">
+                    <a class="btn btn-primary btn-height" id="btnAvailableOrderStock" onclick="PalletPacking_ShowDetailsModals('AvailableStockDetail')">
+                        AVAILABLE ORDER STOCK
+                    </a>
+                    <a class="btn btn-secondary btn-height" id="btnScanQR" onclick="QRPalletPacking_btnScanQR()">
+                        Scan QR
+                    </a>
+                    <button type="button" title="Print" onclick="PalletPacking_Print('Single','N')" class="btn btn-primary btn-height">Print</button>
+                    <button type="button" onclick="CreateNew()" title="Create New" class="btn btn-primary btn-height">Create New</button>
+                    <button type="button" class="btn btn-primary btn-height" title="Back" onclick="Close()">BACK</button>
                 </div>
             </div>
         </div>
@@ -252,7 +257,7 @@
                 <button type="button" class="close modal-close" aria-label="Close" onclick="Close_ViewIdInPalletModal()"<span aria-hidden="true">x</span></button>
             </div>
             <div class="modal-body">
-                <div class="table-wrapper fixed-height-table">
+                <div class="table-wrapper">
                     <table id="ViewInIdPalletTable" class="fixed-width-table table">
                         <thead id="table-header-ViewInIdPalletTable">
                         </thead>
@@ -268,4 +273,33 @@
             </div>
         </div>
     </div>
+</div>
+<div id="DivScanQRCodeByCameraControlModal"></div>
+<div class="modal fade bs-example-modal-center" id="DetailsModal" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:484px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ModalTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="tbDetails" class="fixed-width-table table">
+                        <thead id="tbDetailsHeader">
+                        </thead>
+                        <tbody id="tbDetailsbody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-tbDetails">
+                </div>
+
+                <div class="text-end mt-1">
+                    <a class="btn btn-danger btn-height" data-bs-dismiss="modal">
+                        Close
+                    </a>
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
 </div>

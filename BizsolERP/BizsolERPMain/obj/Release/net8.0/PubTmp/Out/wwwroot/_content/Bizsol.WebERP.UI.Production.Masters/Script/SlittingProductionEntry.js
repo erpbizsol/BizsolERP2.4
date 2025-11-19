@@ -25,6 +25,9 @@ let G_IssueItemSizeMaster_Code = 0;
 let G_IssueGodownMaster_Code = 0;
 let G_IssueWeight = 0;
 let G_FormType = "Production";
+let G_ShowProcessStartEndTime = "N";
+let G_ShowGrossWeight = "N";
+
 let LockDateAndShiftInWeb = "N";
 let IsGetWeightByScale = false;
 let indxSnoCol_tbSlittingReceivedDetails = 0;
@@ -33,15 +36,18 @@ let indxSizeDespCol_tbSlittingReceivedDetails = 2;
 let indxPCsCol_tbSlittingReceivedDetails = 4;
 let indxWeightCol_tbSlittingReceivedDetails = 5;
 let indxManualIDCol_tbSlittingReceivedDetails = 7;
-let indxHiddenCol_tbSlittingReceivedDetails = 8;
+let indxInTimeCol_tbSlittingReceivedDetails = 8;
+let indxOutTimeCol_tbSlittingReceivedDetails = 9;
+let indxGrossWeightCol_tbSlittingReceivedDetails = 10;
+let indxRemarksCol_tbSlittingReceivedDetails = 11;
+let indxHiddenCol_tbSlittingReceivedDetails = 12;
 
 let G_SlittingPlanMaster_Code = 0;
 let G_Row = ''
 
 let G_UserMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-
-
-let G_isView = "N";
+let prevFocus;
+let G_machineIP = "";
 function ChangeMode(Mode) {
     $('#DivProductionGPForm').hide();
     $('#DivProductionGPViewGrid').hide();
@@ -70,6 +76,14 @@ function SlittingProductionEntry_ShowPlanGrid() {
                 item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_EditOrView(\'Y\',\'' + item.SlittingPlanMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>'
             });
         }
+        else {
+            
+                response.forEach(item => {
+                    item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_Print(\'' + item["Identification No"] + '\')"> <i class="fa fa-print"></i></a>'
+                });
+            
+        }
+
        // console.log(response);
         //response = response.map((item) => ({
         //    "PackingList No": item.PackingListNo, Date: item.PackingListDate, Warehouse: item.GodownName, "Packing Type": item.PackingType, "Requisition No / Order No": item["Requisition No"], "Party Name": item.ClienName, "Qty KG": item.QtyMT, "Qty PC": item.QtyPC, "Qty SQM": item.QtyMTRS, Status: item.PKStatus,
@@ -103,67 +117,21 @@ function SlittingProductionEntry_ShowPlanGrid() {
     ChangeMode('');
 }
 
-function WebLocatePackingSumDispatch(response) {
-    let DispatchRows = response.filter(item => item["Packing Type"] ==='Dispatch');
-    let StockRows = response.filter(item => item["Packing Type"] === 'Stock Transfer');
 
-    let DispatchTotalMT = 0;
-    let DispatchTotalPC = 0;
-    let DispatchTotalMTRS = 0;
-    let StockTotalMT = 0;
-    let StockTotalPC = 0;
-    let StockTotalMTRS = 0;
-
-    if (StockRows.length > 0)
-    {
-        StockTotalMT = StockRows.reduce((partialSum, item) => partialSum + item.QtyMT, 0)
-        StockTotalPC = StockRows.reduce((partialSum, item) => partialSum + item.QtyPC, 0)
-        StockTotalMTRS = StockRows.reduce((partialSum, item) => partialSum + item.QtyMTRS, 0)
-    }
-
-    if (DispatchRows.length > 0) {
-        DispatchTotalMT = DispatchRows.reduce((partialSum, item) => partialSum + item.QtyMT, 0)
-        DispatchTotalPC = DispatchRows.reduce((partialSum, item) => partialSum + item.QtyPC, 0)
-        DispatchTotalMTRS = DispatchRows.reduce((partialSum, item) => partialSum + item.QtyMTRS, 0)
-    }
-    let tfootContent = `
-        <tr id="trDispatchTotal">
-        <td colspan="5"></td>
-        <td >DISPATCH TOTAL:</td>
-        <td style="text-align: right;">${ parseFloat(DispatchTotalMT).toFixed(2)}</td >
-        <td style="text-align: right;">${DispatchTotalPC}</td>
-        <td style="text-align: right;">${parseFloat(DispatchTotalMTRS).toFixed(2)}</td>
-        <td colspan="2"></td>
-        </tr>
-        <tr id="trStockTotal">
-        <td colspan="5"></td>
-        <td >STOCK TRANSFER TOTAL :</td>
-        <td style="text-align: right;">${parseFloat(StockTotalMT).toFixed(2)}</td>
-        <td style="text-align: right;">${StockTotalPC}</td>
-        <td style="text-align: right;">${parseFloat(StockTotalMTRS).toFixed(2)}</td>
-        <td colspan="2"></td>
-        </tr>
-        <tr id="trTotal">
-        <td colspan="5"></td>
-        <td >TOTAL:</td>
-        <td style="text-align: right;">${parseFloat((DispatchTotalMT + StockTotalMT)).toFixed(2)}</td>
-        <td style="text-align: right;">${(DispatchTotalPC + StockTotalPC)}</td>
-        <td style="text-align: right;">${parseFloat((DispatchTotalMTRS + StockTotalMTRS)).toFixed(2)}</td>
-        <td colspan="2"></td>
-        </tr>
-        `;
-
-   
-
-    $('#tbProductionGPView tfoot')[0].innerHTML = tfootContent;
-
-
-
-}
 function getPackingListFGFixedParaMeters() {
     SlittingProductionEntryService.GetFixedParaMeter().then(function (response) {
         PackingListFGFixedParaMeters = response;
         LoadFrm();
+    });
+}
+function GetProcessMasterCustomizedValue(ProcessMaster_Code) {
+    SlittingProductionEntryService.GetSlittingProductionEntryDDl('GetProcessMasterCustomizedValue', ProcessMaster_Code).then(function (response) {
+
+        if (response.length > 0) {
+            G_ShowProcessStartEndTime = response[0].ShowProcessStartEndTime;
+            G_ShowGrossWeight = response[0].ShowGrossWeight;
+        }
+
     });
 }
 function SelectOptionByText(Id, FindText) {
@@ -315,6 +283,7 @@ function Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code) {
         console.log(response)
         if (response.length > 0) {
             AllowWeightOnlyByWeighment = response[0].AllowWeightOnlyByWeighment;
+            G_machineIP = response[0].WeightScaleIP;
             G_issueIdentificationNo = response[0]["Identification No"];
             
             G_IssueItemMaster_Code = response[0].IssueItemMaster_Code;
@@ -385,9 +354,13 @@ function Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code) {
                 "Size Desp": `${item.SizeDesp} &nbsp;&nbsp;<a class="btn btn-secondary icon-height" onclick="SlittingProductionEntry_OnClick_NewSize(this)"><i class="fa fa-plus"></i></a>`,
                 "Thickness": item.itemThick,
                 "PCs": eleText.toLowerCase() == 'slitting' && item.NoofSlits > 1 ? `${item.NoofSlits} &nbsp;&nbsp;<a class="btn btn-primary icon-height" onclick="SlittingProductionEntry_AddReceivedItem(this)">Split PC</a>` : item.NoofSlits,
-                "Weight": '<input  class="form-control form-control-sm itemWeight" type="text" maxlength="6" autocomplete="off" value="' + parseFloat(item.Weight).toFixed(3) + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);SlittingProductionEntry_CalScrapWeight();" >',
+                "Weight": '<input id="txtItemWeight_' + item.SNo + '"  class="form-control form-control-sm itemWeight" type="text" maxlength="6" autocomplete="off" value="' + parseFloat(item.Weight).toFixed(3) + '" style="text-align: right;min-width: 70px;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);SlittingProductionEntry_CalScrapWeight();" >',
                 "No Of Pass": '<input  class="form-control form-control-sm" type="text" maxlength="6" autocomplete="off" value="' + item.NoOfPass + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);">',
                 "Manual ID": '<input  class="form-control form-control-sm" type="text" maxlength="6" autocomplete="off" value="' + item.ManualIDNo + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);">',
+                "In Time": '<input  class="form-control form-control-sm " type="time" maxlength="6" autocomplete="off" value="' + item.InTime + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);"  >',
+                "Out Time": '<input  class="form-control form-control-sm " type="time" maxlength="6" autocomplete="off" value="' + item.OutTime + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" >',
+                "Gross Weight": '<input  class="form-control form-control-sm " type="text" maxlength="6" autocomplete="off" value="' + parseFloat(item.GrossWeight).toFixed(3) + '" style="text-align: right;" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);">',
+                "Remarks": '<input  class="form-control form-control-sm " type="text" maxlength="150" autocomplete="off" value="' + item.Remarks + '" style="text-align: right;" >',
                 "HiddenCol": JSON.stringify(item)
                 }
             ))
@@ -413,6 +386,15 @@ function Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code) {
             if (AskNoOfPassInSlitting === 'N') {
                 hiddenColumns.push("No Of Pass");
             }
+            if (G_ShowProcessStartEndTime === 'N') {
+                hiddenColumns.push("In Time");
+                hiddenColumns.push("Out Time");
+            }
+            if (G_ShowGrossWeight === 'N') {
+                hiddenColumns.push("Gross Weight");
+                }
+
+                
             
 
             
@@ -436,6 +418,15 @@ function Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code) {
                     });
                 }
                 //initialize ItemReceived select control end
+
+                $("input").focus(function () {
+
+
+                    if (typeof prevFocus !== "undefined") {
+                        $("#prev").html(prevFocus.val());
+                    }
+                    prevFocus = $(this);
+                });
 
             } else {
                 $('#tbSlittingReceivedDetails tr').empty();
@@ -656,7 +647,7 @@ function SlittingProductionEntry_OnChangeddlProcess(CallBy) {
 
     Bind_ddlScrapItem(ProcessMaster_Code);
     Bind_ddlItemReceived(ProcessMaster_Code);
-    
+    GetProcessMasterCustomizedValue(ProcessMaster_Code);
 }
 function SlittingProductionEntry_OnChangeddlPlanOrIds(element) {
 
@@ -701,10 +692,11 @@ function SlittingProductionEntry_OnChangeddlPlanOrIds(element) {
 
 function SlittingProductionEntry_OnClick_NewSize(Row) {
     G_Row = Row;
+    let processMaster_Code = $('#ddlProcess').val();
     let UpdateRow = $(Row).closest("tr")[0];
 
     let HideColObj = JSON.parse(UpdateRow.cells[indxHiddenCol_tbSlittingReceivedDetails].innerHTML.trim());
-    InitSizeControl(HideColObj.ItemMaster_Code, HideColObj.ItemSizeMaster_Code, "SlittingProductionEntry_SizeCallBack", 0)
+    InitSizeControl(HideColObj.ItemMaster_Code, HideColObj.ItemSizeMaster_Code, "SlittingProductionEntry_SizeCallBack", processMaster_Code)
 
 }
 function SlittingProductionEntry_OnChange_ddlItemReceived(Row) {
@@ -739,10 +731,10 @@ function SlittingProductionEntry_OnChange_ddlItemReceived(Row) {
 
 }
 
-function InitSizeControl(itemMaster_Code, itemSizeMaster_Code, callBackFunctionName_btnDone, rowNo) {
+function InitSizeControl(itemMaster_Code, itemSizeMaster_Code, callBackFunctionName_btnDone, processMaster_Code) {
     let url = baseUrl + '/CustomControl/SizeControl';
 
-    $('#DivSizeControlmodal').load(url, { ItemMaster_Code: itemMaster_Code, ItemSizeMaster_Code: itemSizeMaster_Code, CallBackFunctionName_btnDone: callBackFunctionName_btnDone, RowNo: rowNo });
+    $('#DivSizeControlmodal').load(url, { ItemMaster_Code: itemMaster_Code, ItemSizeMaster_Code: itemSizeMaster_Code, CallBackFunctionName_btnDone: callBackFunctionName_btnDone, RowNo: 0, ProcessMaster_Code: processMaster_Code });
 
 }
 
@@ -1075,10 +1067,10 @@ function SlittingProductionEntry_CreatNewEntry() {
 
     
 
-    //if (AllowWeightOnlyByWeighment === 'Y' && IsGetWeightByScale == false) {
-    //    toastr.error('Please take weight by Scale!');
-    //    return false;
-    //}
+    if (AllowWeightOnlyByWeighment === 'Y' && IsGetWeightByScale == false) {
+        toastr.error('Please take weight by Scale!');
+        return false;
+    }
 
     let CheckStockPayLoad = {
         EntryType: "O",
@@ -1102,11 +1094,47 @@ function SlittingProductionEntry_CreatNewEntry() {
 
     let SlittingEntryDataPayload = [];
 
+    let rowno = 0;
+    let validateProcessStartEndTime = true;
     $.each(ReceivedDetailsArry, function (index, value) {
         let HideColObj = JSON.parse(value.cells[indxHiddenCol_tbSlittingReceivedDetails].innerHTML.trim());
         let Weight = parseFloat(value.cells[indxWeightCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value);
         let ManualID = parseInt(value.cells[indxManualIDCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value);
+        let InTime = value.cells[indxInTimeCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value;
+        let OutTime = value.cells[indxOutTimeCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value;
+        let GrossWeight = parseFloat(value.cells[indxGrossWeightCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value);
+        let Remarks = value.cells[indxRemarksCol_tbSlittingReceivedDetails].getElementsByTagName('input')[0].value;
+        rowno++;
+        if (G_ShowProcessStartEndTime == "Y") {
+
+            if (typeof InTime === 'undefined' || InTime === '' || InTime === null || InTime === '0') {
+
+                toastr.error('In Time Can not Be Blank RowNo ' + rowno);
+                validateProcessStartEndTime = false;
+                return;
+            }
+
+            if (typeof OutTime === 'undefined' || OutTime === '' || OutTime === null || OutTime === '0') {
+
+                toastr.error('Out Time Can not Be Blank RowNo ' + rowno);
+                validateProcessStartEndTime = false;
+                return;
+            }
+
+        }
+
+        if (G_ShowGrossWeight == "Y") {
+
+            if (GrossWeight > 0 && GrossWeight < Weight) {
+
+                toastr.error('Gross Weight should be greater than equal to ' + Weight+' in RowNo ' + rowno);
+                validateProcessStartEndTime = false;
+                return;
+            }
+
+        }
         
+
         SlittingEntryDataPayload.push({
             Sno: HideColObj.SNo,
             ItemMaster_Code: HideColObj.ItemMaster_Code,
@@ -1115,9 +1143,11 @@ function SlittingProductionEntry_CreatNewEntry() {
             NoOfPass: HideColObj.NoOfPass,
             NoofSlits: HideColObj.NoofSlits,
             ManualIDNo: ManualID,
-            InTime: "",
-            OutTime: "",
+            InTime: InTime,
+            OutTime: OutTime,
             Speed: "",
+            GrossWeight: GrossWeight,
+            Remarks: Remarks,
             SlittingPlanMaster_Code: G_SlittingPlanMaster_Code,
             ShiftMaster_Code: $("#ddlShift").val(),
             FormType: G_FormType,
@@ -1131,6 +1161,13 @@ function SlittingProductionEntry_CreatNewEntry() {
         });
 
     });
+
+    if (G_ShowProcessStartEndTime == "Y" && validateProcessStartEndTime == false) {
+        return;
+    }
+    if (G_ShowGrossWeight == "Y" && validateProcessStartEndTime == false) {
+        return;
+    }
 
     Showloader();
     BreakDownService.IsBreakDownRunning(ProcessMaster_Code, MachineMaster_Code, GodownMaster_Code).then(function (breakDownrespone) {
@@ -1183,9 +1220,12 @@ function SlittingProductionEntry_CreatNewEntry() {
 
    
 }
+
 function ClrFrm() {
     G_SlittingPlanMaster_Code = 0;
-   
+    G_ShowProcessStartEndTime = "N";
+    G_ShowGrossWeight = "N";
+
     $('#txtScrapWeight').val('0');
     $('#txtSlittingDate').val(new Date().toISOString().slice(0, 10));
   
@@ -1247,9 +1287,25 @@ $('#btnPrint').on('click', function () {
 
         BindSelectList($('#ddlParantID')[0], response.map((item) => ({ Code: item.ParantID, Desp: item.ParantID })))
         $('#ddlParantID').select2({
-            width: '-webkit-fill-available'
+            width: '-webkit-fill-available',
+            dropdownParent: $('#PintIDModal'),
         });
-        HideLoader()
+
+        
+        HideLoader();
+        
+        //$('#ddlParantID').select2({
+        //    data: response.map(item => ({ id: item.ParantID, text: item.ParantID })),
+
+        //    dataAdapter: CustomData,
+        //    resultsAdapter: ResultsAdapter,
+        //    dropdownParent: $('#PintIDModal'),
+        //    width: '-webkit-fill-available',
+        //});
+
+        $('#tbPrintID tr').empty();
+        $('#paginator-tbPrintID').empty();
+        
         $("#PintIDModal").modal({
             backdrop: 'static',
         });
@@ -1259,7 +1315,7 @@ $('#btnPrint').on('click', function () {
 });
 
 $('#btnModalPrint').on('click', function () {
-   
+    //InitSelectPrinterToPrintControl("01-18I-0002A#01-18I-0002B#");
 
     let PrintId = "";
     let table = document.getElementById("tbPrintID");
@@ -1279,16 +1335,17 @@ $('#btnModalPrint').on('click', function () {
         toastr.error('Plz Select at least one Id!');
         return;
     }
-    
-    SlittingProductionEntryService.PrintIdentificationNos(PrintId, '0').then(function (response) {
-        let url = response.Url;
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.target = '_blank';
-        a.href = url;
-        document.body.appendChild(a);
-        a.click();
-    });
+    InitSelectPrinterToPrintControl(PrintId);
+
+    //SlittingProductionEntryService.PrintIdentificationNos(PrintId, '0').then(function (response) {
+    //    let url = response.Url;
+    //    const a = document.createElement('a');
+    //    a.style.display = 'none';
+    //    a.target = '_blank';
+    //    a.href = url;
+    //    document.body.appendChild(a);
+    //    a.click();
+    //});
 });
 
 $('#btnBrkDownStart').on('click', function () {
@@ -1317,14 +1374,212 @@ $('#btnBrkDownStart').on('click', function () {
     InitBrakDownControl(entryDate, processMaster_Code, machineMaster_Code, shiftMaster_Code, godownMaster_Code);
 });
 
+// our single focus event handler
 
+
+$("input").focus(function () {
+
+    // let's check if the previous focus has already been defined
+    if (typeof prevFocus !== "undefined") {
+
+        // we do something with the previously focused element
+        $("#prev").html(prevFocus.val());
+    }
+    prevFocus = $(this);
+});
+
+
+function InitSelectPrinterToPrintControl(printText) {
+    let url = baseUrl + '/CustomControl/SelectPrinterToPrintControl';
+
+    $('#DivSelectPrinterToPrintControlModal').load(url, { PrintText: encodeURIComponent(printText) });
+
+}
+function SlittingProductionEntry_GetSCaleWeight() {
+    
+
+    if (G_machineIP === "") {
+        toastr.error('Can not calculate Scale Weight! MachineIp not available for this process');
+        return;
+    }
+    Showloader();
+    SlittingProductionEntryService.GetSCaleWeight(G_machineIP).then(function (resp) {
+        if (resp.Status === 'Y') {
+            HideLoader();
+           
+            if (resp.Msg.includes("System.Net.Sockets.SocketException") == true) {
+                toastr.error('Weight Not Available on Scale! Please Put Weight on Scale!');
+                return;
+            }
+
+            toastr.success(resp.Msg);
+                if (typeof prevFocus !== "undefined") {
+                    var id = prevFocus[0].id;
+                    if (id === 'txtScrapWeight' || id.includes("txtItemWeight")) {
+                        var Data = resp.Msg.replace(/\\n/g, '').replace(/\\r/g, '').replace(/"/g, '')
+
+                        Data = parseInt(Data) / 1000
+
+
+                        document.getElementById(id).value = parseFloat(Data).toFixed(3);
+                       IsGetWeightByScale = true;
+                        if (id === 'txtScrapWeight') {
+                            SlittingProductionEntry_CalScrapPerWeight();
+                        } else if (id.includes("txtItemWeight")) {
+                            SlittingProductionEntry_CalScrapWeight();
+                        }
+
+
+                    }
+                }
+            
+
+        } else {
+            toastr.error(resp.Msg);
+            HideLoader();
+        }
+
+    });
+
+    
+}
+function SlittingProductionEntry_Print(IdentificationNo) {
+    Showloader
+    SlittingProductionEntryService.GetChildIDsByParantIDToPrintID('GetChildIDsByParantIDToPrintID', IdentificationNo).then(function (response) {
+        HideLoader()
+
+        BindSelectList($('#ddlParantID')[0], [{ Code: IdentificationNo, Desp: IdentificationNo }]);
+        $('#ddlParantID').val(IdentificationNo);
+        $('#ddlParantID').select2({
+            width: '-webkit-fill-available',
+            dropdownParent: $('#PintIDModal'),
+        });
+
+        const stringFilterColumn = [];
+        const numericFilterColumn = [];
+        const dateFilterColumn = [];
+        const button = false;
+        const stringDoubleFilterColumn = [];
+        const showButtons = [];
+        const hiddenColumns = [];
+        const columnAlignment = {};
+        response = response.map(item => {
+            return {
+                ...item,
+
+                'Print <input type="checkbox" id="checkAllPrint" onchange="SlittingProductionEntry_AllCheckSelection(this)" checked>': `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`,
+            };
+        })
+
+        BizsolCustomFilterGrid.CreateDataTable("table-header-tbPrintID", "table-body-tbPrintID", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+
+
+        $("#PintIDModal").modal({
+            backdrop: 'static',
+        });
+        $('#PintIDModal').modal('show');
+    });
+
+    
+
+}
 SlittingProductionEntry_ShowPlanGrid();
 getPackingListFGFixedParaMeters();
 Bind_AllDLL();
 Bind_ddlIdNo('dllAllPlansOrId', G_UserMaster_Code);
 //LoadFrm();
 
+//var CustomData, ResultsAdapter; 
 
+//var items = Array.from(Array(99992)).map(function (_, index) {
+//    return { id: index, text: "item - " + index };
+//});
+
+//$(document).ready(function () {
+//    $.fn.select2.amd.require(
+//        [
+//            "select2/data/array",
+//            "select2/results",
+//            "select2/dropdown/infiniteScroll",
+//            "select2/utils"
+//        ],
+//        function (ArrayData, ResultsList, InfiniteScroll, Utils) {
+//            function MyCustomData($element, options) {
+//                MyCustomData.__super__.constructor.call(this, $element, options);
+//            }
+//            Utils.Extend(MyCustomData, ArrayData);
+
+//            MyCustomData.prototype.query = function (params, callback) {
+//                var pageSize = 20;
+//                var page = params.page || 1;
+//                var results = [];
+//                var data = this.options.options.data || [];
+//                var term = (params.term || "").trim().toUpperCase();
+
+//                if (term) {
+//                    results = data.filter(function (item) {
+//                        return item.text.toUpperCase().indexOf(term) >= 0;
+//                    });
+//                } else {
+//                    results = data;
+//                }
+
+//                callback({
+//                    results: results.slice((page - 1) * pageSize, page * pageSize),
+//                    pagination: {
+//                        more: results.length >= page * pageSize,
+//                    },
+//                });
+//            };
+
+//            // Assign to global
+//            CustomData = MyCustomData;
+//            ResultsAdapter = Utils.Decorate(ResultsList, InfiniteScroll);
+
+           
+//        }
+//    );
+//});
+
+
+//$('#ddltest').select2({
+//    ajax: {
+//        url: "https://web.bizsol.in/erp25api/api/SlittingEntry/GetSlittingProductionEntryDDl?ddlType=GetPrintIDs&Code=0", // Replace with your API endpoint
+//        dataType: 'json',
+//        delay: 250,
+//        data: function (params) {
+//            return {
+//                searchTerm: params.term, // Search term from Select2 input
+//                page: params.page || 1 // Pagination
+//            };
+//        },
+//        processResults: function (data, params) {
+//            params.page = params.page || 1;
+
+//            return {
+//                results: data, // Results from your API
+//                pagination: {
+//                    more: (params.page * 30) < data.length//data.total_count // Assuming 30 items per page
+//                }
+//            };
+//        },
+//        cache: true
+//    },
+//    placeholder: 'Search for an item',
+//    minimumInputLength: 2, // Start searching after 2 characters
+//    templateResult: function (item) {
+//        if (item.loading) {
+//            return item.text;
+//        }
+//        // Customize how each item is displayed
+//       // return `<div>${item.name} - ${item.description}</div>`;
+//        return `${item.ParantID}`;
+//    },
+//    templateSelection: function (item) {
+//        // Customize how the selected item is displayed
+//        return item.name || item.text;
+//    }
+//});
 
 window.SlittingProductionEntry_CreateNew = SlittingProductionEntry_CreateNew;
 window.SlittingProductionEntry_Back = SlittingProductionEntry_Back;
@@ -1343,5 +1598,7 @@ window.SlittingProductionEntry_AddReceivedItem = SlittingProductionEntry_AddRece
 window.SlittingProductionEntry_AllCheckSelection = SlittingProductionEntry_AllCheckSelection;
 window.SlittingProductionEntry_OnChangeddlParantID = SlittingProductionEntry_OnChangeddlParantID;
 window.SlittingProductionEntry_CreatNewEntry = SlittingProductionEntry_CreatNewEntry;
+window.SlittingProductionEntry_GetSCaleWeight = SlittingProductionEntry_GetSCaleWeight;
+window.SlittingProductionEntry_Print = SlittingProductionEntry_Print;
 
 

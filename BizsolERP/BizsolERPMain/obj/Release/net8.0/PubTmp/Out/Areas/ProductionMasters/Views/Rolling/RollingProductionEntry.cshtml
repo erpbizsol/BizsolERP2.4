@@ -3,261 +3,265 @@
 }
 
 <style>
-    .without-label-field {
-        margin-top: 2.3rem;
-    }
+   
 </style>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
 
-<style>
-   
-    #tbProductionGPView tfoot {
-        position: sticky;
-        bottom: 0;
-        z-index: 0; 
-    }
+<div class="tab-section">
+    <ul class="nav nav-tabs" id="RollingProductionTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#IssueTab" role="tab" aria-controls="Issue" aria-selected="true" onclick="">
+                Issue
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ReceiveTab" role="tab" aria-controls="Receive" aria-selected="false" onclick="">
+                Receive
+            </button>
+        </li>
+    </ul>
 
-        #tbProductionGPView tfoot td, #tbProductionGPView tfoot th, #tbProductionGPView tfoot {
-        background-color: #d5dde5; 
-    }
-</style>
 
-<div class="row mb-2" id="DivProductionGPForm">
-    <div class="col-md-12">
-        <fieldset class="rounded-1 p-3">
-            <legend class="float-none w-auto px-2">Production Entry</legend>
+    <div class="tab-content" id="RollingProductionTabContent">
 
+        @* Issue Tabs *@
+
+        <div class="tab-pane fade show active" id="IssueTab" role="tabpanel" aria-labelledby="Issue">
             <div class="row">
-                <div class="col-md-2 col-6">
-                    <label for="txtSlittingDate" class="col-form-label-sm fw-bold">Date:</label>
-                    <input type="date" id="txtSlittingDate" name="txtSlittingDate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" />
+                <div class="col-sm-2 col-6">
+                    <label for="txtIssuePlanDate" class="col-form-label-sm fw-bold">Plan Date</label>
+                    <input type="date" class="form-control form-control-sm" id="txtIssuePlanDate" onchange="RollingProductionEnty_GatPlanDetail()">
                 </div>
-                <div class="col-md-2 col-6">
-                    <label for="ddlShift" class="col-form-label-sm fw-bold">Shift:</label>
-                    <select id="ddlShift" class="form-control form-control-sm box_border" >
-                    </select>
-                    
+                <div class="col-sm-2 col-6">
+                    <label for="txtIssueProductionDate" class="col-form-label-sm fw-bold">Production Date</label>
+                    <input type="date" class="form-control form-control-sm" id="txtIssueProductionDate" onchange="RollingProductionEnty_GatPlanDetail()">
                 </div>
-                <div class="col-md-2 col-6">
-                    <label for="ddlProcess" class="col-form-label-sm fw-bold">Process:</label>
-                    <select id="ddlProcess" class="form-control form-control-sm box_border" onchange="SlittingProductionEntry_OnChangeddlProcess('Process')">
+                <div class="col-sm-2 col-6">
+                    <label for="ddlGodown" class="col-form-label-sm fw-bold">Warehouse</label>
+                    <select id="ddlGodown" class="form-control form-control-sm box_border" onchange="RollingProductionEnty_GatPlanDetail()">
                     </select>
                 </div>
+                <div class="col-sm-2 col-6">
+                    <label for="ddlMachineNo" class="col-form-label-sm fw-bold">Mill</label>
+                    <select id="ddlMachineNo" class="form-control form-control-sm box_border" onchange="RollingProductionEnty_GatPlanDetail()">
+                    </select>
 
-                <div class="col-md-2 col-6">
-                    <label for="ddlPlanNo" class="col-form-label-sm fw-bold">Plan No:</label>
-                    <select id="ddlPlanNo" class="form-control form-control-sm box_border" onchange="SlittingProductionEntry_OnChangeddlPlanOrIds(this)">
-                    </select>
                 </div>
-                <div class="col-md-2 col-6" >
-                    <label for="ddlIdNo" class="col-form-label-sm fw-bold">Id No:</label>
-                    <select id="ddlIdNo" class="form-control form-control-sm box_border" onchange="SlittingProductionEntry_OnChangeddlPlanOrIds(this)">
+                <div class="col-sm-2 col-6">
+                    <label class="col-form-label-sm fw-bold">Shift</label>
+                    <select id="ddlIssueShift" class="form-control form-control-sm box_border" onchange="RollingProductionEnty_GatPlanDetail()">
                     </select>
+
                 </div>
-                
-                <div class="col-md-2 col-6" >
-                    <label for="ddlMachineNo" class="col-form-label-sm fw-bold">Machine No:</label>
-                    <select id="ddlMachineNo" class="form-control form-control-sm box_border">
-                    </select>
-                </div>
-                <div class="col-md-2 col-6">
-                    <label for="txtScrapWeight" class="col-form-label-sm fw-bold">Scrap Weight</label>
-                    <input id="txtScrapWeight" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);SlittingProductionEntry_CalScrapPerWeight()" value="0" maxlength="6" autocomplete="off">
+                <div class="col-sm-2 col-6">
+                    <label class="col-form-label-sm fw-bold">Identification No</label>
+                    <input type="text" id="txtScanIdNo" class="form-control form-control-sm box_border" onchange="RollingProductionEnty_SaveIssueID('ScanIdNo')" autocomplete="off">
                     
+
                 </div>
-                <div class="col-md-2 col-6">
-                    <label for="ddlScrapItem" class="col-form-label-sm fw-bold">Scrap Item:</label>
-                    <select id="ddlScrapItem" class="form-control form-control-sm box_border">
-                    </select>
+                <div class="col-md-12 col-12 mt-2">
+
+                    <a class="btn btn-primary btn-height" id="btnBrkDownStart">
+                        BREAK DOWN START
+                    </a> &nbsp;&nbsp;
+                    <a class="btn btn-secondary btn-height" id="btnScanQR" onclick="RollingProductionEnty_btnScanQR()">
+                        Scan QR
+                    </a>
+                    &nbsp;&nbsp;
+                    <button type="button" class="btn btn-primary btn-height" onclick="RollingProductionEnty_Back()">Back</button>
                 </div>
-                
+                @*  <div class="col-sm-2 col-3 without-label-field">
+                    <button type="button" class="btn btn-primary btn-height" onclick="RollingProductionEnty_Back()">Back</button>
+                </div>  *@
+
             </div>
             
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="table-wrapper mt-2 ">
+                        <table id="tbIssueSlitID" class="table fixed-width-table">
+                            <thead id="tbIssueSlitIDHeader">
+                            </thead>
+                            <tbody id="tbIssueSlitIDBody">
+                            </tbody>
+                            <tfoot>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="paginator" id="paginator-tbIssueSlitID">
+                    </div>
+
+                    <div class="table-wrapper mt-2 ">
+                        <table id="tbIssuedIDDetails" class="table fixed-width-table">
+                            <thead id="tbIssuedIDDetailsHeader">
+                            </thead>
+                            <tbody id="tbIssuedIDDetailsBody">
+                            </tbody>
+                            <tfoot>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="paginator" id="paginator-tbIssuedIDDetails">
+                    </div>
+                </div>
+                @* <fieldset class="rounded-1 p-3">
+                    <legend class="float-none w-auto px-2">ISSUE SLIT ID</legend>
+                </fieldset> *@
+            </div>
+        </div>
+
+        @* Receive Tabls *@
+        <div class="tab-pane fade" id="ReceiveTab" role="tabpanel" aria-labelledby="Receive">
+            <div class="row">
+                <div class="col-sm-2 col-6">
+                    <label for="txtReceivePlanDate" class="col-form-label-sm fw-bold">Plan Date</label>
+                    <input type="date" class="form-control form-control-sm" id="txtReceivePlanDate" onchange="RollingProductionEnty_GatReceivedPlanDetail()">
+                </div>
+                <div class="col-sm-2 col-6">
+                    <label for="txtReceiveProductionDate" class="col-form-label-sm fw-bold">Production Date</label>
+                    <input type="date" class="form-control form-control-sm" id="txtReceiveProductionDate" onchange="RollingProductionEnty_GatReceivedPlanDetail()">
+                </div>
+                <div class="col-sm-2 col-6">
+                    <label for="ddlGodownReceive" class="col-form-label-sm fw-bold">Warehouse</label>
+                    <select id="ddlGodownReceive" class="form-control form-control-sm box_border" onchange="RollingProductionEnty_GatReceivedPlanDetail()">
+                    </select>
+                </div>
+                <div class="col-sm-2 col-6">
+                    <label for="ddlMachineNoReceive" class="col-form-label-sm fw-bold">Mill</label>
+                    <select id="ddlMachineNoReceive" class="form-control form-control-sm box_border" onchange="RollingProductionEnty_GatReceivedPlanDetail()">
+                    </select>
+
+                </div>
+                <div class="col-sm-2 col-6">
+                    <label class="col-form-label-sm fw-bold">Shift</label>
+                    <select id="ddlReceiveShift" class="form-control form-control-sm box_border" onchange="RollingProductionEnty_GatReceivedPlanDetail()">
+                    </select>
+
+                </div>
+                
+                <div class="col-md-12 col-12">
+                    <a class="btn btn-primary btn-height" id="btnReceiveBrkDownStart">
+                        BREAK DOWN START
+                    </a> &nbsp;&nbsp;
+                    <button type="button" class="btn btn-primary btn-height" onclick="RollingProductionEnty_Back()">Back</button>
+                </div>
+                @* <div class="col-sm-2 col-3 without-label-field">
+                    <button type="button" class="btn btn-primary btn-height" onclick="RollingProductionEnty_Back()">Back</button>
+                </div> *@
+            </div>
+
+            <div class="row">
+                <div class="col-md-12 mt-2">
+                    <h4 class="table-heading">RECEIVE ALL SIZE</h4>
+                </div>
+                <div class="col-md-12">
+                    <div class="table-wrapper mt-2 ">
+                        <table id="tbItemToBeReceive" class="table fixed-width-table">
+                            <thead id="tbItemToBeReceiveHeader">
+                            </thead>
+                            <tbody id="tbItemToBeReceiveBody">
+                            </tbody>
+                            <tfoot>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="paginator" id="paginator-tbItemToBeReceive">
+                    </div>
+                </div>
+                @* <fieldset class="rounded-1 p-3">
+                    <legend class="float-none w-auto px-2">RECEIVE ALL SIZE</legend>
+                </fieldset> *@
+            </div>
+
+
             <div class="row">
                
-                <div class="col-md-6 text-end">
-                    <button type="button" class="btn btn-primary icon-height" onclick="SlittingProductionEntry_Back()">Back</button>
+                <div class="col-md-12 mt-2">
+                    <h4 class="table-heading">RECEIVE</h4>
+                </div>
+                <div class="col-md-12">
+                    <div class="table-wrapper mt-2 ">
+                        <table id="tbReceiveView" class="table fixed-width-table" style="--bs-table-bg: unset;">
+                            <thead id="tbReceiveViewHeader">
+                            </thead>
+                            <tbody id="tbReceiveViewBody">
+                            </tbody>
+                            <tfoot>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="paginator" id="paginator-tbReceiveView">
+                    </div>
+                </div>
+
+                <div class="col-md-12">
+                    <div class="table-wrapper mt-2 ">
+                        <table id="tbTotalSizeORThikPC" class="table fixed-width-table" style="--bs-table-bg: unset;">
+                            <thead id="tbTotalSizeORThikPCHeder">
+                            </thead>
+                            <tbody id="tbTotalSizeORThikPCBody">
+                            </tbody>
+                            <tfoot>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="paginator" id="paginator-tbTotalSizeORThikPC">
+                    </div>
                 </div>
             </div>
+
            
-           
-
-        </fieldset>
-    </div>
-    <div class="row" id="DivBtnAdd">
-        <div class="col-md-6 ">
-
-            <a class="btn btn-warning icon-height" id="btnAvailableOrderStock">
-                SCALE WEIGHT
-            </a>
-            &nbsp;
-            &nbsp;
-            <a class="btn btn-primary icon-height" onclick="SlittingProductionEntry_CalScrapPerWeight()">
-               WEIGHT/SCRAP
-            </a>
-            &nbsp;
-            &nbsp;
-            <a class="btn btn-primary icon-height" id="btnBrkDownStart" >
-                BREAK DOWN START
-            </a>
-
         </div>
-       
-    </div>
-
-    <div class="col-md-12">
-    <fieldset class="rounded-1 p-3 mt-2">
-        <legend class="float-none w-auto px-2">Issue Details</legend>
-
-    <div class="table-wrapper mt-2">
-        <table id="tbSlittingIssueDetails" class="table fixed-width-table">
-            <thead id="tbSlittingIssueDetailsHeader">
-            </thead>
-            <tbody id="tbSlittingIssueDetailsBody">
-            </tbody>
-            <tfoot>
-            </tfoot>
-        </table>
-    </div>
-    <div class="paginator" id="paginator-tbSlittingIssueDetails">
-    </div>
-    
-    </fieldset>
-    </div>
-
-    <div class="col-md-12">
-        <fieldset class="rounded-1 p-3 mt-2">
-        <legend class="float-none w-auto px-2">Received Details</legend>
-
-    <div class="table-wrapper mt-2 ">
-        <table id="tbSlittingReceivedDetails" class="table fixed-width-table">
-            <thead id="tbSlittingReceivedDetailsHeader">
-            </thead>
-            <tbody id="tbSlittingReceivedDetailsBody">
-            </tbody>
-            <tfoot>
-            </tfoot>
-        </table>
-    </div>
-    <div class="paginator" id="paginator-tbSlittingReceivedDetails">
-    </div>
-    </fieldset>
-    </div>
-
-    
-    <div class="row" >
-        <div class="col-md-1 col-2">
-
-            <a class="btn btn-primary icon-height" onclick="SlittingProductionEntry_AddReceivedItem('Addnew')">
-                Add
-            </a>
-            
-
-        </div>
-        <div class="col-md-2 col-6">
-            <input id="txtTotalReceivedWeight" class="BizSolFormControl form-control form-control-sm" placeholder="Total Received Weight" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);" maxlength="6" autocomplete="off">
-        </div>
-
-        <div class="col-md-9 text-end">
-            <a class="btn btn-primary icon-height" id="btnAvailableOrderStock" onclick="SlittingProductionEntry_CreatNewEntry()">
-                Create Entry
-            </a>
-            &nbsp;
-            &nbsp;
-
-            <a class="btn btn-primary icon-height" id="btnPrint">
-                Print ID
-            </a>
-
-        </div>
-
-    </div>
-    
-</div>
-
-
-<div id="DivProductionGPViewGrid">
-    <div class="row">
-        <div class="col-sm-3 col-6">
-            <label for="from-date">From Date</label>
-            <input type="date" class="form-control form-control-sm" id="txtFromDate" >
-        </div>
-        <div class="col-sm-3 col-6">
-            <label for="to-date">To Date</label>
-            <input type="date" class="form-control form-control-sm" id="txtToDate" >
-
-        </div>
-        <div class="col-sm-2 col-6 without-label-field">
-            <span class="radioSection">
-                <input type="radio" name="filterType" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="Plan" checked> Plan
-                <input type="radio" name="filterType" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="Entry"> Entry
-            </span>
-        </div>
-        <div class="col-sm-1 col-3 without-label-field text-end">
-            <label></label>
-            <button type="button" class="btn btn-primary icon-height" onclick="SlittingProductionEntry_ShowPlanGrid()">Show</button>
-
-        </div>
-        <div class="col-sm-2 col-3 without-label-field text-end">
-            <label></label>
-            <button type="button" class="btn btn-primary icon-height" onclick="SlittingProductionEntry_CreateNew()">CREATE NEW</button>
-            
-        </div>
-    </div>
-    <div class="table-wrapper mt-2 fixed-height-table">
-        <table id="tbProductionGPView" class="table fixed-width-table">
-            <thead id="tbProductionGPViewHeader">
-            </thead>
-            <tbody id="tbProductionGPViewBody">
-            </tbody>
-            <tfoot>
-
-            </tfoot>
-        </table>
-    </div>
-    <div class="paginator" id="paginator-tbProductionGPView">
     </div>
 </div>
 
-<div class="modal fade" id="PintIDModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content" style="max-width:627px">
+<div class="modal fade bs-example-modal-center" id="modalGetScrapAndRejectedItem" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="false">
+    <div class="modal-dialog " style="max-width:600px">
+        @* modal-dialog-scrollable *@
+        <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Print ID</h5>
-                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+                <h5 class="modal-title" id="ModalTitle">Scrap And Rejected</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="row">
-                <div class="col-md-4 col-6">
-                        <label for="ddlParantID" class="col-form-label-sm fw-bold">Parant ID:</label>
-                        <select id="ddlParantID" class="form-control form-control-sm box_border" onchange="SlittingProductionEntry_OnChangeddlParantID()">
-                        </select>
-                </div>
-                </div>
-                <div class="table-wrapper">
-                    <table id="tbPrintID" class="fixed-width-table table">
-                        <thead id="table-header-tbPrintID">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="tbScrapAndRejectedItem" class="fixed-width-table table">
+                        <thead id="tbScrapAndRejectedItemHeader">
                         </thead>
-                        <tbody id="table-body-tbPrintID">
+                        <tbody id="tbScrapAndRejectedItembody">
                         </tbody>
                     </table>
                 </div>
-                <div class="paginator" id="paginator-tbPrintID">
+                <div class="paginator" id="paginator-tbScrapAndRejectedItem">
+                </div>
+
+                <div class="text-end mt-1">
+                    <a class="btn btn-success btn-height" id="btnOk" onclick="RollingProductionEnty_CheckValidRejected()">
+                        Ok
+                    </a>
+                    &nbsp;
+                    &nbsp;
+                    <a class="btn btn-danger btn-height" data-bs-dismiss="modal">
+                        Close
+                    </a>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-success btn-height" id="btnModalPrint" >Print</button>
-                <button type="button" class="btn btn-danger btn-height" aria-label="Close" data-bs-dismiss="modal">Cancel</button>
-            </div>
-        </div>
-    </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
 </div>
-
-<div id="DivSizeControlmodal"></div>
 <div id="DivBrakDownStartControlModal"></div>
-
-
+<div id="DivSelectPrinterToPrintControlModal"></div>
+<div id="DivScanQRCodeByCameraControlModal"></div>
+<script>
+    let IsRunningPlan='@ViewBag.IsRunningPlan'
+    let NavPVCProductionMaster_Code='@ViewBag.PVCProductionMaster_Code'
+    let NavPlanDate='@ViewBag.PlanDate'
+    let NavMachineNo='@ViewBag.MachineNo'
+    
+   
+</script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Masters/Script/SlittingProductionEntry.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Masters/Script/RollingProductionEntry.js"></script>
 

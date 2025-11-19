@@ -136,7 +136,7 @@ function SaleOrderApprovedlist(BCode) {
             CreditLimitDayBase = response.CreditLimitDayBase;
             PartyName = response.CreditLimitAmountBase[0].AccountName;
             G_CheckCreditLimitAmountBase = response.CreditLimitAmountBase[0].CheckCreditLimitAmountBase;
-            G_CheckCreditLimitDaysBase = response.CreditLimitAmountBase[0].CheckCreditLimitDaysBase;
+            G_CheckCreditLimitDaysBase = response.CreditLimitDayBase[0].CheckCreditLimitDaysBase;
         }
         //CheckCreditLimit = 'N';
         //CreditLimitAmountBase = response.CreditLimitAmountBase;
@@ -162,7 +162,7 @@ function SaleOrderApprovedlist(BCode) {
                 "Un Booked Sale": item.txtUnBookSale,
                 "Pending Do": item.txtPendingDO,
                 "Available Limit": item.txtAvailableLimit,
-                "Order Amount": item.txtPendingDO,
+                "Order Amount": item.txtDoAmount,
                 "Balance": item.txtBalance
 
             }))
@@ -192,9 +192,9 @@ function SaleOrderApprovedlist(BCode) {
                 const showButtons = [];
                 const StringdoubleFilterColumn = [];
                 const hiddenColumns = [];
-                const ColumnAlignment = {};
-            BizsolCustomFilterGrid.CreateDataTable("table-header-CreditLimitAmountBaseTable", "table-body-CreditLimitAmountBaseTable", CreditLimitAmountBase, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
-            BizsolCustomFilterGrid.CreateDataTable("table-header-CreditLimitDayBaseTable", "table-body-CreditLimitDayBaseTable", CreditLimitDayBase, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            const ColumnAlignment = {};
+            BizsolCustomFilterGrid.CreateDataTable("table-header-CreditLimitAmountBaseTable", "table-body-CreditLimitAmountBaseTable", CreditLimitAmountBase, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false);
+            BizsolCustomFilterGrid.CreateDataTable("table-header-CreditLimitDayBaseTable", "table-body-CreditLimitDayBaseTable", CreditLimitDayBase, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false);
 
             $('#paginator-CreditLimitAmountBaseTable').hide();
             $('#paginator-CreditLimitAmountBaseTable').empty();
@@ -202,10 +202,16 @@ function SaleOrderApprovedlist(BCode) {
             $('#paginator-CreditLimitDayBaseTable').empty();
             $('#ChkCreditLimitPartyName')[0].innerHTML = PartyName;
 
+            //if (G_CheckCreditLimitDaysBase == "Y") {
+
+            //    $('#CreditLimitDayBaseTable').hide();
+            //}
+
             return;
         }
-
+        Showloader();
         SaleOrderApprovalService.SaleOrderApproved(BCode, FrmAction, FrmType).then(function (resdata) {
+            HideLoader();
             if (resdata.Status === "Y") {
                 toastr.success(resdata.Msg);
                 GetSaleOrderApproval();
@@ -216,6 +222,7 @@ function SaleOrderApprovedlist(BCode) {
             }
         }).catch(function (error) {
             toastr.error("Error in Sale Order Approval: ", error);
+            HideLoader();
         });
 
     }).catch(error => {
