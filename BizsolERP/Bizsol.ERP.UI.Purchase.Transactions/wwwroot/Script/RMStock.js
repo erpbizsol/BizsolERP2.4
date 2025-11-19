@@ -197,12 +197,29 @@ function ShowModelPlanned(rowData) {
 }
 function ShowRMStockPlan() {
     RMStockService.ShowRMStockData(G_IdentificationNo).then(function (response) {
+        syncAllowManualWeightFromPlan(response);
         fillTableWithExistingData(response);
         setTimeout(function() {
             updateTableTotals();
             applyAllowManualWeightState();
         }, 100);
     });
+}
+function syncAllowManualWeightFromPlan(response) {
+    try {
+        var flag = '';
+        if (response && response.length > 0) {
+            var row = response[0] || {};
+            flag = row.AutoCalculateWeight ?? row.autoCalculateWeight ?? '';
+        }
+        var shouldCheck = false;
+        if (typeof flag === 'string') {
+            shouldCheck = flag.trim().toUpperCase() === 'N';
+        }
+        $('#AllowManualWeight').prop('checked', shouldCheck);
+    } catch (e) {
+        $('#AllowManualWeight').prop('checked', false);
+    }
 }
 function fillTableWithExistingData(response) {
     Promise.all([GetRMStockItemNameList(), GetRMStockWidthList()])
@@ -321,41 +338,6 @@ function enableNewRowAddition() {
         applyAllowManualWeightState();
     });
 }
-
-//function GetRMStockItemNameList() {
-//    Showloader();
-//    RMStockService.GetRMStockItemName().then(function (response) {
-//        if (response && response.length > 0) {
-//            HideLoader();
-//            const list = response.map((item) => ({ Code: item.Code, Desp: item.ItemName }));
-
-//            //if ($('#ddlItemName').length) {
-//            //    BindSelectList1($('#ddlItemName')[0], list);
-//            //    $('#ddlItemName').select2({
-//            //        dropdownParent: $('#PlannedMyModal'),
-//            //        width: '-webkit-fill-available'
-//            //    });
-//            //}
-
-//            $('.ddlItemNameRow').each(function () {
-//                BindSelectList1(this, list);
-
-//            });
-//            if ($('.ddlItemNameRow').length) {
-//                $('.ddlItemNameRow').select2({
-//                    dropdownParent: $('#PlannedMyModal'),
-//                    width: '-webkit-fill-available'
-//                });
-//            }
-//        } else {
-//            toastr.error('No data received or empty response');
-//            HideLoader();
-//        }
-//    }).catch(function (error) {
-//        toastr.error('Error fetching user list:', error);
-//        HideLoader();
-//    });
-//}
 function GetRMStockItemNameList() {
     Showloader();
     return RMStockService.GetRMStockItemName().then(function (response) {
@@ -489,25 +471,6 @@ function calculateWeightPerSlit(rowId) {
             }
         });
 }
-//function GetRMStockNumericValueWidth() {
-//    let modalSlitNumericWidthValue = parseFloat($('#ddlSlitWidth').val()) || 0;
-//    RMStockService.GetRMStockNumericValueWidth(modalSlitNumericWidthValue).then(function (response) {
-//        if (response && response.length > 0) {
-//            G_selectWidth = (response[0].NumericValue); 
-//            //let selectWidth = G_selectWidth;
-//            if (G_Width >= G_selectWidth) {
-//                //GetRMStockWidthList();
-//                calculateWeightPerSlit();
-//            }
-//            else {
-//                toastr.warning("Slit Width value is greater then Original Width");
-//                BizSolHelperFunction.SelectOptionByText('ddlSlitWidth', '');
-//                return false;
-//            }
-//        }
-//    });
-//}
-
 function GetRMStockNumericValueWidthForRow(rowId) {
     var $row = $('#' + rowId);
     var code = parseFloat($row.find('.ddlSlitWidthRow').val()) || 0;
@@ -773,7 +736,7 @@ function SaveCopiedRows() {
             toastr.success('All rows saved successfully');
             ShowRMStockPlan();
             clearForm();
-            $('#CopyFromPrevious').prop('checked', false);
+            //$('#CopyFromPrevious').prop('checked', false);
         })
         .catch(function (error) {
             toastr.error((error && error.message) || 'Error saving data');
@@ -850,6 +813,7 @@ function buildPlannedRowPayload(rowId) {
     const MachineNo = $('#ddlMachineNo').val();
     G_today = $('#txtDate').val();
     const PartingCase = $('#PartingCase').is(':checked') ? 'Y' : 'N';
+    const AllowManualWeight = $('#AllowManualWeight').is(':checked') ? 'Y' : 'N';
     
     if (!ItemMaster_Code || ItemMaster_Code === '0') { toastr.error('Please select an item name'); return null; }
     if (!ItemMasterWidth_Code || ItemMasterWidth_Code === '0') { toastr.error('Please select a slit width'); return null; }
@@ -887,7 +851,8 @@ function buildPlannedRowPayload(rowId) {
         totalWeight: totalWeightNum.toFixed(3),
         machineNo: MachineNo,
         date: G_today,
-        partingCase: PartingCase
+        partingCase: PartingCase,
+        allowManualWeight:AllowManualWeight
     };
 }
 function CloseModal_RMStock() {
@@ -905,15 +870,6 @@ function BindSelectList1(element, list) {
         option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
     });
     element.innerHTML = option;
-}
-function getUrlVars() {
-    var vars = {};
-    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
-    for (var i = 0; i < hashes.length; i++) {
-        var hash = hashes[i].split('=');
-        vars[hash[0]] = hash[1];
-    }
-    return vars;
 }
 function initializeTabs() {
     var triggerTabList = [].slice.call(document.querySelectorAll('#rmStockTabs button'));
@@ -936,18 +892,14 @@ function GetUnApprovedPlannedList() {
         if (response.length > 0) {
             $('#tblUnApproved_Planned').show();
             const stringFilterColumn = ["Item Name", "Thickness", "Grade", "Make", "Identification No"];
-            const numericFilterColumn = ["Plan No", "Width"];
+            const numericFilterColumn = ["Plan No", "Width","Actual Weight"];
             const dateFilterColumn = ["Plan Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             let hiddenColumns = ["Code"];
             const columnAlignment = {
-                'Invoice Date': 'center', 'Receive Date': 'center', 'Thickness': 'right', 'Ch Wt': 'right', 'Width': 'right;min-width:60px', 'Ac Wt': 'right',
-                'Qty MT': 'right', 'Qty PC': 'right', 'Qty MTRS': 'right', '% E': 'right;min-width:50px', 'Hardness': 'right', 'UTS': 'right;min-width:70px', 'YST': 'right;min-width:70px', 'Status': ';width:150px',
-                'Purchased Date': ';width:150px',
-                'Vendor': ';min-width:230px !important;',
-                'Item Name': ';min-width:100px !important;',
+               'Actual Weight': 'right',
             };
             const updatedResponse = response.map(item => {
                 const Action = `<button class="btn btn-success icon-height mb-1" ${item["Action"]=='Verified'?'disabled':''}  title="${item["Action"]}" onclick="Verify(${item["Code"]},'${item["Action"]}')">${item["Action"]}</button>`;
@@ -957,6 +909,7 @@ function GetUnApprovedPlannedList() {
                 }
                 return formattedItem;
             });
+            calculateTotalFooterUnApproved_Planned(response)
             BizsolCustomFilterGrid.CreateDataTable("table-header-UnApproved_Planned", "table-body-UnApproved_Planned", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             PopulateTableForPrint(response);
         } else {
@@ -971,6 +924,20 @@ function GetUnApprovedPlannedList() {
             $('#tblUnApproved_Planned').hide();
        
     });
+}
+function calculateTotalFooterUnApproved_Planned(rows) {
+    try {
+        let totalUnApproved_Planned = 0;
+        if (rows && rows.length) {
+            rows.forEach(function (r) {
+                totalUnApproved_Planned += parseFloat(r['Actual Weight']) || 0;
+            });
+        }
+        if ($('#totalUnApproved_Planned').length) {
+            $('#totalUnApproved_Planned').text(totalUnApproved_Planned.toFixed(3));
+        }
+    } catch (e) {
+    }
 }
 function GetSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlittedCoilStockValue) {
     Showloader();
@@ -1548,6 +1515,42 @@ function getFinancialYear() {
     }
     return startYear + "-" + (startYear + 1);
 }
+
+$(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
+    setTimeout(function () {
+        triggerActiveTabFooterTotals();
+    }, 300);
+});
+
+function triggerActiveTabFooterTotals() {
+    try {
+        var context = getActiveTabFooterContext();
+        if (!context || typeof context.calculator !== 'function') {
+            return;
+        }
+        var filteredRows = window['filteredData_' + context.tableId] || [];
+        context.calculator(filteredRows);
+    } catch (e) {
+    }
+}
+
+function getActiveTabFooterContext() {
+    var $activeTab = $('#rmStockTabs .nav-link.active');
+    if (!$activeTab || !$activeTab.length) {
+        return null;
+    }
+    var targetTab = $activeTab.attr('data-bs-target');
+    var tabContexts = {
+        '#current-stock': { tableId: 'RMStockCurrent', calculator: calculateRMStockCurrentFooterTotals },
+        '#unApproved-planned': { tableId: 'UnApproved_Planned', calculator: calculateTotalFooterUnApproved_Planned },
+        '#slitted-coil-stock': { tableId: 'Slitted_Coil_Stock', calculator: calculateTotalFooterSlitted_Coil_Stock },
+        '#slitted': { tableId: 'Slitted', calculator: calculateTotalFooterSlitted },
+        '#job-work': { tableId: 'JobWorkData', calculator: calculateTotalFooterJobWork },
+        '#stock-summary': { tableId: 'SummaryData', calculator: calculateTotalFooterStockSummary }
+    };
+    return tabContexts[targetTab] || null;
+}
+
 window.initializeTabs = initializeTabs;
 window.loadTabData = loadTabData;
 window.loadDispatchData = loadDispatchData;

@@ -1,0 +1,42 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/StockAgeingReport.js"></script>
+
+<style>
+    #StockAgeingReport tfoot th,
+    #StockAgeingReport tfoot td {
+        color: #fff !important;
+        background-color: #5c95ce !important;
+        border-color: #5c95ce !important;
+        font-weight: 600;
+    }
+
+</style>
+<div class="row">
+    <div class="col-sm-12">
+        <div class="card p-1">
+           <div id="btnDownload" class="row mb-1" style="display:block">
+                <div class="col-md-12" style="text-align:right">
+                    <button type="button" id="btn" class="btn btn-primary btn-height" onclick="ExportExcel();">Download</button>
+                </div>
+            </div>
+            <div class="table-wrapper" style="min-height:400px;">
+                <table id="StockAgeingReport" class="fixed-width-table table">
+                    <thead id="table-head-StockAgeingReport">
+                    </thead>
+                    <tbody id="table-body-StockAgeingReport">
+                    </tbody>
+                    <tfoot id="table-foot-StockAgeingReport">
+                    </tfoot>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-StockAgeingReport">
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

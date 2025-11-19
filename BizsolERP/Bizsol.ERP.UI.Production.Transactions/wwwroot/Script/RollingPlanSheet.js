@@ -510,12 +510,21 @@ function countTableTr() {
 }
 
 $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
-    // Skip totals row for Pipe Stock tab
-    if ($('#pipe-stock-tab').hasClass('active')) {
-        return;
-    }
+    const isPipeStock = $('#pipe-stock-tab').hasClass('active');
+    const isPendingPlans = $('#pending-plans-tab').hasClass('active');
+
     setTimeout(() => {
         const filteredData = window['filteredData_tblTable'] || [];
+        if (isPipeStock) {
+            updatePipeStockFooterFromFiltered(filteredData);
+            adjustFilterDropdownPosition();
+            applyTooltipsToGridCells();
+            return;
+        }
+        if (isPendingPlans) {
+            updatePendingPlansFooterFromFiltered(filteredData);
+            return;
+        }
         const totals = calculateTotals(filteredData);
         const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         addTotalsRow(totals, hiddenColumns);
@@ -525,12 +534,21 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
 });
 
 $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"], [id^="nextBtn-"], [id^="lastBtn-"]', function () {
-    // Skip totals row for Pipe Stock tab
-    if ($('#pipe-stock-tab').hasClass('active')) {
-        return;
-    }
+    const isPipeStock = $('#pipe-stock-tab').hasClass('active');
+    const isPendingPlans = $('#pending-plans-tab').hasClass('active');
+
     setTimeout(() => {
         const filteredData = window['filteredData_tblTable'] || [];
+        if (isPipeStock) {
+            updatePipeStockFooterFromFiltered(filteredData);
+            adjustFilterDropdownPosition();
+            applyTooltipsToGridCells();
+            return;
+        }
+        if (isPendingPlans) {
+            updatePendingPlansFooterFromFiltered(filteredData);
+            return;
+        }
         const totals = calculateTotals(filteredData);
         const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         addTotalsRow(totals, hiddenColumns);
@@ -538,6 +556,46 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
         applyTooltipsToGridCells();
     }, 300);
 });
+
+function updatePipeStockFooterFromFiltered(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+        addPipeStockFooter(0, 0, 0);
+        return;
+    }
+    let totalQtyMT = 0;
+    let totalQtyPC = 0;
+    let totalKG_Pipe = 0;
+
+    rows.forEach(function (row) {
+        totalQtyMT += parseFloat(row["Qty MT"]) || 0;
+        totalQtyPC += parseFloat(row["Qty PC"]) || 0;
+        totalKG_Pipe += parseFloat(row["KG_Pipe"]) || 0;
+    });
+
+    addPipeStockFooter(totalQtyMT, totalQtyPC, totalKG_Pipe);
+}
+
+function updatePendingPlansFooterFromFiltered(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+        addPendingPlansFooter(0, 0, 0, 0, 0);
+        return;
+    }
+    let totalOrderQty = 0;
+    let totalPlannedQty = 0;
+    let totalRolledQty = 0;
+    let totalBalanceQty = 0;
+    let totalPlannedPC = 0;
+
+    rows.forEach(function (row) {
+        totalOrderQty += parseFloat(row["Order Qty"]) || 0;
+        totalPlannedQty += parseFloat(row["Planned Qty"]) || 0;
+        totalRolledQty += parseFloat(row["Rolled Qty"]) || 0;
+        totalBalanceQty += parseFloat(row["Balance Qty"]) || 0;
+        totalPlannedPC += parseFloat(row["Planned PC"]) || 0;
+    });
+
+    addPendingPlansFooter(totalOrderQty, totalPlannedQty, totalRolledQty, totalBalanceQty, totalPlannedPC);
+}
 function applyTooltipsToGridCells() {
     try {
         const head = document.getElementById('table-head');
@@ -1151,6 +1209,25 @@ function PlanNoCloseModal() {
     }
     $('#planNoDetails').modal('hide');
 }
+$(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
+    let isPipeStock = $('#pipe-stock-tab').hasClass('active');
+    let isPendingPlans = $('#pending-plans-tab').hasClass('active');
+    if (isPipeStock) {
+        setTimeout(() => {
+            const filteredData = window['filteredData_tblTable'] || [];
+            addPipeStockFooter(filteredData);
+            adjustFilterDropdownPosition();
+            applyTooltipsToGridCells();
+        }, 300);
+    }
+    
+        if (isPendingPlans) {
+            setTimeout(() => {
+                const filteredData = window['filteredData_tblTable'] || [];
+                addPendingPlansFooter(filteredData);
+            }, 300);   
+       }
+});
 
 window.ExportExcel = ExportExcel;
 window.OpenModal = OpenModal;
