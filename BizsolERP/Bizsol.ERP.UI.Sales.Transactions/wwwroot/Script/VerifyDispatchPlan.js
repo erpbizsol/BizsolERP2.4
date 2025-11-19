@@ -66,12 +66,12 @@ function GetDispatchAdvicePlanList(Status) {
             };
             const updatedResponse = response.map(item => {
                 const Action = Status == 'C' ? `<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>` : `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["Code"]})"><i class="fa fa-check"></i></button>`;
-                const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Send Mail" onclick="SendMail(${item["Code"]})">Send Mail</button>` : '';
+                const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Verify/Send Mail" onclick="SendMail(${item["Code"]})">Verify/Send Mail</button>` : '';
                 let formattedItem;
                 if (Status == 'D') {
                     formattedItem = {
                         ...item,
-                        Action: Action,
+                        //Action: Action,
                         Other: Other
                     };
                 } else if (Status == 'C') { 
@@ -1049,26 +1049,48 @@ function Update() {
     }
 }
 function SendMailToTransporter() {
-    let TranporterCodes = GetEmpCodes();
-    if (TranporterCodes == '') {
-        toastr.error('Please select at least one transporter.');
-        return;
+    var ModuleName = "Despatch Plan Marketing Person Wise",
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear(),
+        status = $("#ddlStatus").val();
+
+    if (status === 'M') {
+        OptionName = "Verify Marketing";
+    } else if (status === 'P') {
+        OptionName = "Verify PPC";
+    } else if (status === 'D') {
+        OptionName = "Verify";
     }
-    if (confirm("Are you sure you want to send mail ?")) {
-        Showloader();
-        VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo).then(function (response) {
-            if (response[0].Status == 'Y') {
-                toastr.success(response[0].Msg);
-                HideLoader();
-                CloseTransporter();
-            } else {
-                toastr.error(response[0].Msg);
-                HideLoader();
+
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            let TranporterCodes = GetEmpCodes();
+            if (TranporterCodes == '') {
+                toastr.error('Please select at least one transporter.');
+                return;
             }
-        }).catch(function (error) {
-            HideLoader();
-        });
-    }
+            if (confirm("Are you sure you want to verify/send mail ?")) {
+                Showloader();
+                VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo).then(function (response) {
+                    if (response[0].Status == 'Y') {
+                        toastr.success(response[0].Msg);
+                        HideLoader();
+                        CloseTransporter();
+                        GetDispatchAdvicePlanList($("#ddlStatus").val());
+                    } else {
+                        toastr.error(response[0].Msg);
+                        HideLoader();
+                    }
+                }).catch(function (error) {
+                    HideLoader();
+                });
+            }
+        }
+    });
 }
 function ApprovedTransporter() {
     Showloader();
