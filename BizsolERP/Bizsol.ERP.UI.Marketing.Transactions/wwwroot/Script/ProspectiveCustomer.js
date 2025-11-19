@@ -55,10 +55,8 @@ function GetNestedMarketingManList() {
     restoreURLConstructor();
     ProspectiveCustomerService.GetNestedMarketingManList().then(function (response) {
         if (response && response.length > 0) {
-            $('#ddlSalesPersonList').empty();
-
-            let options = '<option value="ALL" selected>ALL</option>';
             let matchedPersonName = null;
+            let marketingList = [];
 
             try {
                 var authKeyStr = sessionStorage.getItem('authKey');
@@ -80,11 +78,18 @@ function GetNestedMarketingManList() {
                         matchedPersonName = person.PersonName;
                     }
 
-                    options += `<option value="${person.PersonName}">${person.PersonName}</option>`;
+                    marketingList.push({
+                        Code: person.PersonName,
+                        Desp: person.PersonName
+                    });
                 }
             }
 
-            $('#ddlSalesPersonList').html(options);
+            BindSelectList1($('#ddlMarketingMan')[0], marketingList);
+            $('#ddlMarketingMan option[value="0"]').val("ALL");
+            $('#ddlMarketingMan').select2({
+                width: '-webkit-fill-available'
+            });
 
             // Set default marketing man value
             try {
