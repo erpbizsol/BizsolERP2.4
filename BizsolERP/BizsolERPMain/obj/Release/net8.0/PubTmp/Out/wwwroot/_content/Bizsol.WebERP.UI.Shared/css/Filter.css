@@ -167,17 +167,27 @@ i:hover {
     margin-right: 5px;
 }
 
-/*.table-wrapper {
+/* Enhanced table wrapper for horizontal overflow */
+.table-wrapper {
     width: 100%;
-    min-height: 400px;
+    overflow-x: auto;
     overflow-y: auto;
     border: 1px solid #ddd;
+    min-height:400px;
 }
 
 .fixed-width-table {
     width: 100%;
+    min-width: max-content;
     border-collapse: collapse;
-}*/
+    table-layout: auto;
+}
+
+.fixed-width-table th,
+.fixed-width-table td {
+    white-space: nowrap;
+    min-width: 100px;
+}
 
 /*.table th, .table td {
     padding: 4px 5px;

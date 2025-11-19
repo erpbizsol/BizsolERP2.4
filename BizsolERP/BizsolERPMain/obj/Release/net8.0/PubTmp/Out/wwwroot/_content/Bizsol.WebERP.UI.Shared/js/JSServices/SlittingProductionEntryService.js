@@ -84,7 +84,17 @@ const SlittingProductionEntryService = {
             }
         );
     },
-   
+
+    GetSCaleWeight: function GetSCaleWeight(MachineIP) {
+
+        let url = `${UrlService.API_ENDPOINT_SlittingEntry}/GetSCaleWeight?MachineIP=${encodeURIComponent(MachineIP)}`;
+
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     
 }
 

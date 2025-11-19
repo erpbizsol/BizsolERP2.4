@@ -1,6 +1,7 @@
 ﻿
+//import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
-import { CRMDashboardService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/CRMDashboardService.js';
+
 $(document).ready(function () {
         bindMenu();
 });
@@ -8,14 +9,16 @@ $(document).ready(function () {
 function bindMenu() {
    // var baseUrl = `${window.location.protocol}//${window.location.host}`;
     var baseUrl = sessionStorage.getItem('AppBaseURL');
+    let LoginGodownName = JSON.parse(sessionStorage.getItem('authKey')).WebERPLoginGodownName;
+        LoginGodownName = LoginGodownName ? `(${LoginGodownName})` : '';
     //var baseUrl = window.AppBaseURL;
-    CRMDashboardService.GetUserDetails()
+    MenuService.GetUserDetails()
         .then(function (res) {
             sessionStorage.setItem('UserDetails', JSON.stringify(res));
             let UserDetailsobj = JSON.parse(sessionStorage.getItem('UserDetails'));
             GetWebNotificationList();
             $('#ERPUserName')[0].innerHTML = UserDetailsobj[0].UserID;
-            $('#ERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})`;
+            $('#ERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})${LoginGodownName}`;
 
             MenuService.GetMenuList(UserDetailsobj[0].UserID).then(function (value) {
                 var menuHtml = '';
@@ -99,7 +102,7 @@ function getChildMenu(value, masterCode, baseUrl) {
             var subChildMenuHtml = getChildMenu(value, item.Code);
             var hasArrow = subChildMenuHtml ? 'has-arrow' : '';
             childMenuHtml += '<li>';
-            childMenuHtml += '<a href="' + baseUrl + '/' + item.FormToOpen + '" class="menu-toggle ' + hasArrow + '">';
+            childMenuHtml += '<a href="' + baseUrl + '/' + item.FormToOpen + '?ModuleDesp=' + item.ModuleDesp +'" class="menu-toggle ' + hasArrow + '">';
             childMenuHtml += '<span>' + item.ModuleDesp + '</span>';
             // Add arrow if submenu exists (always point right initially)
             //childMenuHtml += subChildMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';
@@ -115,7 +118,7 @@ function getChildMenu(value, masterCode, baseUrl) {
 
 function setActiveMenu() {
     var currentUrl = window.location.pathname;
-
+    const LastChar = currentUrl.slice(-1);
     $('#side-menu ul.sub-menu').hide();
 
     $('#side-menu li').removeClass('mm-active last-active');
@@ -123,7 +126,7 @@ function setActiveMenu() {
 
     $('#side-menu a').each(function () {
         var menuLink = $(this).attr('href');
-        if (menuLink && (currentUrl === new URL(menuLink, window.location.origin).pathname) && currentUrl !=="/") {
+        if (menuLink && (currentUrl === new URL(menuLink, window.location.origin).pathname) && currentUrl !== "/" && LastChar !='/') {
             $(this).addClass('active');
             $(this).parents('li').last().addClass('last-active');
             $(this).parents('ul.sub-menu').show();

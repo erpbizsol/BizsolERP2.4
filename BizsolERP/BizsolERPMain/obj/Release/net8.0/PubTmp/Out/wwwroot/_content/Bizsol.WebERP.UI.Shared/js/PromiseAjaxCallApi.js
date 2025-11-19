@@ -11,24 +11,14 @@
                 dataType: 'json',
                 success: function (response) {
                     resolve(response);
-                    //if (response.status === "Success") {
-                    //    resolve(response);
-
-                    //} else if (response.message == 'No Record Found') {
-                    //    alert("Error: No Record Found");
-                    //}
-                    //else if (response.length > 0) {
-                    //    //console.log(response);
-                    //    //return response;
-                    //    resolve(response);
-                    //}
-                    //else {
-                    //    alert("Error: " + response.message);
-                    //}
+                    
                 },
                 error: function (xhr, status, error) {
-                    var errorMessage = status + ': ' + error;
-                    alert('Data Error: ' + errorMessage);
+                    const errorMessage = `${status}: ${error}`;
+
+                    // alert('Data Error: ' + errorMessage);
+                    toastr.error('Data Error : ' + errorMessage + ' ON API:' + new URL(URl).pathname);
+                    reject(errorMessage); // Important to reject the Promise
                     HideLoader();
                 }
             });
@@ -54,7 +44,8 @@
                 },
                 error: function (xhr, status, error) {
                     var errorMessage = status + ': ' + error;
-                    alert('Data Error: ' + errorMessage);
+                   // alert('Data Error: ' + errorMessage);
+                    toastr.error('Data Error: ' + errorMessage + ' ON API:' + new URL(URl).pathname);
                 }
             });
         });

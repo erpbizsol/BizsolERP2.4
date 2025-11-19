@@ -8,6 +8,7 @@ let G_PhysicalStockTackingMaster_Code = 0;
 let responseData = [];
 let todayDate = '';
 let baseUrl = sessionStorage.getItem('AppBaseURL');
+
 $(document).ready(function () {
     $("#ERPHeading").text("Stock Audit");
     highlightSelectedDates();
@@ -267,6 +268,7 @@ function AddPhysicalStock(todayDate, Remark, IdentificationNo, StockType, ItemMa
             G_PhysicalStockTackingMaster_Code = response.Code;
             PhysicalStockTackingTransactionDetails(G_PhysicalStockTackingMaster_Code);
             $("#txtScanIdentificationNo").val('');
+            $('#txtScanIdentificationNoList').empty();
             ScanIdDataListStockTacing(ItemMaster_Code);
         } else {
             toastr.error("Error adding physical stock: " + response.Msg);
@@ -302,7 +304,7 @@ function ViewModal_OpenReport(todayDate) {
             });
             $('#ViewModal_Open').modal('show');
             HideLoader();
-            const stringFilterColumn = [];
+            const stringFilterColumn = ["Physical Godown Name", "ERP Godown Name","Status"];
             const numericFilterColumn = [];
             const dateFilterColumn = [];
             const button = false;
@@ -394,7 +396,7 @@ function UpdateQtyInPhysicalStock(PhysicalStockTackingMaster_Code, TransactionCo
     let updateQtyMTRS = 0;
     let updateStatus = row.find('select[id="tblStatus"]').val();
     let updateRemark = row.find('input[id="tblRemark"]').val();
-    if (updateQtyPC.trim() === '' || updateQtyMT.trim() === '' || updateRemark.trim() === '') {
+    if (updateQtyPC.trim() === '' || updateQtyMT.trim() === '' ) {
         toastr.warning("Please fill in the Quantity and Remark fields. They cannot be blank.");
         return; 
     }
@@ -482,15 +484,8 @@ function ScanIdDataListStockTacing(ItemMaster_Code) {
     PhysicalStockTakingItemService.ScanIdDataListStockTacing(ItemMaster_Code)
         .then(function (response) {
             HideLoader();
-                //$('#txtScanIdentificationNo').off('keydown').on('keydown', function (e) {
-                //    if (e.key === "Enter") {
-                //        let IdentificationNo = $("#txtScanIdentificationNo").val();
-                //        ScanCoilDetails(IdentificationNo, ItemMaster_Code);
-                //    }
-                //});
-            
             if (response && response.length > 0) {
-                AutoSuggestionControl.SetUpAutoSuggestion($('#txtScanIdentificationNo'), $('#txtScanIdentificationNoList'), response.map((item) => ({ Desp: item.StockID })), 'StartWith');
+                AutoSuggestionControl.SetUpAutoSuggestion($('#txtScanIdentificationNo'), $('#txtScanIdentificationNoList'), response.map((item) => ({ Desp: item.StockID })), 'StartWith', false);
             } else {
                 $('#txtScanIdentificationNoList').empty();
             }
@@ -609,6 +604,7 @@ function CloseModal() {
     $('#SizeControlQtyPC').val('');
     $('#SizeControlQtyMT').val('');
     $('#ddlItemSize1').val('');
+    itemSizeMaster_Code = 0;
 }
 function CloseModalView_Physical() {
     $('#ViewModal_Open').modal('hide');
@@ -677,6 +673,27 @@ function PopulateTableForPrint(data) {
 
 }
 
+
+function InitScanQRCodeByCameraControl(outputQRTextElementID, callBackFunctionName) {
+    let url = baseUrl + '/CustomControl/ScanQRCodeByCameraControl';
+
+    $('#DivScanQRCodeByCameraControlModal').load(url, { OutputQRTextElementID: outputQRTextElementID, CallBackFunctionName: callBackFunctionName });
+
+}
+function PhysicalStockTacking_btnScanQR() {
+
+    InitScanQRCodeByCameraControl("txtScanIdentificationNo", "PhysicalStockTacking_CallbackScanQRCode");
+}
+function PhysicalStockTacking_CallbackScanQRCode() {
+    IdentificationNo = $('#txtScanIdentificationNo').val();
+    if (IdentificationNo === '') {
+        return;
+    }
+    ScanCoilDetails(IdentificationNo, ItemMaster_Code);
+    $('#txtScanIdentificationNo').val('');
+    $('#txtScanIdentificationNo').focus()
+}
+
 window.ScanCoilDetails = ScanCoilDetails;
 window.CreateNew = CreateNew;
 window.CloseModal = CloseModal;
@@ -693,4 +710,6 @@ window.NewAddSizePhysical_Stock = NewAddSizePhysical_Stock;
 window.NewSizeAddControl = NewSizeAddControl;
 window.PhysicalStockTacking_SizeCallBack = PhysicalStockTacking_SizeCallBack;
 window.Physical_ExportButton = Physical_ExportButton;
+window.PhysicalStockTacking_btnScanQR = PhysicalStockTacking_btnScanQR;
+window.PhysicalStockTacking_CallbackScanQRCode = PhysicalStockTacking_CallbackScanQRCode;
 

@@ -1,0 +1,3 @@
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Taxation.Masters\wwwroot\css\site.css
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Taxation.Masters\wwwroot\favicon.ico
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Taxation.Masters\wwwroot\js\site.js

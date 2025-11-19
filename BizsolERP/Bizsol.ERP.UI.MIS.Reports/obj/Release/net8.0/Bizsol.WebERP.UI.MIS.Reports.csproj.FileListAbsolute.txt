@@ -1,7 +1,5 @@
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.staticwebassets.runtime.json
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.exe
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.deps.json
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.runtimeconfig.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.pdb
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.csproj.AssemblyReference.cache
@@ -24,11 +22,8 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.ERP.UI.MIS.Reports\obj\Rele
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.pdb
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.genruntimeconfig.cache
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\ref\Bizsol.WebERP.UI.MIS.Reports.dll
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.deps.json
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.runtimeconfig.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\ErrorMessages.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.staticwebassets.runtime.json
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.exe
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.AspNetCore.Antiforgery.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.AspNetCore.Authentication.Abstractions.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.AspNetCore.Authentication.BearerToken.dll
@@ -372,3 +367,36 @@ D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8
 D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.pdb
 D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.genruntimeconfig.cache
 D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\ref\Bizsol.WebERP.UI.MIS.Reports.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.staticwebassets.endpoints.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.staticwebassets.endpoints.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.dll
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.csproj.AssemblyReference.cache
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\rpswa.dswa.cache.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.GeneratedMSBuildEditorConfig.editorconfig
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.AssemblyInfoInputs.cache
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.AssemblyInfo.cs
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.csproj.CoreCompileInputs.cache
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.sourcelink.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\rjimswa.dswa.cache.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\rjsmrazor.dswa.cache.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\rjsmcshtml.dswa.cache.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\scopedcss\bundle\Bizsol.WebERP.UI.MIS.Reports.styles.css
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\staticwebassets.build.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\staticwebassets.build.json.cache
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\staticwebassets.development.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\staticwebassets.build.endpoints.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\staticwebassets.upToDateCheck.txt
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.W.126973E7.Up2Date
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.dll
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\refint\Bizsol.WebERP.UI.MIS.Reports.dll
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.MIS.Reports.pdb
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\ref\Bizsol.WebERP.UI.MIS.Reports.dll
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\swae.build.ex.cache
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Properties\launchSettings.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.MIS.Reports.Microsoft.AspNetCore.StaticWebAssets.props
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.MIS.Reports.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.MIS.Reports.props
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\staticwebassets\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.MIS.Reports.props
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\staticwebassets\msbuild.buildTransitive.Bizsol.WebERP.UI.MIS.Reports.props
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.MIS.Reports\obj\Release\net8.0\staticwebassets.pack.json
