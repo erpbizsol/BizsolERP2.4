@@ -83,8 +83,8 @@ function GetStockAgeingReportList() {
         HideLoader();
         $('#StockAgeingReport').show();
         if (response && response.length > 0) {
-            const stringFilterColumn = [];
-            const numericFilterColumn = [];
+            const stringFilterColumn = ["Item Name","SizeDesp"];
+            const numericFilterColumn = ["0-90 D", "91-120 D", "121-180 D", "> 180 D"];
             const dateFilterColumn = [];
             const button = false;
             const stringDoubleFilterColumn = [];
