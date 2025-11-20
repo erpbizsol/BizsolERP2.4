@@ -67,6 +67,15 @@ border-radius: 8px;
  </div>
 `;
 
+// Helper function to convert Date to YYYY-MM-DD in local timezone
+function dateToLocalISOString(date) {
+    if (!date) return null;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 class DateRangeControlHTMLElement extends HTMLElement {
  constructor() {
  super();
@@ -164,8 +173,8 @@ class DateRangeControlHTMLElement extends HTMLElement {
  // When both dates are selected, auto-close on mobile
  if (mobile && selectedDates && selectedDates.length === 2) {
  setTimeout(() => {
- const f = selectedDates[0] ? selectedDates[0].toISOString().slice(0,10) : null;
- const t = selectedDates[1] ? selectedDates[1].toISOString().slice(0,10) : null;
+ const f = selectedDates[0] ? dateToLocalISOString(selectedDates[0]) : null;
+ const t = selectedDates[1] ? dateToLocalISOString(selectedDates[1]) : null;
  that._setFromValue(f);
  that._setToValue(t);
  that._syncToMin();
@@ -180,8 +189,8 @@ class DateRangeControlHTMLElement extends HTMLElement {
  },
  onClose: (selectedDates, dateStr, instance) => {
  if (selectedDates && selectedDates.length >0) {
- const f = selectedDates[0] ? selectedDates[0].toISOString().slice(0,10) : null;
- const t = selectedDates[1] ? selectedDates[1].toISOString().slice(0,10) : null;
+ const f = selectedDates[0] ? dateToLocalISOString(selectedDates[0]) : null;
+ const t = selectedDates[1] ? dateToLocalISOString(selectedDates[1]) : null;
  that._setFromValue(f);
  that._setToValue(t);
  that._syncToMin();
@@ -377,8 +386,8 @@ class DateRangeControlHTMLElement extends HTMLElement {
  });
  btnApply.addEventListener('click', () => { 
    const sd = instance.selectedDates || []; 
-   const f = sd[0] ? sd[0].toISOString().slice(0,10) : null; 
-   const t = sd[1] ? sd[1].toISOString().slice(0,10) : null; 
+   const f = sd[0] ? dateToLocalISOString(sd[0]) : null; 
+   const t = sd[1] ? dateToLocalISOString(sd[1]) : null; 
    this._setFromValue(f); 
    this._setToValue(t); 
    this._syncToMin(); 
