@@ -510,12 +510,21 @@ function countTableTr() {
 }
 
 $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
-    // Skip totals row for Pipe Stock tab
-    if ($('#pipe-stock-tab').hasClass('active')) {
-        return;
-    }
+    const isPipeStock = $('#pipe-stock-tab').hasClass('active');
+    const isPendingPlans = $('#pending-plans-tab').hasClass('active');
+
     setTimeout(() => {
         const filteredData = window['filteredData_tblTable'] || [];
+        if (isPipeStock) {
+            updatePipeStockFooterFromFiltered(filteredData);
+            adjustFilterDropdownPosition();
+            applyTooltipsToGridCells();
+            return;
+        }
+        if (isPendingPlans) {
+            updatePendingPlansFooterFromFiltered(filteredData);
+            return;
+        }
         const totals = calculateTotals(filteredData);
         const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         addTotalsRow(totals, hiddenColumns);
@@ -525,12 +534,21 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
 });
 
 $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"], [id^="nextBtn-"], [id^="lastBtn-"]', function () {
-    // Skip totals row for Pipe Stock tab
-    if ($('#pipe-stock-tab').hasClass('active')) {
-        return;
-    }
+    const isPipeStock = $('#pipe-stock-tab').hasClass('active');
+    const isPendingPlans = $('#pending-plans-tab').hasClass('active');
+
     setTimeout(() => {
         const filteredData = window['filteredData_tblTable'] || [];
+        if (isPipeStock) {
+            updatePipeStockFooterFromFiltered(filteredData);
+            adjustFilterDropdownPosition();
+            applyTooltipsToGridCells();
+            return;
+        }
+        if (isPendingPlans) {
+            updatePendingPlansFooterFromFiltered(filteredData);
+            return;
+        }
         const totals = calculateTotals(filteredData);
         const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         addTotalsRow(totals, hiddenColumns);
@@ -538,6 +556,46 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
         applyTooltipsToGridCells();
     }, 300);
 });
+
+function updatePipeStockFooterFromFiltered(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+        addPipeStockFooter(0, 0, 0);
+        return;
+    }
+    let totalQtyMT = 0;
+    let totalQtyPC = 0;
+    let totalKG_Pipe = 0;
+
+    rows.forEach(function (row) {
+        totalQtyMT += parseFloat(row["Qty MT"]) || 0;
+        totalQtyPC += parseFloat(row["Qty PC"]) || 0;
+        totalKG_Pipe += parseFloat(row["KG_Pipe"]) || 0;
+    });
+
+    addPipeStockFooter(totalQtyMT, totalQtyPC, totalKG_Pipe);
+}
+
+function updatePendingPlansFooterFromFiltered(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+        addPendingPlansFooter(0, 0, 0, 0, 0);
+        return;
+    }
+    let totalOrderQty = 0;
+    let totalPlannedQty = 0;
+    let totalRolledQty = 0;
+    let totalBalanceQty = 0;
+    let totalPlannedPC = 0;
+
+    rows.forEach(function (row) {
+        totalOrderQty += parseFloat(row["Order Qty"]) || 0;
+        totalPlannedQty += parseFloat(row["Planned Qty"]) || 0;
+        totalRolledQty += parseFloat(row["Rolled Qty"]) || 0;
+        totalBalanceQty += parseFloat(row["Balance Qty"]) || 0;
+        totalPlannedPC += parseFloat(row["Planned PC"]) || 0;
+    });
+
+    addPendingPlansFooter(totalOrderQty, totalPlannedQty, totalRolledQty, totalBalanceQty, totalPlannedPC);
+}
 function applyTooltipsToGridCells() {
     try {
         const head = document.getElementById('table-head');
@@ -783,8 +841,8 @@ function GetPipeStockRollingPlanList() {
                 }
                 return item;
             });
-            const stringFilterColumn = ["ItemName", "Size", "Thickness", "Length", "Stamp", "GRADE", "Qty PC", "KG_Pipe","Qty MT"];
-            const numericFilterColumn = [];
+            const stringFilterColumn = ["ItemName", "Size", "Thickness", "Length", "Stamp", "GRADE", "KG_Pipe","Qty MT", "Type"];
+            const numericFilterColumn = ["Qty PC"];
             const dateFilterColumn = [];
             const button = false;
             const stringDoubleFilterColumn = [];
@@ -792,7 +850,7 @@ function GetPipeStockRollingPlanList() {
             const hiddenColumns = [];
 
             const columnAlignment = {
-                "KG_Pipe": 'right', "Qty PC": 'right', "Qty MT": 'right', "Size": 'right', "Thickness": 'right',"Length":'right'
+                "KG_Pipe": 'right', "Qty PC": 'right', "Qty MT": 'right', "Size": 'right', "Thickness": 'right',"Length":'right',"Type":'right'
             };
 
             BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
@@ -895,52 +953,81 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
             let totalPlannedQty = 0;
             let totalRolledQty = 0;
             let totalBalanceQty = 0;
+            let totalPlannedPC = 0;
             
             response.forEach(function(item) {
                 const orderQty = parseFloat(item["Order Qty"]) || 0;
                 const plannedQty = parseFloat(item["Planned Qty"]) || 0;
                 const rolledQty = parseFloat(item["Rolled Qty"]) || 0;
                 const balanceQty = parseFloat(item["Balance Qty"]) || 0;
+                const plannedPC = parseFloat(item["Planned PC"]) || 0;
                 
                 totalOrderQty += orderQty;
                 totalPlannedQty += plannedQty;
                 totalRolledQty += rolledQty;
                 totalBalanceQty += balanceQty;
+                totalPlannedPC += plannedPC;
             });
             
-            response = response.map(item => {
-                if (item["Planned Qty"] !== undefined && item["Planned Qty"] !== null && !isNaN(item["Planned Qty"])) {
-                    item["Planned Qty"] = parseFloat(item["Planned Qty"]).toFixed(3);
-                } 
-                if (item["Rolled Qty"] !== undefined && item["Rolled Qty"] !== null && !isNaN(item["Rolled Qty"])) {
-                    item["Rolled Qty"] = parseFloat(item["Rolled Qty"]).toFixed(3);
-                }
-                if (item["Balance Qty"] !== undefined && item["Balance Qty"] !== null && !isNaN(item["Balance Qty"])) {
-                    item["Balance Qty"] = parseFloat(item["Balance Qty"]).toFixed(3);
-                }
-                
-                if (item["Plan No"]) {
-                    const rawValue = item["Plan No"];
-                    item["Plan No"] = `<a href="javascript:void(0)" onclick="GetRollingPlanNoDetail('${escapeHtml(item['Plan No'])}')">${rawValue}</a>`;
-                }
-                return item;
-            });
-            const stringFilterColumn = ["Order No", "Item Name", "Size Desp", "Order Qty", "Planned Qty", "Rolled Qty", "Balance Qty"];
+            const stringFilterColumn = ["Order No", "Item Name", "Size Desp", "Order Qty", "Planned Qty", "Rolled Qty", "Balance Qty", "Planned PC"];
             const numericFilterColumn = [];
             const dateFilterColumn = ["Plan Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Code"];
+            const hiddenColumns = ["Code", "Party Name","Order No_raw"];
+            
+            const allowedColumns = [
+                "SNo", "Plan Date", "Plan No", "Order No", "Item Name", "Size Desp", 
+                "Order Qty", "Planned Qty", "Rolled Qty", "Balance Qty", "Planned PC", "Status"
+            ];
+            
+            response = response.map((item, index) => {
+                const filteredItem = {};
+                
+                allowedColumns.forEach(col => {
+                    if (col === "SNo") {
+                        filteredItem[col] = index + 1;
+                    } else if (item.hasOwnProperty(col)) {
+                        filteredItem[col] = item[col];
+                    }
+                });
+                
+                if (filteredItem["Planned Qty"] !== undefined && filteredItem["Planned Qty"] !== null && !isNaN(filteredItem["Planned Qty"])) {
+                    filteredItem["Planned Qty"] = parseFloat(filteredItem["Planned Qty"]).toFixed(3);
+                } 
+                if (filteredItem["Rolled Qty"] !== undefined && filteredItem["Rolled Qty"] !== null && !isNaN(filteredItem["Rolled Qty"])) {
+                    filteredItem["Rolled Qty"] = parseFloat(filteredItem["Rolled Qty"]).toFixed(3);
+                }
+                if (filteredItem["Balance Qty"] !== undefined && filteredItem["Balance Qty"] !== null && !isNaN(filteredItem["Balance Qty"])) {
+                    filteredItem["Balance Qty"] = parseFloat(filteredItem["Balance Qty"]).toFixed(3);
+                }
+                
+                if (filteredItem["Plan No"]) {
+                    const rawValue = filteredItem["Plan No"];
+                    filteredItem["Plan No"] = `<a href="javascript:void(0)" onclick="GetRollingPlanNoDetail('${escapeHtml(rawValue)}')">${rawValue}</a>`;
+                }
+                if (filteredItem["Order No"]) {
+                    const partyName = (item["Party Name"] ?? item["PartyName"] ?? '').toString().trim();
+                    const orderValue = filteredItem["Order No"];
+                    if (partyName) {
+                        filteredItem["Order No"] = `<span class="order-no-cell" title="${escapeHtml(partyName)}">${escapeHtml(orderValue)}</span>`;
+                    } else {
+                        filteredItem["Order No"] = `<span class="order-no-cell">${escapeHtml(orderValue)}</span>`;
+                    }
+                }
+                
+                return filteredItem;
+            });
             const columnAlignment = {
-                "Plan Date": 'center', "Order Qty": 'right', "Planned Qty": 'right', "Rolled Qty": 'right', "Balance Qty": 'right'
+                "Plan Date": 'center', "Order Qty": 'right', "Planned Qty": 'right', "Rolled Qty": 'right', "Balance Qty": 'right',"Planned PC":'right'
             };
 
             BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             $('.totals-row').remove();
             
             setTimeout(function() {
-                addPendingPlansFooter(totalOrderQty,totalPlannedQty, totalRolledQty, totalBalanceQty);
+                addPendingPlansFooter(totalOrderQty, totalPlannedQty, totalRolledQty, totalBalanceQty, totalPlannedPC);
             }, 300);
             
             HideLoader();
@@ -955,7 +1042,7 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
         toastr.error(error.Msg || 'Error During Get Pending Plan Sheet');
     });
 }
-function addPendingPlansFooter(totalOrderQty,totalPlannedQty, totalRolledQty, totalBalanceQty) {
+function addPendingPlansFooter(totalOrderQty, totalPlannedQty, totalRolledQty, totalBalanceQty, totalPlannedPC) {
     const tfoot = document.getElementById('table-foot');
     const thead = document.getElementById('table-head');
     
@@ -977,6 +1064,7 @@ function addPendingPlansFooter(totalOrderQty,totalPlannedQty, totalRolledQty, to
     let plannedQtyIndex = -1;
     let rolledQtyIndex = -1;
     let balanceQtyIndex = -1;
+    let plannedPCIndex = -1;
     
     for (let i = 0; i < headerRow.children.length; i++) {
         const headerText = headerRow.children[i].textContent.trim();
@@ -991,6 +1079,9 @@ function addPendingPlansFooter(totalOrderQty,totalPlannedQty, totalRolledQty, to
         }
         if (headerText.includes('Balance Qty') || headerText.includes('BalanceQty')) {
             balanceQtyIndex = i;
+        }
+        if (headerText.includes('Planned PC') || headerText.includes('PlannedPC')) {
+            plannedPCIndex = i;
         }
     }
     
@@ -1011,6 +1102,9 @@ function addPendingPlansFooter(totalOrderQty,totalPlannedQty, totalRolledQty, to
             cell.style.textAlign = 'right';
         } else if (i === balanceQtyIndex) {
             cell.textContent = totalBalanceQty.toFixed(3);
+            cell.style.textAlign = 'right';
+        } else if (i === plannedPCIndex) {
+            cell.textContent = totalPlannedPC;
             cell.style.textAlign = 'right';
         } else {
             cell.textContent = '';
@@ -1115,6 +1209,25 @@ function PlanNoCloseModal() {
     }
     $('#planNoDetails').modal('hide');
 }
+$(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
+    let isPipeStock = $('#pipe-stock-tab').hasClass('active');
+    let isPendingPlans = $('#pending-plans-tab').hasClass('active');
+    if (isPipeStock) {
+        setTimeout(() => {
+            const filteredData = window['filteredData_tblTable'] || [];
+            addPipeStockFooter(filteredData);
+            adjustFilterDropdownPosition();
+            applyTooltipsToGridCells();
+        }, 300);
+    }
+    
+        if (isPendingPlans) {
+            setTimeout(() => {
+                const filteredData = window['filteredData_tblTable'] || [];
+                addPendingPlansFooter(filteredData);
+            }, 300);   
+       }
+});
 
 window.ExportExcel = ExportExcel;
 window.OpenModal = OpenModal;

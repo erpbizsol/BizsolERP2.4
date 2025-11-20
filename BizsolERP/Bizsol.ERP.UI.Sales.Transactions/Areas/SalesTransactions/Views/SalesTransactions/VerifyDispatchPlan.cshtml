@@ -263,16 +263,15 @@
                         <option value="C">Approved Dispatch Plan</option>
                     </select>
                 </div>
-            </div>
-        </div>
-        <div class="card p-1" id="dvTableDispatch" style="display:none;">
-            <div id="btnDownload" class="row mb-1">
-                <div class="col-md-12" style="text-align:right">
+                <div class="col-md-9" style="text-align:right">
                     <button type="button" id="btnExportExcel" class="btn btn-primary btn-height" onclick="ExportExcel();">
                         <i class="fas fa-download"></i> Download
                     </button>
                 </div>
             </div>
+        </div>
+        <div class="card p-1" id="dvTableDispatch" style="display:none;">
+            
             <div class="table-wrapper" id="tableWrapper" style="min-height:400px;">
                 <table id="tblDispatchPlan" class="fixed-width-table table table-bordered">
                     <thead id="table-head">
@@ -333,7 +332,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary icon-height" onclick="SendMailToTransporter()">Send Mail</button>
+                <button type="button" class="btn btn-primary icon-height" onclick="SendMailToTransporter()">Verify/Send Mail</button>
                 <button type="button" class="btn btn-danger icon-height" onclick="CloseTransporter()">Close</button>
             </div>
         </div>

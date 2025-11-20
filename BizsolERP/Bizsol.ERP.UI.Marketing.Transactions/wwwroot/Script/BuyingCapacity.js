@@ -39,37 +39,61 @@ function getUrlVars() {
 function GetNestedMarketingManList() {
     BuyingCapacityService.GetNestedMarketingManList().then(function (response) {
         if (response && response.length > 0) {
-            $('#ddlSalesPersonList').empty();
-
-            let options = '<option value="ALL" selected>ALL</option>';
             let matchedPersonName = null;
+            let marketingList = [];
+            let userMaster_Code = null;
+
+            try {
+                var authKeyStr = sessionStorage.getItem('authKey');
+                if (authKeyStr) {
+                    var authKey = JSON.parse(authKeyStr);
+                    userMaster_Code = authKey ? authKey.UserMaster_Code : null;
+                }
+            } catch (e) {
+                console.error('Error parsing authKey:', e);
+                userMaster_Code = null;
+            }
 
             for (let i = 0; i < response.length; i++) {
                 const person = response[i];
-                let userMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-                // Check if UserMaster_Code matches
-                if (person.Usermaster_Code == userMaster_Code) {
-                    matchedPersonName = person.PersonName;
+                if (person && person.PersonName) {
+                    if (userMaster_Code && person.Usermaster_Code == userMaster_Code) {
+                        matchedPersonName = person.PersonName;
+                    }
+                    marketingList.push({
+                        Code: person.PersonName,
+                        Desp: person.PersonName
+                    });
                 }
-
-                options += `<option value="${person.PersonName}">${person.PersonName}</option>`;
             }
 
-            $('#ddlSalesPersonList').html(options);
+            BindSelectList1($('#ddlMarketingMan')[0], marketingList);
+            $('#ddlMarketingMan option[value="0"]').val("ALL");
+            if ($('#ddlMarketingMan').select2) {
+                $('#ddlMarketingMan').select2({
+                    width: '-webkit-fill-available'
+                });
+            }
 
             // Set the marketing man input or dropdown value
             var urlParams = getUrlVars();
-            if (decodeURIComponent(urlParams['MarketingMan_Name'] || "") == '') {
+            var urlMarketingMan = decodeURIComponent(urlParams['MarketingMan_Name'] || "");
+            if (urlMarketingMan == '') {
                 if (matchedPersonName) {
                     $('#ddlMarketingMan').val(matchedPersonName);
                 } else {
                     $('#ddlMarketingMan').val("ALL");
                 }
+            } else {
+                $('#ddlMarketingMan').val(urlMarketingMan);
             }
 
         } else {
             toastr.error('No Data Found');
         }
+    }).catch(function (error) {
+        console.error('Error loading marketing person list:', error);
+        toastr.error('Error loading sales person list');
     });
 }
 async function GetBuyingCapacityList() {
@@ -79,18 +103,24 @@ async function GetBuyingCapacityList() {
         const response = await BuyingCapacityService.GetBuyingCapacityList(MarketingPersonName);
         $('#BuyingCapacity').show();
         if (response && response.length > 0) {
-            G_BuyingCapacityRows = response;
-            const StringFilterColumn = ["Person Name"];
+            G_BuyingCapacityRows = response.map(function(item, index) {
+                return {
+                    ...item,
+                    __RowIndex: index
+                };
+            });
+            const StringFilterColumn = ["Party Name", "Marketing Person","Country", "City", "State","PinCode"];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Code"];
+            const hiddenColumns = ["Code", "__RowIndex"];
             const ColumnAlignment = {};
-            const updatedResponse = response.map((item, index) => {
-                let BuyingFrequencyInputHTML = `<select type="text" class="form-control form-control-sm box_border" id="ddlFillBuyingFrequency_${index}" onchange="SaveBuyingCapacity(${index},'${item.Code}')"></select>`;
-                let MonthlyRequiredQtyInputHTML = `<input type="text" class="form-control form-control-sm box_border text-end" id="txtMonthlyRequired_${index}" oninput="validateDecimalRateInput(this)" onblur="SaveBuyingCapacity(${index},'${item.Code}')" style="width:120px"/>`;
+            const updatedResponse = G_BuyingCapacityRows.map((item) => {
+                const rowIndex = item.__RowIndex;
+                let BuyingFrequencyInputHTML = `<select type="text" class="form-control form-control-sm box_border" id="ddlFillBuyingFrequency_${rowIndex}" onchange="SaveBuyingCapacity(${rowIndex},'${item.Code}')"></select>`;
+                let MonthlyRequiredQtyInputHTML = `<input type="text" class="form-control form-control-sm box_border text-end" id="txtMonthlyRequired_${rowIndex}" oninput="validateDecimalRateInput(this)" onblur="SaveBuyingCapacity(${rowIndex},'${item.Code}')" style="width:120px" autocomplete="off"/>`;
 
                 return {
                     ...item,
@@ -105,23 +135,25 @@ async function GetBuyingCapacityList() {
 
             // Bind initial values from response to each row controls
             try {
-                for (var i = 0; i < response.length; i++) {
-                    var row = response[i] || {};
+                for (var i = 0; i < G_BuyingCapacityRows.length; i++) {
+                    var row = G_BuyingCapacityRows[i] || {};
+                    var domIndex = typeof row.__RowIndex === 'number' ? row.__RowIndex : i;
+                    var baseRow = G_BuyingCapacityRows[domIndex] || {};
                     // Prefer the display text present in the response
-                    var bfText = row['Buying Frequency'] || row.BuyingFrequency || '';
+                    var bfText = baseRow.BuyingFrequency || baseRow['Buying Frequency'] || '';
                     // Map code to display text if needed
                     try {
                         var codeMap = { 'M': 'Monthly', 'O': 'Occasionally', 'W': 'Weekly' };
                         if (bfText && codeMap[bfText]) { bfText = codeMap[bfText]; }
                     } catch(eMap) { }
-                    var qty = row.MonthlyRequiredQty != null ? row.MonthlyRequiredQty : (row['Monthly Required(Qty)'] != null ? row['Monthly Required(Qty)'] : '');
+                    var qty = baseRow.MonthlyRequiredQty != null ? baseRow.MonthlyRequiredQty : (baseRow['Monthly Required(Qty)'] != null ? baseRow['Monthly Required(Qty)'] : '');
 
                     // Bind Buying Frequency by text using helper (matches option display text)
                     try {
                         if (bfText && typeof BizSolHelperFunction !== 'undefined' && BizSolHelperFunction.SelectOptionByText) {
-                            BizSolHelperFunction.SelectOptionByText(`ddlFillBuyingFrequency_${i}`, bfText);
+                            BizSolHelperFunction.SelectOptionByText(`ddlFillBuyingFrequency_${domIndex}`, bfText);
                         } else {
-                            var $bfSel = $(`#ddlFillBuyingFrequency_${i}`);
+                            var $bfSel = $(`#ddlFillBuyingFrequency_${domIndex}`);
                             if ($bfSel && $bfSel.length) {
                                 $bfSel.find('option').filter(function(){ return $(this).text() === bfText; }).prop('selected', true);
                                 try { if ($bfSel.select2) { $bfSel.trigger('change.select2'); } else { $bfSel.trigger('change'); } } catch(e2) { $bfSel.trigger('change'); }
@@ -130,7 +162,7 @@ async function GetBuyingCapacityList() {
                     } catch(e1) { }
 
                     // Bind Monthly Required Qty
-                    var $qtyInp = $(`#txtMonthlyRequired_${i}`);
+                    var $qtyInp = $(`#txtMonthlyRequired_${domIndex}`);
                     if ($qtyInp && $qtyInp.length) {
                         if (qty !== '' && !isNaN(qty)) { $qtyInp.val(parseFloat(qty).toFixed(3)); } else { $qtyInp.val(''); }
                     }
@@ -247,6 +279,14 @@ function validateDecimalRateInput(input) {
     }
     input.value = value;
 }
+function BindSelectList1(element, list) {
+    let option = '<option value="0">ALL</option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
+
 function BindSelectList2(element, list) {
     let option = '<option value="0">Select</option>';
     $.each(list, function (key, val) {
@@ -254,6 +294,162 @@ function BindSelectList2(element, list) {
     });
     element.innerHTML = option;
 }
+$(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
+    // Skip totals row for Pipe Stock tab
+    //if ($('#pipe-stock-tab').hasClass('active')) {
+    //    return;
+    //}
+    setTimeout(function () {
+        var filteredRows = window['filteredData_BuyingCapacity'] || [];
+        refreshBuyingCapacityRowControls(filteredRows);
+    }, 300);
+});
+function refreshBuyingCapacityRowControls(rows) {
+    if (!rows || rows.length === 0) {
+        adjustFilterDropdownPosition();
+        return;
+    }
+
+    FillBuyingFrequency().then(function () {
+        try {
+            var codeMap = { 'M': 'Monthly', 'O': 'Occasionally', 'W': 'Weekly' };
+
+            for (var i = 0; i < rows.length; i++) {
+                var row = rows[i] || {};
+                var domIndex = typeof row.__RowIndex === 'number' ? row.__RowIndex : i;
+                var baseRow = (G_BuyingCapacityRows && G_BuyingCapacityRows.length > domIndex) ? G_BuyingCapacityRows[domIndex] : {};
+                var bfText = '';
+                if (baseRow.BuyingFrequency) {
+                    bfText = baseRow.BuyingFrequency;
+                } else if (baseRow['Buying Frequency']) {
+                    bfText = baseRow['Buying Frequency'];
+                }
+
+                if (bfText && codeMap[bfText]) {
+                    bfText = codeMap[bfText];
+                }
+
+                var qty = '';
+                if (baseRow.MonthlyRequiredQty !== undefined && baseRow.MonthlyRequiredQty !== null) {
+                    qty = baseRow.MonthlyRequiredQty;
+                } else if (baseRow['Monthly Required(Qty)'] !== undefined && baseRow['Monthly Required(Qty)'] !== null) {
+                    qty = baseRow['Monthly Required(Qty)'];
+                }
+
+                var selectId = 'ddlFillBuyingFrequency_' + domIndex;
+                var $bfSel = $('#' + selectId);
+
+                try {
+                    if (bfText && typeof BizSolHelperFunction !== 'undefined' && BizSolHelperFunction.SelectOptionByText) {
+                        BizSolHelperFunction.SelectOptionByText(selectId, bfText);
+                    } else if ($bfSel && $bfSel.length) {
+                        $bfSel.find('option').filter(function () {
+                            return $(this).text() === bfText;
+                        }).prop('selected', true);
+                        try {
+                            if ($bfSel.select2) {
+                                $bfSel.trigger('change.select2');
+                            } else {
+                                $bfSel.trigger('change');
+                            }
+                        } catch (e2) {
+                            $bfSel.trigger('change');
+                        }
+                    }
+                } catch (e1) { }
+
+                var $qtyInp = $('#txtMonthlyRequired_' + domIndex);
+                if ($qtyInp && $qtyInp.length) {
+                    if (qty !== '' && !isNaN(qty)) {
+                        $qtyInp.val(parseFloat(qty).toFixed(3));
+                    } else {
+                        $qtyInp.val('');
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error rebinding buying capacity controls:', error);
+        } finally {
+            adjustFilterDropdownPosition();
+        }
+    }).catch(function (error) {
+        console.error('Error refreshing buying frequency after filtering:', error);
+        adjustFilterDropdownPosition();
+    });
+}
+function adjustFilterDropdownPosition() {
+    // Add CSS to position filter dropdowns for last 5 columns to the left
+    const style = document.createElement('style');
+    style.id = 'filter-dropdown-position-fix';
+
+    // Remove existing style if present
+    const existingStyle = document.getElementById('filter-dropdown-position-fix');
+    if (existingStyle) {
+        existingStyle.remove();
+    }
+
+    style.innerHTML = `
+        #table-head th:nth-last-child(-n+5) .filter-dropdown,
+        #table-head th:nth-last-child(-n+5) .dropdown-menu,
+        #table-head th:nth-last-child(-n+5) [class*="filter"],
+        #table-head th:nth-last-child(-n+5) [class*="dropdown"] {
+            right: 0 !important;
+            left: auto !important;
+        }
+        
+        /* Ensure filter content is visible and not cut off */
+        .table-wrapper {
+            overflow-x: auto;
+            overflow-y: visible;
+        }
+        
+        #BuyingCapacity {
+            position: relative;
+        }
+        
+        /* Adjust any filter popups/dropdowns in last 5 columns */
+        #table-head th:last-child .filter-popup,
+        #table-head th:last-child .filter-container,
+        #table-head th:nth-last-child(2) .filter-popup,
+        #table-head th:nth-last-child(2) .filter-container,
+        #table-head th:nth-last-child(3) .filter-popup,
+        #table-head th:nth-last-child(3) .filter-container,
+        #table-head th:nth-last-child(4) .filter-popup,
+        #table-head th:nth-last-child(4) .filter-container,
+        #table-head th:nth-last-child(5) .filter-popup,
+        #table-head th:nth-last-child(5) .filter-container {
+            right: 0 !important;
+            left: auto !important;
+            transform: translateX(0) !important;
+        }
+    `;
+
+    document.head.appendChild(style);
+
+    // Also dynamically adjust filter elements if they exist
+    setTimeout(() => {
+        const tableHead = document.getElementById('table-head');
+        if (tableHead) {
+            const headerCells = tableHead.querySelectorAll('th');
+            const totalCells = headerCells.length;
+
+            // Apply to last 5 columns
+            headerCells.forEach((cell, index) => {
+                if (index >= totalCells - 5) {
+                    cell.style.position = 'relative';
+
+                    // Find any filter-related elements and adjust their positioning
+                    const filterElements = cell.querySelectorAll('[class*="filter"], [class*="dropdown"]');
+                    filterElements.forEach(elem => {
+                        elem.style.right = '0';
+                        elem.style.left = 'auto';
+                    });
+                }
+            });
+        }
+    }, 100);
+}
+
 
 window.GetBuyingCapacityList = GetBuyingCapacityList;
 window.GetNestedMarketingManList = GetNestedMarketingManList;
