@@ -83,25 +83,46 @@ function GetStockAgeingReportList() {
         HideLoader();
         $('#StockAgeingReport').show();
         if (response && response.length > 0) {
+            response = response.map(item => {
+                if (item["0-90 D"] !== undefined && item["0-90 D"] !== null && !isNaN(item["0-90 D"])) {
+                    item["0-90 D"] = parseFloat(item["0-90 D"]).toFixed(3);
+                }
+                if (item["91-120 D "] !== undefined && item["91-120 D "] !== null && !isNaN(item["91-120 D "])) {
+                    item["91-120 D "] = parseFloat(item["91-120 D "]).toFixed(3);
+                }
+                if (item["121-180 D "] !== undefined && item["121-180 D "] !== null && !isNaN(item["121-180 D "])) {
+                    item["121-180 D "] = parseFloat(item["121-180 D "]).toFixed(3);
+                }
+                if (item["> 180 D"] !== undefined && item["> 180 D"] !== null && !isNaN(item["> 180 D"])) {
+                    item["> 180 D"] = parseFloat(item["> 180 D"]).toFixed(3);
+                }
+                if (item["Total"] !== undefined && item["Total"] !== null && !isNaN(item["Total"])) {
+                    item["Total"] = parseFloat(item["Total"]).toFixed(3);
+                }
+                return item;
+            });
             const stringFilterColumn = ["Item Name","SizeDesp"];
-            const numericFilterColumn = ["0-90 D", "91-120 D", "121-180 D", "> 180 D"];
+            const numericFilterColumn = ["0-90 D", "91-120 D ", "121-180 D ", "> 180 D"];
             const dateFilterColumn = [];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = [];
-            const columnAlignment = { "0-90 D": 'right', "91-120 D": 'right', "121-180 D": 'right', "> 180 D": 'right',"Total":'right'};
+            const columnAlignment = { "0-90 D": 'right', "91-120 D ": 'right', "121-180 D ": 'right', "> 180 D": 'right',"Total":'right'};
 
             BizsolCustomFilterGrid.CreateDataTable("table-head-StockAgeingReport", "table-body-StockAgeingReport", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            setStockAgeingFooterTotals(response);
 
         } else {
             HideLoader();
             $('#StockAgeingReport').hide();
+            clearStockAgeingFooter();
             toastr.error('No Data Found');
         }
     }).catch(function (error) {
         HideLoader();
         $('#StockAgeingReport').hide();
+        clearStockAgeingFooter();
         toastr.error(error.Msg || 'Error During Get Rolling Plan Sheet');
     });
 }
@@ -121,6 +142,49 @@ function ExportExcel() {
         toastr.error(error.Msg || 'Error During Export Stock Ageing Report Data');
     });
 }
+function setStockAgeingFooterTotals(data) {
+    const footerId = '#table-foot-StockAgeingReport';
+    if (!Array.isArray(data) || data.length === 0) {
+        clearStockAgeingFooter();
+        return;
+    }
+    const totalColumns = ["0-90 D", "91-120 D ", "121-180 D ", "> 180 D", "Total"];
+    const totals = {};
+    totalColumns.forEach(function (column) {
+        totals[column] = 0;
+    });
+    data.forEach(function (item) {
+        totalColumns.forEach(function (column) {
+            const value = parseFloat(item[column]);
+            if (!isNaN(value)) {
+                totals[column] = totals[column] + value;
+            }
+        });
+    });
+    totalColumns.forEach(function (column) {
+        if (!isNaN(totals[column])) {
+            totals[column] = totals[column].toFixed(3);
+        } else {
+            totals[column] = '';
+        }
+    });
+    const columns = Object.keys(data[0]);
+    let footerRow = '<tr>';
+    columns.forEach(function (column, index) {
+        if (index === 0) {
+            footerRow = footerRow + '<th style="text-align:left">Grand Total</th>';
+        } else if (totalColumns.includes(column)) {
+            footerRow = footerRow + '<th style="text-align:right">' + totals[column] + '</th>';
+        } else {
+            footerRow = footerRow + '<th></th>';
+        }
+    });
+    footerRow = footerRow + '</tr>';
+    $(footerId).html(footerRow);
+}
+function clearStockAgeingFooter() {
+    $('#table-foot-StockAgeingReport').empty();
+}
 function BindSelectList1(element, list) {
     let option = '<option value="All">ALL</option>';
     $.each(list, function (key, val) {
@@ -128,6 +192,12 @@ function BindSelectList1(element, list) {
     });
     element.innerHTML = option;
 }
-
+$(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
+    
+        setTimeout(() => {
+            const filteredData = window['filteredData_StockAgeingReport'] || [];
+            setStockAgeingFooterTotals(filteredData);
+        }, 300);
+});
 window.ExportExcel = ExportExcel;
 
