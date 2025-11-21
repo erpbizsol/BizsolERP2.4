@@ -949,26 +949,6 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
     Showloader();
     RollingPlanSheetService.GetPendingPlansReportList(G_FromDate, G_ToDate).then(function (response) {
         if (response && response.length > 0) {
-            let totalOrderQty = 0;
-            let totalPlannedQty = 0;
-            let totalRolledQty = 0;
-            let totalBalanceQty = 0;
-            let totalPlannedPC = 0;
-            
-            response.forEach(function(item) {
-                const orderQty = parseFloat(item["Order Qty"]) || 0;
-                const plannedQty = parseFloat(item["Planned Qty"]) || 0;
-                const rolledQty = parseFloat(item["Rolled Qty"]) || 0;
-                const balanceQty = parseFloat(item["Balance Qty"]) || 0;
-                const plannedPC = parseFloat(item["Planned PC"]) || 0;
-                
-                totalOrderQty += orderQty;
-                totalPlannedQty += plannedQty;
-                totalRolledQty += rolledQty;
-                totalBalanceQty += balanceQty;
-                totalPlannedPC += plannedPC;
-            });
-            
             const stringFilterColumn = ["Order No", "Item Name", "Size Desp", "Order Qty", "Planned Qty", "Rolled Qty", "Balance Qty", "Planned PC"];
             const numericFilterColumn = [];
             const dateFilterColumn = ["Plan Date"];
@@ -1027,7 +1007,7 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
             $('.totals-row').remove();
             
             setTimeout(function() {
-                addPendingPlansFooter(totalOrderQty, totalPlannedQty, totalRolledQty, totalBalanceQty, totalPlannedPC);
+                updatePendingPlansFooterFromFiltered(response);
             }, 300);
             
             HideLoader();
@@ -1209,26 +1189,6 @@ function PlanNoCloseModal() {
     }
     $('#planNoDetails').modal('hide');
 }
-$(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
-    let isPipeStock = $('#pipe-stock-tab').hasClass('active');
-    let isPendingPlans = $('#pending-plans-tab').hasClass('active');
-    if (isPipeStock) {
-        setTimeout(() => {
-            const filteredData = window['filteredData_tblTable'] || [];
-            addPipeStockFooter(filteredData);
-            adjustFilterDropdownPosition();
-            applyTooltipsToGridCells();
-        }, 300);
-    }
-    
-        if (isPendingPlans) {
-            setTimeout(() => {
-                const filteredData = window['filteredData_tblTable'] || [];
-                addPendingPlansFooter(filteredData);
-            }, 300);   
-       }
-});
-
 window.ExportExcel = ExportExcel;
 window.OpenModal = OpenModal;
 window.CloseModal = CloseModal;
