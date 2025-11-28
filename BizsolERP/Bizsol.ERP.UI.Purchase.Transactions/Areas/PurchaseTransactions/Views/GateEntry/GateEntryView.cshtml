@@ -340,7 +340,7 @@
                             Document Type <span class="text-danger fw-semibold">*</span>
                         </div>
                         <div class="col-8">
-                            <select id="frmLoadedOut_ddlDocumentType" class="BizSolFormControl form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)"></select>
+                            <select id="frmLoadedOut_ddlDocumentType" class="BizSolFormControl form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" onchange="GateEntry_changeDocumentType()"></select>
                         </div>
                     </div>
                     <div class="row">
@@ -360,6 +360,7 @@
                         </div>
                         <div class="col-8">
                             <input id="frmLoadedOut_txtDocumentNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                            <ul id="frmLoadedOut_txtDocumentNo_List" class="AutoSuggestion-list"></ul>
                         </div>
                     </div>
                     <div class="row">
@@ -370,7 +371,23 @@
                             <input id="frmLoadedOut_txtDocumentDate" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" id="RowLoadedOut_txtManualDocNo">
+                        <div class="col-4">
+                            Ext.Manual Invoice No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtManualDocNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off" max="100">
+                        </div>
+                    </div>
+                    <div class="row" id="RowLoadedOut_txtGRNo">
+                        <div class="col-4">
+                            GR No.
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtGRNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off" max="100">
+                        </div>
+                    </div>
+                    <div class="row" >
                         <div class="col-4">
                             E-Way Bill No.
                         </div>
