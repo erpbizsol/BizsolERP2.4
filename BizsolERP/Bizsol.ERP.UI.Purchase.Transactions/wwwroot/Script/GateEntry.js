@@ -26,7 +26,8 @@ let GateEntryImageDetail = [{
 }];
 
 let baseUrl = sessionStorage.getItem('AppBaseURL');
-
+let G_TableName = '';
+let G_TableCode = 0;
 function GateEntryGirdByDates() {
 
     let FromDate = $('#txtFromDate').val(), Todate = $('#txtToDate').val();
@@ -193,6 +194,7 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
             ChangeMode(Mode);
             ClearEmptyOutOrLoadedOutFrm();
             UpdateLoadedIn_Emptyout(response);
+            CopyWeightmentSlip('emptyOut');
         });
 
     }
@@ -209,6 +211,7 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
             ChangeMode(Mode);
             ClearEmptyOutOrLoadedOutFrm();
             UpdateEmptyIn_loadedout(response);
+            CopyWeightmentSlip('loadedOut');
         });
         
     }
@@ -644,6 +647,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     else {
         jQuery('input:radio[name="rdPOAccess"]').filter('[value="withpo"]').attr('checked', true);
     }
+
       $('#DivfrmEmptyOut').show();
       $('#RowfrmEmptyOut_fileVehiclePhoto').show();
 
@@ -676,6 +680,8 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#frmEmptyIn_txtDriverLicenseExpiredDate').val(new Date(gateEntryData[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
     $('#frmEmptyIn_txtTokenNo').val(gateEntryData[0].TokenNo);
 
+    G_TableName = gateEntryData[0].TableName;
+    G_TableCode = gateEntryData[0].Table_Code;
 
     $('#frmEmptyIn_txtVehicleNo').attr('readonly', 'readonly')
     $('#frmEmptyIn_txtDriverName').attr('readonly', 'readonly')
@@ -706,6 +712,9 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#DivEmptyInDriverLicenseNo').hide();
     $('#DivEmptyInDriverLicenseExpiredDate').hide();
     $('#RowfrmEmptyInTokenNo').hide();
+
+    $('#RowLoadedOut_txtManualDocNo').hide();
+    $('#RowLoadedOut_txtGRNo').hide();
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
         $('#RowfrmEmptyInReportingDatetime').show();
@@ -773,6 +782,10 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
         $('#DivEmptyInDriverLicenseExpiredDate').show();
     }
 
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ShowExtraDocumentNo').PerameterValue === 'Y') {
+        $('#RowLoadedOut_txtManualDocNo').show();
+        $('#RowLoadedOut_txtGRNo').show();
+    }
 
     $('.nav-tabs button[data-bs-target="#EmptyInTab"]').tab('show')
     $('#frmEmptyIn_btnSave').attr('disabled', 'disabled')
@@ -936,7 +949,10 @@ function GateEntry_SaveData(Mode) {
     let DriverLicenseExpiredDate = "";
     let TokenNo = "";
     let OutType = "";
+ 
     let OutReason = "";
+    let ManualDocNo = "";
+    let GRNo = "";
 
     let RejectEntry = 'N';
 
@@ -1090,7 +1106,9 @@ function GateEntry_SaveData(Mode) {
 
         OutType = $('#frmLoadedOut_ddlOutType').val();
         OutReason = $('#frmLoadedOut_txtOutReason').val();
-
+        ManualDocNo = $('#frmLoadedOut_txtManualDocNo').val();
+        GRNo = $('#frmLoadedOut_txtGRNo').val();
+   
         if (OutType=='EOUT') {
             RejectEntry = 'Y';
         }
@@ -1555,8 +1573,8 @@ function GateEntry_SaveData(Mode) {
                     driverMobile: DriverMobile,
                     finYear: 2024,
                     createdBy: 0,
-                    tableName: "",
-                    table_Code: 0,
+                    tableName: G_TableName,
+                    table_Code: G_TableCode,
                     uom: Uom,
                     otherTransporterName: TransporterName,
                     godownMaster_Code: LoginGodownMaster_Code,
@@ -1566,7 +1584,7 @@ function GateEntry_SaveData(Mode) {
                     loadedWeight: LoadedWeight,
                     emptyWeightDateTime: EmptyWeightDateTime,
                     loadedWeightDateTime: LoadedWeightDateTime,
-                    manualDocNo: "",
+                    manualDocNo: ManualDocNo,
                     gateEntryMaster_CodeReference: 0,
                     purchaseOrderMaster_Code: PurchaseOrderMaster_Code,
                     vehicleOutTime: VehicleOutTime,
@@ -1589,8 +1607,8 @@ function GateEntry_SaveData(Mode) {
                     driverLicenseExpiredDate: DriverLicenseExpiredDate,
                     tokenNo: TokenNo,
                     outType: OutType,
-                    outReason: OutReason
-
+                    outReason: OutReason,
+                    gRNo:GRNo
                 }
             ],
 
@@ -1972,6 +1990,8 @@ function ClearAllFrm() {
     $('#frmLoadedOut_ddlDocumentType').val('');
     $('#frmLoadedOut_txtDocumentNo').val('');
     $('#frmLoadedOut_txtDocumentDate').val('');
+    $('#frmLoadedOut_txtManualDocNo').val('');
+    $('#frmLoadedOut_txtGRNo').val('');
     $('#frmLoadedOut_txtEWayBillNo').val('');
     $('#frmLoadedOut_txtEWayBillDate').val();
     $('#frmLoadedOut_txtRemarks').val();
@@ -2002,6 +2022,9 @@ function ClearAllFrm() {
     $('#frmLoadedOut_ddlDocumentType').removeAttr('disabled');
     $('#frmLoadedOut_txtDocumentNo').removeAttr('readonly');
     $('#frmLoadedOut_txtDocumentDate').removeAttr('readonly');
+    $('#frmLoadedOut_txtManualDocNo').removeAttr('readonly');
+    $('#frmLoadedOut_txtGRNo').removeAttr('readonly');
+
     $('#frmLoadedOut_txtEWayBillNo').removeAttr('readonly');
     $('#frmLoadedOut_txtEWayBillDate').removeAttr('readonly');
     $('#frmLoadedOut_txtRemarks').removeAttr('readonly');
@@ -2130,6 +2153,8 @@ function ClearEmptyOutOrLoadedOutFrm() {
     $('#frmLoadedOut_ddlDocumentType').val('0');
     $('#frmLoadedOut_txtDocumentNo').val('');
     $('#frmLoadedOut_txtDocumentDate').val('');
+    $('#frmLoadedOut_txtManualDocNo').val('');
+    $('#frmLoadedOut_txtGRNo').val('');
     $('#frmLoadedOut_txtEWayBillNo').val('');
     $('#frmLoadedOut_txtEWayBillDate').val('');
     $('#frmLoadedOut_txtRemarks').val('');
@@ -2205,6 +2230,9 @@ function ViewGateEntry(gateEntryData, EntryType) {
         
         $('#frmLoadedOut_txtDocumentNo').val(gateEntryData[0].DocNo);
         $('#frmLoadedOut_txtDocumentDate').val(new Date(gateEntryData[0].InvoiceDate).toISOString().slice(0, 10));
+        $('#frmLoadedOut_txtManualDocNo').val(gateEntryData[0].ManualDocNo);
+        $('#frmLoadedOut_txtGRNo').val(gateEntryData[0].GRNo);
+
         $('#frmLoadedOut_txtEWayBillNo').val(gateEntryData[0].EwaybillNo);
         $('#frmLoadedOut_txtEWayBillDate').val(gateEntryData[0].EwaybillDate);
         $('#frmLoadedOut_txtRemarks').val(gateEntryData[0].OutRemarks);
@@ -2226,6 +2254,9 @@ function ViewGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_ddlDocumentType').attr('disabled', 'disabled');
         $('#frmLoadedOut_txtDocumentNo').attr('readonly', 'readonly');
         $('#frmLoadedOut_txtDocumentDate').attr('readonly', 'readonly');
+        $('#frmLoadedOut_txtManualDocNo').attr('readonly', 'readonly');
+        $('#frmLoadedOut_txtGRNo').attr('readonly', 'readonly');
+
         $('#frmLoadedOut_txtEWayBillNo').attr('readonly', 'readonly');
         $('#frmLoadedOut_txtEWayBillDate').attr('readonly', 'readonly');
         $('#frmLoadedOut_txtRemarks').attr('readonly', 'readonly');
@@ -2334,6 +2365,12 @@ function EditGateEntry(gateEntryData, EntryType) {
 
         $('#frmLoadedOut_txtDocumentNo').val(gateEntryData[0].DocNo);
         $('#frmLoadedOut_txtDocumentDate').val(new Date(gateEntryData[0].InvoiceDate).toISOString().slice(0, 10));
+
+        $('#frmLoadedOut_txtManualDocNo').val(gateEntryData[0].ManualDocNo);
+        $('#frmLoadedOut_txtGRNo').val(gateEntryData[0].GRNo);
+
+        
+
         $('#frmLoadedOut_txtEWayBillNo').val(gateEntryData[0].EwaybillNo);
         $('#frmLoadedOut_txtEWayBillDate').val(gateEntryData[0].EwaybillDate);
         $('#frmLoadedOut_txtRemarks').val(gateEntryData[0].OutRemarks);
@@ -2866,6 +2903,91 @@ function BindddlVehiclesStatusInFectory() {
     //    width: '-webkit-fill-available'
     //});
 }
+
+function CopyWeightmentSlip(transactionType) {
+
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'CopyWeightmentSlip').PerameterValue === 'Y') {
+        if (transactionType === 'loadedOut') {
+
+            // Copy from Empty In to Loaded Out
+            let weightmentSlipValue = $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val();
+            $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val(weightmentSlipValue);
+
+            //if (weightmentSlipValue) {
+            //    toastr.success('Weightment Slip No copied successfully');
+            //}
+        }
+        else if (transactionType === 'emptyOut') {
+            // Copy from Loaded In to Empty Out frmEmptyIn_txtWeightmentSlipNoEmpty
+            let weightmentSlipValue = $('#frmLoadedIn_txtWeightmentSlipNoLoaded').val();
+            $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val(weightmentSlipValue);
+
+            //if (weightmentSlipValue) {
+            //    toastr.success('Weightment Slip No copied successfully');
+            //}
+        }
+    }
+
+    
+}
+
+
+function GateEntry_changeDocumentType() {
+    G_TableName = '';
+    G_TableCode = 0;
+    $('#frmLoadedOut_txtCustomerName').removeAttr('readonly');
+    $('#frmLoadedOut_txtGoodsDescription').removeAttr('readonly');
+    $('#frmLoadedOut_txtQty').removeAttr('readonly');
+    let F_GateEntryType_Desp = $('#frmLoadedOut_ddlDocumentType').val();
+
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'AutoFatchDocumentDetails').PerameterValue === 'Y') {
+
+        GateEntryService.GetGateEntryERPDocumentDetails("0", F_GateEntryType_Desp, 'Y', LoginGodownMaster_Code).then(function (response) {
+            const DocList = response.map((item) => ({ Desp: item.InvoiceNo }));
+            AutoSuggestionControl.SetUpAutoSuggestion(
+                $('#frmLoadedOut_txtDocumentNo'),
+                $('#frmLoadedOut_txtDocumentNo_List'),
+                DocList,
+                'StartWith',
+                true,
+                function (selectedItem) {
+                    if (selectedItem && selectedItem.Desp) {
+
+                        GateEntryService.GetGateEntryERPDocumentDetails(selectedItem.Desp, F_GateEntryType_Desp, 'N', LoginGodownMaster_Code).then(function (RespDocumentDetails) {
+                            if (RespDocumentDetails.length > 0) {
+                                $('#frmLoadedOut_txtCustomerName').val(RespDocumentDetails[0].PartyName)
+                                $('#frmLoadedOut_txtGoodsDescription').val(RespDocumentDetails[0].GoodsDesp)
+                                $('#frmLoadedOut_txtQty').val(RespDocumentDetails[0].TotalWeight)
+                                $('#frmLoadedOut_txtGRNo').val(RespDocumentDetails[0].GRNo)
+                                $('#frmLoadedOut_ddlUOM').val(RespDocumentDetails[0].UOM).trigger('change')
+
+                                G_TableName = RespDocumentDetails[0].TableName;
+                                G_TableCode = RespDocumentDetails[0].Code;
+
+
+                                $('#frmLoadedOut_txtCustomerName').attr('readonly', 'readonly');
+                                $('#frmLoadedOut_txtGoodsDescription').attr('readonly', 'readonly');
+                                $('#frmLoadedOut_txtQty').attr('readonly', 'readonly');
+
+
+                            } else {
+                                toastr.error('Document Not Fund');
+                                $('#frmLoadedOut_txtCustomerName').removeAttr('readonly');
+                                $('#frmLoadedOut_txtGoodsDescription').removeAttr('readonly');
+                                $('#frmLoadedOut_txtQty').removeAttr('readonly');
+                                G_TableName = '';
+                                G_TableCode = 0;
+                            }
+                        });
+                    }
+                }
+            );
+        });
+
+    }
+
+    
+}
 // Apply to all inputs with this class
 applyAlphaNumUppercase(".alphanum-uppercase");
 BindddlVehiclesStatusInFectory();
@@ -2882,3 +3004,4 @@ window.GateEntry_frmLoadedIn_ddlPurchaseOrder_Change = GateEntry_frmLoadedIn_ddl
 window.GateEntry_InitSelectMachineToGetWeightControl = GateEntry_InitSelectMachineToGetWeightControl
 window.GateEnty_PrintPreviewToken = GateEnty_PrintPreviewToken
 window.GateEntry_ExportExecl = GateEntry_ExportExecl
+window.GateEntry_changeDocumentType = GateEntry_changeDocumentType
