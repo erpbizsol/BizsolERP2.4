@@ -34,10 +34,19 @@ function GateEntryGirdByDates() {
     let ddlGodownMaster_Code = $('#ddlGodown').val();
     ddlGodownMaster_Code = ddlGodownMaster_Code ? ddlGodownMaster_Code : '0';
     let QueryCondition = ".";
-    if (ddlVehiclesStatusInFectory === 'LIN') {
+
+    if (ddlVehiclesStatusInFectory === 'ALIN') {  //Inward Entry
+        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and GodownMaster_Code=" + ddlGodownMaster_Code
+
+    } 
+    else if (ddlVehiclesStatusInFectory === 'AEIN') { //Outward Entry
+        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and GodownMaster_Code=" + ddlGodownMaster_Code
+    }
+    else if (ddlVehiclesStatusInFectory === 'LIN') {
         QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and GateEntryOutDate is not null and GodownMaster_Code=" + ddlGodownMaster_Code
 
-    } else if (ddlVehiclesStatusInFectory === 'EIN'){
+    } 
+    else if (ddlVehiclesStatusInFectory === 'EIN') {
         QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and GateEntryOutDate is not null and GodownMaster_Code=" + ddlGodownMaster_Code
     }
     else if (ddlVehiclesStatusInFectory === 'PLIN') {
@@ -2811,6 +2820,8 @@ function GateEntry_ExportExecl() {
 function BindddlVehiclesStatusInFectory() {
     let ddlVehiclesStatusInFectoryArray = [];
     ddlVehiclesStatusInFectoryArray.push({ Code: "all", Desp: "All" });
+    ddlVehiclesStatusInFectoryArray.push({ Code: "ALIN", Desp: "All Inward" });
+    ddlVehiclesStatusInFectoryArray.push({ Code: "AEIN", Desp: "All Outward" });
     ddlVehiclesStatusInFectoryArray.push({ Code: "LIN", Desp: "Loaded IN (completed)" });
     ddlVehiclesStatusInFectoryArray.push({ Code: "EIN", Desp: "Empty IN (completed)" });
     ddlVehiclesStatusInFectoryArray.push({ Code: "PLIN", Desp: "Loaded IN (in progress)" });
