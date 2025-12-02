@@ -113,7 +113,7 @@ function setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListEleme
         AutoSuggestionList.hide();
         currentIndex = -1;
         if (typeof onSelect === 'function') {
-            const selectedObj = data.find(x => x.Desp === selectedText);
+            const selectedObj = data.find(x => x.Desp == selectedText);
             onSelect(selectedObj);
         }
     });
