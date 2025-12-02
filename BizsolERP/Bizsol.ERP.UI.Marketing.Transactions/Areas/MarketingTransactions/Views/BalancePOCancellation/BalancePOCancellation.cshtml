@@ -1,0 +1,95 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BalancePOCancellation.js"></script>
+
+<style>
+    .fixed-width-table th, .fixed-width-table td {
+        white-space: nowrap;
+        min-width: auto;
+    }
+
+    .form-check-input {
+        background-color: #e9ecef;
+        border: 2px solid #6c757d;
+        border-radius: 4px;
+    }
+
+        .form-check-input:focus {
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+        }
+
+    .form-check-label {
+        font-weight: 600;
+        color: #495057;
+    }
+</style>
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="txtBalanceFromDate" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+                <input type="date" id="txtBalanceFromDate" name="txtBalanceFromDate" class="box_border form-control form-control-sm" required />
+            </div>
+            <div class="col-md-3">
+                <label for="txtBalanceToDate" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+                <input type="date" id="txtBalanceToDate" name="txtBalanceToDate" class="box_border form-control form-control-sm" required />
+            </div>
+            <div class="col-md-3">
+                <label for="ddlMarketingMan" class="form-label">Marketing Person <span class="text-danger">*</span></label>
+                <select id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlPartyName" class="form-label">Party Name <span class="text-danger">*</span></label>
+                <select id="ddlPartyName" name="ddlPartyName" class="form-control form-control-sm box_border" autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlItemName" class="form-label">Item Name <span class="text-danger">*</span></label>
+                <select id="ddlItemName" name="ddlItemName" class="form-control form-control-sm box_border" autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlOrderNo" class="form-label">Order No <span class="text-danger">*</span></label>
+                <select id="ddlOrderNo" name="ddlOrderNo" class="form-control form-control-sm box_border" autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlOrderType" class="form-label">Order Type <span class="text-danger">*</span></label>
+                <select id="ddlOrderType" name="ddlOrderType" class="form-control form-control-sm box_border" autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlBuyerPONo" class="form-label">Buyer PO No <span class="text-danger">*</span></label>
+                <select id="ddlBuyerPONo" name="ddlBuyerPONo" class="form-control form-control-sm box_border" autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlOrderType" class="form-label">Order Type <span class="text-danger">*</span></label>
+                <select id="ddlOrderType" name="ddlOrderType" class="form-control form-control-sm box_border" autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="txtReason" class="form-label">Reason <span class="text-danger">*</span></label>
+                <input id="txtReason" name="txtReason" class="form-control form-control-sm box_border" placeholder="Reason" autocomplete="off" required />
+            </div>
+            <div class="col-md-3 without-label-field">
+                <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+            </div>
+            <div class="col-sm-2 mt-2" >
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="OrderQtyCheck" />
+                    <label class="form-check-label" for="OrderQtyCheck">
+                        Show Order Qty
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-wrapper ">
+    <table id="BalancePOCancellation" class="fixed-width-table table">
+        <thead id="table-header-BalancePOCancellation">
+        </thead>
+        <tbody id="table-body-BalancePOCancellation">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-BalancePOCancellation">
+</div>

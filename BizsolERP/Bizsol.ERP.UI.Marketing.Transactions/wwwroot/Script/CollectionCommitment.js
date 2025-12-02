@@ -76,13 +76,13 @@ function CollectionCommitmentTableShow() {
                 HideLoader();
                 $("#tbCollectionCommitment").show();
                 const stringFilterColumn = ["Party Name"];
-                const numericFilterColumn = ["OutStanding","OverDue"];
+                const numericFilterColumn = ["Out Standing","Over Due"];
                 const dateFilterColumn = [];
                 const button = false;
                 const stringDoubleFilterColumn = [];
                 const showButtons = [];
                 const hiddenColumns = ["PartyMaster_Code"];
-                const columnAlignment = {};
+                const columnAlignment = { "Out Standing": 'right', "Over Due": 'right', "Collected Amount": 'right',"Balance Amount":'right'};
                 const updatedResponse = response.map(item => {
                     let commitmentAmount = parseFloat(item?.['Commitment Amount']) || 0;
                     let collectedAmount = parseFloat(item?.['Collected Amount']) || 0;

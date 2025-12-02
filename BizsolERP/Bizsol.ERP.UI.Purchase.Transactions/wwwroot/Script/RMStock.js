@@ -18,6 +18,7 @@ let G_Width = 0;
 let G_selectWidth = 0;
 let G_SlittingPlanMaster_Code = 0;
 let G_AppendedRowKeys = {};
+let G_ItemMaster_CodeOnlyIssue = '';
 
 function applyAllowManualWeightState() {
     const AllowManualWeight = $('#AllowManualWeight').is(':checked');
@@ -110,9 +111,9 @@ function GetRMStockCurrentListTable() {
             const showButtons = [];
             let hiddenColumns = []
             if ($('#exampleCheck').is(':checked')) {
-                hiddenColumns = ["Code", "Numeric Value","IsPlanned","Size"];
+                hiddenColumns = ["Code", "Numeric Value", "IsPlanned", "Size","ItemMaster_CodeOnlyIssue"];
             } else {
-                hiddenColumns = ["Code", "Numeric Value", "% E", "Hardness", "UTS", "YST", "BEND TEST", "IsPlanned", "Size"];
+                hiddenColumns = ["Code", "Numeric Value", "% E", "Hardness", "UTS", "YST", "BEND TEST", "IsPlanned", "Size","ItemMaster_CodeOnlyIssue"];
             }
             const columnAlignment = {
                 'Invoice Date': 'center', 'Receive Date': 'center', 'Thickness': 'right', 'Ch Wt': 'right', 'Width': 'right;min-width:60px','Ac Wt': 'right',
@@ -180,6 +181,7 @@ function ShowModelPlanned(rowData) {
     $('#despSize').text(rowData.Size);
     G_IdentificationNo = rowData.IdentificationNo;
     G_Width = rowData?.['Numeric Value'];
+    G_ItemMaster_CodeOnlyIssue = rowData.ItemMaster_CodeOnlyIssue || '';
     clearForm();
     //enableNewRowAddition();
     //$('#PlannedMyModal').data('IdentificationNo', G_IdentificationNo);
@@ -338,9 +340,10 @@ function enableNewRowAddition() {
         applyAllowManualWeightState();
     });
 }
-function GetRMStockItemNameList() {
+function GetRMStockItemNameList(ItemMaster_CodeOnlyIssue) {
     Showloader();
-    return RMStockService.GetRMStockItemName().then(function (response) {
+    var itemMasterCodeOnlyIssue = ItemMaster_CodeOnlyIssue || G_ItemMaster_CodeOnlyIssue || '';
+    return RMStockService.GetRMStockItemName(itemMasterCodeOnlyIssue).then(function (response) {
             HideLoader();
             if (response && response.length > 0) {
                 const list = response.map((item) => ({ Code: item.Code, Desp: item.ItemName }));
@@ -859,6 +862,7 @@ function CloseModal_RMStock() {
     GetRMStockCurrentListTable();
     G_Code = 0;
     G_SlittingPlanMaster_Code = 0;
+    G_ItemMaster_CodeOnlyIssue = '';
     $('#CopyFromPrevious').prop('checked', false);
     $('#AllowManualWeight').prop('checked', false);
     $('#PartingCase').prop('checked', false);
