@@ -13,7 +13,8 @@ const CollectionCommitmentService = {
     },
 
     CollectionCommitmentTable: function CollectionCommitmentTable(Date, OrderBy) {
-        var URL = UrlService.API_ENDPOINT_CollectionCommitment + "/CollectionCommitmentTable?Date=" + Date + "" + "&OrderBy=" + OrderBy + "";
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_CollectionCommitment + "/CollectionCommitmentTable?Date=" + Date + "" + "&OrderBy=" + OrderBy + "" + "&UserCode=" + userCode;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
