@@ -45,6 +45,15 @@ const CollectionCommitmentService = {
             }
         );
     },
+    CollectionCommitmentCheckSenior: function CollectionCommitmentCheckSenior(Code) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_CollectionCommitment + "/CollectionCommitmentCheckSenior?UserMaster_Code=" + userCode + "" + "&Code=" + Code;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { CollectionCommitmentService }

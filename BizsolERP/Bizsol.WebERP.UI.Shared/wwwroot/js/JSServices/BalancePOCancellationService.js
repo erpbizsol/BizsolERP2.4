@@ -3,21 +3,9 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 
 const BalancePOCancellationService = {
-    GetProspectiveCustomerList: function GetProspectiveCustomerList(MarketingPersonName,Thickness,Size,Grade,ISCode,Status) {
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_BalancePOCancellation + "/GetProspectiveCustomerList?MarketingMan_Name=" + MarketingPersonName + "&UserMaster_Code=" + userMasterCode + "&Thickness=" + Thickness + "&Size=" + Size + "&Grade=" + Grade + "&ISCode=" + ISCode + "&Status=" + Status;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
-            function (value) {
-                return value;
-            }
-        );
-    },
-    GetNestedMarketingManList: function GetNestedMarketingManList() {
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_BalancePOCancellation + `/ProspectiveCustomer_SalesPersonList?UserMaster_Code=` + userMasterCode;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+    SaveCancelPendingOrder: function SaveCancelPendingOrder(data) {
+        var URL = UrlService.API_ENDPOINT_BalancePOCancellation + "/SaveCancelPendingOrder";
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(data)).then(
             function (value) {
                 return value;
             }
