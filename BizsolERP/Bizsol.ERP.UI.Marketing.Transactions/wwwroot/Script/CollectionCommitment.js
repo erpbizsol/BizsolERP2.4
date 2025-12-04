@@ -63,6 +63,46 @@ function getFinancialYear() {
 
     return startYear + "-" + (startYear + 1);
 }
+
+function ParseDateForComparison(dateStr) {
+    if (!dateStr) {
+        return null;
+    }
+
+    var onlyDate = dateStr;
+
+    if (onlyDate.length >= 10) {
+        onlyDate = onlyDate.substring(0, 10);
+    }
+
+    var parts = onlyDate.split('-');
+
+    if (parts.length !== 3) {
+        return null;
+    }
+
+    var day;
+    var month;
+    var year;
+
+    // Format yyyy-MM-dd
+    if (parts[0].length === 4) {
+        year = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1;
+        day = parseInt(parts[2], 10);
+    } else {
+        // Assume format dd-MM-yyyy
+        day = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1;
+        year = parseInt(parts[2], 10);
+    }
+
+    if (isNaN(day) || isNaN(month) || isNaN(year)) {
+        return null;
+    }
+
+    return new Date(year, month, day);
+}
 function CollectionCommitmentTableShow() {
     let TxtOrderBy = $('#ddlOrderBy').val();
     G_todayDate = $('#txtCommitmentdate').val();
@@ -81,24 +121,26 @@ function CollectionCommitmentTableShow() {
                 const button = false;
                 const stringDoubleFilterColumn = [];
                 const showButtons = [];
-                const hiddenColumns = ["PartyMaster_Code"];
+                const hiddenColumns = ["PartyMaster_Code", "CreateDate","CreatedBy"];
                 const columnAlignment = { "Out Standing": 'right', "Over Due": 'right', "Collected Amount": 'right',"Balance Amount":'right'};
-                const updatedResponse = response.map(item => {
-                    let commitmentAmount = parseFloat(item?.['Commitment Amount']) || 0;
-                    let collectedAmount = parseFloat(item?.['Collected Amount']) || 0;
+                const updatedResponse = response.map(function (item) {
+                    let commitmentAmount = parseFloat(item['Commitment Amount']) || 0;
+                    let collectedAmount = parseFloat(item['Collected Amount']) || 0;
                     let balanceAmount = commitmentAmount - collectedAmount;
 
                     let inputAmount = `<input type="text" class="tblAmount box_border form-control form-control-sm" style="width:100px;text-align:right" value="${commitmentAmount}" oninput="CollectionCommitment_validateDecimalInput(this)" maxlength="10" autocomplete="off" />`;
-                    let BalanceAmount = `${balanceAmount.toFixed(2)}`;
-                    let buttonsHTML = commitmentAmount > 0
-                        ? `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="CommitmentCollection_Delete('${item?.PartyMaster_Code}')"><i class="fa fa-remove"></i></button>`
-                        : ``;
+                    let BalanceAmount = balanceAmount.toFixed(2);
+                    let buttonsHTML = "";
+
+                    if (commitmentAmount > 0) {
+                        buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="CommitmentCollection_Delete('${item.PartyMaster_Code}','${item.CreateDate}','${item.CreatedBy}')"><i class="fa fa-remove"></i></button>`;
+                    }
 
                     return {
                         ...item,
                         "Commitment Amount": inputAmount,
                         "Balance Amount": BalanceAmount,
-                        Action: buttonsHTML,
+                        Action: buttonsHTML
                     };
                 });
 
@@ -170,19 +212,50 @@ function UpdateCommitmentAmount() {
             console.log(error.Msg);
         });
 }
-function CommitmentCollection_Delete(PartyMaster_Code) {
-    G_todayDate = $('#txtCommitmentdate').val();
-    if (confirm(`Are you sure you want to Delete`) == true) {
-        Showloader();
-        CollectionCommitmentService.DeleteCollectionCommitment(PartyMaster_Code, G_todayDate).then(function (response) {
+function CommitmentCollection_Delete(PartyMaster_Code, CreateDate, CreatedBy) {
+    var currentDateString = $('#txtCommitmentdate').val();
+    var currentDate = ParseDateForComparison(currentDateString);
+    var rowDate = ParseDateForComparison(CreateDate);
 
-            if (response.Status == 'Y') {
-                toastr.success(response.Msg);
-                CollectionCommitmentTableShow();
+    if (!currentDate || !rowDate ||
+        currentDate.getFullYear() !== rowDate.getFullYear() ||
+        currentDate.getMonth() !== rowDate.getMonth() ||
+        currentDate.getDate() !== rowDate.getDate()) {
+        toastr.warning('Only current date data can be deleted.');
+        return;
+    }
+
+    if (confirm('Are you sure you want to Delete') == true) {
+        Showloader();
+        CollectionCommitmentService.CollectionCommitmentCheckSenior(CreatedBy).then(function (response) {
+            var result = null;
+            if (response && response.length > 0) {
+                result = response[0];
+            }
+
+            if (result && result.Status == 'Y') {
+                CollectionCommitmentService.DeleteCollectionCommitment(PartyMaster_Code, currentDateString).then(function (deleteResponse) {
+                    if (deleteResponse.Status == 'Y') {
+                        toastr.success(deleteResponse.Msg);
+                        CollectionCommitmentTableShow();
+                    } else {
+                        toastr.error(deleteResponse.Msg);
+                    }
+                    HideLoader();
+                }).catch(function (error) {
+                    console.log(error);
+                    HideLoader();
+                });
+            } else if (result && result.Status == 'N') {
+                toastr.warning(result.Msg);
+                HideLoader();
             } else {
-                toastr.error(response.Msg);
+                toastr.error(result ? result.Msg : 'Error while checking senior rights.');
                 HideLoader();
             }
+        }).catch(function (error) {
+            console.log(error);
+            HideLoader();
         });
     }
 }
