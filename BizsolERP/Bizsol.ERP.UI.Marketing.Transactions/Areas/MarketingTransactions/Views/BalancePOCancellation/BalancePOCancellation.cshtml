@@ -1,0 +1,176 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BalancePOCancellation.js"></script>
+
+<style>
+    .fixed-width-table th, .fixed-width-table td {
+        white-space: nowrap;
+        min-width: auto;
+    }
+
+    .form-check-input {
+        background-color: #e9ecef;
+        border: 2px solid #6c757d;
+        border-radius: 4px;
+    }
+
+        .form-check-input:focus {
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+        }
+
+    .form-check-label {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .d-flex.gap-1 > * {
+        margin-right: 4px;
+    }
+
+    .d-flex.gap-1 > *:last-child {
+        margin-right: 0;
+    }
+
+    .d-flex.gap-3 > * {
+        margin-right: 12px;
+    }
+
+    .d-flex.gap-3 > *:last-child {
+        margin-right: 0;
+    }
+</style>
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <!-- Left Column -->
+            <div class="col-md-4">
+                <div class="mb-2">
+                    <label for="ddlOrderType" class="form-label">Order Type</label>
+                    <select id="ddlOrderType" name="ddlOrderType" class="form-control form-control-sm box_border" autocomplete="off"></select>
+                </div>
+                <div class="mb-2">
+                    <label for="ddlMarketingMan" class="form-label">Marketing Person</label>
+                    <select id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" autocomplete="off"></select>
+                </div>
+                <div class="mb-2">
+                    <label for="ddlItemName" class="form-label">Item Name</label>
+                    <select id="ddlItemName" name="ddlItemName" class="form-control form-control-sm box_border" autocomplete="off"></select>
+                </div>
+                <div class="mb-2">
+                    <label for="ddlBuyerPONo" class="form-label">Buyer Po No.</label>
+                    <select id="ddlBuyerPONo" name="ddlBuyerPONo" class="form-control form-control-sm box_border" autocomplete="off"></select>
+                </div>
+                <div class="mb-2">
+                    <label for="ddlDispatchQtyUnit" class="form-label">Dispatch Qty</label>
+                    <div class="d-flex align-items-center gap-1">
+                        <select id="ddlDispatchQtyUnit" name="ddlDispatchQtyUnit" class="form-control form-control-sm box_border" style="width: 80px;" autocomplete="off"></select>
+                        <select id="ddlDispatchQtyOperator" name="ddlDispatchQtyOperator" class="form-control form-control-sm box_border" style="width: 70px;" autocomplete="off">
+                            <option value=">">&gt;</option>
+                            <option value="<">&lt;</option>
+                            <option value="=">=</option>
+                            <option value=">=">&gt;=</option>
+                            <option value="<=">&lt;=</option>
+                            <option value="between">Between</option>
+                        </select>
+                        <input id="txtDispatchQtyFrom" name="txtDispatchQtyFrom" class="form-control form-control-sm box_border" placeholder="0.000" style="text-align:right;width: 100px;" autocomplete="off" />
+                        <input id="txtDispatchQtyTo" name="txtDispatchQtyTo" class="form-control form-control-sm box_border" placeholder="0.000" style="text-align:right;width: 100px;" autocomplete="off" />
+                    </div>
+                </div>
+            </div>
+            <!-- Middle Column -->
+            <div class="col-md-4">
+                @* <div class="mb-2"> *@
+                    <label for="ddlBalanceQtyUnit" class="form-label">Balance Qty</label>
+                    <div class="d-flex align-items-center gap-1">
+                        <select id="ddlBalanceQtyUnit" name="ddlBalanceQtyUnit" class="form-control form-control-sm box_border" style="width: 80px;" autocomplete="off"></select>
+                        <select id="ddlBalanceQtyOperator" name="ddlBalanceQtyOperator" class="form-control form-control-sm box_border" style="width: 70px;" autocomplete="off">
+                            <option value=">">&gt;</option>
+                            <option value="<">&lt;</option>
+                            <option value="=">=</option>
+                            <option value=">=">&gt;=</option>
+                            <option value="<=">&lt;=</option>
+                            <option value="between">Between</option>
+                        </select>
+                        <input id="txtBalanceQtyFrom" name="txtBalanceQtyFrom" class="form-control form-control-sm box_border" placeholder="0.000" style="text-align:right;width: 100px;" autocomplete="off" />
+                        <input id="txtBalanceQtyTo" name="txtBalanceQtyTo" class="form-control form-control-sm box_border" placeholder="0.000" style="text-align:right;width: 100px;" autocomplete="off" />
+                    </div>
+                @* </div> *@
+                <div class="mb-2">
+                    <label for="txtReason" class="form-label">Reason</label>
+                    <input id="txtReason" name="txtReason" class="form-control form-control-sm box_border" placeholder="Reason" autocomplete="off"/>
+                </div>
+                <div class="mb-2">
+                    <label for="ddlPartyName" class="form-label">Party Name</label>
+                    <select id="ddlPartyName" name="ddlPartyName" class="form-control form-control-sm box_border" autocomplete="off"></select>
+                </div>
+                <div class="mb-2">
+                    <label for="ddlOrderNo" class="form-label">Order No.</label>
+                    <select id="ddlOrderNo" name="ddlOrderNo" class="form-control form-control-sm box_border" autocomplete="off"></select>
+                </div>
+                <div class="mb-2 without-label-field">
+                    <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">SHOW</button>
+                </div>
+            </div>
+            <!-- Right Column -->
+            <div class="col-md-4">
+                <div class="mb-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="chkPeriodWise" />
+                        <label class="form-check-label" for="chkPeriodWise">
+                            Period Wise
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label for="txtBalanceFromDate" class="col-form-label-sm fw-bold">From</label>
+                    <input type="date" id="txtBalanceFromDate" name="txtBalanceFromDate" class="box_border form-control form-control-sm" />
+                </div>
+                <div class="mb-2">
+                    <label for="txtBalanceToDate" class="col-form-label-sm fw-bold">To</label>
+                    <input type="date" id="txtBalanceToDate" name="txtBalanceToDate" class="box_border form-control form-control-sm" />
+                </div>
+                <div class="mb-2">
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="chkOrderQty" />
+                            <label class="form-check-label" for="chkOrderQty">Show Order Qty</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="chkShowDispatchQty" />
+                        <label class="form-check-label" for="chkShowDispatchQty">
+                            Show Dispatch Qty
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="DeliveryDetailCheck" />
+                        <label class="form-check-label" for="DeliveryDetailCheck">
+                            Show Delivery Detail In Place Of Consignee
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <button type="button" id="btnSelectAll" class="btn btn-secondary btn-sm">Select All</button>
+                    <button type="button" id="btnSaveBalance" class="btn btn-success btn-sm">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-wrapper ">
+    <table id="BalancePOCancellation" class="fixed-width-table table">
+        <thead id="table-header-BalancePOCancellation">
+        </thead>
+        <tbody id="table-body-BalancePOCancellation">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-BalancePOCancellation">
+</div>

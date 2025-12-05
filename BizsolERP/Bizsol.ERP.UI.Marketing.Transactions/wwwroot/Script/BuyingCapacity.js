@@ -103,18 +103,24 @@ async function GetBuyingCapacityList() {
         const response = await BuyingCapacityService.GetBuyingCapacityList(MarketingPersonName);
         $('#BuyingCapacity').show();
         if (response && response.length > 0) {
-            G_BuyingCapacityRows = response;
-            const StringFilterColumn = ["Party Name", "Marketing Person", "City", "State","PinCode"];
+            G_BuyingCapacityRows = response.map(function(item, index) {
+                return {
+                    ...item,
+                    __RowIndex: index
+                };
+            });
+            const StringFilterColumn = ["Party Name", "Marketing Person","Country", "City", "State","PinCode"];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Code"];
+            const hiddenColumns = ["Code", "__RowIndex"];
             const ColumnAlignment = {};
-            const updatedResponse = response.map((item, index) => {
-                let BuyingFrequencyInputHTML = `<select type="text" class="form-control form-control-sm box_border" id="ddlFillBuyingFrequency_${index}" onchange="SaveBuyingCapacity(${index},'${item.Code}')"></select>`;
-                let MonthlyRequiredQtyInputHTML = `<input type="text" class="form-control form-control-sm box_border text-end" id="txtMonthlyRequired_${index}" oninput="validateDecimalRateInput(this)" onblur="SaveBuyingCapacity(${index},'${item.Code}')" style="width:120px" autocomplete="off"/>`;
+            const updatedResponse = G_BuyingCapacityRows.map((item) => {
+                const rowIndex = item.__RowIndex;
+                let BuyingFrequencyInputHTML = `<select type="text" class="form-control form-control-sm box_border" id="ddlFillBuyingFrequency_${rowIndex}" onchange="SaveBuyingCapacity(${rowIndex},'${item.Code}')"></select>`;
+                let MonthlyRequiredQtyInputHTML = `<input type="text" class="form-control form-control-sm box_border text-end" id="txtMonthlyRequired_${rowIndex}" oninput="validateDecimalRateInput(this)" onblur="SaveBuyingCapacity(${rowIndex},'${item.Code}')" style="width:120px" autocomplete="off"/>`;
 
                 return {
                     ...item,
@@ -129,23 +135,25 @@ async function GetBuyingCapacityList() {
 
             // Bind initial values from response to each row controls
             try {
-                for (var i = 0; i < response.length; i++) {
-                    var row = response[i] || {};
+                for (var i = 0; i < G_BuyingCapacityRows.length; i++) {
+                    var row = G_BuyingCapacityRows[i] || {};
+                    var domIndex = typeof row.__RowIndex === 'number' ? row.__RowIndex : i;
+                    var baseRow = G_BuyingCapacityRows[domIndex] || {};
                     // Prefer the display text present in the response
-                    var bfText = row['Buying Frequency'] || row.BuyingFrequency || '';
+                    var bfText = baseRow.BuyingFrequency || baseRow['Buying Frequency'] || '';
                     // Map code to display text if needed
                     try {
                         var codeMap = { 'M': 'Monthly', 'O': 'Occasionally', 'W': 'Weekly' };
                         if (bfText && codeMap[bfText]) { bfText = codeMap[bfText]; }
                     } catch(eMap) { }
-                    var qty = row.MonthlyRequiredQty != null ? row.MonthlyRequiredQty : (row['Monthly Required(Qty)'] != null ? row['Monthly Required(Qty)'] : '');
+                    var qty = baseRow.MonthlyRequiredQty != null ? baseRow.MonthlyRequiredQty : (baseRow['Monthly Required(Qty)'] != null ? baseRow['Monthly Required(Qty)'] : '');
 
                     // Bind Buying Frequency by text using helper (matches option display text)
                     try {
                         if (bfText && typeof BizSolHelperFunction !== 'undefined' && BizSolHelperFunction.SelectOptionByText) {
-                            BizSolHelperFunction.SelectOptionByText(`ddlFillBuyingFrequency_${i}`, bfText);
+                            BizSolHelperFunction.SelectOptionByText(`ddlFillBuyingFrequency_${domIndex}`, bfText);
                         } else {
-                            var $bfSel = $(`#ddlFillBuyingFrequency_${i}`);
+                            var $bfSel = $(`#ddlFillBuyingFrequency_${domIndex}`);
                             if ($bfSel && $bfSel.length) {
                                 $bfSel.find('option').filter(function(){ return $(this).text() === bfText; }).prop('selected', true);
                                 try { if ($bfSel.select2) { $bfSel.trigger('change.select2'); } else { $bfSel.trigger('change'); } } catch(e2) { $bfSel.trigger('change'); }
@@ -154,7 +162,7 @@ async function GetBuyingCapacityList() {
                     } catch(e1) { }
 
                     // Bind Monthly Required Qty
-                    var $qtyInp = $(`#txtMonthlyRequired_${i}`);
+                    var $qtyInp = $(`#txtMonthlyRequired_${domIndex}`);
                     if ($qtyInp && $qtyInp.length) {
                         if (qty !== '' && !isNaN(qty)) { $qtyInp.val(parseFloat(qty).toFixed(3)); } else { $qtyInp.val(''); }
                     }
@@ -308,11 +316,13 @@ function refreshBuyingCapacityRowControls(rows) {
 
             for (var i = 0; i < rows.length; i++) {
                 var row = rows[i] || {};
+                var domIndex = typeof row.__RowIndex === 'number' ? row.__RowIndex : i;
+                var baseRow = (G_BuyingCapacityRows && G_BuyingCapacityRows.length > domIndex) ? G_BuyingCapacityRows[domIndex] : {};
                 var bfText = '';
-                if (row['Buying Frequency']) {
-                    bfText = row['Buying Frequency'];
-                } else if (row.BuyingFrequency) {
-                    bfText = row.BuyingFrequency;
+                if (baseRow.BuyingFrequency) {
+                    bfText = baseRow.BuyingFrequency;
+                } else if (baseRow['Buying Frequency']) {
+                    bfText = baseRow['Buying Frequency'];
                 }
 
                 if (bfText && codeMap[bfText]) {
@@ -320,13 +330,13 @@ function refreshBuyingCapacityRowControls(rows) {
                 }
 
                 var qty = '';
-                if (row.MonthlyRequiredQty !== undefined && row.MonthlyRequiredQty !== null) {
-                    qty = row.MonthlyRequiredQty;
-                } else if (row['Monthly Required(Qty)'] !== undefined && row['Monthly Required(Qty)'] !== null) {
-                    qty = row['Monthly Required(Qty)'];
+                if (baseRow.MonthlyRequiredQty !== undefined && baseRow.MonthlyRequiredQty !== null) {
+                    qty = baseRow.MonthlyRequiredQty;
+                } else if (baseRow['Monthly Required(Qty)'] !== undefined && baseRow['Monthly Required(Qty)'] !== null) {
+                    qty = baseRow['Monthly Required(Qty)'];
                 }
 
-                var selectId = 'ddlFillBuyingFrequency_' + i;
+                var selectId = 'ddlFillBuyingFrequency_' + domIndex;
                 var $bfSel = $('#' + selectId);
 
                 try {
@@ -348,7 +358,7 @@ function refreshBuyingCapacityRowControls(rows) {
                     }
                 } catch (e1) { }
 
-                var $qtyInp = $('#txtMonthlyRequired_' + i);
+                var $qtyInp = $('#txtMonthlyRequired_' + domIndex);
                 if ($qtyInp && $qtyInp.length) {
                     if (qty !== '' && !isNaN(qty)) {
                         $qtyInp.val(parseFloat(qty).toFixed(3));

@@ -18,8 +18,8 @@ const RMStockService = {
             }
         );
     },
-    GetRMStockItemName: function GetRMStockItemName() {
-        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockItemName";
+    GetRMStockItemName: function GetRMStockItemName(ItemMaster_CodeOnlyIssue) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockItemName?ItemMaster_CodeOnlyIssue=" + ItemMaster_CodeOnlyIssue;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -148,7 +148,6 @@ const RMStockService = {
             }
         );
     },
-    
 }
 
 export { RMStockService }

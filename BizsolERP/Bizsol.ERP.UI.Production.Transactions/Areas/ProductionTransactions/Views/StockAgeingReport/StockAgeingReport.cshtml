@@ -1,0 +1,64 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/StockAgeingReport.js"></script>
+
+<style>
+    #StockAgeingReport tfoot th,
+    #StockAgeingReport tfoot td {
+        color: #fff !important;
+        background-color: #5c95ce !important;
+        border-color: #5c95ce !important;
+        font-weight: 600;
+    }
+
+</style>
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="ddlCategory" class="form-label filter-label">Category <span class="text-danger">*</span></label>
+                <select id="ddlCategory" name="ddlCategory" class="form-control form-control-sm box_border" placeholder="Select.." multiple style="width: 300px;" autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlItemName" class="form-label filter-label">Item Type <span class="text-danger">*</span></label>
+                <select id="ddlItemName" name="ddlSize" class="form-control form-control-sm box_border" multiple style="width: 300px;" placeholder="Select.." autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlWarehouse" class="form-label filter-label">Warehouse <span class="text-danger">*</span></label>
+                <select id="ddlWarehouse" name="ddlWarehouse" class="form-control form-control-sm box_border" multiple style="width: 300px;" placeholder="Select.." autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="txtAsOnDate" class="form-label">As On Date <span class="text-danger">*</span></label>
+                <input id="txtAsOnDate" name="txtAsOnDate" type="date"class="form-control form-control-sm box_border" placeholder="As On Date" autocomplete="off" required />
+            </div>
+
+            <div class="col-md-12" style="text-align:right">
+                <button type="button" id="btnStockAgeingReportShow" class="btn btn-primary btn-height">Show</button>
+                <button type="button" id="btn" class="btn btn-primary btn-height" onclick="ExportExcel();">Download</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        <div class="card">
+            <div class="table-wrapper" style="min-height:400px;">
+                <table id="StockAgeingReport" class="fixed-width-table table">
+                    <thead id="table-head-StockAgeingReport">
+                    </thead>
+                    <tbody id="table-body-StockAgeingReport">
+                    </tbody>
+                    <tfoot id="table-foot-StockAgeingReport">
+                    </tfoot>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-StockAgeingReport">
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

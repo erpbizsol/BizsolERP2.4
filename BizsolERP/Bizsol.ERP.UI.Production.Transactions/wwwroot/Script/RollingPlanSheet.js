@@ -7,7 +7,6 @@ $(document).ready(function () {
     GetRollingPlanSheetList();
     $(document).on('click', '#dispatch-tab', function () {
         clearTable();
-        // Show date bar and default to today
         $('#date-filter-bar').show();
         $('#btnDownload').hide();
         $('#from-date-to-date-filter-bar').hide();
@@ -510,12 +509,21 @@ function countTableTr() {
 }
 
 $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
-    // Skip totals row for Pipe Stock tab
-    if ($('#pipe-stock-tab').hasClass('active')) {
-        return;
-    }
+    const isPipeStock = $('#pipe-stock-tab').hasClass('active');
+    const isPendingPlans = $('#pending-plans-tab').hasClass('active');
+
     setTimeout(() => {
         const filteredData = window['filteredData_tblTable'] || [];
+        if (isPipeStock) {
+            updatePipeStockFooterFromFiltered(filteredData);
+            adjustFilterDropdownPosition();
+            applyTooltipsToGridCells();
+            return;
+        }
+        if (isPendingPlans) {
+            updatePendingPlansFooterFromFiltered(filteredData);
+            return;
+        }
         const totals = calculateTotals(filteredData);
         const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         addTotalsRow(totals, hiddenColumns);
@@ -525,12 +533,21 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
 });
 
 $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"], [id^="nextBtn-"], [id^="lastBtn-"]', function () {
-    // Skip totals row for Pipe Stock tab
-    if ($('#pipe-stock-tab').hasClass('active')) {
-        return;
-    }
+    const isPipeStock = $('#pipe-stock-tab').hasClass('active');
+    const isPendingPlans = $('#pending-plans-tab').hasClass('active');
+
     setTimeout(() => {
         const filteredData = window['filteredData_tblTable'] || [];
+        if (isPipeStock) {
+            updatePipeStockFooterFromFiltered(filteredData);
+            adjustFilterDropdownPosition();
+            applyTooltipsToGridCells();
+            return;
+        }
+        if (isPendingPlans) {
+            updatePendingPlansFooterFromFiltered(filteredData);
+            return;
+        }
         const totals = calculateTotals(filteredData);
         const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         addTotalsRow(totals, hiddenColumns);
@@ -538,6 +555,61 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
         applyTooltipsToGridCells();
     }, 300);
 });
+
+function updatePipeStockFooterFromFiltered(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+        addPipeStockFooter(0, 0, 0);
+        return;
+    }
+    let totalQtyMT = 0;
+    let totalQtyPC = 0;
+    let totalKG_Pipe = 0;
+
+    rows.forEach(function (row) {
+        totalQtyMT += parseFloat(row["Qty MT"]) || 0;
+        totalQtyPC += parseFloat(row["Qty PC"]) || 0;
+        totalKG_Pipe += parseFloat(row["KG_Pipe"]) || 0;
+    });
+
+    addPipeStockFooter(totalQtyMT, totalQtyPC, totalKG_Pipe);
+}
+
+function updatePendingPlansFooterFromFiltered(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+        addPendingPlansFooter(0, 0, 0, 0, 0, 0, 0, 0);
+        return;
+    }
+    let totalOrderMT = 0;
+    let totalPlannedMT = 0;
+    let totalRolledMT = 0;
+    let totalBalanceMT = 0;
+    let totalOrderPC = 0;
+    let totalPlannedPC = 0;
+    let totalRolledPC = 0;
+    let totalBalancePC = 0;
+
+    rows.forEach(function (row) {
+        totalOrderMT += parseFloat(row["Order MT"]) || 0;
+        totalPlannedMT += parseFloat(row["Planned MT"]) || 0;
+        totalRolledMT += parseFloat(row["Rolled MT"]) || 0;
+        totalBalanceMT += parseFloat(row["Balance MT"]) || 0;
+        totalOrderPC += parseFloat(row["Order PC"]) || 0;
+        totalPlannedPC += parseFloat(row["Planned PC"]) || 0;
+        totalRolledPC += parseFloat(row["Rolled PC"]) || 0;
+        totalBalancePC += parseFloat(row["Balance PC"]) || 0;
+    });
+
+    addPendingPlansFooter(
+        totalOrderMT,
+        totalPlannedMT,
+        totalRolledMT,
+        totalBalanceMT,
+        totalOrderPC,
+        totalPlannedPC,
+        totalRolledPC,
+        totalBalancePC
+    );
+}
 function applyTooltipsToGridCells() {
     try {
         const head = document.getElementById('table-head');
@@ -891,28 +963,8 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
     Showloader();
     RollingPlanSheetService.GetPendingPlansReportList(G_FromDate, G_ToDate).then(function (response) {
         if (response && response.length > 0) {
-            let totalOrderQty = 0;
-            let totalPlannedQty = 0;
-            let totalRolledQty = 0;
-            let totalBalanceQty = 0;
-            let totalPlannedPC = 0;
-            
-            response.forEach(function(item) {
-                const orderQty = parseFloat(item["Order Qty"]) || 0;
-                const plannedQty = parseFloat(item["Planned Qty"]) || 0;
-                const rolledQty = parseFloat(item["Rolled Qty"]) || 0;
-                const balanceQty = parseFloat(item["Balance Qty"]) || 0;
-                const plannedPC = parseFloat(item["Planned PC"]) || 0;
-                
-                totalOrderQty += orderQty;
-                totalPlannedQty += plannedQty;
-                totalRolledQty += rolledQty;
-                totalBalanceQty += balanceQty;
-                totalPlannedPC += plannedPC;
-            });
-            
-            const stringFilterColumn = ["Order No", "Item Name", "Size Desp", "Order Qty", "Planned Qty", "Rolled Qty", "Balance Qty", "Planned PC"];
-            const numericFilterColumn = [];
+            const stringFilterColumn = ["Plan No", "Order No", "Item Name", "Size Desp", "Order PC", "Status"];
+            const numericFilterColumn = ["Order MT", "Planned PC", "Planned MT", "Rolled PC", "Rolled MT", "Balance PC", "Balance MT"];
             const dateFilterColumn = ["Plan Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
@@ -921,7 +973,7 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
             
             const allowedColumns = [
                 "SNo", "Plan Date", "Plan No", "Order No", "Item Name", "Size Desp", 
-                "Order Qty", "Planned Qty", "Rolled Qty", "Balance Qty", "Planned PC", "Status"
+                "Order PC", "Order MT", "Planned PC", "Planned MT", "Rolled PC", "Rolled MT", "Balance PC", "Balance MT", "Status"
             ];
             
             response = response.map((item, index) => {
@@ -935,14 +987,17 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
                     }
                 });
                 
-                if (filteredItem["Planned Qty"] !== undefined && filteredItem["Planned Qty"] !== null && !isNaN(filteredItem["Planned Qty"])) {
-                    filteredItem["Planned Qty"] = parseFloat(filteredItem["Planned Qty"]).toFixed(3);
+                if (filteredItem["Order MT"] !== undefined && filteredItem["Order MT"] !== null && !isNaN(filteredItem["Order MT"])) {
+                    filteredItem["Order MT"] = parseFloat(filteredItem["Order MT"]).toFixed(3);
                 } 
-                if (filteredItem["Rolled Qty"] !== undefined && filteredItem["Rolled Qty"] !== null && !isNaN(filteredItem["Rolled Qty"])) {
-                    filteredItem["Rolled Qty"] = parseFloat(filteredItem["Rolled Qty"]).toFixed(3);
+                if (filteredItem["Planned MT"] !== undefined && filteredItem["Planned MT"] !== null && !isNaN(filteredItem["Planned MT"])) {
+                    filteredItem["Planned MT"] = parseFloat(filteredItem["Planned MT"]).toFixed(3);
+                } 
+                if (filteredItem["Rolled MT"] !== undefined && filteredItem["Rolled MT"] !== null && !isNaN(filteredItem["Rolled MT"])) {
+                    filteredItem["Rolled MT"] = parseFloat(filteredItem["Rolled MT"]).toFixed(3);
                 }
-                if (filteredItem["Balance Qty"] !== undefined && filteredItem["Balance Qty"] !== null && !isNaN(filteredItem["Balance Qty"])) {
-                    filteredItem["Balance Qty"] = parseFloat(filteredItem["Balance Qty"]).toFixed(3);
+                if (filteredItem["Balance MT"] !== undefined && filteredItem["Balance MT"] !== null && !isNaN(filteredItem["Balance MT"])) {
+                    filteredItem["Balance MT"] = parseFloat(filteredItem["Balance MT"]).toFixed(3);
                 }
                 
                 if (filteredItem["Plan No"]) {
@@ -962,14 +1017,14 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
                 return filteredItem;
             });
             const columnAlignment = {
-                "Plan Date": 'center', "Order Qty": 'right', "Planned Qty": 'right', "Rolled Qty": 'right', "Balance Qty": 'right',"Planned PC":'right'
+                "Plan Date": 'center', "Order MT": 'right', "Planned MT": 'right', "Rolled MT": 'right', "Balance MT": 'right', "Planned PC": 'right',"Order PC": 'right', "Rolled PC": 'right', "Balance PC": 'right',
             };
 
             BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             $('.totals-row').remove();
             
             setTimeout(function() {
-                addPendingPlansFooter(totalOrderQty, totalPlannedQty, totalRolledQty, totalBalanceQty, totalPlannedPC);
+                updatePendingPlansFooterFromFiltered(response);
             }, 300);
             
             HideLoader();
@@ -984,7 +1039,7 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
         toastr.error(error.Msg || 'Error During Get Pending Plan Sheet');
     });
 }
-function addPendingPlansFooter(totalOrderQty, totalPlannedQty, totalRolledQty, totalBalanceQty, totalPlannedPC) {
+function addPendingPlansFooter(totalOrderMT, totalPlannedMT, totalRolledMT, totalBalanceMT, totalOrderPC, totalPlannedPC, totalRolledPC, totalBalancePC) {
     const tfoot = document.getElementById('table-foot');
     const thead = document.getElementById('table-head');
     
@@ -1002,28 +1057,40 @@ function addPendingPlansFooter(totalOrderQty, totalPlannedQty, totalRolledQty, t
     const columnCount = headerRow.children.length;
     const footerRow = document.createElement('tr');
     
-    let orderQtyIndex = -1;
-    let plannedQtyIndex = -1;
-    let rolledQtyIndex = -1;
-    let balanceQtyIndex = -1;
+    let orderMTIndex = -1;
+    let plannedMTIndex = -1;
+    let rolledMTIndex = -1;
+    let balanceMTIndex = -1;
     let plannedPCIndex = -1;
+    let orderPCIndex = -1;
+    let rolledPCIndex = -1;
+    let balancePCIndex = -1;
     
     for (let i = 0; i < headerRow.children.length; i++) {
         const headerText = headerRow.children[i].textContent.trim();
-        if (headerText.includes('Order Qty') || headerText.includes('OrderQty')) {
-            orderQtyIndex = i;
+        if (headerText.includes('Order MT') || headerText.includes('OrderMT')) {
+            orderMTIndex = i;
         }
-        if (headerText.includes('Planned Qty') || headerText.includes('PlannedQty')) {
-            plannedQtyIndex = i;
+        if (headerText.includes('Planned MT') || headerText.includes('PlannedMT')) {
+            plannedMTIndex = i;
         }
-        if (headerText.includes('Rolled Qty') || headerText.includes('RolledQty')) {
-            rolledQtyIndex = i;
+        if (headerText.includes('Rolled MT') || headerText.includes('RolledMT')) {
+            rolledMTIndex = i;
         }
-        if (headerText.includes('Balance Qty') || headerText.includes('BalanceQty')) {
-            balanceQtyIndex = i;
+        if (headerText.includes('Balance MT') || headerText.includes('BalanceMT')) {
+            balanceMTIndex = i;
         }
         if (headerText.includes('Planned PC') || headerText.includes('PlannedPC')) {
             plannedPCIndex = i;
+        }
+        if (headerText.includes('Order PC') || headerText.includes('OrderPC')) {
+            orderPCIndex = i;
+        }
+        if (headerText.includes('Rolled PC') || headerText.includes('RolledPC')) {
+            rolledPCIndex = i;
+        }
+        if (headerText.includes('Balance PC') || headerText.includes('BalancePC')) {
+            balancePCIndex = i;
         }
     }
     
@@ -1033,20 +1100,29 @@ function addPendingPlansFooter(totalOrderQty, totalPlannedQty, totalRolledQty, t
         if (i === 0) {
             cell.textContent = 'Total';
             cell.style.textAlign = 'center';
-        } else if (i === orderQtyIndex) {
-            cell.textContent = totalOrderQty;
+        } else if (i === orderMTIndex) {
+            cell.textContent = totalOrderMT.toFixed(3);
             cell.style.textAlign = 'right';
-        } else if (i === plannedQtyIndex) {
-            cell.textContent = totalPlannedQty.toFixed(3);
+        } else if (i === plannedMTIndex) {
+            cell.textContent = totalPlannedMT.toFixed(3);
             cell.style.textAlign = 'right';
-        } else if (i === rolledQtyIndex) {
-            cell.textContent = totalRolledQty.toFixed(3);
+        } else if (i === rolledMTIndex) {
+            cell.textContent = totalRolledMT.toFixed(3);
             cell.style.textAlign = 'right';
-        } else if (i === balanceQtyIndex) {
-            cell.textContent = totalBalanceQty.toFixed(3);
+        } else if (i === balanceMTIndex) {
+            cell.textContent = totalBalanceMT.toFixed(3);
             cell.style.textAlign = 'right';
         } else if (i === plannedPCIndex) {
             cell.textContent = totalPlannedPC;
+            cell.style.textAlign = 'right';
+        } else if (i === orderPCIndex) {
+            cell.textContent = totalOrderPC;
+            cell.style.textAlign = 'right';
+        } else if (i === rolledPCIndex) {
+            cell.textContent = totalRolledPC;
+            cell.style.textAlign = 'right';
+        } else if (i === balancePCIndex) {
+            cell.textContent = totalBalancePC;
             cell.style.textAlign = 'right';
         } else {
             cell.textContent = '';
@@ -1151,7 +1227,6 @@ function PlanNoCloseModal() {
     }
     $('#planNoDetails').modal('hide');
 }
-
 window.ExportExcel = ExportExcel;
 window.OpenModal = OpenModal;
 window.CloseModal = CloseModal;

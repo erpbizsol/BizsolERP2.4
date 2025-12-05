@@ -13,10 +13,18 @@ const DealerMasterService = {
         );
 
     },
+    GetDealerLocate: function GetDealerLocate(AccountDesp) {
+        var URL = UrlService.API_ENDPOINT_DEALER_MASTER + `/GetDealerLocate?AccountDesp=${AccountDesp}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+
+    },
     GetDealerMasterByCode: function GetDealerMasterByCode(Code) {
 
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var userMasterCode = authKeyData.UserMaster_Code;
+        
         var URL = UrlService.API_ENDPOINT_DEALER_MASTER + `/GetDealerMasterByCode?Code=` + Code;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
@@ -27,8 +35,7 @@ const DealerMasterService = {
     },
     GetDealerMasterByName: function GetDealerMasterByName(DealerName) {
 
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var userMasterCode = authKeyData.UserMaster_Code;
+        
         var URL = UrlService.API_ENDPOINT_DEALER_MASTER + `/GetDealerMasterByName?DealerName=` + DealerName;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
@@ -39,8 +46,7 @@ const DealerMasterService = {
     },
     SaveDealerMaster: function SaveDealerMaster(DealerMasterData) {
         var json_data = JSON.stringify(DealerMasterData, null, 2);
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var userMasterCode = authKeyData.UserMaster_Code;
+        
         var URL = UrlService.API_ENDPOINT_DEALER_MASTER + `/SaveDealerMaster`;
         return promiseAjaxCallApi.CallAPI('POST', URL, json_data).then(
             function (value) {
