@@ -861,17 +861,17 @@ function VerifyDispatch(Code) {
         Showloader();
         var Status = $("#ddlStatus").val();
         VerifyDispatchPlanService.Verify(Code, Status).then(function (response) {
-            if (response[0].Status == 'Y') {
-                toastr.success(response[0].Msg);
+            if (response.Status == 'Y') {
+                toastr.success(response.Message);
                 GetDispatchAdvicePlanList($("#ddlStatus").val());
                 HideLoader();
             } else {
-                toastr.error(response[0].Msg);
+                toastr.error(response[0].Message);
                 HideLoader();
             }
         }).catch(function (error) {
             HideLoader();
-            toastr.error(error.Msg || 'Error During Verify ');
+            toastr.error(error.Message || 'Error During Verify ');
         });
     }
 }
@@ -1035,12 +1035,12 @@ function Update() {
     if (confirm("Are you sure you want to update ?")) {
         Showloader();
         VerifyDispatchPlanService.UpdateTransporter(codes).then(function (response) {
-            if (response[0].Status == 'Y') {
-                toastr.success(response[0].Msg);
+            if (response.Status == 'Y') {
+                toastr.success(response.Message);
                 HideLoader();
                 CloseTransporter();
             } else {
-                toastr.error(response[0].Msg);
+                toastr.error(response.Message);
                 HideLoader();
             }
         }).catch(function (error) {
@@ -1076,13 +1076,13 @@ function SendMailToTransporter() {
             if (confirm("Are you sure you want to verify/send mail ?")) {
                 Showloader();
                 VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo).then(function (response) {
-                    if (response[0].Status == 'Y') {
-                        toastr.success(response[0].Msg);
+                    if (response.Status == 'Y') {
+                        toastr.success(response.Message);
                         HideLoader();
                         CloseTransporter();
                         GetDispatchAdvicePlanList($("#ddlStatus").val());
                     } else {
-                        toastr.error(response[0].Msg);
+                        toastr.error(response.Message);
                         HideLoader();
                     }
                 }).catch(function (error) {
@@ -1095,13 +1095,13 @@ function SendMailToTransporter() {
 function ApprovedTransporter() {
     Showloader();
     VerifyDispatchPlanService.ApprovedQuotation(G_DispatchMaster_Code, G_AccountMaster_Code).then(function (response) {
-        if (response[0].Status == 'Y') {
-            toastr.success(response[0].Msg);
+        if (response.Status == 'Y') {
+            toastr.success(response.Message);
             GetDispatchAdvicePlanList($("#ddlStatus").val());
             CloseApprovedModal();
             HideLoader();
         } else {
-            toastr.error(response[0].Msg);
+            toastr.error(response.Message);
             HideLoader();
         }
     }).catch(function (error) {
