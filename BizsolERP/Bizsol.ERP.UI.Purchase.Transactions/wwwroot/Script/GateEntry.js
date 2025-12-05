@@ -3,6 +3,7 @@ import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSugg
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
+//import { MultiAutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/MultiAutoSuggestion.js';
 
 $("#ERPHeading").text("Gate Entry");
 
@@ -10,6 +11,7 @@ let ConfigGateEntry = [];
 let IsWithPo = false;
 let GateEntryMaster_Code = 0;
 let LoginGodownMaster_Code = 0;
+
 let ExcelExportDataArry = [];
 let doctype = [
     { name: "Invoice" },
@@ -24,6 +26,8 @@ let GateEntryImageDetail = [{
     ImgOther: []
 
 }];
+//let G_GateEntryLinkedERPDocuments = [{ TableName: "kumar", TableCode:5 }];
+let G_GateEntryLinkedERPDocuments = [{ TableName: "kumar", TableCode:5 }];
 
 let baseUrl = sessionStorage.getItem('AppBaseURL');
 let G_TableName = '';
@@ -285,6 +289,7 @@ function LoadedInNew() {
     $('#DivLoadedInRCExpiredDate').hide();
     $('#DivLoadedInDriverLicenseNo').hide();
     $('#DivLoadedInDriverLicenseExpiredDate').hide();
+    $('#DivLoadedInDriverAadharNo').hide();
     $('#RowfrmLoadedInTokenNo').hide();
 
     $('#frmLoadedIn_txtDateIn').val(new Date().toISOString().slice(0, 10));
@@ -326,12 +331,14 @@ function LoadedInNew() {
         $('#frmLoadedIn_txtRCExpiredDate').val('');
         $('#frmLoadedIn_txtDriverLicenseNo').val('');
         $('#frmLoadedIn_txtDriverLicenseExpiredDate').val('');
+        $('#frmLoadedIn_txtDriverAadharNo').val('');
 
         $('#DivLoadedInChassisNo').show();
         $('#DivLoadedInRCNo').show();
         $('#DivLoadedInRCExpiredDate').show();
         $('#DivLoadedInDriverLicenseNo').show();
         $('#DivLoadedInDriverLicenseExpiredDate').show();
+        $('#DivLoadedInDriverAadharNo').show();
     }
 
     GateEntryService.GetTransportersNameList().then(function (response) {
@@ -405,6 +412,7 @@ function EmptyInNew() {
     $('#DivEmptyInDriverLicenseNo').hide();
     $('#DivEmptyInDriverLicenseExpiredDate').hide();
     $('#RowfrmEmptyInTokenNo').hide();
+    $('#DivEmptyInDriverAadharNo').hide();
 
     GateEntryService.GetTransportersNameList().then(function (response) {
         //console.log(response);
@@ -433,12 +441,14 @@ function EmptyInNew() {
         $('#frmEmptyIn_txtRCExpiredDate').val('');
         $('#frmEmptyIn_txtDriverLicenseNo').val('');
         $('#frmEmptyIn_txtDriverLicenseExpiredDate').val('');
+        $('#frmEmptyIn_txtDriverAadharNo').val('');
               
         $('#DivEmptyInChassisNo').show();
         $('#DivEmptyInRCNo').show();
         $('#DivEmptyInRCExpiredDate').show();
         $('#DivEmptyInDriverLicenseNo').show();
         $('#DivEmptyInDriverLicenseExpiredDate').show();
+        $('#DivEmptyInDriverAadharNo').show();
     }
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'TokenApplicable').PerameterValue === 'Y') {
         $('#frmEmptyIn_txtReportingDatetime').attr('readonly', 'readonly');
@@ -466,6 +476,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#DivLoadedInRCExpiredDate').hide();
     $('#DivLoadedInDriverLicenseNo').hide();
     $('#DivLoadedInDriverLicenseExpiredDate').hide();
+    $('#DivLoadedInDriverAadharNo').hide();
 
     $('#frmEmptyOut_txtDateOut').val(new Date().toISOString().slice(0, 10));
     $('#frmEmptyOut_txtOutTime').val(`${new Date().getHours()}:${new Date().getMinutes()}`);
@@ -522,6 +533,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtRCExpiredDate').val(gateEntryData[0].RCExpiredDate == null ? '' : new Date(gateEntryData[0].RCExpiredDate).toISOString().slice(0, 10));
     $('#frmLoadedIn_txtDriverLicenseNo').val(gateEntryData[0].DriverLicenseNo);
     $('#frmLoadedIn_txtDriverLicenseExpiredDate').val(gateEntryData[0].DriverLicenseExpiredDate == null ? '' : new Date(gateEntryData[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
+    $('#frmLoadedIn_txtDriverAadharNo').val(gateEntryData[0].DriverAadharNo);
     $('#frmLoadedIn_txtTokenNo').val(gateEntryData[0].TokenNo);
 
 
@@ -554,6 +566,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtRCExpiredDate').attr('readonly', 'readonly');
     $('#frmLoadedIn_txtDriverLicenseNo').attr('readonly', 'readonly');
     $('#frmLoadedIn_txtDriverLicenseExpiredDate').attr('readonly', 'readonly');
+    $('#frmLoadedIn_txtDriverAadharNo').attr('readonly', 'readonly');
     $('#frmLoadedIn_txtTokenNo').attr('readonly', 'readonly');
 
     $('#DivfrmLoadedIn_fileVehiclePhoto').hide();
@@ -595,6 +608,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
         $('#DivLoadedInRCExpiredDate').show();
         $('#DivLoadedInDriverLicenseNo').show();
         $('#DivLoadedInDriverLicenseExpiredDate').show();
+        $('#DivLoadedInDriverAadharNo').show();
     }
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'POWiseEntryMendatory').PerameterValue === 'Y') {
@@ -673,11 +687,14 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
 
     $('#frmLoadedOut_txtVehicleOutTime').val(gateEntryData[0].VehicleOutTime == '00:00' ? `${new Date().getHours()}:${new Date().getMinutes()}` : gateEntryData[0].VehicleOutTime);
 
+    $('#frmLoadedOut_txtNetWeightLoadedOut').val(0);
+
     $('#frmEmptyIn_txtChassisNo').val(gateEntryData[0].ChassisNo);
     $('#frmEmptyIn_txtRCNo').val(gateEntryData[0].RCNo);
     $('#frmEmptyIn_txtRCExpiredDate').val(new Date(gateEntryData[0].RCExpiredDate).toISOString().slice(0, 10));
     $('#frmEmptyIn_txtDriverLicenseNo').val(gateEntryData[0].DriverLicenseNo);
     $('#frmEmptyIn_txtDriverLicenseExpiredDate').val(new Date(gateEntryData[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
+    $('#frmEmptyIn_txtDriverAadharNo').val(gateEntryData[0].DriverAadharNo);
     $('#frmEmptyIn_txtTokenNo').val(gateEntryData[0].TokenNo);
 
     G_TableName = gateEntryData[0].TableName;
@@ -696,6 +713,7 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#frmEmptyIn_txtRCExpiredDate').attr('readonly', 'readonly');
     $('#frmEmptyIn_txtDriverLicenseNo').attr('readonly', 'readonly');
     $('#frmEmptyIn_txtDriverLicenseExpiredDate').attr('readonly', 'readonly');
+    $('#frmEmptyIn_txtDriverAadharNo').attr('readonly', 'readonly');
     $('#frmEmptyIn_txtTokenNo').attr('readonly', 'readonly');
 
     
@@ -705,12 +723,14 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#RowfrmEmptyInWeightmentSlipNoEmpty').hide();
     $('#RowfrmLoadedOutVehicleLoadedWeight').hide();
     $('#RowfrmLoadedOutWeightmentSlipNoLoadedOut').hide();
+    $('#RowfrmLoadedOutNetWeightLoadedOut').hide();
 
     $('#DivEmptyInChassisNo').hide();
     $('#DivEmptyInRCNo').hide();
     $('#DivEmptyInRCExpiredDate').hide();
     $('#DivEmptyInDriverLicenseNo').hide();
     $('#DivEmptyInDriverLicenseExpiredDate').hide();
+    $('#DivEmptyInDriverAadharNo').hide();
     $('#RowfrmEmptyInTokenNo').hide();
 
     $('#RowLoadedOut_txtManualDocNo').hide();
@@ -731,6 +751,7 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
         $('#RowfrmEmptyInWeightmentSlipNoEmpty').show();
         $('#RowfrmLoadedOutVehicleLoadedWeight').show();
         $('#RowfrmLoadedOutWeightmentSlipNoLoadedOut').show();
+        $('#RowfrmLoadedOutNetWeightLoadedOut').show();
     }
 
     GateEntryService.GetVendorOrClientNameListData('CLIENT').then(function (response) {
@@ -780,6 +801,7 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
         $('#DivEmptyInRCExpiredDate').show();
         $('#DivEmptyInDriverLicenseNo').show();
         $('#DivEmptyInDriverLicenseExpiredDate').show();
+        $('#DivEmptyInDriverAadharNo').show();
     }
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ShowExtraDocumentNo').PerameterValue === 'Y') {
@@ -947,6 +969,7 @@ function GateEntry_SaveData(Mode) {
     let RCExpiredDate = "";
     let DriverLicenseNo = "";
     let DriverLicenseExpiredDate = "";
+    let DriverAadharNo = "";
     let TokenNo = "";
     let OutType = "";
  
@@ -979,6 +1002,7 @@ function GateEntry_SaveData(Mode) {
             RCExpiredDate = $('#frmEmptyIn_txtRCExpiredDate').val();
             DriverLicenseNo = $('#frmEmptyIn_txtDriverLicenseNo').val();
             DriverLicenseExpiredDate = $('#frmEmptyIn_txtDriverLicenseExpiredDate').val();
+            DriverAadharNo = $('#frmEmptyIn_txtDriverAadharNo').val();
 
             if (typeof ChassisNo === 'undefined' || ChassisNo === '' || ChassisNo === null) {
                 valid = false;
@@ -1125,6 +1149,7 @@ function GateEntry_SaveData(Mode) {
             RCExpiredDate = $('#frmEmptyIn_txtRCExpiredDate').val();
             DriverLicenseNo = $('#frmEmptyIn_txtDriverLicenseNo').val();
             DriverLicenseExpiredDate = $('#frmEmptyIn_txtDriverLicenseExpiredDate').val();
+            DriverAadharNo = $('#frmEmptyIn_txtDriverAadharNo').val();
         }
 
         if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
@@ -1144,6 +1169,7 @@ function GateEntry_SaveData(Mode) {
                 return;
             }
             NetWeight = LoadedWeight - EmptyWeight;
+            $('#frmLoadedOut_txtNetWeightLoadedOut').val(NetWeight);
             if (RejectEntry == 'N' && NetWeight < 0) {
                 toastr.error('Please Check! vehicle loaded weight Should be greater than to vehicle empty weight');
                 return;
@@ -1265,6 +1291,7 @@ function GateEntry_SaveData(Mode) {
             RCExpiredDate = $('#frmLoadedIn_txtRCExpiredDate').val();
             DriverLicenseNo = $('#frmLoadedIn_txtDriverLicenseNo').val();
             DriverLicenseExpiredDate = $('#frmLoadedIn_txtDriverLicenseExpiredDate').val();
+            DriverAadharNo = $('#frmLoadedIn_txtDriverAadharNo').val();
 
             if (typeof ChassisNo === 'undefined' || ChassisNo === '' || ChassisNo === null) {
                 valid = false;
@@ -1498,6 +1525,7 @@ function GateEntry_SaveData(Mode) {
             RCExpiredDate = $('#frmLoadedIn_txtRCExpiredDate').val();
             DriverLicenseNo = $('#frmLoadedIn_txtDriverLicenseNo').val();
             DriverLicenseExpiredDate = $('#frmLoadedIn_txtDriverLicenseExpiredDate').val();
+            DriverAadharNo = $('#frmLoadedIn_txtDriverAadharNo').val();
         }
         if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
             EmptyWeight = $('#frmEmptyOut_txtVehicleEmptyWeight').val();
@@ -1608,11 +1636,13 @@ function GateEntry_SaveData(Mode) {
                     tokenNo: TokenNo,
                     outType: OutType,
                     outReason: OutReason,
-                    gRNo:GRNo
+                    gRNo: GRNo,
+                    driverAadharNo: DriverAadharNo
                 }
             ],
 
-            gateEntryImageDetail: GateEntryImageDetail
+            gateEntryImageDetail: GateEntryImageDetail,
+            gateEntryLinkedERPDocuments: G_GateEntryLinkedERPDocuments
 
         }
         
@@ -1979,6 +2009,7 @@ function ClearAllFrm() {
     $('#frmEmptyIn_txtRCExpiredDate').val('');
     $('#frmEmptyIn_txtDriverLicenseNo').val('');
     $('#frmEmptyIn_txtDriverLicenseExpiredDate').val('');
+    $('#frmEmptyIn_txtDriverAadharNo').val('');
     $('#frmEmptyIn_txtTokenNo').val('');
 
     $('#frmLoadedOut_txtVehicleLoadedWeight').val('');
@@ -2009,6 +2040,7 @@ function ClearAllFrm() {
     $('#frmEmptyIn_txtRCExpiredDate').removeAttr('readonly');
     $('#frmEmptyIn_txtDriverLicenseNo').removeAttr('readonly');
     $('#frmEmptyIn_txtDriverLicenseExpiredDate').removeAttr('readonly');
+    $('#frmEmptyIn_txtDriverAadharNo').removeAttr('readonly');
     $('#frmEmptyIn_txtTokenNo').removeAttr('readonly');
     $('#frmEmptyIn_btnSave').removeAttr('disabled')
     $('#frmEmptyIn_btnCancel').removeAttr('disabled')
@@ -2059,6 +2091,7 @@ function ClearAllFrm() {
     $('#frmLoadedIn_txtRCExpiredDate').val('');
     $('#frmLoadedIn_txtDriverLicenseNo').val('');
     $('#frmLoadedIn_txtDriverLicenseExpiredDate').val('');
+    $('#frmLoadedIn_txtDriverAadharNo').val('');
     $('#frmLoadedIn_txtTokenNo').val('');
 
 
@@ -2087,6 +2120,7 @@ function ClearAllFrm() {
     $('#frmLoadedIn_txtRCExpiredDate').removeAttr('readonly');
     $('#frmLoadedIn_txtDriverLicenseNo').removeAttr('readonly');
     $('#frmLoadedIn_txtDriverLicenseExpiredDate').removeAttr('readonly');
+    $('#frmLoadedIn_txtDriverAadharNo').removeAttr('readonly');
     $('#frmLoadedIn_txtTokenNo').removeAttr('readonly');
 
     $('#DivfrmLoadedIn_fileVehiclePhoto').show();
@@ -2203,6 +2237,7 @@ function ViewGateEntry(gateEntryData, EntryType) {
 
         $('#frmLoadedOut_txtVehicleLoadedWeight').val(gateEntryData[0].LoadedWeight);
         $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val(gateEntryData[0].WeightmentSlipNumberOut);
+        $('#frmLoadedOut_txtNetWeightLoadedOut').val(gateEntryData[0].NetWeight);
         $('#frmLoadedOut_txtGoodsDescription').val(gateEntryData[0].GoodDescription);
         $('#frmLoadedOut_txtQty').val(gateEntryData[0].Qty);
         GateEntryService.GetUOMMasterList().then(function (response) {
@@ -2338,6 +2373,7 @@ function EditGateEntry(gateEntryData, EntryType) {
 
         $('#frmLoadedOut_txtVehicleLoadedWeight').val(gateEntryData[0].LoadedWeight);
         $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val(gateEntryData[0].WeightmentSlipNumberOut);
+        $('#frmLoadedOut_txtNetWeightLoadedOut').val(gateEntryData[0].NetWeight);
         $('#frmLoadedOut_txtGoodsDescription').val(gateEntryData[0].GoodDescription);
         $('#frmLoadedOut_txtQty').val(gateEntryData[0].Qty);
         GateEntryService.GetUOMMasterList().then(function (response) {
@@ -2358,6 +2394,7 @@ function EditGateEntry(gateEntryData, EntryType) {
                 width: '-webkit-fill-available'
             });
             frmLoadedOut_ddlDocumentType('view');
+            GateEntry_changeDocumentType();
         });
 
 
@@ -2424,6 +2461,7 @@ function EditLoaded() {
     $('#frmLoadedIn_txtRCExpiredDate').removeAttr('readonly');
     $('#frmLoadedIn_txtDriverLicenseNo').removeAttr('readonly');
     $('#frmLoadedIn_txtDriverLicenseExpiredDate').removeAttr('readonly');
+    $('#frmLoadedIn_txtDriverAadharNo').removeAttr('readonly');
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'TokenApplicable').PerameterValue === 'Y')
     {
@@ -2448,6 +2486,7 @@ function EditEmptyIn() {
     $('#frmEmptyIn_txtRCExpiredDate').removeAttr('readonly');
     $('#frmEmptyIn_txtDriverLicenseNo').removeAttr('readonly');
     $('#frmEmptyIn_txtDriverLicenseExpiredDate').removeAttr('readonly');
+    $('#frmEmptyIn_txtDriverAadharNo').removeAttr('readonly');
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'TokenApplicable').PerameterValue === 'Y') {
         $('#frmEmptyIn_txtTokenNo').attr('readonly', 'readonly');
@@ -2522,6 +2561,7 @@ function LoadListDriverDetailsByVehicleNo() {
 
                                         $('#frmLoadedIn_txtDriverLicenseNo').val(RespVehicleDetails[0].DriverLicenseNo);
                                         $('#frmLoadedIn_txtDriverLicenseExpiredDate').val(new Date(RespVehicleDetails[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
+                                        $('#frmLoadedIn_txtDriverAadharNo').val(RespVehicleDetails[0].DriverAadharNo);
 
                                     }
                                     $('#frmLoadedIn_txtDriverName').val(RespVehicleDetails[0].DriverName);
@@ -2563,6 +2603,7 @@ function LoadListDriverDetailsByVehicleNo() {
                                         $('#frmEmptyIn_txtRCExpiredDate').val(new Date(RespVehicleDetails[0].RCExpiredDate).toISOString().slice(0, 10));
                                         $('#frmEmptyIn_txtDriverLicenseNo').val(RespVehicleDetails[0].DriverLicenseNo);
                                         $('#frmEmptyIn_txtDriverLicenseExpiredDate').val(new Date(RespVehicleDetails[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
+                                        $('#frmEmptyIn_txtDriverAadharNo').val(RespVehicleDetails[0].DriverAadharNo);
                                     }
 
                                     $('#frmEmptyIn_txtDriverName').val(RespVehicleDetails[0].DriverName);
@@ -2603,6 +2644,7 @@ function LoadListDriverDetailsByVehicleNo() {
                                         $('#frmEmptyIn_txtRCExpiredDate').val(new Date(RespVehicleDetails[0].RCExpiredDate).toISOString().slice(0, 10));
                                         $('#frmEmptyIn_txtDriverLicenseNo').val(RespVehicleDetails[0].DriverLicenseNo);
                                         $('#frmEmptyIn_txtDriverLicenseExpiredDate').val(new Date(RespVehicleDetails[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
+                                        $('#frmEmptyIn_txtDriverAadharNo').val(RespVehicleDetails[0].DriverAadharNo);
                                     }
 
                                     $('#frmEmptyIn_txtDriverName').val(RespVehicleDetails[0].DriverName);
@@ -2643,6 +2685,7 @@ function LoadListDriverDetailsByVehicleNo() {
 
                                         $('#frmLoadedIn_txtDriverLicenseNo').val(RespVehicleDetails[0].DriverLicenseNo);
                                         $('#frmLoadedIn_txtDriverLicenseExpiredDate').val(new Date(RespVehicleDetails[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
+                                        $('#frmLoadedIn_txtDriverAadharNo').val(RespVehicleDetails[0].DriverAadharNo);
 
                                     }
                                     $('#frmLoadedIn_txtDriverName').val(RespVehicleDetails[0].DriverName);
@@ -2770,6 +2813,10 @@ function GateEnty_PrintPreviewToken(Code) {
                             <td style="padding: 5px 0;">${data.DriverMobile || ''}</td>
                         </tr>
                         <tr>
+                            <td style="padding: 5px 0;"><strong>Driver Aadhar No:</strong></td>
+                            <td style="padding: 5px 0;">${data.DriverAadharNo || ''}</td>
+                        </tr>
+                        <tr>
                             <td style="padding: 5px 0;"><strong>Transporter Name:</strong></td>
                             <td style="padding: 5px 0;">${data.OtherTransporterName || ''}</td>
                         </tr>
@@ -2869,22 +2916,6 @@ function BindddlVehiclesStatusInFectory() {
     ddlVehiclesStatusInFectoryArray.push({ Code: "RLOut", Desp: "Loaded Out (Reject)" });
 
 
-
-
-
-    //<option value="all">All</option>
-    //<option value="LIN">Loaded IN (completed)</option>
-    //<option value="EIN">Empty IN (completed) </option>
-    //<option value="PLIN">Loaded IN (in progress)</option>
-    //<option value="PEIN">Empty IN (in progress)</option>
-    //<option value="PAll">All Vehicles in progress</option>
-    //<option value="RAll">All Reject</option>
-    //<option value="REOut">Empty Out (Reject)</option>
-    //<option value="RLOut">Loaded Out (Reject)</option>
-    //<option value="TAll">All Token Entry </option>
-    //<option value="TCon">Token Entry (Converted)</option>
-    //<option value="TBal">Token Entry (Balance)</option>
-
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'TokenApplicable').PerameterValue === 'Y') {
         ddlVehiclesStatusInFectoryArray.push({ Code: "TAll", Desp: "All Token Entry" });
         ddlVehiclesStatusInFectoryArray.push({ Code: "TCon", Desp: "Token Entry (Converted)" });
@@ -2939,6 +2970,10 @@ function GateEntry_changeDocumentType() {
     $('#frmLoadedOut_txtGoodsDescription').removeAttr('readonly');
     $('#frmLoadedOut_txtQty').removeAttr('readonly');
     let F_GateEntryType_Desp = $('#frmLoadedOut_ddlDocumentType').val();
+    let IsMultipleDocument = false;
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'MultipleDocument').PerameterValue === 'Y') {
+        IsMultipleDocument = true;
+    }
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'AutoFatchDocumentDetails').PerameterValue === 'Y') {
 
@@ -2951,24 +2986,41 @@ function GateEntry_changeDocumentType() {
                 'StartWith',
                 true,
                 function (selectedItem) {
-                    if (selectedItem && selectedItem.Desp) {
-
-                        GateEntryService.GetGateEntryERPDocumentDetails(selectedItem.Desp, F_GateEntryType_Desp, 'N', LoginGodownMaster_Code).then(function (RespDocumentDetails) {
+                    if (selectedItem) {
+                        let DocNos = ''
+                        if (IsMultipleDocument == true) {
+                            DocNos = selectedItem.map(x => x.Desp).join(',');
+                        }
+                        else {
+                            DocNos = selectedItem.Desp;
+                        }
+                        GateEntryService.GetGateEntryERPDocumentDetails(DocNos, F_GateEntryType_Desp, 'N', LoginGodownMaster_Code).then(function (RespDocumentDetails) {
                             if (RespDocumentDetails.length > 0) {
+
+                                const sumtotalWeight = RespDocumentDetails.reduce((sum, item) => {
+                                    // Adjust keys if API uses a slightly different name (TotalWegit vs TotalWeight)
+                                    const raw = item.TotalWeight?? 0;
+                                    // normalize string (remove thousands separators) and parse
+                                    const parsed = parseFloat(String(raw).replace(/,/g, '')) || 0;
+                                    return sum + parsed;
+                                }, 0);
+
+
                                 $('#frmLoadedOut_txtCustomerName').val(RespDocumentDetails[0].PartyName)
                                 $('#frmLoadedOut_txtGoodsDescription').val(RespDocumentDetails[0].GoodsDesp)
-                                $('#frmLoadedOut_txtQty').val(RespDocumentDetails[0].TotalWeight)
+                                $('#frmLoadedOut_txtQty').val(parseFloat(sumtotalWeight).toFixed(2))
                                 $('#frmLoadedOut_txtGRNo').val(RespDocumentDetails[0].GRNo)
                                 $('#frmLoadedOut_ddlUOM').val(RespDocumentDetails[0].UOM).trigger('change')
 
-                                G_TableName = RespDocumentDetails[0].TableName;
-                                G_TableCode = RespDocumentDetails[0].Code;
+                               // G_TableName = RespDocumentDetails[0].TableName;
+                               // G_TableCode = RespDocumentDetails[0].Code;
 
 
                                 $('#frmLoadedOut_txtCustomerName').attr('readonly', 'readonly');
                                 $('#frmLoadedOut_txtGoodsDescription').attr('readonly', 'readonly');
                                 $('#frmLoadedOut_txtQty').attr('readonly', 'readonly');
 
+                                G_GateEntryLinkedERPDocuments = RespDocumentDetails.map((x) => ({ TableName: x.TableName, TableCode: x.Code }));
 
                             } else {
                                 toastr.error('Document Not Fund');
@@ -2981,12 +3033,68 @@ function GateEntry_changeDocumentType() {
                         });
                     }
                 }
+                ,IsMultipleDocument
             );
+
+
+            //MultiAutoSuggestionControl.SetUpMultiAutoSuggestion(
+            //    $('#frmLoadedOut_txtDocumentNo'),
+            //    $('#frmLoadedOut_txtDocumentNo_List'),
+            //    DocList,
+            //    'StartWith',
+            //    true,
+            //    function (selectedItem) {
+            //        const codes = selectedItem.map(obj => obj.Desp).join(',');
+
+            //        if (selectedItem && selectedItem.Desp) {
+
+            //            GateEntryService.GetGateEntryERPDocumentDetails(selectedItem.Desp, F_GateEntryType_Desp, 'N', LoginGodownMaster_Code).then(function (RespDocumentDetails) {
+            //                if (RespDocumentDetails.length > 0) {
+            //                    $('#frmLoadedOut_txtCustomerName').val(RespDocumentDetails[0].PartyName)
+            //                    $('#frmLoadedOut_txtGoodsDescription').val(RespDocumentDetails[0].GoodsDesp)
+            //                    $('#frmLoadedOut_txtQty').val(RespDocumentDetails[0].TotalWeight)
+            //                    $('#frmLoadedOut_txtGRNo').val(RespDocumentDetails[0].GRNo)
+            //                    $('#frmLoadedOut_ddlUOM').val(RespDocumentDetails[0].UOM).trigger('change')
+
+            //                    G_TableName = RespDocumentDetails[0].TableName;
+            //                    G_TableCode = RespDocumentDetails[0].Code;
+
+
+            //                    $('#frmLoadedOut_txtCustomerName').attr('readonly', 'readonly');
+            //                    $('#frmLoadedOut_txtGoodsDescription').attr('readonly', 'readonly');
+            //                    $('#frmLoadedOut_txtQty').attr('readonly', 'readonly');
+
+
+            //                } else {
+            //                    toastr.error('Document Not Fund');
+            //                    $('#frmLoadedOut_txtCustomerName').removeAttr('readonly');
+            //                    $('#frmLoadedOut_txtGoodsDescription').removeAttr('readonly');
+            //                    $('#frmLoadedOut_txtQty').removeAttr('readonly');
+            //                    G_TableName = '';
+            //                    G_TableCode = 0;
+            //                }
+            //            });
+            //        }
+            //    }
+            //);
         });
 
     }
 
     
+}
+
+function GateEntry_GetNetWeight() {
+    let EmptyWeight = 0;
+    let LoadedWeight = 0;
+    let NetWeight = 0;
+
+    EmptyWeight = $('#frmEmptyIn_txtVehicleEmptyWeight').val();
+    LoadedWeight = $('#frmLoadedOut_txtVehicleLoadedWeight').val();
+
+    NetWeight = LoadedWeight - EmptyWeight;
+
+    $('#frmLoadedOut_txtNetWeightLoadedOut').val(NetWeight);
 }
 // Apply to all inputs with this class
 applyAlphaNumUppercase(".alphanum-uppercase");
@@ -3005,3 +3113,4 @@ window.GateEntry_InitSelectMachineToGetWeightControl = GateEntry_InitSelectMachi
 window.GateEnty_PrintPreviewToken = GateEnty_PrintPreviewToken
 window.GateEntry_ExportExecl = GateEntry_ExportExecl
 window.GateEntry_changeDocumentType = GateEntry_changeDocumentType
+window.GateEntry_GetNetWeight = GateEntry_GetNetWeight
