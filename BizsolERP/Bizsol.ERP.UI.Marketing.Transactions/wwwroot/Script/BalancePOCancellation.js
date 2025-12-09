@@ -1,6 +1,4 @@
-﻿import { BalancePOCancellationService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BalancePOCancellationService.js';
-import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
-import { LeadMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_LeadMasterService.js';
+﻿import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { ClosePendingOrderService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ClosePendingOrderService.js';
 
 let G_FromDateValue = '';
@@ -12,7 +10,6 @@ $(document).ready(function () {
     InitializeUnitDropdowns();
     InitializeBalanceQtyOperator();
     GetFilterForCancelPendingOrder();
-    //GetNestedMarketingManList();
     InitializePartyNameDropdown();
     InitializeOrderNoDropdown();
     InitializeOrderTypeDropdown();
@@ -37,6 +34,15 @@ $(document).ready(function () {
 
     $("#ddlDispatchQtyOperator").change(function () {
         ToggleDispatchQtyToField();
+    });
+    $('#chkOrderQty').on("click", function () {
+        GetBalancePOCancellationList();
+    });
+    $('#chkShowDispatchQty').on("click", function () {
+        GetBalancePOCancellationList();
+    });
+    $('#DeliveryDetailCheck').on("click", function () {
+        GetBalancePOCancellationList();
     });
 });
 function setCurrentDateBalancePOCancellation() {
@@ -66,11 +72,17 @@ function InitializeUnitDropdowns() {
     if ($('#ddlBalanceQtyUnit').length > 0) {
         BindSelectList1($('#ddlBalanceQtyUnit')[0], unitList);
         $('#ddlBalanceQtyUnit').val('');
+        $('#ddlBalanceQtyUnit').select2({
+            width: '-webkit-fill-available'
+        });
     }
     
     if ($('#ddlDispatchQtyUnit').length > 0) {
         BindSelectList1($('#ddlDispatchQtyUnit')[0], unitList);
         $('#ddlDispatchQtyUnit').val('');
+        $('#ddlDispatchQtyUnit').select2({
+            width: '-webkit-fill-available'
+        });
     }
 }
 
@@ -83,9 +95,6 @@ function InitializeBalanceQtyOperator() {
     }
     if ($('#txtBalanceQtyTo').length > 0) {
         $('#txtBalanceQtyTo').val('0.000');
-    }
-    if ($('#ddlDispatchQtyOperator').length > 0) {
-        $('#ddlDispatchQtyOperator').val('>');
     }
     if ($('#txtDispatchQtyFrom').length > 0) {
         $('#txtDispatchQtyFrom').val('0.000');
@@ -176,7 +185,6 @@ function SelectAllRows() {
 function GetFilterForCancelPendingOrder() {
     ClosePendingOrderService.GetFilterForCancelPendingOrder()
         .then(function (response) {
-            // Bind Marketing Person (SalesPerson) list
             if (response && response.SalesPerson && response.SalesPerson.length > 0 && $('#ddlMarketingMan').length > 0) {
                 var marketingList = [];
                 for (var i = 0; i < response.SalesPerson.length; i++) {
@@ -185,7 +193,6 @@ function GetFilterForCancelPendingOrder() {
                 }
 
                 BindSelectList1($('#ddlMarketingMan')[0], marketingList);
-                // Change default "ALL" option to value/text expected by this screen
                 $('#ddlMarketingMan option[value="0"]').val('ALL').text('All');
 
                 $('#ddlMarketingMan').select2({
@@ -193,7 +200,6 @@ function GetFilterForCancelPendingOrder() {
                 });
             }
 
-            // Bind Party Name list
             if (response && response.PartyName && response.PartyName.length > 0 && $('#ddlPartyName').length > 0) {
                 var partyList = [];
                 for (var j = 0; j < response.PartyName.length; j++) {
@@ -208,6 +214,62 @@ function GetFilterForCancelPendingOrder() {
                     width: '-webkit-fill-available'
                 });
             }
+            if (response && response.SubSaleType && response.SubSaleType.length > 0 && $('#ddlOrderType').length > 0) {
+                var OrderTypeList = [];
+                for (var j = 0; j < response.SubSaleType.length; j++) {
+                    var subSaleType = response.SubSaleType[j].SubSaleType;
+                    OrderTypeList.push({ Code: subSaleType, Desp: subSaleType });
+                }
+
+                BindSelectList1($('#ddlOrderType')[0], OrderTypeList);
+                $('#ddlOrderType option[value="0"]').val('ALL').text('All');
+
+                $('#ddlOrderType').select2({
+                    width: '-webkit-fill-available'
+                });
+            }
+            if (response && response.ItemName && response.ItemName.length > 0 && $('#ddlItemName').length > 0) {
+                var ItemNameList = [];
+                for (var j = 0; j < response.ItemName.length; j++) {
+                    var itemName = response.ItemName[j].ItemName;
+                    ItemNameList.push({ Code: itemName, Desp: itemName });
+                }
+
+                BindSelectList1($('#ddlItemName')[0], ItemNameList);
+                $('#ddlItemName option[value="0"]').val('ALL').text('All');
+
+                $('#ddlItemName').select2({
+                    width: '-webkit-fill-available'
+                });
+            }
+            if (response && response.BuyerPONo && response.BuyerPONo.length > 0 && $('#ddlBuyerPONo').length > 0) {
+                var BuyerPONoList = [];
+                for (var j = 0; j < response.BuyerPONo.length; j++) {
+                    var buyerPONo = response.BuyerPONo[j].BuyerPONo;
+                    BuyerPONoList.push({ Code: buyerPONo, Desp: buyerPONo });
+                }
+
+                BindSelectList1($('#ddlBuyerPONo')[0], BuyerPONoList);
+                $('#ddlBuyerPONo option[value="0"]').val('ALL').text('All');
+
+                $('#ddlBuyerPONo').select2({
+                    width: '-webkit-fill-available'
+                });
+            }
+            if (response && response.OrderNo && response.OrderNo.length > 0 && $('#ddlOrderNo').length > 0) {
+                var OrderNoList = [];
+                for (var j = 0; j < response.OrderNo.length; j++) {
+                    var orderNo = response.OrderNo[j].OrderNo;
+                    OrderNoList.push({ Code: orderNo, Desp: orderNo });
+                }
+
+                BindSelectList1($('#ddlOrderNo')[0], OrderNoList);
+                $('#ddlOrderNo option[value="0"]').val('ALL').text('All');
+
+                $('#ddlOrderNo').select2({
+                    width: '-webkit-fill-available'
+                });
+            }
         })
         .catch(function (error) {
             console.error('Error fetching data:', error);
@@ -219,87 +281,37 @@ function GetFilterForCancelPendingOrder() {
             }
         });
 }
-//function GetNestedMarketingManList() {
-//    LeadMasterService.GetNestedMarketingManList().then(function (response) {
-//        if (response && response.length > 0) {
-//            let matchedPersonName = null;
-//            let marketingList = [];
-
-//            try {
-//                var authKeyStr = sessionStorage.getItem('authKey');
-//                var userMaster_Code = null;
-//                if (authKeyStr) {
-//                    var authKey = JSON.parse(authKeyStr);
-//                    userMaster_Code = authKey ? authKey.UserMaster_Code : null;
-//                }
-//            } catch (e) {
-//                console.error('Error parsing authKey:', e);
-//                userMaster_Code = null;
-//            }
-
-//            for (let i = 0; i < response.length; i++) {
-//                const person = response[i];
-
-//                if (person && person.PersonName) {
-//                    if (userMaster_Code && person.Usermaster_Code == userMaster_Code) {
-//                        matchedPersonName = person.PersonName;
-//                    }
-
-//                    marketingList.push({
-//                        Code: person.PersonName,
-//                        Desp: person.PersonName
-//                    });
-//                }
-//            }
-
-//            BindSelectList1($('#ddlMarketingMan')[0], marketingList);
-//            $('#ddlMarketingMan option[value="0"]').val("ALL");
-//            $('#ddlMarketingMan').select2({
-//                width: '-webkit-fill-available'
-//            });
-
-//            try {
-//                var urlMarketingMan = '';
-//                if (typeof getUrlVars === 'function') {
-//                    var urlParams = getUrlVars();
-//                    urlMarketingMan = decodeURIComponent(urlParams['MarketingMan_Name'] || "");
-//                }
-//                if (!urlMarketingMan || urlMarketingMan === '') {
-//                    if (matchedPersonName) {
-//                        $('#ddlMarketingMan').val(matchedPersonName);
-//                    } else {
-//                        $('#ddlMarketingMan').val("ALL");
-//                    }
-//                } else {
-//                    $('#ddlMarketingMan').val(urlMarketingMan);
-//                }
-//            } catch (_) { $('#ddlMarketingMan').val("ALL"); }
-
-//        } else {
-//            toastr.error('No Data Found');
-//        }
-//    }).catch(function (error) {
-//        console.error('Error loading marketing person list:', error);
-//        toastr.error('Error loading sales person list');
-//    });
-//}
 function GetBalancePOCancellationList() {
     var MarketingPersonName = $("#ddlMarketingMan").val();
     if (MarketingPersonName == null || MarketingPersonName === 'ALL') {
         MarketingPersonName = '';
     }
 
-    G_FromDateValue = $("#txtBalanceFromDate").val();
-    G_ToDateValue = $("#txtBalanceToDate").val();
+    var isPeriodWise = $("#chkPeriodWise").is(':checked');
+        G_FromDateValue = $("#txtBalanceFromDate").val();
+        G_ToDateValue = $("#txtBalanceToDate").val();
+    
 
     var partyName = $("#ddlPartyName").val();
     if (partyName == null || partyName === 'ALL') {
         partyName = '';
     }
     var orderNo = $("#ddlOrderNo").val() || 'ALL';
+    if (orderNo === 'ALL') {
+        orderNo = '';
+    }
     var orderType = $("#ddlOrderType").val() || 'ALL';
+    if (orderType === 'ALL') {
+        orderType = '';
+    }
     var itemName = $("#ddlItemName").val() || 'ALL';
+    if (itemName === 'ALL') {
+        itemName = '';
+    }
     var buyerPONo = $("#ddlBuyerPONo").val() || 'ALL';
+    if (buyerPONo === 'ALL') {
+        buyerPONo = '';
+    }
     var balanceQtyUnit = $("#ddlBalanceQtyUnit").val() || '';
     var balanceQtyOperator = $("#ddlBalanceQtyOperator").val() || '';
     var balanceQtyFrom = $("#txtBalanceQtyFrom").val() || '0.000';
@@ -307,14 +319,12 @@ function GetBalancePOCancellationList() {
     var dispatchQtyUnit = $("#ddlDispatchQtyUnit").val() || '';
     var dispatchQtyFrom = $("#txtDispatchQtyFrom").val() || '0.000';
     var dispatchQtyTo = $("#txtDispatchQtyTo").val() || '0.000';
-    var periodWise = $("#chkPeriodWise").is(':checked');
-    var showOrderQty = $("#chkOrderQty").is(':checked');
     var dispatchQtyOperator = $("#ddlDispatchQtyOperator").val() || '';
-    var showDispatchQty = $("#chkShowDispatchQty").is(':checked');
-    var showDeliveryDetail = $("#DeliveryDetailCheck").is(':checked');
    
+    var periodWise = isPeriodWise ? 'Y' : 'N';
+    
     Showloader();
-    ClosePendingOrderService.GetCancelPendingOrderList(G_FromDateValue, G_ToDateValue, MarketingPersonName, partyName).then(function (response) {
+    ClosePendingOrderService.GetCancelPendingOrderList(periodWise, G_FromDateValue, G_ToDateValue, MarketingPersonName, partyName, orderType, buyerPONo, itemName, orderNo).then(function (response) {
         HideLoader();
         if (response.length > 0) {
             $('#BalancePOCancellation').show();
@@ -324,8 +334,69 @@ function GetBalancePOCancellationList() {
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Code", "BuyerPODetail_Code", "BuyerPOMaster_Code"];
-            const ColumnAlignment = {};
+            var hiddenColumns = ["Code", "BuyerPODetail_Code", "BuyerPOMaster_Code"];
+            
+            var showOrderQty = $("#chkOrderQty").is(':checked');
+            if (!showOrderQty) {
+                var orderQtyColumns = ["Qty MT","Qty PC", "Qty MR"];
+                hiddenColumns = hiddenColumns.concat(orderQtyColumns);
+            }
+            var showDispatchQty = $("#chkShowDispatchQty").is(':checked');
+            if (!showDispatchQty) {
+                var dispatchQtyColumns = ["Dis MT","Dis PC","Dis MR"];
+                hiddenColumns = hiddenColumns.concat(dispatchQtyColumns);
+            }
+            var showDeliveryDetail = $("#DeliveryDetailCheck").is(':checked');
+            if (!showDeliveryDetail) {
+                var DeliveryDetailColumns = ["Consignee Address"];
+                hiddenColumns = hiddenColumns.concat(DeliveryDetailColumns);
+            } else {
+                var ConsigneeNameColumns = ["Consignee Name"];
+                hiddenColumns = hiddenColumns.concat(ConsigneeNameColumns);
+            }
+            
+            var ColumnAlignment = {"Order Date": 'center'};
+            
+            if (response.length > 0) {
+                var firstRow = response[0];
+                var excludedColumns = ["Select", "Code", "BuyerPODetail_Code", "BuyerPOMaster_Code"];
+                var numericColumnPatterns = ["Qty", "Dis", "Bal", "MT", "PC", "MR", "Thk", "Thickness"];
+                
+                for (var columnName in firstRow) {
+                    if (excludedColumns.indexOf(columnName) === -1) {
+                        var isNumericColumn = false;
+                        var columnNameUpper = columnName.toUpperCase();
+                        
+                        for (var i = 0; i < numericColumnPatterns.length; i++) {
+                            if (columnNameUpper.indexOf(numericColumnPatterns[i].toUpperCase()) !== -1) {
+                                isNumericColumn = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!isNumericColumn) {
+                            var hasNumericValue = false;
+                            for (var j = 0; j < Math.min(5, response.length); j++) {
+                                var value = response[j][columnName];
+                                if (value !== null && value !== undefined && value !== '') {
+                                    if (!isNaN(parseFloat(value)) && isFinite(value)) {
+                                        hasNumericValue = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (hasNumericValue) {
+                                isNumericColumn = true;
+                            }
+                        }
+                        
+                        if (isNumericColumn) {
+                            ColumnAlignment[columnName] = 'right';
+                        }
+                    }
+                }
+            }
+            
             response.forEach((item, index) => {
                 item.Select = `<input type="checkbox" class="select-checkbox" data-index="${index}">`;
             });
@@ -353,11 +424,6 @@ function BindSelectList1(element, list) {
     });
     element.innerHTML = option;
 }
-
-
-window.GetBalancePOCancellationList = GetBalancePOCancellationList;
-//window.GetNestedMarketingManList = GetNestedMarketingManList;
-
 function GetSelectedBalancePOCancellationRows() {
     var tableId = 'BalancePOCancellation';
     var selectedRows = [];
@@ -403,6 +469,11 @@ function GetSelectedBalancePOCancellationRows() {
 }
 
 function SaveBalancePOCancellation() {
+    var selectedRows = GetSelectedBalancePOCancellationRows();
+    if (!selectedRows || selectedRows.length === 0) {
+        toastr.error('Please select at least one order to cancel.');
+        return;
+    }
     if ($('#txtReason').length > 0) {
         var reason = $('#txtReason').val();
         if (reason == null || reason.trim() == '') {
@@ -412,13 +483,7 @@ function SaveBalancePOCancellation() {
         }
     }
 
-    var selectedRows = GetSelectedBalancePOCancellationRows();
-    if (!selectedRows || selectedRows.length === 0) {
-        toastr.error('Please select at least one order to cancel.');
-        return;
-    }
 
-    // Build payload as array of detail objects expected by API
     var reasonText = $('#txtReason').val();
     var details = [];
 
@@ -434,23 +499,53 @@ function SaveBalancePOCancellation() {
         var qtyPC = 0;
         var qtyMTRS = 0;
 
-        // Try both camelCase and PascalCase keys, in case API returns either
+        function getColumnValue(row, patterns) {
+            for (var key in row) {
+                if (row.hasOwnProperty(key)) {
+                    var keyUpper = key.toUpperCase();
+                    for (var p = 0; p < patterns.length; p++) {
+                        var patternUpper = patterns[p].toUpperCase();
+                        if (keyUpper.indexOf(patternUpper) !== -1) {
+                            var value = row[key];
+                            if (value != null && value !== '') {
+                                var numValue = parseFloat(value);
+                                if (!isNaN(numValue) && isFinite(numValue)) {
+                                    return numValue;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+
         if (r.qtyMT != null && r.qtyMT !== '') {
             qtyMT = parseFloat(r.qtyMT) || 0;
         } else if (r.QtyMT != null && r.QtyMT !== '') {
             qtyMT = parseFloat(r.QtyMT) || 0;
+        } else {
+            qtyMT = getColumnValue(r, ["Qty MT", "QtyMT", "qtyMT"]);
         }
 
         if (r.qtyPC != null && r.qtyPC !== '') {
             qtyPC = parseFloat(r.qtyPC) || 0;
         } else if (r.QtyPC != null && r.QtyPC !== '') {
             qtyPC = parseFloat(r.QtyPC) || 0;
+        } else {
+            var qtyPCValue = getColumnValue(r, ["Qty PC", "QtyPC", "qtyPC"]);
+            if (qtyPCValue === 0) {
+                qtyPCValue = getColumnValue(r, ["Bal PC", "BalPC", "balPC"]);
+            }
+            qtyPC = qtyPCValue;
         }
 
         if (r.qtyMTRS != null && r.qtyMTRS !== '') {
             qtyMTRS = parseFloat(r.qtyMTRS) || 0;
         } else if (r.QtyMTRS != null && r.QtyMTRS !== '') {
             qtyMTRS = parseFloat(r.QtyMTRS) || 0;
+        } else {
+            qtyMTRS = getColumnValue(r, ["Qty MTRS", "Qty MTR", "QtyMTRS", "qtyMTRS","Qty MR"]);
         }
 
         details.push({
@@ -463,13 +558,24 @@ function SaveBalancePOCancellation() {
     }
 
     Showloader();
-    BalancePOCancellationService.SaveCancelPendingOrder(details).then(function (response) {
+    ClosePendingOrderService.SaveCancelPendingOrder(details).then(function (response) {
         HideLoader();
-        if (response && response.length > 0 && response[0].Status === 'Y') {
-            toastr.success(response[0].Msg || 'Record saved successfully.');
+        var responseObj = null;
+        
+        if (response) {
+            if (Array.isArray(response) && response.length > 0) {
+                responseObj = response[0];
+            } else if (typeof response === 'object' && response.Status) {
+                responseObj = response;
+            }
+        }
+        
+        if (responseObj && responseObj.Status === 'Y') {
+            toastr.success(responseObj.Msg || 'Record saved successfully.');
             GetBalancePOCancellationList();
-        } else if (response && response.length > 0) {
-            toastr.error(response[0].Msg || 'Error while saving record.');
+            $('#txtReason').val('');
+        } else if (responseObj) {
+            toastr.error(responseObj.Msg || 'Error while saving record.');
         } else {
             toastr.error('Error while saving record.');
         }
@@ -482,3 +588,5 @@ function SaveBalancePOCancellation() {
         }
     });
 }
+
+window.GetBalancePOCancellationList = GetBalancePOCancellationList;

@@ -817,7 +817,8 @@ function buildPlannedRowPayload(rowId) {
     G_today = $('#txtDate').val();
     const PartingCase = $('#PartingCase').is(':checked') ? 'Y' : 'N';
     const AllowManualWeight = $('#AllowManualWeight').is(':checked') ? 'Y' : 'N';
-    
+    let UserCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+
     if (!ItemMaster_Code || ItemMaster_Code === '0') { toastr.error('Please select an item name'); return null; }
     if (!ItemMasterWidth_Code || ItemMasterWidth_Code === '0') { toastr.error('Please select a slit width'); return null; }
 
@@ -855,7 +856,8 @@ function buildPlannedRowPayload(rowId) {
         machineNo: MachineNo,
         date: G_today,
         partingCase: PartingCase,
-        allowManualWeight:AllowManualWeight
+        allowManualWeight: AllowManualWeight,
+        userMaster_Code: UserCode
     };
 }
 function CloseModal_RMStock() {
