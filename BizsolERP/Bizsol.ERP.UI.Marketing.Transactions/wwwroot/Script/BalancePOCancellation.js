@@ -483,9 +483,87 @@ function SaveBalancePOCancellation() {
         }
     }
 
-
     var reasonText = $('#txtReason').val();
     var details = [];
+
+    function getColumnValue(row, patterns) {
+        for (var key in row) {
+            if (row.hasOwnProperty(key)) {
+                var keyUpper = key.toUpperCase();
+                for (var p = 0; p < patterns.length; p++) {
+                    var patternUpper = patterns[p].toUpperCase();
+                    if (keyUpper.indexOf(patternUpper) !== -1) {
+                        var value = row[key];
+                        if (value != null && value !== '') {
+                            var numValue = parseFloat(value);
+                            if (!isNaN(numValue) && isFinite(numValue)) {
+                                return numValue;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
+    function findColumnByName(row, columnName) {
+        for (var key in row) {
+            if (row.hasOwnProperty(key)) {
+                if (key.toUpperCase() === columnName.toUpperCase()) {
+                    var value = row[key];
+                    if (value != null && value !== '') {
+                        var numValue = parseFloat(value);
+                        if (!isNaN(numValue) && isFinite(numValue)) {
+                            return numValue;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    function getDynamicQtyColumn(row, unitType) {
+        var columnNames = [];
+        for (var key in row) {
+            if (row.hasOwnProperty(key)) {
+                var keyUpper = key.toUpperCase();
+                if (keyUpper.indexOf("QTY") !== -1 || keyUpper.indexOf("BAL") !== -1) {
+                    columnNames.push(key);
+                }
+            }
+        }
+
+        var qtyMTColumn = null;
+        var qtyPCColumn = null;
+        var qtyMTRSColumn = null;
+
+        for (var i = 0; i < columnNames.length; i++) {
+            var colName = columnNames[i];
+            var colNameUpper = colName.toUpperCase();
+            
+            if (colNameUpper.indexOf("MT") !== -1 && colNameUpper.indexOf("MTRS") === -1 && colNameUpper.indexOf("MTR") === -1) {
+                if (qtyMTColumn == null) {
+                    qtyMTColumn = colName;
+                }
+            } else if (colNameUpper.indexOf("PC") !== -1) {
+                if (qtyPCColumn == null) {
+                    qtyPCColumn = colName;
+                }
+            } else if (colNameUpper.indexOf("MTRS") !== -1 || colNameUpper.indexOf("MTR") !== -1 || colNameUpper.indexOf("MR") !== -1 || colNameUpper.indexOf("NOS") !== -1) {
+                if (qtyMTRSColumn == null) {
+                    qtyMTRSColumn = colName;
+                }
+            }
+        }
+
+        return {
+            qtyMTColumn: qtyMTColumn,
+            qtyPCColumn: qtyPCColumn,
+            qtyMTRSColumn: qtyMTRSColumn
+        };
+    }
 
     for (var i = 0; i < selectedRows.length; i++) {
         var r = selectedRows[i] || {};
@@ -499,31 +577,19 @@ function SaveBalancePOCancellation() {
         var qtyPC = 0;
         var qtyMTRS = 0;
 
-        function getColumnValue(row, patterns) {
-            for (var key in row) {
-                if (row.hasOwnProperty(key)) {
-                    var keyUpper = key.toUpperCase();
-                    for (var p = 0; p < patterns.length; p++) {
-                        var patternUpper = patterns[p].toUpperCase();
-                        if (keyUpper.indexOf(patternUpper) !== -1) {
-                            var value = row[key];
-                            if (value != null && value !== '') {
-                                var numValue = parseFloat(value);
-                                if (!isNaN(numValue) && isFinite(numValue)) {
-                                    return numValue;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return 0;
-        }
+        var dynamicColumns = getDynamicQtyColumn(r);
 
         if (r.qtyMT != null && r.qtyMT !== '') {
             qtyMT = parseFloat(r.qtyMT) || 0;
         } else if (r.QtyMT != null && r.QtyMT !== '') {
             qtyMT = parseFloat(r.QtyMT) || 0;
+        } else if (dynamicColumns.qtyMTColumn != null) {
+            var mtValue = findColumnByName(r, dynamicColumns.qtyMTColumn);
+            if (mtValue != null) {
+                qtyMT = mtValue;
+            } else {
+                qtyMT = getColumnValue(r, ["Qty MT", "QtyMT", "qtyMT"]);
+            }
         } else {
             qtyMT = getColumnValue(r, ["Qty MT", "QtyMT", "qtyMT"]);
         }
@@ -532,6 +598,17 @@ function SaveBalancePOCancellation() {
             qtyPC = parseFloat(r.qtyPC) || 0;
         } else if (r.QtyPC != null && r.QtyPC !== '') {
             qtyPC = parseFloat(r.QtyPC) || 0;
+        } else if (dynamicColumns.qtyPCColumn != null) {
+            var pcValue = findColumnByName(r, dynamicColumns.qtyPCColumn);
+            if (pcValue != null) {
+                qtyPC = pcValue;
+            } else {
+                var qtyPCValue = getColumnValue(r, ["Qty PC", "QtyPC", "qtyPC"]);
+                if (qtyPCValue === 0) {
+                    qtyPCValue = getColumnValue(r, ["Bal PC", "BalPC", "balPC"]);
+                }
+                qtyPC = qtyPCValue;
+            }
         } else {
             var qtyPCValue = getColumnValue(r, ["Qty PC", "QtyPC", "qtyPC"]);
             if (qtyPCValue === 0) {
@@ -544,8 +621,15 @@ function SaveBalancePOCancellation() {
             qtyMTRS = parseFloat(r.qtyMTRS) || 0;
         } else if (r.QtyMTRS != null && r.QtyMTRS !== '') {
             qtyMTRS = parseFloat(r.QtyMTRS) || 0;
+        } else if (dynamicColumns.qtyMTRSColumn != null) {
+            var mtrsValue = findColumnByName(r, dynamicColumns.qtyMTRSColumn);
+            if (mtrsValue != null) {
+                qtyMTRS = mtrsValue;
+            } else {
+                qtyMTRS = getColumnValue(r, ["Qty MTRS", "Qty MTR", "QtyMTRS", "qtyMTRS", "Qty MR", "Qty NOS"]);
+            }
         } else {
-            qtyMTRS = getColumnValue(r, ["Qty MTRS", "Qty MTR", "QtyMTRS", "qtyMTRS","Qty MR"]);
+            qtyMTRS = getColumnValue(r, ["Qty MTRS", "Qty MTR", "QtyMTRS", "qtyMTRS", "Qty MR", "Qty NOS"]);
         }
 
         details.push({
