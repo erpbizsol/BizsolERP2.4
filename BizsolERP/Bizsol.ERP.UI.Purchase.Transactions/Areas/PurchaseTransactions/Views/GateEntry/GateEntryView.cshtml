@@ -126,6 +126,14 @@
                             <input id="frmEmptyIn_txtDriverNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="12" autocomplete="off">
                         </div>
                     </div>
+                    <div class="row" id="DivEmptyInDriverAadharNo">
+                        <div class="col-4">
+                            Driver Aadhar No. 
+                        </div>
+                        <div class="col-8">
+                            <input id="frmEmptyIn_txtDriverAadharNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" autocomplete="off" maxlength="12">
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-4">
                             Transporter Name. <span class="text-danger fw-semibold">*</span>
@@ -233,7 +241,7 @@
                             Vehicle Loaded Weight (KG) <span class="text-danger fw-semibold">*</span>
                         </div>
                         <div class="col-8">
-                            <input id="frmLoadedOut_txtVehicleLoadedWeight" class="BizSolFormControl form-control form-control-sm" type="text" onchange="BizSolInputControl.OnChangeFloatTextBox(this,2)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" autocomplete="off">
+                            <input id="frmLoadedOut_txtVehicleLoadedWeight" class="BizSolFormControl form-control form-control-sm" type="text" onchange="GateEntry_GetNetWeight();BizSolInputControl.OnChangeFloatTextBox(this,2)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" autocomplete="off">
                             <a class="btn btn-dark btn-height" title="Scale Weight" id="btnScaleWeigh_frmLoadedOut_txtVehicleLoadedWeight" onclick="GateEntry_InitSelectMachineToGetWeightControl('frmLoadedOut_txtVehicleLoadedWeight')">
                                 <i class="fa-solid fa-scale-unbalanced"></i>
                             </a>
@@ -245,6 +253,14 @@
                         </div>
                         <div class="col-8">
                             <input id="frmLoadedOut_txtWeightmentSlipNoLoadedOut" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row" id="RowfrmLoadedOutNetWeightLoadedOut">
+                        <div class="col-4">
+                            Net Weight
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtNetWeightLoadedOut" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off" readonly>
                         </div>
                     </div>
                     <div class="row">
@@ -519,6 +535,14 @@
                         </div>
                         <div class="col-8">
                             <input id="frmLoadedIn_txtDriverNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="12" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row" id="DivLoadedInDriverAadharNo">
+                        <div class="col-4">
+                            Driver Aadhar No
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedIn_txtDriverAadharNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off" maxlength="12">
                         </div>
                     </div>
                     <div class="row">

@@ -9,6 +9,7 @@ let GateEntryImageDetail = [{
     ImgOther: []
 
 }];
+let GateEntryLinkedERPDocuments = [];
 //$('#txtFromDate').val(new Date().toISOString().slice(0, 10));
 //$('#txtToDate').val(new Date().toISOString().slice(0, 10));
 //window.GateToken_ShowReport = function GateToken_ShowReport() {
@@ -70,6 +71,7 @@ function GateToken_SaveData() {
     let RCExpiredDate = "";
     let DriverLicenseNo = "";
     let DriverLicenseExpiredDate = "";
+    let DriverAadharNo = "";
 
     let GateEntryMaster_Code = 0;
     
@@ -87,6 +89,7 @@ function GateToken_SaveData() {
     RCExpiredDate = $('#frmGateToken_txtRCExpiredDate').val();
     DriverLicenseNo = $('#frmGateToken_txtDriverLicenseNo').val();
     DriverLicenseExpiredDate = $('#frmGateToken_txtDriverLicenseExpiredDate').val();
+    DriverAadharNo = $('#frmGateToken_txtDriverAadharNo').val();
     
 
 
@@ -164,13 +167,13 @@ function GateToken_SaveData() {
                     rCNo: RCNo,
                     rCExpiredDate: RCExpiredDate,
                     driverLicenseNo: DriverLicenseNo,
-                    driverLicenseExpiredDate: DriverLicenseExpiredDate
-
+                    driverLicenseExpiredDate: DriverLicenseExpiredDate,
+                    driverAadharNo: DriverAadharNo
                 }
             ],
 
-            gateEntryImageDetail: GateEntryImageDetail
-
+            gateEntryImageDetail: GateEntryImageDetail,
+            gateEntryLinkedERPDocuments: GateEntryLinkedERPDocuments
         }
 
 
@@ -201,6 +204,7 @@ function ShowHideVehicleOtherDetails() {
     $('#DivGateTokenRCExpiredDate').hide();
     $('#DivGateTokenDriverLicenseNo').hide();
     $('#DivGateTokenDriverLicenseExpiredDate').hide();
+    $('#DivGateTokenDriverAadharNo').hide();
 
     GateEntryService.GetConfigGateEntry().then(function (response) {
         if (response.length > 0 && response.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
@@ -209,12 +213,14 @@ function ShowHideVehicleOtherDetails() {
             $('#frmGateToken_txtRCExpiredDate').val('');
             $('#frmGateToken_txtDriverLicenseNo').val('');
             $('#frmGateToken_txtDriverLicenseExpiredDate').val('');
+            $('#frmGateToken_txtDriverAadharNo').val('');
 
             $('#DivGateTokenChassisNo').show();
             $('#DivGateTokenRCNo').show();
             $('#DivGateTokenRCExpiredDate').show();
             $('#DivGateTokenDriverLicenseNo').show();
             $('#DivGateTokenDriverLicenseExpiredDate').show();
+            $('#DivGateTokenDriverAadharNo').show();
         }
         
        
@@ -246,6 +252,7 @@ function ShowHideVehicleOtherDetails() {
 
                                             $('#frmGateToken_txtDriverLicenseNo').val(RespVehicleDetails[0].DriverLicenseNo);
                                             $('#frmGateToken_txtDriverLicenseExpiredDate').val(new Date(RespVehicleDetails[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
+                                            $('#frmGateToken_txtDriverAadharNo').val(RespVehicleDetails[0].DriverAadharNo);
 
                                         }
                                         $('#frmGateToken_txtDriverName').val(RespVehicleDetails[0].DriverName);
