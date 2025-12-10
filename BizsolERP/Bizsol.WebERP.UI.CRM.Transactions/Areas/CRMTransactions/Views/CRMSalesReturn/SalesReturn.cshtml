@@ -1,0 +1,261 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/SalesReturn.js"></script>
+
+<style>
+    .form-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+
+    .grid-container {
+        margin-top: 20px;
+        overflow-x: auto;
+    }
+
+    #salesReturnGrid {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    #salesReturnGrid th {
+        background-color: #3926B6;
+        color: white;
+        padding: 10px;
+        text-align: left;
+        font-weight: 600;
+    }
+
+    #salesReturnGrid td {
+        padding: 8px;
+        border: 1px solid #dee2e6;
+    }
+
+    #salesReturnGrid tbody tr:hover {
+        background-color: #f1f3f5;
+    }
+
+    .grid-input {
+        width: 100%;
+        border: 1px solid #ced4da;
+        padding: 5px;
+        border-radius: 3px;
+    }
+
+    .grid-select2 {
+        width: 100% !important;
+    }
+
+    .total-row {
+        background-color: #e9ecef;
+        font-weight: bold;
+    }
+
+    .btn-add-row {
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+
+    .readonly-field {
+        background-color: #e9ecef;
+        cursor: not-allowed;
+    }
+
+    .action-column {
+        width: 80px;
+        text-align: center;
+    }
+
+    .btn-remove {
+        padding: 2px 8px;
+        font-size: 12px;
+    }
+
+    .action-btn {
+        padding: 5px 10px;
+        margin: 0 2px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-edit {
+        background-color: #8b5cf6;
+        color: white;
+    }
+
+    .btn-view {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .btn-delete {
+        background-color: #ef4444;
+        color: white;
+    }
+
+    .table-wrapper.fixed-height-table {
+        max-height: 420px;
+        overflow: auto;
+    }
+
+    #salesReturnFormSection {
+        display: none;
+    }
+
+    .form-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+</style>
+
+<!-- Filter Section -->
+<div class="card" id="filterSection">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="txtFromDate" class="form-label">From Date <span class="text-danger">*</span></label>
+                <input type="date" id="txtFromDate" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-3">
+                <label for="txtToDate" class="form-label">To Date <span class="text-danger">*</span></label>
+                <input type="date" id="txtToDate" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-4 without-label-field">
+                <button type="button" id="btnShow" class="btn btn-primary btn-height">Show</button>
+                <button type="button" id="btnCreateNew" class="btn btn-success btn-height">Create New</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- List Grid Section -->
+<div class="row mt-3" id="listSection">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <label class="form-label">Sales Return List</label>
+                <div class="row">
+                    <div id="tblSalesReturnList">
+                        <div class="table-wrapper fixed-height-table">
+                            <table id="SalesReturnList" class="table fixed-width-table">
+                                <thead id="SalesReturnList-header">
+                                </thead>
+                                <tbody id="SalesReturnList-body">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="paginator" id="paginator-SalesReturnList">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Return Form Section (Create/Edit/View) -->
+<div class="card" id="salesReturnFormSection">
+    <div class="card-body">
+        
+        <!-- Header Section -->
+        <div class="form-section">
+            <div class="row">
+                <div class="col-md-1">
+                    <label for="txtEntryNo" class="form-label">Entry No.</label>
+                    <input type="text" id="txtEntryNo" class="form-control form-control-sm readonly-field" readonly />
+                </div>
+                <div class="col-md-1">
+                    <label for="txtDate" class="form-label">Date</label>
+                    <input type="text" id="txtDate" class="form-control form-control-sm readonly-field" readonly />
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlDealerName" class="form-label">Dealer Name</label>
+                    <select id="ddlDealerName" class="form-control form-control-sm">
+                        <option value="">Select Dealer</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlDistributorName" class="form-label">Distributor Name</label>
+                    <select id="ddlDistributorName" class="form-control form-control-sm">
+                        <option value="">Select Distributor</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="txtInvoiceNo" class="form-label">Invoice No.</label>
+                    <input id="txtInvoiceNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Grid Section -->
+        <div class="grid-container">
+            <button type="button" id="btnAddRow" class="btn btn-sm btn-success btn-add-row">
+                <i class="fas fa-plus"></i> Add Row
+            </button>
+            
+            <table id="salesReturnGrid" class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">Sr. No.</th>
+                        <th style="width: 40%;">Item Name</th>
+                        <th style="width: 15%;">Qty</th>
+                        <th style="width: 35%;">Remarks</th>
+                        <th class="action-column">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="gridBody">
+                    <!-- Rows will be added dynamically -->
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="2" style="text-align: right;">Total</td>
+                        <td id="totalQty">0</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="row">
+            <div class="col-md-3">
+                <label for="txtReturnCrate" class="form-label">Return Crate</label>
+                
+                <input id="txtReturnCrate" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="4" autocomplete="off">
+            </div>
+            <div class="col-md-3">
+                <label for="txtReceivedPayments" class="form-label">
+                    Received payments
+                </label>
+                
+                <input id="txtReceivedPayments" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="8" autocomplete="off">
+            </div>
+        </div>
+        <!-- Save Button -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <button type="button" id="btnSave" class="btn btn-primary btn-lg icon-height">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                &nbsp;
+                &nbsp;
+                <button type="button" class="btn btn-primary btn-lg icon-height" id="btnCloseForm">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
