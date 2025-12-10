@@ -3,19 +3,24 @@ import { ClosePendingOrderService } from '../../Bizsol.WebERP.UI.Shared/js/JSSer
 
 let G_FromDateValue = '';
 let G_ToDateValue = '';
-$(document).ready(function () {
-    BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
+$(document).ready(function () {
+    initializePage();
+    bindEventHandlers();
+});
+
+function initializePage() {
+    BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     setCurrentDateBalancePOCancellation();
-    InitializeUnitDropdowns();
-    InitializeBalanceQtyOperator();
     GetFilterForCancelPendingOrder();
     InitializePartyNameDropdown();
     InitializeOrderNoDropdown();
     InitializeOrderTypeDropdown();
     InitializeItemNameDropdown();
     InitializeBuyerPONoDropdown();
+}
 
+function bindEventHandlers() {
     $("#btnShow").click(function () {
         GetBalancePOCancellationList();
     });
@@ -28,23 +33,21 @@ $(document).ready(function () {
         SaveBalancePOCancellation();
     });
 
-    $("#ddlBalanceQtyOperator").change(function () {
-        ToggleBalanceQtyToField();
-    });
-
-    $("#ddlDispatchQtyOperator").change(function () {
-        ToggleDispatchQtyToField();
-    });
     $('#chkOrderQty').on("click", function () {
         GetBalancePOCancellationList();
     });
+
     $('#chkShowDispatchQty').on("click", function () {
         GetBalancePOCancellationList();
     });
+
     $('#DeliveryDetailCheck').on("click", function () {
         GetBalancePOCancellationList();
     });
-});
+}
+/**
+ * Set current date range (first of month to today)
+ */
 function setCurrentDateBalancePOCancellation() {
     let today = new Date();
     let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -62,74 +65,9 @@ function setCurrentDateBalancePOCancellation() {
     G_ToDateValue = $('#txtBalanceToDate').val();
 }
 
-function InitializeUnitDropdowns() {
-    var unitList = [
-        { Code: 'MT', Desp: 'MT' },
-        { Code: 'PC', Desp: 'PC' },
-        { Code: 'MTRS', Desp: 'MTRS' }
-    ];
-    
-    if ($('#ddlBalanceQtyUnit').length > 0) {
-        BindSelectList1($('#ddlBalanceQtyUnit')[0], unitList);
-        $('#ddlBalanceQtyUnit').val('');
-        $('#ddlBalanceQtyUnit').select2({
-            width: '-webkit-fill-available'
-        });
-    }
-    
-    if ($('#ddlDispatchQtyUnit').length > 0) {
-        BindSelectList1($('#ddlDispatchQtyUnit')[0], unitList);
-        $('#ddlDispatchQtyUnit').val('');
-        $('#ddlDispatchQtyUnit').select2({
-            width: '-webkit-fill-available'
-        });
-    }
-}
-
-function InitializeBalanceQtyOperator() {
-    if ($('#ddlBalanceQtyOperator').length > 0) {
-        $('#ddlBalanceQtyOperator').val('>');
-    }
-    if ($('#txtBalanceQtyFrom').length > 0) {
-        $('#txtBalanceQtyFrom').val('0.000');
-    }
-    if ($('#txtBalanceQtyTo').length > 0) {
-        $('#txtBalanceQtyTo').val('0.000');
-    }
-    if ($('#txtDispatchQtyFrom').length > 0) {
-        $('#txtDispatchQtyFrom').val('0.000');
-    }
-    if ($('#txtDispatchQtyTo').length > 0) {
-        $('#txtDispatchQtyTo').val('0.000');
-    }
-    ToggleBalanceQtyToField();
-    ToggleDispatchQtyToField();
-}
-
-function ToggleBalanceQtyToField() {
-    if ($('#ddlBalanceQtyOperator').length > 0 && $('#txtBalanceQtyTo').length > 0) {
-        var operator = $('#ddlBalanceQtyOperator').val();
-        if (operator === 'between') {
-            $('#txtBalanceQtyTo').show();
-        } else {
-            $('#txtBalanceQtyTo').hide();
-            $('#txtBalanceQtyTo').val('');
-        }
-    }
-}
-
-function ToggleDispatchQtyToField() {
-    if ($('#ddlDispatchQtyOperator').length > 0 && $('#txtDispatchQtyTo').length > 0) {
-        var operator = $('#ddlDispatchQtyOperator').val();
-        if (operator === 'between') {
-            $('#txtDispatchQtyTo').show();
-        } else {
-            $('#txtDispatchQtyTo').hide();
-            $('#txtDispatchQtyTo').val('');
-        }
-    }
-}
-
+/**
+ * Initialize dropdown controls
+ */
 function InitializePartyNameDropdown() {
     if ($('#ddlPartyName').length > 0) {
         BindSelectList1($('#ddlPartyName')[0], []);
@@ -175,6 +113,9 @@ function InitializeBuyerPONoDropdown() {
     }
 }
 
+/**
+ * Select or deselect all rows in the table
+ */
 function SelectAllRows() {
     var table = $('#BalancePOCancellation');
     var checkboxes = table.find('tbody input[type="checkbox"]');
@@ -182,6 +123,10 @@ function SelectAllRows() {
     
     checkboxes.prop('checked', !allChecked);
 }
+
+/**
+ * Get filter data for cancel pending order
+ */
 function GetFilterForCancelPendingOrder() {
     ClosePendingOrderService.GetFilterForCancelPendingOrder()
         .then(function (response) {
@@ -281,6 +226,10 @@ function GetFilterForCancelPendingOrder() {
             }
         });
 }
+
+/**
+ * Get balance PO cancellation list based on filters
+ */
 function GetBalancePOCancellationList() {
     var MarketingPersonName = $("#ddlMarketingMan").val();
     if (MarketingPersonName == null || MarketingPersonName === 'ALL') {
@@ -288,9 +237,8 @@ function GetBalancePOCancellationList() {
     }
 
     var isPeriodWise = $("#chkPeriodWise").is(':checked');
-        G_FromDateValue = $("#txtBalanceFromDate").val();
-        G_ToDateValue = $("#txtBalanceToDate").val();
-    
+    G_FromDateValue = $("#txtBalanceFromDate").val();
+    G_ToDateValue = $("#txtBalanceToDate").val();
 
     var partyName = $("#ddlPartyName").val();
     if (partyName == null || partyName === 'ALL') {
@@ -312,14 +260,6 @@ function GetBalancePOCancellationList() {
     if (buyerPONo === 'ALL') {
         buyerPONo = '';
     }
-    var balanceQtyUnit = $("#ddlBalanceQtyUnit").val() || '';
-    var balanceQtyOperator = $("#ddlBalanceQtyOperator").val() || '';
-    var balanceQtyFrom = $("#txtBalanceQtyFrom").val() || '0.000';
-    var balanceQtyTo = $("#txtBalanceQtyTo").val() || '0.000';
-    var dispatchQtyUnit = $("#ddlDispatchQtyUnit").val() || '';
-    var dispatchQtyFrom = $("#txtDispatchQtyFrom").val() || '0.000';
-    var dispatchQtyTo = $("#txtDispatchQtyTo").val() || '0.000';
-    var dispatchQtyOperator = $("#ddlDispatchQtyOperator").val() || '';
    
     var periodWise = isPeriodWise ? 'Y' : 'N';
     
@@ -328,73 +268,85 @@ function GetBalancePOCancellationList() {
         HideLoader();
         if (response.length > 0) {
             $('#BalancePOCancellation').show();
-            const StringFilterColumn = [];
-            const NumericFilterColumn = [];
-            const DateFilterColumn = [];
-            const Button = false;
-            const showButtons = [];
-            const StringdoubleFilterColumn = [];
+            var StringFilterColumn = ["Order No", "Party Name", "Item Name", "Sales Person"];
+            var NumericFilterColumn = ["Bal NOS", "Bal MT", "Bal PC", "Bal MR"];
+            var DateFilterColumn = ["Order Date"];
+            var Button = false;
+            var showButtons = [];
+            var StringdoubleFilterColumn = [];
             var hiddenColumns = ["Code", "BuyerPODetail_Code", "BuyerPOMaster_Code"];
             
             var showOrderQty = $("#chkOrderQty").is(':checked');
-            if (!showOrderQty) {
-                var orderQtyColumns = ["Qty MT","Qty PC", "Qty MR"];
-                hiddenColumns = hiddenColumns.concat(orderQtyColumns);
-            }
             var showDispatchQty = $("#chkShowDispatchQty").is(':checked');
-            if (!showDispatchQty) {
-                var dispatchQtyColumns = ["Dis MT","Dis PC","Dis MR"];
-                hiddenColumns = hiddenColumns.concat(dispatchQtyColumns);
-            }
             var showDeliveryDetail = $("#DeliveryDetailCheck").is(':checked');
-            if (!showDeliveryDetail) {
-                var DeliveryDetailColumns = ["Consignee Address"];
-                hiddenColumns = hiddenColumns.concat(DeliveryDetailColumns);
+            
+            if (!showOrderQty) {
+                hiddenColumns.push("Qty MT", "Qty PC", "Qty MR");
             } else {
-                var ConsigneeNameColumns = ["Consignee Name"];
-                hiddenColumns = hiddenColumns.concat(ConsigneeNameColumns);
+                NumericFilterColumn = NumericFilterColumn.concat(["Qty MT", "Qty PC", "Qty MR"]);
+            }
+            
+            if (!showDispatchQty) {
+                hiddenColumns.push("Dis MT", "Dis PC", "Dis MR");
+            } else {
+                NumericFilterColumn = NumericFilterColumn.concat(["Dis MT", "Dis PC", "Dis MR"]);
+            }
+            
+            if (showDeliveryDetail) {
+                hiddenColumns.push("Consignee Name");
+                StringFilterColumn.push("Consignee Address");
+            } else {
+                hiddenColumns.push("Consignee Address");
+                StringFilterColumn.push("Consignee Name");
             }
             
             var ColumnAlignment = {"Order Date": 'center'};
             
-            if (response.length > 0) {
-                var firstRow = response[0];
-                var excludedColumns = ["Select", "Code", "BuyerPODetail_Code", "BuyerPOMaster_Code"];
-                var numericColumnPatterns = ["Qty", "Dis", "Bal", "MT", "PC", "MR", "Thk", "Thickness"];
-                
-                for (var columnName in firstRow) {
-                    if (excludedColumns.indexOf(columnName) === -1) {
-                        var isNumericColumn = false;
-                        var columnNameUpper = columnName.toUpperCase();
-                        
-                        for (var i = 0; i < numericColumnPatterns.length; i++) {
-                            if (columnNameUpper.indexOf(numericColumnPatterns[i].toUpperCase()) !== -1) {
-                                isNumericColumn = true;
+            var firstRow = response[0];
+            var excludedColumns = ["Select", "Code", "BuyerPODetail_Code", "BuyerPOMaster_Code"];
+            var numericColumnPatterns = ["Qty", "Dis", "Bal", "MT", "PC", "MR", "Thk", "Thickness"];
+            var emptyColumns = [];
+            
+            for (var columnName in firstRow) {
+                if (excludedColumns.indexOf(columnName) === -1) {
+                    var isNumericColumn = false;
+                    var columnNameUpper = columnName.toUpperCase();
+                    var hasData = false;
+                    
+                    for (var i = 0; i < numericColumnPatterns.length; i++) {
+                        if (columnNameUpper.indexOf(numericColumnPatterns[i].toUpperCase()) !== -1) {
+                            isNumericColumn = true;
+                            break;
+                        }
+                    }
+                    
+                    for (var k = 0; k < response.length; k++) {
+                        var colValue = response[k][columnName];
+                        if (colValue !== null && colValue !== undefined && colValue !== '') {
+                            hasData = true;
+                            if (!isNumericColumn) {
+                                if (!isNaN(parseFloat(colValue)) && isFinite(colValue)) {
+                                    isNumericColumn = true;
+                                }
+                            }
+                            if (hasData && isNumericColumn) {
                                 break;
                             }
                         }
-                        
-                        if (!isNumericColumn) {
-                            var hasNumericValue = false;
-                            for (var j = 0; j < Math.min(5, response.length); j++) {
-                                var value = response[j][columnName];
-                                if (value !== null && value !== undefined && value !== '') {
-                                    if (!isNaN(parseFloat(value)) && isFinite(value)) {
-                                        hasNumericValue = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (hasNumericValue) {
-                                isNumericColumn = true;
-                            }
-                        }
-                        
-                        if (isNumericColumn) {
-                            ColumnAlignment[columnName] = 'right';
-                        }
+                    }
+                    
+                    if (!hasData) {
+                        emptyColumns.push(columnName);
+                    }
+                    
+                    if (isNumericColumn) {
+                        ColumnAlignment[columnName] = 'right';
                     }
                 }
+            }
+            
+            if (emptyColumns.length > 0) {
+                //hiddenColumns = hiddenColumns.concat(emptyColumns);
             }
             
             response.forEach((item, index) => {
@@ -413,6 +365,12 @@ function GetBalancePOCancellationList() {
         toastr.error('Error loading Balance PO Cancellation data');
     });
 }
+
+/**
+ * Bind select list to dropdown element
+ * @param {HTMLElement} element - The select element
+ * @param {Array} list - Array of objects with Code and Desp properties
+ */
 function BindSelectList1(element, list) {
     if (!element) {
         console.error('BindSelectList1: element is undefined');
@@ -424,6 +382,11 @@ function BindSelectList1(element, list) {
     });
     element.innerHTML = option;
 }
+
+/**
+ * Get selected rows from the table
+ * @returns {Array} Array of selected row data
+ */
 function GetSelectedBalancePOCancellationRows() {
     var tableId = 'BalancePOCancellation';
     var selectedRows = [];
@@ -468,6 +431,9 @@ function GetSelectedBalancePOCancellationRows() {
     return selectedRows;
 }
 
+/**
+ * Save balance PO cancellation
+ */
 function SaveBalancePOCancellation() {
     var selectedRows = GetSelectedBalancePOCancellationRows();
     if (!selectedRows || selectedRows.length === 0) {
@@ -486,6 +452,12 @@ function SaveBalancePOCancellation() {
     var reasonText = $('#txtReason').val();
     var details = [];
 
+    /**
+     * Get column value by matching patterns
+     * @param {Object} row - Row data object
+     * @param {Array} patterns - Array of pattern strings to match
+     * @returns {number} Numeric value or 0
+     */
     function getColumnValue(row, patterns) {
         for (var key in row) {
             if (row.hasOwnProperty(key)) {
@@ -507,6 +479,12 @@ function SaveBalancePOCancellation() {
         return 0;
     }
 
+    /**
+     * Find column value by exact column name match
+     * @param {Object} row - Row data object
+     * @param {string} columnName - Column name to find
+     * @returns {number|null} Numeric value or null
+     */
     function findColumnByName(row, columnName) {
         for (var key in row) {
             if (row.hasOwnProperty(key)) {
@@ -524,7 +502,12 @@ function SaveBalancePOCancellation() {
         return null;
     }
 
-    function getDynamicQtyColumn(row, unitType) {
+    /**
+     * Get dynamic quantity columns from row data
+     * @param {Object} row 
+     * @returns {Object}
+     */
+    function getDynamicQtyColumn(row) {
         var columnNames = [];
         for (var key in row) {
             if (row.hasOwnProperty(key)) {
