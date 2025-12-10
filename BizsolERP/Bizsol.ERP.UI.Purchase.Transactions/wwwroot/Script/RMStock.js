@@ -249,6 +249,7 @@ function fillTableWithExistingData(response) {
                     <tr id="${rowId}" data-detail-code="${item.SNo || 0}" data-master-code="${item.Code || 0}">
                         <td><select id="ddlItemName_${rowId}" class="box_border form-control form-control-sm ddlItemNameRow" required></select></td>
                         <td><select id="ddlSlitWidth_${rowId}" class="box_border form-control form-control-sm ddlSlitWidthRow" required></select></td>
+                        <td><select id="ddlODWidth_${rowId}" class="box_border form-control form-control-sm ddlODWidthRow" required></select></td>
                         <td><input id="txtNoOfSlits_${rowId}" class="box_border form-control form-control-sm text-end txtNoOfSlitsRow" oninput="validateIntegerInput(this)" autocomplete="off" required /></td>
                         <td><input id="txtWeightPerSlit_${rowId}" class="box_border form-control form-control-sm text-end txtWeightPerSlitRow" oninput="validateDecimalRateInput(this)" autocomplete="off" required disabled /></td>
                         <td><input id="txtTotalWeight_${rowId}" class="box_border form-control form-control-sm text-end txtTotalWeightRow" required readonly /></td>
@@ -264,9 +265,14 @@ function fillTableWithExistingData(response) {
 
                 BindSelectList1($row.find('select.ddlItemNameRow')[0], itemNameList);
                 BindSelectList1($row.find('select.ddlSlitWidthRow')[0], widthList);
+                BindSelectList1($row.find('select.ddlODWidthRow')[0], widthList);
                 
                 BizSolHelperFunction.SelectOptionByText(`ddlItemName_${rowId}`, itemNameText);
                 BizSolHelperFunction.SelectOptionByText(`ddlSlitWidth_${rowId}`, slitWidthText);
+                if (item.OD || item.ODWidth || item.DespOD) {
+                    var odText = item.OD || item.ODWidth || item.DespOD || '';
+                    BizSolHelperFunction.SelectOptionByText(`ddlODWidth_${rowId}`, odText);
+                }
 
                 $row.find('input.txtNoOfSlitsRow').val(noOfSlitsVal);
                 $row.find('input.txtWeightPerSlitRow').val(weightPerSlitVal.toFixed(3));
@@ -280,6 +286,12 @@ function fillTableWithExistingData(response) {
             }
             if ($('.ddlSlitWidthRow').length) {
                 $('.ddlSlitWidthRow').select2({
+                    dropdownParent: $('#PlannedMyModal'),
+                    width: '-webkit-fill-available'
+                });
+            }
+            if ($('.ddlODWidthRow').length) {
+                $('.ddlODWidthRow').select2({
                     dropdownParent: $('#PlannedMyModal'),
                     width: '-webkit-fill-available'
                 });
@@ -301,6 +313,7 @@ function enableNewRowAddition() {
         <tr id="${rowId}" data-detail-code="0" data-master-code="${G_SlittingPlanMaster_Code || 0}">
             <td><select id="ddlItemName_${rowId}" class="box_border form-control form-control-sm ddlItemNameRow" required></select></td>
             <td><select id="ddlSlitWidth_${rowId}" class="box_border form-control form-control-sm ddlSlitWidthRow" required></select></td>
+            <td><select id="ddlODWidth_${rowId}" class="box_border form-control form-control-sm ddlODWidthRow" required></select></td>
             <td><input id="txtNoOfSlits_${rowId}" class="box_border form-control form-control-sm text-end txtNoOfSlitsRow" oninput="validateIntegerInput(this)" autocomplete="off" required /></td>
             <td><input id="txtWeightPerSlit_${rowId}" class="box_border form-control form-control-sm text-end txtWeightPerSlitRow" oninput="validateDecimalRateInput(this)" autocomplete="off" required disabled /></td>
             <td><input id="txtTotalWeight_${rowId}" class="box_border form-control form-control-sm text-end txtTotalWeightRow" required readonly /></td>
@@ -331,8 +344,15 @@ function enableNewRowAddition() {
     });
     GetRMStockWidthList().then(function (slitWidthList) {
         BindSelectList1($row.find('select.ddlSlitWidthRow')[0], slitWidthList);
+        BindSelectList1($row.find('select.ddlODWidthRow')[0], slitWidthList);
         if ($('.ddlSlitWidthRow').length) {
             $('.ddlSlitWidthRow').select2({
+                dropdownParent: $('#PlannedMyModal'),
+                width: '-webkit-fill-available'
+            });
+        }
+        if ($('.ddlODWidthRow').length) {
+            $('.ddlODWidthRow').select2({
                 dropdownParent: $('#PlannedMyModal'),
                 width: '-webkit-fill-available'
             });
@@ -533,6 +553,7 @@ function copyFromPrevious() {
 					<tr id="${rowId}" data-detail-code="0" data-master-code="${G_SlittingPlanMaster_Code || 0}">
 						<td><select id="ddlItemName_${rowId}" class="box_border form-control form-control-sm ddlItemNameRow" required></select></td>
 						<td><select id="ddlSlitWidth_${rowId}" class="box_border form-control form-control-sm ddlSlitWidthRow" required></select></td>
+						<td><select id="ddlODWidth_${rowId}" class="box_border form-control form-control-sm ddlODWidthRow" required></select></td>
 						<td><input id="txtNoOfSlits_${rowId}" class="box_border form-control form-control-sm text-end txtNoOfSlitsRow" autocomplete="off" required /></td>
 						<td><input id="txtWeightPerSlit_${rowId}" class="box_border form-control form-control-sm text-end txtWeightPerSlitRow" autocomplete="off" required disabled /></td>
 						<td><input id="txtTotalWeight_${rowId}" class="box_border form-control form-control-sm text-end txtTotalWeightRow" required readonly/></td>
@@ -547,9 +568,14 @@ function copyFromPrevious() {
 
                         BindSelectList1($ddlItem[0], itemNameList);
                         BindSelectList1($ddlWidth[0], widthList);
+                        BindSelectList1($newRow.find('select.ddlODWidthRow')[0], widthList);
 
                         BizSolHelperFunction.SelectOptionByText('ddlItemName_' + rowId, itemNameText);
                         BizSolHelperFunction.SelectOptionByText('ddlSlitWidth_' + rowId, slitWidthText);
+                        if (item.OD || item.ODWidth || item.DespOD) {
+                            var odText = item.OD || item.ODWidth || item.DespOD || '';
+                            BizSolHelperFunction.SelectOptionByText('ddlODWidth_' + rowId, odText);
+                        }
 
                         $newRow.find('#txtNoOfSlits_' + rowId).val(noOfSlitsVal);
                         $newRow.find('#txtWeightPerSlit_' + rowId).val(weightPerSlitVal.toFixed(3));
@@ -563,6 +589,12 @@ function copyFromPrevious() {
                         }
                         if ($('.ddlSlitWidthRow').length) {
                             $('.ddlSlitWidthRow').select2({
+                                dropdownParent: $('#PlannedMyModal'),
+                                width: '-webkit-fill-available'
+                            });
+                        }
+                        if ($('.ddlODWidthRow').length) {
+                            $('.ddlODWidthRow').select2({
                                 dropdownParent: $('#PlannedMyModal'),
                                 width: '-webkit-fill-available'
                             });
@@ -655,13 +687,11 @@ function updateTableTotals() {
     var tbody = $container.find('#RMStockCurrentPlanned tbody');
     var rows = tbody.find('tr');
     
-    var totalWidthCount = 0;
     var totalNoOfSlits = 0;
     var totalWeightPerSlit = 0;
     var totalWeight = 0;
     
     if (rows.length === 0) {
-        $container.find('#totalWidthCount').text('0');
         $container.find('#totalNoOfSlits').text('0');
         $container.find('#totalWeightPerSlit').text('0.000');
         $container.find('#totalWeight').text('0.000');
@@ -676,17 +706,12 @@ function updateTableTotals() {
         if (isNaN(rowTotalWeight) || rowTotalWeight <= 0) {
             rowTotalWeight = noOfSlits * weightPerSlit;
         }
-
-        var selectedWidthText = $row.find('.ddlSlitWidthRow option:selected').text().trim();
-        var widthCount = parseFloat(selectedWidthText) || 0;
         
-        totalWidthCount += widthCount;
         totalNoOfSlits += noOfSlits;
         totalWeightPerSlit += weightPerSlit;
         totalWeight += rowTotalWeight;
     });
     
-    $container.find('#totalWidthCount').text(totalWidthCount.toFixed(0));
     $container.find('#totalNoOfSlits').text(totalNoOfSlits.toFixed(0));
     $container.find('#totalWeightPerSlit').text(totalWeightPerSlit.toFixed(3));
     $container.find('#totalWeight').text(totalWeight.toFixed(3));
@@ -799,6 +824,7 @@ function buildPlannedRowPayload(rowId) {
     const suffix = rowId != null ? rowId : 0;
     const itemSelector = $('#ddlItemName_' + suffix);
     const widthSelector = $('#ddlSlitWidth_' + suffix);
+    const odSelector = $('#ddlODWidth_' + suffix);
     const noOfSlitsInput = $('#txtNoOfSlits_' + suffix);
     const weightPerSlitInput = $('#txtWeightPerSlit_' + suffix);
     const totalWeightInput = $('#txtTotalWeight_' + suffix);
@@ -811,13 +837,15 @@ function buildPlannedRowPayload(rowId) {
 
     const ItemMaster_Code = itemSelector.val();
     const ItemMasterWidth_Code = widthSelector.val();
+    const ItemMasterOD_Code = odSelector.length ? odSelector.val() : '';
     const NoOfSlitsValue = noOfSlitsInput.val();
     const IdentificationNo = G_IdentificationNo;
     const MachineNo = $('#ddlMachineNo').val();
     G_today = $('#txtDate').val();
     const PartingCase = $('#PartingCase').is(':checked') ? 'Y' : 'N';
     const AllowManualWeight = $('#AllowManualWeight').is(':checked') ? 'Y' : 'N';
-    
+    let UserCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+
     if (!ItemMaster_Code || ItemMaster_Code === '0') { toastr.error('Please select an item name'); return null; }
     if (!ItemMasterWidth_Code || ItemMasterWidth_Code === '0') { toastr.error('Please select a slit width'); return null; }
 
@@ -845,7 +873,7 @@ function buildPlannedRowPayload(rowId) {
         detailCode = Number(suffix) || 0;
     }
 
-    return {
+    var payload = {
         Code: detailCode,
         itemMaster_Code: ItemMaster_Code,
         ItemParameterValueMaster_Code: ItemMasterWidth_Code,
@@ -855,8 +883,15 @@ function buildPlannedRowPayload(rowId) {
         machineNo: MachineNo,
         date: G_today,
         partingCase: PartingCase,
-        allowManualWeight:AllowManualWeight
+        allowManualWeight: AllowManualWeight,
+        userMaster_Code: UserCode
     };
+    
+    if (ItemMasterOD_Code && ItemMasterOD_Code !== '0') {
+        payload.ItemParameterValueMasterOD_Code = ItemMasterOD_Code;
+    }
+    
+    return payload;
 }
 function CloseModal_RMStock() {
     GetRMStockCurrentListTable();
