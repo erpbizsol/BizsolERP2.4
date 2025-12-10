@@ -45,9 +45,6 @@ function bindEventHandlers() {
         GetBalancePOCancellationList();
     });
 }
-/**
- * Set current date range (first of month to today)
- */
 function setCurrentDateBalancePOCancellation() {
     let today = new Date();
     let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -65,9 +62,6 @@ function setCurrentDateBalancePOCancellation() {
     G_ToDateValue = $('#txtBalanceToDate').val();
 }
 
-/**
- * Initialize dropdown controls
- */
 function InitializePartyNameDropdown() {
     if ($('#ddlPartyName').length > 0) {
         BindSelectList1($('#ddlPartyName')[0], []);
@@ -113,9 +107,6 @@ function InitializeBuyerPONoDropdown() {
     }
 }
 
-/**
- * Select or deselect all rows in the table
- */
 function SelectAllRows() {
     var table = $('#BalancePOCancellation');
     var checkboxes = table.find('tbody input[type="checkbox"]');
@@ -124,9 +115,6 @@ function SelectAllRows() {
     checkboxes.prop('checked', !allChecked);
 }
 
-/**
- * Get filter data for cancel pending order
- */
 function GetFilterForCancelPendingOrder() {
     ClosePendingOrderService.GetFilterForCancelPendingOrder()
         .then(function (response) {
@@ -227,9 +215,6 @@ function GetFilterForCancelPendingOrder() {
         });
 }
 
-/**
- * Get balance PO cancellation list based on filters
- */
 function GetBalancePOCancellationList() {
     var MarketingPersonName = $("#ddlMarketingMan").val();
     if (MarketingPersonName == null || MarketingPersonName === 'ALL') {
@@ -366,11 +351,6 @@ function GetBalancePOCancellationList() {
     });
 }
 
-/**
- * Bind select list to dropdown element
- * @param {HTMLElement} element - The select element
- * @param {Array} list - Array of objects with Code and Desp properties
- */
 function BindSelectList1(element, list) {
     if (!element) {
         console.error('BindSelectList1: element is undefined');
@@ -383,10 +363,6 @@ function BindSelectList1(element, list) {
     element.innerHTML = option;
 }
 
-/**
- * Get selected rows from the table
- * @returns {Array} Array of selected row data
- */
 function GetSelectedBalancePOCancellationRows() {
     var tableId = 'BalancePOCancellation';
     var selectedRows = [];
@@ -430,10 +406,6 @@ function GetSelectedBalancePOCancellationRows() {
 
     return selectedRows;
 }
-
-/**
- * Save balance PO cancellation
- */
 function SaveBalancePOCancellation() {
     var selectedRows = GetSelectedBalancePOCancellationRows();
     if (!selectedRows || selectedRows.length === 0) {
@@ -452,12 +424,6 @@ function SaveBalancePOCancellation() {
     var reasonText = $('#txtReason').val();
     var details = [];
 
-    /**
-     * Get column value by matching patterns
-     * @param {Object} row - Row data object
-     * @param {Array} patterns - Array of pattern strings to match
-     * @returns {number} Numeric value or 0
-     */
     function getColumnValue(row, patterns) {
         for (var key in row) {
             if (row.hasOwnProperty(key)) {
@@ -479,12 +445,6 @@ function SaveBalancePOCancellation() {
         return 0;
     }
 
-    /**
-     * Find column value by exact column name match
-     * @param {Object} row - Row data object
-     * @param {string} columnName - Column name to find
-     * @returns {number|null} Numeric value or null
-     */
     function findColumnByName(row, columnName) {
         for (var key in row) {
             if (row.hasOwnProperty(key)) {
@@ -502,11 +462,6 @@ function SaveBalancePOCancellation() {
         return null;
     }
 
-    /**
-     * Get dynamic quantity columns from row data
-     * @param {Object} row 
-     * @returns {Object}
-     */
     function getDynamicQtyColumn(row) {
         var columnNames = [];
         for (var key in row) {
