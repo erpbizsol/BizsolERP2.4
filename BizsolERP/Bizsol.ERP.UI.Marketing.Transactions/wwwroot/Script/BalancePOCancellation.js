@@ -254,7 +254,7 @@ function GetBalancePOCancellationList() {
         if (response.length > 0) {
             $('#BalancePOCancellation').show();
             var StringFilterColumn = ["Order No", "Party Name", "Item Name", "Sales Person"];
-            var NumericFilterColumn = ["Bal NOS", "Bal MT", "Bal PC", "Bal MR"];
+            var NumericFilterColumn = ["Bal NOS", "Dis NOS","Qty NOS", "Bal MT", "Bal PC", "Bal MR"];
             var DateFilterColumn = ["Order Date"];
             var Button = false;
             var showButtons = [];
