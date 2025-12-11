@@ -116,13 +116,13 @@ function CollectionCommitmentTableShow() {
                 HideLoader();
                 $("#tbCollectionCommitment").show();
                 const stringFilterColumn = ["Party Name"];
-                const numericFilterColumn = ["Out Standing","Over Due"];
-                const dateFilterColumn = [];
+                const numericFilterColumn = ["OutStanding","Over Due"];
+                const dateFilterColumn = ["Created Date"];
                 const button = false;
                 const stringDoubleFilterColumn = [];
                 const showButtons = [];
-                const hiddenColumns = ["PartyMaster_Code", "CreateDate","CreatedBy"];
-                const columnAlignment = { "Out Standing": 'right', "Over Due": 'right', "Collected Amount": 'right',"Balance Amount":'right'};
+                const hiddenColumns = ["PartyMaster_Code","UserCode"];
+                const columnAlignment = { "OutStanding": 'right', "Over Due": 'right', "Collected Amount": 'right',"Balance Amount":'right',"Created Date":'center'};
                 const updatedResponse = response.map(function (item) {
                     let commitmentAmount = parseFloat(item['Commitment Amount']) || 0;
                     let collectedAmount = parseFloat(item['Collected Amount']) || 0;
@@ -133,7 +133,7 @@ function CollectionCommitmentTableShow() {
                     let buttonsHTML = "";
 
                     if (commitmentAmount > 0) {
-                        buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="CommitmentCollection_Delete('${item.PartyMaster_Code}','${item.CreateDate}','${item.CreatedBy}')"><i class="fa fa-remove"></i></button>`;
+                        buttonsHTML = `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="CommitmentCollection_Delete('${item.PartyMaster_Code}','${item?.['Created Date']}','${item.UserCode}')"><i class="fa fa-remove"></i></button>`;
                     }
 
                     return {
