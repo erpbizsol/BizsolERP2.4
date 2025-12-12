@@ -148,6 +148,30 @@ const RMStockService = {
             }
         );
     },
+    GetRMStockODSize: function GetRMStockODSize() {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockODSize";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRMStockCheckODSizeApplicable: function GetRMStockCheckODSizeApplicable(ItemMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockCheckODSizeApplicable?ItemMaster_Code=" + ItemMaster_Code;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRMStockODSizeWidthSelection: function GetRMStockODSizeWidthSelection(ItemParameterMaster_Code_Width, MachineMaster_Code, ItemParameterMaster_Code_Thk) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockODSizeWidthSelection?ItemParameterMaster_Code_Width=" + ItemParameterMaster_Code_Width + "&MachineMaster_Code=" + MachineMaster_Code + "&ItemParameterMaster_Code_Thk=" + ItemParameterMaster_Code_Thk;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { RMStockService }
