@@ -427,6 +427,20 @@ function enableNewRowAddition() {
                 width: '-webkit-fill-available'
             });
         }
+        if (itemNameList && itemNameList.length === 1) {
+            var $itemDropdown = $row.find('select.ddlItemNameRow');
+            if ($itemDropdown.length) {
+                var firstItemCode = itemNameList[0].Code;
+                setTimeout(function() {
+                    $itemDropdown.val(firstItemCode);
+                    if ($itemDropdown.data('select2')) {
+                        $itemDropdown.trigger('change.select2');
+                    } else {
+                        $itemDropdown.trigger('change');
+                    }
+                }, 100);
+            }
+        }
     });
     Promise.all([GetRMStockWidthList(), GetRMStockODSizeList()]).then(function ([slitWidthList, odSizeList]) {
         BindSelectList1($row.find('select.ddlSlitWidthRow')[0], slitWidthList);
@@ -515,17 +529,54 @@ function UpdateODSizeWidthSelection(rowId) {
         var $odDropdown = $row.find('.ddlODWidthRow');
         var slitWidthCode = $slitWidthDropdown.val();
         
-        if (slitWidthCode && slitWidthCode !== '0' && $odDropdown.prop('disabled') === false) {
+        if (slitWidthCode && slitWidthCode !== '0') {
             RMStockService.GetRMStockODSizeWidthSelection(slitWidthCode, machineNo, thicknessCode).then(function (response) {
                 if (response && response.length > 0) {
                     var odSizeList = response.map((item) => ({ Code: item.Code, Desp: item.Desp }));
                     BindSelectList1($odDropdown[0], odSizeList);
+                    var firstItemCode = response[0].Code;
+                    $odDropdown.val(firstItemCode);
+                    $odDropdown.prop('disabled', true).addClass('bg-light');
                     if ($odDropdown.data('select2')) {
                         $odDropdown.trigger('change.select2');
+                    } else {
+                        $odDropdown.trigger('change');
                     }
+                } else {
+                    GetRMStockODSizeList().then(function (odSizeList) {
+                        BindSelectList1($odDropdown[0], odSizeList);
+                        $odDropdown.val('0');
+                        $odDropdown.prop('disabled', false).removeClass('bg-light');
+                        if ($odDropdown.data('select2')) {
+                            $odDropdown.trigger('change.select2');
+                        } else {
+                            $odDropdown.trigger('change');
+                        }
+                    });
                 }
             }).catch(function (error) {
                 console.error('Error fetching OD Size Width Selection:', error);
+                GetRMStockODSizeList().then(function (odSizeList) {
+                    BindSelectList1($odDropdown[0], odSizeList);
+                    $odDropdown.val('0');
+                    $odDropdown.prop('disabled', false).removeClass('bg-light');
+                    if ($odDropdown.data('select2')) {
+                        $odDropdown.trigger('change.select2');
+                    } else {
+                        $odDropdown.trigger('change');
+                    }
+                });
+            });
+        } else {
+            GetRMStockODSizeList().then(function (odSizeList) {
+                BindSelectList1($odDropdown[0], odSizeList);
+                $odDropdown.val('0');
+                $odDropdown.prop('disabled', false).removeClass('bg-light');
+                if ($odDropdown.data('select2')) {
+                    $odDropdown.trigger('change.select2');
+                } else {
+                    $odDropdown.trigger('change');
+                }
             });
         }
     } else {
@@ -536,17 +587,54 @@ function UpdateODSizeWidthSelection(rowId) {
             var $odDropdown = $row.find('.ddlODWidthRow');
             var slitWidthCode = $slitWidthDropdown.val();
             
-            if (slitWidthCode && slitWidthCode !== '0' && $odDropdown.prop('disabled') === false) {
+            if (slitWidthCode && slitWidthCode !== '0') {
                 RMStockService.GetRMStockODSizeWidthSelection(slitWidthCode, machineNo, thicknessCode).then(function (response) {
                     if (response && response.length > 0) {
                         var odSizeList = response.map((item) => ({ Code: item.Code, Desp: item.Desp }));
                         BindSelectList1($odDropdown[0], odSizeList);
+                        var firstItemCode = response[0].Code;
+                        $odDropdown.val(firstItemCode);
+                        $odDropdown.prop('disabled', true).addClass('bg-light');
                         if ($odDropdown.data('select2')) {
                             $odDropdown.trigger('change.select2');
+                        } else {
+                            $odDropdown.trigger('change');
                         }
+                    } else {
+                        GetRMStockODSizeList().then(function (odSizeList) {
+                            BindSelectList1($odDropdown[0], odSizeList);
+                            $odDropdown.val('0');
+                            $odDropdown.prop('disabled', false).removeClass('bg-light');
+                            if ($odDropdown.data('select2')) {
+                                $odDropdown.trigger('change.select2');
+                            } else {
+                                $odDropdown.trigger('change');
+                            }
+                        });
                     }
                 }).catch(function (error) {
                     console.log('Error fetching OD Size Width Selection:', error);
+                    GetRMStockODSizeList().then(function (odSizeList) {
+                        BindSelectList1($odDropdown[0], odSizeList);
+                        $odDropdown.val('0');
+                        $odDropdown.prop('disabled', false).removeClass('bg-light');
+                        if ($odDropdown.data('select2')) {
+                            $odDropdown.trigger('change.select2');
+                        } else {
+                            $odDropdown.trigger('change');
+                        }
+                    });
+                });
+            } else {
+                GetRMStockODSizeList().then(function (odSizeList) {
+                    BindSelectList1($odDropdown[0], odSizeList);
+                    $odDropdown.val('0');
+                    $odDropdown.prop('disabled', false).removeClass('bg-light');
+                    if ($odDropdown.data('select2')) {
+                        $odDropdown.trigger('change.select2');
+                    } else {
+                        $odDropdown.trigger('change');
+                    }
                 });
             }
         });
@@ -609,12 +697,25 @@ function CheckODSizeApplicabilityForRow(rowId, itemMasterCode) {
 function GetRMStockMachineNoList() {
     RMStockService.GetRMStockMachineNo().then(function (response) {
         if (response && response.length > 0) {
-            BindSelectList1($('#ddlMachineNo')[0], response.map((item) => ({ Code: item.Code, Desp: item.MachineNo })));
+            var machineList = response.map((item) => ({ Code: item.Code, Desp: item.MachineNo }));
+            BindSelectList1($('#ddlMachineNo')[0], machineList);
 
             $('#ddlMachineNo').select2({
                 dropdownParent: $('#PlannedMyModal'),
                 width: '-webkit-fill-available'
             });
+
+            if (response.length === 1) {
+                var firstMachineCode = response[0].Code;
+                setTimeout(function() {
+                    $('#ddlMachineNo').val(firstMachineCode);
+                    if ($('#ddlMachineNo').data('select2')) {
+                        $('#ddlMachineNo').trigger('change.select2');
+                    } else {
+                        $('#ddlMachineNo').trigger('change');
+                    }
+                }, 100);
+            }
         } else {
             toastr.error('No data received or empty response');
         }
@@ -1010,12 +1111,38 @@ function SaveCopiedRows() {
 function validateODSizeRequired(rowId) {
     return new Promise(function (resolve, reject) {
         const suffix = rowId != null ? rowId : 0;
-        const itemSelector = $('#ddlItemName_' + suffix);
-        const odSelector = $('#ddlODWidth_' + suffix);
-        const itemMasterCode = itemSelector.val();
-        const odCode = odSelector.length ? odSelector.val() : '';
+        var $row = $('#' + suffix);
+        
+        if (!$row.length) {
+            resolve(true);
+            return;
+        }
+        
+        const $itemSelector = $row.find('.ddlItemNameRow');
+        const $odSelector = $row.find('.ddlODWidthRow');
+        
+        var itemMasterCode = '';
+        var odCode = '';
+        
+        if ($itemSelector.length) {
+            if ($itemSelector.data('select2')) {
+                itemMasterCode = $itemSelector.select2('val');
+            }
+            if (!itemMasterCode) {
+                itemMasterCode = $itemSelector.val();
+            }
+        }
+        
+        if ($odSelector.length) {
+            if ($odSelector.data('select2')) {
+                odCode = $odSelector.select2('val');
+            }
+            if (!odCode) {
+                odCode = $odSelector.val();
+            }
+        }
 
-        if (!itemMasterCode || itemMasterCode === '0') {
+        if (!itemMasterCode || itemMasterCode === '0' || itemMasterCode === null || itemMasterCode === undefined) {
             resolve(true);
             return;
         }
@@ -1033,7 +1160,8 @@ function validateODSizeRequired(rowId) {
             }
 
             if (isApplicable === 'Y' || isApplicable === 'y') {
-                if (!odCode || odCode === '0') {
+                if (!odCode || odCode === '0' || odCode === null || odCode === undefined || odCode === '') {
+                    toastr.error('OD Size is mandatory for this item. Please select an OD Size.');
                     reject(new Error('OD Size is mandatory for this item. Please select an OD Size.'));
                 } else {
                     resolve(true);
@@ -1058,7 +1186,13 @@ function saveRowAndUpdateMaster(rowId) {
     return validateODSizeRequired(rowId).then(function () {
         return RMStockService.SaveRMStockData(payload).then(function (response) {
             if (!response || response.Status !== 'Y') {
-                throw new Error((response && response.Message) || 'Save failed');
+                if (response && response.Status === 'N') {
+                    var errorMsg = response.Message || 'Save failed';
+                    toastr.error(errorMsg);
+                    throw new Error(errorMsg);
+                } else {
+                    throw new Error((response && response.Message) || 'Save failed');
+                }
             }
 
             const masterCode = extractMasterCodeFromResponse(response);
@@ -1111,7 +1245,7 @@ function buildPlannedRowPayload(rowId) {
     }
 
     const ItemMaster_Code = itemSelector.val();
-    const ItemMasterWidth_Code = widthSelector.val();
+    var ItemMasterWidth_Code = widthSelector.val();
     const ItemMasterOD_Code = odSelector.length ? odSelector.val() : '';
     const NoOfSlitsValue = noOfSlitsInput.val();
     const IdentificationNo = G_IdentificationNo;
@@ -1121,8 +1255,15 @@ function buildPlannedRowPayload(rowId) {
     const AllowManualWeight = $('#AllowManualWeight').is(':checked') ? 'Y' : 'N';
     let UserCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
 
+    if (widthSelector.data('select2')) {
+        ItemMasterWidth_Code = widthSelector.select2('val');
+    }
+    if (!ItemMasterWidth_Code) {
+        ItemMasterWidth_Code = widthSelector.val();
+    }
+
     if (!ItemMaster_Code || ItemMaster_Code === '0') { toastr.error('Please select an item name'); return null; }
-    if (!ItemMasterWidth_Code || ItemMasterWidth_Code === '0') { toastr.error('Please select a slit width'); return null; }
+    if (!ItemMasterWidth_Code || ItemMasterWidth_Code === '0' || ItemMasterWidth_Code === null || ItemMasterWidth_Code === undefined) { toastr.error('Please select a slit width'); return null; }
 
     const slitWidthValue = parseFloat(ItemMasterWidth_Code);
     if (isNaN(slitWidthValue) || slitWidthValue <= 0) { toastr.error('Please select a valid slit width'); return null; }
@@ -1152,6 +1293,7 @@ function buildPlannedRowPayload(rowId) {
         Code: detailCode,
         itemMaster_Code: ItemMaster_Code,
         ItemParameterValueMaster_Code: ItemMasterWidth_Code,
+        ItemParameterMaster_Code_Width: ItemMasterWidth_Code ? Number(ItemMasterWidth_Code) : 0,
         noofSlit: noOfSlitsNum,
         identificationNo: IdentificationNo,
         totalWeight: totalWeightNum.toFixed(3),
