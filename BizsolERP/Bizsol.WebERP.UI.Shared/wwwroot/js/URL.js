@@ -16,9 +16,9 @@ let UrlService = {
     API_ENDPOINT_LEADSOURCE: `${environment.BASE_URL}/LeadSource`,
     API_ENDPOINT_INDUSTRYTYPE: `${environment.BASE_URL}/IndustryType`,
     API_ENDPOINT_DEPARTMENT: `${environment.BASE_URL}/Department`,
-    API_ENDPOINT_SUBDEPARTMENT: `${environment.BASE_URL}/SubDepartment`,
     API_ENDPOINT_DESIGNATION: `${environment.BASE_URL}/Designation`,
     API_ENDPOINT_SubDepartment: `${environment.BASE_URL}/SubDepartment`,
+    API_ENDPOINT_SUBDEPARTMENT: `${environment.BASE_URL}/SubDepartment`,
     API_ENDPOINT_SALESPERSON: `${environment.BASE_URL}/MarketingMan`,
     API_ENDPOINT_ENQUIRYFOLLOWUP: `${environment.BASE_URL}/EnquiryFollowUp`,
     API_ENDPOINT_UOM: `${environment.BASE_URL}/UOM`,
@@ -112,6 +112,7 @@ let UrlService = {
     API_DOCUMENT_StockAgeingReport: `${environment.BASE_URL}/StockAgeingReport`,
     API_ENDPOINT_BalancePOCancellation: `${environment.BASE_URL}/BalancePOCancellation`,
     API_ENDPOINT_CRM_SALESRETURN: `${environment.BASE_URL}/CRMSalesReturn`,
+    API_ENDPOINT_SalesanalysisAST: `${environment.BASE_URL}/SalesanalysisAST`,
 }
 
 export { UrlService  }
