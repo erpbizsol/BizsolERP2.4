@@ -7,6 +7,32 @@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/RollingPlanSheet.js"></script>
 
 <style>
+
+    /* Hide page scrollbar */
+    html {
+        overflow: hidden !important;
+        height: 100% !important;
+    }
+    
+    body {
+        overflow: hidden !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Ensure main content area fits viewport without scrolling */
+    .row {
+        margin: 0 !important;
+        height: 100% !important;
+    }
+    
+    .col-sm-12 {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
     /* Tab design */
     .nav-tabs { border-bottom: none; gap: 6px; }
     .nav-tabs .nav-link {
@@ -35,7 +61,27 @@
         box-shadow: 0 2px 6px rgb(83 135 188);
     }
     .nav-tabs .nav-link i { opacity: .9; }
-    #rmStockTabContent { margin-top: .5rem; }
+    .nav-tabs {
+        flex-shrink: 0;
+    }
+    
+    #rmStockTabContent { 
+        margin-top: .5rem;
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 150px);
+        min-height: 400px;
+        overflow: hidden;
+        flex: 1;
+    }
+
+    /* Prevent filter bars and buttons from growing */
+    #date-filter-bar,
+    #from-date-to-date-filter-bar,
+    #btnDownload,
+    .paginator {
+        flex-shrink: 0;
+    }
     
     
     
@@ -76,6 +122,31 @@
         font-size: 8pt !important;
         height: 16px !important;
         vertical-align: middle !important;
+    }
+    
+    /* Remove gap between totals row and header row */
+    .totals-row {
+        margin-bottom: 0 !important;
+        border-bottom: none !important;
+    }
+    
+    /* Remove bottom border from totals row cells to eliminate gap */
+    .totals-row th {
+        border-bottom: none !important;
+    }
+    
+    #tblTable thead {
+        border-collapse: collapse !important;
+    }
+    
+    #tblTable thead tr {
+        margin: 0 !important;
+        border-spacing: 0 !important;
+    }
+    
+    /* Ensure no gap between totals row and column header row */
+    .totals-row + tr th {
+        border-top: none !important;
     }
     
     .totals-row th:first-child {
@@ -126,6 +197,126 @@
         background-color: #5c95ce !important;
         border-color: #5c95ce !important;
         font-weight: 600;
+    }
+
+    /* Fixed header styles for all tables */
+    .table-wrapper {
+        position: relative;
+        overflow: auto;
+        flex: 1;
+        min-height: 0;
+        /* Table wrapper takes remaining space and scrolls internally */
+    }
+
+    /* Ensure table takes full width and height of wrapper */
+    #tblTable {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    /* Responsive height adjustments for smaller screens */
+    @@media (max-height: 800px) {
+        #rmStockTabContent {
+            max-height: calc(100vh - 150px);
+        }
+        .table-wrapper {
+            min-height: 300px;
+        }
+    }
+
+    @@media (max-height: 600px) {
+        #rmStockTabContent {
+            max-height: calc(100vh - 120px);
+        }
+        .table-wrapper {
+            min-height: 250px;
+        }
+    }
+
+    /* Fixed header for main table */
+    #tblTable thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #fff;
+    }
+
+    #tblTable thead th {
+        background-color: #558bc0 !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        z-index: 11;
+        border-bottom: 2px solid #dee2e6;
+        padding-right: 15px !important;
+    }
+
+    /* Fixed header for DetailTable in modal */
+    #DetailTable thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #fff;
+    }
+
+    #DetailTable thead th {
+        background-color: #558bc0 !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        z-index: 11;
+        border-bottom: 2px solid #dee2e6;
+        padding-right: 15px !important;
+    }
+
+    /* Fixed header for PlanNoDetailTable in modal */
+    #PlanNoDetailTable thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #fff;
+    }
+
+    #PlanNoDetailTable thead th {
+        background-color: #558bc0 !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        z-index: 11;
+        border-bottom: 2px solid #dee2e6;
+        padding-right: 15px !important;
+    }
+
+    /* Ensure table wrapper in modal has proper overflow */
+    .rps-detail-modal .table-wrapper {
+        height: calc(65vh - 100px);
+        min-height: 300px;
+        max-height: 500px;
+        overflow: auto;
+    }
+
+    .modal-body .table-wrapper {
+        height: calc(65vh - 100px);
+        min-height: 300px;
+        max-height: 500px;
+        overflow: auto;
+    }
+
+    /* Responsive modal table heights */
+    @@media (max-height: 800px) {
+        .rps-detail-modal .table-wrapper,
+        .modal-body .table-wrapper {
+            height: calc(60vh - 80px);
+            min-height: 250px;
+        }
+    }
+
+    @@media (max-height: 600px) {
+        .rps-detail-modal .table-wrapper,
+        .modal-body .table-wrapper {
+            height: calc(55vh - 60px);
+            min-height: 200px;
+        }
     }
 
 </style>
@@ -190,7 +381,7 @@
                     <button type="button" id="btn" class="btn btn-primary btn-height" onclick="ExportExcel();">Download</button>
                 </div> 
             </div>
-            <div class="table-wrapper" style="min-height:400px;">
+            <div class="table-wrapper">
                 <table id="tblTable" class="fixed-width-table table">
                     <thead id="table-head">
                     </thead>
@@ -214,7 +405,7 @@
                 <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
             </div>
             <div class="modal-body">
-                <div class="table-wrapper" style="max-height:400px;">
+                <div class="table-wrapper">
                     <table id="DetailTable" class="fixed-width-table table">
                         <thead id="DetailTable-head">
                         </thead>

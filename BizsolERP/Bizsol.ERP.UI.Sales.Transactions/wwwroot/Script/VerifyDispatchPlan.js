@@ -832,7 +832,7 @@ function ExportExcel() {
     });
 
 }
-function Verify(DispatchAdviceNo) {
+function Verify(Code) {
     var ModuleName = "Despatch Plan Marketing Person Wise",
         OptionName = "Verify",
         ShowMsg = "Y",
@@ -852,18 +852,25 @@ function Verify(DispatchAdviceNo) {
             toastr.error(response.Msg);
             return false;
         } else {
-            VerifyDispatch(DispatchAdviceNo)
+            OpenVerifyModal(Code);
         }
     });
 }
-function VerifyDispatch(Code) {
+function VerifyDispatch() {
+    var Remark = $("#txtRemark").val();
+    if (Remark == '') {
+        toastr.error("Please enter remark.");
+        return;
+    }
+    var Code = $("#hfCode").val();
     if (confirm("Are you sure you want to verify ?")) {
         Showloader();
         var Status = $("#ddlStatus").val();
-        VerifyDispatchPlanService.Verify(Code, Status).then(function (response) {
+        VerifyDispatchPlanService.Verify(Code, Status, Remark).then(function (response) {
             if (response.Status == 'Y') {
                 toastr.success(response.Message);
                 GetDispatchAdvicePlanList($("#ddlStatus").val());
+                CloseVerifyModal();
                 HideLoader();
             } else {
                 toastr.error(response[0].Message);
@@ -974,6 +981,7 @@ function SendMail(Code) {
 }
 function CloseModal() {
     $('#AllModal').modal('hide');
+    
 }
 function CloseTransporter() {
     $('#Transporter').modal('hide');
@@ -1068,14 +1076,20 @@ function SendMailToTransporter() {
             toastr.error(response.Msg);
             return false;
         } else {
+
             let TranporterCodes = GetEmpCodes();
+            let Remark = $("#txtDispatchRemark").val();
             if (TranporterCodes == '') {
                 toastr.error('Please select at least one transporter.');
                 return;
             }
+            if (Remark == '') {
+                toastr.error('Please enter remark.');
+                return;
+            }
             if (confirm("Are you sure you want to verify/send mail ?")) {
                 Showloader();
-                VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo).then(function (response) {
+                VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo,Remark).then(function (response) {
                     if (response.Status == 'Y') {
                         toastr.success(response.Message);
                         HideLoader();
@@ -1119,8 +1133,21 @@ function ApprovedQuotstion(Code, TransporterCode) {
 function CloseApprovedModal() {
     $('#dvApproved').modal('hide');
 }
+function OpenVerifyModal(Code) {
+    $('#hfCode').val(Code);
+    $('#dvRemark').modal({ backdrop: 'static' });
+    $('#dvRemark').modal('show');
+    $("#txtRemark").val("");
+}
+function CloseVerifyModal() {
+    $('#dvRemark').modal('hide');
+    $("#txtRemark").val("");
+}
 
 window.ViewAll = ViewAll;
+window.CloseVerifyModal = CloseVerifyModal;
+window.OpenVerifyModal = OpenVerifyModal;
+window.VerifyDispatch = VerifyDispatch;
 window.Verify = Verify;
 window.ExportExcel = ExportExcel;
 window.CloseModal = CloseModal;
