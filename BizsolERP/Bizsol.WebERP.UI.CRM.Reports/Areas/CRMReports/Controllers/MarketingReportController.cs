@@ -10,6 +10,11 @@ namespace Bizsol.WebERP.UI.CRM.Reports.Areas.CRMReports.Controllers
         {
             return View();
         }
-        
+        [HttpGet]
+        public IActionResult SalesanalysisAST()
+        {
+            return View();
+        }
+
     }
 }
