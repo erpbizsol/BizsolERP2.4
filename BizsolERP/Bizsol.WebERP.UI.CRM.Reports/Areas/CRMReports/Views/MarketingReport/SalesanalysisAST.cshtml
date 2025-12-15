@@ -1,0 +1,448 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.css" rel="stylesheet" />
+
+<style>
+    /* Custom column for 5 columns in a row */
+    @@media (min-width: 1200px) {
+        .col-xl-2-4 {
+            flex: 0 0 20%;
+            max-width: 20%;
+        }
+    }
+    
+    /* KPI card styling */
+    .kpi-card {
+        transition: transform 0.2s;
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    /* Summary grid styling */
+    .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    /* Summary grid table hover effect */
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+
+    /* Summary grid scrollbar styling */
+    .table-responsive::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <button class="btn btn-primary btn-height" type="button" data-bs-toggle="collapse" data-bs-target="#customerFilterCollapse" aria-expanded="true" aria-controls="customerFilterCollapse">
+        <i class="fa-solid fa-filter"></i> Filters
+    </button>
+
+    <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width" onclick="SalesanalysisAST_ShowReport()">Show</button>
+</div>
+<div class="collapse " id="customerFilterCollapse">
+    <div class="row">
+        <div class="col-md-3">
+            
+            <date-range-control id="dateRange"></date-range-control>
+
+        </div>
+        <div class="col-md-3">
+            <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Sales Person</label>
+
+            <select id="ddlSalesPersonlist" class="form-control form-control-sm box_border">
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label for="txtDealerName" class="col-form-label-sm fw-bold">Dealer Name</label>
+
+            <select id="ddlDealerNamelist" class="form-control form-control-sm box_border">
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="txtCitiesName" class="col-form-label-sm fw-bold">Location</label>
+
+            <select id="ddlCitiesNamelist" class="form-control form-control-sm box_border">
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="txtStatusName" class="col-form-label-sm fw-bold">Status</label>
+
+            <select id="ddlStatusNamelist" class="form-control form-control-sm box_border">
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="txtGP" class="col-form-label-sm fw-bold">GP</label>
+
+            <select id="ddlGPlist" class="form-control form-control-sm box_border">
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="txtIndustryType" class="col-form-label-sm fw-bold">Segment</label>
+
+            <select id="ddlIndustryTypelist" class="form-control form-control-sm box_border">
+            </select>
+        </div>
+       
+    </div>
+</div>
+
+
+<br />
+<ul class="nav nav-tabs" id="salesAnalysisTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="summaryReport-tab" data-bs-toggle="tab" data-bs-target="#summaryReport" type="button" role="tab" aria-controls="summaryReport" aria-selected="true">
+            Summary Report
+        </button>
+    </li>
+
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="partyScoring-tab" data-bs-toggle="tab" data-bs-target="#partyScoring" type="button" role="tab" aria-controls="partyScoring" aria-selected="false">
+            Party Scoring
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="goldenCircle-tab" data-bs-toggle="tab" data-bs-target="#goldenCircle" type="button" role="tab" aria-controls="goldenCircle" aria-selected="false">
+            Golden Circle Client
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="manifestation-tab" data-bs-toggle="tab" data-bs-target="#manifestation" type="button" role="tab" aria-controls="manifestation" aria-selected="false">
+            Manifestation
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="nbdCrr-tab" data-bs-toggle="tab" data-bs-target="#nbdCrr" type="button" role="tab" aria-controls="nbdCrr" aria-selected="false">
+            NBD CRR
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="segmentWise-tab" data-bs-toggle="tab" data-bs-target="#segmentWise" type="button" role="tab" aria-controls="segmentWise" aria-selected="false">
+            Segment Wise
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="gpWiseSummary-tab" data-bs-toggle="tab" data-bs-target="#gpWiseSummary" type="button" role="tab" aria-controls="gpWiseSummary" aria-selected="false">
+            GP Wise Summary
+        </button>
+    </li>
+</ul>
+
+
+
+<div class="tab-content pt-3" id="salesAnalysisTabsContent">
+    <div class="tab-pane fade show active" id="summaryReport" role="tabpanel" aria-labelledby="summaryReport-tab">
+        <!-- KPI Cards Row -->
+        <div class="row">
+            <div class="col-md-6 col-lg-3 col-xl-2-4 ">
+                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-1">
+                        <small class="text-muted">Parties</small>
+                        <div id="kpi-parties" class="fw-bold" style="font-size:36px; color:#28a745; margin-top:8px;">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3 col-xl-2-4">
+                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-1">
+                        <small class="text-muted">High GP</small>
+                        <div id="kpi-high-gp" class="fw-bold" style="font-size:36px; color:#17a2b8; margin-top:8px;">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3 col-xl-2-4">
+                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-1">
+                        <small class="text-muted">Lost Client</small>
+                        <div id="kpi-lost-client" class="fw-bold" style="font-size:36px; color:#dc3545; margin-top:8px;">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3 col-xl-2-4">
+                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-1">
+                        <small class="text-muted">Manifested Sales</small>
+                        <div id="kpi-manifested-sales" class="fw-bold" style="font-size:36px; color:#fd7e14; margin-top:8px;">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3 col-xl-2-4">
+                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-1">
+                        <small class="text-muted">Actual Sale</small>
+                        <div id="kpi-actual-sale" class="fw-bold" style="font-size:36px; color:#6f42c1; margin-top:8px;">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Date Range Display -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="alert-warning text-center" role="alert" style="background-color:#ff9800; color:#fff; border:none;">
+                    <h5 id="report-date-range" class="mb-0" style="font-weight:bold;">Report Showing From : </h5>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Report Table -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Summary Report</h5>
+                <div class="table-responsive mt-2">
+                    <table id="summaryReportTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="summaryReportTableHeader">
+                        </thead>
+                        <tbody id="summaryReportTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-summaryReportTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="partyScoring" role="tabpanel" aria-labelledby="partyScoring-tab">
+        
+        <!-- Summary Grids Row -->
+        <div class="row mb-2">
+            <div class="col-lg-4 mb-0">
+                <div class="card" style="border:1px solid #dcdcdc; display: flex; flex-direction: column; height: 280px;">
+                    <div class="card-body p-0" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+                        <div class="table-responsive" style="flex: 1; max-height: 230px; overflow-y: auto;">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 40px;">S.no.</th>
+                                        <th>Location</th>
+                                        <th class="text-end" style="width: 120px;">Record Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="locationSummaryBody">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="summary-grid-footer" style="border-top: 2px solid #dee2e6; background: #f8f9fa;">
+                            <table class="table table-sm mb-0">
+                                <tr style="font-weight: bold;">
+                                    <td colspan="2" style="padding: 8px 12px;">Grand total</td>
+                                    <td class="text-end grand-total-value" style="padding: 8px 12px; width: 120px;">0</td>
+                                </tr>
+                                <tr style="font-weight: bold;">
+                                    <td colspan="3" class="mb-0 summary-grid-title" style="padding: 8px 12px; width: 120px;">0</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-0">
+                <div class="card" style="border:1px solid #dcdcdc; display: flex; flex-direction: column; height: 280px;">
+                    <div class="card-body p-0" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+                        <div class="table-responsive" style="flex: 1; max-height: 230px; overflow-y: auto;">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 40px;">S.no.</th>
+                                        <th>MGKT Person</th>
+                                        <th class="text-end" style="width: 120px;">Record Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgktPersonSummaryBody">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="summary-grid-footer" style="border-top: 2px solid #dee2e6; background: #f8f9fa;">
+                            <table class="table table-sm mb-0">
+                                <tr style="font-weight: bold;">
+                                    <td colspan="2" style="padding: 8px 12px;">Grand total</td>
+                                    <td class="text-end grand-total-value" style="padding: 8px 12px; width: 120px;">0</td>
+                                </tr>
+                                <tr style="font-weight: bold;">
+                                    <td colspan="3" class="mb-0 summary-grid-title" style="padding: 8px 12px; width: 120px;">0</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-0">
+                <div class="card" style="border:1px solid #dcdcdc; display: flex; flex-direction: column; height: 280px;">
+                    <div class="card-body p-0" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+                        <div class="table-responsive" style="flex: 1; max-height: 230px; overflow-y: auto;">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 40px;">S.no.</th>
+                                        <th>Party ID</th>
+                                        <th class="text-end" style="width: 120px;">Record Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="partyIdSummaryBody">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="summary-grid-footer" style="border-top: 2px solid #dee2e6; background: #f8f9fa;">
+                            <table class="table table-sm mb-0">
+                                <tr style="font-weight: bold;">
+                                    <td colspan="2" style="padding: 8px 12px;">Grand total</td>
+                                    <td class="text-end grand-total-value" style="padding: 8px 12px; width: 120px;">0</td>
+                                </tr>
+                                <tr style="font-weight: bold;">
+                                    <td colspan="3" class="mb-0 summary-grid-title" style="padding: 8px 12px; width: 120px;">0</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Party Scoring Table -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Party Scoring Details</h5>
+                <div class="table-responsive mt-2">
+                    <table id="partyScoringTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="partyScoringTableHeader">
+                        </thead>
+                        <tbody id="partyScoringTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-partyScoringTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="goldenCircle" role="tabpanel" aria-labelledby="goldenCircle-tab">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Golden Circle Client</h5>
+                <div class="table-responsive mt-2">
+                    <table id="goldenCircleTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="goldenCircleTableHeader">
+                        </thead>
+                        <tbody id="goldenCircleTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-goldenCircleTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="manifestation" role="tabpanel" aria-labelledby="manifestation-tab">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Manifestation</h5>
+                <div class="table-responsive mt-2">
+                    <table id="manifestationTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="manifestationTableHeader">
+                        </thead>
+                        <tbody id="manifestationTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-manifestationTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="nbdCrr" role="tabpanel" aria-labelledby="nbdCrr-tab">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">NBD CRR</h5>
+                <div class="table-responsive mt-2">
+                    <table id="nbdCrrTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="nbdCrrTableHeader">
+                        </thead>
+                        <tbody id="nbdCrrTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-nbdCrrTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="segmentWise" role="tabpanel" aria-labelledby="segmentWise-tab">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Segment Wise</h5>
+                <div class="table-responsive mt-2">
+                    <table id="segmentWiseTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="segmentWiseTableHeader">
+                        </thead>
+                        <tbody id="segmentWiseTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-segmentWiseTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="gpWiseSummary" role="tabpanel" aria-labelledby="gpWiseSummary-tab">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">GP Wise Summary</h5>
+                <div class="table-responsive mt-2">
+                    <table id="gpWiseTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="gpWiseTableHeader">
+                        </thead>
+                        <tbody id="gpWiseTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-gpWiseTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/SalesanalysisAST.js"></script>
