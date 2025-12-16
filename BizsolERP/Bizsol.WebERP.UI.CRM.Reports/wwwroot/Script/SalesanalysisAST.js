@@ -318,6 +318,103 @@ function formatDateForDisplay(dateStr) {
     }
 }
 
+// Chart instances for cleanup
+let baseSalesPieChartInstance = null;
+let partySharePieChartInstance = null;
+
+// Helper function to generate distinct colors
+function generateColors(count) {
+    const colors = [
+        '#FFA500', '#FFD700', '#FF8C00', '#FFA07A', '#FF6347',
+        '#FF4500', '#DC143C', '#C71585', '#8B008B', '#9370DB',
+        '#4169E1', '#1E90FF', '#00BFFF', '#00CED1', '#20B2AA',
+        '#3CB371', '#2E8B57', '#228B22', '#32CD32', '#7FFF00',
+        '#ADFF2F', '#FFD700', '#F0E68C', '#EEE8AA', '#BDB76B'
+    ];
+    
+    // If we need more colors than predefined, generate random ones
+    while (colors.length < count) {
+        const r = Math.floor(Math.random() * 200 + 55);
+        const g = Math.floor(Math.random() * 200 + 55);
+        const b = Math.floor(Math.random() * 200 + 55);
+        colors.push(`rgb(${r}, ${g}, ${b})`);
+    }
+    
+    return colors.slice(0, count);
+}
+
+// Helper function to create pie chart
+function createPieChart(canvasId, labels, data, title) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return null;
+    
+    const colors = generateColors(labels.length);
+    
+    return new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors,
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        boxWidth: 15,
+                        padding: 10,
+                        font: {
+                            size: 11
+                        },
+                        generateLabels: function (chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                const dataset = data.datasets[0];
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+
+
+                                return data.labels.map((label, i) => {
+                                    const value = dataset.data[i];
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+
+                                    return {
+                                        text: `${label}: ${percentage}%`,
+                                        fillStyle: dataset.backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                            return `${label}: ${formatNumber(value)} (${percentage}%)`;
+                        }
+                    }
+                },
+                title: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
 function renderPartyScoring() {
     let selectedDealers = GetSelectedValues('ddlDealerNamelist');
     selectedDealers = selectedDealers.join(',');
@@ -374,7 +471,7 @@ function renderPartyScoring() {
         populateSummaryGrid('mgktPersonSummaryBody', mgktPersonCounts, 'MGKT Person');
 
         // Populate Party ID Summary Grid
-        populateSummaryGrid('partyIdSummaryBody', partyIdCounts, 'Party ID');
+        populateSummaryGrid('partyIdSummaryBody', partyIdCounts, 'Parties');
 
         // Render main Party Scoring table
         const StringFilterColumn = [];
@@ -456,9 +553,15 @@ function renderGoldenCircleClient() {
         
         if (!response || response.length === 0) {
             console.warn('No golden circle client data received');
+            // Clear all visualizations
+            clearGoldenCircleDashboard();
             return;
         }
 
+        // Process data for visualizations
+        processGoldenCircleData(response);
+
+        // Render original data table
         const StringFilterColumn = [];
         const NumericFilterColumn = [];
         const DateFilterColumn = [];
@@ -467,6 +570,8 @@ function renderGoldenCircleClient() {
         const StringdoubleFilterColumn = [];
         const hiddenColumns = [];
         const ColumnAlignment = {
+            'Weight': 'right',
+            'GP': 'right',
             'Sales': 'right',
             'Growth (%)': 'right'
         };
@@ -477,7 +582,245 @@ function renderGoldenCircleClient() {
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching golden circle data:', err);
+        clearGoldenCircleDashboard();
     });
+}
+
+function clearGoldenCircleDashboard() {
+    // Clear charts
+    if (baseSalesPieChartInstance) {
+        baseSalesPieChartInstance.destroy();
+        baseSalesPieChartInstance = null;
+    }
+    if (partySharePieChartInstance) {
+        partySharePieChartInstance.destroy();
+        partySharePieChartInstance = null;
+    }
+    
+    // Clear tables
+    document.getElementById('mgktPersonWeightBody').innerHTML = '<tr><td colspan="2" class="text-center text-muted">No data available</td></tr>';
+    document.getElementById('baseWeightBody').innerHTML = '<tr><td colspan="2" class="text-center text-muted">No data available</td></tr>';
+    document.getElementById('gpWeightBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
+    
+    // Reset footers
+    const mgktFooter = document.getElementById('mgktPersonWeightFooter');
+    if (mgktFooter) {
+        mgktFooter.innerHTML = '<tr><td class="col-width-2-name"><strong>Grand total</strong></td><td class="text-end col-width-2-value"><strong>0.00</strong></td></tr>';
+    }
+    
+    const baseFooter = document.getElementById('baseWeightFooter');
+    if (baseFooter) {
+        baseFooter.innerHTML = '<tr><td class="col-width-2-name"><strong>Grand total</strong></td><td class="text-end col-width-2-value"><strong>0.00</strong></td></tr>';
+    }
+    
+    const gpFooter = document.getElementById('gpWeightFooter');
+    if (gpFooter) {
+        gpFooter.innerHTML = '<tr><td class="col-width-4-party"><strong>Grand total</strong></td><td class="text-end col-width-4-value"><strong>0.00</strong></td><td class="text-end col-width-4-value"><strong>0.00</strong></td><td class="text-end col-width-4-value"><strong>0.00</strong></td></tr>';
+    }
+}
+
+function processGoldenCircleData(data) {
+    // Clear existing charts
+    if (baseSalesPieChartInstance) {
+        baseSalesPieChartInstance.destroy();
+    }
+    if (partySharePieChartInstance) {
+        partySharePieChartInstance.destroy();
+    }
+
+    // Aggregations
+    const mgktPersonWeight = new Map();
+    const baseWeight = new Map();
+    const partyWeight = new Map();
+    const gpByParty = new Map(); // Map<partyCode, {High: 0, Low: 0, Medium: 0}>
+
+    data.forEach(function(row) {
+        // Marketing Person aggregation
+        const marketingMan = row['Marketing Man'] || row.MarketingMan || row['MGKT Person'] || 'Unknown';
+        const weight = parseFloat(row['Weight'] || row.weight || 0);
+        mgktPersonWeight.set(marketingMan, (mgktPersonWeight.get(marketingMan) || 0) + weight);
+
+        // Base (Item Name) aggregation
+        const itemName = row['Item Name'] || row.ItemName || row.BASE || 'Unknown';
+        baseWeight.set(itemName, (baseWeight.get(itemName) || 0) + weight);
+
+        // Party aggregation for pie chart
+        const partyName = row['Party Name'] || row.PartyName || 'Unknown';
+        partyWeight.set(partyName, (partyWeight.get(partyName) || 0) + weight);
+
+        // GP by Party aggregation
+        const partyCode = row['Party Name'] || row.PartyName || row['PARTY_CODE'] || 'Unknown';
+        const gp = (row['GP'] || row.gp || '').toString().toUpperCase();
+        
+        if (!gpByParty.has(partyCode)) {
+            gpByParty.set(partyCode, { High: 0, Low: 0, Medium: 0 });
+        }
+        
+        const gpData = gpByParty.get(partyCode);
+        if (gp.includes('HIGH') || gp.includes('HRC') || gp.includes('CRCA') || gp.includes('HRPO')) {
+            gpData.High += weight;
+        } else if (gp.includes('LOW') || gp.includes('GI') || gp.includes('CRFH')) {
+            gpData.Low += weight;
+        } else if (gp.includes('MEDIUM') || gp.includes('GP')) {
+            gpData.Medium += weight;
+        }
+    });
+
+    // Render Marketing Person Weight Table
+    renderMgktPersonWeightTable(mgktPersonWeight);
+
+    // Render Base Weight Table and Pie Chart
+    renderBaseWeightTable(baseWeight);
+    renderBaseSalesPieChart(baseWeight);
+
+    // Render Party Share Pie Chart
+    renderPartySharePieChart(partyWeight);
+
+    // Render GP / Weight Table
+    renderGPWeightTable(gpByParty);
+}
+
+function renderMgktPersonWeightTable(mgktPersonWeight) {
+    const tbody = document.getElementById('mgktPersonWeightBody');
+    const tfoot = document.getElementById('mgktPersonWeightFooter');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    // Sort by weight descending
+    const sorted = Array.from(mgktPersonWeight.entries())
+        .sort((a, b) => b[1] - a[1]);
+
+    let grandTotal = 0;
+    sorted.forEach(function([person, weight]) {
+        grandTotal += weight;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="col-width-2-name">${escapeHtml(person)}</td>
+            <td class="text-end col-width-2-value">${formatNumber(weight)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Update grand total in footer
+    if (tfoot) {
+        tfoot.innerHTML = `
+            <tr>
+                <td class="col-width-2-name"><strong>Grand total</strong></td>
+                <td class="text-end col-width-2-value"><strong>${formatNumber(grandTotal)}</strong></td>
+            </tr>
+        `;
+    }
+}
+
+function renderBaseWeightTable(baseWeight) {
+    const tbody = document.getElementById('baseWeightBody');
+    const tfoot = document.getElementById('baseWeightFooter');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    // Sort by weight descending
+    const sorted = Array.from(baseWeight.entries())
+        .sort((a, b) => b[1] - a[1]);
+
+    let grandTotal = 0;
+    sorted.forEach(function([base, weight]) {
+        grandTotal += weight;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="col-width-2-name">${escapeHtml(base)}</td>
+            <td class="text-end col-width-2-value">${formatNumber(weight)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Update grand total in footer
+    if (tfoot) {
+        tfoot.innerHTML = `
+            <tr>
+                <td class="col-width-2-name"><strong>Grand total</strong></td>
+                <td class="text-end col-width-2-value"><strong>${formatNumber(grandTotal)}</strong></td>
+            </tr>
+        `;
+    }
+}
+
+function renderBaseSalesPieChart(baseWeight) {
+    const sorted = Array.from(baseWeight.entries())
+        .sort((a, b) => b[1] - a[1]);
+
+    const labels = sorted.map(item => item[0]);
+    const data = sorted.map(item => item[1]);
+
+    baseSalesPieChartInstance = createPieChart('baseSalesPieChart', labels, data, 'Base wise Sales % with weight');
+}
+
+function renderPartySharePieChart(partyWeight) {
+    // Sort by weight descending
+    const sorted = Array.from(partyWeight.entries())
+        .sort((a, b) => b[1] - a[1]);
+
+    // Take top 10 parties and group the rest as "Others"
+    const topParties = sorted.slice(0, 10);
+    const othersWeight = sorted.slice(10).reduce((sum, item) => sum + item[1], 0);
+
+    const labels = topParties.map(item => item[0]);
+    const data = topParties.map(item => item[1]);
+
+    if (othersWeight > 0) {
+        labels.push('Others');
+        data.push(othersWeight);
+    }
+
+    partySharePieChartInstance = createPieChart('partySharePieChart', labels, data, 'Partywise Share % in Sales');
+}
+
+function renderGPWeightTable(gpByParty) {
+    const tbody = document.getElementById('gpWeightBody');
+    const tfoot = document.getElementById('gpWeightFooter');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    // Sort by total weight descending
+    const sorted = Array.from(gpByParty.entries())
+        .sort((a, b) => {
+            const totalA = a[1].High + a[1].Low + a[1].Medium;
+            const totalB = b[1].High + b[1].Low + b[1].Medium;
+            return totalB - totalA;
+        });
+
+    let grandTotalHigh = 0;
+    let grandTotalLow = 0;
+    let grandTotalMedium = 0;
+
+    sorted.forEach(function([party, gpData]) {
+        grandTotalHigh += gpData.High;
+        grandTotalLow += gpData.Low;
+        grandTotalMedium += gpData.Medium;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="col-width-4-party">${escapeHtml(party)}</td>
+            <td class="text-end col-width-4-value">${formatNumber(gpData.High)}</td>
+            <td class="text-end col-width-4-value">${formatNumber(gpData.Low)}</td>
+            <td class="text-end col-width-4-value">${formatNumber(gpData.Medium)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Update grand total in footer
+    if (tfoot) {
+        tfoot.innerHTML = `
+            <tr>
+                <td class="col-width-4-party"><strong>Grand total</strong></td>
+                <td class="text-end col-width-4-value"><strong>${formatNumber(grandTotalHigh)}</strong></td>
+                <td class="text-end col-width-4-value"><strong>${formatNumber(grandTotalLow)}</strong></td>
+                <td class="text-end col-width-4-value"><strong>${formatNumber(grandTotalMedium)}</strong></td>
+            </tr>
+        `;
+    }
 }
 
 function renderManifestation() {
@@ -497,6 +840,9 @@ function renderManifestation() {
         
         if (!response || response.length === 0) {
             console.warn('No manifestation data received');
+            // Clear the table
+            document.getElementById('manifestationTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+            document.getElementById('manifestationTableHeader').innerHTML = '';
             return;
         }
 
@@ -508,8 +854,12 @@ function renderManifestation() {
         const StringdoubleFilterColumn = [];
         const hiddenColumns = [];
         const ColumnAlignment = {
+            'Manifestation': 'right',
+            'Weight': 'right',
             'Sales': 'right',
-            'Manifestation Score': 'right'
+            'Actual Sales': 'right',
+            'Variance': 'right',
+            'Achievement %': 'right'
         };
 
         if (typeof BizsolCustomFilterGrid !== 'undefined') {
@@ -538,6 +888,9 @@ function renderNBDCRR() {
         
         if (!response || response.length === 0) {
             console.warn('No NBD CRR data received');
+            // Clear the table
+            document.getElementById('nbdCrrTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+            document.getElementById('nbdCrrTableHeader').innerHTML = '';
             return;
         }
 
@@ -549,9 +902,11 @@ function renderNBDCRR() {
         const StringdoubleFilterColumn = [];
         const hiddenColumns = [];
         const ColumnAlignment = {
+            'Weight': 'right',
+            'Sales': 'right',
             'NBD Count': 'right',
             'CRR Count': 'right',
-            'Total': 'right'
+            'Total Count': 'right'
         };
 
         if (typeof BizsolCustomFilterGrid !== 'undefined') {
@@ -580,6 +935,9 @@ function renderSegmentWise() {
         
         if (!response || response.length === 0) {
             console.warn('No segment wise data received');
+            // Clear the table
+            document.getElementById('segmentWiseTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+            document.getElementById('segmentWiseTableHeader').innerHTML = '';
             return;
         }
 
@@ -591,8 +949,11 @@ function renderSegmentWise() {
         const StringdoubleFilterColumn = [];
         const hiddenColumns = [];
         const ColumnAlignment = {
+            'Weight': 'right',
             'Sales': 'right',
-            'Growth (%)': 'right'
+            'Parties': 'right',
+            'Total Sales': 'right',
+            'Share %': 'right'
         };
 
         if (typeof BizsolCustomFilterGrid !== 'undefined') {
@@ -621,6 +982,9 @@ function renderGPWiseSummary() {
         
         if (!response || response.length === 0) {
             console.warn('No GP wise summary data received');
+            // Clear the table
+            document.getElementById('gpWiseTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+            document.getElementById('gpWiseTableHeader').innerHTML = '';
             return;
         }
 
@@ -632,9 +996,14 @@ function renderGPWiseSummary() {
         const StringdoubleFilterColumn = [];
         const hiddenColumns = [];
         const ColumnAlignment = {
-            'GP': 'right',
+            'Weight': 'right',
             'Sales': 'right',
-            'Percentage': 'right'
+            'Parties': 'right',
+            'Total Sales': 'right',
+            'Share %': 'right',
+            'High GP': 'right',
+            'Low GP': 'right',
+            'Medium GP': 'right'
         };
 
         if (typeof BizsolCustomFilterGrid !== 'undefined') {
