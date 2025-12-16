@@ -1,4 +1,4 @@
-﻿import { RollingPlanSheetService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RollingPlanSheetService.js';
+import { RollingPlanSheetService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RollingPlanSheetService.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 
 let G_FromDate = '';
@@ -343,7 +343,7 @@ function addTotalsRow(totals, hiddenColumns = []) {
     totalsRow.className = 'totals-row';
     totalsRow.style.backgroundColor = '#fff';
     totalsRow.style.fontWeight = 'bold';
-    totalsRow.style.borderBottom = '2px solid #5c95ce';
+    totalsRow.style.borderBottom = 'none';
     totalsRow.style.position = 'sticky';
     const firstHeaderRow = tableHead.children[0];
     totalsRow.style.top = '0';

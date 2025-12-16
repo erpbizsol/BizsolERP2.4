@@ -10,10 +10,10 @@ const VerifyDispatchPlanService = {
             }
         );
     },
-    Verify: function Verify(Code, Status) {
+    Verify: function Verify(Code, Status,Remark) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/VerifyDispatchAdvice?Status=${Status}&UserMaster_Code=${userMasterCode}&Code=${Code}`;
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/VerifyDispatchAdvice?Status=${Status}&UserMaster_Code=${userMasterCode}&Code=${Code}&Remark=${Remark}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -44,8 +44,8 @@ const VerifyDispatchPlanService = {
             }
         );
     },
-    SendMailToTransporter: function SendMailToTransporter(TransporterCodes,Code) {
-        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/SendMailToTransporter?TransporterCodes=${TransporterCodes}&Code=${Code}`;
+    SendMailToTransporter: function SendMailToTransporter(TransporterCodes,Code,Remark) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/SendMailToTransporter?TransporterCodes=${TransporterCodes}&Code=${Code}&Remark=${Remark}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
