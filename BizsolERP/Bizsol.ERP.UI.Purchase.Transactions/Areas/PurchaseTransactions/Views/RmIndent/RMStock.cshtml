@@ -11,6 +11,112 @@
         white-space: nowrap;
         min-width: auto;
     }
+
+    /* Shared scroll container for all data tables (reference: RollingPlanSheet) */
+    .table-wrapper {
+        position: relative;
+        overflow: auto;                /* only the table area scrolls */
+        max-height: calc(100vh - 260px);   /* viewport-based height similar to RollingPlanSheet */
+        /* min-height: 300px; */
+        margin-bottom: 0;
+        position: relative;
+        overflow: auto; /* only the table area scrolls */
+        flex: 1; /* take remaining height inside rmStockTabContent */
+        min-height: 0; /* allow it to shrink when viewport is small */
+        margin-bottom: 0;
+    }
+
+    /* Ensure main tables stretch full width inside wrapper */
+    #RMStockCurrent,
+    #UnApproved_Planned,
+    #Slitted_Coil_Stock,
+    #dispatch,
+    #Slitted,
+    #JobWorkData,
+    #SummaryData {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    /* Sticky table headers for all RMStock grids (like RollingPlanSheet) */
+    #RMStockCurrent thead,
+    #UnApproved_Planned thead,
+    #Slitted_Coil_Stock thead,
+    #dispatch thead,
+    #Slitted thead,
+    #JobWorkData thead,
+    #SummaryData thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #fff;
+    }
+
+    #RMStockCurrent thead th,
+    #UnApproved_Planned thead th,
+    #Slitted_Coil_Stock thead th,
+    #dispatch thead th,
+    #Slitted thead th,
+    #JobWorkData thead th,
+    #SummaryData thead th {
+        background-color: #558bc0 !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        z-index: 11;
+        border-bottom: 2px solid #dee2e6;
+        padding-right: 15px !important;
+    }
+
+    /* Compact, fixed-height footer row styling (color already defined below) */
+    #RMStockCurrent tfoot th,
+    #RMStockCurrent tfoot td,
+    #UnApproved_Planned tfoot th,
+    #UnApproved_Planned tfoot td,
+    #Slitted_Coil_Stock tfoot th,
+    #Slitted_Coil_Stock tfoot td,
+    #Slitted tfoot th,
+    #Slitted tfoot td,
+    #JobWorkData tfoot th,
+    #JobWorkData tfoot td,
+    #SummaryData tfoot th,
+    #SummaryData tfoot td {
+        height: 22px;
+        padding: 4px 8px;
+        vertical-align: middle;
+    }
+
+    /* Responsive height adjustments for smaller screens (reference: RollingPlanSheet) */
+    @@media (max-height: 800px) {
+        #current-stock,
+        #unApproved-planned,
+        #slitted-coil-stock,
+        #dispatch,
+        #slitted,
+        #job-work,
+        #stock-summary {
+            max-height: calc(100vh - 150px);
+        }
+        .table-wrapper {
+            min-height: 300px;
+        }
+    }
+
+    @@media (max-height: 600px) {
+        #current-stock,
+        #unApproved-planned,
+        #slitted-coil-stock,
+        #dispatch,
+        #slitted,
+        #job-work,
+        #stock-summary {
+            max-height: calc(100vh - 120px);
+        }
+        .table-wrapper {
+            min-height: 250px;
+        }
+    }
+
     .nav-tabs .nav-link {
         border: 1px solid transparent;
         border-top-left-radius: 0.375rem;
@@ -59,7 +165,7 @@
         border: 1px solid #dee2e6;
         border-top: none;
         border-radius: 0 0 0.375rem 0.375rem;
-        padding: 1.5rem;
+        padding: 5px;
         background-color: #fff;
     }
 
@@ -252,126 +358,104 @@
 
             <!-- Tab Content -->
             <div class="card" id="rmStockTabContent">
-                <!-- Current Stock Tab -->
-                <div class="tab-pane fade show active" id="current-stock" role="tabpanel" aria-labelledby="current-stock-tab">
-                    <!-- Data Table -->
-                    <div class="table-responsive">
-                        <div id="tblRMStockCurrent">
-                            <div class="table-wrapper ">
-                                <table id="RMStockCurrent" class="fixed-width-table table ">
-                                    <thead id="table-header-RMStockCurrent">
-                                    </thead>
-                                    <tbody id="table-body-RMStockCurrent">
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                        <td id="RowCountValue" class="text-end">Count:</td>
-                                        <td colspan="10" class="text-end">Totals</td>
-                                        <td id="totalChWt" class="text-end">0.000</td>
-                                        <td id="totalAcWt" class="text-end">0.000</td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            <div class="paginator" id="paginator-RMStockCurrent">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-             </div>
-                <!-- UnApproved-Planned Tab -->
-               <div class="card">
-                    <div class="tab-pane fade show active" id="unApproved-planned" role="tabpanel" aria-labelledby="unApproved-planned-tab">
-                            <div class="table-responsive">
-                                <div id="tblUnApproved_Planned">
-                                    <div class="table-wrapper">
-                                        <table id="UnApproved_Planned" class="fixed-width-table table ">
-                                            <thead id="table-header-UnApproved_Planned">
-                                            </thead>
-                                            <tbody id="table-body-UnApproved_Planned">
-                                            </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <td colspan="7" class="text-end">Totals</td>
-                                                    <td id="totalUnApproved_Planned" class="text-end">0.000</td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                    <div class="paginator" id="paginator-UnApproved_Planned">
-                                    </div>
+                <div class="tab-content">
+                    <!-- Current Stock Tab -->
+                    <div class="tab-pane fade show active" id="current-stock" role="tabpanel" aria-labelledby="current-stock-tab">
+                        <div class="table-responsive">
+                            <div id="tblRMStockCurrent">
+                                <div class="table-wrapper ">
+                                    <table id="RMStockCurrent" class="fixed-width-table table ">
+                                        <thead id="table-header-RMStockCurrent">
+                                        </thead>
+                                        <tbody id="table-body-RMStockCurrent">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td id="RowCountValue" class="text-end">Count:</td>
+                                                <td colspan="10" class="text-end">Totals</td>
+                                                <td id="totalChWt" class="text-end">0.000</td>
+                                                <td id="totalAcWt" class="text-end">0.000</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <div class="paginator" id="paginator-RMStockCurrent">
                                 </div>
                             </div>
                         </div>
-                </div>
+                    </div>
 
-            <!-- Slitted-Coil-Stock Tab -->
-            <div class="card">
-                <div class="tab-pane fade show active" id="slitted-coil-stock" role="tabpanel" aria-labelledby="slitted-coil-stock-tab">
-                    @* <div class="card col-md-12">
-                        <div class="card-body">
-                            <div class="row ">
-                                <div class="col-auto">
-                                    <label for="txtFromDateSlittedCoilStock" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
-                                    <input type="date" id="txtFromDateSlittedCoilStock" name="txtFromDateSlittedCoilStock" class="box_border form-control form-control-sm" required />
+                    <!-- UnApproved-Planned Tab -->
+                    <div class="tab-pane fade" id="unApproved-planned" role="tabpanel" aria-labelledby="unApproved-planned-tab">
+                        <div class="table-responsive">
+                            <div id="tblUnApproved_Planned">
+                                <div class="table-wrapper">
+                                    <table id="UnApproved_Planned" class="fixed-width-table table ">
+                                        <thead id="table-header-UnApproved_Planned">
+                                        </thead>
+                                        <tbody id="table-body-UnApproved_Planned">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="7" class="text-end">Totals</td>
+                                                <td id="totalUnApproved_Planned" class="text-end">0.000</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
                                 </div>
-                                <div class="col-auto">
-                                    <label for="txtToDateSlittedCoilStock" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
-                                    <input type="date" id="txtToDateSlittedCoilStock" name="txtToDateSlittedCoilStock" class="box_border form-control form-control-sm" required />
+                                <div class="paginator" id="paginator-UnApproved_Planned">
                                 </div>
-                                <div class="col-auto" style="margin-top:2.1rem">
-                                    <div><button type="button" onclick="ShowSlittedCoilStockList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> *@
-                    <div class="table-responsive">
-                        <div id="tblSlitted_Coil_Stock">
-                            <div class="table-wrapper">
-                                <table id="Slitted_Coil_Stock" class="fixed-width-table table ">
-                                    <thead id="table-header-Slitted_Coil_Stock">
-                                    </thead>
-                                    <tbody id="table-body-Slitted_Coil_Stock">
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="5" class="text-end">Totals</td>
-                                            <td id="totalSlitted_Coil_QtyPC" class="text-end">0</td>
-                                            <td id="totalSlitted_Coil_QtyMT" class="text-end">0.000</td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            <div class="paginator" id="paginator-Slitted_Coil_Stock">
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-                <!-- Dispatch Tab -->
-                    <div class="tab-pane fade show active" id="dispatch" role="tabpanel" aria-labelledby="dispatch-tab">
-                    <div class="card col-md-12">
-                        <div class="card-body">
-                            <div class="row ">
-                                <div class="col-auto">
-                                    <label for="txtFromDate" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
-                                    <input type="date" id="txtFromDate" name="txtFromDate" class="box_border form-control form-control-sm" required />
+                    <!-- Slitted-Coil-Stock Tab -->
+                    <div class="tab-pane fade" id="slitted-coil-stock" role="tabpanel" aria-labelledby="slitted-coil-stock-tab">
+                        <div class="table-responsive">
+                            <div id="tblSlitted_Coil_Stock">
+                                <div class="table-wrapper">
+                                    <table id="Slitted_Coil_Stock" class="fixed-width-table table ">
+                                        <thead id="table-header-Slitted_Coil_Stock">
+                                        </thead>
+                                        <tbody id="table-body-Slitted_Coil_Stock">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="5" class="text-end">Totals</td>
+                                                <td id="totalSlitted_Coil_QtyPC" class="text-end">0</td>
+                                                <td id="totalSlitted_Coil_QtyMT" class="text-end">0.000</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
                                 </div>
-                                <div class="col-auto">
-                                    <label for="txtToDate" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
-                                    <input type="date" id="txtToDate" name="txtToDate" class="box_border form-control form-control-sm" required />
-                                </div>
-                                <div class="col-auto" style="margin-top:2.1rem">
-                                    <div><button type="button" onclick="ShowDispatchList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button></div>
+                                <div class="paginator" id="paginator-Slitted_Coil_Stock">
                                 </div>
                             </div>
                         </div>
                     </div>
-                        <!-- Data Table -->
+
+                    <!-- Dispatch Tab -->
+                    <div class="tab-pane fade" id="dispatch" role="tabpanel" aria-labelledby="dispatch-tab">
+                        <div class="card col-md-12">
+                            <div class="card-body">
+                                <div class="row ">
+                                    <div class="col-auto">
+                                        <label for="txtFromDate" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtFromDate" name="txtFromDate" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-auto">
+                                        <label for="txtToDate" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtToDate" name="txtToDate" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-auto" style="margin-top:2.1rem">
+                                        <div><button type="button" onclick="ShowDispatchList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <div id="tbldispatch">
                                 <div class="table-wrapper">
@@ -388,76 +472,73 @@
                         </div>
                     </div>
 
-                <!-- Slitted Tab -->
-                    <div class="card">
-                <div class="tab-pane fade " id="slitted" role="tabpanel" aria-labelledby="slitted-tab" style="display:none">
-                    <div class="card col-md-12">
-                        <div class="card-body">
-                            <div class="row ">
-                                <div class="col-auto">
-                                    <label for="txtFromDateSlitted" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
-                                    <input type="date" id="txtFromDateSlitted" name="txtFromDateSlitted" class="box_border form-control form-control-sm" required />
-                                </div>
-                                <div class="col-auto">
-                                    <label for="txtToDateSlitted" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
-                                    <input type="date" id="txtToDateSlitted" name="txtToDateSlitted" class="box_border form-control form-control-sm" required />
-                                </div>
-                                <div class="col-auto" style="margin-top:2.1rem">
-                                    <div><button type="button" onclick="ShowSlittedList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button></div>
+                    <!-- Slitted Tab -->
+                    <div class="tab-pane fade" id="slitted" role="tabpanel" aria-labelledby="slitted-tab">
+                        <div class="card col-md-12">
+                            <div class="card-body">
+                                <div class="row ">
+                                    <div class="col-auto">
+                                        <label for="txtFromDateSlitted" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtFromDateSlitted" name="txtFromDateSlitted" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-auto">
+                                        <label for="txtToDateSlitted" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtToDateSlitted" name="txtToDateSlitted" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-auto" style="margin-top:2.1rem">
+                                        <div><button type="button" onclick="ShowSlittedList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>     
-                    <div class="table-responsive">
-                             <div id="tblSlitted">
-                                 <div class="table-wrapper">
+                        <div class="table-responsive">
+                            <div id="tblSlitted">
+                                <div class="table-wrapper">
                                     <table id="Slitted" class="fixed-width-table table ">
                                         <thead id="table-header-Slitted">
-                                         </thead>
+                                        </thead>
                                         <tbody id="table-body-Slitted">
-                                         </tbody>
-                                    <tfoot>
-                                       <tr>
-                                            <td colspan="8" class="text-end">Totals</td>
-                                            <td id="totalWt" class="text-end">0.000</td>
-                                            <td id="totalActWt" class="text-end">0.000</td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                        </tr>
-                                    </tfoot>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="8" class="text-end">Totals</td>
+                                                <td id="totalWt" class="text-end">0.000</td>
+                                                <td id="totalActWt" class="text-end">0.000</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
-                                 </div>
+                                </div>
                                 <div class="paginator" id="paginator-Slitted">
-                                 </div>
-                             </div>
-                         </div>
-                     </<div>
-                </div>
-
-                <!-- Job Work Tab -->
-                <div class="card">
-                    <div class="tab-pane fade" id="job-work" role="tabpanel" aria-labelledby="job-work-tab" style="display:none">
-                       <div class="card col-md-12">
-                        <div class="card-body">
-                            <div class="row ">
-                                <div class="col-auto">
-                                    <label for="txtFromDateJobWork" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
-                                    <input type="date" id="txtFromDateJobWork" name="txtFromDateJobWork" class="box_border form-control form-control-sm" required />
-                                </div>
-                                <div class="col-auto">
-                                    <label for="txtToDateJobWork" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
-                                    <input type="date" id="txtToDateJobWork" name="txtToDateJobWork" class="box_border form-control form-control-sm" required />
-                                </div>
-                                <div class="col-auto" style="margin-top:2.1rem">
-                                    <div><button type="button" onclick="ShowJobWorkList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button></div>
                                 </div>
                             </div>
                         </div>
-                    </div>  
+                    </div>
+
+                    <!-- Job Work Tab -->
+                    <div class="tab-pane fade" id="job-work" role="tabpanel" aria-labelledby="job-work-tab">
+                        <div class="card col-md-12">
+                            <div class="card-body">
+                                <div class="row ">
+                                    <div class="col-auto">
+                                        <label for="txtFromDateJobWork" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtFromDateJobWork" name="txtFromDateJobWork" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-auto">
+                                        <label for="txtToDateJobWork" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtToDateJobWork" name="txtToDateJobWork" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-auto" style="margin-top:2.1rem">
+                                        <div><button type="button" onclick="ShowJobWorkList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <div id="tblJobWorkData">
                                 <div class="table-wrapper">
@@ -466,19 +547,19 @@
                                         </thead>
                                         <tbody id="table-body-JobWorkData">
                                         </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <td colspan="8" class="text-end">Totals</td>
-                                                    <td id="totalWeight" class="text-end">0.000</td>
-                                                    <td id="totalActualWt" class="text-end">0.000</td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
-                                                </tr>
-                                            </tfoot>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="8" class="text-end">Totals</td>
+                                                <td id="totalWeight" class="text-end">0.000</td>
+                                                <td id="totalActualWt" class="text-end">0.000</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                                 <div class="paginator" id="paginator-JobWorkData">
@@ -486,34 +567,34 @@
                             </div>
                         </div>
                     </div>
-                 </div>
-                <!-- Stock Summary Tab -->
-                    <div class="card" style="display: inline-block; width: auto; max-width: 100%;">
-                        <div class="tab-pane fade" id="stock-summary" role="tabpanel" aria-labelledby="stock-summary-tab" style="display:none;">
-                            <div class="table-responsive" style="width: auto;">
-                                <div id="tblSummaryData">
-                                    <div class="table-wrapper">
-                                        <table id="SummaryData" class="fixed-width-table table" style="min-width:300px; width: auto;">
-                                            <thead id="table-header-SummaryData">
-                                            </thead>
-                                            <tbody id="table-body-SummaryData">
-                                            </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <td colspan="1" class="text-end">Totals</td>
-                                                    <td id="totalNoOFPCCoil" class="text-end">0</td>
-                                                    <td id="totalWeightStock" class="text-end">0.000</td>
-                                                    <td id="totalNoOFPC" class="text-end">0</td>
-                                                    <td id="totalWtStock" class="text-end">0.000</td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                    <div class="paginator" id="paginator-SummaryData"></div>
+
+                    <!-- Stock Summary Tab -->
+                    <div class="tab-pane fade" id="stock-summary" role="tabpanel" aria-labelledby="stock-summary-tab">
+                        <div class="table-responsive" style="width: auto;">
+                            <div id="tblSummaryData">
+                                <div class="table-wrapper">
+                                    <table id="SummaryData" class="fixed-width-table table" style="min-width:300px; width: auto;">
+                                        <thead id="table-header-SummaryData">
+                                        </thead>
+                                        <tbody id="table-body-SummaryData">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="1" class="text-end">Totals</td>
+                                                <td id="totalNoOFPCCoil" class="text-end">0</td>
+                                                <td id="totalWeightStock" class="text-end">0.000</td>
+                                                <td id="totalNoOFPC" class="text-end">0</td>
+                                                <td id="totalWtStock" class="text-end">0.000</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
                                 </div>
+                                <div class="paginator" id="paginator-SummaryData"></div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
