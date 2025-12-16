@@ -4,6 +4,8 @@
 
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
 <link href="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.css" rel="stylesheet" />
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <style>
     /* Custom column for 5 columns in a row */
@@ -53,6 +55,111 @@
 
     .table-responsive::-webkit-scrollbar-thumb:hover {
         background: #555;
+    }
+
+    /* Dashboard chart styling */
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin: 20px 0;
+    }
+
+    .dashboard-card {
+        border: 1px solid #dcdcdc;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        background: #ffffff;
+    }
+
+    .dashboard-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 15px;
+        text-align: center;
+        padding: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 5px;
+    }
+
+    .table-compact {
+        font-size: 13px;
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .table-compact th {
+        background-color: #f0f0f0;
+        font-weight: 600;
+        padding: 8px;
+        border: 1px solid #ddd;
+    }
+
+    .table-compact td {
+        padding: 6px 8px;
+        border: 1px solid #ddd;
+    }
+
+    .grand-total-row {
+        background-color: #e8f4f8;
+        font-weight: bold;
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+    }
+
+    .gp-weight-table {
+        background-color: #e0f7fa;
+    }
+
+    .base-table {
+        background-color: #fff9c4;
+    }
+
+    /* Scrollable table container with sticky footer */
+    .table-with-sticky-footer {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .table-scroll-wrapper {
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .table-footer-sticky {
+        border-top: 2px solid #333;
+        background-color: #e8f4f8;
+        font-weight: bold;
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .dashboard-table-container {
+        display: flex;
+        flex-direction: column;
+        height: 350px;
+    }
+
+    /* Column width specifications for 2-column tables */
+    .col-width-2-name {
+        width: 60%;
+    }
+
+    .col-width-2-value {
+        width: 40%;
+    }
+
+    /* Column width specifications for 4-column GP table */
+    .col-width-4-party {
+        width: 60%;
+    }
+
+    .col-width-4-value {
+        width: 20%;
     }
 </style>
 
@@ -266,7 +373,7 @@
             </div>
 
             <div class="col-lg-4 mb-0">
-                <div class="card" style="border:1px solid #dcdcdc; display: flex; flex-direction: column; height: 280px;">
+                <div class="card" style="border:1px solid #dcdccdc; display: flex; flex-direction: column; height: 280px;">
                     <div class="card-body p-0" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
                         <div class="table-responsive" style="flex: 1; max-height: 230px; overflow-y: auto;">
                             <table class="table table-sm table-hover mb-0">
@@ -307,7 +414,7 @@
                                 <thead class="table-light sticky-top">
                                     <tr>
                                         <th style="width: 40px;">S.no.</th>
-                                        <th>Party ID</th>
+                                        <th>Parties</th>
                                         <th class="text-end" style="width: 120px;">Record Count</th>
                                     </tr>
                                 </thead>
@@ -353,17 +460,153 @@
     </div>
 
     <div class="tab-pane fade" id="goldenCircle" role="tabpanel" aria-labelledby="goldenCircle-tab">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Golden Circle Client</h5>
-                <div class="table-responsive mt-2">
-                    <table id="goldenCircleTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
-                        <thead class="table-secondary" id="goldenCircleTableHeader">
-                        </thead>
-                        <tbody id="goldenCircleTableBody">
-                        </tbody>
-                    </table>
-                    <div class="paginator" id="paginator-goldenCircleTable">
+        <div class="container-fluid">
+            <!-- Row 1: Marketing Person Table and Base % Chart -->
+            <div class="row">
+                <!-- Marketing Person Weight Table -->
+                <div class="col-lg-3">
+                    <div class="dashboard-card">
+                        <div class="dashboard-title">Marketing Person Weight</div>
+                        <div class="dashboard-table-container">
+                            <div class="table-scroll-wrapper">
+                                <table class="table table-compact table-bordered table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr>
+                                            <th class="col-width-2-name">MGKT_PERSON</th>
+                                            <th class="text-end col-width-2-value">WEIGHT</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="mgktPersonWeightBody">
+                                        <tr>
+                                            <td colspan="2" class="text-center text-muted">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <table class="table table-compact table-bordered mb-0 table-footer-sticky">
+                                <tfoot id="mgktPersonWeightFooter">
+                                    <tr>
+                                        <td class="col-width-2-name"><strong>Grand total</strong></td>
+                                        <td class="text-end col-width-2-value"><strong>0.00</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Base % and Weight Table -->
+                <div class="col-lg-4">
+                    <div class="dashboard-card base-table">
+                        <div class="dashboard-title" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Base % and Weight</div>
+                        <div class="dashboard-table-container">
+                            <div class="table-scroll-wrapper">
+                                <table class="table table-compact table-bordered table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr>
+                                            <th class="col-width-2-name">BASE</th>
+                                            <th class="text-end col-width-2-value">WEIGHT</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="baseWeightBody">
+                                        <tr>
+                                            <td colspan="2" class="text-center text-muted">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <table class="table table-compact table-bordered mb-0 table-footer-sticky">
+                                <tfoot id="baseWeightFooter">
+                                    <tr>
+                                        <td class="col-width-2-name"><strong>Grand total</strong></td>
+                                        <td class="text-end col-width-2-value"><strong>0.00</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Base Wise Sales % Pie Chart -->
+                <div class="col-lg-5">
+                    <div class="dashboard-card">
+                        <div class="dashboard-title" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">Base wise Sales % with weight</div>
+                        <div class="chart-container">
+                            <canvas id="baseSalesPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Partywise Share Pie Chart and GP/Weight Table -->
+            <div class="row">
+                <!-- Partywise Share % Pie Chart -->
+                <div class="col-lg-5">
+                    <div class="dashboard-card">
+                        <div class="dashboard-title" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">Partywise Share % in Sales</div>
+                        <div class="chart-container">
+                            <canvas id="partySharePieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GP / Weight Table -->
+                <div class="col-lg-7">
+                    <div class="dashboard-card gp-weight-table">
+                        <div class="dashboard-title" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">GP / WEIGHT</div>
+                        <div class="dashboard-table-container">
+                            <div class="table-scroll-wrapper">
+                                <table class="table table-compact table-bordered table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr>
+                                            <th rowspan="2" class="col-width-4-party">PARTY_CODE</th>
+                                            <th colspan="3" class="text-center">GP / WEIGHT</th>
+                                        </tr>
+                                        <tr>
+                                            <th class="text-end col-width-4-value">High</th>
+                                            <th class="text-end col-width-4-value">Low</th>
+                                            <th class="text-end col-width-4-value">Medium</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="gpWeightBody">
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <table class="table table-compact table-bordered mb-0 table-footer-sticky">
+                                <tfoot id="gpWeightFooter">
+                                    <tr>
+                                        <td class="col-width-4-party"><strong>Grand total</strong></td>
+                                        <td class="text-end col-width-4-value"><strong>0.00</strong></td>
+                                        <td class="text-end col-width-4-value"><strong>0.00</strong></td>
+                                        <td class="text-end col-width-4-value"><strong>0.00</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Original Data Table (if needed) -->
+            <div class="row mt-3">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Golden Circle Client - Detailed Data</h5>
+                            <div class="table-responsive mt-2">
+                                <table id="goldenCircleTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                                    <thead class="table-secondary" id="goldenCircleTableHeader">
+                                    </thead>
+                                    <tbody id="goldenCircleTableBody">
+                                    </tbody>
+                                </table>
+                                <div class="paginator" id="paginator-goldenCircleTable">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
