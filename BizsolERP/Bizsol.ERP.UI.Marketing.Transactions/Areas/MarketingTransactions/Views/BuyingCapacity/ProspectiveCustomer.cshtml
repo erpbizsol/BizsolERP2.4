@@ -6,54 +6,164 @@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/ProspectiveCustomer.js"></script>
 
 <style>
+    /* Hide page scrollbar */
+    html {
+        overflow: hidden !important;
+        height: 100% !important;
+    }
+
+    body {
+        overflow: hidden !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Ensure main content area fits viewport without scrolling */
+    .row {
+        margin: 0 !important;
+    }
+    
+    .col-sm-12 {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* Main container for card and table - similar to #rmStockTabContent */
+    #prospectiveCustomerContent {
+        margin-top: .5rem;
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 150px);
+        min-height: 400px;
+        overflow: hidden;
+        flex: 1;
+    }
+
+    /* Prevent card and card-body from growing */
+    .card {
+        margin: 0 !important;
+        margin-bottom: 0 !important;
+    }
+
+    .card-body {
+        margin: 0 !important;
+        padding: 1rem !important;
+        flex-shrink: 0;
+    }
+
+    /* Prevent paginator from growing */
+    .paginator {
+        flex-shrink: 0;
+    }
+
     .fixed-width-table th, .fixed-width-table td {
         white-space: nowrap;
         min-width: auto;
     }
-</style>
-<div class="card">
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-3">
-                <label for="ddlMarketingMan" class="form-label">Sales Person <span class="text-danger">*</span></label>
-                <select id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" autocomplete="off" required></select>
-                @* <input list="ddlSalesPersonList" id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" onclick="$(this).val('');" placeholder="Sales Person" autocomplete="off" required>
-                <datalist id="ddlSalesPersonList"></datalist> *@
-            </div>
-            <div class="col-md-3">
-                <label for="ddlThikness" class="form-label">Thikness <span class="text-danger">*</span></label>
-                <select id="ddlThikness" name="ddlThikness" class="form-control form-control-sm box_border" placeholder="Thikness" autocomplete="off" required></select>
-            </div>
-            <div class="col-md-3">
-                <label for="ddlSize" class="form-label">Size <span class="text-danger">*</span></label>
-                <select list="ddlSize" id="ddlSize" name="ddlSize" class="form-control form-control-sm box_border" placeholder="Size" autocomplete="off" required></select>
-            </div>
-            <div class="col-md-3">
-                <label for="ddlGrade" class="form-label">Grade <span class="text-danger">*</span></label>
-                <select id="ddlGrade" name="ddlGrade" class="form-control form-control-sm box_border" placeholder="Grade" autocomplete="off" required></select>
-            </div>
-            <div class="col-md-3">
-                <label for="ddlISCode" class="form-label">IS Code <span class="text-danger">*</span></label>
-                <select id="ddlISCode" name="ddlISCode" class="form-control form-control-sm box_border" placeholder="IS Code" autocomplete="off" required></select>
-            </div>
-            <div class="col-md-3">
-                <label for="txtStatus" class="form-label">Status <span class="text-danger">*</span></label>
-                <input id="txtStatus" name="txtStatus" class="form-control form-control-sm box_border" placeholder="Status" value="Active" autocomplete="off" required readonly/>
-            </div>
 
-            <div class="col-md-3 without-label-field">
-                <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+    /* Table wrapper with flex layout - similar to RollingPlanSheet */
+    .table-wrapper {
+        position: relative;
+        overflow: auto; /* Shows scrollbars (vertical and horizontal) when content exceeds container */
+        flex: 1; /* Take remaining space inside prospectiveCustomerContent */
+        min-height: 0; /* Allow it to shrink when viewport is small */
+        margin: 0 !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Ensure table takes full width */
+    #ProspectiveCustomer {
+        width: 100%;
+        margin: 0 !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Sticky table header */
+    #ProspectiveCustomer thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #fff;
+    }
+
+    #ProspectiveCustomer thead th {
+        background-color: #558bc0 !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        z-index: 11;
+        border-bottom: 2px solid #dee2e6;
+        padding-right: 15px !important;
+    }
+
+    /* Responsive height adjustments for smaller screens - similar to RollingPlanSheet */
+    @@media (max-height: 800px) {
+        #prospectiveCustomerContent {
+            max-height: calc(100vh - 150px);
+        }
+        .table-wrapper {
+            min-height: 300px;
+        }
+    }
+
+    @@media (max-height: 600px) {
+        #prospectiveCustomerContent {
+            max-height: calc(100vh - 120px);
+        }
+        .table-wrapper {
+            min-height: 250px;
+        }
+    }
+</style>
+<div class="row">
+    <div class="col-sm-12">
+        <div class="card p-1" id="prospectiveCustomerContent">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="ddlMarketingMan" class="form-label">Sales Person <span class="text-danger">*</span></label>
+                        <select id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" autocomplete="off" required></select>
+                        @* <input list="ddlSalesPersonList" id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" onclick="$(this).val('');" placeholder="Sales Person" autocomplete="off" required>
+                        <datalist id="ddlSalesPersonList"></datalist> *@
+                    </div>
+                    <div class="col-md-3">
+                        <label for="ddlThikness" class="form-label">Thikness <span class="text-danger">*</span></label>
+                        <select id="ddlThikness" name="ddlThikness" class="form-control form-control-sm box_border" placeholder="Thikness" autocomplete="off" required></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="ddlSize" class="form-label">Size <span class="text-danger">*</span></label>
+                        <select list="ddlSize" id="ddlSize" name="ddlSize" class="form-control form-control-sm box_border" placeholder="Size" autocomplete="off" required></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="ddlGrade" class="form-label">Grade <span class="text-danger">*</span></label>
+                        <select id="ddlGrade" name="ddlGrade" class="form-control form-control-sm box_border" placeholder="Grade" autocomplete="off" required></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="ddlISCode" class="form-label">IS Code <span class="text-danger">*</span></label>
+                        <select id="ddlISCode" name="ddlISCode" class="form-control form-control-sm box_border" placeholder="IS Code" autocomplete="off" required></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="txtStatus" class="form-label">Status <span class="text-danger">*</span></label>
+                        <input id="txtStatus" name="txtStatus" class="form-control form-control-sm box_border" placeholder="Status" value="Active" autocomplete="off" required readonly/>
+                    </div>
+
+                    <div class="col-md-3 without-label-field">
+                        <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+                    </div>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table id="ProspectiveCustomer" class="fixed-width-table table">
+                    <thead id="table-header-ProspectiveCustomer">
+                    </thead>
+                    <tbody id="table-body-ProspectiveCustomer">
+                    </tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-ProspectiveCustomer">
             </div>
         </div>
     </div>
-</div>
-<div class="table-wrapper ">
-    <table id="ProspectiveCustomer" class="fixed-width-table table">
-        <thead id="table-header-ProspectiveCustomer">
-        </thead>
-        <tbody id="table-body-ProspectiveCustomer">
-        </tbody>
-    </table>
-</div>
-<div class="paginator" id="paginator-ProspectiveCustomer">
 </div>
