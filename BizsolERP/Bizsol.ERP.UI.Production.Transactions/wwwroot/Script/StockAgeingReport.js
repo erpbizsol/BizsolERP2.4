@@ -8,6 +8,7 @@ $(document).ready(function () {
     GetCategoryList();
     GetItemTypeList();
     GetWarehouseList();
+    $('#StockAgeingReportTableCard').hide();
     $("#btnStockAgeingReportShow").click(function () {
         GetStockAgeingReportList();
     });
@@ -81,6 +82,7 @@ function GetStockAgeingReportList() {
     Showloader();
     StockAgeingReportService.GetStockAgeingReportList(CategoryName, ItemTypeName, WarehouseName, AsOnDate).then(function (response) {
         HideLoader();
+        $('#StockAgeingReportTableCard').show();
         $('#StockAgeingReport').show();
         if (response && response.length > 0) {
             response = response.map(item => {
@@ -115,12 +117,14 @@ function GetStockAgeingReportList() {
 
         } else {
             HideLoader();
+            $('#StockAgeingReportTableCard').hide();
             $('#StockAgeingReport').hide();
             clearStockAgeingFooter();
             toastr.error('No Data Found');
         }
     }).catch(function (error) {
         HideLoader();
+        $('#StockAgeingReportTableCard').hide();
         $('#StockAgeingReport').hide();
         clearStockAgeingFooter();
         toastr.error(error.Msg || 'Error During Get Rolling Plan Sheet');

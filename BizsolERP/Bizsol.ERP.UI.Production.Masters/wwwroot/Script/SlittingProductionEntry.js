@@ -44,6 +44,7 @@ let indxHiddenCol_tbSlittingReceivedDetails = 12;
 
 let G_SlittingPlanMaster_Code = 0;
 let G_Row = ''
+let G_NewPlanSummary = []; // holds last GetSlittingPlanOrEntrySummary response for New mode
 
 let G_UserMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
 let prevFocus;
@@ -59,29 +60,324 @@ function ChangeMode(Mode) {
         $('#DivProductionGPForm').hide();
         $('#DivProductionGPViewGrid').show();
     }
-
 }
-function SlittingProductionEntry_ShowPlanGrid() {
-    let FromDate = $('#txtFromDate').val(), Todate = $('#txtToDate').val();
+function SlittingProductionEntry_GetValue(item, keys, prefix = '', defaultValue = '') {
+    if (!item) return defaultValue;
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        if (item[key] !== undefined && item[key] !== null && item[key] !== '') {
+            return prefix + item[key];
+        }
+    }
+    return defaultValue;
+}
+
+function SlittingProductionEntry_BindNewPlanLayout(plans) {
+    // Clear previous data
+    $('#spPlanNo').text('');
+    $('#spPlanDate').text('');
+    $('#spMillName').text('Mill :');
+    $('#spProcessName').text('Process :');
+    $('#spCoilId').text('Coil Id :');
+    $('#spCoilSize').text('Coil Size :');
+    $('#spCoilWeight').text('Coil Weight :');
+    $('#spOutput').text('Output :');
+    $('#spStartTimeCell').text('');
+    $('#spEndTimeCell').text('');
+    $('#spEditCell').html('');
+    $('#upcomingPlansContainer').empty();
+    $('#upcomingPlansSection').hide();
+
+    if (!plans || plans.length === 0) {
+        return;
+    }
+
+    // Bind main plan (first item)
+    const first = plans[0];
+
+    const planNo = SlittingProductionEntry_GetValue(first, ['PlanNo', 'Plan No', 'Plan_No', 'PackingList No'], '');
+    const planDate = SlittingProductionEntry_GetValue(first, ['PlanDate', 'Plan Date', 'Date'], '');
+    const millName = SlittingProductionEntry_GetValue(first, ['Desp', 'Mill Name', 'Mill', 'MachineName', 'Machine Name'], '');
+    const processName = SlittingProductionEntry_GetValue(first, ['ProcessName', 'Process Name', 'Process', 'ProcessDesp'], '');
+    const coilId = SlittingProductionEntry_GetValue(first, ['IdentificationNo', 'Identification No', 'CoilId', 'Coil ID'], '');
+    const coilSize = SlittingProductionEntry_GetValue(first, ['CoilSize', 'SizeDesp', 'Size Desp'], '');
+    const coilWeight = SlittingProductionEntry_GetValue(first, ['CoilWeight', 'Weight', 'QtyKG', 'Qty KG'], '');
+    const output = SlittingProductionEntry_GetValue(first, ['Slitting Combination', 'OutPut', 'SlittingCombination', 'OutPutDesp'], '');
+    const masterCode = SlittingProductionEntry_GetValue(first, ['SlittingPlanMaster_Code', 'Code'], '');
+    const mainInTime = SlittingProductionEntry_GetValue(first, ['InTime', 'In Time', 'In_Time', 'StartTime', 'Start Time'], '');
+
+    $('#spPlanNo').text(planNo);
+    $('#spPlanDate').text(planDate);
+    if (millName) {
+        $('#spMillName').text('Mill : ' + millName);
+    }
+    if (processName) {
+        $('#spProcessName').text('Process : ' + processName);
+    }
+    if (coilId) {
+        $('#spCoilId').text('Coil Id : ' + coilId);
+    }
+    if (coilSize) {
+        $('#spCoilSize').text('Coil Size : ' + coilSize);
+    }
+    if (coilWeight) {
+        $('#spCoilWeight').text('Coil Weight : ' + coilWeight);
+    }
+    if (output) {
+        $('#spOutput').text('Output : ' + output);
+    }
+    // Bind start time from API (InTime) if present
+    if (mainInTime) {
+        $('#spStartTimeCell').text(mainInTime);
+    }
     
+    // Set Start button data attribute and Edit button
+    $('.btn-start-main').attr('data-plan-code', masterCode);
+    // Enable/Disable Start button based on InTime:
+    // If InTime is blank => enabled (disabled = false)
+    // Else => disabled (disabled = true)
+    $('.btn-start-main').prop('disabled', false);
+    $('.btn-start-main').removeClass('btn-secondary').addClass('btn-success');
+    if (mainInTime) {
+        $('.btn-start-main').prop('disabled', true);
+        $('.btn-start-main').removeClass('btn-success').addClass('btn-secondary');
+    }
+    if (masterCode) {
+        $('#spEditCell').html('<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_EditOrView(\'Y\',\'' + masterCode + '\')"> <i class="fa fa-pencil"></i></a>');
+    }
+
+    // Bind upcoming plans (index 1 onwards) - create dynamic cards
+    if (plans.length > 1) {
+        $('#upcomingPlansSection').show();
+        
+        for (let i = 1; i < plans.length; i++) {
+            const item = plans[i];
+            const rowPlanNo = SlittingProductionEntry_GetValue(item, ['PlanNo', 'Plan No', 'Plan_No', 'PackingList No'], '');
+            const rowPlanDate = SlittingProductionEntry_GetValue(item, ['PlanDate', 'Plan Date', 'Date'], '');
+            const rowMillName = SlittingProductionEntry_GetValue(item, ['Desp', 'Mill Name', 'Mill', 'MachineName', 'Machine Name'], '');
+            const rowProcessName = SlittingProductionEntry_GetValue(item, ['ProcessName', 'Process Name', 'Process', 'ProcessDesp'], '');
+            const rowCoilId = SlittingProductionEntry_GetValue(item, ['IdentificationNo', 'Identification No', 'CoilId', 'Coil ID'], '');
+            const rowCoilSize = SlittingProductionEntry_GetValue(item, ['CoilSize', 'SizeDesp', 'Size Desp'], '');
+            const rowCoilWeight = SlittingProductionEntry_GetValue(item, ['CoilWeight', 'Weight', 'QtyKG', 'Qty KG'], '');
+            const rowOutput = SlittingProductionEntry_GetValue(item, ['Slitting Combination', 'OutPut', 'SlittingCombination', 'OutPutDesp'], '');
+            const rowMasterCode = SlittingProductionEntry_GetValue(item, ['SlittingPlanMaster_Code', 'Code'], '');
+            const rowInTime = SlittingProductionEntry_GetValue(item, ['InTime', 'In Time', 'In_Time', 'StartTime', 'Start Time'], '');
+
+            let editBtn = '';
+            if (rowMasterCode) {
+                editBtn = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_EditOrView(\'Y\',\'' + rowMasterCode + '\')"> <i class="fa fa-pencil"></i></a>';
+            }
+
+            let startDisabledAttr = '';
+            if (rowInTime) {
+                startDisabledAttr = ' disabled';
+            }
+
+            let upcomingCardHtml = '<div style="margin:auto !important;" class="card slit-plan-card col-sm-6" data-plan-index="' + i + '" data-plan-code="' + rowMasterCode + '">' +
+                '<div class="card-body">' +
+                '<div class="table-responsive">' +
+                '<table class="slit-plan-table">' +
+                '<tr>' +
+                '<th style="width:16%; min-width:80px;">Plan No</th>' +
+                '<td style="width:15%; min-width:100px;">' + (rowPlanNo || '') + '</td>' +
+                '<td colspan="6" class="d-none d-md-table-cell"></td>' +
+                '<th style="width:20%; min-width:80px;">Plan Date</th>' +
+                '<td style="width:25%; min-width:100px;">' + (rowPlanDate || '') + '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td colspan="10" class="slit-plan-header-main">' +
+                (rowMillName ? 'Mill : ' + rowMillName : 'Mill :') +
+                '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td colspan="10" class="slit-plan-header-sub">' +
+                (rowProcessName ? 'Process : ' + rowProcessName : 'Process :') +
+                '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td colspan="10" class="slit-plan-coil-id">' +
+                (rowCoilId ? 'Coil Id : ' + rowCoilId : 'Coil Id :') +
+                '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td colspan="10" class="slit-plan-coil-size">' +
+                (rowCoilSize ? 'Coil Size : ' + rowCoilSize : 'Coil Size :') +
+                '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td colspan="10" class="slit-plan-coil-weight">' +
+                (rowCoilWeight ? 'Coil Weight : ' + rowCoilWeight : 'Coil Weight :') +
+                '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td colspan="10" class="slit-plan-output">' +
+                (rowOutput ? 'Output : ' + rowOutput : 'Output :') +
+                '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td colspan="10" class="slit-plan-actions-row">' +
+                '<div class="d-flex align-items-center w-100">' +
+                // Left: Start button + time
+                '<div class="d-flex align-items-center" style="flex:1; justify-content:flex-start; gap:8px;">' +
+                '<button type="button" class="btn btn-success btn-height btn-sm btn-start-upcoming" data-plan-index="' + i + '" data-plan-code="' + rowMasterCode + '"' + startDisabledAttr + '>Start Time</button>' +
+                '<span class="upcoming-start-time-' + i + ' slit-plan-actions-time">' + (rowInTime || '') + '</span>' +
+                '</div>' +
+                // Center: Edit button
+                '<div class="upcoming-edit-cell-' + i + '" style="flex:0; text-align:center;">' + editBtn + '</div>' +
+                // Right: End button
+                '<div style="flex:1; display:flex; justify-content:flex-end;">' +
+                '<button type="button" class="btn btn-danger btn-height btn-sm btn-end-upcoming" data-plan-index="' + i + '" data-plan-code="' + rowMasterCode + '" disabled>End Time</button>' +
+                '</div>' +
+                '</div>' +
+                '</td>' +
+                '</tr>' +
+                '</table>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+
+            $('#upcomingPlansContainer').append(upcomingCardHtml);
+        }
+    }
+}
+
+// Event handler for Start button on main plan
+$(document).on('click', '.btn-start-main', function () {
+    let planCode = $(this).data('plan-code');
+
+    if (planCode && planCode !== '' && planCode !== 0 && planCode !== '0') {
+        Showloader();
+        SlittingProductionEntryService.StartTimeUpdated(planCode).then(function (resp) {
+            HideLoader();
+            if (resp && resp.Status === 'N') {
+                toastr.error(resp.Msg || 'Failed to update start time.');
+                return;
+            }
+        }).catch(function () {
+            HideLoader();
+        });
+    }
+
+    let now = new Date();
+    let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    $('#spStartTimeCell').text(timeText);
+
+    // persist start time in main plan object (index 0)
+    if (Array.isArray(G_NewPlanSummary) && G_NewPlanSummary.length > 0) {
+        G_NewPlanSummary[0].StartTime = timeText;
+        G_NewPlanSummary[0].InTime = timeText;
+    }
+    
+    // Disable the button after starting
+    $(this).prop('disabled', true);
+    $(this).removeClass('btn-success').addClass('btn-secondary');
+});
+
+// Event handler for End button on main plan
+$(document).on('click', '.btn-end-main', function () {
+    let now = new Date();
+    let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    $('#spEndTimeCell').text(timeText);
+
+    // Disable the button after ending
+    $(this).prop('disabled', true);
+    $(this).removeClass('btn-danger').addClass('btn-secondary');
+});
+
+// Event handler for Start button on upcoming plans
+$(document).on('click', '.btn-start-upcoming', function () {
+    let planIndex = $(this).data('plan-index');
+    let planCode = $(this).data('plan-code');
+
+    let now = new Date();
+    let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    if (planCode && planCode !== '' && planCode !== 0 && planCode !== '0') {
+        Showloader();
+        SlittingProductionEntryService.StartTimeUpdated(planCode).then(function (resp) {
+            HideLoader();
+            if (resp && resp.Status === 'N') {
+                toastr.error(resp.Msg || 'Failed to update start time.');
+                return;
+            }
+        }).catch(function () {
+            HideLoader();
+        });
+    }
+
+    // update in-memory list
+    if (Array.isArray(G_NewPlanSummary) && planIndex > 0 && planIndex < G_NewPlanSummary.length) {
+        G_NewPlanSummary[planIndex].StartTime = timeText;
+        G_NewPlanSummary[planIndex].InTime = timeText;
+
+        // move this plan to top (index 0)
+        const selectedPlan = G_NewPlanSummary.splice(planIndex, 1)[0];
+        G_NewPlanSummary.unshift(selectedPlan);
+
+        // rebind layout so selected plan becomes main at top
+        SlittingProductionEntry_BindNewPlanLayout(G_NewPlanSummary);
+    } else {
+        // fallback: just set text if array not available
+        $('.upcoming-start-time-' + planIndex).text(timeText);
+    }
+
+    // Disable the button after starting
+    $(this).prop('disabled', true);
+    $(this).removeClass('btn-success').addClass('btn-secondary');
+});
+$(document).on('click', '.btn-end-upcoming', function () {
+    let planIndex = $(this).data('plan-index');
+    let now = new Date();
+    let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    
+    $('.upcoming-end-time-' + planIndex).text(timeText);
+    
+    // Disable the button after starting
+    $(this).prop('disabled', true);
+    $(this).removeClass('btn-danger').addClass('btn-secondary');
+});
+function SlittingProductionEntry_ShowPlanGrid() {
+    let filterType = $('input[name="filterType"]:checked').val();
+    let FromDate = $('#txtFromDate').val(), Todate = $('#txtToDate').val();
+
     if (FromDate == "" && Todate == "") {
         return false;
     }
-    let filterType = $('input[name="filterType"]:checked').val();
+
+    // API should receive FilterType=Plan even when UI filterType is 'New'
+    let apiFilterType = filterType === 'New' ? 'Plan' : filterType;
+
     Showloader();
-    SlittingProductionEntryService.GetSlittingPlanOrEntrySummary(FromDate, Todate,filterType).then(function (response) {
+    SlittingProductionEntryService.GetSlittingPlanOrEntrySummary(FromDate, Todate, apiFilterType).then(function (response) {
         HideLoader();
+
+        if (filterType === 'New') {
+            G_NewPlanSummary = Array.isArray(response) ? response : [];
+
+            $('#NewPlanLayout').show();
+            $('.fixed-height-table').hide();
+            $('#paginator-tbProductionGPView').hide();
+
+            SlittingProductionEntry_BindNewPlanLayout(G_NewPlanSummary);
+            return;
+        } else {
+            $('#NewPlanLayout').hide();
+            $('.fixed-height-table').show();
+            $('#paginator-tbProductionGPView').show();
+        }
+
         if (filterType == 'Plan') {
             response.forEach(item => {
                 item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_EditOrView(\'Y\',\'' + item.SlittingPlanMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>'
             });
         }
         else {
-            
-                response.forEach(item => {
-                    item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_Print(\'' + item["Identification No"] + '\')"> <i class="fa fa-print"></i></a>'
-                });
-            
+
+            response.forEach(item => {
+                item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_Print(\'' + item["Identification No"] + '\')"> <i class="fa fa-print"></i></a>'
+            });
+
         }
 
        // console.log(response);
@@ -97,7 +393,7 @@ function SlittingProductionEntry_ShowPlanGrid() {
         const Button = false;
         const showButtons = []
         const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["QtyMT", "QtyPC", "QtyMTRS","SlittingPlanMaster_Code"];
+        const hiddenColumns = ["QtyMT", "QtyPC", "QtyMTRS", "SlittingPlanMaster_Code", "Desp", "Slitting Combination","InTime"];
         const ColumnAlignment = {
             "Qty PC": 'right',
             "Qty KG": 'right',
