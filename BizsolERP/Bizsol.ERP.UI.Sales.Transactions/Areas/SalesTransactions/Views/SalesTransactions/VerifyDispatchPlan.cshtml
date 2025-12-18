@@ -372,6 +372,25 @@
     #dvUpdateQty .modal-content {
         width: 100%;
     }
+
+    /* Update Qty modal: mobile friendly */
+    #dvUpdateQty #QtyUpdateGridWrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    @@media (max-width: 576px) {
+        #dvUpdateQty .modal-dialog {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+        }
+
+        #dvUpdateQty .modal-body {
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+    }
 </style>
 <div class="row">
     <div class="col-sm-12">
@@ -514,15 +533,15 @@
     </div>
 </div>
 <div class="modal fade rps-detail-modal" id="dvUpdateQty" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content ">
             <div class="modal-header">
                 <h5 class="modal-title" id="detail-modal-title">Update Qty</h5>
                 <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
             </div>
             <div class="modal-body">
-                <div id="QtyUpdateGridWrapper">
-                    <table id="tblUpdateGridWrapper" class="table table-bordered table-striped table-sm">
+                <div id="QtyUpdateGridWrapper" class="table-responsive">
+                    <table id="tblUpdateGridWrapper" class="table table-bordered table-striped table-sm mb-0">
                         <thead>
                             <tr>
                                 <th style="width:40px;text-align:center;">Sr No</th>
