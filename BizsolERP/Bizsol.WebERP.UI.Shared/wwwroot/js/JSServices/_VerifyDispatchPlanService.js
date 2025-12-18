@@ -60,6 +60,23 @@ const VerifyDispatchPlanService = {
             }
         );
     },
+    GetDespatchAdviceQtyForUpdate: function GetDespatchAdviceQtyForUpdate(Code) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetDespatchAdviceQtyForUpdate?Code=" + encodeURIComponent(Code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SaveDespatchAdviceQty: function SaveDespatchAdviceQty(Data) {
+        var json_data = JSON.stringify(Data, null, 2);
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/SaveDespatchAdviceQty`;
+        return promiseAjaxCallApi.CallAPI('POST', URL, json_data).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VerifyDispatchPlanService }

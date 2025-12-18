@@ -1,10 +1,18 @@
 import { RollingPlanSheetService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RollingPlanSheetService.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 let G_FromDate = '';
 let G_ToDate = '';
 $(document).ready(function () {
     GetRollingPlanSheetList();
+    var urlParams = BizSolHelperFunction.getUrlVars();
+    var menuValue = decodeURI(urlParams['ModuleDesp']);
+    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
+        $("#ERPHeading").text(menuValue);
+    } else {
+        $("#ERPHeading").text("Rolling Plan Sheet");
+    }
     $(document).on('click', '#dispatch-tab', function () {
         clearTable();
         $('#date-filter-bar').show();
