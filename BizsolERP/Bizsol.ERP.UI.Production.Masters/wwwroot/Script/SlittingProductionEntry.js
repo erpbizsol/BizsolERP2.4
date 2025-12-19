@@ -44,6 +44,7 @@ let indxHiddenCol_tbSlittingReceivedDetails = 12;
 
 let G_SlittingPlanMaster_Code = 0;
 let G_Row = ''
+let G_NewPlanSummary = []; // holds last GetSlittingPlanOrEntrySummary response for New mode
 
 let G_UserMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
 let prevFocus;
@@ -59,29 +60,325 @@ function ChangeMode(Mode) {
         $('#DivProductionGPForm').hide();
         $('#DivProductionGPViewGrid').show();
     }
-
 }
-function SlittingProductionEntry_ShowPlanGrid() {
-    let FromDate = $('#txtFromDate').val(), Todate = $('#txtToDate').val();
+function SlittingProductionEntry_GetValue(item, keys, prefix = '', defaultValue = '') {
+    if (!item) return defaultValue;
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        if (item[key] !== undefined && item[key] !== null && item[key] !== '') {
+            return prefix + item[key];
+        }
+    }
+    return defaultValue;
+}
+function SlittingProductionEntry_IsBlank(value) {
+    return value === undefined || value === null || value === '';
+}
+function SlittingProductionEntry_GetInTimeValue(item) {
+    return SlittingProductionEntry_GetValue(item, ['InTime', 'In Time', 'In_Time', 'StartTime', 'Start Time'], '');
+}
+function SlittingProductionEntry_GetPriorityNo(item) {
+    let p = SlittingProductionEntry_GetValue(item, ['Priority', 'Priority No', 'PriorityNo', 'priority'], '');
+    if (SlittingProductionEntry_IsBlank(p)) {
+        return 999999;
+    }
+    let n = parseFloat(p);
+    if (isNaN(n)) {
+        return 999999;
+    }
+    return n;
+}
+function SlittingProductionEntry_GetPlanCode(item) {
+    return SlittingProductionEntry_GetValue(item, ['SlittingPlanMaster_Code', 'Code'], '');
+}
+function SlittingProductionEntry_FindPlanIndexByCode(list, planCode) {
+    if (!Array.isArray(list)) {
+        return -1;
+    }
+    for (let i = 0; i < list.length; i++) {
+        let code = SlittingProductionEntry_GetPlanCode(list[i]);
+        if (code !== '' && planCode !== '' && code.toString() === planCode.toString()) {
+            return i;
+        }
+    }
+    return -1;
+}
+function SlittingProductionEntry_SortPlansByPriority(list) {
+    list.sort(function (a, b) {
+        return SlittingProductionEntry_GetPriorityNo(a) - SlittingProductionEntry_GetPriorityNo(b);
+    });
+}
+
+function SlittingProductionEntry_BuildPlanCardHtml(item, isMainCard) {
+    const planNo = SlittingProductionEntry_GetValue(item, ['PlanNo', 'Plan No', 'Plan_No', 'PackingList No'], '');
+    const planDate = SlittingProductionEntry_GetValue(item, ['PlanDate', 'Plan Date', 'Date'], '');
+    const millName = SlittingProductionEntry_GetValue(item, ['Desp', 'Mill Name', 'Mill', 'MachineName', 'Machine Name'], '');
+    const processName = SlittingProductionEntry_GetValue(item, ['ProcessName', 'Process Name', 'Process', 'ProcessDesp'], '');
+    const coilId = SlittingProductionEntry_GetValue(item, ['IdentificationNo', 'Identification No', 'CoilId', 'Coil ID'], '');
+    const coilSize = SlittingProductionEntry_GetValue(item, ['CoilSize', 'SizeDesp', 'Size Desp'], '');
+    const coilWeight = SlittingProductionEntry_GetValue(item, ['CoilWeight', 'Weight', 'QtyKG', 'Qty KG'], '');
+    const output = SlittingProductionEntry_GetValue(item, ['Slitting Combination', 'OutPut', 'SlittingCombination', 'OutPutDesp'], '');
+    const planCode = SlittingProductionEntry_GetPlanCode(item);
+    const inTime = SlittingProductionEntry_GetInTimeValue(item);
+
+    let editBtn = '';
+    if (planCode) {
+        editBtn = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_EditOrView(\'Y\',\'' + planCode + '\')"> <i class="fa fa-pencil"></i></a>';
+    }
+
+    let startDisabledAttr = '';
+    let startBtnClass = 'btn-success';
+    if (!SlittingProductionEntry_IsBlank(inTime)) {
+        startDisabledAttr = ' disabled';
+        startBtnClass = 'btn-secondary';
+    }
+
+    let startBtnCssClass = 'btn-start-upcoming';
+    if (isMainCard === true) {
+        startBtnCssClass = 'btn-start-main';
+    }
+
+    let endBtnCssClass = 'btn-end-upcoming';
+    if (isMainCard === true) {
+        endBtnCssClass = 'btn-end-main';
+    }
+
+    let html = '<div class="card slit-plan-card col-12 col-sm-6 mt-3" data-plan-code="' + planCode + '">' +
+        '<div class="card-body">' +
+        '<div class="table-responsive">' +
+        '<table class="slit-plan-table">' +
+        '<tr>' +
+        '<th style="width:16%; min-width:80px;">Plan No</th>' +
+        '<td style="width:15%; min-width:100px;">' + (planNo || '') + '</td>' +
+        '<td colspan="6" class="d-none d-md-table-cell"></td>' +
+        '<th style="width:20%; min-width:80px;">Plan Date</th>' +
+        '<td style="width:25%; min-width:100px;">' + (planDate || '') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-header-main">' + (millName ? 'Mill : ' + millName : 'Mill :') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-header-sub">' + (processName ? 'Process : ' + processName : 'Process :') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-coil-id">' + (coilId ? 'Coil Id : ' + coilId : 'Coil Id :') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-coil-size">' + (coilSize ? 'Coil Size : ' + coilSize : 'Coil Size :') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-coil-weight">' + (coilWeight ? 'Coil Weight : ' + coilWeight : 'Coil Weight :') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-output">' + (output ? 'Output : ' + output : 'Output :') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-actions-row">' +
+        '<div class="d-flex align-items-center w-100">' +
+        '<div class="d-flex align-items-center" style="flex:1; justify-content:flex-start; gap:8px;">' +
+        '<button type="button" class="btn ' + startBtnClass + ' btn-height btn-sm ' + startBtnCssClass + '" data-plan-code="' + planCode + '"' + startDisabledAttr + '>Start Time</button>' +
+        '<span class="slit-plan-actions-time">' + (inTime || '') + '</span>' +
+        '</div>' +
+        '<div style="flex:0; text-align:center;">' + editBtn + '</div>' +
+        '<div style="flex:1; display:flex; justify-content:flex-end;">' +
+        '<button type="button" class="btn btn-danger btn-height btn-sm ' + endBtnCssClass + '" disabled>End Time</button>' +
+        '</div>' +
+        '</div>' +
+        '</td>' +
+        '</tr>' +
+        '</table>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+
+    return html;
+}
+
+function SlittingProductionEntry_BindNewPlanLayout(plans) {
+    // Clear previous data
+    $('#mainPlanCard').empty();
+    $('#upcomingPlansContainer').empty();
+    $('#upcomingPlansSection').hide();
+
+    if (!plans || plans.length === 0) {
+        return;
+    }
+
+    // Split by Priority + InTime:
+    // - Main cards: Priority is NOT blank AND InTime is NOT blank (started + prioritized)
+    // - Upcoming cards: everything else (not started / missing priority)
+    let mainCards = [];
+    let upcomingCards = [];
+
+    for (let i = 0; i < plans.length; i++) {
+        let pVal = SlittingProductionEntry_GetValue(plans[i], ['Priority', 'Priority No', 'PriorityNo', 'priority'], '');
+        let inTime = SlittingProductionEntry_GetInTimeValue(plans[i]);
+
+        if (!SlittingProductionEntry_IsBlank(pVal) && !SlittingProductionEntry_IsBlank(inTime)) {
+            mainCards.push(plans[i]);
+        } else {
+            upcomingCards.push(plans[i]);
+        }
+    }
+
+    SlittingProductionEntry_SortPlansByPriority(mainCards);
+    SlittingProductionEntry_SortPlansByPriority(upcomingCards);
+
+    // Render main cards (multiple)
+    for (let i = 0; i < mainCards.length; i++) {
+        $('#mainPlanCard').append(SlittingProductionEntry_BuildPlanCardHtml(mainCards[i], true));
+    }
+
+    // If there is no main card (no started+priority), show first upcoming as main to avoid blank screen
+    if (mainCards.length === 0 && upcomingCards.length > 0) {
+        $('#mainPlanCard').append(SlittingProductionEntry_BuildPlanCardHtml(upcomingCards[0], true));
+        upcomingCards.splice(0, 1);
+    }
+
+    // Render upcoming cards
+    if (upcomingCards.length > 0) {
+        $('#upcomingPlansSection').show();
+        for (let i = 0; i < upcomingCards.length; i++) {
+            $('#upcomingPlansContainer').append(SlittingProductionEntry_BuildPlanCardHtml(upcomingCards[i], false));
+        }
+    }
+}
+
+// Event handler for Start button on main plan
+$(document).on('click', '.btn-start-main', function () {
+    let planCode = $(this).data('plan-code');
+
+    if (planCode && planCode !== '' && planCode !== 0 && planCode !== '0') {
+        Showloader();
+        SlittingProductionEntryService.StartTimeUpdated(planCode).then(function (resp) {
+            HideLoader();
+            if (resp && resp.Status === 'N') {
+                toastr.error(resp.Msg || 'Failed to update start time.');
+                return;
+            }
+        }).catch(function () {
+            HideLoader();
+        });
+    }
+
+    let now = new Date();
+    let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    // update the time text inside the same card
+    $(this).closest('.slit-plan-actions-row').find('.slit-plan-actions-time').text(timeText);
+
+    // persist start time in the selected plan item by code
+    let idx = SlittingProductionEntry_FindPlanIndexByCode(G_NewPlanSummary, planCode);
+    if (idx >= 0) {
+        G_NewPlanSummary[idx].StartTime = timeText;
+        G_NewPlanSummary[idx].InTime = timeText;
+    }
     
+    // Disable the button after starting
+    $(this).prop('disabled', true);
+    $(this).removeClass('btn-success').addClass('btn-secondary');
+});
+
+// Event handler for End button on main plan
+$(document).on('click', '.btn-end-main', function () {
+    let now = new Date();
+    let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    $('#spEndTimeCell').text(timeText);
+
+    // Disable the button after ending
+    $(this).prop('disabled', true);
+    $(this).removeClass('btn-danger').addClass('btn-secondary');
+});
+
+// Event handler for Start button on upcoming plans
+$(document).on('click', '.btn-start-upcoming', function () {
+    let planCode = $(this).data('plan-code');
+
+    let now = new Date();
+    let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    if (planCode && planCode !== '' && planCode !== 0 && planCode !== '0') {
+        Showloader();
+        SlittingProductionEntryService.StartTimeUpdated(planCode).then(function (resp) {
+            HideLoader();
+            if (resp && resp.Status === 'N') {
+                toastr.error(resp.Msg || 'Failed to update start time.');
+                return;
+            }
+        }).catch(function () {
+            HideLoader();
+        });
+    }
+
+    // update in-memory list by code (index based on current render order may change)
+    let idx = SlittingProductionEntry_FindPlanIndexByCode(G_NewPlanSummary, planCode);
+    if (idx >= 0) {
+        G_NewPlanSummary[idx].StartTime = timeText;
+        G_NewPlanSummary[idx].InTime = timeText;
+
+        // refresh layout to move it into main section if now qualifies
+        SlittingProductionEntry_BindNewPlanLayout(G_NewPlanSummary);
+    } else {
+        // fallback: just set time text in this card
+        $(this).closest('.slit-plan-actions-row').find('.slit-plan-actions-time').text(timeText);
+    }
+
+    // Disable the button after starting
+    $(this).prop('disabled', true);
+    $(this).removeClass('btn-success').addClass('btn-secondary');
+});
+$(document).on('click', '.btn-end-upcoming', function () {
+    let planIndex = $(this).data('plan-index');
+    let now = new Date();
+    let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    
+    $('.upcoming-end-time-' + planIndex).text(timeText);
+    
+    // Disable the button after starting
+    $(this).prop('disabled', true);
+    $(this).removeClass('btn-danger').addClass('btn-secondary');
+});
+function SlittingProductionEntry_ShowPlanGrid() {
+    let filterType = $('input[name="filterType"]:checked').val();
+    let FromDate = $('#txtFromDate').val(), Todate = $('#txtToDate').val();
+
     if (FromDate == "" && Todate == "") {
         return false;
     }
-    let filterType = $('input[name="filterType"]:checked').val();
+
+    // API should receive FilterType=Plan even when UI filterType is 'New'
+    let apiFilterType = filterType === 'New' ? 'Plan' : filterType;
+
     Showloader();
-    SlittingProductionEntryService.GetSlittingPlanOrEntrySummary(FromDate, Todate,filterType).then(function (response) {
+    SlittingProductionEntryService.GetSlittingPlanOrEntrySummary(FromDate, Todate, apiFilterType).then(function (response) {
         HideLoader();
+
+        if (filterType === 'New') {
+            G_NewPlanSummary = Array.isArray(response) ? response : [];
+
+            $('#NewPlanLayout').show();
+            $('.fixed-height-table').hide();
+            $('#paginator-tbProductionGPView').hide();
+
+            SlittingProductionEntry_BindNewPlanLayout(G_NewPlanSummary);
+            return;
+        } else {
+            $('#NewPlanLayout').hide();
+            $('.fixed-height-table').show();
+            $('#paginator-tbProductionGPView').show();
+        }
+
         if (filterType == 'Plan') {
             response.forEach(item => {
                 item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_EditOrView(\'Y\',\'' + item.SlittingPlanMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>'
             });
         }
         else {
-            
-                response.forEach(item => {
-                    item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_Print(\'' + item["Identification No"] + '\')"> <i class="fa fa-print"></i></a>'
-                });
-            
+
+            response.forEach(item => {
+                item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_Print(\'' + item["Identification No"] + '\')"> <i class="fa fa-print"></i></a>'
+            });
+
         }
 
        // console.log(response);
@@ -97,7 +394,7 @@ function SlittingProductionEntry_ShowPlanGrid() {
         const Button = false;
         const showButtons = []
         const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["QtyMT", "QtyPC", "QtyMTRS","SlittingPlanMaster_Code"];
+        const hiddenColumns = ["QtyMT", "QtyPC", "QtyMTRS", "SlittingPlanMaster_Code", "Desp", "Slitting Combination","InTime"];
         const ColumnAlignment = {
             "Qty PC": 'right',
             "Qty KG": 'right',
