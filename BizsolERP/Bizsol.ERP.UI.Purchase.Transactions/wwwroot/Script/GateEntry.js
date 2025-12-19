@@ -34,55 +34,62 @@ let G_TableName = '';
 let G_TableCode = 0;
 function GateEntryGirdByDates() {
 
+    let UserDetailsobj = JSON.parse(sessionStorage.getItem('UserDetails'));
+    let UserType = UserDetailsobj[0].UserType;
     let FromDate = $('#txtFromDate').val(), Todate = $('#txtToDate').val();
     let ddlVehiclesStatusInFectory = $('#ddlVehiclesStatusInFectory').val();
     let ddlGodownMaster_Code = $('#ddlGodown').val();
     ddlGodownMaster_Code = ddlGodownMaster_Code ? ddlGodownMaster_Code : '0';
     let QueryCondition = ".";
 
+    if (UserType == 'U' && LoginGodownMaster_Code>0) {
+        ddlGodownMaster_Code = LoginGodownMaster_Code
+        $('#ddlGodown').attr('disabled', 'disabled');
+    }
+
     if (ddlVehiclesStatusInFectory === 'ALIN') {  //Inward Entry
-        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
 
     } 
     else if (ddlVehiclesStatusInFectory === 'AEIN') { //Outward Entry
-        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
     }
     else if (ddlVehiclesStatusInFectory === 'LIN') {
-        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and GateEntryOutDate is not null and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and GateEntryOutDate is not null and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
 
     } 
     else if (ddlVehiclesStatusInFectory === 'EIN') {
-        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and GateEntryOutDate is not null and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and GateEntryOutDate is not null and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
     }
     else if (ddlVehiclesStatusInFectory === 'PLIN') {
-        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and GateEntryOutDate is null and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and GateEntryOutDate is null and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
     }
     else if (ddlVehiclesStatusInFectory === 'PEIN') {
-        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and GateEntryOutDate is null and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and GateEntryOutDate is null and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
     }
     else if (ddlVehiclesStatusInFectory === 'PAll') {
         QueryCondition = " and GateEntryNo>0 and GateEntryOutDate is null"
     }
     else if (ddlVehiclesStatusInFectory === 'RAll') {
-        QueryCondition = " and GateEntryNo>0 and (TransactionType='EIN' and OutType='EOUT') OR (TransactionType='LIN' and OutType='LOUT') and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and GateEntryNo>0 and (TransactionType='EIN' and OutType='EOUT') OR (TransactionType='LIN' and OutType='LOUT') and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
     }
     else if (ddlVehiclesStatusInFectory === 'REOut') {
-        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and OutType='EOUT' and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and GateEntryNo>0 and TransactionType='EIN' and OutType='EOUT' and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
     }
     else if (ddlVehiclesStatusInFectory === 'RLOut') {
-        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and OutType='LOUT' and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and GateEntryNo>0 and TransactionType='LIN' and OutType='LOUT' and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
     }
     else if (ddlVehiclesStatusInFectory === 'TAll') {
-        QueryCondition = " and TokenNo<>'' and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and TokenNo<>'' and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
     }
     else if (ddlVehiclesStatusInFectory === 'TCon') {
-        QueryCondition = " and GateEntryNo>0 and TokenNo<>'' and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and GateEntryNo>0 and TokenNo<>'' and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
     }
     else if (ddlVehiclesStatusInFectory === 'TBal') {
-        QueryCondition = " and TokenNo<>'' and GateEntryNo=0 and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and TokenNo<>'' and GateEntryNo=0 and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
     }
     else if (ddlVehiclesStatusInFectory === 'all' && parseInt(ddlGodownMaster_Code) > 0) {
-        QueryCondition = " and GateEntryNo>0 and GodownMaster_Code=" + ddlGodownMaster_Code
+        QueryCondition = " and GateEntryNo>0 and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
     }
     else {
         QueryCondition = " and GateEntryNo>0"
@@ -116,8 +123,8 @@ function GateEntryGirdByDates() {
         }
         ExcelExportDataArry = response;
         //console.log(response);
-        const StringFilterColumn = ["Type In", "Party name", "Vehicle No"];
-        const NumericFilterColumn = ["Entry No"];
+        const StringFilterColumn = ["Type In", "Party name", "Vehicle No", "Transporter Name", "Doc Type", "Doc No","Good Desp"];
+        const NumericFilterColumn = ["Entry No IN", "Entry No OUT",];
         const DateFilterColumn = ["Date In Time", "Date Out Time"];
         const Button = false;
         const showButtons = []
@@ -2891,6 +2898,7 @@ function ddlGodown() {
 
         if (LoginGodownMaster_Code>0) {
             $('#DivGodown').show();
+            GateEntryGirdByDates();
         }
     });
 }
