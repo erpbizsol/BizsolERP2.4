@@ -1,7 +1,9 @@
-﻿import { VerifyDispatchPlanService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_VerifyDispatchPlanService.js';
+import { VerifyDispatchPlanService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_VerifyDispatchPlanService.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+var userMaster = authKeyData.UserMaster_Code;
 
 let G_DispatchPlanlist = [];
 let G_DispatchAdviceNo = 0;
@@ -65,8 +67,8 @@ function GetDispatchAdvicePlanList(Status) {
                 "AvailableLimit": "right"
             };
             const updatedResponse = response.map(item => {
-                const Action = Status == 'C' ? `<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>` : `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["Code"]})"><i class="fa fa-check"></i></button>`;
-                const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Verify/Send Mail" onclick="SendMail(${item["Code"]})">Verify/Send Mail</button>` : '';
+                const Action = Status == 'C' ? `<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>` : `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["Code"]})"><i class="fa fa-check"></i></button>&nbsp;<button class="btn btn-info icon-height mb-1" title="Update Qty" onclick="EditQty(${item["Code"]})"><i class="fa fa-pencil"></i></button>`;
+                const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Verify/Send Mail" onclick="SendMail(${item["Code"]})">Verify/Send Mail</button>&nbsp;<button class="btn btn-info icon-height mb-1" title="Update Qty" onclick="EditQty(${item["Code"]})"><i class="fa fa-pencil"></i></button>` : '';
                 let formattedItem;
                 if (Status == 'D') {
                     formattedItem = {
@@ -82,7 +84,11 @@ function GetDispatchAdvicePlanList(Status) {
                         LV2_Transporter: item.LV2_Transporter == '' ? '' : `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.Code},${item.LV2_TransporterCode})">${item.LV2_Transporter}</a>`,
                         LV3_Transporter: item.LV3_Transporter == '' ? '' : `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.Code},${item.LV3_TransporterCode})">${item.LV3_Transporter}</a>`
                     };
-                } else{
+                } else if (Status == 'T'){
+                    formattedItem = {
+                        ...item
+                    };
+                } else {
                     formattedItem = {
                         ...item,
                         Action: Action
@@ -192,6 +198,7 @@ function GetDispatchAdvicePlanList(Status) {
 
                 // Enforce fixed widths by column index (1–14) after render
                 applyFixedWidthsByIndex();
+                applyTableBorders();
             }, 300);
 
         } else {
@@ -455,6 +462,19 @@ function calculateTotals(data) {
     return totals;
 }
 function addTotalsRow(totals, hiddenColumns = []) {
+    // Check if status is 'T' and hide totals row if so
+    const status = $('#ddlStatus').val();
+    if (status === 'T') {
+        const tableHead = document.getElementById('table-head');
+        if (tableHead) {
+            const existingTotalsRow = tableHead.querySelector('.totals-row');
+            if (existingTotalsRow) {
+                existingTotalsRow.remove();
+            }
+        }
+        return;
+    }
+    
     const tableHead = document.getElementById('table-head');
     if (!tableHead) {
         setTimeout(() => addTotalsRow(totals, hiddenColumns), 200);
@@ -674,7 +694,7 @@ function addTotalsRow(totals, hiddenColumns = []) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    setInterval(ChangecolorTr, 1000); // Slower interval for better performance
+    setInterval(ChangecolorTr, 1000); 
 });
 function ChangecolorTr() {
     const tableBody = document.getElementById("table-body");
@@ -775,6 +795,28 @@ function ChangecolorTr() {
 function countTableTr() {
     return $('#table-body tr').length;
 }
+function applyTableBorders() {
+    const tableBody = document.getElementById('table-body');
+    const tableHead = document.getElementById('table-head');
+    
+    if (tableBody) {
+        const tds = tableBody.querySelectorAll('td');
+        tds.forEach(td => {
+            if (!td.style.border || td.style.border === '') {
+                td.style.border = '1px solid #ddd';
+            }
+        });
+    }
+    
+    if (tableHead) {
+        const ths = tableHead.querySelectorAll('th');
+        ths.forEach(th => {
+            if (!th.style.border || th.style.border === '') {
+                th.style.border = '1px solid #ddd';
+            }
+        });
+    }
+}
 
 $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
     setTimeout(() => {
@@ -798,6 +840,7 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
         const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
         addTotalsRow(totals, hiddenColumns);
         applyFixedWidthsByIndex();
+        applyTableBorders();
     }, 300);
 });
 
@@ -823,6 +866,7 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
         const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
         addTotalsRow(totals, hiddenColumns);
         applyFixedWidthsByIndex();
+        applyTableBorders();
     }, 300);
 });
 function ExportExcel() {
@@ -1143,9 +1187,212 @@ function CloseVerifyModal() {
     $('#dvRemark').modal('hide');
     $("#txtRemark").val("");
 }
+function EditQty(Code) {
+    var ModuleName = "Delivery Order/Despatch Advice (GST)",
+    OptionName = "Edit",
+    ShowMsg = "Y",
+    FinYear = getFinancialYear()
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            OpenUpdateQtyModal(Code);
+        }
+    });
+}
+function OpenUpdateQtyModal(Code) {
+    Showloader();
+    $('#dvUpdateQty').modal({ backdrop: 'static' });
+    $('#dvUpdateQty').modal('show');
+    VerifyDispatchPlanService.GetDespatchAdviceQtyForUpdate(Code).then(function (response) {
+        HideLoader();
+        const $tbody = $('#tbodyUpdateGridWrapper');
+
+        $tbody.empty();
+
+        if (response && response.length > 0) {
+            response.forEach(function (item, index) {
+                const masterCode = item["DespatchAdviceMaster_Code"];
+                const tranCode = item["DespatchAdviceTransaction_Code"];
+                const itemName = item["ItemName"] || '';
+                const sizeDesp = item["SizeDesp"] || '';
+                const qtyPc = item["PlannedQtyPc"] ?? 0;
+                const qtyMT = item["PlannedQtyMT"] ?? 0;
+                const qtyMTRS = item["PlannedQtyMTRS"] ?? 0;
+
+                const rowHtml = `
+                    <tr data-master-code="${masterCode}" data-tran-code="${tranCode}">
+                        <td style="text-align:center;">${index + 1}</td>
+                        <td style="text-align:left;">${itemName}</td>
+                        <td style="text-align:left;">${sizeDesp}</td>
+                        <td>
+                            <input type="text"
+                                   class="form-control form-control-sm qty-pc"
+                                   value="${qtyPc}"
+                                   style="text-align:right;" />
+                        </td>
+                        <td>
+                            <input type="text"
+                                   class="form-control form-control-sm qty-mt"
+                                   value="${qtyMT}"
+                                   style="text-align:right;" />
+                        </td>
+                        <td>
+                            <input type="text"
+                                   class="form-control form-control-sm qty-mtrs"
+                                   value="${qtyMTRS}"
+                                   style="text-align:right;" />
+                        </td>
+                    </tr>`;
+                $tbody.append(rowHtml);
+            });
+        } else {
+            toastr.error('No Data Found');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error During Get Transporter List');
+    });
+    
+}
+function CloseUpdateQtyModal() {
+    $('#dvUpdateQty').modal('hide');
+}
+
+$(document).on('keypress', '.qty-pc', function (e) {
+    const charCode = e.which || e.keyCode;
+    if (charCode === 8 || charCode === 9 || charCode === 13) return;
+    const ch = String.fromCharCode(charCode);
+    if (!/[0-9]/.test(ch)) {
+        e.preventDefault();
+    }
+});
+$(document).on('keypress', '.qty-mt, .qty-mtrs', function (e) {
+    const input = e.target;
+    const $input = $(input);
+    const charCode = e.which || e.keyCode;
+    if (charCode === 8 || charCode === 9 || charCode === 13) return;
+
+    const ch = String.fromCharCode(charCode);
+    if (!/[0-9.]/.test(ch)) {
+        e.preventDefault();
+        return;
+    }
+
+    const current = $input.val() ? $input.val().toString() : '';
+    const start = input.selectionStart != null ? input.selectionStart : current.length;
+    const end = input.selectionEnd != null ? input.selectionEnd : current.length;
+    const next = current.slice(0, start) + ch + current.slice(end);
+
+    const dots = (next.match(/\./g) || []).length;
+    if (dots > 1) {
+        e.preventDefault();
+        return;
+    }
+    const parts = next.split('.');
+    if (parts.length === 2 && parts[1].length > 3) {
+        e.preventDefault();
+        return;
+    }
+});
+function UpdateQty() {
+    const rows = $('#tbodyUpdateGridWrapper tr');
+    if (rows.length === 0) {
+        toastr.error('No rows to update.');
+        return;
+    }
+    const payload = [];
+    let isValid = true;
+    rows.each(function (rowIndex) {
+        const $row = $(this);
+        const masterCode = $row.data('master-code');
+        const tranCode = $row.data('tran-code');
+
+        let qtyPcStr = ($row.find('.qty-pc').val() || '').toString().trim();
+        let qtyMtStr = ($row.find('.qty-mt').val() || '').toString().trim();
+        let qtyMtrsStr = ($row.find('.qty-mtrs').val() || '').toString().trim();
+
+        if (!masterCode || !tranCode) {
+            return;
+        }
+
+        if (qtyPcStr === '') qtyPcStr = '0';
+        if (qtyMtStr === '') qtyMtStr = '0';
+        if (qtyMtrsStr === '') qtyMtrsStr = '0';
+
+        if (!/^\d+$/.test(qtyPcStr)) {
+            toastr.error('Invalid Planned Qty Pc at row ' + (rowIndex + 1) + '. Only whole numbers allowed.');
+            $row.find('.qty-pc').focus();
+            isValid = false;
+            return false;
+        }
+        const decimalRegex = /^(?:\d+|\d*\.\d{1,3})$/;
+
+        if (!decimalRegex.test(qtyMtStr)) {
+            toastr.error('Invalid Planned Qty MT at row ' + (rowIndex + 1) + '. Max 3 decimals allowed (e.g. 1, 1.5, .999).');
+            $row.find('.qty-mt').focus();
+            isValid = false;
+            return false;
+        }
+
+        if (!decimalRegex.test(qtyMtrsStr)) {
+            toastr.error('Invalid Planned Qty MTRS at row ' + (rowIndex + 1) + '. Max 3 decimals allowed (e.g. 1, 1.5, .999).');
+            $row.find('.qty-mtrs').focus();
+            isValid = false;
+            return false;
+        }
+        const qtyPc = parseInt(qtyPcStr, 10);
+        const qtyMT = parseFloat(qtyMtStr);
+        const qtyMTRS = parseFloat(qtyMtrsStr);
+        let Process = $("#ddlStatus").val();
+        if (Process == 'M') {
+            Process = 'Marketing';
+        } else if (Process == 'P') {
+            Process = 'PPC';
+        }else {
+            Process = 'Dispatch';
+        }
+        payload.push({
+            DespatchAdviceMaster_Code: masterCode,
+            DespatchAdviceTransaction_Code: tranCode,
+            QtyPc: qtyPc,
+            QtyMT: qtyMT,
+            QtyMTRS: qtyMTRS,
+            UserMaster_Code: userMaster,
+            ProcessType: Process
+        });
+    });
+
+    if (!isValid) {
+        return;
+    }
+
+    if (payload.length === 0) {
+        toastr.error('Invalid data. Please check quantities.');
+        return;
+    }
+    console.log("userMasterCode" + userMaster);
+    VerifyDispatchPlanService.SaveDespatchAdviceQty(payload).then(function (response) {
+        if (response.Status == 'Y') {
+            toastr.success(response.Msg);
+            GetDispatchAdvicePlanList($("#ddlStatus").val());
+            CloseUpdateQtyModal();
+            HideLoader();
+        } else {
+            toastr.error(response.Msg);
+            HideLoader();
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error During Approved Quotation ');
+    });
+}
 
 window.ViewAll = ViewAll;
+window.EditQty = EditQty;
 window.CloseVerifyModal = CloseVerifyModal;
+window.CloseUpdateQtyModal = CloseUpdateQtyModal;
 window.OpenVerifyModal = OpenVerifyModal;
 window.VerifyDispatch = VerifyDispatch;
 window.Verify = Verify;
@@ -1161,6 +1408,7 @@ window.UpdateTransporter = UpdateTransporter;
 window.SendMailToTransporter = SendMailToTransporter;
 window.ApprovedQuotstion = ApprovedQuotstion;
 window.ApprovedTransporter = ApprovedTransporter;
+window.UpdateQty = UpdateQty;
 
 
 
