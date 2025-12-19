@@ -3,7 +3,7 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const SalesanalysisASTService = {
 
-    GetSalesAnalysisData: function GetSalesAnalysisData(Mode, DealerCodes, FromDate, ToDate) {
+    GetSalesAnalysisData: function GetSalesAnalysisData(Mode, DealerCodes, FromDate, ToDate, SalesPersons, Cities, Status, GP, IndustryType) {
 
         const formatDate = (d) => {
             if (d === '0') return "0";
@@ -22,6 +22,46 @@ const SalesanalysisASTService = {
         let url = `${UrlService.API_ENDPOINT_SalesanalysisAST}/GetSalesAnalysisData?Mode=${encodeURIComponent(Mode)}&DealerCodes=${encodeURIComponent(DealerCodes)}`;
         if (fd) url += `&FromDate=${encodeURIComponent(fd)}`;
         if (td) url += `&ToDate=${encodeURIComponent(td)}`;
+        
+        // Add additional filter parameters
+        if (SalesPersons) url += `&SalesPersons=${encodeURIComponent(SalesPersons)}`;
+        if (Cities) url += `&Cities=${encodeURIComponent(Cities)}`;
+        if (Status) url += `&Status=${encodeURIComponent(Status)}`;
+        if (GP) url += `&GP=${encodeURIComponent(GP)}`;
+        if (IndustryType) url += `&IndustryType=${encodeURIComponent(IndustryType)}`;
+
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetMultipleTableSalesAnalysisData: function GetMultipleTableSalesAnalysisData(Mode, DealerCodes, FromDate, ToDate, SalesPersons, Cities, Status, GP, IndustryType) {
+
+        const formatDate = (d) => {
+            if (d === '0') return "0";
+            // If it's already a Date object use it, otherwise try to parse
+            const dt = (d instanceof Date) ? d : new Date(d);
+            if (isNaN(dt)) return String(d);
+            const yyyy = dt.getFullYear();
+            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        };
+
+        const fd = formatDate(FromDate);
+        const td = formatDate(ToDate);
+
+        let url = `${UrlService.API_ENDPOINT_SalesanalysisAST}/GetMultipleTableSalesAnalysisData?Mode=${encodeURIComponent(Mode)}&DealerCodes=${encodeURIComponent(DealerCodes)}`;
+        if (fd) url += `&FromDate=${encodeURIComponent(fd)}`;
+        if (td) url += `&ToDate=${encodeURIComponent(td)}`;
+        
+        // Add additional filter parameters
+        if (SalesPersons) url += `&SalesPersons=${encodeURIComponent(SalesPersons)}`;
+        if (Cities) url += `&Cities=${encodeURIComponent(Cities)}`;
+        if (Status) url += `&Status=${encodeURIComponent(Status)}`;
+        if (GP) url += `&GP=${encodeURIComponent(GP)}`;
+        if (IndustryType) url += `&IndustryType=${encodeURIComponent(IndustryType)}`;
 
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
