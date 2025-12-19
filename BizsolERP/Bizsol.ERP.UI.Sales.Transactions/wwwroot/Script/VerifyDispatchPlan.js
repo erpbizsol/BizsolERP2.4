@@ -9,6 +9,64 @@ let G_DispatchPlanlist = [];
 let G_DispatchAdviceNo = 0;
 let G_DispatchMaster_Code = 0;
 let G_AccountMaster_Code = 0;
+
+// --- Grid height fix (avoid footer overlap) ---
+// Same approach as MillWiseProductionReport.js (viewport + footer overlap aware).
+let _vdpHeightRaf = 0;
+let _vdpHeightHandlersBound = false;
+function getViewportHeight() {
+    return (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : (window.innerHeight || document.documentElement.clientHeight || 0);
+}
+function getFooterViewportOverlapHeight() {
+    const footer = document.querySelector('footer.footer');
+    if (!footer) return 0;
+    const viewportHeight = getViewportHeight();
+    const rect = footer.getBoundingClientRect();
+    const h = rect.height || 0;
+    if (!isFinite(h) || h <= 0) return 0;
+
+    const overlap = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+    return overlap > 0 && isFinite(overlap) ? overlap : 0;
+}
+function adjustVerifyDispatchPlanTableHeight() {
+    const tableWrapper = document.getElementById('tableWrapper');
+    if (!tableWrapper) return;
+    if (tableWrapper.offsetParent === null) return; // hidden (display:none)
+
+    const rect = tableWrapper.getBoundingClientRect();
+    const viewportHeight = getViewportHeight();
+    const footerHeight = getFooterViewportOverlapHeight();
+    const bottomGap = 8;
+    const minHeight = 200;
+
+    let availableHeight = viewportHeight - rect.top - footerHeight - bottomGap;
+    if (!isFinite(availableHeight)) return;
+    availableHeight = Math.max(minHeight, Math.floor(availableHeight));
+
+    tableWrapper.style.height = availableHeight + 'px';
+    tableWrapper.style.maxHeight = availableHeight + 'px';
+}
+function scheduleVerifyDispatchPlanTableHeightAdjust() {
+    if (_vdpHeightRaf) cancelAnimationFrame(_vdpHeightRaf);
+    _vdpHeightRaf = requestAnimationFrame(function () {
+        _vdpHeightRaf = 0;
+        adjustVerifyDispatchPlanTableHeight();
+    });
+}
+function bindVerifyDispatchPlanTableHeightHandlers() {
+    if (_vdpHeightHandlersBound) return;
+    _vdpHeightHandlersBound = true;
+
+    window.addEventListener('resize', scheduleVerifyDispatchPlanTableHeightAdjust, { passive: true });
+    window.addEventListener('orientationchange', scheduleVerifyDispatchPlanTableHeightAdjust, { passive: true });
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', scheduleVerifyDispatchPlanTableHeightAdjust, { passive: true });
+    }
+
+    setTimeout(scheduleVerifyDispatchPlanTableHeightAdjust, 0);
+    setTimeout(scheduleVerifyDispatchPlanTableHeightAdjust, 150);
+    setTimeout(scheduleVerifyDispatchPlanTableHeightAdjust, 350);
+}
 $(document).ready(function () {
     //BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     var urlParams = BizSolHelperFunction.getUrlVars();
@@ -26,6 +84,9 @@ $(document).ready(function () {
         $("#ddlStatus").val('M');
     }
 
+    bindVerifyDispatchPlanTableHeightHandlers();
+    scheduleVerifyDispatchPlanTableHeightAdjust();
+
     GetDispatchAdvicePlanList($("#ddlStatus").val());
     $("#ddlStatus").change(function(){
         GetDispatchAdvicePlanList($(this).val());
@@ -38,9 +99,9 @@ function GetDispatchAdvicePlanList(Status) {
             G_DispatchPlanlist = response;
             $("#dvTableDispatch").show();
             HideLoader();
-            const stringFilterColumn = ["Marketing Man","PinCode", "Vehicle No", "Client Name", "Consignee Name", "City", "State", "Buyer PO No", "Ord No","Item Name","Size/Particular"];
+            const stringFilterColumn = ["Marketing Man", "PinCode", "Vehicle No", "Client Name", "Consignee Name", "City", "State", "Buyer PO No", "Ord No", "Item Name", "Size/Particular", "Party Name","Destination City","Transporter Name","Truck No","Driver Name","Driver Mobile No"];
             const numericFilterColumn = ["DO No",
-                "Ord Qty Pc","Ord Qty MT","OrdQty MTRS","Bal Qty Pc","Bal Qty MT","BalQty MTRS","Pld Qty Pc","Pld Qty MT","PldQty MTRS","OutStanding Amt","Over due Amt","Credit Days","Credit Limit","AvailableLimit"
+                "Ord Qty Pc", "Ord Qty MT", "OrdQty MTRS", "Bal Qty Pc", "Bal Qty MT", "BalQty MTRS", "Pld Qty Pc", "Pld Qty MT", "PldQty MTRS", "OutStanding Amt", "Over due Amt", "Credit Days", "Credit Limit", "AvailableLimit", "Approved Rate"
             ];
             const dateFilterColumn = ["Ord Date", "Dispatch Date", "DO Date","Buyer PO Date","Delivery Date"];
             const button = false;
@@ -175,6 +236,7 @@ function GetDispatchAdvicePlanList(Status) {
                 return formattedItem;
             });
             BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            scheduleVerifyDispatchPlanTableHeightAdjust();
 
             setTimeout(() => {
                 const filteredData = updatedResponse;
@@ -199,6 +261,7 @@ function GetDispatchAdvicePlanList(Status) {
                 // Enforce fixed widths by column index (1–14) after render
                 applyFixedWidthsByIndex();
                 applyTableBorders();
+                scheduleVerifyDispatchPlanTableHeightAdjust();
             }, 300);
 
         } else {
@@ -1220,12 +1283,24 @@ function OpenUpdateQtyModal(Code) {
                 const qtyPc = item["PlannedQtyPc"] ?? 0;
                 const qtyMT = item["PlannedQtyMT"] ?? 0;
                 const qtyMTRS = item["PlannedQtyMTRS"] ?? 0;
+                // Store balance quantities for validation
+                const balQtyPc = item["BalQTYPCS"] ?? 0;
+                const balQtyMT = item["BalQTYMT"] ?? 0;
+                const balQtyMTRS = item["BalQTYMTRS"] ?? 0;
+
+                // Format balance quantities for display
+                const balQtyPcDisplay = Number(balQtyPc).toFixed(0);
+                const balQtyMTDisplay = Number(balQtyMT).toFixed(3);
+                const balQtyMTRSDisplay = Number(balQtyMTRS).toFixed(0);
 
                 const rowHtml = `
-                    <tr data-master-code="${masterCode}" data-tran-code="${tranCode}">
+                    <tr data-master-code="${masterCode}" data-tran-code="${tranCode}" data-bal-qty-pc="${balQtyPc}" data-bal-qty-mt="${balQtyMT}" data-bal-qty-mtrs="${balQtyMTRS}">
                         <td style="text-align:center;">${index + 1}</td>
                         <td style="text-align:left;">${itemName}</td>
                         <td style="text-align:left;">${sizeDesp}</td>
+                        <td style="text-align:right;">${balQtyPcDisplay}</td>
+                        <td style="text-align:right;">${balQtyMTDisplay}</td>
+                        <td style="text-align:right;">${balQtyMTRSDisplay}</td>
                         <td>
                             <input type="text"
                                    class="form-control form-control-sm qty-pc"
@@ -1296,6 +1371,97 @@ $(document).on('keypress', '.qty-mt, .qty-mtrs', function (e) {
         return;
     }
 });
+
+// Validation functions for balance quantity checks
+function validateQtyPc(input) {
+    const $input = $(input);
+    const $row = $input.closest('tr');
+    const balQtyPc = parseFloat($row.data('bal-qty-pc') || 0);
+    const inputVal = $input.val() ? $input.val().toString().trim() : '';
+    
+    if (inputVal === '') {
+        $input.removeClass('is-invalid');
+        return true;
+    }
+    
+    if (!/^\d+$/.test(inputVal)) {
+        return false;
+    }
+    
+    const qtyPc = parseInt(inputVal, 10);
+    if (qtyPc > balQtyPc) {
+        $input.addClass('is-invalid');
+        return false;
+    }
+    
+    $input.removeClass('is-invalid');
+    return true;
+}
+
+function validateQtyMT(input) {
+    const $input = $(input);
+    const $row = $input.closest('tr');
+    const balQtyMT = parseFloat($row.data('bal-qty-mt') || 0);
+    const inputVal = $input.val() ? $input.val().toString().trim() : '';
+    
+    if (inputVal === '') {
+        $input.removeClass('is-invalid');
+        return true;
+    }
+    
+    const decimalRegex = /^(?:\d+|\d*\.\d{1,3})$/;
+    if (!decimalRegex.test(inputVal)) {
+        return false;
+    }
+    
+    const qtyMT = parseFloat(inputVal);
+    if (qtyMT > balQtyMT) {
+        $input.addClass('is-invalid');
+        return false;
+    }
+    
+    $input.removeClass('is-invalid');
+    return true;
+}
+
+function validateQtyMTRS(input) {
+    const $input = $(input);
+    const $row = $input.closest('tr');
+    const balQtyMTRS = parseFloat($row.data('bal-qty-mtrs') || 0);
+    const inputVal = $input.val() ? $input.val().toString().trim() : '';
+    
+    if (inputVal === '') {
+        $input.removeClass('is-invalid');
+        return true;
+    }
+    
+    const decimalRegex = /^(?:\d+|\d*\.\d{1,3})$/;
+    if (!decimalRegex.test(inputVal)) {
+        return false;
+    }
+    
+    const qtyMTRS = parseFloat(inputVal);
+    if (qtyMTRS > balQtyMTRS) {
+        $input.addClass('is-invalid');
+        return false;
+    }
+    
+    $input.removeClass('is-invalid');
+    return true;
+}
+
+// Add validation on blur/change events
+$(document).on('blur change', '.qty-pc', function () {
+    validateQtyPc(this);
+});
+
+$(document).on('blur change', '.qty-mt', function () {
+    validateQtyMT(this);
+});
+
+$(document).on('blur change', '.qty-mtrs', function () {
+    validateQtyMTRS(this);
+});
 function UpdateQty() {
     const rows = $('#tbodyUpdateGridWrapper tr');
     if (rows.length === 0) {
@@ -1345,6 +1511,33 @@ function UpdateQty() {
         const qtyPc = parseInt(qtyPcStr, 10);
         const qtyMT = parseFloat(qtyMtStr);
         const qtyMTRS = parseFloat(qtyMtrsStr);
+        
+        // Validate against balance quantities
+        const balQtyPc = parseFloat($row.data('bal-qty-pc') || 0);
+        const balQtyMT = parseFloat($row.data('bal-qty-mt') || 0);
+        const balQtyMTRS = parseFloat($row.data('bal-qty-mtrs') || 0);
+        
+        if (qtyPc > balQtyPc) {
+            toastr.error('Planned Qty Pc (' + qtyPc + ') cannot be greater than Balance Qty Pc (' + balQtyPc + ') at row ' + (rowIndex + 1) + '.');
+            $row.find('.qty-pc').focus().addClass('is-invalid');
+            isValid = false;
+            return false;
+        }
+        
+        if (qtyMT > balQtyMT) {
+            toastr.error('Planned Qty MT (' + qtyMT + ') cannot be greater than Balance Qty MT (' + balQtyMT + ') at row ' + (rowIndex + 1) + '.');
+            $row.find('.qty-mt').focus().addClass('is-invalid');
+            isValid = false;
+            return false;
+        }
+        
+        if (qtyMTRS > balQtyMTRS) {
+            toastr.error('Planned Qty MTRS (' + qtyMTRS + ') cannot be greater than Balance Qty MTRS (' + balQtyMTRS + ') at row ' + (rowIndex + 1) + '.');
+            $row.find('.qty-mtrs').focus().addClass('is-invalid');
+            isValid = false;
+            return false;
+        }
+        
         let Process = $("#ddlStatus").val();
         if (Process == 'M') {
             Process = 'Marketing';
