@@ -1,5 +1,4 @@
-﻿
-const BizsolCustomFilterGrid = {
+﻿const BizsolCustomFilterGrid = {
     CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true) {
         const columns = Object.keys(data[0]);
         const tableId = $('#' + bodyId).closest('table').attr('id');
@@ -515,7 +514,7 @@ window.renderTableHeader = function renderTableHeader(hiddenColumns, headerId, b
                                             </select>
                                             <div class="filter-inputs">
                                                 <input type="number" id="filter-value-${col.replace(/\s+/g, '')}" class="filter-input form-control form-control-sm" placeholder="Enter value" />
-                                                <input type="number" id="min-value-${col.replace(/\s+/g, '')}" class="filter-input form-control form-control-sm" placeholder="Min value" style="display:none" />
+                                                 <input type="number" id="min-value-${col.replace(/\s+/g, '')}" class="filter-input form-control form-control-sm" placeholder="Min value" style="display:none" />
                                                 <input type="number" id="max-value-${col.replace(/\s+/g, '')}" class="filter-input form-control form-control-sm" placeholder="Max value" style="display:none" />
                                             </div>
                                             <button class="btn btn-success btn-height" onclick="applyNumericFilter('${col}','${bodyId}')">Apply</button>
@@ -640,7 +639,14 @@ window.renderTable = function renderTable(items, bodyId) {
                 ? 'display:none'
                 : `text-align:${alignment}`;
 
-            return `<td style="${style}">${item[key]}</td>`;
+            // Format numeric values to 2 decimal places
+            let cellValue = item[key];
+            if (alignment === 'right' && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
+            //if (!isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
+                cellValue = parseFloat(cellValue).toFixed(2);
+            }
+
+            return `<td style="${style}">${cellValue}</td>`;
         }).join('');
 
         let buttons = '';

@@ -8,6 +8,110 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <style>
+    /* Floating Action Buttons */
+    .floating-buttons {
+        position: fixed;
+        right: 20px;
+        top: 55px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .floating-btn {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .floating-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+
+    .floating-btn i {
+        font-size: 18px;
+    }
+
+    .btn-filter {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-show-floating {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+
+    /* Offcanvas Filter Panel */
+    .offcanvas-filter {
+        width: 400px !important;
+    }
+
+    .offcanvas-filter .offcanvas-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .offcanvas-filter .offcanvas-body {
+        padding: 20px;
+        padding-bottom: 80px;
+        overflow-y: auto;
+    }
+
+    .filter-group {
+        margin-bottom: 15px;
+    }
+
+    .filter-group label {
+        font-weight: 600;
+        font-size: 13px;
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    /* Sticky Apply Button */
+    .filter-apply-btn-container {
+        position: sticky;
+        bottom: 95%;
+        left: 0;
+        right: 0;
+        /* padding: 15px 20px; */
+        background: linear-gradient(to top, #ffffff 85%, rgba(255,255,255,0.95) 95%, transparent 100%);
+        z-index: 1000;
+        
+    }
+
+    .filter-apply-btn {
+        width: 100%;
+       
+        font-size: 15px;
+        font-weight: 600;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .filter-apply-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .filter-apply-btn:active {
+        transform: translateY(0);
+    }
+
     /* Custom column for 5 columns in a row */
     @@media (min-width: 1200px) {
         .col-xl-2-4 {
@@ -161,65 +265,161 @@
     .col-width-4-value {
         width: 20%;
     }
+
+    /* GP Wise Summary Table Styling */
+    #gpWiseTable thead th {
+        background-color: #e9ecef !important;
+        position: sticky;
+        z-index: 10;
+    }
+
+    #gpWiseTable thead tr:first-child th {
+        top: 0;
+    }
+
+    #gpWiseTable thead tr:nth-child(2) th {
+        top: 38px; /* Adjust based on first row height */
+    }
+
+    #gpWiseTable tbody tr:last-child {
+        position: sticky;
+        bottom: 0;
+        background-color: #d4edda !important;
+        font-weight: bold;
+        border-top: 2px solid #333 !important;
+        z-index: 9;
+    }
+
+    /* Ensure table borders are visible */
+    #gpWiseTable {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    #gpWiseTable th,
+    #gpWiseTable td {
+        border: 1px solid #dee2e6;
+        padding: 8px;
+    }
+
+    /* Column widths for GP Wise Summary */
+    #gpWiseTable th:first-child,
+    #gpWiseTable td:first-child {
+        min-width: 200px;
+    }
+
+    #gpWiseTable th:not(:first-child),
+    #gpWiseTable td:not(:first-child) {
+        min-width: 100px;
+    }
+
+    /* Highlight Total and % of Total columns */
+    #gpWiseTable tbody tr td:nth-child(5),
+    #gpWiseTable tbody tr td:nth-child(6) {
+        background-color: #f8f9fa;
+    }
+
+    #gpWiseTable tbody tr:hover td {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+
+    #gpWiseTable tbody tr:hover td:nth-child(5),
+    #gpWiseTable tbody tr:hover td:nth-child(6) {
+        background-color: rgba(0, 123, 255, 0.15);
+    }
+
+    /* Responsive adjustments */
+    @@media (max-width: 768px) {
+        .floating-buttons {
+            right: 15px;
+            top: 80px;
+        }
+        
+        .floating-btn {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .floating-btn i {
+            font-size: 16px;
+        }
+        
+        .offcanvas-filter {
+            width: 90% !important;
+        }
+    }
 </style>
 
-<div class="d-flex justify-content-between align-items-center mb-2">
-    <button class="btn btn-primary btn-height" type="button" data-bs-toggle="collapse" data-bs-target="#customerFilterCollapse" aria-expanded="true" aria-controls="customerFilterCollapse">
-        <i class="fa-solid fa-filter"></i> Filters
+<!-- Floating Action Buttons -->
+<div class="floating-buttons">
+    <button class="floating-btn btn-filter" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterOffcanvas" aria-controls="filterOffcanvas" title="Filters">
+        <i class="fa-solid fa-filter"></i>
     </button>
-
-    <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width" onclick="SalesanalysisAST_ShowReport()">Show</button>
+    @* <button type="button" class="floating-btn btn-show-floating" onclick="SalesanalysisAST_ShowReport()" title="Show Report">
+        <i class="fa-solid fa-eye"></i>
+    </button> *@
 </div>
-<div class="collapse " id="customerFilterCollapse">
-    <div class="row">
-        <div class="col-md-3">
-            
+
+<!-- Right Side Filter Offcanvas -->
+<div class="offcanvas offcanvas-end offcanvas-filter" tabindex="-1" id="filterOffcanvas" aria-labelledby="filterOffcanvasLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="filterOffcanvasLabel">
+            <i class="fa-solid fa-filter me-2"></i>Filters
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="filter-group">
+            <label for="dateRange" class="col-form-label-sm">Date Range</label>
             <date-range-control id="dateRange"></date-range-control>
-
         </div>
-        <div class="col-md-3">
-            <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Sales Person</label>
 
+        <div class="filter-group">
+            <label for="ddlSalesPersonlist" class="col-form-label-sm">Sales Person</label>
             <select id="ddlSalesPersonlist" class="form-control form-control-sm box_border">
             </select>
         </div>
 
-        <div class="col-md-3">
-            <label for="txtDealerName" class="col-form-label-sm fw-bold">Dealer Name</label>
-
+        <div class="filter-group">
+            <label for="ddlDealerNamelist" class="col-form-label-sm">Dealer Name</label>
             <select id="ddlDealerNamelist" class="form-control form-control-sm box_border">
             </select>
         </div>
-        <div class="col-md-3">
-            <label for="txtCitiesName" class="col-form-label-sm fw-bold">Location</label>
 
+        <div class="filter-group">
+            <label for="ddlCitiesNamelist" class="col-form-label-sm">Location</label>
             <select id="ddlCitiesNamelist" class="form-control form-control-sm box_border">
             </select>
         </div>
-        <div class="col-md-3">
-            <label for="txtStatusName" class="col-form-label-sm fw-bold">Status</label>
 
+        <div class="filter-group">
+            <label for="ddlStatusNamelist" class="col-form-label-sm">Status</label>
             <select id="ddlStatusNamelist" class="form-control form-control-sm box_border">
             </select>
         </div>
-        <div class="col-md-3">
-            <label for="txtGP" class="col-form-label-sm fw-bold">GP</label>
 
+        <div class="filter-group">
+            <label for="ddlGPlist" class="col-form-label-sm">GP</label>
             <select id="ddlGPlist" class="form-control form-control-sm box_border">
             </select>
         </div>
-        <div class="col-md-3">
-            <label for="txtIndustryType" class="col-form-label-sm fw-bold">Segment</label>
 
+        <div class="filter-group">
+            <label for="ddlIndustryTypelist" class="col-form-label-sm">Segment</label>
             <select id="ddlIndustryTypelist" class="form-control form-control-sm box_border">
             </select>
         </div>
-       
+
+        <!-- Sticky Apply Button Container -->
+        <div class="filter-apply-btn-container">
+            <button type="button" class="filter-apply-btn" onclick="SalesanalysisAST_ShowReport(); bootstrap.Offcanvas.getInstance(document.getElementById('filterOffcanvas')).hide();">
+                <i class="fa-solid fa-eye me-2"></i>Apply Filters & Show
+            </button>
+        </div>
     </div>
 </div>
 
-
-<br />
+<!-- Tabs Navigation -->
 <ul class="nav nav-tabs" id="salesAnalysisTabs" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active" id="summaryReport-tab" data-bs-toggle="tab" data-bs-target="#summaryReport" type="button" role="tab" aria-controls="summaryReport" aria-selected="true">
@@ -259,8 +459,16 @@
     </li>
 </ul>
 
+<!-- Report Date Range Display - MOVED HERE TO BE VISIBLE FOR ALL TABS -->
+<div class="row mt-2 mb-2">
+    <div class="col-lg-12">
+        <div class="alert-warning text-center" role="alert" style="background-color:#ff9800; color:#fff; border:none;">
+            <h5 id="report-date-range" class="mb-0" style="font-weight:bold;">Report Showing From : </h5>
+        </div>
+    </div>
+</div>
 
-
+<!-- Tab Content -->
 <div class="tab-content pt-3" id="salesAnalysisTabsContent">
     <div class="tab-pane fade show active" id="summaryReport" role="tabpanel" aria-labelledby="summaryReport-tab">
         <!-- KPI Cards Row -->
@@ -303,15 +511,6 @@
                         <small class="text-muted">Actual Sale</small>
                         <div id="kpi-actual-sale" class="fw-bold" style="font-size:36px; color:#6f42c1; margin-top:8px;">0</div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Report Date Range Display -->
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="alert-warning text-center" role="alert" style="background-color:#ff9800; color:#fff; border:none;">
-                    <h5 id="report-date-range" class="mb-0" style="font-weight:bold;">Report Showing From : </h5>
                 </div>
             </div>
         </div>
@@ -415,7 +614,7 @@
                                     <tr>
                                         <th style="width: 40px;">S.no.</th>
                                         <th>Parties</th>
-                                        <th class="text-end" style="width: 120px;">Record Count</th>
+                                        <th class="text-end" style="width: 120px;">Score</th>
                                     </tr>
                                 </thead>
                                 <tbody id="partyIdSummaryBody">
@@ -614,17 +813,69 @@
     </div>
 
     <div class="tab-pane fade" id="manifestation" role="tabpanel" aria-labelledby="manifestation-tab">
-        <div class="card">
+        <!-- Week / WEIGHT Table -->
+        <div class="card mb-3">
             <div class="card-body">
-                <h5 class="card-title">Manifestation</h5>
+                <h5 class="card-title">Week / WEIGHT</h5>
                 <div class="table-responsive mt-2">
-                    <table id="manifestationTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
-                        <thead class="table-secondary" id="manifestationTableHeader">
+                    <table id="weekWeightTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="weekWeightTableHeader">
                         </thead>
-                        <tbody id="manifestationTableBody">
+                        <tbody id="weekWeightTableBody">
                         </tbody>
                     </table>
-                    <div class="paginator" id="paginator-manifestationTable">
+                    <div class="paginator" id="paginator-weekWeightTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manifeste Table -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Manifeste</h5>
+                <div class="table-responsive mt-2">
+                    <table id="manifesteTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="manifesteTableHeader">
+                        </thead>
+                        <tbody id="manifesteTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-manifesteTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Sheet Data Table -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Order Sheet Data</h5>
+                <div class="table-responsive mt-2">
+                    <table id="orderSheetTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="orderSheetTableHeader">
+                        </thead>
+                        <tbody id="orderSheetTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-orderSheetTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Item / WEIGHT Table -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Item / WEIGHT</h5>
+                <div class="table-responsive mt-2">
+                    <table id="itemWeightTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="itemWeightTableHeader">
+                        </thead>
+                        <tbody id="itemWeightTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-itemWeightTable">
                     </div>
                 </div>
             </div>
@@ -632,17 +883,35 @@
     </div>
 
     <div class="tab-pane fade" id="nbdCrr" role="tabpanel" aria-labelledby="nbdCrr-tab">
-        <div class="card">
+        <!-- BASE / Week Table -->
+        <div class="card mb-3">
             <div class="card-body">
-                <h5 class="card-title">NBD CRR</h5>
+                <h5 class="card-title">BASE / Week</h5>
                 <div class="table-responsive mt-2">
-                    <table id="nbdCrrTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
-                        <thead class="table-secondary" id="nbdCrrTableHeader">
+                    <table id="nbdCrrBaseWeekTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="nbdCrrBaseWeekTableHeader">
                         </thead>
-                        <tbody id="nbdCrrTableBody">
+                        <tbody id="nbdCrrBaseWeekTableBody">
                         </tbody>
                     </table>
-                    <div class="paginator" id="paginator-nbdCrrTable">
+                    <div class="paginator" id="paginator-nbdCrrBaseWeekTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Details Table -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Order Details</h5>
+                <div class="table-responsive mt-2">
+                    <table id="nbdCrrOrderDetailsTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="nbdCrrOrderDetailsTableHeader">
+                        </thead>
+                        <tbody id="nbdCrrOrderDetailsTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-nbdCrrOrderDetailsTable">
                     </div>
                 </div>
             </div>
@@ -671,15 +940,13 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">GP Wise Summary</h5>
-                <div class="table-responsive mt-2">
-                    <table id="gpWiseTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
-                        <thead class="table-secondary" id="gpWiseTableHeader">
+                <div class="table-responsive mt-2" style="max-height: 600px; overflow-y: auto; position: relative;">
+                    <table id="gpWiseTable" class="table table-sm table-bordered mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="gpWiseTableHeader" style="position: sticky; top: 0; z-index: 100;">
                         </thead>
                         <tbody id="gpWiseTableBody">
                         </tbody>
                     </table>
-                    <div class="paginator" id="paginator-gpWiseTable">
-                    </div>
                 </div>
             </div>
         </div>
