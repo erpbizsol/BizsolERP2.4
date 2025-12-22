@@ -10,6 +10,10 @@ let G_ddlDealerNameList = [];
 let fromDate = '0';
 let toDate = '0';
 
+// Chart instances
+let baseSalesPieChartInstance = null;
+let partySharePieChartInstance = null;
+
 // DateRangeControl initialization
 function initDateRangeControl() {
     const dr = document.querySelector('date-range-control#dateRange');
@@ -199,20 +203,98 @@ function GetDateRange() {
     }
 }
 
-// Tab rendering functions
-function renderSummaryReport() {
+// Helper function to collect all filter values
+function GetAllFilters() {
+    GetDateRange();
+    
+    // Get Dealer Codes
     let selectedDealers = GetSelectedValues('ddlDealerNamelist');
     selectedDealers = selectedDealers.join(',');
     if (AreAllSelected('ddlDealerNamelist') === true) {
         selectedDealers = '0';
     }
-    if (selectedDealers == '') {
+    
+    // Get Sales Person
+    let selectedSalesPersons = GetSelectedValues('ddlSalesPersonlist');
+    selectedSalesPersons = selectedSalesPersons.join(',');
+    if (AreAllSelected('ddlSalesPersonlist') === true) {
+        selectedSalesPersons = '0';
+    }
+    
+    // Get Cities/Location
+    let selectedCities = GetSelectedValues('ddlCitiesNamelist');
+    selectedCities = selectedCities.join(',');
+    if (AreAllSelected('ddlCitiesNamelist') === true) {
+        selectedCities = '0';
+    }
+    
+    // Get Status
+    let selectedStatus = GetSelectedValues('ddlStatusNamelist');
+    selectedStatus = selectedStatus.join(',');
+    if (AreAllSelected('ddlStatusNamelist') === true) {
+        selectedStatus = '0';
+    }
+    
+    // Get GP
+    let selectedGP = GetSelectedValues('ddlGPlist');
+    selectedGP = selectedGP.join(',');
+    if (AreAllSelected('ddlGPlist') === true) {
+        selectedGP = '0';
+    }
+    
+    // Get Industry Type/Segment
+    let selectedIndustryType = GetSelectedValues('ddlIndustryTypelist');
+    selectedIndustryType = selectedIndustryType.join(',');
+    if (AreAllSelected('ddlIndustryTypelist') === true) {
+        selectedIndustryType = '0';
+    }
+    
+    return {
+        dealerCodes: selectedDealers,
+        salesPersons: selectedSalesPersons,
+        cities: selectedCities,
+        status: selectedStatus,
+        gp: selectedGP,
+        industryType: selectedIndustryType,
+        fromDate: fromDate,
+        toDate: toDate
+    };
+}
+
+// Helper function to format date for display
+function formatDateForDisplay(dateStr) {
+    if (!dateStr || dateStr === '0') return '';
+    try {
+        const date = new Date(dateStr);
+        const day = date.getDate();
+        const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
+            'july', 'august', 'september', 'october', 'november', 'december'];
+        const month = monthNames[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+    } catch (e) {
+        return dateStr;
+    }
+}
+
+// Helper function to update report date range display
+function updateReportDateRangeDisplay() {
+    const fromDateDisplay = fromDate !== '0' ? formatDateForDisplay(fromDate) : 'N/A';
+    const toDateDisplay = toDate !== '0' ? formatDateForDisplay(toDate) : 'Today';
+    document.getElementById('report-date-range').textContent = `Report Showing From : ${fromDateDisplay} to ${toDateDisplay}`;
+}
+
+// Tab rendering functions
+function renderSummaryReport() {
+    const filters = GetAllFilters();
+    
+    if (filters.dealerCodes == '') {
         return;
     }
-    GetDateRange();
+    
     Showloader();
     
-    SalesanalysisASTService.GetSalesAnalysisData('SUMMARY_REPORT', selectedDealers, fromDate, toDate).then(function (response) {
+    SalesanalysisASTService.GetSalesAnalysisData('SUMMARY_REPORT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
         HideLoader();
         
         if (!response || response.length === 0) {
@@ -223,7 +305,7 @@ function renderSummaryReport() {
             document.getElementById('kpi-lost-client').textContent = '0';
             document.getElementById('kpi-manifested-sales').textContent = '0';
             document.getElementById('kpi-actual-sale').textContent = '0';
-            document.getElementById('report-date-range').textContent = '';
+            updateReportDateRangeDisplay();
             return;
         }
 
@@ -274,9 +356,7 @@ function renderSummaryReport() {
         document.getElementById('kpi-actual-sale').textContent = formatNumber(actualSaleTotal);
         
         // Update date range display
-        const fromDateDisplay = fromDate !== '0' ? formatDateForDisplay(fromDate) : 'N/A';
-        const toDateDisplay = toDate !== '0' ? formatDateForDisplay(toDate) : 'Today';
-        document.getElementById('report-date-range').textContent = `Report Showing From : ${fromDateDisplay} to ${toDateDisplay}`;
+        updateReportDateRangeDisplay();
 
         const StringFilterColumn = [];
         const NumericFilterColumn = [];
@@ -302,132 +382,19 @@ function renderSummaryReport() {
     });
 }
 
-// Helper function to format date for display
-function formatDateForDisplay(dateStr) {
-    if (!dateStr || dateStr === '0') return '';
-    try {
-        const date = new Date(dateStr);
-        const day = date.getDate();
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'];
-        const month = monthNames[date.getMonth()].toLowerCase();
-        const year = date.getFullYear();
-        return `${day} ${month} ${year}`;
-    } catch (e) {
-        return dateStr;
-    }
-}
-
-// Chart instances for cleanup
-let baseSalesPieChartInstance = null;
-let partySharePieChartInstance = null;
-
-// Helper function to generate distinct colors
-function generateColors(count) {
-    const colors = [
-        '#FFA500', '#FFD700', '#FF8C00', '#FFA07A', '#FF6347',
-        '#FF4500', '#DC143C', '#C71585', '#8B008B', '#9370DB',
-        '#4169E1', '#1E90FF', '#00BFFF', '#00CED1', '#20B2AA',
-        '#3CB371', '#2E8B57', '#228B22', '#32CD32', '#7FFF00',
-        '#ADFF2F', '#FFD700', '#F0E68C', '#EEE8AA', '#BDB76B'
-    ];
-    
-    // If we need more colors than predefined, generate random ones
-    while (colors.length < count) {
-        const r = Math.floor(Math.random() * 200 + 55);
-        const g = Math.floor(Math.random() * 200 + 55);
-        const b = Math.floor(Math.random() * 200 + 55);
-        colors.push(`rgb(${r}, ${g}, ${b})`);
-    }
-    
-    return colors.slice(0, count);
-}
-
-// Helper function to create pie chart
-function createPieChart(canvasId, labels, data, title) {
-    const ctx = document.getElementById(canvasId);
-    if (!ctx) return null;
-    
-    const colors = generateColors(labels.length);
-    
-    return new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: colors,
-                borderColor: '#fff',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: {
-                        boxWidth: 15,
-                        padding: 10,
-                        font: {
-                            size: 11
-                        },
-                        generateLabels: function (chart) {
-                            const data = chart.data;
-                            if (data.labels.length && data.datasets.length) {
-                                const dataset = data.datasets[0];
-                                const total = dataset.data.reduce((a, b) => a + b, 0);
-
-
-                                return data.labels.map((label, i) => {
-                                    const value = dataset.data[i];
-                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-
-                                    return {
-                                        text: `${label}: ${percentage}%`,
-                                        fillStyle: dataset.backgroundColor[i],
-                                        hidden: false,
-                                        index: i
-                                    };
-                                });
-                            }
-                            return [];
-                        }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const label = context.label || '';
-                            const value = context.parsed || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
-                            return `${label}: ${formatNumber(value)} (${percentage}%)`;
-                        }
-                    }
-                },
-                title: {
-                    display: false
-                }
-            }
-        }
-    });
-}
-
 function renderPartyScoring() {
-    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
-    selectedDealers = selectedDealers.join(',');
-    if (AreAllSelected('ddlDealerNamelist') === true) {
-        selectedDealers = '0';
-    }
-    if (selectedDealers == '') {
+    const filters = GetAllFilters();
+    
+    if (filters.dealerCodes == '') {
         return;
     }
-    GetDateRange();
+    
+    // Update date range display for this tab
+    updateReportDateRangeDisplay();
+    
     Showloader();
     
-    SalesanalysisASTService.GetSalesAnalysisData('PARTY_SCORING', selectedDealers, fromDate, toDate).then(function (response) {
+    SalesanalysisASTService.GetSalesAnalysisData('PARTY_SCORING', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
         HideLoader();
         
         if (!response || response.length === 0) {
@@ -457,10 +424,16 @@ function renderPartyScoring() {
                 mgktPersonCounts.set(mgktPerson, (mgktPersonCounts.get(mgktPerson) || 0) + 1);
             }
 
+            //// Count by Party ID
+            //const partyId = row['Party ID'] || row.PartyID || row['Party Name'] || '';
+            //if (partyId) {
+            //    partyIdCounts.set(partyId, (partyIdCounts.get(partyId) || 0) + 1);
+            //}
             // Count by Party ID
             const partyId = row['Party ID'] || row.PartyID || row['Party Name'] || '';
             if (partyId) {
-                partyIdCounts.set(partyId, (partyIdCounts.get(partyId) || 0) + 1);
+                const parsed = parseInt(row['Score'], 10);
+                partyIdCounts.set(partyId, Number.isNaN(parsed) ? 0 : parsed);
             }
         });
 
@@ -537,18 +510,18 @@ function populateSummaryGrid(tbodyId, dataMap, columnName) {
 }
 
 function renderGoldenCircleClient() {
-    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
-    selectedDealers = selectedDealers.join(',');
-    if (AreAllSelected('ddlDealerNamelist') === true) {
-        selectedDealers = '0';
-    }
-    if (selectedDealers == '') {
+    const filters = GetAllFilters();
+    
+    if (filters.dealerCodes == '') {
         return;
     }
-    GetDateRange();
+    
+    // Update date range display for this tab
+    updateReportDateRangeDisplay();
+    
     Showloader();
     
-    SalesanalysisASTService.GetSalesAnalysisData('GOLDEN_CIRCLE', selectedDealers, fromDate, toDate).then(function (response) {
+    SalesanalysisASTService.GetSalesAnalysisData('GOLDEN_CIRCLE', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
         HideLoader();
         
         if (!response || response.length === 0) {
@@ -617,6 +590,74 @@ function clearGoldenCircleDashboard() {
     if (gpFooter) {
         gpFooter.innerHTML = '<tr><td class="col-width-4-party"><strong>Grand total</strong></td><td class="text-end col-width-4-value"><strong>0.00</strong></td><td class="text-end col-width-4-value"><strong>0.00</strong></td><td class="text-end col-width-4-value"><strong>0.00</strong></td></tr>';
     }
+}
+
+// Helper function to create pie charts using Chart.js
+function createPieChart(canvasId, labels, data, title) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) {
+        console.warn('Canvas element not found:', canvasId);
+        return null;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Generate colors for the chart
+    const colors = generateColors(labels.length);
+    
+    return new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 10,
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = formatNumber(context.parsed);
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Helper function to generate colors
+function generateColors(count) {
+    const baseColors = [
+        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+        '#858796', '#5a5c69', '#2e59d9', '#17a673', '#2c9faf'
+    ];
+    
+    const colors = [];
+    for (let i = 0; i < count; i++) {
+        colors.push(baseColors[i % baseColors.length]);
+    }
+    return colors;
 }
 
 function processGoldenCircleData(data) {
@@ -824,195 +865,645 @@ function renderGPWeightTable(gpByParty) {
 }
 
 function renderManifestation() {
-    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
-    selectedDealers = selectedDealers.join(',');
-    if (AreAllSelected('ddlDealerNamelist') === true) {
-        selectedDealers = '0';
-    }
-    if (selectedDealers == '') {
+    const filters = GetAllFilters();
+    
+    if (filters.dealerCodes == '') {
         return;
     }
-    GetDateRange();
+    
+    // Update date range display for this tab
+    updateReportDateRangeDisplay();
+    
     Showloader();
     
-    SalesanalysisASTService.GetSalesAnalysisData('MANIFESTATION', selectedDealers, fromDate, toDate).then(function (response) {
+    SalesanalysisASTService.GetMultipleTableSalesAnalysisData('MANIFESTATION', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
         HideLoader();
         
-        if (!response || response.length === 0) {
+        if (!response) {
             console.warn('No manifestation data received');
-            // Clear the table
-            document.getElementById('manifestationTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
-            document.getElementById('manifestationTableHeader').innerHTML = '';
+            clearManifestationTables();
             return;
         }
 
-        const StringFilterColumn = [];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = [];
-        const Button = false;
-        const showButtons = [];
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = [];
-        const ColumnAlignment = {
-            'Manifestation': 'right',
-            'Weight': 'right',
-            'Sales': 'right',
-            'Actual Sales': 'right',
-            'Variance': 'right',
-            'Achievement %': 'right'
-        };
+        console.log('Manifestation API Response:', response);
 
-        if (typeof BizsolCustomFilterGrid !== 'undefined') {
-            BizsolCustomFilterGrid.CreateDataTable("manifestationTableHeader", "manifestationTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        // The API can return data in different formats:
+        // Format 1: { weekWeight: [], manifeste: [], orderSheet: [], itemWeight: [] }
+        // Format 2: { WeekWeight: [], Manifeste: [], OrderSheet: [], ItemWeight: [] }
+        // Format 3: { Table1: [], Table2: [], Table3: [], Table4: [] }
+        // Format 4: Array of 4 separate arrays [[...], [...], [...], [...]]
+        // Format 5: Single array with mixed data
+        
+        let weekWeightData = [];
+        let manifesteData = [];
+        let orderSheetData = [];
+        let itemWeightData = [];
+
+        // Try different property name variations
+        if (response.weekWeight || response.WeekWeight) {
+            weekWeightData = response.weekWeight || response.WeekWeight || [];
+            manifesteData = response.manifeste || response.Manifeste || [];
+            orderSheetData = response.orderSheet || response.OrderSheet || [];
+            itemWeightData = response.itemWeight || response.ItemWeight || [];
         }
+        // Try Table1, Table2, etc.
+        else if (response.Table || response.Table1) {
+            weekWeightData = response.Table || response.Table1 || [];
+            manifesteData = response.Table2 || [];
+            orderSheetData = response.Table3 || [];
+            itemWeightData = response.Table4 || [];
+        }
+        // Try array of arrays
+        else if (Array.isArray(response) && response.length > 0) {
+            if (Array.isArray(response[0])) {
+                // Array of arrays
+                weekWeightData = response[0] || [];
+                manifesteData = response[1] || [];
+                orderSheetData = response[2] || [];
+                itemWeightData = response[3] || [];
+            } else {
+                // Single array - try to separate
+                separateAndRenderManifestationData(response);
+                return;
+            }
+        }
+        
+        renderWeekWeightTable(weekWeightData);
+        renderManifesteTable(manifesteData);
+        renderOrderSheetTable(orderSheetData);
+        renderItemWeightTable(itemWeightData);
+        
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching manifestation data:', err);
+        clearManifestationTables();
     });
+}
+
+function clearManifestationTables() {
+    // Clear Week / WEIGHT table
+    document.getElementById('weekWeightTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+    document.getElementById('weekWeightTableHeader').innerHTML = '';
+    
+    // Clear Manifeste table
+    document.getElementById('manifesteTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+    document.getElementById('manifesteTableHeader').innerHTML = '';
+    
+    // Clear Order Sheet Data table
+    document.getElementById('orderSheetTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+    document.getElementById('orderSheetTableHeader').innerHTML = '';
+    
+    // Clear Item / WEIGHT table
+    document.getElementById('itemWeightTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+    document.getElementById('itemWeightTableHeader').innerHTML = '';
+}
+
+function separateAndRenderManifestationData(data) {
+    // This function tries to intelligently separate the data
+    // Based on the properties each row contains
+    
+    console.warn('API returned single array. Attempting to separate data by row properties...');
+    
+    const weekWeightData = [];
+    const manifesteData = [];
+    const orderSheetData = [];
+    const itemWeightData = [];
+    
+    data.forEach(row => {
+        const keys = Object.keys(row).map(k => k.toLowerCase());
+        
+        // Week/WEIGHT table has MGKT_PERSON and week columns (April - W1, etc.)
+        const hasWeekColumns = Object.keys(row).some(k => 
+            k.includes('April') || k.includes('August') || k.includes('December') || 
+            k.includes('W1') || k.includes('W2') || k.includes('W3') || k.includes('W4') || k.includes('W5') ||
+            k.includes('-W')
+        );
+        
+        // Manifeste table has specific columns
+        const hasManifestColumns = keys.some(k => 
+            k.includes('party codes') || k.includes('partycodes') || 
+            k.includes('mani_current_m') || k.includes('manifested') ||
+            k.includes('not achieved') || k.includes('not done')
+        );
+        
+        // Order Sheet Data has Invoice related columns
+        const hasOrderSheetColumns = keys.some(k => 
+            k.includes('invoice date') || k.includes('invoicedate') || 
+            k.includes('invoice amount') || k.includes('invoiceamount') ||
+            k.includes('nbd/crr') || k.includes('nbdcrr')
+        );
+        
+        // Item / WEIGHT - simplest structure with just item and weight
+        const hasItemWeightColumns = keys.length <= 3 && 
+            (keys.includes('item name') || keys.includes('itemname')) &&
+            (keys.includes('weight'));
+        
+        // Classify the row
+        if (hasWeekColumns) {
+            weekWeightData.push(row);
+        } else if (hasManifestColumns) {
+            manifesteData.push(row);
+        } else if (hasOrderSheetColumns) {
+            orderSheetData.push(row);
+        } else if (hasItemWeightColumns) {
+            itemWeightData.push(row);
+        } else {
+            // Default: put in order sheet if has weight
+            if (keys.includes('weight')) {
+                orderSheetData.push(row);
+            }
+        }
+    });
+    
+    console.log('Separated data:', {
+        weekWeight: weekWeightData.length,
+        manifeste: manifesteData.length,
+        orderSheet: orderSheetData.length,
+        itemWeight: itemWeightData.length
+    });
+    
+    renderWeekWeightTable(weekWeightData);
+    renderManifesteTable(manifesteData);
+    renderOrderSheetTable(orderSheetData);
+    renderItemWeightTable(itemWeightData);
+}
+
+function renderWeekWeightTable(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('weekWeightTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+        document.getElementById('weekWeightTableHeader').innerHTML = '';
+        return;
+    }
+
+    const StringFilterColumn = [];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = [];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = [];
+    
+    // Right align all numeric columns (weeks)
+    const ColumnAlignment = {};
+    Object.keys(data[0] || {}).forEach(key => {
+        if (key !== 'MGKT_PERSON' && key !== 'MGKT Person' && key !== 'Marketing Man' && 
+            key !== 'MarketingMan' && key !== 'Person') {
+            ColumnAlignment[key] = 'right';
+        }
+    });
+
+    if (typeof BizsolCustomFilterGrid !== 'undefined') {
+        BizsolCustomFilterGrid.CreateDataTable("weekWeightTableHeader", "weekWeightTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+    }
+}
+
+function renderManifesteTable(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('manifesteTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+        document.getElementById('manifesteTableHeader').innerHTML = '';
+        return;
+    }
+
+    const StringFilterColumn = [];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = [];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = [];
+    const ColumnAlignment = {
+        'Mani_Current_M': 'right',
+        'Manifested ?': 'right',
+        'Manifested': 'right',
+        'Actual': 'right',
+        'Current Week': 'right',
+        'Current_M': 'right',
+        'Not Achieved': 'right',
+        'Not Done %': 'right',
+        'NotAchieved': 'right',
+        'NotDone': 'right'
+    };
+
+    if (typeof BizsolCustomFilterGrid !== 'undefined') {
+        BizsolCustomFilterGrid.CreateDataTable("manifesteTableHeader", "manifesteTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+    }
+}
+
+function renderOrderSheetTable(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('orderSheetTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+        document.getElementById('orderSheetTableHeader').innerHTML = '';
+        return;
+    }
+
+    const StringFilterColumn = [];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = ['Invoice Date', 'InvoiceDate'];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = [];
+    const ColumnAlignment = {
+        'Weight': 'right',
+        'Invoice Amount': 'right',
+        'InvoiceAmount': 'right'
+    };
+
+    if (typeof BizsolCustomFilterGrid !== 'undefined') {
+        BizsolCustomFilterGrid.CreateDataTable("orderSheetTableHeader", "orderSheetTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+    }
+}
+
+function renderItemWeightTable(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('itemWeightTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+        document.getElementById('itemWeightTableHeader').innerHTML = '';
+        return;
+    }
+
+    const StringFilterColumn = [];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = [];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = [];
+    const ColumnAlignment = {
+        'Weight': 'right',
+        'WEIGHT': 'right'
+    };
+
+    if (typeof BizsolCustomFilterGrid !== 'undefined') {
+        BizsolCustomFilterGrid.CreateDataTable("itemWeightTableHeader", "itemWeightTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+    }
 }
 
 function renderNBDCRR() {
-    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
-    selectedDealers = selectedDealers.join(',');
-    if (AreAllSelected('ddlDealerNamelist') === true) {
-        selectedDealers = '0';
-    }
-    if (selectedDealers == '') {
+    const filters = GetAllFilters();
+    
+    if (filters.dealerCodes == '') {
         return;
     }
-    GetDateRange();
+    
+    // Update date range display for this tab
+    updateReportDateRangeDisplay();
+    
     Showloader();
     
-    SalesanalysisASTService.GetSalesAnalysisData('NBD_CRR', selectedDealers, fromDate, toDate).then(function (response) {
+    SalesanalysisASTService.GetMultipleTableSalesAnalysisData('NBD_CRR', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
         HideLoader();
         
-        if (!response || response.length === 0) {
+        if (!response) {
             console.warn('No NBD CRR data received');
-            // Clear the table
-            document.getElementById('nbdCrrTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
-            document.getElementById('nbdCrrTableHeader').innerHTML = '';
+            clearNBDCRRTables();
             return;
         }
 
-        const StringFilterColumn = [];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = [];
-        const Button = false;
-        const showButtons = [];
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = [];
-        const ColumnAlignment = {
-            'Weight': 'right',
-            'Sales': 'right',
-            'NBD Count': 'right',
-            'CRR Count': 'right',
-            'Total Count': 'right'
-        };
+        console.log('NBD CRR API Response:', response);
 
-        if (typeof BizsolCustomFilterGrid !== 'undefined') {
-            BizsolCustomFilterGrid.CreateDataTable("nbdCrrTableHeader", "nbdCrrTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        let baseWeekData = [];
+        let orderDetailsData = [];
+
+        // Try different property name variations for the API response
+        if (response.baseWeek || response.BaseWeek) {
+            baseWeekData = response.baseWeek || response.BaseWeek || [];
+            orderDetailsData = response.orderDetails || response.OrderDetails || [];
         }
+        else if (response.Table || response.Table1) {
+            baseWeekData = response.Table || response.Table1 || [];
+            orderDetailsData = response.Table2 || [];
+        }
+        else if (Array.isArray(response) && response.length > 0) {
+            if (Array.isArray(response[0])) {
+                baseWeekData = response[0] || [];
+                orderDetailsData = response[1] || [];
+            } else {
+                separateAndRenderNBDCRRData(response);
+                return;
+            }
+        }
+        
+        renderNBDCRRBaseWeekTable(baseWeekData);
+        renderNBDCRROrderDetailsTable(orderDetailsData);
+        
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching NBD CRR data:', err);
+        clearNBDCRRTables();
     });
 }
 
-function renderSegmentWise() {
-    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
-    selectedDealers = selectedDealers.join(',');
-    if (AreAllSelected('ddlDealerNamelist') === true) {
-        selectedDealers = '0';
-    }
-    if (selectedDealers == '') {
+function clearNBDCRRTables() {
+    document.getElementById('nbdCrrBaseWeekTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+    document.getElementById('nbdCrrBaseWeekTableHeader').innerHTML = '';
+    
+    document.getElementById('nbdCrrOrderDetailsTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+    document.getElementById('nbdCrrOrderDetailsTableHeader').innerHTML = '';
+}
+
+function separateAndRenderNBDCRRData(data) {
+    console.warn('API returned single array. Attempting to separate NBD CRR data by row properties...');
+    
+    const baseWeekData = [];
+    const orderDetailsData = [];
+    
+    data.forEach(row => {
+        const keys = Object.keys(row).map(k => k.toLowerCase());
+        
+        // BASE / Week table has MGKT_PERSON and week columns (April - W1, etc.)
+        const hasWeekColumns = Object.keys(row).some(k => 
+            k.includes('April') || k.includes('August') || k.includes('December') || 
+            k.includes('W1') || k.includes('W2') || k.includes('W3') || k.includes('W4') || k.includes('W5') ||
+            k.includes('-W') || k.includes('WEEK')
+        );
+        
+        // Order Details has Invoice related columns and Party Name
+        const hasOrderColumns = keys.some(k => 
+            k.includes('party name') || k.includes('partyname') ||
+            k.includes('invoice') || k.includes('nbd') || k.includes('crr') ||
+            k.includes('item name') || k.includes('itemname')
+        );
+        
+        if (hasWeekColumns) {
+            baseWeekData.push(row);
+        } else if (hasOrderColumns) {
+            orderDetailsData.push(row);
+        } else {
+            // Default: check if has Marketing Man - likely order details
+            if (keys.includes('marketing man') || keys.includes('marketingman')) {
+                orderDetailsData.push(row);
+            } else {
+                baseWeekData.push(row);
+            }
+        }
+    });
+    
+    console.log('Separated NBD CRR data:', {
+        baseWeek: baseWeekData.length,
+        orderDetails: orderDetailsData.length
+    });
+    
+    renderNBDCRRBaseWeekTable(baseWeekData);
+    renderNBDCRROrderDetailsTable(orderDetailsData);
+}
+
+function renderNBDCRRBaseWeekTable(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('nbdCrrBaseWeekTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+        document.getElementById('nbdCrrBaseWeekTableHeader').innerHTML = '';
         return;
     }
-    GetDateRange();
+
+    const StringFilterColumn = [];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = [];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = [];
+    
+    // Right align all numeric columns (weeks, percentages, counts)
+    const ColumnAlignment = {};
+    Object.keys(data[0] || {}).forEach(key => {
+        const lowerKey = key.toLowerCase();
+        if (lowerKey !== 'mgkt_person' && lowerKey !== 'mgkt person' && 
+            lowerKey !== 'marketing man' && lowerKey !== 'marketingman' && 
+            lowerKey !== 'week' && lowerKey !== 'person') {
+            ColumnAlignment[key] = 'right';
+        }
+    });
+
+    if (typeof BizsolCustomFilterGrid !== 'undefined') {
+        BizsolCustomFilterGrid.CreateDataTable("nbdCrrBaseWeekTableHeader", "nbdCrrBaseWeekTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+    }
+}
+
+function renderNBDCRROrderDetailsTable(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('nbdCrrOrderDetailsTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+        document.getElementById('nbdCrrOrderDetailsTableHeader').innerHTML = '';
+        return;
+    }
+
+    const StringFilterColumn = [];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = ['Invoice Date', 'InvoiceDate'];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = [];
+    const ColumnAlignment = {
+        'Weight': 'right',
+        'Invoice Amount': 'right',
+        'InvoiceAmount': 'right',
+        'Manifested Weight': 'right',
+        'ManifestedWeight': 'right'
+    };
+
+    if (typeof BizsolCustomFilterGrid !== 'undefined') {
+        BizsolCustomFilterGrid.CreateDataTable("nbdCrrOrderDetailsTableHeader", "nbdCrrOrderDetailsTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+    }
+}
+
+function renderSegmentWise() {
+    const filters = GetAllFilters();
+    
+    if (filters.dealerCodes == '') {
+        return;
+    }
+    
+    // Update date range display for this tab
+    updateReportDateRangeDisplay();
+    
     Showloader();
     
-    SalesanalysisASTService.GetSalesAnalysisData('SEGMENT_WISE', selectedDealers, fromDate, toDate).then(function (response) {
+    SalesanalysisASTService.GetSalesAnalysisData('SEGMENT_WISE', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
         HideLoader();
         
-        if (!response || response.length === 0) {
-            console.warn('No segment wise data received');
-            // Clear the table
-            document.getElementById('segmentWiseTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
-            document.getElementById('segmentWiseTableHeader').innerHTML = '';
-            return;
-        }
+        if (response && response.length > 0) {
+            const StringFilterColumn = [];
+            const NumericFilterColumn = [];
+            const DateFilterColumn = [];
+            const Button = false;
+            const showButtons = [];
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = [];
+            const ColumnAlignment = {
+                'Weight': 'right',
+                'Sales': 'right',
+                'Sales Amount': 'right',
+                'SalesAmount': 'right',
+                'Transactions': 'right',
+                'Count': 'right',
+                'Percentage': 'right',
+                '%': 'right',
+                'Manifested Weight': 'right'
+            };
 
-        const StringFilterColumn = [];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = [];
-        const Button = false;
-        const showButtons = [];
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = [];
-        const ColumnAlignment = {
-            'Weight': 'right',
-            'Sales': 'right',
-            'Parties': 'right',
-            'Total Sales': 'right',
-            'Share %': 'right'
-        };
+            // Compute percentage for each row
+            const totalWeight = response.reduce((sum, row) => sum + (parseFloat(row.Weight) || 0), 0);
+            response.forEach(row => {
+                const weight = parseFloat(row.Weight) || 0;
+                row.Percentage = totalWeight > 0 ? ((weight / totalWeight) * 100).toFixed(2) + '%' : '0.00%';
+            });
 
-        if (typeof BizsolCustomFilterGrid !== 'undefined') {
-            BizsolCustomFilterGrid.CreateDataTable("segmentWiseTableHeader", "segmentWiseTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            if (typeof BizsolCustomFilterGrid !== 'undefined') {
+                BizsolCustomFilterGrid.CreateDataTable("segmentWiseTableHeader", "segmentWiseTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            }
+        } else {
+            const el = $('#segmentWiseTableBody')[0];
+            if (el) el.innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
         }
-    }).catch(function (err) {
+    }).catch(function (error) {
         HideLoader();
-        console.error('Error fetching segment wise data:', err);
+        console.error('Error fetching segment wise data:', error);
     });
 }
 
 function renderGPWiseSummary() {
-    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
-    selectedDealers = selectedDealers.join(',');
-    if (AreAllSelected('ddlDealerNamelist') === true) {
-        selectedDealers = '0';
-    }
-    if (selectedDealers == '') {
+    const filters = GetAllFilters();
+    
+    if (filters.dealerCodes == '') {
         return;
     }
-    GetDateRange();
+    
+    // Update date range display for this tab
+    updateReportDateRangeDisplay();
+    
     Showloader();
     
-    SalesanalysisASTService.GetSalesAnalysisData('GP_WISE_SUMMARY', selectedDealers, fromDate, toDate).then(function (response) {
+    SalesanalysisASTService.GetSalesAnalysisData('GP_WISE_SUMMARY', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
         HideLoader();
         
         if (!response || response.length === 0) {
             console.warn('No GP wise summary data received');
-            // Clear the table
             document.getElementById('gpWiseTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
             document.getElementById('gpWiseTableHeader').innerHTML = '';
             return;
         }
 
-        const StringFilterColumn = [];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = [];
-        const Button = false;
-        const showButtons = [];
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = [];
-        const ColumnAlignment = {
-            'Weight': 'right',
-            'Sales': 'right',
-            'Parties': 'right',
-            'Total Sales': 'right',
-            'Share %': 'right',
-            'High GP': 'right',
-            'Low GP': 'right',
-            'Medium GP': 'right'
-        };
+        console.log('GP Wise Summary API Response:', response);
 
-        if (typeof BizsolCustomFilterGrid !== 'undefined') {
-            BizsolCustomFilterGrid.CreateDataTable("gpWiseTableHeader", "gpWiseTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
-        }
+        // Process and render the GP Wise Summary table with fixed header/footer
+        renderGPWiseSummaryCustomTable(response);
+        
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching GP wise summary data:', err);
     });
+}
+
+function renderGPWiseSummaryCustomTable(data) {
+    const tbody = document.getElementById('gpWiseTableBody');
+    const thead = document.getElementById('gpWiseTableHeader');
+    
+    if (!tbody || !thead) {
+        console.error('GP Wise table elements not found');
+        return;
+    }
+
+    // Aggregate data by Marketing Man and GP category
+    const aggregatedData = new Map();
+    
+    data.forEach(function(row) {
+        // Get Marketing Man (try multiple property variations)
+        const marketingMan = row['Marketing Man'] || row['MarketingMan'] || row['MARKETING MAN'] || 
+                            row['MGKT Person'] || row['MGKT_PERSON'] || row['Person'] || 'Unknown';
+        
+        // Get Weight
+        const weight = parseFloat(row['Weight'] || row['WEIGHT'] || row['weight'] || 0);
+        
+        // Get GP category and normalize it
+        const gpRaw = (row['GP'] || row['gp'] || '').toString().toUpperCase().trim();
+        let gpCategory = 'Medium'; // default
+        
+        if (gpRaw.includes('HIGH')) {
+            gpCategory = 'High';
+        } else if (gpRaw.includes('LOW')) {
+            gpCategory = 'Low';
+        } else if (gpRaw.includes('MEDIUM')) {
+            gpCategory = 'Medium';
+        }
+        
+        // Initialize if not exists
+        if (!aggregatedData.has(marketingMan)) {
+            aggregatedData.set(marketingMan, { High: 0, Low: 0, Medium: 0 });
+        }
+        
+        // Add weight to appropriate category
+        const personData = aggregatedData.get(marketingMan);
+        personData[gpCategory] += weight;
+    });
+
+    // Create header
+    thead.innerHTML = `
+        <tr>
+            <th rowspan="2" style="vertical-align: middle; background-color: #e9ecef; position: sticky; top: 0; z-index: 10;">MARKETING MAN</th>
+            <th colspan="3" class="text-center" style="background-color: #e9ecef; position: sticky; top: 0; z-index: 10;">GP / WEIGHT</th>
+            <th rowspan="2" class="text-end" style="vertical-align: middle; background-color: #e9ecef; position: sticky; top: 0; z-index: 10;">Total</th>
+            <th rowspan="2" class="text-end" style="vertical-align: middle; background-color: #e9ecef; position: sticky; top: 0; z-index: 10;">% of Total</th>
+        </tr>
+        <tr>
+            <th class="text-end" style="background-color: #e9ecef; position: sticky; top: 38px; z-index: 10;">High</th>
+            <th class="text-end" style="background-color: #e9ecef; position: sticky; top: 38px; z-index: 10;">Low</th>
+            <th class="text-end" style="background-color: #e9ecef; position: sticky; top: 38px; z-index: 10;">Medium</th>
+        </tr>
+    `;
+
+    // Sort by total weight descending
+    const sorted = Array.from(aggregatedData.entries())
+        .sort((a, b) => {
+            const totalA = a[1].High + a[1].Low + a[1].Medium;
+            const totalB = b[1].High + b[1].Low + b[1].Medium;
+            return totalB - totalA;
+        });
+
+    // Calculate overall grand total for percentage calculation
+    let overallGrandTotal = 0;
+    sorted.forEach(function([marketingMan, gpData]) {
+        overallGrandTotal += gpData.High + gpData.Low + gpData.Medium;
+    });
+
+    // Populate body
+    tbody.innerHTML = '';
+    let grandTotalHigh = 0;
+    let grandTotalLow = 0;
+    let grandTotalMedium = 0;
+    let grandTotal = 0;
+
+    sorted.forEach(function([marketingMan, gpData]) {
+        const rowTotal = gpData.High + gpData.Low + gpData.Medium;
+        const percentageOfTotal = overallGrandTotal > 0 ? ((rowTotal / overallGrandTotal) * 100) : 0;
+        
+        grandTotalHigh += gpData.High;
+        grandTotalLow += gpData.Low;
+        grandTotalMedium += gpData.Medium;
+        grandTotal += rowTotal;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${escapeHtml(marketingMan)}</td>
+            <td class="text-end">${formatNumber(gpData.High)}</td>
+            <td class="text-end">${formatNumber(gpData.Low)}</td>
+            <td class="text-end">${formatNumber(gpData.Medium)}</td>
+            <td class="text-end"><strong>${formatNumber(rowTotal)}</strong></td>
+            <td class="text-end"><strong>${percentageOfTotal.toFixed(2)}%</strong></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Add grand total row to tbody (sticky at bottom)
+    const grandTotalRow = document.createElement('tr');
+    grandTotalRow.style.cssText = 'background-color: #d4edda; font-weight: bold; position: sticky; bottom: 0; border-top: 2px solid #333;';
+    grandTotalRow.innerHTML = `
+        <td><strong>Grand total</strong></td>
+        <td class="text-end"><strong>${formatNumber(grandTotalHigh)}</strong></td>
+        <td class="text-end"><strong>${formatNumber(grandTotalLow)}</strong></td>
+        <td class="text-end"><strong>${formatNumber(grandTotalMedium)}</strong></td>
+        <td class="text-end"><strong>${formatNumber(grandTotal)}</strong></td>
+        <td class="text-end"><strong>100.00%</strong></td>
+    `;
+    tbody.appendChild(grandTotalRow);
 }
 
 // Initialize dropdowns
