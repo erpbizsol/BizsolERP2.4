@@ -281,6 +281,39 @@
         background-color: #f8f9fa;
     }
 
+    /* Running Plan header - waterflow animation */
+    @@keyframes runningPlanWaterFlow {
+        0% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+        }
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
+    .slit-plan-running {
+        font-weight: 700;
+        text-align: center;
+        padding: 12px 8px;
+        font-size: 14pt;
+        background: linear-gradient(135deg, #667eea 0%, #eff514 100%);
+        /* background: linear-gradient(120deg, #0d47a1, #42a5f5, #0d47a1); */
+        background-size: 200% 200%;
+        color: #ffffff;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        animation: runningPlanWaterFlow 1s ease-in-out infinite;
+    }
+
+    @@media (max-width: 768px) {
+        .slit-plan-running {
+            font-size: 12pt;
+            padding: 10px 6px;
+        }
+    }
     .slit-plan-upcoming {
         font-weight: 700;
         text-align: center;
@@ -300,6 +333,96 @@
     }
 
     /* Upcoming cards layout is handled by Bootstrap (.row + g-3). */
+
+    /* Main Plan Card - Base font sizes (22pt for header-main) */
+    #mainPlanCard .slit-plan-header-main {
+        font-size: 22pt;
+    }
+
+    @@media (max-width: 768px) {
+        #mainPlanCard .slit-plan-header-main {
+            font-size: 16pt;
+        }
+    }
+
+    #mainPlanCard .slit-plan-header-sub {
+        font-size: 19pt;
+    }
+
+    @@media (max-width: 768px) {
+        #mainPlanCard .slit-plan-header-sub {
+            font-size: 14pt;
+        }
+    }
+
+    #mainPlanCard .slit-plan-coil-id,
+    #mainPlanCard .slit-plan-coil-size {
+        font-size: 17pt;
+    }
+
+    @@media (max-width: 768px) {
+        #mainPlanCard .slit-plan-coil-id,
+        #mainPlanCard .slit-plan-coil-size {
+            font-size: 13pt;
+        }
+    }
+
+    #mainPlanCard .slit-plan-coil-weight,
+    #mainPlanCard .slit-plan-output {
+        font-size: 16pt;
+    }
+
+    @@media (max-width: 768px) {
+        #mainPlanCard .slit-plan-coil-weight,
+        #mainPlanCard .slit-plan-output {
+            font-size: 12pt;
+        }
+    }
+
+    /* Upcoming Plan Cards - 2pt lower font sizes (20pt for header-main) */
+    #upcomingPlansContainer .slit-plan-header-main {
+        font-size: 20pt;
+    }
+
+    @@media (max-width: 768px) {
+        #upcomingPlansContainer .slit-plan-header-main {
+            font-size: 14pt;
+        }
+    }
+
+    #upcomingPlansContainer .slit-plan-header-sub {
+        font-size: 17pt;
+    }
+
+    @@media (max-width: 768px) {
+        #upcomingPlansContainer .slit-plan-header-sub {
+            font-size: 12pt;
+        }
+    }
+
+    #upcomingPlansContainer .slit-plan-coil-id,
+    #upcomingPlansContainer .slit-plan-coil-size {
+        font-size: 15pt;
+    }
+
+    @@media (max-width: 768px) {
+        #upcomingPlansContainer .slit-plan-coil-id,
+        #upcomingPlansContainer .slit-plan-coil-size {
+            font-size: 11pt;
+        }
+    }
+
+    #upcomingPlansContainer .slit-plan-coil-weight,
+    #upcomingPlansContainer .slit-plan-output {
+        font-size: 14pt;
+    }
+
+    @@media (max-width: 768px) {
+        #upcomingPlansContainer .slit-plan-coil-weight,
+        #upcomingPlansContainer .slit-plan-output {
+            font-size: 10pt;
+        }
+    }
 
     /* Button styling in plan cards */
     .slit-plan-card .btn {
@@ -338,7 +461,7 @@
     }
 
     .btn-start-main {
-        animation: startButtonColorChange 5s ease-in-out infinite;
+        animation: startButtonColorChange .5s ease-in-out infinite;
     }
 
     /* Action row (Start / Edit / End) */
@@ -619,6 +742,19 @@
     </div>
     <!-- New plan layout shown when filterType = 'New' -->
     <div id="NewPlanLayout" style="display:none;" class="container-fluid px-0 mt-1">
+        <!-- Main Plan Header -->
+        <div class="card slit-plan-card col-sm-6" style="margin:auto !important;">
+            <div class="card-body p-0">
+                <table class="slit-plan-table mb-0">
+                    <tr>
+                        <td colspan="10" class="slit-plan-running">
+                            Running Plan
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
         <!-- Main Plan Cards (rendered dynamically based on Priority + InTime) -->
         <div id="mainPlanCard" class="row justify-content-center g-3 mx-0 mt-2"></div>
         
