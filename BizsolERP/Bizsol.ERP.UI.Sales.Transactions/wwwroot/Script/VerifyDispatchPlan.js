@@ -74,7 +74,7 @@ $(document).ready(function () {
     if (menuValue && menuValue !== "undefined" && menuValue !== "") {
         $("#ERPHeading").text(menuValue);
     } else {
-        $("#ERPHeading").text("Despatch Plan Marketing Person Wise");
+        $("#ERPHeading").text("Delivery Order/Despatch Advice (GST)");
     }
     if (decodeURI(urlParams['FrmAction']) == 'Verify PPC') {
         $("#ddlStatus").val('P');
@@ -940,7 +940,7 @@ function ExportExcel() {
 
 }
 function Verify(Code) {
-    var ModuleName = "Despatch Plan Marketing Person Wise",
+    var ModuleName = "Delivery Order/Despatch Advice (GST)",
         OptionName = "Verify",
         ShowMsg = "Y",
         FinYear = getFinancialYear(),
@@ -1128,7 +1128,7 @@ $(document).on('click', '.transporter-update', function () {
     UpdateTransporter();
 });
 function UpdateTransporter() {
-    var ModuleName = "Despatch Plan Marketing Person Wise",
+    var ModuleName = "Delivery Order/Despatch Advice (GST)",
         OptionName = "Verify",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
@@ -1164,7 +1164,7 @@ function Update() {
     }
 }
 function SendMailToTransporter() {
-    var ModuleName = "Despatch Plan Marketing Person Wise",
+    var ModuleName = "Delivery Order/Despatch Advice (GST)",
         OptionName = "Verify",
         ShowMsg = "Y",
         FinYear = getFinancialYear(),
@@ -1450,17 +1450,113 @@ function validateQtyMTRS(input) {
     return true;
 }
 
-// Add validation on blur/change events
+// Flag to prevent recursive updates during auto-calculation
+let isCalculating = false;
+
+// Auto-calculation functions for MT and PC
+function calculatePCFromMT($input) {
+    if (isCalculating) return;
+    
+    const $row = $input.closest('tr');
+    const balQtyPc = parseFloat($row.data('bal-qty-pc') || 0);
+    const balQtyMT = parseFloat($row.data('bal-qty-mt') || 0);
+    const inputVal = $input.val() ? $input.val().toString().trim() : '';
+    
+    // If field value is empty, treat as 0
+    const qtyMT = inputVal === '' ? 0 : parseFloat(inputVal);
+    if (isNaN(qtyMT)) {
+        return;
+    }
+    
+    // Check if balance quantities are valid for conversion
+    if (balQtyPc === 0 || balQtyMT === 0) {
+        return;
+    }
+    
+    // Calculate conversion factor from balance quantities
+    const conversionFactor = balQtyMT / balQtyPc;
+    if (conversionFactor === 0 || !isFinite(conversionFactor)) {
+        return;
+    }
+    
+    // Calculate PC from MT: PC = MT / conversionFactor
+    const calculatedPC = Math.round(qtyMT / conversionFactor);
+    const $pcInput = $row.find('.qty-pc');
+    
+    // Update the calculated value (even if 0)
+    if (calculatedPC >= 0 && calculatedPC <= balQtyPc) {
+        isCalculating = true;
+        $pcInput.val(calculatedPC);
+        validateQtyPc($pcInput[0]);
+        isCalculating = false;
+    }
+}
+
+function calculateMTFromPC($input) {
+    if (isCalculating) return;
+    
+    const $row = $input.closest('tr');
+    const balQtyPc = parseFloat($row.data('bal-qty-pc') || 0);
+    const balQtyMT = parseFloat($row.data('bal-qty-mt') || 0);
+    const inputVal = $input.val() ? $input.val().toString().trim() : '';
+    
+    // If field value is empty, treat as 0
+    const qtyPc = inputVal === '' ? 0 : parseInt(inputVal, 10);
+    if (isNaN(qtyPc)) {
+        return;
+    }
+    
+    // Check if balance quantities are valid for conversion
+    if (balQtyPc === 0 || balQtyMT === 0) {
+        return;
+    }
+    
+    // Calculate conversion factor from balance quantities
+    const conversionFactor = balQtyMT / balQtyPc;
+    if (conversionFactor === 0 || !isFinite(conversionFactor)) {
+        return;
+    }
+    
+    // Calculate MT from PC: MT = PC * conversionFactor
+    const calculatedMT = (qtyPc * conversionFactor).toFixed(3);
+    const $mtInput = $row.find('.qty-mt');
+    const calculatedMTNum = parseFloat(calculatedMT);
+    
+    // Update the calculated value (even if 0)
+    if (calculatedMTNum >= 0 && calculatedMTNum <= balQtyMT) {
+        isCalculating = true;
+        $mtInput.val(calculatedMT);
+        validateQtyMT($mtInput[0]);
+        isCalculating = false;
+    }
+}
+
+// Add validation and auto-calculation on blur/change events
 $(document).on('blur change', '.qty-pc', function () {
     validateQtyPc(this);
+    // Auto-calculate MT when PC is entered
+    calculateMTFromPC($(this));
 });
 
 $(document).on('blur change', '.qty-mt', function () {
     validateQtyMT(this);
+    // Auto-calculate PC when MT is entered
+    calculatePCFromMT($(this));
 });
 
 $(document).on('blur change', '.qty-mtrs', function () {
     validateQtyMTRS(this);
+});
+
+// Add real-time calculation on input (as user types)
+$(document).on('input', '.qty-pc', function () {
+    // Auto-calculate MT when PC is being typed (even if empty, treat as 0)
+    calculateMTFromPC($(this));
+});
+
+$(document).on('input', '.qty-mt', function () {
+    // Auto-calculate PC when MT is being typed (even if empty, treat as 0)
+    calculatePCFromMT($(this));
 });
 function UpdateQty() {
     const rows = $('#tbodyUpdateGridWrapper tr');
