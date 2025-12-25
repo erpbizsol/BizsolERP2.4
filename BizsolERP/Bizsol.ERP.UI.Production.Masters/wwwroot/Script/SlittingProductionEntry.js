@@ -195,7 +195,6 @@ function SlittingProductionEntry_BuildPlanCardHtml(item, isMainCard) {
 }
 
 function SlittingProductionEntry_BindNewPlanLayout(plans) {
-    // Clear previous data
     $('#mainPlanCard').empty();
     $('#upcomingPlansContainer').empty();
     $('#upcomingPlansSection').hide();
@@ -204,49 +203,63 @@ function SlittingProductionEntry_BindNewPlanLayout(plans) {
         return;
     }
 
-    // Split by Priority + InTime:
-    // - Main cards: Priority is NOT blank AND InTime is NOT blank (started + prioritized)
-    // - Upcoming cards: everything else (not started / missing priority)
-    let mainCards = [];
+    let runningCards = [];
     let upcomingCards = [];
 
+    // First, separate running (InTime not blank) and others
     for (let i = 0; i < plans.length; i++) {
-        let pVal = SlittingProductionEntry_GetValue(plans[i], ['Priority', 'Priority No', 'PriorityNo', 'priority'], '');
         let inTime = SlittingProductionEntry_GetInTimeValue(plans[i]);
 
-        if (!SlittingProductionEntry_IsBlank(pVal) && !SlittingProductionEntry_IsBlank(inTime)) {
-            mainCards.push(plans[i]);
+        if (!SlittingProductionEntry_IsBlank(inTime)) {
+            runningCards.push(plans[i]);
         } else {
             upcomingCards.push(plans[i]);
         }
     }
 
-    SlittingProductionEntry_SortPlansByPriority(mainCards);
-    SlittingProductionEntry_SortPlansByPriority(upcomingCards);
-
-    // Render main cards (multiple)
-    for (let i = 0; i < mainCards.length; i++) {
-        $('#mainPlanCard').append(SlittingProductionEntry_BuildPlanCardHtml(mainCards[i], true));
+    // Only ONE running plan card: pick by Priority
+    let mainCard = null;
+    if (runningCards.length > 0) {
+        SlittingProductionEntry_SortPlansByPriority(runningCards);
+        mainCard = runningCards[0];
     }
 
-    // If there is no main card (no started+priority), show first upcoming as main to avoid blank screen
-    if (mainCards.length === 0 && upcomingCards.length > 0) {
-        $('#mainPlanCard').append(SlittingProductionEntry_BuildPlanCardHtml(upcomingCards[0], true));
-        upcomingCards.splice(0, 1);
+    // Build upcoming list = all plans except the selected mainCard
+    let allUpcoming = [];
+    for (let i = 0; i < plans.length; i++) {
+        let planCode = SlittingProductionEntry_GetPlanCode(plans[i]);
+        let isMain = false;
+
+        if (mainCard !== null) {
+            let mainCode = SlittingProductionEntry_GetPlanCode(mainCard);
+            if (mainCode !== '' && planCode !== '' && mainCode.toString() === planCode.toString()) {
+                isMain = true;
+            }
+        }
+
+        if (!isMain) {
+            allUpcoming.push(plans[i]);
+        }
     }
 
-    // Render upcoming cards
-    if (upcomingCards.length > 0) {
+    // Render single running plan card (if any)
+    if (mainCard !== null) {
+        $('#mainPlanCard').append(SlittingProductionEntry_BuildPlanCardHtml(mainCard, true));
+    }
+
+    // Render upcoming plans
+    if (allUpcoming.length > 0) {
         $('#upcomingPlansSection').show();
-        for (let i = 0; i < upcomingCards.length; i++) {
-            $('#upcomingPlansContainer').append(SlittingProductionEntry_BuildPlanCardHtml(upcomingCards[i], false));
+        SlittingProductionEntry_SortPlansByPriority(allUpcoming);
+        for (let i = 0; i < allUpcoming.length; i++) {
+            $('#upcomingPlansContainer').append(SlittingProductionEntry_BuildPlanCardHtml(allUpcoming[i], false));
         }
     }
 }
 
-// Event handler for Start button on main plan
 $(document).on('click', '.btn-start-main', function () {
-    let planCode = $(this).data('plan-code');
+    let btn = $(this);
+    let planCode = btn.data('plan-code');
 
     if (planCode && planCode !== '' && planCode !== 0 && planCode !== '0') {
         Showloader();
@@ -256,46 +269,38 @@ $(document).on('click', '.btn-start-main', function () {
                 toastr.error(resp.Msg || 'Failed to update start time.');
                 return;
             }
+
+            let now = new Date();
+            let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            btn.closest('.slit-plan-actions-row').find('.slit-plan-actions-time').text(timeText);
+
+            let idx = SlittingProductionEntry_FindPlanIndexByCode(G_NewPlanSummary, planCode);
+            if (idx >= 0) {
+                G_NewPlanSummary[idx].StartTime = timeText;
+                G_NewPlanSummary[idx].InTime = timeText;
+            }
+            
+            btn.prop('disabled', true);
+            btn.removeClass('btn-success').addClass('btn-secondary');
         }).catch(function () {
             HideLoader();
         });
     }
-
-    let now = new Date();
-    let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    // update the time text inside the same card
-    $(this).closest('.slit-plan-actions-row').find('.slit-plan-actions-time').text(timeText);
-
-    // persist start time in the selected plan item by code
-    let idx = SlittingProductionEntry_FindPlanIndexByCode(G_NewPlanSummary, planCode);
-    if (idx >= 0) {
-        G_NewPlanSummary[idx].StartTime = timeText;
-        G_NewPlanSummary[idx].InTime = timeText;
-    }
-    
-    // Disable the button after starting
-    $(this).prop('disabled', true);
-    $(this).removeClass('btn-success').addClass('btn-secondary');
 });
 
-// Event handler for End button on main plan
 $(document).on('click', '.btn-end-main', function () {
     let now = new Date();
     let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
     $('#spEndTimeCell').text(timeText);
 
-    // Disable the button after ending
     $(this).prop('disabled', true);
     $(this).removeClass('btn-danger').addClass('btn-secondary');
 });
 
-// Event handler for Start button on upcoming plans
 $(document).on('click', '.btn-start-upcoming', function () {
-    let planCode = $(this).data('plan-code');
-
-    let now = new Date();
-    let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    let btn = $(this);
+    let planCode = btn.data('plan-code');
 
     if (planCode && planCode !== '' && planCode !== 0 && planCode !== '0') {
         Showloader();
@@ -305,27 +310,27 @@ $(document).on('click', '.btn-start-upcoming', function () {
                 toastr.error(resp.Msg || 'Failed to update start time.');
                 return;
             }
+
+            let now = new Date();
+            let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            let idx = SlittingProductionEntry_FindPlanIndexByCode(G_NewPlanSummary, planCode);
+            if (idx >= 0) {
+                G_NewPlanSummary[idx].StartTime = timeText;
+                G_NewPlanSummary[idx].InTime = timeText;
+
+                // Rebuild layout: this will add ONE running plan card in mainPlanCard
+                // and move this plan from upcoming to main section
+                SlittingProductionEntry_BindNewPlanLayout(G_NewPlanSummary);
+            } else {
+                btn.closest('.slit-plan-actions-row').find('.slit-plan-actions-time').text(timeText);
+                btn.prop('disabled', true);
+                btn.removeClass('btn-success').addClass('btn-secondary');
+            }
         }).catch(function () {
             HideLoader();
         });
     }
-
-    // update in-memory list by code (index based on current render order may change)
-    let idx = SlittingProductionEntry_FindPlanIndexByCode(G_NewPlanSummary, planCode);
-    if (idx >= 0) {
-        G_NewPlanSummary[idx].StartTime = timeText;
-        G_NewPlanSummary[idx].InTime = timeText;
-
-        // refresh layout to move it into main section if now qualifies
-        SlittingProductionEntry_BindNewPlanLayout(G_NewPlanSummary);
-    } else {
-        // fallback: just set time text in this card
-        $(this).closest('.slit-plan-actions-row').find('.slit-plan-actions-time').text(timeText);
-    }
-
-    // Disable the button after starting
-    $(this).prop('disabled', true);
-    $(this).removeClass('btn-success').addClass('btn-secondary');
 });
 $(document).on('click', '.btn-end-upcoming', function () {
     let planIndex = $(this).data('plan-index');
@@ -334,7 +339,6 @@ $(document).on('click', '.btn-end-upcoming', function () {
     
     $('.upcoming-end-time-' + planIndex).text(timeText);
     
-    // Disable the button after starting
     $(this).prop('disabled', true);
     $(this).removeClass('btn-danger').addClass('btn-secondary');
 });
@@ -346,7 +350,6 @@ function SlittingProductionEntry_ShowPlanGrid() {
         return false;
     }
 
-    // API should receive FilterType=Plan even when UI filterType is 'New'
     let apiFilterType = filterType === 'New' ? 'Plan' : filterType;
 
     Showloader();

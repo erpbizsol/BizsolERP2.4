@@ -51,13 +51,13 @@ $(document).ready(function () {
             });
         }
 
-        const StringFilterColumn = ["Enquiry No", "Company Name", "State", "City", "Sales Person"];
+        const StringFilterColumn = ["Company Name", "City", "Sales Person"];
         const NumericFilterColumn = [];
         const DateFilterColumn = ["Next Followup Date"];
         const Button = false;
         const showButtons = [];
         const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["Lead Date","Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "NextFollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject"]
+        const hiddenColumns = ["Lead Date", "Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "NextFollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No","State"]
         const ColumnAlignment = {
         };
         if (filteredData.length > 0) {
@@ -259,6 +259,19 @@ $(document).ready(function () {
         if (e.key === "Enter") {
             $("#txtRemarks").focus();
         }
+    });
+
+    // Ensure only one default contact checkbox is selected at a time
+    $(document).on('change', '.cp-default', function () {
+        // Uncheck all others
+        $('.cp-default').not(this).prop('checked', false);
+
+        // If user tries to uncheck the last one, keep it checked (always at least one)
+        if (!$('.cp-default:checked').length) {
+            $(this).prop('checked', true);
+        }
+
+        UpdateDefaultContactSummary();
     });
     
     $('#txtNextFollowupDate').change(function () {
@@ -490,13 +503,13 @@ function GetLeadMasterList(SalesPerson) {
         $("#table").show();
         if (response.length > 0) {
             G_originalData = response;
-            const StringFilterColumn = ["Enquiry No","Company Name","State","City","Sales Person"];
+            const StringFilterColumn = ["Person Name", "Company Name", "City", "Sales Person","Contact No"];
             const NumericFilterColumn = [];
-            const DateFilterColumn = ["Next Followup Date"];
+            const DateFilterColumn = ["Followup Date"];
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Lead Date","Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "NextFollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject"];
+            const hiddenColumns = ["Lead Date", "Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "FollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No","State"];
             const ColumnAlignment = {
                 Action: ";min-width:150px;"
             };
@@ -508,7 +521,7 @@ function GetLeadMasterList(SalesPerson) {
                 const isUnverified = item.Verified === 'N';
 
                 const followUpBtn = isUnverified ? '' : `<button class="btn btn-info icon-height mb-1" title="Follow Up" onclick="FollowUp(${item.Code})" ${isRejected ? 'disabled' : ''}><i class="fa-solid fa-user-plus"></i></button>&nbsp;`;
-                const editBtn = `<button class="btn btn-warning icon-height mb-1" title="Edit" onclick="GetEnquiryDetailsByCode(${item.Code},this)" ${isRejected ? 'disabled' : ''}><i class="fa fa-pencil"></i></button>`;
+                const editBtn = `<button class="btn btn-warning icon-height mb-1" title="Edit" onclick="GetEnquiryDetailsByCode(${item.Code},this)" ${isRejected ? 'disabled' : ''}><i class="fa fa-pencil"></i></button>&nbsp;`;
 
                 //if (isDraft) {
                 //    return {
@@ -531,12 +544,12 @@ function GetLeadMasterList(SalesPerson) {
                             ${assignBtn}
                             ${deleteBtn}
                         </ul>
-                    </div>
+                    </div>&nbsp;
                 `;
-
+                const whatsappbtn = `<button class="btn btn-success icon-height mb-1" title="WhatsApp" onclick="WhatsApp(${item.Code})"><i class="fab fa-whatsapp"></i></button>&nbsp;`;
                 return {
                     ...item,
-                    Action: followUpBtn + editBtn + dropdown,
+                    Action: followUpBtn + editBtn + whatsappbtn + dropdown,
                 };
             });
 
@@ -1027,6 +1040,8 @@ async function GetEnquiryDetailsByCode(Code) {
         if (resObj.ContactPersonsList?.length > 0) {
             let grid = "";
             $.each(resObj.ContactPersonsList, function (i, person) {
+                let isDefaultValue = person.isDefault || person.IsDefault || person["Is Default"] || person["Default"] || "";
+                const isDefault = isDefaultValue === 'Y' || isDefaultValue === 'y';
                 grid += `
                     <tr>
                         <td><input type='text' id='txtName_${person.Code}' class='form-control form-control-sm cp-name' value='${person.Name || ""}' maxlength='50' autocomplete='off' /></td>
@@ -1034,6 +1049,9 @@ async function GetEnquiryDetailsByCode(Code) {
                         <td><input type='text' id='txtDesignation_${person.Code}' class='form-control form-control-sm cp-desig' value='${person.Designation || ""}' autocomplete='off' /></td>
                         <td><input type='email' id='txtContactEmail_${person.Code}' class='form-control form-control-sm cp-email' value='${person["Email Id"] || ""}' maxlength='100' autocomplete='off' /></td>
                         <td><input type='text' id='txtContactMobileNo_${person.Code}' class='form-control form-control-sm cp-mobile Phone' value='${person["Contact No"] || ""}' maxlength='10' autocomplete='off' /></td>
+                        <td class='text-center'>
+                            <input type='checkbox' class='form-check-input cp-default' ${isDefault ? "checked" : ""} />
+                        </td>
                         <td class='text-center'>
                             <button type='button' class='btn btn-height btn-info' onclick='ChangeContact(${person.Code})'><i class='fa fa-save'></i></button>
                             &nbsp;
@@ -1122,6 +1140,15 @@ function ClearData() {
     try { SetTodayEnquiryDate(); } catch (e) {}
 }
 function SaveContactPersonDetails(Code) {
+    let isDefaultChecked = false;
+    let $nameInput = $("#txtName_" + Code);
+    if ($nameInput.length > 0) {
+        let $row = $nameInput.closest('tr');
+        let $checkbox = $row.find('.cp-default');
+        if ($checkbox.length > 0) {
+            isDefaultChecked = $checkbox.is(':checked');
+        }
+    }
     let payload = [{
         code: Code || 0,
         enquiryMaster_Code: $("#hfCode").val() || 0,
@@ -1131,7 +1158,8 @@ function SaveContactPersonDetails(Code) {
         contactPersonExt: "",
         contactPersonDesignation: $("#txtDesignation_"+Code).val() || "",
         departmentName: $("#txtDepartment_"+Code).val() || "",
-        emailInInvoiceCopy: ""
+        emailInInvoiceCopy: "",
+        isDefault: isDefaultChecked ? "Y" : "N"
     }];
     if ($("#hfCode").val() == '0' || $("#hfCode").val() == '0') {
         toastr.error("Please fill first enquiry details.");
@@ -1274,6 +1302,51 @@ function Delete(Code) {
         }
 
     });
+}
+function WhatsApp(Code) {
+    try {
+        if (!G_originalData || G_originalData.length === 0) {
+            toastr.error("Contact information not available.");
+            return;
+        }
+        let item = G_originalData.find(function (x) {
+            return x.Code == Code;
+        });
+        if (!item) {
+            toastr.error("Contact information not found.");
+            return;
+        }
+        let contactNo = item["Contact No"] || item.ContactNo;
+        if (contactNo === null || contactNo === undefined || contactNo === "" || contactNo === "null" || contactNo === "undefined") {
+            toastr.error("Contact number is not available for this record. Please add a contact number.");
+            return;
+        }
+        contactNo = contactNo.toString().trim();
+        if (contactNo === "" || contactNo === "null" || contactNo === "undefined") {
+            toastr.error("Contact number is not available for this record. Please add a contact number.");
+            return;
+        }
+        contactNo = contactNo.replace(/\s+/g, "");
+        contactNo = contactNo.replace(/-/g, "");
+        contactNo = contactNo.replace(/\(/g, "");
+        contactNo = contactNo.replace(/\)/g, "");
+        if (contactNo.startsWith("+")) {
+            contactNo = contactNo.substring(1);
+        }
+        if (contactNo.startsWith("91") && contactNo.length === 12) {
+        } else if (contactNo.length === 10) {
+            contactNo = "91" + contactNo;
+        }
+        if (contactNo.length < 10) {
+            toastr.error("Invalid contact number.");
+            return;
+        }
+        let whatsappUrl = "https://wa.me/" + contactNo;
+        window.open(whatsappUrl, "_blank");
+    } catch (error) {
+        toastr.error("An error occurred while opening WhatsApp.");
+        console.error(error);
+    }
 }
 function getFinancialYear() {
     var currentDate = new Date();
@@ -1953,9 +2026,36 @@ function CreateContactNewRow() {
     grid += "<td><input type='text'id='txtDesignation_0' class='form-control form-control-sm cp-desig' value='' autocomplete='off' /></td>";
     grid += "<td><input type='text'id='txtContactEmail_0' class='form-control form-control-sm pd-ContactEmail' value='' autocomplete='off' /></td>";
     grid += "<td><input type='text'id='txtContactMobileNo_0' class='form-control form-control-sm pd-ContactMobileNo Phone' value='' maxlength='10' autocomplete='off' /></td>";
+    grid += "<td class='text-center'><input type='checkbox' class='form-check-input cp-default' /></td>";
     grid += "<td class='text-center'><button type='button' class='btn btn-height btn-info' onclick='ChangeContact(0)'><i class='fa fa-save'></i></button></td>";
     grid += "</tr>";
     return grid;
+}
+
+function UpdateDefaultContactSummary() {
+    try {
+        const $checked = $('.cp-default:checked').closest('tr');
+        if ($checked.length === 0) {
+            return;
+        }
+
+        const name = $checked.find('.cp-name, .pd-ContactName').val() || '';
+        const email = $checked.find('.cp-email, .pd-ContactEmail').val() || '';
+        const mobile = $checked.find('.cp-mobile, .pd-ContactMobileNo').val() || '';
+
+        // Reflect selected contact into main enquiry fields
+        if (name !== '') {
+            $('#ddlCustomerContactPersonName').val(name);
+        }
+        if (email !== '') {
+            $('#txtEmail').val(email);
+        }
+        if (mobile !== '') {
+            $('#txtContactNo').val(mobile);
+        }
+    } catch (e) {
+        // silent fail for safety
+    }
 }
 function CreateProductNewRow() {
     let grid = "";
@@ -2387,3 +2487,4 @@ window.CloseContactPersonModal = CloseContactPersonModal;
 window.SaveModalContactPersonDetails = SaveModalContactPersonDetails;
 window.ResetEnquiryFollowUp = ResetEnquiryFollowUp;
 window.BackEnquiry = BackEnquiry;
+window.WhatsApp = WhatsApp;
