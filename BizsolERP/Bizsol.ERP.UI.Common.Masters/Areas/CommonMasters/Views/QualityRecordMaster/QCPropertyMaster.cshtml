@@ -2,10 +2,129 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>@ViewData["Title"]</h2>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/QCPropertyMaster .js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+<style>
+    .table-wrapper.fixed-height-table {
+        height: calc(100vh - 250px);
+        min-height: 300px;
+        max-height: none;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+</style>
 
-<p>
-    QC Property Master view loaded successfully.
-</p>
+<div id="locateQCPropertyMaster">
+            <div class="row">
+                <div class="col-md-12 text-end">
+                    <button type="button" onclick="CreateNew_QCPropertyMaster()" title="Create New" class="btn btn-primary btn-height">Create New</button>
+                    <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download List"><i class="fa fa-download" aria-hidden="true"></i></button>
+                </div>
+            </div>
+    <div class="row mt-1">
+        <div class="col-md-12">
+            <div id="tblQCPropertyMaster">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="QCPropertyMaster" class="fixed-width-table table">
+                        <thead id="table-header-QCPropertyMaster">
+                        </thead>
+                        <tbody id="table-body-QCPropertyMaster">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-QCPropertyMaster">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-
+<div id="newCreateFormQCPropertyMaster" class="card" style="display:none">
+    <form class="card-body">
+        <div class="row">
+            <input type="hidden" name="Code" id="Code" class="form-control" value="0">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtQCGroup" class="col-form-label-sm fw-bold">QC Group Name:<span class="text-danger">*</span></label>
+                    <select id="txtQCGroup" name="txtQCGroup" class="box_border form-control form-control-sm" required></select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtPropertyName" class="col-form-label-sm fw-bold">Property Name:<span class="text-danger">*</span></label>
+                    <input id="txtPropertyName" name="txtPropertyName" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Property Name" maxlength="30" required />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtSortOrderMaster" class="col-form-label-sm fw-bold">Sort Order:<span class="text-danger">*</span></label>
+                    <input id="txtSortOrderMaster" name="txtSortOrderMaster" class="box_border form-control form-control-sm text-end" autocomplete="off" placeholder="Sort Order" maxlength="8" oninput="QCPropertyMaster_validateSortOrder(this)" required />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtValueType" class="col-form-label-sm fw-bold">Value Type:<span class="text-danger">*</span></label>
+                    <select id="txtValueType" name="txtValueType" class="box_border form-control form-control-sm" required></select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtLOVValue" class="col-form-label-sm fw-bold">LOV Value:<span class="text-danger">*</span></label>
+                    <input id="txtLOVValue" name="txtLOVValue" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Enter values separated by comma (e.g., Value1, Value2, Value3)" maxlength="2000" required />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtMinValue" class="col-form-label-sm fw-bold">Min Value:<span class="text-danger">*</span></label>
+                    <input id="txtMinValue" name="txtMinValue" class="box_border form-control form-control-sm text-end" autocomplete="off" placeholder="Min Value" maxlength="8" oninput="QCPropertyMaster_validateDecimal(this)" onblur="QCPropertyMaster_validateMinMax()" required />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtMaxValue" class="col-form-label-sm fw-bold">Max Value:<span class="text-danger">*</span></label>
+                    <input id="txtMaxValue" name="txtMaxValue" class="box_border form-control form-control-sm text-end" autocomplete="off" placeholder="Max Value" maxlength="8" oninput="QCPropertyMaster_validateDecimal(this)" onblur="QCPropertyMaster_validateMinMax()" required />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtDefaultValue" class="col-form-label-sm fw-bold">Default Value:<span class="text-danger">*</span></label>
+                    <input id="txtDefaultValue" name="txtDefaultValue" class="box_border form-control form-control-sm " autocomplete="off" placeholder="Default Value" maxlength="100" required />
+                </div>
+            </div>
+            
+            <div class="col-md-12 text-end">
+                <button type="button" onclick="submit_QCPropertyMaster()" id="saveQCPropertyMasterButton" title="Save" class="btn btn-success btn-height">Save</button>
+                <button type="button" class="btn btn-danger btn-height" title="Back" onclick="QCPropertyMaster_Back()">Back</button>
+            </div>
+        </div>
+    </form>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="reasonForDeleteInput" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveModal_QCPropertyMasterDelete()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal_QCPropertyMasterDelete()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
+</div>
