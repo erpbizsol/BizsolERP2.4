@@ -141,18 +141,21 @@ function submit_QCPropertyTestTypeMaster() {
 
     if (!FieldValue) {
         toastr.warning('Please Fill The Test Type.');
+        $('#txtTestType').focus();
         return;
     }
 
     let sortOrderText = $('#txtSortOrder').val();
     if (!sortOrderText) {
         toastr.warning('Please Enter Sort Order.');
+        $('#txtSortOrder').focus();
         return;
     }
 
     let sortOrderNumber = parseFloat(sortOrderText);
     if (isNaN(sortOrderNumber)) {
         toastr.warning('Please Enter Valid Sort Order.');
+        $('#txtSortOrder').focus();
         return;
     }
 
@@ -225,6 +228,7 @@ function SaveModal_QCPropertyTestTypeMasterDelete() {
 
     if (!reasonForDelete) {
         toastr.warning("Please Provide a Reason For Delete.");
+        $('#reasonForDeleteInput').focus();
         return;
     }
 
