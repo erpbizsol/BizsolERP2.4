@@ -2,10 +2,102 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>@ViewData["Title"]</h2>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/QCPropertyTestTypeMaster.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+<style>
+    .table-wrapper.fixed-height-table {
+        height: calc(100vh - 250px);
+        min-height: 300px;
+        max-height: none;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+</style>
 
-<p>
-    QC Property Test Type Master view loaded successfully.
-</p>
+<div id="locateQCPropertyTestTypeMaster">
+    <div class="row">
+        <div class="col-md-12 text-end">
+            <button type="button" onclick="CreateNew_QCPropertyTestTypeMaster()" title="Create New" class="btn btn-primary btn-height">Create New</button>
+            <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download List"><i class="fa fa-download" aria-hidden="true"></i></button>
+        </div>
+    </div>
+    <div class="row mt-1">
+        <div class="col-md-12">
+            <div id="tblQCPropertyTestTypeMaster">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="QCPropertyTestTypeMaster" class="fixed-width-table table">
+                        <thead id="table-header-QCPropertyTestTypeMaster">
+                        </thead>
+                        <tbody id="table-body-QCPropertyTestTypeMaster">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-QCPropertyTestTypeMaster">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
+<div id="newCreateFormQCPropertyTestTypeMaster" class="card" style="display:none">
+    <form class="card-body">
+        <div class="row">
+            <input type="hidden" name="Code" id="Code" class="form-control" value="0">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtTestType" class="col-form-label-sm fw-bold">Test Type:<span class="text-danger">*</span></label>
+                    <input id="txtTestType" name="txtTestType" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Test Type" maxlength="50" required />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label for="txtSortOrder" class="col-form-label-sm fw-bold">Sort Order:<span class="text-danger">*</span></label>
+                    <input id="txtSortOrder" name="txtSortOrder" class="box_border form-control form-control-sm text-end" autocomplete="off" placeholder="Sort Order" maxlength="8" oninput="QCPropertyTestTypeMaster_validateSortOrder(this)" required />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="chkActive" class="col-form-label-sm fw-bold">Active:<span class="text-danger">*</span></label>
+                    <div class="form-check">
+                        <input type="checkbox" id="chkActive" name="chkActive" class="form-check-input" />
+                        <label class="form-check-label small" for="chkActive">Is Active</label>
+                    </div>
+                </div>
+            </div>
 
+            <div class="col-md-4 text-end" style="margin-top:2rem">
+                <button type="button" onclick="submit_QCPropertyTestTypeMaster()" id="saveQCPropertyTestTypeMasterButton" title="Save" class="btn btn-success btn-height">Save</button>
+                <button type="button" class="btn btn-danger btn-height" title="Back" onclick="QCPropertyTestTypeMaster_Back()">Back</button>
+            </div>
+        </div>
+    </form>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="reasonForDeleteInput" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveModal_QCPropertyTestTypeMasterDelete()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal_QCPropertyTestTypeMasterDelete()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
+</div>
