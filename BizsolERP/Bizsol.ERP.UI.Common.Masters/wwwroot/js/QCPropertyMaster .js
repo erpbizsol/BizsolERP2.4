@@ -18,6 +18,7 @@ $(document).ready(function () {
     });
 
     SetupEnterKeyNavigation();
+    PopulateValueTypeDropdown();
 });
 
 function SetupEnterKeyNavigation() {
@@ -251,19 +252,36 @@ function QCPropertyMaster_EditData(Code) {
                         normalizedValueType = 'Lov';
                     }
                     
-                    BizSolHelperFunction.SelectOptionByText('txtValueType', normalizedValueType);
+                    $('#txtValueType').val(normalizedValueType);
+                    HandleValueTypeChange();
                     
                     setTimeout(function () {
-                        HandleValueTypeChange();
-                        if (lovValue) {
-                            $('#txtLOVValue').val(lovValue);
+                        if (normalizedValueType === 'Lov' || normalizedValueType === 'LOV') {
+                            if (lovValue) {
+                                $('#txtLOVValue').val(lovValue);
+                            }
+                        } else if (normalizedValueType === 'Numeric' || normalizedValueType === 'Decimal') {
+                            if (row.MinValue !== undefined && row.MinValue !== null) {
+                                $('#txtMinValue').val(row.MinValue);
+                            } else if (row.minValue !== undefined && row.minValue !== null) {
+                                $('#txtMinValue').val(row.minValue);
+                            }
+                            if (row.MaxValue !== undefined && row.MaxValue !== null) {
+                                $('#txtMaxValue').val(row.MaxValue);
+                            } else if (row.maxValue !== undefined && row.maxValue !== null) {
+                                $('#txtMaxValue').val(row.maxValue);
+                            }
+                        } else if (normalizedValueType === 'Text') {
+                            if (row.DefaultValue !== undefined && row.DefaultValue !== null) {
+                                $('#txtDefaultValue').val(row.DefaultValue);
+                            } else if (row.defaultValue !== undefined && row.defaultValue !== null) {
+                                $('#txtDefaultValue').val(row.defaultValue);
+                            }
                         }
-                    }, 300);
+                    }, 200);
                 } else {
+                    $('#txtValueType').val('Numeric');
                     HandleValueTypeChange();
-                    if (lovValue) {
-                        $('#txtLOVValue').val(lovValue);
-                    }
                 }
 
                 var qcGroupText = '';
@@ -317,31 +335,10 @@ function QCPropertyMaster_EditData(Code) {
                         }
                     }
                 }, 200);
-
-                if (row.MinValue !== undefined && row.MinValue !== null) {
-                    minValue = row.MinValue;
-                } else if (row.minValue !== undefined && row.minValue !== null) {
-                    minValue = row.minValue;
-                }
-                $('#txtMinValue').val(minValue);
-
-                if (row.MaxValue !== undefined && row.MaxValue !== null) {
-                    maxValue = row.MaxValue;
-                } else if (row.maxValue !== undefined && row.maxValue !== null) {
-                    maxValue = row.maxValue;
-                }
-                $('#txtMaxValue').val(maxValue);
-
-                if (row.DefaultValue !== undefined && row.DefaultValue !== null) {
-                    defaultValue = row.DefaultValue;
-                } else if (row.defaultValue !== undefined && row.defaultValue !== null) {
-                    defaultValue = row.defaultValue;
-                }
-                $('#txtDefaultValue').val(defaultValue);
             }
             setTimeout(function () {
                 $('#txtQCGroup').focus();
-            }, 400);
+            }, 500);
         });
     });
 }
@@ -354,24 +351,28 @@ function submit_QCPropertyMaster() {
 
     if (!propertyName) {
         toastr.warning('Please Fill The Property Name.');
+        $('#txtPropertyName').focus();
         return;
     }
 
     let sortOrderText = $('#txtSortOrderMaster').val();
     if (!sortOrderText) {
         toastr.warning('Please Enter Sort Order.');
+        $('#txtSortOrderMaster').focus();
         return;
     }
 
     let sortOrderNumber = parseFloat(sortOrderText);
     if (isNaN(sortOrderNumber)) {
         toastr.warning('Please Enter Valid Sort Order.');
+        $('#txtSortOrderMaster').focus();
         return;
     }
 
     let valueType = $('#txtValueType').val();
     if (!valueType) {
         toastr.warning('Please Select Value Type.');
+        $('#txtValueType').focus();
         return;
     }
 
@@ -384,11 +385,13 @@ function submit_QCPropertyMaster() {
         let lovValueText = $('#txtLOVValue').val();
         if (!lovValueText) {
             toastr.warning('Please Enter LOV Value.');
+            $('#txtLOVValue').focus();
             return;
         }
         lovValueText = lovValueText.trim();
         if (!lovValueText) {
             toastr.warning('Please Enter LOV Value.');
+            $('#txtLOVValue').focus();
             return;
         }
         lovValue = lovValueText;
@@ -396,22 +399,26 @@ function submit_QCPropertyMaster() {
         let minValueText = $('#txtMinValue').val();
         if (!minValueText) {
             toastr.warning('Please Enter Min Value.');
+            $('#txtMinValue').focus();
             return;
         }
         minValueNumber = parseFloat(minValueText);
         if (isNaN(minValueNumber)) {
             toastr.warning('Please Enter Valid Min Value.');
+            $('#txtMinValue').focus();
             return;
         }
 
         let maxValueText = $('#txtMaxValue').val();
         if (!maxValueText) {
             toastr.warning('Please Enter Max Value.');
+            $('#txtMaxValue').focus();
             return;
         }
         maxValueNumber = parseFloat(maxValueText);
         if (isNaN(maxValueNumber)) {
             toastr.warning('Please Enter Valid Max Value.');
+            $('#txtMaxValue').focus();
             return;
         }
 
@@ -433,6 +440,7 @@ function submit_QCPropertyMaster() {
     let qcGroup = $('#txtQCGroup').val();
     if (!qcGroup) {
         toastr.warning('Please Select QC Group.');
+        $('#txtQCGroup').focus();
         return;
     }
 
@@ -523,6 +531,7 @@ function SaveModal_QCPropertyMasterDelete() {
 
     if (!reasonForDelete) {
         toastr.warning("Please Provide a Reason For Delete.");
+        $('#reasonForDeleteInput').focus();
         return;
     }
 
@@ -561,7 +570,6 @@ function CreateNew_QCPropertyMaster() {
     $('#Code').val('0');
     $('#txtPropertyName').val('');
     $('#txtSortOrderMaster').val('');
-    $('#txtValueType').val('');
     $('#txtLOVValue').val('');
     $('#txtQCGroup').val('');
     $('#txtMinValue').val('');
@@ -569,9 +577,9 @@ function CreateNew_QCPropertyMaster() {
     $('#txtDefaultValue').val('');
     $('#locateQCPropertyMaster').hide();
     $('#newCreateFormQCPropertyMaster').show();
+    $('#txtValueType').val('Numeric');
     PopulateValueTypeDropdown();
     GetQCPropertyMasterForDropdown();
-    HandleValueTypeChange();
     setTimeout(function () {
         $('#txtQCGroup').focus();
     }, 300);
@@ -613,16 +621,34 @@ function QCPropertyMaster_validateDecimal(input) {
         value = input.value;
     }
 
-    value = value.replace(/[^0-9.]/g, '');
+    var valueType = $('#txtValueType').val();
+    
+    if (valueType === 'Numeric') {
+        value = value.replace(/[^0-9]/g, '');
+    } else if (valueType === 'Decimal') {
+        value = value.replace(/[^0-9.]/g, '');
+        
+        var parts = value.split('.');
+        if (parts.length > 2) {
+            value = parts[0] + '.' + parts[1];
+            parts = value.split('.');
+        }
 
-    var parts = value.split('.');
-    if (parts.length > 2) {
-        value = parts[0] + '.' + parts[1];
-        parts = value.split('.');
-    }
+        if (parts[1] && parts[1].length > 2) {
+            value = parts[0] + '.' + parts[1].slice(0, 2);
+        }
+    } else {
+        value = value.replace(/[^0-9.]/g, '');
+        
+        var parts = value.split('.');
+        if (parts.length > 2) {
+            value = parts[0] + '.' + parts[1];
+            parts = value.split('.');
+        }
 
-    if (parts[1] && parts[1].length > 2) {
-        value = parts[0] + '.' + parts[1].slice(0, 2);
+        if (parts[1] && parts[1].length > 2) {
+            value = parts[0] + '.' + parts[1].slice(0, 2);
+        }
     }
 
     input.value = value;
@@ -656,37 +682,48 @@ function HandleValueTypeChange() {
     var valueType = $('#txtValueType').val();
     
     if (valueType === 'Text') {
-        $('#txtLOVValue').closest('.col-md-3').hide();
-        $('#txtMinValue').closest('.col-md-3').hide();
-        $('#txtMaxValue').closest('.col-md-3').hide();
+        $('#txtLOVValue').closest('div[class*="col-md"]').hide();
+        $('#txtMinValue').closest('div[class*="col-md"]').hide();
+        $('#txtMaxValue').closest('div[class*="col-md"]').hide();
         $('#txtLOVValue').val('').removeAttr('required');
         $('#txtMinValue').val('').removeAttr('required');
         $('#txtMaxValue').val('').removeAttr('required');
-        $('#txtDefaultValue').closest('.col-md-3').show();
+        $('#txtDefaultValue').closest('div[class*="col-md"]').show();
         $('#txtDefaultValue').attr('required', 'required');
     } else if (valueType === 'Numeric' || valueType === 'Decimal') {
-        $('#txtLOVValue').closest('.col-md-3').hide();
-        $('#txtDefaultValue').closest('.col-md-3').hide();
+        $('#txtLOVValue').closest('div[class*="col-md"]').hide();
+        $('#txtDefaultValue').closest('div[class*="col-md"]').hide();
         $('#txtLOVValue').val('').removeAttr('required');
         $('#txtDefaultValue').val('').removeAttr('required');
-        $('#txtMinValue').closest('.col-md-3').show();
-        $('#txtMaxValue').closest('.col-md-3').show();
+        $('#txtMinValue').closest('div[class*="col-md"]').show();
+        $('#txtMaxValue').closest('div[class*="col-md"]').show();
         $('#txtMinValue').attr('required', 'required');
         $('#txtMaxValue').attr('required', 'required');
+        
+        if (valueType === 'Numeric') {
+            var minValue = $('#txtMinValue').val();
+            var maxValue = $('#txtMaxValue').val();
+            if (minValue && minValue.indexOf('.') !== -1) {
+                $('#txtMinValue').val(minValue.split('.')[0]);
+            }
+            if (maxValue && maxValue.indexOf('.') !== -1) {
+                $('#txtMaxValue').val(maxValue.split('.')[0]);
+            }
+        }
     } else if (valueType === 'Lov' || valueType === 'LOV') {
-        $('#txtMinValue').closest('.col-md-3').hide();
-        $('#txtMaxValue').closest('.col-md-3').hide();
-        $('#txtDefaultValue').closest('.col-md-3').hide();
+        $('#txtMinValue').closest('div[class*="col-md"]').hide();
+        $('#txtMaxValue').closest('div[class*="col-md"]').hide();
+        $('#txtDefaultValue').closest('div[class*="col-md"]').hide();
         $('#txtMinValue').val('').removeAttr('required');
         $('#txtMaxValue').val('').removeAttr('required');
         $('#txtDefaultValue').val('').removeAttr('required');
-        $('#txtLOVValue').closest('.col-md-3').show();
+        $('#txtLOVValue').closest('div[class*="col-md"]').show();
         $('#txtLOVValue').attr('required', 'required');
     } else {
-        $('#txtLOVValue').closest('.col-md-3').show();
-        $('#txtMinValue').closest('.col-md-3').show();
-        $('#txtMaxValue').closest('.col-md-3').show();
-        $('#txtDefaultValue').closest('.col-md-3').show();
+        $('#txtLOVValue').closest('div[class*="col-md"]').show();
+        $('#txtMinValue').closest('div[class*="col-md"]').show();
+        $('#txtMaxValue').closest('div[class*="col-md"]').show();
+        $('#txtDefaultValue').closest('div[class*="col-md"]').show();
         $('#txtLOVValue').attr('required', 'required');
         $('#txtMinValue').attr('required', 'required');
         $('#txtMaxValue').attr('required', 'required');
@@ -695,22 +732,6 @@ function HandleValueTypeChange() {
 }
 
 function PopulateValueTypeDropdown() {
-    var valueTypeOptions = [
-        { Code: 'Text', Desp: 'Text' },
-        { Code: 'Numeric', Desp: 'Numeric' },
-        { Code: 'Decimal', Desp: 'Decimal' },
-        { Code: 'Lov', Desp: 'Lov' }
-    ];
-    
-    BindSelectList1($('#txtValueType')[0], valueTypeOptions);
-
-    if ($('#txtValueType').hasClass('select2-hidden-accessible')) {
-        $('#txtValueType').select2('destroy');
-    }
-    $('#txtValueType').select2({
-        width: '-webkit-fill-available'
-    });
-
     HandleValueTypeChange();
 }
 
