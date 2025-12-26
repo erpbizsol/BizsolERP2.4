@@ -1176,7 +1176,7 @@ function GateEntry_SaveData(Mode) {
                 return;
             }
             NetWeight = LoadedWeight - EmptyWeight;
-            $('#frmLoadedOut_txtNetWeightLoadedOut').val(NetWeight);
+            $('#frmLoadedOut_txtNetWeightLoadedOut').val(parseFloat(NetWeight).toFixed(2));
             if (RejectEntry == 'N' && NetWeight < 0) {
                 toastr.error('Please Check! vehicle loaded weight Should be greater than to vehicle empty weight');
                 return;
@@ -2244,7 +2244,7 @@ function ViewGateEntry(gateEntryData, EntryType) {
 
         $('#frmLoadedOut_txtVehicleLoadedWeight').val(gateEntryData[0].LoadedWeight);
         $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val(gateEntryData[0].WeightmentSlipNumberOut);
-        $('#frmLoadedOut_txtNetWeightLoadedOut').val(gateEntryData[0].NetWeight);
+        $('#frmLoadedOut_txtNetWeightLoadedOut').val(parseFloat(gateEntryData[0].NetWeight).toFixed(2));
         $('#frmLoadedOut_txtGoodsDescription').val(gateEntryData[0].GoodDescription);
         $('#frmLoadedOut_txtQty').val(gateEntryData[0].Qty);
         GateEntryService.GetUOMMasterList().then(function (response) {
@@ -2380,7 +2380,7 @@ function EditGateEntry(gateEntryData, EntryType) {
 
         $('#frmLoadedOut_txtVehicleLoadedWeight').val(gateEntryData[0].LoadedWeight);
         $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val(gateEntryData[0].WeightmentSlipNumberOut);
-        $('#frmLoadedOut_txtNetWeightLoadedOut').val(gateEntryData[0].NetWeight);
+        $('#frmLoadedOut_txtNetWeightLoadedOut').val(parseFloat(gateEntryData[0].NetWeight).toFixed(2));
         $('#frmLoadedOut_txtGoodsDescription').val(gateEntryData[0].GoodDescription);
         $('#frmLoadedOut_txtQty').val(gateEntryData[0].Qty);
         GateEntryService.GetUOMMasterList().then(function (response) {
@@ -2512,8 +2512,8 @@ function LockDocumntFutureDate() {
     $('#frmLoadedOut_txtEWayBillDate').attr('max', maxDate);
     $('#frmLoadedIn_txtReportingDatetime').attr('max', maxDate);
     $('#frmEmptyIn_txtReportingDatetime').attr('max', maxDate);
-    $('#txtFromDate').attr('max', maxDate);
-    $('#txtToDate').attr('max', maxDate);
+    //$('#txtFromDate').attr('max', maxDate);
+    //$('#txtToDate').attr('max', maxDate);
 
     $('#frmLoadedOut_txtDocumentDate').attr('min', MinDate);
     $('#frmLoadedIn_txtDocumentDate').attr('min', MinDate);
@@ -3102,7 +3102,7 @@ function GateEntry_GetNetWeight() {
 
     NetWeight = LoadedWeight - EmptyWeight;
 
-    $('#frmLoadedOut_txtNetWeightLoadedOut').val(NetWeight);
+    $('#frmLoadedOut_txtNetWeightLoadedOut').val(parseFloat(NetWeight).toFixed(2));
 }
 // Apply to all inputs with this class
 applyAlphaNumUppercase(".alphanum-uppercase");

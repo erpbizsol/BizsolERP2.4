@@ -114,6 +114,8 @@ let UrlService = {
     API_ENDPOINT_CRM_SALESRETURN: `${environment.BASE_URL}/CRMSalesReturn`,
     API_ENDPOINT_SalesanalysisAST: `${environment.BASE_URL}/SalesanalysisAST`,
     API_ENDPOINT_QCPropertyGroupMaster: `${environment.BASE_URL}/QCPropertyGroupMaster`,
+    API_ENDPOINT_QCPropertyMaster: `${environment.BASE_URL}/QCPropertyMaster`,
+    API_ENDPOINT_QCPropertyTestTypeMaster: `${environment.BASE_URL}/QCPropertyTestTypeMaster`,
 }
 
 export { UrlService  }

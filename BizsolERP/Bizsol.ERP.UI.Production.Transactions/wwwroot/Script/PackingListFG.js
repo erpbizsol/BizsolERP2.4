@@ -39,6 +39,7 @@ let G_QtyMTR = 'MTRS';
 let G_DetailsModalType ='ScanPallet'
 let FixedParameterQtyConfiguration = await PalletPackingService.FixedParameterQtyConfiguration();
 let G_TransactionRate = 0;
+let G_AutoSelectConsigneeByOrder = 'N';
 
 if (FixedParameterQtyConfiguration.length > 0) {
     G_QtyMT = FixedParameterQtyConfiguration[0].QtyMT
@@ -1639,6 +1640,9 @@ function LoadFrm() {
     if (PackingListFGFixedParaMeters.length > 0 && PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'FGNameForBatchNo').PeramaterValue != '') {
         FGNameForBatchNo = PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'FGNameForBatchNo').PeramaterValue;
     }
+    if (PackingListFGFixedParaMeters.length > 0 && PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'AutoSelectConsigneeByOrder').PeramaterValue === 'Y') {
+        G_AutoSelectConsigneeByOrder = "Y";
+    }
     
     if (ShowPalletTypeAndNoInPackingList === 'Y') {
         let chkSummary = document.getElementById("chkSummary");
@@ -1760,6 +1764,35 @@ function PackingListFG_DeleteEntryOnGrid(packingListMaster_Code) {
     }
 }
 
+function PackingListFG_OnChangeddlOrderNo() {
+
+    if (G_AutoSelectConsigneeByOrder === 'Y') {
+        let ddlOrderNo = document.getElementById("ddlOrderNo");
+        let selectedOrderValue = ddlOrderNo.value;
+
+        // Skip if no order is selected
+        if (!selectedOrderValue || selectedOrderValue === '0') {
+            return;
+        }
+
+        // Get all options with the same order value (same order number)
+        let allOptions = Array.from(ddlOrderNo.options);
+        let sameOrderOptions = allOptions.filter(opt => opt.value === selectedOrderValue);
+
+        // Extract unique party names for this order
+        let uniquePartyNames = [...new Set(sameOrderOptions.map(opt => opt.getAttribute('partyname')))];
+
+        // Remove '0' or empty values from unique party names
+        uniquePartyNames = uniquePartyNames.filter(name => name && name !== '0');
+
+        // Only auto-select if there is exactly one unique party name for this order
+        if (uniquePartyNames.length === 1) {
+            let partyName = uniquePartyNames[0];
+            SelectOptionByText('ddlConsignee', partyName);
+        }
+    }
+}
+
 PackingListFG_ShowViewGrid();
 getPackingListFGFixedParaMeters();
 Bind_AllDLL();
@@ -1784,4 +1817,5 @@ window.PackingListFG_EndLoadingOnGrid = PackingListFG_EndLoadingOnGrid;
 window.PackingListFG_btnScanQR = PackingListFG_btnScanQR;
 window.PackingListFG_CallbackScanQRCode = PackingListFG_CallbackScanQRCode;
 window.PackingListFG_DeleteEntryOnGrid = PackingListFG_DeleteEntryOnGrid;
+window.PackingListFG_OnChangeddlOrderNo = PackingListFG_OnChangeddlOrderNo;
 
