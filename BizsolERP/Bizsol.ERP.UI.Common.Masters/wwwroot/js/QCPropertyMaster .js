@@ -436,6 +436,7 @@ function submit_QCPropertyMaster() {
             defaultValue = defaultValueText.trim();
         }
     }
+    let isActive = $('#chkActive').is(':checked') ? 'Y' : 'N';
 
     let qcGroup = $('#txtQCGroup').val();
     if (!qcGroup) {
@@ -481,6 +482,7 @@ function submit_QCPropertyMaster() {
         MaxValue: maxValueNumber,
         DefaultValue: defaultValue,
         Verify: 'Y',
+        isActive: isActive,
         CreatedBy: userCode
     }];
 
