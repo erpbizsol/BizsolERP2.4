@@ -358,7 +358,12 @@ $("#txtPropertyName").change(function () {
     // Sort Order
     const sortOrder = QCPropertyMaster['Sort Order'] || QCPropertyMaster.SortOrder || QCPropertyMaster['SortOrder'] || '';
     if (sortOrder !== undefined && sortOrder !== null && sortOrder !== '') {
-        $('#txtSortOrder').val(sortOrder);
+        const sortOrderValue = parseFloat(sortOrder);
+        if (!isNaN(sortOrderValue)) {
+            $('#txtSortOrder').val(sortOrderValue.toFixed(1));
+        } else {
+            $('#txtSortOrder').val(sortOrder);
+        }
     }
     
     // Value Type
@@ -371,13 +376,23 @@ $("#txtPropertyName").change(function () {
     // Min Value
     const minValue = QCPropertyMaster['Min Value'] || QCPropertyMaster.MinValue || QCPropertyMaster['MinValue'] || '';
     if (minValue !== undefined && minValue !== null && minValue !== '') {
-        $('#txtMinValue').val(minValue);
+        const minValueNum = parseFloat(minValue);
+        if (!isNaN(minValueNum)) {
+            $('#txtMinValue').val(minValueNum.toFixed(2));
+        } else {
+            $('#txtMinValue').val(minValue);
+        }
     }
     
     // Max Value
     const maxValue = QCPropertyMaster['Max Value'] || QCPropertyMaster.MaxValue || QCPropertyMaster['MaxValue'] || '';
     if (maxValue !== undefined && maxValue !== null && maxValue !== '') {
-        $('#txtMaxValue').val(maxValue);
+        const maxValueNum = parseFloat(maxValue);
+        if (!isNaN(maxValueNum)) {
+            $('#txtMaxValue').val(maxValueNum.toFixed(2));
+        } else {
+            $('#txtMaxValue').val(maxValue);
+        }
     }
     
     // Default Value
@@ -537,6 +552,13 @@ function attachSortOrderValidation() {
             finalValue = parts[0] + '.' + parts[1].substring(0, 1);
         }
         
+        if (finalValue !== '' && finalValue !== null && finalValue !== undefined) {
+            const numValue = parseFloat(finalValue);
+            if (!isNaN(numValue)) {
+                finalValue = numValue.toFixed(1);
+            }
+        }
+        
         if (finalValue !== value) {
             $(this).val(finalValue);
         }
@@ -556,42 +578,42 @@ function attachMinMaxValidation() {
         const currentValue = $field.val();
         
         // For Numeric: only integers (no decimal)
-        if (valueType === 'Numeric') {
-            if (eventType === 'keypress') {
-                // Allow: backspace, delete, tab, escape, enter, and arrow keys
-                if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
-                    (e.keyCode === 65 && e.ctrlKey === true) ||
-                    (e.keyCode === 67 && e.ctrlKey === true) ||
-                    (e.keyCode === 86 && e.ctrlKey === true) ||
-                    (e.keyCode === 88 && e.ctrlKey === true)) {
-                    return true;
-                }
+        //if (valueType === 'Numeric') {
+        //    if (eventType === 'keypress') {
+        //        // Allow: backspace, delete, tab, escape, enter, and arrow keys
+        //        if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
+        //            (e.keyCode === 65 && e.ctrlKey === true) ||
+        //            (e.keyCode === 67 && e.ctrlKey === true) ||
+        //            (e.keyCode === 86 && e.ctrlKey === true) ||
+        //            (e.keyCode === 88 && e.ctrlKey === true)) {
+        //            return true;
+        //        }
                 
-                // Allow only digits (0-9), no decimal point
-                if ((e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105)) {
-                    return true;
-                }
+        //        // Allow only digits (0-9), no decimal point
+        //        if ((e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105)) {
+        //            return true;
+        //        }
                 
-                // Block decimal point and all other characters
-                e.preventDefault();
-                return false;
-            } else if (eventType === 'input') {
-                // Remove decimal point and all non-numeric characters
-                let value = currentValue.replace(/[^0-9]/g, '');
-                if (value !== currentValue) {
-                    $field.val(value);
-                }
-            } else if (eventType === 'paste') {
-                const pastedData = (e.originalEvent || e).clipboardData.getData('text');
-                // Only allow integers
-                if (!/^-?\d+$/.test(pastedData)) {
-                    e.preventDefault();
-                    return false;
-                }
-            }
-        }
-        // For Decimal: allow decimal with max 2 decimal places
-        else if (valueType === 'Decimal') {
+        //        // Block decimal point and all other characters
+        //        e.preventDefault();
+        //        return false;
+        //    } else if (eventType === 'input') {
+        //        // Remove decimal point and all non-numeric characters
+        //        let value = currentValue.replace(/[^0-9]/g, '');
+        //        if (value !== currentValue) {
+        //            $field.val(value);
+        //        }
+        //    } else if (eventType === 'paste') {
+        //        const pastedData = (e.originalEvent || e).clipboardData.getData('text');
+        //        // Only allow integers
+        //        if (!/^-?\d+$/.test(pastedData)) {
+        //            e.preventDefault();
+        //            return false;
+        //        }
+        //    }
+        //}
+        // For Numeric and Decimal: allow decimal with max 2 decimal places
+        if (valueType === 'Numeric' || valueType === 'Decimal') {
             if (eventType === 'keypress') {
                 // Allow: backspace, delete, tab, escape, enter, and arrow keys
                 if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
@@ -679,7 +701,22 @@ function attachMinMaxValidation() {
     }).on('blur', function() {
         let value = $(this).val();
         if (valueType === 'Numeric') {
-            const cleaned = value.replace(/[^0-9]/g, '');
+            let cleaned = value.replace(/[^0-9.]/g, '');
+            const parts = cleaned.split('.');
+            if (parts.length > 2) {
+                cleaned = parts[0] + '.' + parts.slice(1).join('').replace(/\./g, '');
+            }
+            if (parts.length === 2 && parts[1].length > 2) {
+                cleaned = parts[0] + '.' + parts[1].substring(0, 2);
+            }
+            
+            if (cleaned !== '' && cleaned !== null && cleaned !== undefined) {
+                const numValue = parseFloat(cleaned);
+                if (!isNaN(numValue)) {
+                    cleaned = numValue.toFixed(2);
+                }
+            }
+            
             if (cleaned !== value) {
                 $(this).val(cleaned);
             }
@@ -692,6 +729,14 @@ function attachMinMaxValidation() {
             if (parts.length === 2 && parts[1].length > 2) {
                 cleaned = parts[0] + '.' + parts[1].substring(0, 2);
             }
+            
+            if (cleaned !== '' && cleaned !== null && cleaned !== undefined) {
+                const numValue = parseFloat(cleaned);
+                if (!isNaN(numValue)) {
+                    cleaned = numValue.toFixed(2);
+                }
+            }
+            
             if (cleaned !== value) {
                 $(this).val(cleaned);
             }
@@ -717,7 +762,22 @@ function attachMinMaxValidation() {
     }).on('blur', function() {
         let value = $(this).val();
         if (valueType === 'Numeric') {
-            const cleaned = value.replace(/[^0-9]/g, '');
+            let cleaned = value.replace(/[^0-9.]/g, '');
+            const parts = cleaned.split('.');
+            if (parts.length > 2) {
+                cleaned = parts[0] + '.' + parts.slice(1).join('').replace(/\./g, '');
+            }
+            if (parts.length === 2 && parts[1].length > 2) {
+                cleaned = parts[0] + '.' + parts[1].substring(0, 2);
+            }
+            
+            if (cleaned !== '' && cleaned !== null && cleaned !== undefined) {
+                const numValue = parseFloat(cleaned);
+                if (!isNaN(numValue)) {
+                    cleaned = numValue;
+                }
+            }
+            
             if (cleaned !== value) {
                 $(this).val(cleaned);
             }
@@ -730,6 +790,14 @@ function attachMinMaxValidation() {
             if (parts.length === 2 && parts[1].length > 2) {
                 cleaned = parts[0] + '.' + parts[1].substring(0, 2);
             }
+            
+            if (cleaned !== '' && cleaned !== null && cleaned !== undefined) {
+                const numValue = parseFloat(cleaned);
+                if (!isNaN(numValue)) {
+                    cleaned = numValue.toFixed(2);
+                }
+            }
+            
             if (cleaned !== value) {
                 $(this).val(cleaned);
             }
@@ -946,18 +1014,33 @@ function populateForm(data) {
         }, 500);
     }
     if (data.SortOrder !== undefined && data.SortOrder !== null) {
-        $('#txtSortOrder').val(data.SortOrder);
+        const sortOrderValue = parseFloat(data.SortOrder);
+        if (!isNaN(sortOrderValue)) {
+            $('#txtSortOrder').val(sortOrderValue.toFixed(1));
+        } else {
+            $('#txtSortOrder').val(data.SortOrder);
+        }
     }
     if (data.ValueType) {
         $('#txtValueType').val(data.ValueType);
     }
     handleValueTypeChange();
     attachMinMaxValidation();
-    if (data.MinValue) {
-        $('#txtMinValue').val(data.MinValue);
+    if (data.MinValue !== undefined && data.MinValue !== null && data.MinValue !== '') {
+        const minValue = parseFloat(data.MinValue);
+        if (!isNaN(minValue)) {
+            $('#txtMinValue').val(minValue.toFixed(2));
+        } else {
+            $('#txtMinValue').val(data.MinValue);
+        }
     }
-    if (data.MaxValue) {
-        $('#txtMaxValue').val(data.MaxValue);
+    if (data.MaxValue !== undefined && data.MaxValue !== null && data.MaxValue !== '') {
+        const maxValue = parseFloat(data.MaxValue);
+        if (!isNaN(maxValue)) {
+            $('#txtMaxValue').val(maxValue.toFixed(2));
+        } else {
+            $('#txtMaxValue').val(data.MaxValue);
+        }
     }
     if (data.DefaultValue) {
         $('#txtDefaultValue').val(data.DefaultValue);

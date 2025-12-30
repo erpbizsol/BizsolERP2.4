@@ -1,6 +1,7 @@
 ﻿import { QCPropertyMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/QCPropertyMasterService.js';
 import { QCPropertyGroupMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/QCPropertyGroupMasterService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 
 let G_Code = 0;
 
@@ -178,6 +179,15 @@ function GetQCPropertyMasterForDropdown() {
     });
 }
 function QCPropertyMaster_EditData(Code) {
+    var ModuleName = "QC Property Master",
+        OptionName = "Edit",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
     G_Code = Code;
     PopulateValueTypeDropdown();
     GetQCPropertyMasterForDropdown().then(function () {
@@ -216,6 +226,13 @@ function QCPropertyMaster_EditData(Code) {
                     sortOrderValue = row.SortOrderMaster;
                 } else if (row.sortOrderMaster !== undefined && row.sortOrderMaster !== null) {
                     sortOrderValue = row.sortOrderMaster;
+                }
+                
+                if (sortOrderValue !== '' && sortOrderValue !== null && sortOrderValue !== undefined) {
+                    var numValue = parseFloat(sortOrderValue);
+                    if (!isNaN(numValue)) {
+                        sortOrderValue = numValue.toFixed(1);
+                    }
                 }
                 $('#txtSortOrderMaster').val(sortOrderValue);
 
@@ -266,16 +283,33 @@ function QCPropertyMaster_EditData(Code) {
                                 $('#txtLOVValue').val(lovValue);
                             }
                         } else if (normalizedValueType === 'Numeric' || normalizedValueType === 'Decimal') {
+                            var minValue = '';
                             if (row.MinValue !== undefined && row.MinValue !== null) {
-                                $('#txtMinValue').val(row.MinValue);
+                                minValue = row.MinValue;
                             } else if (row.minValue !== undefined && row.minValue !== null) {
-                                $('#txtMinValue').val(row.minValue);
+                                minValue = row.minValue;
                             }
+                            if (minValue !== '' && minValue !== null && minValue !== undefined) {
+                                var minNumValue = parseFloat(minValue);
+                                if (!isNaN(minNumValue)) {
+                                    minValue = minNumValue.toFixed(2);
+                                }
+                            }
+                            $('#txtMinValue').val(minValue);
+                            
+                            var maxValue = '';
                             if (row.MaxValue !== undefined && row.MaxValue !== null) {
-                                $('#txtMaxValue').val(row.MaxValue);
+                                maxValue = row.MaxValue;
                             } else if (row.maxValue !== undefined && row.maxValue !== null) {
-                                $('#txtMaxValue').val(row.maxValue);
+                                maxValue = row.maxValue;
                             }
+                            if (maxValue !== '' && maxValue !== null && maxValue !== undefined) {
+                                var maxNumValue = parseFloat(maxValue);
+                                if (!isNaN(maxNumValue)) {
+                                    maxValue = maxNumValue.toFixed(2);
+                                }
+                            }
+                            $('#txtMaxValue').val(maxValue);
                         } else if (normalizedValueType === 'Text') {
                             if (row.DefaultValue !== undefined && row.DefaultValue !== null) {
                                 $('#txtDefaultValue').val(row.DefaultValue);
@@ -368,6 +402,8 @@ function QCPropertyMaster_EditData(Code) {
                 $('#txtQCGroup').focus();
             }, 500);
         });
+    });
+        }
     });
 }
 
@@ -541,13 +577,23 @@ function DeleteQCMaster(Code) {
     if (!Code) {
         return;
     }
+    var ModuleName = "QC Property Master",
+        OptionName = "Delete",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            $('#myModal').data('code', Code);
+            $('#myModal').modal({
+                backdrop: 'static',
+            });
 
-    $('#myModal').data('code', Code);
-    $('#myModal').modal({
-        backdrop: 'static',
+            $('#myModal').modal('show');
+        }
     });
-
-    $('#myModal').modal('show');
 }
 
 function CloseModal_QCPropertyMasterDelete() {
@@ -597,23 +643,34 @@ function Verify_QCPropertyMaster(Code) {
 }
 
 function CreateNew_QCPropertyMaster() {
-    $('#Code').val('0');
-    $('#txtPropertyName').val('');
-    $('#txtSortOrderMaster').val('');
-    $('#txtLOVValue').val('');
-    $('#txtQCGroup').val('');
-    $('#txtMinValue').val('');
-    $('#txtMaxValue').val('');
-    $('#txtDefaultValue').val('');
-    $('#chkActive').prop('checked', true);
-    $('#locateQCPropertyMaster').hide();
-    $('#newCreateFormQCPropertyMaster').show();
-    $('#txtValueType').val('Numeric');
-    PopulateValueTypeDropdown();
-    GetQCPropertyMasterForDropdown();
-    setTimeout(function () {
-        $('#txtQCGroup').focus();
-    }, 300);
+    var ModuleName = "QC Property Master",
+        OptionName = "New",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            $('#Code').val('0');
+            $('#txtPropertyName').val('');
+            $('#txtSortOrderMaster').val('');
+            $('#txtLOVValue').val('');
+            $('#txtQCGroup').val('');
+            $('#txtMinValue').val('');
+            $('#txtMaxValue').val('');
+            $('#txtDefaultValue').val('');
+            $('#chkActive').prop('checked', true);
+            $('#locateQCPropertyMaster').hide();
+            $('#newCreateFormQCPropertyMaster').show();
+            $('#txtValueType').val('Numeric');
+            PopulateValueTypeDropdown();
+            GetQCPropertyMasterForDropdown();
+            setTimeout(function () {
+                $('#txtQCGroup').focus();
+            }, 300);
+        }
+    });
 }
 
 function QCPropertyMaster_Back() {
@@ -655,8 +712,6 @@ function QCPropertyMaster_validateDecimal(input) {
     var valueType = $('#txtValueType').val();
     
     if (valueType === 'Numeric') {
-        value = value.replace(/[^0-9]/g, '');
-    } else if (valueType === 'Decimal') {
         value = value.replace(/[^0-9.]/g, '');
         
         var parts = value.split('.');
@@ -860,6 +915,15 @@ function BindSelectList1(element, list) {
         option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
     });
     element.innerHTML = option;
+}
+function getFinancialYear() {
+    var currentDate = new Date();
+    var currentMonth = currentDate.getMonth();
+    var startYear = currentDate.getFullYear();
+    if (currentMonth < 3) {
+        startYear = startYear - 1;
+    }
+    return startYear + "-" + (startYear + 1);
 }
 
 window.GetQCPropertyMasterTable = GetQCPropertyMasterTable;
