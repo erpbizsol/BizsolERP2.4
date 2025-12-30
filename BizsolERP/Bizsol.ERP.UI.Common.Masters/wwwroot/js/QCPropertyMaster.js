@@ -60,7 +60,7 @@ function SetupEnterKeyNavigation() {
     $('#txtLOVValue').on('keydown', function (e) {
         if (e.key === 'Enter' || e.keyCode === 13) {
             e.preventDefault();
-            $('#txtMinValue').focus();
+            $('#chkActive').focus();
         }
     });
 
@@ -70,17 +70,22 @@ function SetupEnterKeyNavigation() {
             $('#txtMaxValue').focus();
         }
     });
-
-    $('#txtMaxValue').on('keydown', function (e) {
-        if (e.key === 'Enter' || e.keyCode === 13) {
-            e.preventDefault();
-            $('#txtDefaultValue').focus();
-        }
-    });
-
     $('#txtDefaultValue').on('keydown', function (e) {
         if (e.key === 'Enter' || e.keyCode === 13) {
             e.preventDefault();
+            $('#chkActive').focus();
+        }
+    });
+    $('#txtMaxValue').on('keydown', function (e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();
+            $('#chkActive').focus();
+        }
+    });
+    $('#chkActive').on('keydown', function (e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();
+            $(this).prop('checked', !$(this).prop('checked'));
             $('#saveQCPropertyMasterButton').focus();
         }
     });
@@ -335,6 +340,29 @@ function QCPropertyMaster_EditData(Code) {
                         }
                     }
                 }, 200);
+
+                var activeFlag = '';
+                if (row.IsActive !== undefined && row.IsActive !== null) {
+                    activeFlag = row.IsActive;
+                } else if (row.isActive !== undefined && row.isActive !== null) {
+                    activeFlag = row.isActive;
+                } else if (row.Active !== undefined && row.Active !== null) {
+                    activeFlag = row.Active;
+                } else if (row.Status !== undefined && row.Status !== null) {
+                    activeFlag = row.Status;
+                }
+
+                var isChecked = false;
+                if (typeof activeFlag === 'string') {
+                    var upperFlag = activeFlag.trim().toUpperCase();
+                    isChecked = upperFlag === 'Y' || upperFlag === 'YES' || upperFlag === 'TRUE' || upperFlag === '1';
+                } else if (typeof activeFlag === 'number') {
+                    isChecked = activeFlag === 1;
+                } else if (typeof activeFlag === 'boolean') {
+                    isChecked = activeFlag;
+                }
+
+                $('#chkActive').prop('checked', isChecked);
             }
             setTimeout(function () {
                 $('#txtQCGroup').focus();
@@ -577,6 +605,7 @@ function CreateNew_QCPropertyMaster() {
     $('#txtMinValue').val('');
     $('#txtMaxValue').val('');
     $('#txtDefaultValue').val('');
+    $('#chkActive').prop('checked', true);
     $('#locateQCPropertyMaster').hide();
     $('#newCreateFormQCPropertyMaster').show();
     $('#txtValueType').val('Numeric');
