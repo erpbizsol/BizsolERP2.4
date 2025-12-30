@@ -4,7 +4,7 @@
 
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/QCPropertyMaster .js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/QCPropertyMaster.js"></script>
 <script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 <style>
     .table-wrapper.fixed-height-table {
@@ -57,7 +57,7 @@
                     <input id="txtPropertyName" name="txtPropertyName" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Property Name" maxlength="30" required />
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="form-group">
                     <label for="txtSortOrderMaster" class="col-form-label-sm fw-bold">Sort Order:<span class="text-danger">*</span></label>
                     <input id="txtSortOrderMaster" name="txtSortOrderMaster" class="box_border form-control form-control-sm text-end" autocomplete="off" placeholder="Sort Order" maxlength="8" oninput="QCPropertyMaster_validateSortOrder(this)" required />
@@ -66,7 +66,12 @@
             <div class="col-md-3">
                 <div class="form-group">
                     <label for="txtValueType" class="col-form-label-sm fw-bold">Value Type:<span class="text-danger">*</span></label>
-                    <select id="txtValueType" name="txtValueType" class="box_border form-control form-control-sm" required></select>
+                    <select id="txtValueType" name="txtValueType" class="box_border form-control form-control-sm" required>
+                        <option value="Numeric" selected>Numeric</option>
+                        <option value="Decimal">Decimal</option>
+                        <option value="Text">Text</option>
+                        <option value="Lov">Lov</option>
+                    </select>
                 </div>
             </div>
             <div class="col-md-3">
@@ -75,13 +80,13 @@
                     <input id="txtLOVValue" name="txtLOVValue" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Enter values separated by comma (e.g., Value1, Value2, Value3)" maxlength="2000" required />
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="form-group">
                     <label for="txtMinValue" class="col-form-label-sm fw-bold">Min Value:<span class="text-danger">*</span></label>
                     <input id="txtMinValue" name="txtMinValue" class="box_border form-control form-control-sm text-end" autocomplete="off" placeholder="Min Value" maxlength="8" oninput="QCPropertyMaster_validateDecimal(this)" onblur="QCPropertyMaster_validateMinMax()" required />
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="form-group">
                     <label for="txtMaxValue" class="col-form-label-sm fw-bold">Max Value:<span class="text-danger">*</span></label>
                     <input id="txtMaxValue" name="txtMaxValue" class="box_border form-control form-control-sm text-end" autocomplete="off" placeholder="Max Value" maxlength="8" oninput="QCPropertyMaster_validateDecimal(this)" onblur="QCPropertyMaster_validateMinMax()" required />
@@ -93,7 +98,15 @@
                     <input id="txtDefaultValue" name="txtDefaultValue" class="box_border form-control form-control-sm " autocomplete="off" placeholder="Default Value" maxlength="100" required />
                 </div>
             </div>
-            
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="chkActive" class="col-form-label-sm fw-bold">Active:<span class="text-danger">*</span></label>
+                    <div class="form-check">
+                        <input type="checkbox" id="chkActive" name="chkActive" class="form-check-input" />
+                        @* <label class="form-check-label small" for="chkActive">Is Active</label> *@
+                    </div>
+                </div>
+            </div>
             <div class="col-md-12 text-end">
                 <button type="button" onclick="submit_QCPropertyMaster()" id="saveQCPropertyMasterButton" title="Save" class="btn btn-success btn-height">Save</button>
                 <button type="button" class="btn btn-danger btn-height" title="Back" onclick="QCPropertyMaster_Back()">Back</button>

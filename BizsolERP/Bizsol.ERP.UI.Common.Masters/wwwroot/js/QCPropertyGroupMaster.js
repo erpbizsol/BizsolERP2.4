@@ -155,18 +155,21 @@ function submit_QCPropertyGroupMaster() {
 
     if (!FieldValue) {
         toastr.warning('Please Fill The QC Group Name.');
+        $('#txtQCGroupName').focus();
         return;
     }
 
     let sortOrderText = $('#txtSortOrder').val();
     if (!sortOrderText) {
         toastr.warning('Please Enter Sort Order.');
+        $('#txtSortOrder').focus();
         return;
     }
 
     let sortOrderNumber = parseFloat(sortOrderText);
     if (isNaN(sortOrderNumber)) {
         toastr.warning('Please Enter Valid Sort Order.');
+        $('#txtSortOrder').focus();
         return;
     }
 
@@ -240,6 +243,7 @@ function SaveModal_QCGroupDelete() {
 
     if (!reasonForDelete) {
         toastr.warning("Please Provide a Reason For Delete.");
+        $('#reasonForDeleteInput').focus();
         return;
     }
 
