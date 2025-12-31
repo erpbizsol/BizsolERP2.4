@@ -1,10 +1,161 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<h2>@ViewData["Title"]</h2>
 
-<p>
-    QC Property Item Configuration view loaded successfully.
-</p>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/QCPropertyItemConfiguration.js"></script>
+<style>
+    /* Fix select2 dropdown scrollbar issue - prevent page scroll when dropdown opens */
+    .select2-container--open .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+    
+    .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+    
+    /* Ensure all parent containers don't clip select2 dropdowns */
+    .card {
+        overflow: visible !important;
+    }
+    
+    .card-body {
+        overflow: visible !important;
+    }
+    
+    #dvFrom {
+        overflow: visible !important;
+    }
+    
+    .row {
+        overflow: visible !important;
+    }
+    
+    /* Ensure select2 results container doesn't cause page scroll */
+    .select2-results {
+        max-height: 200px !important;
+        overflow-y: auto !important;
+    }
+    
+    /* Ensure select2 dropdown is positioned correctly */
+    .select2-dropdown {
+        position: absolute !important;
+    }
+    
+    /* Prevent any overflow on form containers */
+    .form-control-sm {
+        position: relative;
+    }
+    
+    /* Ensure main content area doesn't cause scroll */
+    .main-content {
+        overflow: visible !important;
+    }
+    
+    /* Fix for any wrapper containers */
+    .col-md-3, .col-md-2 {
+        overflow: visible !important;
+    }
+</style>
 
-
+<div class="card p-2">
+    <div id="dvGrid" style="display:block;">
+        <div class="row text-end">
+            <div class="col-md-12">
+                <button class="btn btn-success icon-height mb-1" title="Create New" onclick="CreateNew()">Create New</button>
+                <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
+            </div>
+        </div>
+        <div class="table-wrapper ">
+            <table id="tblItemConfiguration" class="fixed-width-table table">
+                <thead id="table-header">
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tblItemConfiguration">
+        </div>
+    </div>
+    <div id="dvFrom" style="display:none;">
+        <div class="row g-2 mb-3">
+            <div class="col-md-3">
+                <label for="txtItemCode" class="form-label fw-semibold">Item Code <span class="text-danger">*</span></label>
+                <select id="txtItemCode" class="form-control form-control-sm box_border" autocomplete="off" tabindex="0"></select>
+                <input type="hidden" id="txtCode" class="form-control form-control-sm box_border" value="0" />
+            </div>
+            <div class="col-md-3">
+                <label for="txtItemName" class="form-label fw-semibold">Item Name <span class="text-danger">*</span></label>
+                <select id="txtItemName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+            </div>
+            <div class="col-md-3">
+                <label for="txtPropertyGroup" class="form-label fw-semibold">Property Group <span class="text-danger">*</span></label>
+                <select id="txtPropertyGroup" class="form-control form-control-sm box_border" autocomplete="off" tabindex="2"></select>
+            </div>
+            <div class="col-md-3">
+                <label for="txtPropertyName" class="form-label fw-semibold">Property Name <span class="text-danger">*</span></label>
+                <select id="txtPropertyName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="3"></select>
+            </div>
+            <div class="col-md-2">
+                <label for="txtSortOrder" class="form-label fw-semibold">Sort Order <span class="text-danger">*</span></label>
+                <input type="text" id="txtSortOrder" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Sort Order" tabindex="4" style="text-align: right;" maxlength="5" />
+            </div>
+            <div class="col-md-3">
+                <label for="txtValueType" class="form-label fw-semibold">Value Type <span class="text-danger">*</span></label>
+                <select id="txtValueType" class="form-control form-control-sm box_border" autocomplete="off" tabindex="5">
+                    <option value="Numeric">Numeric</option>
+                    <option value="Decimal">Decimal</option>
+                    <option value="Text">Text</option>
+                    <option value="Lov">Lov</option>
+                </select>
+            </div>
+            <div class="col-md-2 hide">
+                <label for="txtMinValue" class="form-label fw-semibold">Min Value <span class="text-danger">*</span></label>
+                <input type="text" id="txtMinValue" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Min Value" tabindex="6" style="text-align: right;" maxlength="5" />
+            </div>
+            <div class="col-md-2 hide">
+                <label for="txtMaxValue" class="form-label fw-semibold">Max Value <span class="text-danger">*</span></label>
+                <input type="text" id="txtMaxValue" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Max Value" tabindex="7" style="text-align: right;" maxlength="5" />
+            </div>
+            <div class="col-md-3 hide">
+                <label for="txtDefaultValue" class="form-label fw-semibold">Default Value <span class="text-danger">*</span></label>
+                <input type="text" id="txtDefaultValue" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Default Value" tabindex="8" maxlength="100" />
+            </div>
+            <div class="col-md-3 hide">
+                <label for="txtLovValues" class="form-label fw-semibold">LOV Values <span class="text-danger">*</span></label>
+                <input type="text" id="txtLovValues" class="form-control form-control-sm box_border" autocomplete="off" placeholder="LOV Values" tabindex="9" maxlength="1000" />
+            </div>
+        </div>
+        <div class="row text-end">
+            <div class="col-md-12">
+                <button class="btn btn-success icon-height mb-1" title="Edit" id="btnSave" onclick="SaveData()">Save</button>
+                <button class="btn btn-danger icon-height mb-1" title="Edit" id="btnBack" onclick="Back()">Back</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade rps-detail-modal" id="dvRemark" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Remark</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="txtRemark" class="form-label filter-label">Remark </label> <span class="text-danger">*</span>
+                    <input type="text" id="txtRemark" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" />
+                    <input type="hidden" id="hfCode" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-12 text-end">
+                    <button type="button" class="btn btn-success icon-height" onclick="DeleteItemConfiguration()">Ok</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
