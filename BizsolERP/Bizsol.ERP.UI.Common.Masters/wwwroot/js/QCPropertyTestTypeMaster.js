@@ -1,5 +1,6 @@
 ﻿import { QCPropertyTestTypeMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/QCPropertyTestTypeMasterService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 
 let G_Code = 0;
 
@@ -71,6 +72,15 @@ function GetQCPropertyTestTypeMasterTable() {
 }
 
 function QCPropertyTestTypeMaster_EditData(Code) {
+    var ModuleName = "QC Property Test Type Master",
+        OptionName = "Edit",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
     G_Code = Code;
     QCPropertyTestTypeMasterService.GetQCPropertyTestTypeMasterByCode(Code).then(function (response) {
         $('#locateQCPropertyTestTypeMaster').hide();
@@ -103,6 +113,13 @@ function QCPropertyTestTypeMaster_EditData(Code) {
             } else if (row.sortOrder !== undefined && row.sortOrder !== null) {
                 sortOrderValue = row.sortOrder;
             }
+            
+            if (sortOrderValue !== '' && sortOrderValue !== null && sortOrderValue !== undefined) {
+                var numValue = parseFloat(sortOrderValue);
+                if (!isNaN(numValue)) {
+                    sortOrderValue = numValue.toFixed(1);
+                }
+            }
             $('#txtSortOrder').val(sortOrderValue);
 
             if (row.IsActive !== undefined && row.IsActive !== null) {
@@ -130,6 +147,9 @@ function QCPropertyTestTypeMaster_EditData(Code) {
         setTimeout(function () {
             $('#txtQCGroupName').focus();
         }, 100);
+    });
+            
+        }
     });
 }
 
@@ -209,12 +229,23 @@ function DeleteQCPropertyTestTypeMaster(Code) {
         return;
     }
 
+    var ModuleName = "QC Property Test Type Master",
+        OptionName = "Delete",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
     $('#myModal').data('code', Code);
     $('#myModal').modal({
         backdrop: 'static',
     });
 
     $('#myModal').modal('show');
+        }
+    });
 }
 
 function CloseModal_QCPropertyTestTypeMasterDelete() {
@@ -264,12 +295,23 @@ function Verify_QCPropertyTestTypeMaster(Code) {
 }
 
 function CreateNew_QCPropertyTestTypeMaster() {
+    var ModuleName = "QC Property Test Type Master",
+        OptionName = "New",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
     $('#Code').val('0');
     $('#txtTestType').val('');
     $('#txtSortOrder').val('');
     $('#chkActive').prop('checked', true);
     $('#locateQCPropertyTestTypeMaster').hide();
     $('#newCreateFormQCPropertyTestTypeMaster').show();
+        }
+    });
 }
 
 function QCPropertyTestTypeMaster_Back() {
@@ -361,6 +403,15 @@ function Export_QCPropertyTestTypeMaster() {
     });
 
     tempTable.remove();
+}
+function getFinancialYear() {
+    var currentDate = new Date();
+    var currentMonth = currentDate.getMonth();
+    var startYear = currentDate.getFullYear();
+    if (currentMonth < 3) {
+        startYear = startYear - 1;
+    }
+    return startYear + "-" + (startYear + 1);
 }
 
 window.GetQCPropertyTestTypeMasterTable = GetQCPropertyTestTypeMasterTable;
