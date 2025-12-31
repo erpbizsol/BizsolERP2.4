@@ -1,8 +1,6 @@
 import { SalesanalysisASTService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SalesanalysisASTService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { CRMReportsServices } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CRMReportsService.js';
-import { DateRangeControl } from '../../Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.js';
-
 BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
 // Global variables
@@ -14,60 +12,222 @@ let toDate = '0';
 let baseSalesPieChartInstance = null;
 let partySharePieChartInstance = null;
 
-// DateRangeControl initialization
-function initDateRangeControl() {
-    const dr = document.querySelector('date-range-control#dateRange');
-    if (!dr) return;
-
-    try {
-        const now = new Date();
-        const month = now.getMonth() + 1;
-        const year = now.getFullYear();
-        const fyStartYear = (month >= 4) ? year : (year - 1);
-        const fyEndYear = fyStartYear + 1;
-        const fyFrom = fyStartYear + '-04-01';
-        const fyTo = fyEndYear + '-03-31';
-
-        try { dr.setRange({ fromDate: fyFrom, toDate: fyTo }); } catch (e) { }
-
-        try {
-            const legacyFrom = document.getElementById('txtFromDate');
-            const legacyTo = document.getElementById('txtToDate');
-            if (legacyFrom) legacyFrom.value = fyFrom;
-            if (legacyTo) legacyTo.value = fyTo;
-        } catch (e) { }
-
-        try { fromDate = fyFrom; toDate = fyTo; } catch (e) { }
-    } catch (e) {
-        console.warn('Failed to initialize financial year default range', e);
+// Initialize FilterSidePanelControl
+function initFilterSidePanelControl() {
+    console.log('Initializing FilterSidePanelControl...');
+    
+    const filterPanel = document.getElementById('filterPanel');
+    if (!filterPanel) {
+        console.error('FilterSidePanelControl element not found! Make sure <filter-side-panel-control id="filterPanel"> is in the HTML.');
+        return;
     }
 
-    function syncToLegacyInputs(detail) {
-        const from = detail.fromDate || '';
-        const to = detail.toDate || '';
-        const legacyFrom = document.getElementById('txtFromDate');
-        const legacyTo = document.getElementById('txtToDate');
-        if (legacyFrom) legacyFrom.value = from;
-        if (legacyTo) legacyTo.value = to;
+    console.log('FilterSidePanelControl found:', filterPanel);
+
+    // Wait for the component to be fully defined
+    if (!customElements.get('filter-side-panel-control')) {
+        console.warn('filter-side-panel-control not yet defined, waiting...');
+        customElements.whenDefined('filter-side-panel-control').then(() => {
+            console.log('filter-side-panel-control now defined, continuing initialization...');
+            initFilterSidePanelControl();
+        });
+        return;
     }
 
-    dr.addEventListener('daterangechange', function (e) {
+    // Initialize with empty filters first
+    const filters = [
+        { id: 'dateRange', type: 'daterange', label: 'Date Range' },
+        { id: 'ddlSalesPersonlist', type: 'multiselect', label: 'Sales Person', data: [] },
+        { id: 'ddlDealerNamelist', type: 'multiselect', label: 'Dealer Name', data: [] },
+        { id: 'ddlCitiesNamelist', type: 'multiselect', label: 'Location', data: [] },
+        { id: 'ddlStatusNamelist', type: 'multiselect', label: 'Status', data: [] },
+        { id: 'ddlGPlist', type: 'multiselect', label: 'GP', data: [] },
+        { id: 'ddlIndustryTypelist', type: 'multiselect', label: 'Segment', data: [] }
+    ];
+    
+    console.log('Setting filters:', filters);
+    filterPanel.setFilters(filters);
+
+    // Set default date range to financial year
+    setTimeout(() => {
+        console.log('Setting default date range...');
         try {
-            syncToLegacyInputs(e.detail);
-        } catch (err) {
-            console.warn('DateRangeControl sync error', err);
+            const dateRangeEl = filterPanel.shadowRoot?.getElementById('dateRange');
+            if (dateRangeEl) {
+                const now = new Date();
+                const month = now.getMonth() + 1;
+                const year = now.getFullYear();
+                const fyStartYear = (month >= 4) ? year : (year - 1);
+                const fyEndYear = fyStartYear + 1;
+                const fyFrom = fyStartYear + '-04-01';
+                const fyTo = fyEndYear + '-03-31';
+                
+                console.log(`Setting financial year range: ${fyFrom} to ${fyTo}`);
+                dateRangeEl.setRange({ fromDate: fyFrom, toDate: fyTo });
+                fromDate = fyFrom;
+                toDate = fyTo;
+                console.log('Date range set successfully');
+            } else {
+                console.warn('DateRange element not found in shadow DOM');
+            }
+        } catch (e) {
+            console.error('Failed to set default date range:', e);
         }
+    }, 500);
+
+    // Listen to filter apply event
+    filterPanel.addEventListener('filtersapplied', (e) => {
+        console.log('Filters applied event received:', e.detail);
+        const filters = e.detail.filters;
+        
+        // Update global date variables
+        if (filters.dateRange) {
+            fromDate = filters.dateRange.fromDate || '0';
+            toDate = filters.dateRange.toDate || '0';
+            console.log(`Updated global date range: ${fromDate} to ${toDate}`);
+        }
+        
+        // Show the report
+        console.log('Calling SalesanalysisAST_ShowReport...');
+        SalesanalysisAST_ShowReport();
     });
 
-    window.SetDateRange = function (fromIso, toIso) {
-        dr.setRange({ fromDate: fromIso, toDate: toIso });
-    };
+    console.log('FilterSidePanelControl initialized, loading dropdowns...');
+    // Load dropdown data
+    loadFilterDropdowns(filterPanel);
 }
 
+// Load all dropdown data for filters
+function loadFilterDropdowns(filterPanel) {
+    // Load Sales Person List
+    CRMReportsServices.GetSalespersonList().then(function (response) {
+        if (response && response.length > 0) {
+            const data = response.map(item => ({ Code: item.Code, Desp: item.PersonName }));
+            filterPanel.updateFilterData('ddlSalesPersonlist', data);
+            
+            // Setup change listener for dependent dealer dropdown
+            setTimeout(() => {
+                const salesPersonWrapper = filterPanel.shadowRoot.getElementById('ddlSalesPersonlist');
+                if (salesPersonWrapper) {
+                    const checkboxes = salesPersonWrapper.querySelectorAll('.ddlSalesPersonlist_chk');
+                    checkboxes.forEach(chk => {
+                        chk.addEventListener('change', () => {
+                            updateDealerListBasedOnSalesPerson(filterPanel);
+                        });
+                    });
+                }
+            }, 500);
+        }
+    }).catch(function (error) {
+        console.error('Error fetching salesperson list:', error);
+    });
+
+    // Load Dealer List
+    CRMReportsServices.GetDealerList().then(function (response) {
+        if (response && response.length > 0) {
+            G_ddlDealerNameList = response.slice();
+            const data = response.map(item => ({ Code: item.Code, Desp: item.AccountDesp }));
+            filterPanel.updateFilterData('ddlDealerNamelist', data);
+        }
+    }).catch(function (error) {
+        console.error('Error fetching dealer list:', error);
+    });
+
+    // Load Cities List
+    SalesanalysisASTService.GetSalesAnalysisData('DDL_CITIESNAMELIST', '0', '0', '0').then(function (response) {
+        if (response && response.length > 0) {
+            const data = response.map(item => ({ Code: item.CityName, Desp: item.CityName }));
+            filterPanel.updateFilterData('ddlCitiesNamelist', data);
+        }
+    }).catch(function (error) {
+        console.error('Error fetching cities list:', error);
+    });
+
+    // Load Status List
+    SalesanalysisASTService.GetSalesAnalysisData('DDL_STATUSNAME', '0', '0', '0').then(function (response) {
+        if (response && response.length > 0) {
+            const data = response.map(item => ({ Code: item.StatusName, Desp: item.StatusName }));
+            filterPanel.updateFilterData('ddlStatusNamelist', data);
+        }
+    }).catch(function (error) {
+        console.error('Error fetching status list:', error);
+    });
+
+    // Load GP List
+    SalesanalysisASTService.GetSalesAnalysisData('DDL_GPLIST', '0', '0', '0').then(function (response) {
+        if (response && response.length > 0) {
+            const data = response.map(item => ({ Code: item.GP, Desp: item.GP }));
+            filterPanel.updateFilterData('ddlGPlist', data);
+        }
+    }).catch(function (error) {
+        console.error('Error fetching GP list:', error);
+    });
+
+    // Load Industry Type List
+    SalesanalysisASTService.GetSalesAnalysisData('DDL_INDUSTRYTYPELIST', '0', '0', '0').then(function (response) {
+        if (response && response.length > 0) {
+            const data = response.map(item => ({ Code: item.IndustryType, Desp: item.IndustryType }));
+            filterPanel.updateFilterData('ddlIndustryTypelist', data);
+        }
+    }).catch(function (error) {
+        console.error('Error fetching industry type list:', error);
+    });
+}
+
+// Update dealer list based on selected sales persons (dependent dropdown)
+function updateDealerListBasedOnSalesPerson(filterPanel) {
+    const filterValues = filterPanel.getFilterValues();
+    const salesPersonFilter = filterValues.ddlSalesPersonlist;
+    
+    if (!salesPersonFilter || salesPersonFilter.values.length === 0) {
+        return;
+    }
+
+    const promises = salesPersonFilter.values.map(function (code) {
+        try {
+            return CRMReportsServices.GetDealerList(code);
+        } catch (e) {
+            return Promise.resolve([]);
+        }
+    });
+    
+    Showloader();
+    Promise.all(promises).then(function (responses) {
+        HideLoader();
+        const merged = [];
+        const seen = new Set();
+        responses.forEach(function (resp) {
+            if (Array.isArray(resp)) {
+                resp.forEach(function (d) {
+                    const key = String(d.Code);
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        merged.push(d);
+                    }
+                });
+            }
+        });
+
+        if (merged.length > 0) {
+            G_ddlDealerNameList = merged.slice();
+            const data = merged.map(item => ({ Code: item.Code, Desp: item.AccountDesp }));
+            filterPanel.updateFilterData('ddlDealerNamelist', data);
+        } else {
+            G_ddlDealerNameList = [];
+            filterPanel.updateFilterData('ddlDealerNamelist', []);
+        }
+    }).catch(function (err) {
+        console.error('Error fetching dealer lists for selected salespersons', err);
+        G_ddlDealerNameList = [];
+        filterPanel.updateFilterData('ddlDealerNamelist', []);
+    });
+}
+
+// Initialize on DOM ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDateRangeControl);
+    document.addEventListener('DOMContentLoaded', initFilterSidePanelControl);
 } else {
-    initDateRangeControl();
+    initFilterSidePanelControl();
 }
 
 // Helper functions
@@ -86,179 +246,58 @@ function formatNumber(v) {
     return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function BindSelectList(element, list) {
-    if (!element) return;
 
-    if (element.jquery) element = element[0];
 
-    let container = element;
-    if (element.tagName && element.tagName.toLowerCase() === 'select') {
-        const div = document.createElement('div');
-        div.id = element.id || ('checkbox_' + Math.random().toString(36).slice(2));
-        div.className = element.className || '';
-        if (element.style && element.style.cssText) div.style.cssText = element.style.cssText;
-        element.parentNode.replaceChild(div, element);
-        container = div;
-    }
 
-    const searchId = container.id + '_search';
-    const allId = container.id + '_all';
-    const listId = container.id + '_list';
-
-    const html = [
-        `<div class="multi-checkbox-root" style="font-size:13px;">`,
-        `  <div class="multi-checkbox-search" style="margin-bottom:6px;">`,
-        `    <input type="text" id="${searchId}" placeholder="Search..." style="width:100%;padding:6px;border:1px solid #ccc;border-radius:3px;" />`,
-        `  </div>`,
-        `  <div class="multi-checkbox-selectall" style="margin-bottom:6px;">`,
-        `    <label style="cursor:pointer;"><input type="checkbox" id="${allId}" style="margin-right:6px;" checked /> Select All</label>`,
-        `  </div>`,
-        `  <div id="${listId}" class="multi-checkbox-list" style="max-height:150px;overflow:auto;border:1px solid #e6e6e6;padding:6px;border-radius:3px;background:#fff;"></div>`,
-        `</div>`
-    ].join('\n');
-
-    container.innerHTML = html;
-
-    const listDiv = container.querySelector('#' + listId);
-
-    list.forEach(function (item) {
-        const val = escapeHtml(item.Code);
-        const text = escapeHtml(item.Desp);
-        const itemId = `${container.id}_chk_${val}`;
-        const itemHtml =
-            `<div class="checkbox-item" style="padding:4px 2px;">` +
-            `  <label for="${itemId}" style="cursor:pointer;"><input type="checkbox" id="${itemId}" class="${container.id}_chk" value="${val}" style="margin-right:6px;" checked/> ${text}</label>` +
-            `</div>`;
-        listDiv.insertAdjacentHTML('beforeend', itemHtml);
-    });
-
-    const selectAllCheckbox = document.getElementById(allId);
-    const itemCheckboxSelector = '.' + container.id + '_chk';
-    function getItemCheckboxes() {
-        return Array.from(container.querySelectorAll(itemCheckboxSelector));
-    }
-
-    selectAllCheckbox.addEventListener('change', function (ev) {
-        const checked = ev.target.checked;
-        getItemCheckboxes().forEach(function (chk) { chk.checked = checked; });
-    });
-
-    getItemCheckboxes().forEach(function (chk) {
-        chk.addEventListener('change', function () {
-            const all = getItemCheckboxes();
-            const checkedCount = all.filter(c => c.checked).length;
-            selectAllCheckbox.checked = (checkedCount === all.length && all.length > 0);
-            if (checkedCount === 0) selectAllCheckbox.checked = false;
-        });
-    });
-
-    const searchInput = document.getElementById(searchId);
-    searchInput.addEventListener('input', function (ev) {
-        const term = ev.target.value.trim().toLowerCase();
-        const items = container.querySelectorAll('.checkbox-item');
-        items.forEach(function (div) {
-            const text = div.textContent.trim().toLowerCase();
-            div.style.display = (term === '' || text.indexOf(term) !== -1) ? '' : 'none';
-        });
-    });
-}
-
-function GetSelectedValues(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return [];
-    const inputs = Array.from(container.querySelectorAll('input[type="checkbox"].' + containerId + '_chk'));
-    return inputs.filter(i => i.checked).map(i => i.value);
-}
-
-function AreAllSelected(containerId) {
-    try {
-        if (!containerId) return false;
-        const container = document.getElementById(containerId);
-        if (!container) return false;
-
-        const selectAllId = containerId + '_all';
-        const selectAllEl = container.querySelector('#' + selectAllId);
-        if (selectAllEl && selectAllEl instanceof HTMLInputElement && selectAllEl.type === 'checkbox') {
-            return !!selectAllEl.checked;
-        }
-
-        const itemSelector = 'input[type="checkbox"].' + containerId + '_chk';
-        const inputs = Array.from(container.querySelectorAll(itemSelector));
-        if (inputs.length === 0) return false;
-
-        return inputs.every(function (chk) { return chk.checked === true; });
-    } catch (e) {
-        console.error('AreAllSelected error', e);
-        return false;
-    }
-}
-
-function GetDateRange() {
-    try {
-        const drange = DateRangeControl.getDateRangeFromControl('dateRange');
-        fromDate = drange.fromDate || '0';
-        toDate = drange.toDate || '0';
-    } catch (e) {
-        console.warn('Could not read date range control via helper:', e);
-    }
-}
 
 // Helper function to collect all filter values
 function GetAllFilters() {
-    GetDateRange();
-    
-    // Get Dealer Codes
-    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
-    selectedDealers = selectedDealers.join(',');
-    if (AreAllSelected('ddlDealerNamelist') === true) {
-        selectedDealers = '0';
+    const filterPanel = document.getElementById('filterPanel');
+    if (!filterPanel) {
+        console.warn('FilterSidePanelControl not found - using fallback values');
+        // Fallback to old method if control not found
+        return {
+            dealerCodes: '0',
+            salesPersons: '0',
+            cities: '0',
+            status: '0',
+            gp: '0',
+            industryType: '0',
+            fromDate: fromDate,
+            toDate: toDate
+        };
     }
     
-    // Get Sales Person
-    let selectedSalesPersons = GetSelectedValues('ddlSalesPersonlist');
-    selectedSalesPersons = selectedSalesPersons.join(',');
-    if (AreAllSelected('ddlSalesPersonlist') === true) {
-        selectedSalesPersons = '0';
+    try {
+        const filterValues = filterPanel.getFilterValues();
+        console.log('Filter values from control:', filterValues);
+        
+        const filters = {
+            dealerCodes: filterValues.ddlDealerNamelist?.joined || '0',
+            salesPersons: filterValues.ddlSalesPersonlist?.joined || '0',
+            cities: filterValues.ddlCitiesNamelist?.joined || '0',
+            status: filterValues.ddlStatusNamelist?.joined || '0',
+            gp: filterValues.ddlGPlist?.joined || '0',
+            industryType: filterValues.ddlIndustryTypelist?.joined || '0',
+            fromDate: filterValues.dateRange?.fromDate || fromDate || '0',
+            toDate: filterValues.dateRange?.toDate || toDate || '0'
+        };
+        
+        console.log('Processed filters:', filters);
+        return filters;
+    } catch (e) {
+        console.error('Error getting filter values:', e);
+        return {
+            dealerCodes: '0',
+            salesPersons: '0',
+            cities: '0',
+            status: '0',
+            gp: '0',
+            industryType: '0',
+            fromDate: fromDate,
+            toDate: toDate
+        };
     }
-    
-    // Get Cities/Location
-    let selectedCities = GetSelectedValues('ddlCitiesNamelist');
-    selectedCities = selectedCities.join(',');
-    if (AreAllSelected('ddlCitiesNamelist') === true) {
-        selectedCities = '0';
-    }
-    
-    // Get Status
-    let selectedStatus = GetSelectedValues('ddlStatusNamelist');
-    selectedStatus = selectedStatus.join(',');
-    if (AreAllSelected('ddlStatusNamelist') === true) {
-        selectedStatus = '0';
-    }
-    
-    // Get GP
-    let selectedGP = GetSelectedValues('ddlGPlist');
-    selectedGP = selectedGP.join(',');
-    if (AreAllSelected('ddlGPlist') === true) {
-        selectedGP = '0';
-    }
-    
-    // Get Industry Type/Segment
-    let selectedIndustryType = GetSelectedValues('ddlIndustryTypelist');
-    selectedIndustryType = selectedIndustryType.join(',');
-    if (AreAllSelected('ddlIndustryTypelist') === true) {
-        selectedIndustryType = '0';
-    }
-    
-    return {
-        dealerCodes: selectedDealers,
-        salesPersons: selectedSalesPersons,
-        cities: selectedCities,
-        status: selectedStatus,
-        gp: selectedGP,
-        industryType: selectedIndustryType,
-        fromDate: fromDate,
-        toDate: toDate
-    };
 }
 
 // Helper function to format date for display
@@ -358,7 +397,7 @@ function renderSummaryReport() {
         // Update date range display
         updateReportDateRangeDisplay();
 
-        const StringFilterColumn = [];
+        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man","Location"];
         const NumericFilterColumn = [];
         const DateFilterColumn = [];
         const Button = false;
@@ -447,7 +486,7 @@ function renderPartyScoring() {
         populateSummaryGrid('partyIdSummaryBody', partyIdCounts, 'Parties');
 
         // Render main Party Scoring table
-        const StringFilterColumn = [];
+        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man","Location"];
         const NumericFilterColumn = [];
         const DateFilterColumn = [];
         const Button = false;
@@ -535,7 +574,7 @@ function renderGoldenCircleClient() {
         processGoldenCircleData(response);
 
         // Render original data table
-        const StringFilterColumn = [];
+        const StringFilterColumn = ["Party Name", "Item Name", "Marketing Man", "GP"];
         const NumericFilterColumn = [];
         const DateFilterColumn = [];
         const Button = false;
@@ -1064,7 +1103,7 @@ function renderManifesteTable(data) {
         return;
     }
 
-    const StringFilterColumn = [];
+    const StringFilterColumn = ["Party Name", "MGKT_PERSON","Item Name"];
     const NumericFilterColumn = [];
     const DateFilterColumn = [];
     const Button = false;
@@ -1096,9 +1135,9 @@ function renderOrderSheetTable(data) {
         return;
     }
 
-    const StringFilterColumn = [];
+    const StringFilterColumn = ["Party Name", "Marketing Man", "Item Name"];
     const NumericFilterColumn = [];
-    const DateFilterColumn = ['Invoice Date', 'InvoiceDate'];
+    const DateFilterColumn = [];
     const Button = false;
     const showButtons = [];
     const StringdoubleFilterColumn = [];
@@ -1506,180 +1545,36 @@ function renderGPWiseSummaryCustomTable(data) {
     tbody.appendChild(grandTotalRow);
 }
 
-// Initialize dropdowns
-CRMReportsServices.GetSalespersonList().then(function (response) {
-    if (response && response.length > 0) {
-        BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })));
-        try {
-            const root = document.getElementById('ddlSalesPersonlist');
-            if (root) {
-                root.removeEventListener('change', dllSalesPresonListChange);
-                root.addEventListener('change', dllSalesPresonListChange);
-            }
-        } catch (e) { console.warn('Could not attach change handler to ddlSalesPresonlist', e); }
-    } else {
-        const el = $('#ddlSalesPersonlist')[0];
-        if (el) el.innerHTML = '';
-    }
-}).catch(function (error) {
-    console.error('Error fetching salesperson list:', error);
-});
-
-function dllSalesPresonListChange() {
-    try {
-        const vals = GetSelectedValues('ddlSalesPersonlist');
-        if (!vals || vals.length === 0) {
-            return;
-        }
-
-        const promises = vals.map(function (code) {
-            try {
-                return CRMReportsServices.GetDealerList(code);
-            } catch (e) {
-                return Promise.resolve([]);
-            }
-        });
-        Showloader();
-        Promise.all(promises).then(function (responses) {
-            HideLoader();
-            const merged = [];
-            const seen = new Set();
-            responses.forEach(function (resp) {
-                if (Array.isArray(resp)) {
-                    resp.forEach(function (d) {
-                        const key = String(d.Code);
-                        if (!seen.has(key)) {
-                            seen.add(key);
-                            merged.push(d);
-                        }
-                    });
-                }
-            });
-
-            if (merged.length > 0) {
-                G_ddlDealerNameList = merged.slice();
-                try {
-                    BindSelectList($('#ddlDealerNamelist')[0], merged.map(function (item) { return { Code: item.Code, Desp: item.AccountDesp }; }));
-                } catch (e) {
-                    console.error('Error binding dealer list after salesperson change', e);
-                }
-            } else {
-                G_ddlDealerNameList = [];
-                const el = $('#ddlDealerNamelist')[0];
-                if (el) el.innerHTML = '';
-            }
-        }).catch(function (err) {
-            console.error('Error fetching dealer lists for selected salespersons', err);
-            G_ddlDealerNameList = [];
-            const el = $('#ddlDealerNamelist')[0];
-            if (el) el.innerHTML = '';
-        });
-    } catch (e) {
-        console.error('dllSalesPresonListChange error', e);
-    }
-}
-
-CRMReportsServices.GetDealerList().then(function (response) {
-    if (response && response.length > 0) {
-        G_ddlDealerNameList = response.slice();
-        BindSelectList($('#ddlDealerNamelist')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })));
-    } else {
-        G_ddlDealerNameList = [];
-        const el = $('#ddlDealerNamelist')[0];
-        if (el) el.innerHTML = '';
-    }
-}).catch(function (error) {
-    console.error('Error fetching dealer list:', error);
-    G_ddlDealerNameList = [];
-    const el = $('#ddlDealerNamelist')[0];
-    if (el) el.innerHTML = '';
-});
-
-SalesanalysisASTService.GetSalesAnalysisData('DDL_CITIESNAMELIST', '0', '0', '0').then(function (response) {
-    if (response && response.length > 0) {
-        BindSelectList($('#ddlCitiesNamelist')[0], response.map((item) => ({ Code: item.CityName, Desp: item.CityName })));
-    } else {
-        const el = $('#ddlCitiesNamelist')[0];
-        if (el) el.innerHTML = '';
-    }
-}).catch(function (error) {
-    console.error('Error fetching cities list:', error);
-    const el = $('#ddlCitiesNamelist')[0];
-    if (el) el.innerHTML = '';
-});
-
-SalesanalysisASTService.GetSalesAnalysisData('DDL_STATUSNAME', '0', '0', '0').then(function (response) {
-    if (response && response.length > 0) {
-        BindSelectList($('#ddlStatusNamelist')[0], response.map((item) => ({ Code: item.StatusName, Desp: item.StatusName })));
-    } else {
-        const el = $('#ddlStatusNamelist')[0];
-        if (el) el.innerHTML = '';
-    }
-}).catch(function (error) {
-    console.error('Error fetching status list:', error);
-    const el = $('#ddlStatusNamelist')[0];
-    if (el) el.innerHTML = '';
-});
-
-SalesanalysisASTService.GetSalesAnalysisData('DDL_GPLIST', '0', '0', '0').then(function (response) {
-    if (response && response.length > 0) {
-        BindSelectList($('#ddlGPlist')[0], response.map((item) => ({ Code: item.GP, Desp: item.GP })));
-    } else {
-        const el = $('#ddlGPlist')[0];
-        if (el) el.innerHTML = '';
-    }
-}).catch(function (error) {
-    console.error('Error fetching GP list:', error);
-    const el = $('#ddlGPlist')[0];
-    if (el) el.innerHTML = '';
-});
-
-SalesanalysisASTService.GetSalesAnalysisData('DDL_INDUSTRYTYPELIST', '0', '0', '0').then(function (response) {
-    if (response && response.length > 0) {
-        BindSelectList($('#ddlIndustryTypelist')[0], response.map((item) => ({ Code: item.IndustryType, Desp: item.IndustryType })));
-    } else {
-        const el = $('#ddlIndustryTypelist')[0];
-        if (el) el.innerHTML = '';
-    }
-}).catch(function (error) {
-    console.error('Error fetching industry type list:', error);
-    const el = $('#ddlIndustryTypelist')[0];
-    if (el) el.innerHTML = '';
-});
-
 // Show report function
 function SalesanalysisAST_ShowReport() {
-    let selectedDealers = GetSelectedValues('ddlDealerNamelist');
-    selectedDealers = selectedDealers.join(',');
-
-    if (AreAllSelected('ddlDealerNamelist') === true) {
-        selectedDealers = '0';
-    }
-
-    if (selectedDealers == '') {
+    const filters = GetAllFilters();
+    
+    // Check if dealer codes are empty (not just checking the old way)
+    if (!filters.dealerCodes || filters.dealerCodes === '') {
+        console.warn('No dealers selected');
         return;
     }
 
     // Check which tab is active and render accordingly
-    if (document.querySelector('#summaryReport') && document.querySelector('#summaryReport').classList.contains('show')) {
+    if (document.querySelector('#summaryReport')?.classList.contains('show') || document.querySelector('#summaryReport')?.classList.contains('active')) {
         renderSummaryReport();
     }
-    if (document.querySelector('#partyScoring') && document.querySelector('#partyScoring').classList.contains('show')) {
+    if (document.querySelector('#partyScoring')?.classList.contains('show') || document.querySelector('#partyScoring')?.classList.contains('active')) {
         renderPartyScoring();
     }
-    if (document.querySelector('#goldenCircle') && document.querySelector('#goldenCircle').classList.contains('show')) {
+    if (document.querySelector('#goldenCircle')?.classList.contains('show') || document.querySelector('#goldenCircle')?.classList.contains('active')) {
         renderGoldenCircleClient();
     }
-    if (document.querySelector('#manifestation') && document.querySelector('#manifestation').classList.contains('show')) {
+    if (document.querySelector('#manifestation')?.classList.contains('show') || document.querySelector('#manifestation')?.classList.contains('active')) {
         renderManifestation();
     }
-    if (document.querySelector('#nbdCrr') && document.querySelector('#nbdCrr').classList.contains('show')) {
+    if (document.querySelector('#nbdCrr')?.classList.contains('show') || document.querySelector('#nbdCrr')?.classList.contains('active')) {
         renderNBDCRR();
     }
-    if (document.querySelector('#segmentWise') && document.querySelector('#segmentWise').classList.contains('show')) {
+    if (document.querySelector('#segmentWise')?.classList.contains('show') || document.querySelector('#segmentWise')?.classList.contains('active')) {
         renderSegmentWise();
     }
-    if (document.querySelector('#gpWiseSummary') && document.querySelector('#gpWiseSummary').classList.contains('show')) {
+    if (document.querySelector('#gpWiseSummary')?.classList.contains('show') || document.querySelector('#gpWiseSummary')?.classList.contains('active')) {
         renderGPWiseSummary();
     }
 }
