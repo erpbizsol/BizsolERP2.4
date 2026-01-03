@@ -155,7 +155,7 @@ function SlittingProductionEntry_BuildPlanCardHtml(item, isMainCard) {
         '<td style="width:25%; min-width:100px;">' + (planDate || '') + '</td>' +
         '</tr>' +
         '<tr>' +
-        '<td colspan="10" class="slit-plan-header-main">' + (millName ? 'Mill : ' + millName : 'Mill :') + '</td>' +
+        '<td colspan="10" class="slit-plan-header-main">' + (millName ? 'Machine : ' + millName : 'Machine :') + '</td>' +
         '</tr>' +
         '<tr>' +
         '<td colspan="10" class="slit-plan-header-sub">' + (processName ? 'Process : ' + processName : 'Process :') + '</td>' +
