@@ -29,7 +29,86 @@ $(document).ready(function () {
     }
     $("#ddlSalesPerson").change(function () {
         var SalesPerson = $(this).val();
-        GetLeadMasterList(SalesPerson)
+        var Status = $("#ddlStatus").val();
+        
+        if (G_originalData && G_originalData.length > 0) {
+            let updatedResponse = [];
+            let filteredData = [];
+
+            if (SalesPerson?.toLowerCase() === "all" && Status?.toLowerCase() === "all") {
+                filteredData = G_originalData;
+            } else {
+                filteredData = G_originalData.filter(item => {
+                    const salesMatch = SalesPerson?.toLowerCase() === "all"
+                        || item["Sales Person"]?.toLowerCase() === SalesPerson?.toLowerCase();
+
+                    const statusMatch = Status?.toLowerCase() === "all"
+                        || item["Status"]?.toLowerCase() === Status?.toLowerCase();
+
+                    return salesMatch && statusMatch;
+                });
+            }
+
+            const StringFilterColumn = ["Company Name", "City", "Sales Person"];
+            const NumericFilterColumn = [];
+            const DateFilterColumn = ["Followup Date"];
+            const Button = false;
+            const showButtons = [];
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = ["Lead Date", "Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "NextFollowupMode","FollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No","State"]
+            const ColumnAlignment = {
+            };
+            if (filteredData.length > 0) {
+                updatedResponse = filteredData.map(item => {
+                    const isDraft = item.Status === 'Draft';
+                    const isRejected = item.Status === 'Rejected';
+                    const isVerified = item.Verified === 'Y' || item.Status === 'Draft';
+                    const isUnverified = item.Verified === 'N';
+
+                    const followUpBtn = isUnverified ? '' : `<button class="btn btn-info icon-height mb-1" title="Follow Up" onclick="FollowUp(${item.Code})" ${isRejected ? 'disabled' : ''}><i class="fa-solid fa-user-plus"></i></button>&nbsp;`;
+                    const editBtn = `<button class="btn btn-warning icon-height mb-1" title="Edit" onclick="GetEnquiryDetailsByCode(${item.Code},this)" ${isRejected ? 'disabled' : ''}><i class="fa fa-pencil"></i></button>`;
+
+                    const verifyBtn = isVerified ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Verify" class="btn btn-success mb-1 btn-height" title="Verify" onclick="VerifyEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
+                    const assignBtn = isDraft ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Assign" class="btn btn-info mb-1 btn-height" title="Assign" onclick="AssignEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
+                    const deleteBtn = `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Delete" class="btn btn-danger mb-1 btn-height" title="Delete" onclick="Delete(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
+
+                    const dropdown = `
+                        <div class="btn-group">
+                            <button type="button" style="margin-top:-4px" class="btn btn-primary icon-height dropdown-toggle" data-bs-toggle="dropdown" ${isRejected ? 'disabled' : ''}>
+                                ...
+                            </button>
+                            <ul class="dropdown-menu p-1">
+                                ${verifyBtn}
+                                ${assignBtn}
+                                ${deleteBtn}
+                            </ul>
+                        </div>
+                    `;
+
+                    var updatedItem = {
+                        ...item,
+                        Action: followUpBtn + editBtn + dropdown,
+                    };
+                    
+                    if (IsInvalidDate(item["Followup Date"])) {
+                        updatedItem["Followup Date"] = "";
+                    }
+                    
+                    if (IsInvalidDate(item["Next Followup Date"])) {
+                        updatedItem["Next Followup Date"] = "";
+                    }
+                    
+                    return updatedItem;
+                });
+            }
+            if (filteredData.length === 0) {
+                $("#table-body").html("<tr><td colspan='10' style='text-align:center;'>No matching records found</td></tr>");
+                return;
+            }
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+        } else {
+            GetLeadMasterList(SalesPerson);
+        }
     });
     $("#ddlStatus").change(function () {
         var SalesPerson = $("#ddlSalesPerson").val();
@@ -53,11 +132,11 @@ $(document).ready(function () {
 
         const StringFilterColumn = ["Company Name", "City", "Sales Person"];
         const NumericFilterColumn = [];
-        const DateFilterColumn = ["Next Followup Date"];
+        const DateFilterColumn = ["Followup Date"];
         const Button = false;
         const showButtons = [];
         const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["Lead Date", "Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "NextFollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No","State"]
+        const hiddenColumns = ["Lead Date", "Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "NextFollowupMode", "FollowupMode","LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No","State"]
         const ColumnAlignment = {
         };
         if (filteredData.length > 0) {
@@ -94,10 +173,20 @@ $(document).ready(function () {
                     </div>
                 `;
 
-                return {
+                var updatedItem = {
                     ...item,
                     Action: followUpBtn + editBtn + dropdown,
                 };
+                
+                if (IsInvalidDate(item["Followup Date"])) {
+                    updatedItem["Followup Date"] = "";
+                }
+                
+                if (IsInvalidDate(item["Next Followup Date"])) {
+                    updatedItem["Next Followup Date"] = "";
+                }
+                
+                return updatedItem;
             });
         }
         if (filteredData.length === 0) {
@@ -410,6 +499,28 @@ function SetMinNextFollowupDateToToday() {
     $('#txtNextFollowupDate').attr('min', todayStr);
     $('#txtNextFollowUpDateFollowUp').attr('min', todayStr);
 }
+function IsInvalidDate(dateValue) {
+    if (!dateValue || dateValue === null || dateValue === undefined || dateValue === '') {
+        return true;
+    }
+    var dateStr = dateValue.toString().trim();
+    if (dateStr === '' || dateStr === 'null' || dateStr === 'undefined') {
+        return true;
+    }
+    if (dateStr.indexOf('1900') !== -1 || dateStr.indexOf('01-Jan-1900') !== -1 || dateStr.indexOf('1900-01-01') !== -1) {
+        return true;
+    }
+    var date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+        return true;
+    }
+    var year = date.getFullYear();
+    if (year === 1900 || year < 1900) {
+        return true;
+    }
+    return false;
+}
+
 function IsDateBeforeToday(dateStr) {
     if (!dateStr) return false;
     try {
@@ -547,10 +658,17 @@ function GetLeadMasterList(SalesPerson) {
                     </div>&nbsp;
                 `;
                 const whatsappbtn = `<button class="btn btn-success icon-height mb-1" title="WhatsApp" onclick="WhatsApp(${item.Code})"><i class="fab fa-whatsapp"></i></button>&nbsp;`;
-                return {
+                
+                var updatedItem = {
                     ...item,
                     Action: followUpBtn + editBtn + whatsappbtn + dropdown,
                 };
+                
+                if (IsInvalidDate(item["Followup Date"])) {
+                    updatedItem["Followup Date"] = "";
+                }
+                
+                return updatedItem;
             });
 
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
@@ -2444,8 +2562,8 @@ function BackEnquiry() {
     }
     // Show Enquiry tab content and hide others
     $("#dvTab1").show();
-    $("#dvTab2").hide();
-    $("#dvTab3").hide();
+    $("#dvTab2").show();
+    $("#dvTab3").show();
     BackMaster();
 }
 
