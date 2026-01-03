@@ -2436,6 +2436,16 @@ function BackEnquiry() {
     if ($("#ddlAssignSalesman").val() != '') {
         SaveLeadEnquiryOnChange();
     }
+    // Reset tabs and select Enquiry tab
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    var enquiryTab = document.querySelector('.card-header-tabs .tab');
+    if (enquiryTab) {
+        enquiryTab.classList.add('active');
+    }
+    // Show Enquiry tab content and hide others
+    $("#dvTab1").show();
+    $("#dvTab2").hide();
+    $("#dvTab3").hide();
     BackMaster();
 }
 
