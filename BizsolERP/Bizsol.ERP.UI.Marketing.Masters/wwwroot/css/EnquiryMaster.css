@@ -110,17 +110,42 @@ button, .icon-height {
     padding: 3px 10px;
 }
 
+/* Table wrapper for horizontal scrolling on mobile */
+#ContactPersonGrid, #ProductDetailsGrid {
+    width: 100%;
+}
+
+/* Wrapper for tables to enable horizontal scroll on mobile */
+.table-responsive-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+}
+
 /* Mobile responsive adjustments */
 @media (max-width: 991.98px) {
     .card-header-tabs {
         gap: 6px;
         padding: 6px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
     }
 
-        .card-header-tabs .tab {
-            padding: 6px 8px;
-            font-size: 14px;
-        }
+    .card-header-tabs .tab {
+        padding: 8px 12px;
+        font-size: 13px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .card-header-tabs .btn-danger {
+        white-space: nowrap;
+        flex-shrink: 0;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
 
     .form-grid .row > [class*='col-'] {
         margin-bottom: 10px;
@@ -134,18 +159,63 @@ button, .icon-height {
     .card {
         border-radius: 8px;
     }
+
+    /* Table responsive wrapper */
+    .table-responsive-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+    }
+
+    #ContactPersonGrid,
+    #ProductDetailsGrid {
+        min-width: 800px;
+        width: 100%;
+    }
 }
 
 @media (max-width: 575.98px) {
     .card-header-tabs {
         font-size: 11px;
+        padding: 8px 6px;
+        gap: 4px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
     }
 
-        .card-header-tabs .tab {
-            flex: 1 1 48%;
-            margin-bottom: 6px;
-            font-size: 8px;
-        }
+    .card-header-tabs::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .card-header-tabs::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .card-header-tabs::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+    }
+
+    .card-header-tabs::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    .card-header-tabs .tab {
+        padding: 10px 14px;
+        font-size: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        min-width: auto;
+    }
+
+    .card-header-tabs .btn-danger {
+        padding: 10px 14px;
+        font-size: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
 
     .form-grid .row > [class*='col-'] {
         flex: 0 0 100% !important;
@@ -164,6 +234,63 @@ button, .icon-height {
     /* tables scroll horizontally */
     .fixed-width-table.table {
         min-width: 600px;
+    }
+
+    /* Table responsive styles for mobile */
+    .table-responsive-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        -ms-overflow-style: -ms-autohiding-scrollbar;
+        position: relative;
+        margin: 0 -8px;
+        padding: 0 8px;
+    }
+
+    .table-responsive-wrapper::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .table-responsive-wrapper::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .table-responsive-wrapper::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+    }
+
+    .table-responsive-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    #ContactPersonGrid,
+    #ProductDetailsGrid {
+        min-width: 900px;
+        width: 100%;
+        display: table;
+    }
+
+    #ContactPersonGrid thead,
+    #ProductDetailsGrid thead {
+        display: table-header-group;
+    }
+
+    #ContactPersonGrid tbody,
+    #ProductDetailsGrid tbody {
+        display: table-row-group;
+    }
+
+    #ContactPersonGrid tr,
+    #ProductDetailsGrid tr {
+        display: table-row;
+    }
+
+    #ContactPersonGrid th,
+    #ContactPersonGrid td,
+    #ProductDetailsGrid th,
+    #ProductDetailsGrid td {
+        display: table-cell;
     }
 
     /* reduce paddings to fit smaller screens */
