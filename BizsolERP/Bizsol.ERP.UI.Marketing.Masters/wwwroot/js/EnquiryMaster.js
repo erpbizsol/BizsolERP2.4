@@ -410,6 +410,28 @@ function SetMinNextFollowupDateToToday() {
     $('#txtNextFollowupDate').attr('min', todayStr);
     $('#txtNextFollowUpDateFollowUp').attr('min', todayStr);
 }
+function IsInvalidDate(dateValue) {
+    if (!dateValue || dateValue === null || dateValue === undefined || dateValue === '') {
+        return true;
+    }
+    var dateStr = dateValue.toString().trim();
+    if (dateStr === '' || dateStr === 'null' || dateStr === 'undefined') {
+        return true;
+    }
+    if (dateStr.indexOf('1900') !== -1 || dateStr.indexOf('01-Jan-1900') !== -1 || dateStr.indexOf('1900-01-01') !== -1) {
+        return true;
+    }
+    var date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+        return true;
+    }
+    var year = date.getFullYear();
+    if (year === 1900 || year < 1900) {
+        return true;
+    }
+    return false;
+}
+
 function IsDateBeforeToday(dateStr) {
     if (!dateStr) return false;
     try {
@@ -547,10 +569,17 @@ function GetLeadMasterList(SalesPerson) {
                     </div>&nbsp;
                 `;
                 const whatsappbtn = `<button class="btn btn-success icon-height mb-1" title="WhatsApp" onclick="WhatsApp(${item.Code})"><i class="fab fa-whatsapp"></i></button>&nbsp;`;
-                return {
+                
+                var updatedItem = {
                     ...item,
                     Action: followUpBtn + editBtn + whatsappbtn + dropdown,
                 };
+                
+                if (IsInvalidDate(item["Followup Date"])) {
+                    updatedItem["Followup Date"] = "";
+                }
+                
+                return updatedItem;
             });
 
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
@@ -2444,8 +2473,8 @@ function BackEnquiry() {
     }
     // Show Enquiry tab content and hide others
     $("#dvTab1").show();
-    $("#dvTab2").hide();
-    $("#dvTab3").hide();
+    $("#dvTab2").show();
+    $("#dvTab3").show();
     BackMaster();
 }
 
