@@ -11,8 +11,24 @@ const PurchaseQualityCheckService = {
             }
         );
     },
-    GetMRNMasterDataForMRNNo: function GetMRNMasterDataForMRNNo() {
-        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetMRNMasterDataForMRNNo`;
+    GetMRNMasterDataForMRNNo: function GetMRNMasterDataForMRNNo(PartyMaster_Code, FinYear) {
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetMRNMasterDataForMRNNo?PartyMaster_Code=${PartyMaster_Code}&FinYear=${FinYear}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetMRNVendor: function GetMRNVendor() {
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetMRNVendor`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetFinYear: function GetFinYear() {
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetFinYear`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
