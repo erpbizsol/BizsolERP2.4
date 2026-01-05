@@ -9,6 +9,7 @@ let G_SelectedTestTypeCodes = [];
 let G_SelectedTestTypes = [];
 let G_HeaderTestTypeSelections = [];
 let G_ChangedInputs = [];
+let G_MRNNoList = [];
 
 $(document).ready(function () {
     const urlParams = BizSolHelperFunction.getUrlVars
@@ -21,9 +22,11 @@ $(document).ready(function () {
     } else {
         $('#ERPHeading').text('Purchase Quality Check');
     }
-    loadMRNMasterList();
-    GetQCPropertyTestTypeMaster();
     
+    GetQCPropertyTestTypeMaster();
+    bindYearDropdown();
+    GetMRNVendor();
+    loadMRNMasterList();
     $('#btnSaveQualityCheck').on('click', function() {
         saveQualityCheckData();
     });
@@ -31,28 +34,43 @@ $(document).ready(function () {
     $('#btnReset').on('click', function() {
         resetGrid();
     });
+    $("#ddlFinYear").change(function () {
+        loadMRNMasterList();
+        clearTable();
+        $('#txtMRNDate').val('');
+        $('#txtBillDate').val('');
+        $('#txtBillNo').val('');
+    });
 });
 function loadMRNMasterList() {
     const $mrnNo = $('#txtMRNNo');
     if (!$mrnNo.length) {
         return;
     }
+    
+    var PartyMaster_Code = $("#ddlPartyName").val() == null ? 0 : $("#ddlPartyName").val();
+    var FinYear = $("#ddlFinYear").val() == null ? '' : $("#ddlFinYear").val();
 
     Showloader();
-    PurchaseQualityCheckService.GetMRNMasterDataForMRNNo()
+    PurchaseQualityCheckService.GetMRNMasterDataForMRNNo(PartyMaster_Code, FinYear)
         .then(function (response) {
             HideLoader();
             if (response && Array.isArray(response) && response.length > 0) {
+                G_MRNNoList = response;
                 bindMRNDropdown(response);
             } else {
-                toastr.warning('No MRN data found');
+                G_MRNNoList = [];
                 $mrnNo.html('<option value="0">No MRN available</option>');
+                clearMRNData();
+                clearTable();
             }
         })
         .catch(function (error) {
             HideLoader();
-            console.error('Error loading MRN Master list:', error);
-            toastr.error('Error loading MRN list. Please try again.');
+            G_MRNNoList = [];
+            $mrnNo.html('<option value="0">Please select..</option>');
+            clearMRNData();
+            clearTable();
         });
 }
 function bindMRNDropdown(list) {
@@ -60,6 +78,9 @@ function bindMRNDropdown(list) {
     if (!$mrnNo.length) {
         return;
     }
+
+    $mrnNo.off('change select2:select');
+    $mrnNo.off('select2:open select2:close');
 
     let options = '<option value="0">Please select..</option>';
 
@@ -76,10 +97,16 @@ function bindMRNDropdown(list) {
 
     try {
         if ($.fn.select2) {
+            // Destroy existing select2 instance if it exists
+            if ($mrnNo.hasClass('select2-hidden-accessible')) {
+                $mrnNo.select2('destroy');
+            }
+            
             $mrnNo.select2({
                 width: '100%',
                 dropdownParent: $(document.body)
             });
+            
             if (typeof attachSelect2ScrollPrevention === 'function') {
                 attachSelect2ScrollPrevention($mrnNo);
             } else {
@@ -105,10 +132,29 @@ function bindMRNDropdown(list) {
                 $mrnNo.on('select2:open', preventScroll);
                 $mrnNo.on('select2:close', restoreScroll);
             }
+            
             $mrnNo.on('change select2:select', function () {
                 const mrnNo = $(this).val();
                 if (mrnNo && mrnNo !== '0' && mrnNo !== '') {
-                    let mrnMasterCode = parseInt(mrnNo);
+                    const selectedMRNData = G_MRNNoList.find(function(item) {
+                        return (item.MRNNo === mrnNo || item.MRN_NO === mrnNo || item.mrnNo === mrnNo);
+                    });
+                    
+                    if (selectedMRNData) {
+                        if (selectedMRNData.ReceiveDate) {
+                            $('#txtMRNDate').val(selectedMRNData.ReceiveDate);
+                        }
+                        
+                        if (selectedMRNData.BillDate) {
+                            $('#txtBillDate').val(selectedMRNData.BillDate);
+                        }
+                        
+                        if (selectedMRNData.BillNo) {
+                            $('#txtBillNo').val(selectedMRNData.BillNo);
+                        }
+                    }
+                    
+                    let mrnMasterCode = mrnNo;
                     if (mrnMasterCode && mrnMasterCode !== 0) {
                         $('#hfMRNMasterCode').val(mrnMasterCode);
                         loadPurchaseQualityCheckData(mrnMasterCode);
@@ -116,6 +162,9 @@ function bindMRNDropdown(list) {
                         toastr.warning('Unable to get MRN Master Code. Please select a valid MRN.');
                     }
                 } else {
+                    $('#txtMRNDate').val('');
+                    $('#txtBillDate').val('');
+                    $('#txtBillNo').val('');
                     clearMRNData();
                     clearTable();
                 }
@@ -639,7 +688,7 @@ function handleHeaderTestTypeCheckboxChange($checkbox) {
     // Reload data if MRN is selected
     const mrnNo = $('#txtMRNNo').val();
     if (mrnNo && mrnNo !== '0' && mrnNo !== '') {
-        const mrnMasterCode = parseInt(mrnNo);
+        const mrnMasterCode = mrnNo;
         if (mrnMasterCode && mrnMasterCode !== 0) {
             loadPurchaseQualityCheckData(mrnMasterCode);
         }
@@ -775,7 +824,7 @@ function saveQualityCheckData() {
                     HideLoader();
                     const mrnNo = $('#txtMRNNo').val();
                     if (mrnNo && mrnNo !== '0') {
-                        loadPurchaseQualityCheckData(parseInt(mrnNo));
+                        loadPurchaseQualityCheckData(mrnNo);
                     }
                 })
                 .catch(function (error) {
@@ -801,7 +850,7 @@ function resetGrid() {
     G_ChangedInputs = [];
     const mrnNo = $('#txtMRNNo').val();
     if (mrnNo && mrnNo !== '0' && mrnNo !== '') {
-        const mrnMasterCode = parseInt(mrnNo);
+        const mrnMasterCode = mrnNo;
         if (mrnMasterCode && mrnMasterCode !== 0) {
             loadPurchaseQualityCheckData(mrnMasterCode);
         }
@@ -810,5 +859,124 @@ function resetGrid() {
 function SavePurchaseQualityCheck() {
     saveQualityCheckData();
 }
+function bindYearDropdown() {
+    const $dropdown = $('#ddlFinYear');
+    if (!$dropdown.length) {
+        console.warn('Fin Year dropdown element not found');
+        return;
+    }
+    Showloader();
+    PurchaseQualityCheckService.GetFinYear()
+        .then(function (response) {
+            HideLoader();
+            if (response && Array.isArray(response) && response.length > 0) {
+                let options = '<option value="">Please select...</option>';
+                
+                response.forEach(function (item) {
+                    const finYear = item.FinYear || item.finYear || item.FinYearValue || '';
+                    if (finYear) {
+                        options += `<option value="${finYear}">${finYear}</option>`;
+                    }
+                });
+                
+                $dropdown.html(options);
+            } else {
+                HideLoader();
+                toastr.warning('No Financial Year data found');
+                $dropdown.html('<option value="">Please select...</option>');
+            }
+        })
+        .catch(function (error) {
+            HideLoader();
+            toastr.error('Error loading Financial Year list. Please try again.');
+            $dropdown.html('<option value="">Please select...</option>');
+        });
+}
+function GetMRNVendor() {
+    const $PartyName = $('#ddlPartyName');
+    if (!$PartyName.length) {
+        return;
+    }
+
+    Showloader();
+    PurchaseQualityCheckService.GetMRNVendor()
+        .then(function (response) {
+            HideLoader();
+            if (response && Array.isArray(response) && response.length > 0) {
+                bindVendorDropdown(response);
+            } else {
+                toastr.warning('No vendor data found');
+                $PartyName.html('<option value="0">No vendor available</option>');
+            }
+        })
+        .catch(function (error) {
+            HideLoader();
+            console.error('Error loading vendor list:', error);
+            toastr.error('Error loading vendor list. Please try again.');
+        });
+}
+function bindVendorDropdown(list) {
+    const $PartyName = $('#ddlPartyName');
+    if (!$PartyName.length) {
+        return;
+    }
+
+    let options = '<option value="0">Please select..</option>';
+
+    (list || []).forEach(function (item) {
+        const code = item.Code || item.code || 0;
+        const partyName = item.AccountDesp || item.accountDesp || '';
+
+        if (partyName && code && code !== 0) {
+            options += `<option value="${code}" data-code="${code}">${partyName}</option>`;
+        }
+    });
+
+    $PartyName.html(options);
+
+    try {
+        if ($.fn.select2) {
+            $PartyName.select2({
+                width: '100%',
+                dropdownParent: $(document.body)
+            });
+            if (typeof attachSelect2ScrollPrevention === 'function') {
+                attachSelect2ScrollPrevention($PartyName);
+            } else {
+                function preventScroll() {
+                    const scrollY = window.scrollY || window.pageYOffset;
+                    document.documentElement.style.overflow = 'hidden';
+                    document.body.style.position = 'fixed';
+                    document.body.style.top = `-${scrollY}px`;
+                    document.body.style.width = '100%';
+                    document.body.setAttribute('data-scroll-y', scrollY);
+                }
+
+                function restoreScroll() {
+                    const scrollY = document.body.getAttribute('data-scroll-y') || '0';
+                    document.documentElement.style.overflow = '';
+                    document.body.style.position = '';
+                    document.body.style.top = '';
+                    document.body.style.width = '';
+                    window.scrollTo(0, parseInt(scrollY));
+                    document.body.removeAttribute('data-scroll-y');
+                }
+
+                $PartyName.on('select2:open', preventScroll);
+                $PartyName.on('select2:close', restoreScroll);
+            }
+            $PartyName.on('change select2:select', function () {
+                loadMRNMasterList();
+                clearTable();
+                $('#txtMRNDate').val('');
+                $('#txtBillDate').val('');
+                $('#txtBillNo').val('');
+            });
+        }
+    } catch (e) {
+        toastr.error('Error initializing select2 for Party Name:', e);
+    }
+}
 
 window.SavePurchaseQualityCheck = SavePurchaseQualityCheck;
+window.bindYearDropdown = bindYearDropdown;

@@ -103,38 +103,43 @@
             <div class="row">
                 <input type="hidden" name="Code" id="Code" class="form-control" value="0">
                 <input type="hidden" name="MRNMasterCode" id="hfMRNMasterCode" class="form-control" value="0">
-                
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="ddlFinYear" class="col-form-label-sm fw-bold">Fin Year :<span class="text-danger">*</span></label>
+                        <select id="ddlFinYear" name="ddlFinYear" class="box_border form-control form-control-sm" autocomplete="off"></select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="ddlPartyName" class="col-form-label-sm fw-bold">Party Name :<span class="text-danger">*</span></label>
+                        <select id="ddlPartyName" name="ddlPartyName" class="box_border form-control form-control-sm" autocomplete="off"></select>
+                    </div>
+                </div>
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="txtMRNNo" class="col-form-label-sm fw-bold">MRN No :<span class="text-danger">*</span></label>
-                        <select id="txtMRNNo" name="txtMRNNo" class="box_border form-control form-control-sm" autocomplete="off" required></select>
+                        <select id="txtMRNNo" name="txtMRNNo" class="box_border form-control form-control-sm" autocomplete="off"></select>
                     </div>
                 </div>
-                @* <div class="col-md-2">
+                <div class="col-md-3">
                     <div class="form-group">
-                        <label for="txtMRNDate" class="col-form-label-sm fw-bold">MRN DATE:<span class="text-danger">*</span></label>
-                        <input type="date" id="txtMRNDate" name="txtMRNDate" class="box_border form-control form-control-sm" autocomplete="off" required />
+                        <label for="txtMRNDate" class="col-form-label-sm fw-bold">MRN Date :<span class="text-danger">*</span></label>
+                        <input type="text" id="txtMRNDate" name="txtMRNDate" class="box_border form-control form-control-sm" autocomplete="off" disabled/>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <div class="form-group">
-                        <label for="txtBillNo" class="col-form-label-sm fw-bold">BILL NO:<span class="text-danger">*</span></label>
-                        <input id="txtBillNo" name="txtBillNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="BILL NO" maxlength="50" required />
+                        <label for="txtBillNo" class="col-form-label-sm fw-bold">Bill No :<span class="text-danger">*</span></label>
+                        <input id="txtBillNo" name="txtBillNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="BILL NO" maxlength="50" disabled/>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <div class="form-group">
-                        <label for="txtBillDate" class="col-form-label-sm fw-bold">BILL DATE:<span class="text-danger">*</span></label>
-                        <input type="date" id="txtBillDate" name="txtBillDate" class="box_border form-control form-control-sm" autocomplete="off" required />
+                        <label for="txtBillDate" class="col-form-label-sm fw-bold">Bill Date :<span class="text-danger">*</span></label>
+                        <input type="text" id="txtBillDate" name="txtBillDate" class="box_border form-control form-control-sm" autocomplete="off" disabled/>
                     </div>
                 </div>
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label for="txtPartyName" class="col-form-label-sm fw-bold">PARTY NAME:<span class="text-danger">*</span></label>
-                        <input id="txtPartyName" name="txtPartyName" class="box_border form-control form-control-sm" autocomplete="off" placeholder="PARTY NAME" maxlength="100" required />
-                    </div>
-                </div> *@
-                <div class="col-md-7">
+                <div class="col-md-6">
                     <div class="form-group">
                         <label for="txtTestType" class="col-form-label-sm fw-bold">Test Type :<span class="text-danger">*</span></label>
                         <div id="chkTestType"></div>
