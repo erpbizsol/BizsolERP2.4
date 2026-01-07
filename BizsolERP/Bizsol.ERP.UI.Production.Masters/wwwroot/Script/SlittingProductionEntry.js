@@ -3,6 +3,8 @@ import { SlittingProductionEntryService } from '../../Bizsol.WebERP.UI.Shared/js
 import { SizeControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_SizeControlService.js';
 import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
 import { BreakDownService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_BreakDownService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+
 $("#ERPHeading").text("Production Entry GP");
 $('#txtFromDate').val(new Date().toISOString().slice(0, 10));
 $('#txtToDate').val(new Date().toISOString().slice(0, 10));
@@ -198,6 +200,7 @@ function SlittingProductionEntry_BindNewPlanLayout(plans) {
     $('#mainPlanCard').empty();
     $('#upcomingPlansContainer').empty();
     $('#upcomingPlansSection').hide();
+    $('#runningPlanHeader').hide();
 
     if (!plans || plans.length === 0) {
         return;
@@ -244,6 +247,7 @@ function SlittingProductionEntry_BindNewPlanLayout(plans) {
 
     // Render single running plan card (if any)
     if (mainCard !== null) {
+        $('#runningPlanHeader').show();
         $('#mainPlanCard').append(SlittingProductionEntry_BuildPlanCardHtml(mainCard, true));
     }
 
@@ -1787,6 +1791,8 @@ SlittingProductionEntry_ShowPlanGrid();
 getPackingListFGFixedParaMeters();
 Bind_AllDLL();
 Bind_ddlIdNo('dllAllPlansOrId', G_UserMaster_Code);
+LoadConfigurationAndManageRadioButtons();
+
 //LoadFrm();
 
 //var CustomData, ResultsAdapter; 
@@ -1881,6 +1887,260 @@ Bind_ddlIdNo('dllAllPlansOrId', G_UserMaster_Code);
 //    }
 //});
 
+async function LoadConfigurationAndManageRadioButtons() {
+  let configValueResponse = await SlittingProductionEntryService.GetConfigSlittingProduction()
+    if(configValueResponse){
+        let configValue = '';
+        
+        $.each(configValueResponse[0], function (key, val) {
+            if (key === 'WebSlittingProductionAsPer') {
+                configValue = val;
+            }
+        });
+        
+        ManageRadioButtonVisibility(configValue);
+        
+        if (configValue === 'S') {
+            $('input[name="filterType"][value="New"]').prop('checked', true);
+        } else if (configValue === 'M') {
+            $('input[name="filterType"][value="Plan"]').prop('checked', true);
+        } else if (configValue === 'B') {   
+            $('input[name="filterType"][value="Plan"]').prop('checked', true);
+        }
+    }
+}
+
+function ShowSlittingProductionConfigurationModal() {
+    $("#SlittingProductionConfigurationModal").modal({
+        backdrop: 'static',
+        // keyboard: false
+    });
+    $("#SlittingProductionConfigurationModal").modal('show');
+    
+    let option = '';
+    
+    option += `<div class="col-6 mb-2">
+                    <input type="checkbox" id="chkSingleValue" class="box_border" value="S" />
+                    <label for="chkSingleValue">Single Value</label>
+                </div>`;
+    option += `<div class="col-6 mb-2">
+                    <input type="checkbox" id="chkMultipleValue" class="box_border" value="M" />
+                    <label for="chkMultipleValue">Multiple Value</label>
+                </div>`;
+    option += `<div class="col-6 mb-2">
+                    <input type="checkbox" id="chkBothValue" class="box_border" value="B" />
+                    <label for="chkBothValue">Both Value</label>
+                </div>`;
+    
+    //SlittingProductionEntryService.GetConfigSlittingProduction().then(function (response) {
+    //    let configValue = '';
+        
+    //    $.each(response, function (key, val) {
+    //        if (val.PerameterName && val.PerameterName === 'WebSlittingProductionAsPer') {
+    //            configValue = val.PerameterValue;
+    //        } else if (val.PerameterName && val.PerameterValue !== undefined) {
+    //            let Checked = val.PerameterValue && val.PerameterValue.toLowerCase() === 'y' ? 'checked' : '';
+    //            option += `<div class="col-6"><input type="checkbox" class="box_border" ${Checked} onclick="setSlittingProductionParamater(this,'${val.PerameterName}','${val.PerameterValue}')" />&nbsp;<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName)}</label></div>`;
+    //        }
+    //    });
+
+        let configValue = '';
+        
+        $('#DivChkSetSlittingProductionConfiguration')[0].innerHTML = option;
+        
+        InitializeConfigurationCheckboxes();
+        
+        if (configValue) {
+            if (configValue === 'S') {
+                $('#chkSingleValue').prop('checked', true);
+            } else if (configValue === 'M') {
+                $('#chkMultipleValue').prop('checked', true);
+            } else if (configValue === 'B') {
+                $('#chkBothValue').prop('checked', true);
+            }
+        }
+        
+        ManageRadioButtonVisibility(configValue);
+    //});
+}
+function setSlittingProductionParamater(element, PerameterValue) {
+    let SetPerameterValue = 'N';
+    if (element.checked == true) {
+        SetPerameterValue = 'Y';
+    }
+    
+    let configValue = '';
+    if ($('#chkSingleValue').is(':checked')) {
+        configValue = 'S';
+    } else if ($('#chkMultipleValue').is(':checked')) {
+        configValue = 'M';
+    } else if ($('#chkBothValue').is(':checked')) {
+        configValue = 'B';
+    }
+    
+    SlittingProductionEntryService.UpdateConfigSlittingProduction(SetPerameterValue).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+        }
+    });
+
+}
+
+function InitializeConfigurationCheckboxes() {
+    $('#chkSingleValue').off('change').on('change', function () {
+        HandleConfigurationCheckboxChange('S', $(this).is(':checked'));
+    });
+    
+    $('#chkMultipleValue').off('change').on('change', function () {
+        HandleConfigurationCheckboxChange('M', $(this).is(':checked'));
+    });
+    
+    $('#chkBothValue').off('change').on('change', function () {
+        HandleConfigurationCheckboxChange('B', $(this).is(':checked'));
+    });
+    
+    LoadConfigurationCheckboxValues();
+}
+
+function HandleConfigurationCheckboxChange(valueType, isChecked) {
+    if (isChecked) {
+        if (valueType === 'S') {
+            $('#chkMultipleValue').prop('checked', false);
+            $('#chkBothValue').prop('checked', false);
+        } else if (valueType === 'M') {
+            $('#chkSingleValue').prop('checked', false);
+            $('#chkBothValue').prop('checked', false);
+        } else if (valueType === 'B') {
+            $('#chkSingleValue').prop('checked', false);
+            $('#chkMultipleValue').prop('checked', false);
+        }
+    }
+    
+    let SetPerameterValue = isChecked ? valueType : '';
+    
+    SlittingProductionEntryService.UpdateConfigSlittingProduction(SetPerameterValue).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+            ManageRadioButtonVisibility(SetPerameterValue);
+            
+            if (SetPerameterValue === 'S') {
+                $('input[name="filterType"][value="New"]').prop('checked', true);
+            } else if (SetPerameterValue === 'M') {
+                $('input[name="filterType"][value="Plan"]').prop('checked', true);
+            } else if (SetPerameterValue === 'B') {
+                $('input[name="filterType"][value="Plan"]').prop('checked', true);
+            }
+        }
+    });
+    
+    SaveConfigurationCheckboxValue(valueType, isChecked);
+}
+
+function SaveConfigurationCheckboxValue(valueType, isChecked) {
+    let selectedValue = '';
+    if (isChecked) {
+        selectedValue = valueType;
+    }
+    
+    sessionStorage.setItem('SlittingProductionConfigValue', selectedValue);
+    console.log('Configuration saved: ' + selectedValue);
+}
+
+function LoadConfigurationCheckboxValues() {
+    let savedValue = sessionStorage.getItem('SlittingProductionConfigValue');
+    
+    if (savedValue) {
+        if (savedValue === 'S') {
+            $('#chkSingleValue').prop('checked', true);
+        } else if (savedValue === 'M') {
+            $('#chkMultipleValue').prop('checked', true);
+        } else if (savedValue === 'B') {
+            $('#chkBothValue').prop('checked', true);
+        }
+    }
+}
+
+function GetSelectedConfigurationValue() {
+    if ($('#chkSingleValue').is(':checked')) {
+        return 'S';
+    } else if ($('#chkMultipleValue').is(':checked')) {
+        return 'M';
+    } else if ($('#chkBothValue').is(':checked')) {
+        return 'B';
+    }
+    return '';
+}
+
+function ManageRadioButtonVisibility(configValue) {
+    let radioButtons = $('input[name="filterType"]');
+    
+    if (configValue === 'S') {
+        radioButtons.each(function () {
+            let radioValue = $(this).val();
+            let textNode = this.nextSibling;
+            
+            if (radioValue === 'New' || radioValue === 'Entry') {
+                $(this).css('display', 'inline');
+                if (textNode && textNode.nodeType === 3) {
+                    textNode.nodeValue = textNode.nodeValue.trim() ? ' ' + radioValue : radioValue;
+                }
+            } else if (radioValue === 'Plan') {
+                $(this).css('display', 'none');
+                if (textNode && textNode.nodeType === 3) {
+                    textNode.nodeValue = '';
+                }
+            }
+        });
+        
+        if ($('input[name="filterType"]:checked').val() === 'Plan') {
+            $('input[name="filterType"][value="Entry"]').prop('checked', true);
+        }
+    } else if (configValue === 'M') {
+        radioButtons.each(function () {
+            let radioValue = $(this).val();
+            let textNode = this.nextSibling;
+            
+            if (radioValue === 'Plan' || radioValue === 'Entry') {
+                $(this).css('display', 'inline');
+                if (textNode && textNode.nodeType === 3) {
+                    textNode.nodeValue = textNode.nodeValue.trim() ? ' ' + radioValue : radioValue;
+                }
+            } else if (radioValue === 'New') {
+                $(this).css('display', 'none');
+                if (textNode && textNode.nodeType === 3) {
+                    textNode.nodeValue = '';
+                }
+            }
+        });
+        
+        if ($('input[name="filterType"]:checked').val() === 'New') {
+            $('input[name="filterType"][value="Plan"]').prop('checked', true);
+        }
+    } else if (configValue === 'B') {
+        radioButtons.each(function () {
+            let radioValue = $(this).val();
+            let textNode = this.nextSibling;
+            
+            $(this).css('display', 'inline');
+            if (textNode && textNode.nodeType === 3) {
+                textNode.nodeValue = textNode.nodeValue.trim() ? ' ' + radioValue : radioValue;
+            }
+        });
+    } else {
+        radioButtons.each(function () {
+            let radioValue = $(this).val();
+            let textNode = this.nextSibling;
+            
+            $(this).css('display', 'inline');
+            if (textNode && textNode.nodeType === 3) {
+                textNode.nodeValue = textNode.nodeValue.trim() ? ' ' + radioValue : radioValue;
+            }
+        });
+    }
+}
+
+BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnSlittingProductionConfiguration');
+
 window.SlittingProductionEntry_CreateNew = SlittingProductionEntry_CreateNew;
 window.SlittingProductionEntry_Back = SlittingProductionEntry_Back;
 window.SlittingProductionEntry_ShowPlanGrid = SlittingProductionEntry_ShowPlanGrid;
@@ -1900,5 +2160,8 @@ window.SlittingProductionEntry_OnChangeddlParantID = SlittingProductionEntry_OnC
 window.SlittingProductionEntry_CreatNewEntry = SlittingProductionEntry_CreatNewEntry;
 window.SlittingProductionEntry_GetSCaleWeight = SlittingProductionEntry_GetSCaleWeight;
 window.SlittingProductionEntry_Print = SlittingProductionEntry_Print;
-
-
+window.ShowSlittingProductionConfigurationModal = ShowSlittingProductionConfigurationModal
+window.setSlittingProductionParamater = setSlittingProductionParamater
+window.InitializeConfigurationCheckboxes = InitializeConfigurationCheckboxes
+window.GetSelectedConfigurationValue = GetSelectedConfigurationValue
+window.LoadConfigurationAndManageRadioButtons = LoadConfigurationAndManageRadioButtons
