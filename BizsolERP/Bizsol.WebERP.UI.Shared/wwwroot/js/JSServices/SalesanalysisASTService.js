@@ -19,18 +19,21 @@ const SalesanalysisASTService = {
         const fd = formatDate(FromDate);
         const td = formatDate(ToDate);
 
-        let url = `${UrlService.API_ENDPOINT_SalesanalysisAST}/GetSalesAnalysisData?Mode=${encodeURIComponent(Mode)}&DealerCodes=${encodeURIComponent(DealerCodes)}`;
-        if (fd) url += `&FromDate=${encodeURIComponent(fd)}`;
-        if (td) url += `&ToDate=${encodeURIComponent(td)}`;
-        
-        // Add additional filter parameters
-        if (SalesPersons) url += `&SalesPersons=${encodeURIComponent(SalesPersons)}`;
-        if (Cities) url += `&Cities=${encodeURIComponent(Cities)}`;
-        if (Status) url += `&Status=${encodeURIComponent(Status)}`;
-        if (GP) url += `&GP=${encodeURIComponent(GP)}`;
-        if (IndustryType) url += `&IndustryType=${encodeURIComponent(IndustryType)}`;
+        const requestBody = {
+            Mode: Mode,
+            DealerCodes: DealerCodes,
+            FromDate: fd,
+            ToDate: td,
+            SalesPersons: SalesPersons,
+            Cities: Cities,
+            Status: Status,
+            GP: GP,
+            IndustryType: IndustryType
+        };
 
-        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+        let url = `${UrlService.API_ENDPOINT_SalesanalysisAST}/GetSalesAnalysisData`;
+
+        return promiseAjaxCallApi.CallAPI('POST', url, JSON.stringify(requestBody)).then(
             function (value) {
                 return value;
             }
@@ -52,18 +55,21 @@ const SalesanalysisASTService = {
         const fd = formatDate(FromDate);
         const td = formatDate(ToDate);
 
-        let url = `${UrlService.API_ENDPOINT_SalesanalysisAST}/GetMultipleTableSalesAnalysisData?Mode=${encodeURIComponent(Mode)}&DealerCodes=${encodeURIComponent(DealerCodes)}`;
-        if (fd) url += `&FromDate=${encodeURIComponent(fd)}`;
-        if (td) url += `&ToDate=${encodeURIComponent(td)}`;
-        
-        // Add additional filter parameters
-        if (SalesPersons) url += `&SalesPersons=${encodeURIComponent(SalesPersons)}`;
-        if (Cities) url += `&Cities=${encodeURIComponent(Cities)}`;
-        if (Status) url += `&Status=${encodeURIComponent(Status)}`;
-        if (GP) url += `&GP=${encodeURIComponent(GP)}`;
-        if (IndustryType) url += `&IndustryType=${encodeURIComponent(IndustryType)}`;
+        const requestBody = {
+            Mode: Mode,
+            DealerCodes: DealerCodes,
+            FromDate: fd,
+            ToDate: td,
+            SalesPersons: SalesPersons,
+            Cities: Cities,
+            Status: Status,
+            GP: GP,
+            IndustryType: IndustryType
+        };
 
-        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+        let url = `${UrlService.API_ENDPOINT_SalesanalysisAST}/GetMultipleTableSalesAnalysisData`;
+
+        return promiseAjaxCallApi.CallAPI('POST', url, JSON.stringify(requestBody)).then(
             function (value) {
                 return value;
             }

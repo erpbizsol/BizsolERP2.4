@@ -134,7 +134,7 @@ function loadFilterDropdowns(filterPanel) {
     });
 
     // Load Cities List
-    SalesanalysisASTService.GetSalesAnalysisData('DDL_CITIESNAMELIST', '0', '0', '0').then(function (response) {
+    SalesanalysisASTService.GetSalesAnalysisData('DDL_CITIESNAMELIST', '0', '0', '0', '0', '0', '0','0','0').then(function (response) {
         if (response && response.length > 0) {
             const data = response.map(item => ({ Code: item.CityName, Desp: item.CityName }));
             filterPanel.updateFilterData('ddlCitiesNamelist', data);
@@ -144,7 +144,7 @@ function loadFilterDropdowns(filterPanel) {
     });
 
     // Load Status List
-    SalesanalysisASTService.GetSalesAnalysisData('DDL_STATUSNAME', '0', '0', '0').then(function (response) {
+    SalesanalysisASTService.GetSalesAnalysisData('DDL_STATUSNAME', '0', '0', '0', '0', '0', '0', '0', '0').then(function (response) {
         if (response && response.length > 0) {
             const data = response.map(item => ({ Code: item.StatusName, Desp: item.StatusName }));
             filterPanel.updateFilterData('ddlStatusNamelist', data);
@@ -154,7 +154,7 @@ function loadFilterDropdowns(filterPanel) {
     });
 
     // Load GP List
-    SalesanalysisASTService.GetSalesAnalysisData('DDL_GPLIST', '0', '0', '0').then(function (response) {
+    SalesanalysisASTService.GetSalesAnalysisData('DDL_GPLIST', '0', '0', '0', '0', '0', '0', '0', '0').then(function (response) {
         if (response && response.length > 0) {
             const data = response.map(item => ({ Code: item.GP, Desp: item.GP }));
             filterPanel.updateFilterData('ddlGPlist', data);
@@ -164,7 +164,7 @@ function loadFilterDropdowns(filterPanel) {
     });
 
     // Load Industry Type List
-    SalesanalysisASTService.GetSalesAnalysisData('DDL_INDUSTRYTYPELIST', '0', '0', '0').then(function (response) {
+    SalesanalysisASTService.GetSalesAnalysisData('DDL_INDUSTRYTYPELIST', '0', '0', '0', '0', '0', '0', '0', '0').then(function (response) {
         if (response && response.length > 0) {
             const data = response.map(item => ({ Code: item.IndustryType, Desp: item.IndustryType }));
             filterPanel.updateFilterData('ddlIndustryTypelist', data);
