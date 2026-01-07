@@ -460,9 +460,9 @@
         }
     }
 
-    .btn-start-main {
+    /* .btn-start-main {
         animation: startButtonColorChange .5s ease-in-out infinite;
-    }
+    } */
 
     /* Action row (Start / Edit / End) */
     .slit-plan-actions-row {
@@ -709,22 +709,23 @@
             <input type="date" class="form-control form-control-sm" id="txtToDate" >
 
         </div>
-        <div class="col-sm-2 col-6 without-label-field">
+        <div class="col-sm-3 col-6 without-label-field">
             <span class="radioSection">
                 <input type="radio" name="filterType" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="Plan" checked> Plan
                 <input type="radio" name="filterType" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="Entry"> Entry
                 <input type="radio" name="filterType" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="New"> New
             </span>
         </div>
-        <div class="col-sm-1 col-3 without-label-field text-end">
+        @* <div class="col-sm-1 col-3 without-label-field text-end">
             <label></label>
-            <button type="button" class="btn btn-primary icon-height" onclick="SlittingProductionEntry_ShowPlanGrid()">Show</button>
 
-        </div>
-        <div class="col-sm-2 col-3 without-label-field text-end">
+        </div> *@
+        <div class="col-sm-3 col-6 without-label-field text-end">
             @* <label></label> *@
+            <button type="button" class="btn btn-primary icon-height" onclick="SlittingProductionEntry_ShowPlanGrid()">Show</button>
             <button type="button" class="btn btn-primary btn-height" onclick="SlittingProductionEntry_CreateNew()">Create New</button>
-            
+            <i class="fa fa-gear" id="btnSlittingProductionConfiguration" onclick="ShowSlittingProductionConfigurationModal()" style="cursor:pointer"></i>
+
         </div>
     </div>
     <div class="table-wrapper mt-2 fixed-height-table">
@@ -743,7 +744,7 @@
     <!-- New plan layout shown when filterType = 'New' -->
     <div id="NewPlanLayout" style="display:none;" class="container-fluid px-0 mt-1">
         <!-- Main Plan Header -->
-        <div class="card slit-plan-card col-sm-6" style="margin:auto !important;">
+        <div id="runningPlanHeader" class="card slit-plan-card col-sm-6" style="margin:auto !important; display:none;">
             <div class="card-body p-0">
                 <table class="slit-plan-table mb-0">
                     <tr>
@@ -811,7 +812,26 @@
         </div>
     </div>
 </div>
+<div class="modal fade bs-example-modal-center" id="SlittingProductionConfigurationModal" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:484px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Set Configuration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="DivChkSetSlittingProductionConfiguration" class="row">
+                </div>
 
+                <div class="text-end mt-1">
+                    <a class="btn btn-danger icon-height" data-bs-dismiss="modal">
+                        Close
+                    </a>
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
 <div id="DivSizeControlmodal"></div>
 <div id="DivBrakDownStartControlModal"></div>
 <div id="DivSelectPrinterToPrintControlModal"></div>
