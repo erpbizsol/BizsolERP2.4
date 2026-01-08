@@ -352,7 +352,18 @@ function LoadedInNew() {
         AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedIn_ddlTransporterName'), $('#frmLoadedIn_ddlTransporterName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
     });
     GateEntryService.GetVendorOrClientNameListData('VENDOR').then(function (response) {
-        AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedIn_txtVendorName'), $('#frmLoadedIn_txtVendorName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+        AutoSuggestionControl.SetUpAutoSuggestion(
+            $('#frmLoadedIn_txtVendorName'), 
+            $('#frmLoadedIn_txtVendorName_List'), 
+            response.map((item) => ({ Desp: item.AccountDesp })), 
+            'StartWith',
+            true,
+            function (selectedItem) {
+                if (selectedItem) {
+                    $('#frmLoadedIn_ddlPurchaseOrder').val('').trigger('change');
+                }
+            }
+        );
     });
     GateEntryService.GetGoodDespList().then(function (response) {
         // Map with UOM included for auto-suggestion
@@ -1938,22 +1949,52 @@ function frmLoadedIn_ddlDocumentType(callby) {
     if (elementValue.toLowerCase() === 'sales return') {
         $('#DivfrmLoadedIn_Vendor')[0].innerHTML = 'Customer Name'
         GateEntryService.GetVendorOrClientNameListData('CLIENT').then(function (response) {
-            AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedIn_txtVendorName'), $('#frmLoadedIn_txtVendorName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
-
+            AutoSuggestionControl.SetUpAutoSuggestion(
+                $('#frmLoadedIn_txtVendorName'), 
+                $('#frmLoadedIn_txtVendorName_List'), 
+                response.map((item) => ({ Desp: item.AccountDesp })), 
+                'StartWith',
+                true,
+                function (selectedItem) {
+                    if (selectedItem) {
+                        $('#frmLoadedIn_ddlPurchaseOrder').val('').trigger('change');
+                    }
+                }
+            );
         });
     }
     else if (elementValue.toLowerCase().includes('job work') == true) {
         $('#DivfrmLoadedIn_Vendor')[0].innerHTML = 'Job Worker'
         GateEntryService.GetVendorOrClientNameListData('JOBWORK').then(function (response) {
-            AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedIn_txtVendorName'), $('#frmLoadedIn_txtVendorName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
-
+            AutoSuggestionControl.SetUpAutoSuggestion(
+                $('#frmLoadedIn_txtVendorName'), 
+                $('#frmLoadedIn_txtVendorName_List'), 
+                response.map((item) => ({ Desp: item.AccountDesp })), 
+                'StartWith',
+                true,
+                function (selectedItem) {
+                    if (selectedItem) {
+                        $('#frmLoadedIn_ddlPurchaseOrder').val('').trigger('change');
+                    }
+                }
+            );
         });
     }
     else {
         $('#DivfrmLoadedIn_Vendor')[0].innerHTML = 'Vendor Name'
         GateEntryService.GetVendorOrClientNameListData('VENDOR').then(function (response) {
-            AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedIn_txtVendorName'), $('#frmLoadedIn_txtVendorName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
-
+            AutoSuggestionControl.SetUpAutoSuggestion(
+                $('#frmLoadedIn_txtVendorName'), 
+                $('#frmLoadedIn_txtVendorName_List'), 
+                response.map((item) => ({ Desp: item.AccountDesp })), 
+                'StartWith',
+                true,
+                function (selectedItem) {
+                    if (selectedItem) {
+                        $('#frmLoadedIn_ddlPurchaseOrder').val('').trigger('change');
+                    }
+                }
+            );
         });
     }
     if (typeof callby === 'undefined' || callby === '') {
