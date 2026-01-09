@@ -6,7 +6,6 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/QCPropertyItemConfiguration.js"></script>
 <style>
-    /* Fix select2 dropdown scrollbar issue - prevent page scroll when dropdown opens */
     .select2-container--open .select2-dropdown {
         z-index: 9999 !important;
         position: absolute !important;
@@ -17,7 +16,6 @@
         position: absolute !important;
     }
     
-    /* Ensure all parent containers don't clip select2 dropdowns */
     .card {
         overflow: visible !important;
     }
@@ -34,33 +32,63 @@
         overflow: visible !important;
     }
     
-    /* Ensure select2 results container doesn't cause page scroll */
     .select2-results {
         max-height: 200px !important;
         overflow-y: auto !important;
     }
     
-    /* Ensure select2 dropdown is positioned correctly */
     .select2-dropdown {
         position: absolute !important;
     }
-    
-    /* Prevent any overflow on form containers */
     .form-control-sm {
         position: relative;
     }
     
-    /* Ensure main content area doesn't cause scroll */
     .main-content {
         overflow: visible !important;
     }
     
-    /* Fix for any wrapper containers */
     .col-md-3, .col-md-2 {
         overflow: visible !important;
     }
-</style>
 
+    /* Responsive table height based on screen height (excluding header, paginator and footer) */
+    #dvGrid .table-wrapper {
+        max-height: calc(100vh - 320px);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+    #dvFrom .table-wrapper {
+        max-height: calc(100vh - 390px);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+    /* Sticky table header */
+    #dvGrid .table-wrapper thead,
+    #dvFrom .table-wrapper thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #fff;
+    }
+
+    .paginator {
+        position: sticky;
+        bottom:15px;
+        background-color: #fff;
+        z-index: 5;
+    }
+</style>
+<div>
+    <div class="row g-2 mb-3" id="dvIsProperty" style="display:block;">
+        <div class="col-md-2">
+            <input type="checkbox" id="chkIsProperty" checked />
+            <label for="chkIsProperty" class="form-label fw-semibold"> Without Property <span class="text-danger">*</span></label>
+        </div>
+    </div>
+</div>
 <div class="card p-2">
     <div id="dvGrid" style="display:block;">
         <div class="row text-end">
@@ -83,49 +111,8 @@
     <div id="dvFrom" style="display:none;">
         <div class="row g-2 mb-3">
             <div class="col-md-3">
-                <label for="txtItemCode" class="form-label fw-semibold">Item Code <span class="text-danger">*</span></label>
-                <select id="txtItemCode" class="form-control form-control-sm box_border" autocomplete="off" tabindex="0"></select>
-                <input type="hidden" id="txtCode" class="form-control form-control-sm box_border" value="0" />
-            </div>
-            <div class="col-md-3">
                 <label for="txtItemName" class="form-label fw-semibold">Item Name <span class="text-danger">*</span></label>
                 <select id="txtItemName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
-            </div>
-            <div class="col-md-3">
-                <label for="txtPropertyGroup" class="form-label fw-semibold">Property Group <span class="text-danger">*</span></label>
-                <select id="txtPropertyGroup" class="form-control form-control-sm box_border" autocomplete="off" tabindex="2"></select>
-            </div>
-            <div class="col-md-3">
-                <label for="txtPropertyName" class="form-label fw-semibold">Property Name <span class="text-danger">*</span></label>
-                <select id="txtPropertyName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="3"></select>
-            </div>
-            <div class="col-md-2">
-                <label for="txtSortOrder" class="form-label fw-semibold">Sort Order <span class="text-danger">*</span></label>
-                <input type="text" id="txtSortOrder" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Sort Order" tabindex="4" style="text-align: right;" maxlength="5" />
-            </div>
-            <div class="col-md-3">
-                <label for="txtValueType" class="form-label fw-semibold">Value Type <span class="text-danger">*</span></label>
-                <select id="txtValueType" class="form-control form-control-sm box_border" autocomplete="off" tabindex="5">
-                    <option value="Numeric">Numeric</option>
-                    <option value="Text">Text</option>
-                    <option value="Lov">Lov</option>
-                </select>
-            </div>
-            <div class="col-md-2 hide">
-                <label for="txtMinValue" class="form-label fw-semibold">Min Value <span class="text-danger">*</span></label>
-                <input type="text" id="txtMinValue" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Min Value" tabindex="6" style="text-align: right;" maxlength="8" />
-            </div>
-            <div class="col-md-2 hide">
-                <label for="txtMaxValue" class="form-label fw-semibold">Max Value <span class="text-danger">*</span></label>
-                <input type="text" id="txtMaxValue" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Max Value" tabindex="7" style="text-align: right;" maxlength="8" />
-            </div>
-            <div class="col-md-3 hide">
-                <label for="txtDefaultValue" class="form-label fw-semibold">Default Value <span class="text-danger">*</span></label>
-                <input type="text" id="txtDefaultValue" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Default Value" tabindex="8" maxlength="100" />
-            </div>
-            <div class="col-md-3 hide">
-                <label for="txtLovValues" class="form-label fw-semibold">LOV Values <span class="text-danger">*</span></label>
-                <input type="text" id="txtLovValues" class="form-control form-control-sm box_border" autocomplete="off" placeholder="LOV Values" tabindex="9" maxlength="1000" />
             </div>
         </div>
         <div class="row text-end">
@@ -133,6 +120,16 @@
                 <button class="btn btn-success icon-height mb-1" title="Edit" id="btnSave" onclick="SaveData()">Save</button>
                 <button class="btn btn-danger icon-height mb-1" title="Edit" id="btnBack" onclick="Back()">Back</button>
             </div>
+        </div>
+        <div class="table-wrapper">
+            <table id="tblItemConfigurationEditable" class="fixed-width-table table">
+                <thead id="table-headerEditable">
+                </thead>
+                <tbody id="table-bodyEditable">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tblItemConfigurationEditable">
         </div>
     </div>
 </div>

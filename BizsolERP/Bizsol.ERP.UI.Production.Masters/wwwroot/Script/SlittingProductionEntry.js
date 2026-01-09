@@ -1909,59 +1909,15 @@ async function LoadConfigurationAndManageRadioButtons() {
         }
     }
 }
-
 function ShowSlittingProductionConfigurationModal() {
     $("#SlittingProductionConfigurationModal").modal({
         backdrop: 'static',
         // keyboard: false
     });
     $("#SlittingProductionConfigurationModal").modal('show');
-    
-    let option = '';
-    
-    option += `<div class="col-6 mb-2">
-                    <input type="checkbox" id="chkSingleValue" class="box_border" value="S" />
-                    <label for="chkSingleValue">Single Value</label>
-                </div>`;
-    option += `<div class="col-6 mb-2">
-                    <input type="checkbox" id="chkMultipleValue" class="box_border" value="M" />
-                    <label for="chkMultipleValue">Multiple Value</label>
-                </div>`;
-    option += `<div class="col-6 mb-2">
-                    <input type="checkbox" id="chkBothValue" class="box_border" value="B" />
-                    <label for="chkBothValue">Both Value</label>
-                </div>`;
-    
-    //SlittingProductionEntryService.GetConfigSlittingProduction().then(function (response) {
-    //    let configValue = '';
-        
-    //    $.each(response, function (key, val) {
-    //        if (val.PerameterName && val.PerameterName === 'WebSlittingProductionAsPer') {
-    //            configValue = val.PerameterValue;
-    //        } else if (val.PerameterName && val.PerameterValue !== undefined) {
-    //            let Checked = val.PerameterValue && val.PerameterValue.toLowerCase() === 'y' ? 'checked' : '';
-    //            option += `<div class="col-6"><input type="checkbox" class="box_border" ${Checked} onclick="setSlittingProductionParamater(this,'${val.PerameterName}','${val.PerameterValue}')" />&nbsp;<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName)}</label></div>`;
-    //        }
-    //    });
-
-        let configValue = '';
-        
-        $('#DivChkSetSlittingProductionConfiguration')[0].innerHTML = option;
         
         InitializeConfigurationCheckboxes();
         
-        if (configValue) {
-            if (configValue === 'S') {
-                $('#chkSingleValue').prop('checked', true);
-            } else if (configValue === 'M') {
-                $('#chkMultipleValue').prop('checked', true);
-            } else if (configValue === 'B') {
-                $('#chkBothValue').prop('checked', true);
-            }
-        }
-        
-        ManageRadioButtonVisibility(configValue);
-    //});
 }
 function setSlittingProductionParamater(element, PerameterValue) {
     let SetPerameterValue = 'N';
@@ -1981,11 +1937,11 @@ function setSlittingProductionParamater(element, PerameterValue) {
     SlittingProductionEntryService.UpdateConfigSlittingProduction(SetPerameterValue).then(function (response) {
         if (response.Status === 'Y') {
             toastr.success(response.Msg);
+            
         }
     });
 
 }
-
 function InitializeConfigurationCheckboxes() {
     $('#chkSingleValue').off('change').on('change', function () {
         HandleConfigurationCheckboxChange('S', $(this).is(':checked'));
@@ -2001,7 +1957,6 @@ function InitializeConfigurationCheckboxes() {
     
     LoadConfigurationCheckboxValues();
 }
-
 function HandleConfigurationCheckboxChange(valueType, isChecked) {
     if (isChecked) {
         if (valueType === 'S') {
@@ -2022,7 +1977,7 @@ function HandleConfigurationCheckboxChange(valueType, isChecked) {
         if (response.Status === 'Y') {
             toastr.success(response.Msg);
             ManageRadioButtonVisibility(SetPerameterValue);
-            
+            $("#SlittingProductionConfigurationModal").modal('hide');
             if (SetPerameterValue === 'S') {
                 $('input[name="filterType"][value="New"]').prop('checked', true);
             } else if (SetPerameterValue === 'M') {
@@ -2030,12 +1985,14 @@ function HandleConfigurationCheckboxChange(valueType, isChecked) {
             } else if (SetPerameterValue === 'B') {
                 $('input[name="filterType"][value="Plan"]').prop('checked', true);
             }
+            setTimeout(function () {
+                SlittingProductionEntry_ShowPlanGrid();
+            }, 1000);
         }
     });
     
     SaveConfigurationCheckboxValue(valueType, isChecked);
 }
-
 function SaveConfigurationCheckboxValue(valueType, isChecked) {
     let selectedValue = '';
     if (isChecked) {
@@ -2045,7 +2002,6 @@ function SaveConfigurationCheckboxValue(valueType, isChecked) {
     sessionStorage.setItem('SlittingProductionConfigValue', selectedValue);
     console.log('Configuration saved: ' + selectedValue);
 }
-
 function LoadConfigurationCheckboxValues() {
     let savedValue = sessionStorage.getItem('SlittingProductionConfigValue');
     
@@ -2059,7 +2015,6 @@ function LoadConfigurationCheckboxValues() {
         }
     }
 }
-
 function GetSelectedConfigurationValue() {
     if ($('#chkSingleValue').is(':checked')) {
         return 'S';
@@ -2070,7 +2025,6 @@ function GetSelectedConfigurationValue() {
     }
     return '';
 }
-
 function ManageRadioButtonVisibility(configValue) {
     let radioButtons = $('input[name="filterType"]');
     

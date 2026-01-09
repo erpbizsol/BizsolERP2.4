@@ -7,7 +7,7 @@ let G_ItemMasterList = [];
 let G_QCGroupMasterList = [];
 let G_QCPropertyMasterList = [];
 let G_QCPropertyItemConfigurationList = [];
-
+let G_IsProperty = 'Y';
 $(document).ready(function () {
     const urlParams = BizSolHelperFunction.getUrlVars
         ? BizSolHelperFunction.getUrlVars()
@@ -22,31 +22,40 @@ $(document).ready(function () {
     getItemMasterlist();
     QCGroupMasterlist();
     QCPropertyMasterlist(0);
-    handleValueTypeChange();
+    //handleValueTypeChange();
     
     $('#txtValueType').on('change', function() {
         handleValueTypeChange();
         attachMinMaxValidation();
+    });
+    $('#chkIsProperty').on('change', function () {
+        G_IsProperty = this.checked ? 'Y' : 'N';
+        getQCPropertyItemConfigurationList();
+    });
+    $('#txtItemName').on('change', function () {
+        let ItemMaster_Code = $(this).val();
+        getQCPropertyItemConfigurationByCode(ItemMaster_Code);
     });
     attachSortOrderValidation();
     attachMinMaxValidation();
     attachEnterKeyNavigation();
     getQCPropertyItemConfigurationList();
 });
-
 function CreateNew() {
     HideGrid();
 }
 function ShowGrid() {
     $("#dvGrid").show();
     $("#dvFrom").hide();
+    $("#dvIsProperty").show();
     getQCPropertyItemConfigurationList();
 }
 function HideGrid() {
     $("#dvGrid").hide();
     $("#dvFrom").show();
-    // Focus first field after form is shown
-    
+    $("#dvIsProperty").hide();
+    // Initialize empty editable table
+    buildEmptyEditableTable();
 }
 function getItemMasterlist() {
     QCPropertyItemConfigurationService.GetItemMasterList()
@@ -60,45 +69,30 @@ function getItemMasterlist() {
         });
 }
 function bindItemDropdowns(list) {
-    const $code = $('#txtItemCode');
     const $name = $('#txtItemName');
 
-    if (!$code.length || !$name.length) {
-        return;
-    }
-
-    let codeOptions = '<option value="0">Please select..</option>';
     let nameOptions = '<option value="0">Please select..</option>';
 
     (list || []).forEach(function (item) {
         const Code = item.Code || '';
-        const itemCode = item.ItemCode || '';
+
         const itemName = item.ItemName || '';
-        codeOptions += `<option value="${Code}">${itemCode}</option>`;
+
         nameOptions += `<option value="${Code}">${itemName}</option>`;
     });
 
-    $code.html(codeOptions);
     $name.html(nameOptions);
 
     try {
         if ($.fn.select2) {
-            // Initialize select2 with dropdownParent and scroll prevention
-            $code.select2({ 
-                width: '100%',
-                dropdownParent: $(document.body)
-            });
             $name.select2({ 
                 width: '100%',
                 dropdownParent: $(document.body)
             });
             
-            // Attach scroll prevention using common function or inline
             if (typeof attachSelect2ScrollPrevention === 'function') {
-                attachSelect2ScrollPrevention($code);
                 attachSelect2ScrollPrevention($name);
             } else {
-                // Inline fallback if common function not available
                 function preventScroll() {
                     const scrollY = window.scrollY || window.pageYOffset;
                     document.documentElement.style.overflow = 'hidden';
@@ -118,8 +112,6 @@ function bindItemDropdowns(list) {
                     document.body.removeAttribute('data-scroll-y');
                 }
                 
-                $code.on('select2:open', preventScroll);
-                $code.on('select2:close', restoreScroll);
                 $name.on('select2:open', preventScroll);
                 $name.on('select2:close', restoreScroll);
             }
@@ -805,111 +797,93 @@ function attachMinMaxValidation() {
     });
 }
 function saveQCPropertyItemConfiguration() {
-    const itemCode = $('#txtItemCode').val();
+    // Build payload from editable table rows
     const itemName = $('#txtItemName').val();
-    const propertyGroup = $('#txtPropertyGroup').val();
-    const propertyName = $('#txtPropertyName').val();
-    const sortOrder = $('#txtSortOrder').val();
-    const valueType = $('#txtValueType').val();
-    
-    if (!itemCode || itemCode === '0') {
-        toastr.error('Please select Item Code.');
-        $('#txtItemCode').focus();
-        return;
-    }
-    
     if (!itemName || itemName === '0') {
         toastr.error('Please select Item Name.');
         $('#txtItemName').focus();
         return;
     }
-    
-    if (!propertyGroup || propertyGroup === '0') {
-        toastr.error('Please select Property Group.');
-        $('#txtPropertyGroup').focus();
+
+    const $tbody = $('#table-bodyEditable');
+    if (!$tbody.length) {
+        toastr.error('Editable table not found.');
         return;
     }
-    
-    if (!propertyName || propertyName === '0') {
-        toastr.error('Please select Property Name.');
-        $('#txtPropertyName').focus();
+
+    const $rows = $tbody.find('tr');
+    if ($rows.length === 0) {
+        toastr.error('Please add at least one row before saving.');
         return;
     }
-    
-    if (!sortOrder || sortOrder.trim() === '') {
-        toastr.error('Please enter Sort Order.');
-        $('#txtSortOrder').focus();
+
+    // Validate all rows first
+    const validation = validateAllEditableTableRows();
+    if (!validation.isValid) {
+        toastr.warning(validation.message);
+        if (validation.$field) {
+            setTimeout(function () {
+                if (validation.$field.is('select')) {
+                    if (validation.$field.data('select2')) {
+                        validation.$field.select2('open');
+                    } else {
+                        validation.$field.focus();
+                    }
+                } else {
+                    validation.$field.focus();
+                }
+                validation.$field.addClass('is-invalid');
+                setTimeout(function () {
+                    validation.$field.removeClass('is-invalid');
+                }, 3000);
+            }, 100);
+        }
         return;
     }
-    
-    if (!valueType || valueType === '') {
-        toastr.error('Please select Value Type.');
-        $('#txtValueType').focus();
-        return;
-    }
-    
-    if (valueType === 'Numeric' || valueType === 'Decimal') {
-        const minValue = $('#txtMinValue').val();
-        const maxValue = $('#txtMaxValue').val();
-        
-        if (!minValue || minValue.trim() === '') {
-            toastr.error('Please enter Min Value.');
-            $('#txtMinValue').focus();
-            return;
+
+    // Build payload array from each row
+    const data = [];
+    $rows.each(function () {
+        const $row = $(this);
+
+        const code = $row.data('code') || 0;
+        const itemMasterCode = $row.data('item-master-code') || itemName;
+
+        const $propertyGroup = $row.find('.editable-property-group-select');
+        const $propertyName = $row.find('.editable-property-name-select');
+        const $sortOrder = $row.find('.editable-sort-order');
+        const $valueType = $row.find('.editable-value-type-select');
+        const $minValue = $row.find('.editable-min-value');
+        const $maxValue = $row.find('.editable-max-value');
+        const $defaultValue = $row.find('.editable-default-value');
+        const $lovValues = $row.find('.editable-lov-values');
+
+        const valueType = ($valueType.val() || '').trim();
+
+        const payloadItem = {
+            Code: code,
+            ItemMaster_Code: parseInt(itemMasterCode),
+            QCPropertyMaster_Code: parseInt($propertyName.val() || 0),
+            SortOrder: parseFloat($sortOrder.val() || 0) || 0,
+            ValueType: valueType,
+            MinValue: 0,
+            MaxValue: 0,
+            DefaultValue: '',
+            LovValues: ''
+        };
+
+        if (valueType === 'Numeric' || valueType === 'Decimal') {
+            payloadItem.MinValue = $minValue.val() === '' ? 0 : $minValue.val();
+            payloadItem.MaxValue = $maxValue.val() === '' ? 0 : $maxValue.val();
+        } else if (valueType === 'Text') {
+            payloadItem.DefaultValue = $defaultValue.val() || '';
+        } else if (valueType === 'Lov') {
+            payloadItem.LovValues = $lovValues.val() || '';
         }
-        
-        if (!maxValue || maxValue.trim() === '') {
-            toastr.error('Please enter Max Value.');
-            $('#txtMaxValue').focus();
-            return;
-        }
-        
-        
-        const min = parseFloat(minValue);
-        const max = parseFloat(maxValue);
-        if (min >= max) {
-            toastr.error('Min Value must be less than Max Value.');
-            $('#txtMinValue').focus();
-            return;
-        }
-       
-    } else if (valueType === 'Text') {
-        const defaultValue = $('#txtDefaultValue').val();
-        if (!defaultValue || defaultValue.trim() === '') {
-            toastr.error('Please enter Default Value.');
-            $('#txtDefaultValue').focus();
-            return;
-        }
-    } else if (valueType === 'Lov') {
-        const lovValues = $('#txtLovValues').val();
-        if (!lovValues || lovValues.trim() === '') {
-            toastr.error('Please enter LOV Values.');
-            $('#txtLovValues').focus();
-            return;
-        }
-    }
-    
-    const data = [{
-        Code: $("#txtCode").val(),
-        ItemMaster_Code: parseInt(itemCode),
-        QCPropertyMaster_Code: parseInt(propertyName),
-        SortOrder: parseFloat($('#txtSortOrder').val()) || 0,
-        ValueType: valueType,
-        MinValue: $('#txtMinValue').val() == '' ? 0 : $('#txtMinValue').val(),
-        MaxValue: $('#txtMaxValue').val() == '' ? 0 : $('#txtMaxValue').val(),
-        DefaultValue: $('#txtDefaultValue').val(),
-        LovValues: $('#txtLovValues').val()
-    }];
-    
-    if (valueType === 'Numeric' || valueType === 'Decimal') {
-        data.MinValue = $('#txtMinValue').val() || 0;
-        data.MaxValue = $('#txtMaxValue').val() || 0;
-        data.DefaultValue = $('#txtDefaultValue').val() || '';
-    } else if (valueType === 'Text') {
-        data.DefaultValue = $('#txtDefaultValue').val() || '';
-    } else if (valueType === 'Lov') {
-        data.LovValues = $('#txtLovValues').val() || '';
-    }
+
+        data.push(payloadItem);
+    });
+
     Showloader();
     QCPropertyItemConfigurationService.SaveQCPropertyItemConfiguration(data)
         .then(function (response) {
@@ -943,26 +917,955 @@ function Edit(Code) {
     });
 }
 function getQCPropertyItemConfigurationByCode(code) {
-    if (!code) {
+    if (!code || code === '0') {
+        buildEmptyEditableTable();
         return;
     }
     $("#txtCode").val(code);
+    const $itemName = $('#txtItemName');
+    $itemName.val(code);   
+
+    if ($itemName.data('select2')) {
+        $itemName.trigger('change.select2');
+    } else {
+        $itemName.trigger('change');
+    }
+    Showloader();
     QCPropertyItemConfigurationService.GetQCPropertyItemConfigurationByCode(code)
         .then(function (response) {
+            HideLoader();
             if (response && Array.isArray(response) && response.length > 0) {
-                const data = response[0];
-                populateForm(data);
+                buildEditableTable(response, code);
             } else {
-                toastr.warning('No data found for the given code.');
+                buildEmptyEditableTable(code);
+                addNewEditableRow(code, $('#table-bodyEditable'));
             }
         })
         .catch(function (error) {
+            HideLoader();
             toastr.error('Error loading data. Please try again.');
+            buildEmptyEditableTable(code);
         });
+}
+function buildEditableTable(data, itemMasterCode) {
+    const $thead = $('#table-headerEditable');
+    const $tbody = $('#table-bodyEditable');
+    
+    if (!$thead.length || !$tbody.length) {
+        toastr.error('Editable table structure not found.');
+        return;
+    }
+    
+    if (!G_QCGroupMasterList || G_QCGroupMasterList.length === 0) {
+        QCGroupMasterlist();
+    }
+    
+    $thead.empty();
+    $tbody.empty();
+    let headerRow = '<tr>' +
+        '<th class="text-center" style="width: 40px;">SNo</th>' +
+        '<th class="text-left" style="width: 90px;">Item Code</th>' +
+        '<th class="text-left" style="width: 160px;">Item Name</th>' +
+        '<th class="text-left" style="width: 150px;">Property Group</th>' +
+        '<th class="text-left" style="width: 150px;">Property Name</th>' +
+        '<th class="text-center" style="width: 90px;">Sort Order</th>' +
+        '<th class="text-left" style="width: 100px;">Value Type</th>' +
+        '<th class="text-right" style="width: 80px;">Min Value</th>' +
+        '<th class="text-right" style="width: 80px;">Max Value</th>' +
+        '<th class="text-left" style="width: 100px;">Default Value</th>' +
+        '<th class="text-left" style="width: 150px;">LOV Values</th>' +
+        '<th class="text-center" style="width: 80px;">Action</th>' +
+        '</tr>';
+    
+    $thead.html(headerRow);
+    
+    const $tableWrapper = $tbody.closest('.table-wrapper');
+    if ($tableWrapper.length) {
+        // Remove any existing external "Add New Row" button if present
+        $tableWrapper.find('.btn-add-row').remove();
+    }
+    
+    let propertyGroupOptions = '<option value="0">Please select..</option>';
+    (G_QCGroupMasterList || []).forEach(function (groupItem) {
+        const groupCode = groupItem['Code'] || 0;
+        const groupName = groupItem['QC Group Name'] || '';
+        propertyGroupOptions += `<option value="${groupCode}">${groupName}</option>`;
+    });
+    
+    data.forEach(function (item, index) {
+        const serialNumber = index + 1;
+        const itemCode = item['Item Code'] || item.ItemCode || '';
+        const itemName = item['Item Name'] || item.ItemName || '';
+        const propertyGroupCode = item['QCPropertyGroupMaster_Code'] || item.QCPropertyGroupMaster_Code || 0;
+        const propertyGroup = item['Property Group'] || item.PropertyGroup || '';
+        const propertyNameCode = item['QCPropertyMaster_Code'] || item.QCPropertyMaster_Code || 0;
+        const propertyName = item['Property Name'] || item.PropertyName || '';
+        const sortOrder = item['Sort Order'] || item.SortOrder || '';
+        const valueType = item['Value Type'] || item.ValueType || 'Numeric';
+        const minValue = item['Min Value'] || item.MinValue || '';
+        const maxValue = item['Max Value'] || item.MaxValue || '';
+        const defaultValue = item['Default Value'] || item.DefaultValue || '';
+        const lovValues = item['LOV Values'] || item.LovValues || '';
+        const code = item.Code || 0;
+        
+        let propertyNameOptions = '<option value="0">Please select..</option>';
+        
+        const valueTypeOptions = [
+            { value: 'Numeric', text: 'Numeric', selected: valueType === 'Numeric' },
+            { value: 'Text', text: 'Text', selected: valueType === 'Text' },
+            { value: 'Lov', text: 'Lov', selected: valueType === 'Lov' }
+        ];
+        let valueTypeSelect = '<select class="form-control form-control-sm editable-value-type-select" data-code="' + code + '" data-row-index="' + index + '" autocomplete="off">';
+        valueTypeOptions.forEach(function(opt) {
+            valueTypeSelect += `<option value="${opt.value}" ${opt.selected ? 'selected' : ''}>${opt.text}</option>`;
+        });
+        valueTypeSelect += '</select>';
+        
+        const showMinMax = (valueType === 'Numeric' || valueType === 'Decimal');
+        const showDefault = (valueType === 'Text');
+        const showLov = (valueType === 'Lov');
+        
+        let row = '<tr data-code="' + code + '" data-item-master-code="' + itemMasterCode + '" data-property-group-code="' + propertyGroupCode + '" data-property-name-code="' + propertyNameCode + '">' +
+            '<td class="text-center" style="width: 40px;">' + serialNumber + '</td>' +
+            '<td class="text-left" style="width: 90px;">' +
+                '<input type="text" ' +
+                'class="form-control form-control-sm" ' +
+                'data-code="' + code + '" ' +
+                'data-row-index="' + index + '" ' +
+                'value="' + itemCode + '" ' +
+                'disabled ' +
+                'readonly ' +
+                'style="background-color: #e9ecef; cursor: not-allowed; width: 100%;">' +
+            '</td>' +
+            '<td class="text-left" style="width: 160px;">' +
+                '<input type="text" ' +
+                'class="form-control form-control-sm" ' +
+                'data-code="' + code + '" ' +
+                'data-row-index="' + index + '" ' +
+                'value="' + itemName + '" ' +
+                'disabled ' +
+                'readonly ' +
+                'style="background-color: #e9ecef; cursor: not-allowed; width: 100%;">' +
+            '</td>' +
+            '<td class="text-left" style="width: 150px;">' +
+                '<select class="form-control form-control-sm editable-property-group-select" ' +
+                'data-code="' + code + '" ' +
+                'data-row-index="' + index + '" ' +
+                'autocomplete="off" required style="width: 100%;">' +
+                (propertyGroupCode && propertyGroupCode !== '0' 
+                    ? propertyGroupOptions.replace('value="' + propertyGroupCode + '"', 'value="' + propertyGroupCode + '" selected')
+                    : propertyGroupOptions) +
+                '</select>' +
+            '</td>' +
+            '<td class="text-left" style="width: 150px;">' +
+                '<select class="form-control form-control-sm editable-property-name-select" ' +
+                'data-code="' + code + '" ' +
+                'data-row-index="' + index + '" ' +
+                'data-property-group-code="' + propertyGroupCode + '" ' +
+                'autocomplete="off" required style="width: 100%;">' +
+                propertyNameOptions +
+                '</select>' +
+            '</td>' +
+            '<td class="text-center" style="width: 90px;">' +
+                '<input type="text" class="form-control form-control-sm editable-sort-order" ' +
+                'data-code="' + code + '" ' +
+                'data-row-index="' + index + '" ' +
+                'value="' + sortOrder + '" ' +
+                'placeholder="Sort Order" ' +
+                'style="text-align: right; width: 100%;" maxlength="5" required />' +
+            '</td>' +
+            '<td class="text-left" style="width: 100px;">' + valueTypeSelect.replace('<select', '<select required style="width: 100%;"') + '</td>' +
+            '<td class="text-right" style="width: 80px;">' +
+                '<input type="text" class="form-control form-control-sm editable-min-value numeric-input" ' +
+                'data-code="' + code + '" ' +
+                'data-row-index="' + index + '" ' +
+                'value="' + minValue + '" ' +
+                'placeholder="Min Value" ' +
+                'style="text-align: right; width: 100%;' + (showMinMax ? '' : 'display:none;') + '" ' +
+                'maxlength="8" />' +
+            '</td>' +
+            '<td class="text-right" style="width: 80px;">' +
+                '<input type="text" class="form-control form-control-sm editable-max-value numeric-input" ' +
+                'data-code="' + code + '" ' +
+                'data-row-index="' + index + '" ' +
+                'value="' + maxValue + '" ' +
+                'placeholder="Max Value" ' +
+                'style="text-align: right; width: 100%;' + (showMinMax ? '' : 'display:none;') + '" ' +
+                'maxlength="8" />' +
+            '</td>' +
+            '<td class="text-left" style="width: 100px;">' +
+                '<input type="text" class="form-control form-control-sm editable-default-value" ' +
+                'data-code="' + code + '" ' +
+                'data-row-index="' + index + '" ' +
+                'value="' + defaultValue + '" ' +
+                'placeholder="Default Value" ' +
+                'style="width: 100%;' + (showDefault ? '' : 'display:none;') + '" ' +
+                'maxlength="100" />' +
+            '</td>' +
+            '<td class="text-left" style="width: 150px;">' +
+                '<input type="text" class="form-control form-control-sm editable-lov-values" ' +
+                'data-code="' + code + '" ' +
+                'data-row-index="' + index + '" ' +
+                'value="' + lovValues + '" ' +
+                'placeholder="LOV Values" ' +
+                'style="width: 100%;' + (showLov ? '' : 'display:none;') + '" ' +
+                'maxlength="1000" />' +
+            '</td>' +
+            '<td class="text-center" style="width: 80px;">' +
+                '<button type="button" class="btn btn-danger icon-height mb-1 btn-delete-row-inline" title="Delete Row">' +
+                    '<i class="fa fa-trash"></i>' +
+                '</button>&nbsp;' +
+                '<button type="button" class="btn btn-success icon-height mb-1 btn-add-row-inline" title="Add New Row">' +
+                    '<i class="fa fa-plus"></i>' +
+                '</button>' +
+            '</td>' +
+            '</tr>';
+        
+        $tbody.append(row);
+    });
+    
+    $tbody.find('tr').each(function() {
+        const $row = $(this);
+        const propertyGroupCode = $row.data('property-group-code') || 0;
+        if (propertyGroupCode && propertyGroupCode !== 0) {
+            loadPropertyNameOptionsForRow($row, propertyGroupCode);
+        }
+    });
+    
+    $tbody.find('select').each(function() {
+        const $select = $(this);
+        if ($.fn.select2) {
+            $select.select2({
+                width: '100%',
+                dropdownParent: $(document.body)
+            });
+        }
+    });
+    
+    attachEditableTablePropertyGroupChange();
+    attachEditableTableValueTypeChange();
+    attachEditableTableNumericValidation();
+    attachEditableTableSortOrderValidation();
+    attachEditableTableFieldChangeValidation();
+    attachEditableTableActionButtons();
+}
+function validateEditableTableRow($row) {
+    if (!$row || !$row.length) {
+        return { isValid: false, message: 'Row not found', $field: null };
+    }
+    
+    const $propertyGroup = $row.find('.editable-property-group-select');
+    const propertyGroupValue = $propertyGroup.val();
+    if (!propertyGroupValue || propertyGroupValue === '0') {
+        return { isValid: false, message: 'Please select Property Group', $field: $propertyGroup };
+    }
+    const $propertyName = $row.find('.editable-property-name-select');
+    const propertyNameValue = $propertyName.val();
+    if (!propertyNameValue || propertyNameValue === '0') {
+        return { isValid: false, message: 'Please select Property Name', $field: $propertyName };
+    }
+    
+    const $sortOrder = $row.find('.editable-sort-order');
+    const sortOrderValue = $sortOrder.val();
+    if (!sortOrderValue || sortOrderValue.trim() === '') {
+        return { isValid: false, message: 'Please enter Sort Order', $field: $sortOrder };
+    }
+    
+    const $valueType = $row.find('.editable-value-type-select');
+    const valueTypeValue = $valueType.val();
+    if (!valueTypeValue || valueTypeValue.trim() === '') {
+        return { isValid: false, message: 'Please select Value Type', $field: $valueType };
+    }
+    
+    if (valueTypeValue === 'Numeric' || valueTypeValue === 'Decimal') {
+        const $minValue = $row.find('.editable-min-value');
+        const minValue = $minValue.val();
+        if (!minValue || minValue.trim() === '') {
+            return { isValid: false, message: 'Please enter Min Value', $field: $minValue };
+        }
+        
+        const $maxValue = $row.find('.editable-max-value');
+        const maxValue = $maxValue.val();
+        if (!maxValue || maxValue.trim() === '') {
+            return { isValid: false, message: 'Please enter Max Value', $field: $maxValue };
+        }
+        
+        const minNum = parseFloat(minValue);
+        const maxNum = parseFloat(maxValue);
+        if (!isNaN(minNum) && !isNaN(maxNum) && minNum >= maxNum) {
+            return { isValid: false, message: 'Min Value must be less than Max Value', $field: $minValue };
+        }
+    } else if (valueTypeValue === 'Text') {
+        const $defaultValue = $row.find('.editable-default-value');
+        const defaultValue = $defaultValue.val();
+        if (!defaultValue || defaultValue.trim() === '') {
+            return { isValid: false, message: 'Please enter Default Value', $field: $defaultValue };
+        }
+    } else if (valueTypeValue === 'Lov') {
+        const $lovValues = $row.find('.editable-lov-values');
+        const lovValues = $lovValues.val();
+        if (!lovValues || lovValues.trim() === '') {
+            return { isValid: false, message: 'Please enter LOV Values', $field: $lovValues };
+        }
+    }
+    
+    return { isValid: true, message: '', $field: null };
+}
+function validateAllEditableTableRows() {
+    const $tbody = $('#table-bodyEditable');
+    if (!$tbody.length) {
+        return { isValid: true, message: '', $field: null };
+    }
+    
+    const $rows = $tbody.find('tr');
+    if ($rows.length === 0) {
+        return { isValid: true, message: '', $field: null };
+    }
+    
+    let firstInvalidRow = null;
+    $rows.each(function() {
+        const $row = $(this);
+        const validation = validateEditableTableRow($row);
+        if (!validation.isValid && !firstInvalidRow) {
+            firstInvalidRow = validation;
+        }
+    });
+    
+    return firstInvalidRow || { isValid: true, message: '', $field: null };
+}
+function addNewEditableRow(itemMasterCode, $tbody) {
+    if (!$tbody.length) {
+        $tbody = $('#table-bodyEditable');
+    }
+    
+    if (!$tbody.length) {
+        toastr.error('Table body not found.');
+        return;
+    }
+    
+    // Validate all existing rows before adding a new one
+    const validation = validateAllEditableTableRows();
+    if (!validation.isValid) {
+        toastr.warning(validation.message);
+        if (validation.$field) {
+            // Focus on the field
+            setTimeout(function() {
+                if (validation.$field.is('select')) {
+                    if (validation.$field.data('select2')) {
+                        validation.$field.select2('open');
+                    } else {
+                        validation.$field.focus();
+                    }
+                } else {
+                    validation.$field.focus();
+                }
+                // Highlight the field
+                validation.$field.addClass('is-invalid');
+                setTimeout(function() {
+                    validation.$field.removeClass('is-invalid');
+                }, 3000);
+            }, 100);
+        }
+        return;
+    }
+    
+    // Check if item is selected
+    if (!itemMasterCode || itemMasterCode === '0') {
+        toastr.warning('Please select an Item Name first.');
+        return;
+    }
+    
+    // Get item details
+    let itemCodeValue = '';
+    let itemNameValue = '';
+    if (itemMasterCode && itemMasterCode !== '0') {
+        const selectedItem = (G_ItemMasterList || []).find(function(item) {
+            const itemCode = item.Code || '';
+            return parseInt(itemCode) === parseInt(itemMasterCode) || String(itemCode) === String(itemMasterCode);
+        });
+        if (selectedItem) {
+            itemCodeValue = selectedItem.ItemCode || selectedItem['Item Code'] || selectedItem.Code || '';
+            itemNameValue = selectedItem.ItemName || selectedItem['Item Name'] || '';
+        }
+    }
+    
+    // Get current row count for serial number
+    const currentRowCount = $tbody.find('tr').length;
+    const serialNumber = currentRowCount + 1;
+    const newRowIndex = currentRowCount;
+    const newCode = 0; // New row has code 0
+    
+    // Build Property Group dropdown options
+    let propertyGroupOptions = '<option value="0">Please select..</option>';
+    (G_QCGroupMasterList || []).forEach(function (groupItem) {
+        const groupCode = groupItem['Code'] || 0;
+        const groupName = groupItem['QC Group Name'] || '';
+        propertyGroupOptions += `<option value="${groupCode}">${groupName}</option>`;
+    });
+    
+    // Value Type dropdown options (default to Numeric)
+    const valueType = 'Numeric';
+    const valueTypeOptions = [
+        { value: 'Numeric', text: 'Numeric', selected: true },
+        { value: 'Text', text: 'Text', selected: false },
+        { value: 'Lov', text: 'Lov', selected: false }
+    ];
+    let valueTypeSelect = '<select class="form-control form-control-sm editable-value-type-select" data-code="' + newCode + '" data-row-index="' + newRowIndex + '" autocomplete="off" required>';
+    valueTypeOptions.forEach(function(opt) {
+        valueTypeSelect += `<option value="${opt.value}" ${opt.selected ? 'selected' : ''}>${opt.text}</option>`;
+    });
+    valueTypeSelect += '</select>';
+    
+    // Determine which fields to show based on Value Type (Numeric by default)
+    const showMinMax = true; // Numeric shows Min/Max
+    const showDefault = false;
+    const showLov = false;
+    
+    // Build the new row
+    let row = '<tr data-code="' + newCode + '" data-item-master-code="' + itemMasterCode + '" data-property-group-code="0" data-property-name-code="0">' +
+        '<td class="text-center" style="width: 40px;">' + serialNumber + '</td>' +
+        '<td class="text-left" style="width: 90px;">' +
+            '<input type="text" ' +
+            'class="form-control form-control-sm" ' +
+            'data-code="' + newCode + '" ' +
+            'data-row-index="' + newRowIndex + '" ' +
+            'value="' + itemCodeValue + '" ' +
+            'disabled ' +
+            'readonly ' +
+            'style="background-color: #e9ecef; cursor: not-allowed; width: 100%;">' +
+        '</td>' +
+        '<td class="text-left" style="width: 160px;">' +
+            '<input type="text" ' +
+            'class="form-control form-control-sm" ' +
+            'data-code="' + newCode + '" ' +
+            'data-row-index="' + newRowIndex + '" ' +
+            'value="' + itemNameValue + '" ' +
+            'disabled ' +
+            'readonly ' +
+            'style="background-color: #e9ecef; cursor: not-allowed; width: 100%;">' +
+        '</td>' +
+        '<td class="text-left" style="width: 150px;">' +
+            '<select class="form-control form-control-sm editable-property-group-select" ' +
+            'data-code="' + newCode + '" ' +
+            'data-row-index="' + newRowIndex + '" ' +
+            'autocomplete="off" required style="width: 100%;">' +
+            propertyGroupOptions +
+            '</select>' +
+        '</td>' +
+        '<td class="text-left" style="width: 150px;">' +
+            '<select class="form-control form-control-sm editable-property-name-select" ' +
+            'data-code="' + newCode + '" ' +
+            'data-row-index="' + newRowIndex + '" ' +
+            'data-property-group-code="0" ' +
+            'autocomplete="off" required style="width: 100%;">' +
+            '<option value="0">Please select..</option>' +
+            '</select>' +
+        '</td>' +
+        '<td class="text-center" style="width: 90px;">' +
+            '<input type="text" class="form-control form-control-sm editable-sort-order" ' +
+            'data-code="' + newCode + '" ' +
+            'data-row-index="' + newRowIndex + '" ' +
+            'value="" ' +
+            'placeholder="Sort Order" ' +
+            'style="text-align: right; width: 100%;" maxlength="5" required />' +
+        '</td>' +
+        '<td class="text-left" style="width: 100px;">' + valueTypeSelect.replace('<select', '<select style="width: 100%;"') + '</td>' +
+        '<td class="text-right" style="width: 80px;">' +
+            '<input type="text" class="form-control form-control-sm editable-min-value numeric-input" ' +
+            'data-code="' + newCode + '" ' +
+            'data-row-index="' + newRowIndex + '" ' +
+            'value="" ' +
+            'placeholder="Min Value" ' +
+            'style="text-align: right; width: 100%;' + (showMinMax ? '' : 'display:none;') + '" ' +
+            'maxlength="8" />' +
+        '</td>' +
+        '<td class="text-right" style="width: 80px;">' +
+            '<input type="text" class="form-control form-control-sm editable-max-value numeric-input" ' +
+            'data-code="' + newCode + '" ' +
+            'data-row-index="' + newRowIndex + '" ' +
+            'value="" ' +
+            'placeholder="Max Value" ' +
+            'style="text-align: right; width: 100%;' + (showMinMax ? '' : 'display:none;') + '" ' +
+            'maxlength="8" />' +
+        '</td>' +
+        '<td class="text-left" style="width: 100px;">' +
+            '<input type="text" class="form-control form-control-sm editable-default-value" ' +
+            'data-code="' + newCode + '" ' +
+            'data-row-index="' + newRowIndex + '" ' +
+            'value="" ' +
+            'placeholder="Default Value" ' +
+            'style="width: 100%;' + (showDefault ? '' : 'display:none;') + '" ' +
+            'maxlength="100" />' +
+        '</td>' +
+        '<td class="text-left" style="width: 150px;">' +
+            '<input type="text" class="form-control form-control-sm editable-lov-values" ' +
+            'data-code="' + newCode + '" ' +
+            'data-row-index="' + newRowIndex + '" ' +
+            'value="" ' +
+            'placeholder="LOV Values" ' +
+            'style="width: 100%;' + (showLov ? '' : 'display:none;') + '" ' +
+            'maxlength="1000" />' +
+        '</td>' +
+        '<td class="text-center" style="width: 80px;">' +
+            '<button type="button" class="btn btn-danger icon-height mb-1 btn-delete-row-inline" title="Delete Row">' +
+                '<i class="fa fa-trash"></i>' +
+            '</button>&nbsp;' +
+            '<button type="button" class="btn btn-success icon-height mb-1 btn-add-row-inline" title="Add New Row">' +
+                '<i class="fa fa-plus"></i>' +
+            '</button>' +
+        '</td>' +
+        '</tr>';
+    
+    // Append the new row
+    $tbody.append(row);
+    
+    // Initialize select2 for dropdowns in the new row
+    const $newRow = $tbody.find('tr').last();
+    $newRow.find('select').each(function() {
+        const $select = $(this);
+        if ($.fn.select2) {
+            $select.select2({
+                width: '100%',
+                dropdownParent: $(document.body)
+            });
+        }
+    });
+    
+    // Attach event handlers to the new row (they use event delegation, so they should work automatically)
+    // But we need to make sure the handlers are attached
+    attachEditableTablePropertyGroupChange();
+    attachEditableTableValueTypeChange();
+    attachEditableTableNumericValidation();
+    attachEditableTableSortOrderValidation();
+    attachEditableTableFieldChangeValidation();
+    attachEditableTableActionButtons();
+}
+function buildEmptyEditableTable(itemMasterCode) {
+    const $thead = $('#table-headerEditable');
+    const $tbody = $('#table-bodyEditable');
+    
+    if (!$thead.length || !$tbody.length) {
+        toastr.error('Editable table structure not found.');
+        return;
+    }
+    
+    // Clear existing content
+    $thead.empty();
+    $tbody.empty();
+    
+    // Build table header
+    let headerRow = '<tr>' +
+        '<th class="text-center" style="width: 40px;">SNo</th>' +
+        '<th class="text-left" style="width: 90px;">Item Code</th>' +
+        '<th class="text-left" style="width: 160px;">Item Name</th>' +
+        '<th class="text-left" style="width: 150px;">Property Group</th>' +
+        '<th class="text-left" style="width: 150px;">Property Name</th>' +
+        '<th class="text-center" style="width: 90px;">Sort Order</th>' +
+        '<th class="text-left" style="width: 100px;">Value Type</th>' +
+        '<th class="text-right" style="width: 80px;">Min Value</th>' +
+        '<th class="text-right" style="width: 80px;">Max Value</th>' +
+        '<th class="text-left" style="width: 100px;">Default Value</th>' +
+        '<th class="text-left" style="width: 150px;">LOV Values</th>' +
+        '<th class="text-center" style="width: 80px;">Action</th>' +
+        '</tr>';
+    
+    $thead.html(headerRow);
+    
+    // Remove any external "Add New Row" button (we now use per-row Action column)
+    const $tableWrapper = $tbody.closest('.table-wrapper');
+    if ($tableWrapper.length) {
+        $tableWrapper.find('.btn-add-row').remove();
+    }
+}
+function attachEditableTableItemDropdownSyncEvents() {
+    const $tbody = $('#table-bodyEditable');
+    if (!$tbody.length) {
+        return;
+    }
+    
+    $tbody.off('change', '.editable-item-code-select');
+    $tbody.off('change', '.editable-item-name-select');
+    
+    let isSyncing = false;
+    
+    $tbody.on('change', '.editable-item-code-select', function() {
+        if (isSyncing) return;
+        isSyncing = true;
+        
+        const selectedCode = $(this).val();
+        const $row = $(this).closest('tr');
+        const $itemNameSelect = $row.find('.editable-item-name-select');
+        
+        if (!selectedCode || selectedCode === '0') {
+            $itemNameSelect.val('0');
+        } else {
+            $itemNameSelect.val(selectedCode);
+        }
+        
+        if ($itemNameSelect.data('select2')) {
+            $itemNameSelect.trigger('change.select2');
+        } else {
+            $itemNameSelect.trigger('change');
+        }
+        
+        isSyncing = false;
+    });
+    
+    $tbody.on('change', '.editable-item-name-select', function() {
+        if (isSyncing) return;
+        isSyncing = true;
+        
+        const selectedCode = $(this).val();
+        const $row = $(this).closest('tr');
+        const $itemCodeSelect = $row.find('.editable-item-code-select');
+        
+        if (!selectedCode || selectedCode === '0') {
+            $itemCodeSelect.val('0');
+        } else {
+            $itemCodeSelect.val(selectedCode);
+        }
+        
+        if ($itemCodeSelect.data('select2')) {
+            $itemCodeSelect.trigger('change.select2');
+        } else {
+            $itemCodeSelect.trigger('change');
+        }
+        
+        isSyncing = false;
+    });
+}
+function loadPropertyNameOptionsForRow($row, propertyGroupCode) {
+    const $propertyNameSelect = $row.find('.editable-property-name-select');
+    if (!$propertyNameSelect.length) {
+        return;
+    }
+    
+    Showloader();
+    QCPropertyItemConfigurationService.GetQCPropertyMasterForDropdown(propertyGroupCode)
+        .then(function (response) {
+            HideLoader();
+            let options = '<option value="0">Please select..</option>';
+            if (response && Array.isArray(response)) {
+                const currentValue = $row.data('property-name-code') || $propertyNameSelect.data('property-name-code') || 0;
+                response.forEach(function (item) {
+                    const Code = item['Code'] || 0;
+                    const PropertyName = item['PropertyName'] || '';
+                    const selected = (parseInt(Code) === parseInt(currentValue) || Code === currentValue) ? 'selected' : '';
+                    options += `<option value="${Code}" ${selected}>${PropertyName}</option>`;
+                });
+            }
+            $propertyNameSelect.html(options);
+            if ($propertyNameSelect.data('select2')) {
+                $propertyNameSelect.trigger('change.select2');
+            }
+        })
+        .catch(function (error) {
+            HideLoader();
+            console.error('Error loading property name list:', error);
+        });
+}
+function attachEditableTablePropertyGroupChange() {
+    const $tbody = $('#table-bodyEditable');
+    if (!$tbody.length) {
+        return;
+    }
+    
+    $tbody.off('change', '.editable-property-group-select');
+    $tbody.on('change', '.editable-property-group-select', function() {
+        const $row = $(this).closest('tr');
+        const propertyGroupCode = $(this).val();
+        $row.data('property-group-code', propertyGroupCode);
+        const $propertyNameSelect = $row.find('.editable-property-name-select');
+        $propertyNameSelect.data('property-group-code', propertyGroupCode);
+        $propertyNameSelect.data('property-name-code', '0'); // Reset property name
+        
+        if (propertyGroupCode && propertyGroupCode !== '0') {
+            loadPropertyNameOptionsForRow($row, propertyGroupCode);
+        } else {
+            $propertyNameSelect.html('<option value="0">Please select..</option>');
+            if ($propertyNameSelect.data('select2')) {
+                $propertyNameSelect.trigger('change.select2');
+            }
+        }
+    });
+    
+    // Track property name changes and prevent duplicate properties for same item
+    $tbody.off('change', '.editable-property-name-select');
+    $tbody.on('change', '.editable-property-name-select', function() {
+        const $currentSelect = $(this);
+        const $row = $currentSelect.closest('tr');
+        const propertyNameCode = $currentSelect.val();
+
+        // If nothing selected, just clear stored value
+        if (!propertyNameCode || propertyNameCode === '0') {
+            $row.data('property-name-code', '0');
+            $currentSelect.data('property-name-code', '0');
+            return;
+        }
+
+        // Determine item code for this row (from row data or main Item Name control)
+        const currentItemCode = $row.data('item-master-code') || $('#txtItemName').val() || '0';
+
+        let isDuplicate = false;
+        $tbody.find('tr').each(function() {
+            const $otherRow = $(this);
+            if ($otherRow[0] === $row[0]) {
+                return; // skip current row
+            }
+
+            const otherItemCode = $otherRow.data('item-master-code') || $('#txtItemName').val() || '0';
+            const otherPropertyCode = $otherRow.find('.editable-property-name-select').val();
+
+            if (otherItemCode && String(otherItemCode) === String(currentItemCode) &&
+                otherPropertyCode && String(otherPropertyCode) === String(propertyNameCode)) {
+                isDuplicate = true;
+                return false; // break loop
+            }
+        });
+
+        if (isDuplicate) {
+            toastr.warning('This property is already selected for the selected item.');
+
+            // Reset selection back to "Please select.."
+            $currentSelect.val('0');
+            $row.data('property-name-code', '0');
+            $currentSelect.data('property-name-code', '0');
+
+            if ($currentSelect.data('select2')) {
+                $currentSelect.trigger('change.select2');
+            } else {
+                $currentSelect.trigger('change');
+            }
+            return;
+        }
+
+        // Store selected property code on row and element
+        $row.data('property-name-code', propertyNameCode);
+        $currentSelect.data('property-name-code', propertyNameCode);
+    });
+}
+function attachEditableTableValueTypeChange() {
+    const $tbody = $('#table-bodyEditable');
+    if (!$tbody.length) {
+        return;
+    }
+    
+    $tbody.off('change', '.editable-value-type-select');
+    $tbody.on('change', '.editable-value-type-select', function() {
+        const $row = $(this).closest('tr');
+        const valueType = $(this).val();
+        const $minValue = $row.find('.editable-min-value');
+        const $maxValue = $row.find('.editable-max-value');
+        const $defaultValue = $row.find('.editable-default-value');
+        const $lovValues = $row.find('.editable-lov-values');
+        
+        // Hide all fields first
+        $minValue.hide();
+        $maxValue.hide();
+        $defaultValue.hide();
+        $lovValues.hide();
+        
+        // Show relevant fields based on value type
+        if (valueType === 'Numeric' || valueType === 'Decimal') {
+            $minValue.show();
+            $maxValue.show();
+            $defaultValue.val('');
+            $lovValues.val('');
+        } else if (valueType === 'Text') {
+            $defaultValue.show();
+            $minValue.val('');
+            $maxValue.val('');
+            $lovValues.val('');
+        } else if (valueType === 'Lov') {
+            $lovValues.show();
+            $minValue.val('');
+            $maxValue.val('');
+            $defaultValue.val('');
+        }
+    });
+}
+function attachEditableTableNumericValidation() {
+    const $tbody = $('#table-bodyEditable');
+    if (!$tbody.length) {
+        return;
+    }
+    
+    // Apply numeric validation to Min Value and Max Value fields
+    $tbody.find('.editable-min-value, .editable-max-value').on('input', function() {
+        let value = $(this).val();
+        const originalValue = value;
+        
+        // Remove all non-numeric characters except decimal point
+        value = value.replace(/[^0-9.]/g, '');
+        
+        // Ensure only one decimal point
+        const parts = value.split('.');
+        if (parts.length > 2) {
+            value = parts[0] + '.' + parts.slice(1).join('').replace(/\./g, '');
+        }
+        
+        // Limit to 2 decimal places
+        if (parts.length === 2 && parts[1].length > 2) {
+            value = parts[0] + '.' + parts[1].substring(0, 2);
+        }
+        
+        if (value !== originalValue) {
+            $(this).val(value);
+        }
+    });
+    
+    $tbody.find('.editable-min-value, .editable-max-value').on('blur', function() {
+        let value = $(this).val();
+        if (value && value !== '') {
+            const numValue = parseFloat(value);
+            if (!isNaN(numValue)) {
+                $(this).val(numValue.toFixed(2));
+            }
+        }
+    });
+}
+function attachEditableTableSortOrderValidation() {
+    const $tbody = $('#table-bodyEditable');
+    if (!$tbody.length) {
+        return;
+    }
+    
+    $tbody.find('.editable-sort-order').on('input', function() {
+        let value = $(this).val();
+        const originalValue = value;
+        
+        // Remove all non-numeric characters except decimal point
+        value = value.replace(/[^0-9.]/g, '');
+        
+        // Ensure only one decimal point
+        const parts = value.split('.');
+        if (parts.length > 2) {
+            value = parts[0] + '.' + parts.slice(1).join('').replace(/\./g, '');
+        }
+        
+        // Limit to 1 decimal place
+        if (parts.length === 2 && parts[1].length > 1) {
+            value = parts[0] + '.' + parts[1].substring(0, 1);
+        }
+        
+        if (value !== originalValue) {
+            $(this).val(value);
+        }
+    });
+    
+    $tbody.find('.editable-sort-order').on('blur', function() {
+        let value = $(this).val();
+        if (value && value !== '') {
+            const numValue = parseFloat(value);
+            if (!isNaN(numValue)) {
+                $(this).val(numValue.toFixed(1));
+            }
+        }
+    });
+}
+function attachEditableTableFieldChangeValidation() {
+    const $tbody = $('#table-bodyEditable');
+    if (!$tbody.length) {
+        return;
+    }
+    
+    $tbody.on('change input', '.editable-property-group-select, .editable-property-name-select, .editable-sort-order, .editable-value-type-select, .editable-min-value, .editable-max-value, .editable-default-value, .editable-lov-values', function() {
+        $(this).removeClass('is-invalid');
+    });
+}
+function updateEditableTableActionButtons() {
+    const $tbody = $('#table-bodyEditable');
+    if (!$tbody.length) {
+        return;
+    }
+
+    const $rows = $tbody.find('tr');
+    $rows.find('.btn-add-row-inline').hide();
+
+    if ($rows.length > 0) {
+        $rows.last().find('.btn-add-row-inline').show();
+    }
+}
+function deleteEditableTableRowFromDatabase(code, $row, $tbody) {
+    if (!code || code <= 0) {
+        return;
+    }
+
+    Showloader();
+    QCPropertyItemConfigurationService.DeleteQCPropertyItemConfigurationByCode(code, '')
+        .then(function (response) {
+            HideLoader();
+            if (response && response.Status === 'Y') {
+                toastr.success(response.Msg || 'Row deleted successfully.');
+                $row.remove();
+                renumberEditableTableRows($tbody);
+                updateEditableTableActionButtons();
+            } else {
+                toastr.error(response?.Msg || 'Error deleting row from database.');
+            }
+        })
+        .catch(function (error) {
+            HideLoader();
+            toastr.error('Error deleting row. Please try again.');
+            console.error('Delete error:', error);
+        });
+}
+function renumberEditableTableRows($tbody) {
+    $tbody.find('tr').each(function (index) {
+        const $currentRow = $(this);
+        $currentRow.find('td:first').text(index + 1);
+        $currentRow.attr('data-row-index', index);
+        $currentRow.find('[data-row-index]').attr('data-row-index', index);
+    });
+}
+function attachEditableTableActionButtons() {
+    const $tbody = $('#table-bodyEditable');
+    if (!$tbody.length) {
+        return;
+    }
+
+    updateEditableTableActionButtons();
+
+    $tbody.off('click', '.btn-delete-row-inline');
+    $tbody.on('click', '.btn-delete-row-inline', function () {
+        const $row = $(this).closest('tr');
+        const $tbodyLocal = $row.closest('tbody');
+        const rowCount = $tbodyLocal.find('tr').length;
+
+        if (rowCount <= 1) {
+            toastr.warning('At least one row is required and cannot be deleted.');
+            return;
+        }
+
+        const rowCode = parseInt($row.data('code')) || 0;
+        const propertyName = $row.find('.editable-property-name-select option:selected').text() || 'this row';
+
+        if (!confirm('Are you sure you want to delete ' + propertyName + '?')) {
+            return;
+        }
+
+        if (rowCode > 0) {
+            deleteEditableTableRowFromDatabase(rowCode, $row, $tbodyLocal);
+        } else {
+            $row.remove();
+            renumberEditableTableRows($tbodyLocal);
+            updateEditableTableActionButtons();
+        }
+    });
+
+    $tbody.off('click', '.btn-add-row-inline');
+    $tbody.on('click', '.btn-add-row-inline', function () {
+        const $row = $(this).closest('tr');
+        const $tbodyLocal = $row.closest('tbody');
+
+        const itemMasterCode = $row.data('item-master-code') || $('#txtItemName').val();
+        addNewEditableRow(itemMasterCode, $tbodyLocal);
+        updateEditableTableActionButtons();
+    });
 }
 function getQCPropertyItemConfigurationList() {
     Showloader();
-    QCPropertyItemConfigurationService.GetQCPropertyItemConfigurationList()
+    QCPropertyItemConfigurationService.GetQCPropertyItemConfigurationList(G_IsProperty)
         .then(function (response) {
             HideLoader();
             if (response && Array.isArray(response)) {
@@ -987,7 +1890,7 @@ function getQCPropertyItemConfigurationList() {
                         'Action': InputHTML,
                     };
                 });
-                BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false);
+                BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
             } else {
                 toastr.error('No data found');
             }
@@ -1213,12 +2116,182 @@ function attachEnterKeyNavigation() {
         }
     });
 }
-
 function Download() {
     const hiddenFields = [
         "Code"
     ];
     ExportToExcelControl.ExportToExcel(G_QCPropertyItemConfigurationList, hiddenFields, "QCPropertyItemConfiguration");
+}
+function buildQCPropertyItemConfigurationTable(data) {
+    const $thead = $('#table-header');
+    const $tbody = $('#table-body');
+
+    if (!$thead.length || !$tbody.length) {
+        toastr.error('Table structure not found.');
+        return;
+    }
+
+    $thead.empty();
+    $tbody.empty();
+
+    let headerRow = '<tr>' +
+        '<th class="text-center" style="width: 40px;">SNo</th>' +
+        '<th class="text-left" style="min-width: 80px;">Item Code</th>' +
+        '<th class="text-left" style="min-width: 160px;">Item Name</th>' +
+        '<th class="text-left" style="min-width: 150px;">Property Group</th>' +
+        '<th class="text-left" style="min-width: 150px;">Property Name</th>' +
+        '<th class="text-center" style="min-width: 50px;">Sort Order</th>' +
+        '<th class="text-left" style="min-width: 100px;">Value Type</th>' +
+        '<th class="text-right" style="min-width: 50px;">Min Value</th>' +
+        '<th class="text-right" style="min-width: 50px;">Max Value</th>' +
+        '<th class="text-left" style="min-width: 100px;">Default Value</th>' +
+        '<th class="text-left" style="min-width: 150px;">LOV Values</th>' +
+        '<th class="text-center" style="min-width: 80px;">Action</th>' +
+        '</tr>';
+
+    $thead.html(headerRow);
+
+    data.forEach(function (item, index) {
+        const serialNumber = index + 1;
+        const itemCode = item['Item Code'] || item.ItemCode || item.ItemMaster_Code || '';
+        const itemName = item['Item Name'] || item.ItemName || '';
+        const propertyGroup = item['Property Group'] || item.PropertyGroup || '';
+        const propertyName = item['Property Name'] || item.PropertyName || '';
+        const sortOrder = item['Sort Order'] || item.SortOrder || '';
+        const valueType = item['Value Type'] || item.ValueType || '';
+        const minValue = item['Min Value'] || item.MinValue || '';
+        const maxValue = item['Max Value'] || item.MaxValue || '';
+        const defaultValue = item['Default Value'] || item.DefaultValue || '';
+        const lovValues = item['LOV Values'] || item.LovValues || '';
+        const code = item.Code || 0;
+
+        let itemCodeOptions = '<option value="0">Please select..</option>';
+        (G_ItemMasterList || []).forEach(function (masterItem) {
+            const masterCode = masterItem.Code || '';
+            const masterItemName = masterItem.ItemName || '';
+            const selected = (masterCode === itemCode || masterCode === String(itemCode)) ? 'selected' : '';
+            itemCodeOptions += `<option value="${masterCode}" ${selected}>${masterItemName}</option>`;
+        });
+
+        let itemNameOptions = '<option value="0">Please select..</option>';
+        (G_ItemMasterList || []).forEach(function (masterItem) {
+            const masterCode = masterItem.Code || '';
+            const masterItemName = masterItem.ItemName || '';
+            const selected = (masterCode === itemCode || masterCode === String(itemCode)) ? 'selected' : '';
+            itemNameOptions += `<option value="${masterCode}" ${selected}>${masterItemName}</option>`;
+        });
+
+        let row = '<tr data-code="' + code + '">' +
+            '<td class="text-center">' + serialNumber + '</td>' +
+            '<td class="text-left">' +
+            '<select class="form-control form-control-sm item-code-select" ' +
+            'data-code="' + code + '" ' +
+            'data-row-index="' + index + '" ' +
+            'autocomplete="off">' +
+            itemCodeOptions +
+            '</select>' +
+            '</td>' +
+            '<td class="text-left">' +
+            '<select class="form-control form-control-sm item-name-select" ' +
+            'data-code="' + code + '" ' +
+            'data-row-index="' + index + '" ' +
+            'autocomplete="off">' +
+            itemNameOptions +
+            '</select>' +
+            '</td>' +
+            '<td class="text-left">' + (propertyGroup || '-') + '</td>' +
+            '<td class="text-left">' + (propertyName || '-') + '</td>' +
+            '<td class="text-center">' + (sortOrder || '-') + '</td>' +
+            '<td class="text-left">' + (valueType || '-') + '</td>' +
+            '<td class="text-right">' + (minValue || '-') + '</td>' +
+            '<td class="text-right">' + (maxValue || '-') + '</td>' +
+            '<td class="text-left">' + (defaultValue || '-') + '</td>' +
+            '<td class="text-left">' + (lovValues || '-') + '</td>' +
+            '<td class="text-center">' +
+            '<button class="btn btn-warning icon-height mb-1" title="Edit" onclick="Edit(' + code + ')">' +
+            '<i class="fa fa-pencil"></i></button>&nbsp;' +
+            '<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete(' + code + ')">' +
+            '<i class="fa fa-trash"></i></button>' +
+            '</td>' +
+            '</tr>';
+
+        $tbody.append(row);
+    });
+
+    $tbody.find('.item-code-select, .item-name-select').each(function () {
+        const $select = $(this);
+        if ($.fn.select2) {
+            $select.select2({
+                width: '100%',
+                dropdownParent: $(document.body)
+            });
+        }
+    });
+
+    attachTableItemDropdownSyncEvents();
+}
+function buildEmptyQCPropertyItemConfigurationTable() {
+    const $thead = $('#table-header');
+    const $tbody = $('#table-body');
+
+    if (!$thead.length || !$tbody.length) {
+        toastr.error('Table structure not found.');
+        return;
+    }
+
+    $thead.empty();
+    $tbody.empty();
+
+    let headerRow = '<tr>' +
+        '<th class="text-center" style="width: 40px;">SNo</th>' +
+        '<th class="text-left" style="min-width: 90px;">Item Code</th>' +
+        '<th class="text-left" style="min-width: 160px;">Item Name</th>' +
+        '<th class="text-left" style="min-width: 150px;">Property Group</th>' +
+        '<th class="text-left" style="min-width: 150px;">Property Name</th>' +
+        '<th class="text-center" style="min-width:90px;">Sort Order</th>' +
+        '<th class="text-left" style="min-width: 100px;">Value Type</th>' +
+        '<th class="text-right" style="min-width: 80px;">Min Value</th>' +
+        '<th class="text-right" style="min-width: 80px;">Max Value</th>' +
+        '<th class="text-left" style="min-width: 100px;">Default Value</th>' +
+        '<th class="text-left" style="min-width: 150px;">LOV Values</th>' +
+        '<th class="text-center" style="min-width: 80px;">Action</th>' +
+        '</tr>';
+
+    $thead.html(headerRow);
+    let row = '<tr data-code="0">' +
+        '<td class="text-center">1</td>' +
+        '<td class="text-left">' +
+        '<input type="text" ' +
+        'class="form-control form-control-sm" ' +
+        'id="txtItemCode_0" ' +
+        'value="" ' +
+        'placeholder="Item Code" ' +
+        'disabled ' +
+        'readonly ' +
+        'style="background-color: #e9ecef; cursor: not-allowed;">' +
+        '</td>' +
+        '<td class="text-left">' +
+        '<input type="text" ' +
+        'class="form-control form-control-sm" ' +
+        'id="txtItemName_0" ' +
+        'value="" ' +
+        'placeholder="Item Name" ' +
+        'disabled ' +
+        'readonly ' +
+        'style="background-color: #e9ecef; cursor: not-allowed;">' +
+        '</td>' +
+        '<td class="text-left">-</td>' +
+        '<td class="text-left">-</td>' +
+        '<td class="text-center">-</td>' +
+        '<td class="text-left">-</td>' +
+        '<td class="text-right">-</td>' +
+        '<td class="text-right">-</td>' +
+        '<td class="text-left">-</td>' +
+        '<td class="text-left">-</td>' +
+        '<td class="text-center">-</td>' +
+        '</tr>';
+
+    $tbody.append(row);
 }
 
 window.Edit = Edit;
