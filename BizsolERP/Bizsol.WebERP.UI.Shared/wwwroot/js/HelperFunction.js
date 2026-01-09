@@ -64,6 +64,11 @@
         if (value && value !== "undefined" && value !== "") {
             $(headingSelector).text(value);
         }
+    },
+    getCurrentDate: function getCurrentDate() {
+        let UserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
+        let ServerDate = UserDetails[0].ServerDate;
+        return ServerDate;
     }
 }
 export { BizSolHelperFunction }

@@ -2,11 +2,6 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<style>
-    .without-label-field {
-        margin-top: 2.3rem;
-    }
-</style>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
 
 <style>
@@ -711,9 +706,9 @@
         </div>
         <div class="col-sm-3 col-6 without-label-field">
             <span class="radioSection">
-                <input type="radio" name="filterType" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="Plan" checked> Plan
-                <input type="radio" name="filterType" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="Entry"> Entry
-                <input type="radio" name="filterType" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="New"> New
+                <input type="radio" name="filterType" style="margin:5px;" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="Plan" checked> Plan
+                <input type="radio" name="filterType" style="margin:5px;" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="Entry"> Entry
+                <input type="radio" name="filterType" style="margin:5px;" class="col-form-label-sm fw-bold" onchange="SlittingProductionEntry_ShowPlanGrid()" value="New"> New
             </span>
         </div>
         @* <div class="col-sm-1 col-3 without-label-field text-end">
@@ -820,9 +815,18 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div id="DivChkSetSlittingProductionConfiguration" class="row">
+                <div class="col-6 mb-2">
+                    <input type="checkbox" id="chkSingleValue" class="box_border" value="S" />
+                    <label for="chkSingleValue">Single Value</label>
                 </div>
-
+                <div class="col-6 mb-2">
+                    <input type="checkbox" id="chkMultipleValue" class="box_border" value="M" />
+                    <label for="chkMultipleValue">Multiple Value</label>
+                </div>
+                <div class="col-6 mb-2">
+                    <input type="checkbox" id="chkBothValue" class="box_border" value="B" />
+                    <label for="chkBothValue">Both Value</label>
+                </div>
                 <div class="text-end mt-1">
                     <a class="btn btn-danger icon-height" data-bs-dismiss="modal">
                         Close
