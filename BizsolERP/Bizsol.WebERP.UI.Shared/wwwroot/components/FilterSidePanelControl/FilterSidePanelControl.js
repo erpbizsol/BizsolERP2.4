@@ -577,7 +577,8 @@ class FilterSidePanelControl extends HTMLElement {
                             values[filter.id] = {
                                 values: selectedValues,
                                 isAll: isAllSelected,
-                                joined: (isAllSelected || selectedValues.length === allCheckboxes.length) ? '0' : selectedValues.join(',')
+                                //joined: (isAllSelected || selectedValues.length === allCheckboxes.length) ? '0' : selectedValues.join(',')
+                                joined: selectedValues.join(',')
                             };
                             console.log(`Multiselect values for ${filter.id}:`, values[filter.id]);
                         } catch (e) {

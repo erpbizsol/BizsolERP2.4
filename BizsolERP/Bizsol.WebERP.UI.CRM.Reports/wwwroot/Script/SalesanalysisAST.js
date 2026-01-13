@@ -99,8 +99,11 @@ function initFilterSidePanelControl() {
 
 // Load all dropdown data for filters
 function loadFilterDropdowns(filterPanel) {
+    // Create an array to track all promises
+    const loadPromises = [];
+
     // Load Sales Person List
-    CRMReportsServices.GetSalespersonList().then(function (response) {
+    const salesPersonPromise = CRMReportsServices.GetSalespersonList().then(function (response) {
         if (response && response.length > 0) {
             const data = response.map(item => ({ Code: item.Code, Desp: item.PersonName }));
             filterPanel.updateFilterData('ddlSalesPersonlist', data);
@@ -121,9 +124,10 @@ function loadFilterDropdowns(filterPanel) {
     }).catch(function (error) {
         console.error('Error fetching salesperson list:', error);
     });
+    loadPromises.push(salesPersonPromise);
 
     // Load Dealer List
-    CRMReportsServices.GetDealerList().then(function (response) {
+    const dealerPromise = CRMReportsServices.GetDealerList().then(function (response) {
         if (response && response.length > 0) {
             G_ddlDealerNameList = response.slice();
             const data = response.map(item => ({ Code: item.Code, Desp: item.AccountDesp }));
@@ -132,9 +136,10 @@ function loadFilterDropdowns(filterPanel) {
     }).catch(function (error) {
         console.error('Error fetching dealer list:', error);
     });
+    loadPromises.push(dealerPromise);
 
     // Load Cities List
-    SalesanalysisASTService.GetSalesAnalysisData('DDL_CITIESNAMELIST', '0', '0', '0', '0', '0', '0','0','0').then(function (response) {
+    const citiesPromise = SalesanalysisASTService.GetSalesAnalysisData('DDL_CITIESNAMELIST', '0', '0', '0', '0', '0', '0','0','0').then(function (response) {
         if (response && response.length > 0) {
             const data = response.map(item => ({ Code: item.CityName, Desp: item.CityName }));
             filterPanel.updateFilterData('ddlCitiesNamelist', data);
@@ -142,9 +147,10 @@ function loadFilterDropdowns(filterPanel) {
     }).catch(function (error) {
         console.error('Error fetching cities list:', error);
     });
+    loadPromises.push(citiesPromise);
 
     // Load Status List
-    SalesanalysisASTService.GetSalesAnalysisData('DDL_STATUSNAME', '0', '0', '0', '0', '0', '0', '0', '0').then(function (response) {
+    const statusPromise = SalesanalysisASTService.GetSalesAnalysisData('DDL_STATUSNAME', '0', '0', '0', '0', '0', '0', '0', '0').then(function (response) {
         if (response && response.length > 0) {
             const data = response.map(item => ({ Code: item.StatusName, Desp: item.StatusName }));
             filterPanel.updateFilterData('ddlStatusNamelist', data);
@@ -152,9 +158,10 @@ function loadFilterDropdowns(filterPanel) {
     }).catch(function (error) {
         console.error('Error fetching status list:', error);
     });
+    loadPromises.push(statusPromise);
 
     // Load GP List
-    SalesanalysisASTService.GetSalesAnalysisData('DDL_GPLIST', '0', '0', '0', '0', '0', '0', '0', '0').then(function (response) {
+    const gpPromise = SalesanalysisASTService.GetSalesAnalysisData('DDL_GPLIST', '0', '0', '0', '0', '0', '0', '0', '0').then(function (response) {
         if (response && response.length > 0) {
             const data = response.map(item => ({ Code: item.GP, Desp: item.GP }));
             filterPanel.updateFilterData('ddlGPlist', data);
@@ -162,15 +169,34 @@ function loadFilterDropdowns(filterPanel) {
     }).catch(function (error) {
         console.error('Error fetching GP list:', error);
     });
+    loadPromises.push(gpPromise);
 
     // Load Industry Type List
-    SalesanalysisASTService.GetSalesAnalysisData('DDL_INDUSTRYTYPELIST', '0', '0', '0', '0', '0', '0', '0', '0').then(function (response) {
+    const industryPromise = SalesanalysisASTService.GetSalesAnalysisData('DDL_INDUSTRYTYPELIST', '0', '0', '0', '0', '0', '0', '0', '0').then(function (response) {
         if (response && response.length > 0) {
-            const data = response.map(item => ({ Code: item.IndustryType, Desp: item.IndustryType }));
+            const data = response.map(item => ({ Code: item.Code, Desp: item.IndustryType }));
             filterPanel.updateFilterData('ddlIndustryTypelist', data);
         }
     }).catch(function (error) {
         console.error('Error fetching industry type list:', error);
+    });
+    loadPromises.push(industryPromise);
+
+    // Wait for all dropdowns to load, then call the report
+    Promise.all(loadPromises).then(function() {
+        console.log('All filter dropdowns loaded successfully');
+        // Call the report after all filters are loaded
+        setTimeout(() => {
+            console.log('Calling SalesanalysisAST_ShowReport after all filters loaded...');
+            SalesanalysisAST_ShowReport();
+        }, 1000); // Adding a small delay to ensure UI updates are complete
+    }).catch(function(error) {
+        console.error('Error loading one or more filter dropdowns:', error);
+        // Still call the report even if some filters failed to load
+        setTimeout(() => {
+            console.log('Calling SalesanalysisAST_ShowReport (with some filter errors)...');
+            SalesanalysisAST_ShowReport();
+        }, 1000);
     });
 }
 
@@ -245,7 +271,6 @@ function formatNumber(v) {
     if (v === null || v === undefined) return '';
     return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-
 
 
 
