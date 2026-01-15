@@ -641,8 +641,8 @@ window.renderTable = function renderTable(items, bodyId) {
 
             // Format numeric values to 2 decimal places
             let cellValue = item[key];
-            if (alignment === 'right' && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
-            //if (!isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
+            //if (alignment === 'right' && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
+            if (cellValue.toString().includes('.')==true && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
                 cellValue = parseFloat(cellValue).toFixed(2);
             }
 

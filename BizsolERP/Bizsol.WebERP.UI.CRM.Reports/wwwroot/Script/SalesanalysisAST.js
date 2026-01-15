@@ -105,7 +105,7 @@ function loadFilterDropdowns(filterPanel) {
     // Load Sales Person List
     const salesPersonPromise = CRMReportsServices.GetSalespersonList().then(function (response) {
         if (response && response.length > 0) {
-            const data = response.map(item => ({ Code: item.Code, Desp: item.PersonName }));
+            const data = response.map(item => ({ Code: item.Code, Desp: item.PersonName }))
             filterPanel.updateFilterData('ddlSalesPersonlist', data);
             
             // Setup change listener for dependent dealer dropdown
@@ -271,9 +271,6 @@ function formatNumber(v) {
     if (v === null || v === undefined) return '';
     return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-
-
-
 
 // Helper function to collect all filter values
 function GetAllFilters() {
@@ -1385,35 +1382,8 @@ function renderSegmentWise() {
         HideLoader();
         
         if (response && response.length > 0) {
-            const StringFilterColumn = [];
-            const NumericFilterColumn = [];
-            const DateFilterColumn = [];
-            const Button = false;
-            const showButtons = [];
-            const StringdoubleFilterColumn = [];
-            const hiddenColumns = [];
-            const ColumnAlignment = {
-                'Weight': 'right',
-                'Sales': 'right',
-                'Sales Amount': 'right',
-                'SalesAmount': 'right',
-                'Transactions': 'right',
-                'Count': 'right',
-                'Percentage': 'right',
-                '%': 'right',
-                'Manifested Weight': 'right'
-            };
-
-            // Compute percentage for each row
-            const totalWeight = response.reduce((sum, row) => sum + (parseFloat(row.Weight) || 0), 0);
-            response.forEach(row => {
-                const weight = parseFloat(row.Weight) || 0;
-                row.Percentage = totalWeight > 0 ? ((weight / totalWeight) * 100).toFixed(2) + '%' : '0.00%';
-            });
-
-            if (typeof BizsolCustomFilterGrid !== 'undefined') {
-                BizsolCustomFilterGrid.CreateDataTable("segmentWiseTableHeader", "segmentWiseTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
-            }
+            // Render the collapsible table grouped by segment
+            renderSegmentWiseCollapsibleTable(response);
         } else {
             const el = $('#segmentWiseTableBody')[0];
             if (el) el.innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
@@ -1424,21 +1394,183 @@ function renderSegmentWise() {
     });
 }
 
+function renderSegmentWiseCollapsibleTable(data) {
+    const tbody = document.getElementById('segmentWiseTableBody');
+    const thead = document.getElementById('segmentWiseTableHeader');
+    
+    if (!tbody || !thead) {
+        console.error('Segment Wise table elements not found');
+        return;
+    }
+
+    // Group data by Segment and Buyers
+    const segmentData = new Map();
+    let grandTotalWeight = 0;
+    let grandTotalManifested = 0;
+
+    data.forEach(function(row) {
+        const segment = row['Segment'] || row['SEGMENT'] || row['IndustryType'] || 'Unknown';
+        const buyerName = row['Party Name'] || row['Buyers Name'] || row['BuyersName'] || row['PartyName'] || 'Unknown';
+        const weight = parseFloat(row['Weight'] || row['WEIGHT'] || 0);
+        const manifestedWeight = parseFloat(row['Manifested Weight'] || row['ManifestedWeight'] || 0);
+        
+        if (!segmentData.has(segment)) {
+            segmentData.set(segment, {
+                totalWeight: 0,
+                totalManifested: 0,
+                buyersMap: new Map()
+            });
+        }
+        
+        const segInfo = segmentData.get(segment);
+        segInfo.totalWeight += weight;
+        segInfo.totalManifested += manifestedWeight;
+        
+        if (!segInfo.buyersMap.has(buyerName)) {
+            segInfo.buyersMap.set(buyerName, {
+                weight: 0,
+                manifested: 0
+            });
+        }
+        
+        const buyerInfo = segInfo.buyersMap.get(buyerName);
+        buyerInfo.weight += weight;
+        buyerInfo.manifested += manifestedWeight;
+        
+        grandTotalWeight += weight;
+        grandTotalManifested += manifestedWeight;
+    });
+
+    // Create header
+    thead.innerHTML = `
+        <tr>
+            <th style="width: 50%; background-color: #4472C4; color: white;">Segment</th>
+            <th class="text-end" style="width: 20%; background-color: #4472C4; color: white;">Weight</th>
+            <th class="text-end" style="width: 20%; background-color: #4472C4; color: white;">Manifested Weight</th>
+            <th class="text-end" style="width: 10%; background-color: #4472C4; color: white;">Percentage</th>
+        </tr>
+    `;
+
+    // Sort segments by weight descending
+    const sortedSegments = Array.from(segmentData.entries())
+        .sort((a, b) => b[1].totalWeight - a[1].totalWeight);
+
+    // Populate body
+    tbody.innerHTML = '';
+    
+    sortedSegments.forEach(function([segment, segInfo], index) {
+        const percentage = grandTotalWeight > 0 ? ((segInfo.totalWeight / grandTotalWeight) * 100) : 0;
+        const segmentId = `segment-${index}`;
+        
+        // Main segment row
+        const segmentRow = document.createElement('tr');
+        segmentRow.style.cssText = 'cursor: pointer; background-color: #f8f9fa; font-weight: bold;';
+        segmentRow.innerHTML = `
+            <td>
+                <i class="fa fa-angle-right segment-toggle" id="toggle-${segmentId}" style="margin-right: 8px;"></i>
+                ${escapeHtml(segment)}
+            </td>
+            <td class="text-end">${formatNumber(segInfo.totalWeight)}</td>
+            <td class="text-end">${formatNumber(segInfo.totalManifested)}</td>
+            <td class="text-end">${percentage.toFixed(2)}%</td>
+        `;
+        tbody.appendChild(segmentRow);
+
+        // Create collapsible container for buyers
+        const buyersContainer = document.createElement('tr');
+        buyersContainer.id = segmentId;
+        buyersContainer.style.display = 'none';
+        buyersContainer.className = 'segment-buyers-container';
+        
+        // Create nested table for buyers
+        const buyersTableCell = document.createElement('td');
+        buyersTableCell.colSpan = 4;
+        buyersTableCell.style.padding = '0';
+        
+        let buyersTableHTML = `
+            <table class="table table-sm mb-0" style="margin-left: 20px; width: calc(100% - 30px);">
+                <thead>
+                    <tr style="background-color: #5B9BD5; color: white;">
+                        <th style="width: 5%;">#</th>
+                        <th style="width: 42%;">Buyers Name</th>
+                        <th class="text-end" style="width: 17.66%;">Weight</th>
+                        <th class="text-end" style="width: 17.66%;">Manifested Weight</th>
+                        <th class="text-end" style="width: 17.66%;">Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        // Sort buyers by weight descending
+        const sortedBuyers = Array.from(segInfo.buyersMap.entries())
+            .sort((a, b) => b[1].weight - a[1].weight);
+        
+        sortedBuyers.forEach(function([buyerName, buyerInfo], buyerIndex) {
+            const buyerPercentage = segInfo.totalWeight > 0 ? ((buyerInfo.weight / segInfo.totalWeight) * 100) : 0;
+            buyersTableHTML += `
+                <tr>
+                    <td>${buyerIndex + 1}</td>
+                    <td>${escapeHtml(buyerName)}</td>
+                    <td class="text-end">${formatNumber(buyerInfo.weight)}</td>
+                    <td class="text-end">${formatNumber(buyerInfo.manifested)}</td>
+                    <td class="text-end">${buyerPercentage.toFixed(2)}%</td>
+                </tr>
+            `;
+        });
+        
+        buyersTableHTML += `
+                </tbody>
+            </table>
+        `;
+        
+        buyersTableCell.innerHTML = buyersTableHTML;
+        buyersContainer.appendChild(buyersTableCell);
+        tbody.appendChild(buyersContainer);
+
+        // Add click event to toggle
+        segmentRow.addEventListener('click', function() {
+            const container = document.getElementById(segmentId);
+            const toggle = document.getElementById(`toggle-${segmentId}`);
+            
+            if (container.style.display === 'none') {
+                container.style.display = '';
+                toggle.classList.remove('fa-angle-right');
+                toggle.classList.add('fa-angle-down');
+            } else {
+                container.style.display = 'none';
+                toggle.classList.remove('fa-angle-down');
+                toggle.classList.add('fa-angle-right');
+            }
+        });
+    });
+
+    // Add grand total row
+    const grandTotalRow = document.createElement('tr');
+    grandTotalRow.style.cssText = 'background-color: #d4edda; font-weight: bold; border-top: 2px solid #333;';
+    grandTotalRow.innerHTML = `
+        <td><strong>Grand Total</strong></td>
+        <td class="text-end"><strong>${formatNumber(grandTotalWeight)}</strong></td>
+        <td class="text-end"><strong>${formatNumber(grandTotalManifested)}</strong></td>
+        <td class="text-end"><strong>100.00%</strong></td>
+    `;
+    tbody.appendChild(grandTotalRow);
+}
+
 function renderGPWiseSummary() {
     const filters = GetAllFilters();
-    
+
     if (filters.dealerCodes == '') {
         return;
     }
-    
+
     // Update date range display for this tab
     updateReportDateRangeDisplay();
-    
+
     Showloader();
-    
+
     SalesanalysisASTService.GetSalesAnalysisData('GP_WISE_SUMMARY', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
         HideLoader();
-        
+
         if (!response || response.length === 0) {
             console.warn('No GP wise summary data received');
             document.getElementById('gpWiseTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
@@ -1450,7 +1582,7 @@ function renderGPWiseSummary() {
 
         // Process and render the GP Wise Summary table with fixed header/footer
         renderGPWiseSummaryCustomTable(response);
-        
+
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching GP wise summary data:', err);
@@ -1460,7 +1592,7 @@ function renderGPWiseSummary() {
 function renderGPWiseSummaryCustomTable(data) {
     const tbody = document.getElementById('gpWiseTableBody');
     const thead = document.getElementById('gpWiseTableHeader');
-    
+
     if (!tbody || !thead) {
         console.error('GP Wise table elements not found');
         return;
@@ -1468,19 +1600,19 @@ function renderGPWiseSummaryCustomTable(data) {
 
     // Aggregate data by Marketing Man and GP category
     const aggregatedData = new Map();
-    
-    data.forEach(function(row) {
+
+    data.forEach(function (row) {
         // Get Marketing Man (try multiple property variations)
-        const marketingMan = row['Marketing Man'] || row['MarketingMan'] || row['MARKETING MAN'] || 
-                            row['MGKT Person'] || row['MGKT_PERSON'] || row['Person'] || 'Unknown';
-        
+        const marketingMan = row['Marketing Man'] || row['MarketingMan'] || row['MARKETING MAN'] ||
+            row['MGKT Person'] || row['MGKT_PERSON'] || row['Person'] || 'Unknown';
+
         // Get Weight
         const weight = parseFloat(row['Weight'] || row['WEIGHT'] || row['weight'] || 0);
-        
+
         // Get GP category and normalize it
         const gpRaw = (row['GP'] || row['gp'] || '').toString().toUpperCase().trim();
         let gpCategory = 'Medium'; // default
-        
+
         if (gpRaw.includes('HIGH')) {
             gpCategory = 'High';
         } else if (gpRaw.includes('LOW')) {
@@ -1488,12 +1620,12 @@ function renderGPWiseSummaryCustomTable(data) {
         } else if (gpRaw.includes('MEDIUM')) {
             gpCategory = 'Medium';
         }
-        
+
         // Initialize if not exists
         if (!aggregatedData.has(marketingMan)) {
             aggregatedData.set(marketingMan, { High: 0, Low: 0, Medium: 0 });
         }
-        
+
         // Add weight to appropriate category
         const personData = aggregatedData.get(marketingMan);
         personData[gpCategory] += weight;
@@ -1524,7 +1656,7 @@ function renderGPWiseSummaryCustomTable(data) {
 
     // Calculate overall grand total for percentage calculation
     let overallGrandTotal = 0;
-    sorted.forEach(function([marketingMan, gpData]) {
+    sorted.forEach(function ([marketingMan, gpData]) {
         overallGrandTotal += gpData.High + gpData.Low + gpData.Medium;
     });
 
@@ -1535,10 +1667,10 @@ function renderGPWiseSummaryCustomTable(data) {
     let grandTotalMedium = 0;
     let grandTotal = 0;
 
-    sorted.forEach(function([marketingMan, gpData]) {
+    sorted.forEach(function ([marketingMan, gpData]) {
         const rowTotal = gpData.High + gpData.Low + gpData.Medium;
         const percentageOfTotal = overallGrandTotal > 0 ? ((rowTotal / overallGrandTotal) * 100) : 0;
-        
+
         grandTotalHigh += gpData.High;
         grandTotalLow += gpData.Low;
         grandTotalMedium += gpData.Medium;
@@ -1649,7 +1781,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const gpWiseTabBtn = document.getElementById('gpWiseSummary-tab');
-    if (gpWiseTabBtn) {
+    if ( gpWiseTabBtn) {
         gpWiseTabBtn.addEventListener('shown.bs.tab', function () {
             renderGPWiseSummary();
         });
