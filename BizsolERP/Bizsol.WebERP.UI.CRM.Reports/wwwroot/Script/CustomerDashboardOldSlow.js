@@ -12,10 +12,6 @@ const _cityGeoCache = new Map();
 let fromDate = '0';
 let toDate = '0';
 
-// Global variable to store raw dashboard data
-let G_RawDashboardData = [];
-let G_IsDataLoaded = false;
-
 // Initialize FilterSidePanelControl
 function initFilterSidePanelControl() {
     console.log('Initializing FilterSidePanelControl...');
@@ -88,11 +84,9 @@ function initFilterSidePanelControl() {
             console.log(`Updated global date range: ${fromDate} to ${toDate}`);
         }
         
-        // Load raw data and then show the report (refresh all tabs)
-        console.log('Calling LoadRawDashboardData...');
-        LoadRawDashboardData().then(() => {
-            CustomerDashboard_ShowReport(true); // true = refresh all tabs
-        });
+        // Show the report
+        console.log('Calling CustomerDashboard_ShowReport...');
+        CustomerDashboard_ShowReport();
     });
 
     console.log('FilterSidePanelControl initialized, loading dropdowns...');
@@ -142,7 +136,7 @@ function loadFilterDropdowns(filterPanel) {
     loadPromises.push(dealerPromise);
 
     // Load Cities List
-    const citiesPromise = CustomerDashboardService.GetCustomerDashboardData('DDL_CITIESNAMELIST', '0','0','0','0').then(function (response) {
+    const citiesPromise = CustomerDashboardService.GetCustomerDashboardData('DDL_CITIESNAMELIST', '0','0','0').then(function (response) {
         if (response && response.length > 0) {
             const data = response.map(item => ({ Code: item.CityName, Desp: item.CityName }));
             filterPanel.updateFilterData('ddlCitiesNamelist', data);
@@ -154,24 +148,20 @@ function loadFilterDropdowns(filterPanel) {
 
    
 
-    // Wait for all dropdowns to load, then load raw data and call the report
+    // Wait for all dropdowns to load, then call the report
     Promise.all(loadPromises).then(function() {
         console.log('All filter dropdowns loaded successfully');
-        // Load raw data and then call the report
+        // Call the report after all filters are loaded
         setTimeout(() => {
-            console.log('Loading raw dashboard data after all filters loaded...');
-            LoadRawDashboardData().then(() => {
-                CustomerDashboard_ShowReport(true); // true = refresh all tabs on initial load
-            });
+            console.log('Calling CustomerDashboard_ShowReport after all filters loaded...');
+            CustomerDashboard_ShowReport();
         }, 1000); // Adding a small delay to ensure UI updates are complete
     }).catch(function(error) {
         console.error('Error loading one or more filter dropdowns:', error);
-        // Still load raw data and call the report even if some filters failed to load
+        // Still call the report even if some filters failed to load
         setTimeout(() => {
-            console.log('Loading raw dashboard data (with some filter errors)...');
-            LoadRawDashboardData().then(() => {
-                CustomerDashboard_ShowReport(true); // true = refresh all tabs on initial load
-            });
+            console.log('Calling CustomerDashboard_ShowReport (with some filter errors)...');
+            CustomerDashboard_ShowReport();
         }, 1000);
     });
 }
@@ -340,154 +330,6 @@ if (document.readyState === 'loading') {
     initDateRangeControl();
 }
 
-// Function to load raw dashboard data
-async function LoadRawDashboardData() {
-    const filters = GetAllFilters();
-    const selectedDealers = filters.dealerCodes;
-    const selectedCities = filters.cities;
-    
-    if (!selectedDealers || selectedDealers === '' || selectedDealers === '0') {
-        console.warn('No dealers selected, skipping data load');
-        G_RawDashboardData = [];
-        G_IsDataLoaded = false;
-        clearAllTabs();
-        return;
-    }
-    
-    console.log('Loading raw dashboard data...');
-    console.log('Filters:', { dealers: selectedDealers, cities: selectedCities, from: filters.fromDate, to: filters.toDate });
-    Showloader();
-    
-    try {
-        const response = await CustomerDashboardService.GetCustomerDashboardData(
-            'getVw_Data', 
-            selectedDealers, 
-            filters.fromDate, 
-            filters.toDate,
-            selectedCities
-        );
-        
-        HideLoader();
-        
-        if (response && Array.isArray(response) && response.length > 0) {
-            G_RawDashboardData = response;
-            G_IsDataLoaded = true;
-            console.log(`Loaded ${G_RawDashboardData.length} raw data records`);
-        } else {
-            console.warn('No raw data received from API');
-            G_RawDashboardData = [];
-            G_IsDataLoaded = false;
-            clearAllTabs();
-        }
-    } catch (error) {
-        HideLoader();
-        console.error('Error loading raw dashboard data:', error);
-        G_RawDashboardData = [];
-        G_IsDataLoaded = false;
-        clearAllTabs();
-    }
-}
-
-// Function to clear all tabs when no data is available
-function clearAllTabs() {
-    console.log('Clearing all tabs due to no data...');
-    
-    // Clear Sales Tab
-    try {
-        $('#kpi-selected-year').html('0');
-        $('#kpi-best-month').html('-');
-        $('#kpi-best-month-amt').html('0');
-        $('#kpi-best-day-date').html('-');
-        $('#kpi-best-day-amt').html('0');
-        
-        if (window.barChartInstance) {
-            window.barChartInstance.destroy();
-            window.barChartInstance = null;
-        }
-    } catch (e) {
-        console.warn('Error clearing sales tab:', e);
-    }
-    
-    // Clear Regional Tab
-    try {
-        $('#regional-state-max').text('-');
-        $('#regional-city-max').text('-');
-        
-        if (window.regionSalesChartInstance) {
-            window.regionSalesChartInstance.destroy();
-            window.regionSalesChartInstance = null;
-        }
-        
-        if (window._regionalLayerGroup) {
-            window._regionalLayerGroup.clearLayers();
-        }
-    } catch (e) {
-        console.warn('Error clearing regional tab:', e);
-    }
-    
-    // Clear Client Tab
-    try {
-        $('#top-client-name').text('-');
-        $('#clientSalesTableBody').empty();
-        $('#clientSalesTableHeader').empty();
-    } catch (e) {
-        console.warn('Error clearing client tab:', e);
-    }
-    
-    // Clear Product Tab
-    try {
-        $('#top-product-name').text('-');
-        $('#top-group-name').text('-');
-        $('#productSalesTableBody').empty();
-        $('#productSalesTableHeader').empty();
-        
-        if (window.topProductsPieInstance) {
-            window.topProductsPieInstance.destroy();
-            window.topProductsPieInstance = null;
-        }
-    } catch (e) {
-        console.warn('Error clearing product tab:', e);
-    }
-    
-    // Clear Product Specification Tab
-    try {
-        $('#top-thickness').text('-');
-        $('#top-size').text('-');
-        $('#productSpecTableBody').empty();
-        $('#productSpecTableHeader').empty();
-        
-        if (window.thicknessPieInstance) {
-            window.thicknessPieInstance.destroy();
-            window.thicknessPieInstance = null;
-        }
-        
-        if (window.sizePieInstance) {
-            window.sizePieInstance.destroy();
-            window.sizePieInstance = null;
-        }
-    } catch (e) {
-        console.warn('Error clearing product specification tab:', e);
-    }
-    
-    // Clear Target & Growth Tab
-    try {
-        $('#best-marketing-man').text('-');
-        $('#best-marketing-man-amt').text('0');
-        $('#gauge-center-label').text('0');
-        
-        if (window.targetGaugeChartInstance) {
-            window.targetGaugeChartInstance.destroy();
-            window.targetGaugeChartInstance = null;
-        }
-        
-        $('#salesWithoutTargetTable tbody').empty();
-        $('#targetAnalysisTable tbody').empty();
-        $('#marketingGrowthTable tbody').empty();
-    } catch (e) {
-        console.warn('Error clearing target growth tab:', e);
-    }
-}
-
 // Existing chart data and functions follow
 
 const labels = ['Apr', 'May', 'Jun', 'Jul'];
@@ -506,15 +348,18 @@ function loadChartDataLabelsPlugin(callback) {
 }
 
 function renderBarChart() {
-if (!G_IsDataLoaded || G_RawDashboardData.length === 0) {
-    console.warn('No raw data available for sales chart');
-    return;
+const filters = GetAllFilters();
+const selectedDealers = filters.dealerCodes;
+ 
+if (selectedDealers == '' || selectedDealers == null) {
+return;
 }
-
-console.log('Rendering bar chart from raw data...');
-    
-// Process raw data to create monthly sales summary
-const chartRows = processRawDataForSalesTab(G_RawDashboardData);
+fromDate = filters.fromDate;
+toDate = filters.toDate;
+ Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('SALESTAB', selectedDealers, fromDate, toDate).then(function (response) {
+ HideLoader();
+ const chartRows = Array.isArray(response) ? response : (response && response.MonthlySales ? response.MonthlySales : []);
 
         // chartRows expected as array of objects:
         // [{ MonthOrder:1, MonthName:'Apr', CurrentFYQty:5405.29, PrevFYQty:4697.70 }, ...]
@@ -652,121 +497,34 @@ const chartRows = processRawDataForSalesTab(G_RawDashboardData);
         try { setTimeout(() => window.barChartInstance.resize(),50); } catch (e) { /* ignore */ }
 
         setBestSaleDetils();
-}
+    })
 
-// Process raw data for Sales Tab (monthly aggregation)
-function processRawDataForSalesTab(rawData) {
-    const monthMap = new Map();
-    const monthOrder = {
-        'Apr': 1, 'May': 2, 'Jun': 3, 'Jul': 4, 'Aug': 5, 'Sep': 6,
-        'Oct': 7, 'Nov': 8, 'Dec': 9, 'Jan': 10, 'Feb': 11, 'Mar': 12
-    };
-    
-    rawData.forEach(row => {
-        const month = row.InvoiceMonth;
-        if (!month) return;
-        
-        if (!monthMap.has(month)) {
-            monthMap.set(month, {
-                MonthName: month,
-                MonthOrder: monthOrder[month] || 0,
-                CurrentFYQty: 0,
-                PrevFYQty: 0
-            });
-        }
-        
-        const monthData = monthMap.get(month);
-        const qty = Number(row.SalesQtyMT) || 0;
-        
-        // Determine if this is current FY or previous FY based on invoice date
-        const invoiceDate = new Date(row.InvoiceDate);
-        const currentFYStart = new Date(row.CurrentFY_FromDate);
-        const currentFYEnd = new Date(row.CurrentFY_ToDate);
-        
-        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd) {
-            monthData.CurrentFYQty += qty;
-        } else {
-            monthData.PrevFYQty += qty;
-        }
-    });
-    
-    return Array.from(monthMap.values()).sort((a, b) => a.MonthOrder - b.MonthOrder);
 }
 function setBestSaleDetils() {
-    if (!G_IsDataLoaded || G_RawDashboardData.length === 0) {
-        $('#kpi-selected-year')[0].innerHTML = '0';
-        $('#kpi-best-month')[0].innerHTML = '-';
-        $('#kpi-best-month-amt')[0].innerHTML = '0';
-        $('#kpi-best-day-date')[0].innerHTML = '-';
-        $('#kpi-best-day-amt')[0].innerHTML = '0';
-        return;
-    }
+const filters = GetAllFilters();
+const selectedDealers = filters.dealerCodes;
     
-    // Calculate best sale details from raw data
-    const details = processBestSaleDetails(G_RawDashboardData);
-    
-    $('#kpi-selected-year')[0].innerHTML = formatNumber(details.TotalCurrentSales);
-    $('#kpi-best-month')[0].innerHTML = details.BestMonthName;
-    $('#kpi-best-month-amt')[0].innerHTML = formatNumber(details.BestMonthSale);
-    $('#kpi-best-day-date')[0].innerHTML = details.BestDayDate;
-    $('#kpi-best-day-amt')[0].innerHTML = formatNumber(details.BestDaySale);
+if (selectedDealers == '' || selectedDealers == null) {
+    return;
 }
-
-// Process raw data for best sale details
-function processBestSaleDetails(rawData) {
-    const currentFYData = rawData.filter(row => {
-        const invoiceDate = new Date(row.InvoiceDate);
-        const currentFYStart = new Date(row.CurrentFY_FromDate);
-        const currentFYEnd = new Date(row.CurrentFY_ToDate);
-        return invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd;
-    });
-    
-    // Total current year sales
-    const totalCurrentSales = currentFYData.reduce((sum, row) => sum + (Number(row.SalesQtyMT) || 0), 0);
-    
-    // Best month
-    const monthSales = new Map();
-    currentFYData.forEach(row => {
-        const month = row.InvoiceMonth;
-        if (month) {
-            monthSales.set(month, (monthSales.get(month) || 0) + (Number(row.SalesQtyMT) || 0));
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('SALESTAB_BESTSALEDETAILS', selectedDealers, fromDate, toDate).then(function (response) {
+        HideLoader();
+        if (response.length > 0) {
+            $('#kpi-selected-year')[0].innerHTML = response[0].TotalCurrentSales
+            $('#kpi-best-month')[0].innerHTML = response[0].BestMonthName
+            $('#kpi-best-month-amt')[0].innerHTML = response[0].BestMonthSale
+            $('#kpi-best-day-date')[0].innerHTML = response[0].BestDayDate
+            $('#kpi-best-day-amt')[0].innerHTML = response[0].BestDaySale
         }
-    });
-    
-    let bestMonthName = '-';
-    let bestMonthSale = 0;
-    monthSales.forEach((sales, month) => {
-        if (sales > bestMonthSale) {
-            bestMonthSale = sales;
-            bestMonthName = month;
+        else {
+            $('#kpi-selected-year')[0].innerHTML = '0'
+            $('#kpi-best-month')[0].innerHTML = '-'
+            $('#kpi-best-month-amt')[0].innerHTML = '0'
+            $('#kpi-best-day-date')[0].innerHTML = '-'
+            $('#kpi-best-day-amt')[0].innerHTML = '0'
         }
-    });
-    
-    // Best day
-    const daySales = new Map();
-    currentFYData.forEach(row => {
-        const date = row.InvoiceDate;
-        if (date) {
-            daySales.set(date, (daySales.get(date) || 0) + (Number(row.SalesQtyMT) || 0));
-        }
-    });
-    
-    let bestDayDate = '-';
-    let bestDaySale = 0;
-    daySales.forEach((sales, date) => {
-        if (sales > bestDaySale) {
-            bestDaySale = sales;
-            bestDayDate = new Date(date).toLocaleDateString('en-IN');
-        }
-    });
-    
-    return {
-        TotalCurrentSales: totalCurrentSales,
-        BestMonthName: bestMonthName,
-        BestMonthSale: bestMonthSale,
-        BestDayDate: bestDayDate,
-        BestDaySale: bestDaySale
-    };
+    })
 }
 
 /* ===== Utility functions ===== */
@@ -805,16 +563,43 @@ loadChartDataLabelsPlugin(() => {
 
 /* ===== Regional charts + map rendering (existing) ===== */
 
-async function renderRegionalSection() {
-if (!G_IsDataLoaded || G_RawDashboardData.length === 0) {
-    console.warn('No raw data available for regional section');
+function renderRegionalSection() {
+const filters = GetAllFilters();
+const selectedDealers = filters.dealerCodes;
+    
+if (selectedDealers == '' || selectedDealers == null) {
     return;
 }
+fromDate = filters.fromDate;
+toDate = filters.toDate;
+    const placeholder = {
+        stateMax: '-',
+        cityMax: '-',
+        pareto: { labels: ['-'], sales: [0], cumulative: [0] },
+        regionSales: { labels: ['-'], data: [0] },
+        polygon: [],
+        center: [0, 0],
+        zoom: 11
+    };
 
-console.log('Rendering regional section from raw data...');
-    
-// Process raw data for regional analysis
-const regionalData = processRawDataForRegionalTab(G_RawDashboardData);
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('REGIONTAB', selectedDealers, fromDate, toDate).then(async function (response) {
+        HideLoader();
+
+        // Normalize response - expect array of city records
+        let regionalData = [];
+
+        try {
+            if (response && Array.isArray(response) && response.length > 0) {
+                regionalData = response;
+            } else {
+                console.warn('No regional data received or unexpected format');
+                regionalData = [];
+            }
+        } catch (e) {
+            console.warn('regional response parsing failed', e);
+            regionalData = [];
+        }
 
         // Extract first row for KPIs
         let stateMax = '-';
@@ -1027,41 +812,18 @@ const regionalData = processRawDataForRegionalTab(G_RawDashboardData);
         } catch (e) {
             console.warn('Leaflet not available or map render failed', e);
         }
-}
 
-// Process raw data for Regional Tab (city-wise aggregation)
-function processRawDataForRegionalTab(rawData) {
-    const cityMap = new Map();
-    
-    // Filter for current FY data only
-    const currentFYData = rawData.filter(row => {
-        const invoiceDate = new Date(row.InvoiceDate);
-        const currentFYStart = new Date(row.CurrentFY_FromDate);
-        const currentFYEnd = new Date(row.CurrentFY_ToDate);
-        return invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd;
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching regional summary', err);
+        // If API failed, render placeholder UI
+        try {
+            const stateEl = document.getElementById('regional-state-max');
+            const cityEl = document.getElementById('regional-city-max');
+            if (stateEl) stateEl.textContent = '-';
+            if (cityEl) cityEl.textContent = '-';
+        } catch (e) { /* ignore */ }
     });
-    
-    currentFYData.forEach(row => {
-        const city = row.ConsigneeCityName;
-        const state = row.ConsigneeStateName;
-        const sales = Number(row.SalesQtyMT) || 0;
-        
-        if (!city) return;
-        
-        if (!cityMap.has(city)) {
-            cityMap.set(city, {
-                ConsigneeCityName: city,
-                ConsigneeStateName: state,
-                CurrentYearSales: 0
-            });
-        }
-        
-        cityMap.get(city).CurrentYearSales += sales;
-    });
-    
-    // Convert to array and sort by sales descending
-    return Array.from(cityMap.values())
-        .sort((a, b) => b.CurrentYearSales - a.CurrentYearSales);
 }
 
 /* ===== NEW: Client charts + table rendering ===== */
@@ -1072,15 +834,17 @@ function formatNumber(v) {
 }
 
 function renderClientSection() {
-if (!G_IsDataLoaded || G_RawDashboardData.length === 0) {
-    console.warn('No raw data available for client section');
+const filters = GetAllFilters();
+const selectedDealers = filters.dealerCodes;
+    
+if (selectedDealers == '' || selectedDealers == null) {
     return;
 }
-
-console.log('Rendering client section from raw data...');
-    
-// Process raw data for client analysis
-const response = processRawDataForClientTab(G_RawDashboardData);
+fromDate = filters.fromDate;
+toDate = filters.toDate;
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('CLIENTTAB', selectedDealers, fromDate, toDate).then(function (response) {
+        HideLoader();
         const StringFilterColumn = [];
         const NumericFilterColumn = [];
         const DateFilterColumn = [];
@@ -1095,68 +859,20 @@ const response = processRawDataForClientTab(G_RawDashboardData);
         };
 
 
-    if (response.length > 0) {
-        BizsolCustomFilterGrid.CreateDataTable("clientSalesTableHeader", "clientSalesTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false);
-        // Top client
-        const topClient = response[0]["Client Name"] || '-';
-        const topEl = document.getElementById('top-client-name');
-        if (topEl) topEl.textContent = topClient;
-    }
-}
+        if (response.length > 0) {
+            BizsolCustomFilterGrid.CreateDataTable("clientSalesTableHeader", "clientSalesTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false)
+            // Top client
+            const topClient = response[0]["Client Name"] || '-';
+            const topEl = document.getElementById('top-client-name');
+            if (topEl) topEl.textContent = topClient;
+        }
+    })
 
-// Process raw data for Client Tab (consignee-wise aggregation with growth)
-function processRawDataForClientTab(rawData) {
-    const clientMap = new Map();
-    
-    rawData.forEach(row => {
-        const clientCode = row.ConsigneeMaster_Code;
-        const clientName = row.ConsigneeName;
-        const sales = Number(row.SalesQtyMT) || 0;
-        
-        if (!clientName) return;
-        
-        const invoiceDate = new Date(row.InvoiceDate);
-        const currentFYStart = new Date(row.CurrentFY_FromDate);
-        const currentFYEnd = new Date(row.CurrentFY_ToDate);
-        const prevFYStart = new Date(row.PrevFY_FromDate);
-        const prevFYEnd = new Date(row.PrevFY_ToDate);
-        
-        if (!clientMap.has(clientCode)) {
-            clientMap.set(clientCode, {
-                "Client Name": clientName,
-                "Current Year Sales": 0,
-                "Last Year Sales": 0,
-                "Growth (%)": 0
-            });
-        }
-        
-        const clientData = clientMap.get(clientCode);
-        
-        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd) {
-            clientData["Current Year Sales"] += sales;
-        } else if (invoiceDate >= prevFYStart && invoiceDate <= prevFYEnd) {
-            clientData["Last Year Sales"] += sales;
-        }
-    });
-    
-    // Calculate growth percentage
-    const result = Array.from(clientMap.values()).map(client => {
-        const current = client["Current Year Sales"];
-        const last = client["Last Year Sales"];
-        
-        if (last > 0) {
-            client["Growth (%)"] = ((current - last) / last * 100).toFixed(2);
-        } else if (current > 0) {
-            client["Growth (%)"] = '100.00';
-        } else {
-            client["Growth (%)"] = '0.00';
-        }
-        
-        return client;
-    });
-    
-    // Sort by current year sales descending
-    return result.sort((a, b) => b["Current Year Sales"] - a["Current Year Sales"]);
+
+
+
+    // populate the table
+
 }
 
 /* When client tab becomes visible, re-render charts to ensure proper sizing */
@@ -1220,20 +936,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
 /* ===== Product Specification rendering ===== */
 function renderProductSpecificationSection() {
-if (!G_IsDataLoaded || G_RawDashboardData.length === 0) {
-    console.warn('No raw data available for product specification section');
-    return;
-}
-
-console.log('Rendering product specification section from raw data...');
+const filters = GetAllFilters();
+const selectedDealers = filters.dealerCodes;
     
-// Process raw data for product specification
-const response = processRawDataForProductSpecificationTab(G_RawDashboardData);
-
-if (!response || response.length === 0) {
-    console.warn('No product specification data after processing');
+if (selectedDealers == '' || selectedDealers == null) {
     return;
 }
+fromDate = filters.fromDate;
+toDate = filters.toDate;
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('PRODUCTSPECIFICATIONTAB', selectedDealers, fromDate, toDate).then(function (response) {
+        HideLoader();
+
+        if (!response || response.length === 0) {
+            console.warn('No product specification data received');
+            return;
+        }
 
         // Get top thickness and size from first record (assuming sorted by highest sales)
         const topThickness = response[0]['Thickness'] || '-';
@@ -1383,81 +1101,31 @@ if (!response || response.length === 0) {
         };
 
         BizsolCustomFilterGrid.CreateDataTable("productSpecTableHeader", "productSpecTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
-}
 
-// Process raw data for Product Specification Tab (thickness/size-wise aggregation)
-function processRawDataForProductSpecificationTab(rawData) {
-    const specMap = new Map();
-    
-    rawData.forEach(row => {
-        const thickness = row.ItemThickness || '';
-        const size = row.ItemSize || '';
-        const key = `${thickness}|${size}`;
-        const sales = Number(row.SalesQtyMT) || 0;
-        
-        if (!thickness && !size) return;
-        
-        const invoiceDate = new Date(row.InvoiceDate);
-        const currentFYStart = new Date(row.CurrentFY_FromDate);
-        const currentFYEnd = new Date(row.CurrentFY_ToDate);
-        const prevFYStart = new Date(row.PrevFY_FromDate);
-        const prevFYEnd = new Date(row.PrevFY_ToDate);
-        
-        if (!specMap.has(key)) {
-            specMap.set(key, {
-                "Thickness": thickness,
-                "Size": size,
-                "Current Year Sales": 0,
-                "Last Year Sales": 0,
-                "Products Growth (%)": 0
-            });
-        }
-        
-        const specData = specMap.get(key);
-        
-        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd) {
-            specData["Current Year Sales"] += sales;
-        } else if (invoiceDate >= prevFYStart && invoiceDate <= prevFYEnd) {
-            specData["Last Year Sales"] += sales;
-        }
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching product specification data:', err);
     });
-    
-    // Calculate growth percentage
-    const result = Array.from(specMap.values()).map(spec => {
-        const current = spec["Current Year Sales"];
-        const last = spec["Last Year Sales"];
-        
-        if (last > 0) {
-            spec["Products Growth (%)"] = ((current - last) / last * 100).toFixed(2);
-        } else if (current > 0) {
-            spec["Products Growth (%)"] = '100.00';
-        } else {
-            spec["Products Growth (%)"] = '0.00';
-        }
-        
-        return spec;
-    });
-    
-    // Sort by current year sales descending
-    return result.sort((a, b) => b["Current Year Sales"] - a["Current Year Sales"]);
 }
 
 /* ===== Product rendering ===== */
 function renderProductSection() {
-if (!G_IsDataLoaded || G_RawDashboardData.length === 0) {
-    console.warn('No raw data available for product section');
-    return;
-}
-
-console.log('Rendering product section from raw data...');
+const filters = GetAllFilters();
+const selectedDealers = filters.dealerCodes;
     
-// Process raw data for product analysis
-const response = processRawDataForProductTab(G_RawDashboardData);
-
-if (!response || response.length === 0) {
-    console.warn('No product data after processing');
+if (selectedDealers == '' || selectedDealers == null) {
     return;
 }
+fromDate = filters.fromDate;
+toDate = filters.toDate;
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('PRODUCTTAB', selectedDealers, fromDate, toDate).then(function (response) {
+        HideLoader();
+
+        if (!response || response.length === 0) {
+            console.warn('No product data received');
+            return;
+        }
 
         // Get top product and group from first record (assuming sorted by highest sales)
         const topProduct = response[0]['Products Name'] || '-';
@@ -1572,83 +1240,34 @@ if (!response || response.length === 0) {
             'Last Year Sales': 'right'
         };
 
-        BizsolCustomFilterGrid.CreateDataTable("productSalesTableHeader", "productSalesTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false);
-}
+        BizsolCustomFilterGrid.CreateDataTable("productSalesTableHeader", "productSalesTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false)
 
-// Process raw data for Product Tab (product/group-wise aggregation)
-function processRawDataForProductTab(rawData) {
-    const productMap = new Map();
-    
-    rawData.forEach(row => {
-        const productCode = row.ItemMaster_Code;
-        const productName = row.ItemName || row.MasterItemName;
-        const groupName = row.ItemCategory;
-        const sales = Number(row.SalesQtyMT) || 0;
-        
-        if (!productName) return;
-        
-        const invoiceDate = new Date(row.InvoiceDate);
-        const currentFYStart = new Date(row.CurrentFY_FromDate);
-        const currentFYEnd = new Date(row.CurrentFY_ToDate);
-        const prevFYStart = new Date(row.PrevFY_FromDate);
-        const prevFYEnd = new Date(row.PrevFY_ToDate);
-        
-        if (!productMap.has(productCode)) {
-            productMap.set(productCode, {
-                "Products Name": productName,
-                "Group Name": groupName || '-',
-                "Current Year Sales": 0,
-                "Last Year Sales": 0,
-                "Products Growth (%)": 0
-            });
-        }
-        
-        const productData = productMap.get(productCode);
-        
-        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd) {
-            productData["Current Year Sales"] += sales;
-        } else if (invoiceDate >= prevFYStart && invoiceDate <= prevFYEnd) {
-            productData["Last Year Sales"] += sales;
-        }
+
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching product data:', err);
     });
-    
-    // Calculate growth percentage
-    const result = Array.from(productMap.values()).map(product => {
-        const current = product["Current Year Sales"];
-        const last = product["Last Year Sales"];
-        
-        if (last > 0) {
-            product["Products Growth (%)"] = ((current - last) / last * 100).toFixed(2);
-        } else if (current > 0) {
-            product["Products Growth (%)"] = '100.00';
-        } else {
-            product["Products Growth (%)"] = '0.00';
-        }
-        
-        return product;
-    });
-    
-    // Sort by current year sales descending
-    return result.sort((a, b) => b["Current Year Sales"] - a["Current Year Sales"]);
 }
 
 /* ===== Target & Growth rendering ===== */
 
 function renderTargetGrowthSection() {
-if (!G_IsDataLoaded || G_RawDashboardData.length === 0) {
-    console.warn('No raw data available for target growth section');
-    return;
-}
-
-console.log('Rendering target growth section from raw data...');
+const filters = GetAllFilters();
+const selectedDealers = filters.dealerCodes;
     
-// Process raw data for target growth analysis
-const response = processRawDataForTargetGrowthTab(G_RawDashboardData);
-
-if (!response || response.length === 0) {
-    console.warn('No target growth data after processing');
+if (selectedDealers == '' || selectedDealers == null) {
     return;
 }
+fromDate = filters.fromDate;
+toDate = filters.toDate;
+    Showloader();
+    CustomerDashboardService.GetCustomerDashboardData('TARGETGROWTHTAB', selectedDealers, fromDate, toDate).then(function (response) {
+        HideLoader();
+
+        if (!response || response.length === 0) {
+            console.warn('No target growth data received');
+            return;
+        }
 
         // Find best marketing man (highest Current Year Sales)
         let best = { name: '-', amt: 0 };
@@ -1850,124 +1469,71 @@ if (!response || response.length === 0) {
                 mgTable.appendChild(tr);
             });
         }
-}
 
-// Process raw data for Target & Growth Tab (marketing man-wise aggregation)
-function processRawDataForTargetGrowthTab(rawData) {
-    const marketingManMap = new Map();
-    
-    rawData.forEach(row => {
-        const marketingManCode = row.MarketingManMaster_Code || row.TargetMarketingManCode;
-        const marketingMan = row.MarketingMan || row.TargetMarketingManName;
-        const sales = Number(row.SalesQtyMT) || 0;
-        const targetAmount = Number(row.TargetAmount) || 0;
-        
-        if (!marketingMan) return;
-        
-        const invoiceDate = new Date(row.InvoiceDate);
-        const currentFYStart = new Date(row.CurrentFY_FromDate);
-        const currentFYEnd = new Date(row.CurrentFY_ToDate);
-        const prevFYStart = new Date(row.PrevFY_FromDate);
-        const prevFYEnd = new Date(row.PrevFY_ToDate);
-        
-        if (!marketingManMap.has(marketingManCode)) {
-            marketingManMap.set(marketingManCode, {
-                "Marketing Man": marketingMan,
-                "Current Year Sales": 0,
-                "Last Year Sales": 0,
-                "Target": 0,
-                "Target Achieved": 'No',
-                "Marketing Men Growth (%)": 0
-            });
-        }
-        
-        const manData = marketingManMap.get(marketingManCode);
-        
-        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd) {
-            manData["Current Year Sales"] += sales;
-        } else if (invoiceDate >= prevFYStart && invoiceDate <= prevFYEnd) {
-            manData["Last Year Sales"] += sales;
-        }
-        
-        // Set target (use max if multiple records)
-        if (targetAmount > manData["Target"]) {
-            manData["Target"] = targetAmount;
-        }
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching target growth data:', err);
     });
-    
-    // Calculate growth percentage and target achievement
-    const result = Array.from(marketingManMap.values()).map(man => {
-        const current = man["Current Year Sales"];
-        const last = man["Last Year Sales"];
-        const target = man["Target"];
-        
-        // Growth calculation
-        if (last > 0) {
-            man["Marketing Men Growth (%)"] = ((current - last) / last * 100).toFixed(2);
-        } else if (current > 0) {
-            man["Marketing Men Growth (%)"] = '100.00';
-        } else {
-            man["Marketing Men Growth (%)"] = '0.00';
-        }
-        
-        // Target achievement
-        if (target > 0 && current >= target) {
-            man["Target Achieved"] = 'Yes';
-        } else {
-            man["Target Achieved"] = 'No';
-        }
-        
-        return man;
-    });
-    
-    // Sort by current year sales descending
-    return result.sort((a, b) => b["Current Year Sales"] - a["Current Year Sales"]);
 }
 
 /* Segment tab removed as per requirements */
 
 /* Service calls and dropdown logic now handled by FilterSidePanelControl initialization */
 
-function CustomerDashboard_ShowReport(refreshAll = false) {
-    if (!G_IsDataLoaded) {
-        console.warn('Raw data not loaded yet');
-        clearAllTabs();
-        return;
-    }
+function CustomerDashboard_ShowReport() {
+const filters = GetAllFilters();
+const selectedDealers = filters.dealerCodes;
+ 
+if (selectedDealers == '' || selectedDealers == null) {
+console.warn('No dealers selected');
+return;
+}
 
-    // If refreshAll is true, refresh all tabs regardless of visibility
-    // Otherwise, only refresh the currently visible tab
-    if (refreshAll) {
-        console.log('Refreshing all tabs...');
-        renderBarChart();
-        renderRegionalSection();
-        renderClientSection();
-        renderTargetGrowthSection();
-        renderProductSection();
-        renderProductSpecificationSection();
-    } else {
-        // Render only the currently visible tab
-        if (document.querySelector('#Sales') && document.querySelector('#Sales').classList.contains('show')) {
-            renderBarChart();
-        }
-        if (document.querySelector('#regional') && document.querySelector('#regional').classList.contains('show')) {
-            renderRegionalSection();
-        }
-        if (document.querySelector('#client') && document.querySelector('#client').classList.contains('show')) {
-            renderClientSection();
-        }
-        if (document.querySelector('#target-growth') && document.querySelector('#target-growth').classList.contains('show')) {
-            renderTargetGrowthSection();
-        }
-        if (document.querySelector('#product') && document.querySelector('#product').classList.contains('show')) {
-            renderProductSection();
-            renderProductSpecificationSection();
-        }
-    }
+ if (document.querySelector('#Sales') && document.querySelector('#Sales').classList.contains('show')) {
+ renderBarChart();
+ }
+ if (document.querySelector('#regional') && document.querySelector('#regional').classList.contains('show')) {
+ renderRegionalSection();
+ }
+ if (document.querySelector('#client') && document.querySelector('#client').classList.contains('show')) {
+ renderClientSection();
+ }
+ if (document.querySelector('#target-growth') && document.querySelector('#target-growth').classList.contains('show')) {
+ renderTargetGrowthSection();
+ }
+ if (document.querySelector('#product') && document.querySelector('#product').classList.contains('show')) {
+ renderProductSection();
+ renderProductSpecificationSection();
+ }
 }
 
 
+/* Legacy function kept for backward compatibility */
+function AreAllSelected(containerId) {
+    console.warn('AreAllSelected is deprecated - using FilterSidePanelControl instead');
+    try {
+        if (!containerId) return false;
+        const container = document.getElementById(containerId);
+        if (!container) return false;
 
+        // If "Select All" checkbox exists, use its state as a quick answer
+        const selectAllId = containerId + '_all';
+        const selectAllEl = container.querySelector('#' + selectAllId);
+        if (selectAllEl && selectAllEl instanceof HTMLInputElement && selectAllEl.type === 'checkbox') {
+            return !!selectAllEl.checked;
+        }
+
+        // Fallback: evaluate all item checkboxes directly
+        const itemSelector = 'input[type="checkbox"].' + containerId + '_chk';
+        const inputs = Array.from(container.querySelectorAll(itemSelector));
+        if (inputs.length === 0) return false;
+
+        return inputs.every(function (chk) { return chk.checked === true; });
+    } catch (e) {
+        console.error('AreAllSelected error', e);
+        return false;
+    }
+}
 
 
 
@@ -2242,6 +1808,16 @@ out geom;`;
     return null;
 }
 
-
+function GetDateRange() {
+    // Read date range using shared helper and show in alert
+    try {
+        const drange = DateRangeControl.getDateRangeFromControl('dateRange');
+        fromDate = drange.fromDate || '0';
+        toDate = drange.toDate || '0';
+        // alert('Date Range - From: ' + fromDate + '\nTo: ' + toDate);
+    } catch (e) {
+        console.warn('Could not read date range control via helper:', e);
+    }
+}
 window.CustomerDashboard_ShowReport = CustomerDashboard_ShowReport;
 
