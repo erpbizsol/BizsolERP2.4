@@ -233,27 +233,38 @@ function calculateRMStockCurrentFooterTotals(rows) {
     }
 }
 function ShowModelPlanned(rowData) {
-    $('#txtIdentificationNo').val(rowData.IdentificationNo);
-    $('#txtWidth').val(rowData?.['Ac Wt']);
-    $('#despSize').text(rowData.Size);
-    G_IdentificationNo = rowData.IdentificationNo;
-    G_Width = rowData?.['Numeric Value'];
-    G_ItemMaster_CodeOnlyIssue = rowData.ItemMaster_CodeOnlyIssue || '';
-    G_Thickness_Code = rowData.Thickness_Code || rowData.ThicknessCode || 0;
-    clearForm();
-    //enableNewRowAddition();
-    //$('#PlannedMyModal').data('IdentificationNo', G_IdentificationNo);
-    $('#PlannedMyModal').modal({
-        backdrop: 'static',
+    var ModuleName = "Slitting Plan",
+        OptionName = "New",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            $('#txtIdentificationNo').val(rowData.IdentificationNo);
+            $('#txtWidth').val(rowData?.['Ac Wt']);
+            $('#despSize').text(rowData.Size);
+            G_IdentificationNo = rowData.IdentificationNo;
+            G_Width = rowData?.['Numeric Value'];
+            G_ItemMaster_CodeOnlyIssue = rowData.ItemMaster_CodeOnlyIssue || '';
+            G_Thickness_Code = rowData.Thickness_Code || rowData.ThicknessCode || 0;
+            clearForm();
+            //enableNewRowAddition();
+            //$('#PlannedMyModal').data('IdentificationNo', G_IdentificationNo);
+            $('#PlannedMyModal').modal({
+                backdrop: 'static',
+            });
+            $('#PlannedMyModal').modal('show');
+            ShowRMStockPlan();
+            //GetRMStockWidthList();
+            //GetRMStockItemNameList();
+            GetRMStockMachineNoList();
+            setCurrentDate();
+            updateTableTotals();
+        }
     });
-    $('#PlannedMyModal').modal('show');
-    ShowRMStockPlan();
-    //GetRMStockWidthList();
-    //GetRMStockItemNameList();
-    GetRMStockMachineNoList();
-    setCurrentDate();
-    updateTableTotals();
-     
 }
 function ShowRMStockPlan() {
     RMStockService.ShowRMStockData(G_IdentificationNo).then(function (response) {
@@ -983,14 +994,26 @@ function clearForm() {
 //    row.remove();
 //    updateTableTotals();
 //}
-function deleteRow(button, Code,SlittingMasterCode) {
-    G_SNo = Code;
-    G_Code = SlittingMasterCode;
-    $('#myModalDelete').modal({
-        backdrop: 'static',
-    });
+function deleteRow(button, Code, SlittingMasterCode) {
+    var ModuleName = "Slitting Plan",
+        OptionName = "Delete",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
 
-    $('#myModalDelete').modal('show');
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            G_SNo = Code;
+            G_Code = SlittingMasterCode;
+            $('#myModalDelete').modal({
+                backdrop: 'static',
+            });
+
+            $('#myModalDelete').modal('show');
+        }
+    });
 }
 function DeleteModal() {
     let reasonForDelete = $('#deleteReason').val();
