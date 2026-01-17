@@ -1868,7 +1868,7 @@ function getQCPropertyItemConfigurationList() {
     QCPropertyItemConfigurationService.GetQCPropertyItemConfigurationList(G_IsProperty)
         .then(function (response) {
             HideLoader();
-            if (response && Array.isArray(response)) {
+            if (response && response.length > 0) {
                 G_QCPropertyItemConfigurationList = response;
                 const StringFilterColumn = ["Item Code", "Item Name", "Property Group","Property Name",	"Value Type"	,"Lov Values","Default Value"];
                 const NumericFilterColumn = ["Sort Order", "Min Value","Max Value"];
