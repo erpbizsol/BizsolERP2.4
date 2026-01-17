@@ -523,12 +523,32 @@
          //     }, 3000);  // 3000 ms = 3 seconds
          // });
         $(document).on('select2:open', function () {
+            // Prevent page scrolling when select2 dropdown opens
+            const scrollY = window.scrollY || window.pageYOffset;
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.top = '-' + scrollY + 'px';
+            document.body.style.width = '100%';
+            document.body.setAttribute('data-scroll-y', scrollY);
+            
+            // Focus on search field
             if ($('.select2-search__field').length > 1) {
                 $('.select2-search__field')[1].focus()
             }
             else {
                 $('.select2-search__field')[0].focus();
             }
+        });
+        
+        $(document).on('select2:close', function () {
+            // Restore page scrolling when select2 dropdown closes
+            const scrollY = document.body.getAttribute('data-scroll-y') || '0';
+            document.documentElement.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            window.scrollTo(0, parseInt(scrollY));
+            document.body.removeAttribute('data-scroll-y');
         });
     </script>
     @* Loder End *@

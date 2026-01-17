@@ -1403,21 +1403,64 @@ function renderSegmentWiseCollapsibleTable(data) {
         return;
     }
 
-    // Group data by Segment and Buyers
+    // Helper function to get week number of month from date
+    function getWeekOfMonth(dateStr) {
+        if (!dateStr) return null;
+        
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return null;
+            
+            // Get the first day of the month
+            const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+            
+            // Calculate the week number
+            const dayOfMonth = date.getDate();
+            const firstDayOfWeek = firstDay.getDay();
+            
+            // Calculate week number (1-based)
+            const weekNum = Math.ceil((dayOfMonth + firstDayOfWeek) / 7);
+            
+            return weekNum;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // Collect all unique weeks from the data
+    const allWeeks = new Set();
+    data.forEach(function(row) {
+        const invoiceDate = row['Invoice Date'] || row['InvoiceDate'] || row['INVOICE_DATE'];
+        if (invoiceDate) {
+            const week = getWeekOfMonth(invoiceDate);
+            if (week !== null) {
+                allWeeks.add(week);
+            }
+        }
+    });
+
+    // Sort weeks
+    const sortedWeeks = Array.from(allWeeks).sort((a, b) => a - b);
+
+    // Group data by Segment and Buyers with week-wise breakdown
     const segmentData = new Map();
     let grandTotalWeight = 0;
     let grandTotalManifested = 0;
+    const grandWeekTotals = {};
 
     data.forEach(function(row) {
         const segment = row['Segment'] || row['SEGMENT'] || row['IndustryType'] || 'Unknown';
         const buyerName = row['Party Name'] || row['Buyers Name'] || row['BuyersName'] || row['PartyName'] || 'Unknown';
         const weight = parseFloat(row['Weight'] || row['WEIGHT'] || 0);
         const manifestedWeight = parseFloat(row['Manifested Weight'] || row['ManifestedWeight'] || 0);
+        const invoiceDate = row['Invoice Date'] || row['InvoiceDate'] || row['INVOICE_DATE'];
+        const week = getWeekOfMonth(invoiceDate);
         
         if (!segmentData.has(segment)) {
             segmentData.set(segment, {
                 totalWeight: 0,
                 totalManifested: 0,
+                weekTotals: {},
                 buyersMap: new Map()
             });
         }
@@ -1426,10 +1469,18 @@ function renderSegmentWiseCollapsibleTable(data) {
         segInfo.totalWeight += weight;
         segInfo.totalManifested += manifestedWeight;
         
+        // Add to week total for segment
+        if (week !== null) {
+            const weekKey = `W${week}`;
+            segInfo.weekTotals[weekKey] = (segInfo.weekTotals[weekKey] || 0) + weight;
+            grandWeekTotals[weekKey] = (grandWeekTotals[weekKey] || 0) + weight;
+        }
+        
         if (!segInfo.buyersMap.has(buyerName)) {
             segInfo.buyersMap.set(buyerName, {
                 weight: 0,
-                manifested: 0
+                manifested: 0,
+                weekSales: {}
             });
         }
         
@@ -1437,19 +1488,34 @@ function renderSegmentWiseCollapsibleTable(data) {
         buyerInfo.weight += weight;
         buyerInfo.manifested += manifestedWeight;
         
+        // Add to week sales for buyer
+        if (week !== null) {
+            const weekKey = `W${week}`;
+            buyerInfo.weekSales[weekKey] = (buyerInfo.weekSales[weekKey] || 0) + weight;
+        }
+        
         grandTotalWeight += weight;
         grandTotalManifested += manifestedWeight;
     });
 
-    // Create header
-    thead.innerHTML = `
+    // Create header with week columns
+    let headerHTML = `
         <tr>
-            <th style="width: 50%; background-color: #4472C4; color: white;">Segment</th>
-            <th class="text-end" style="width: 20%; background-color: #4472C4; color: white;">Weight</th>
-            <th class="text-end" style="width: 20%; background-color: #4472C4; color: white;">Manifested Weight</th>
-            <th class="text-end" style="width: 10%; background-color: #4472C4; color: white;">Percentage</th>
+            <th style="background-color: #4472C4; color: white;">Segment</th>
+    `;
+    
+    sortedWeeks.forEach(function(week) {
+        headerHTML += `<th class="text-end" style="background-color: #4472C4; color: white;">W${week} SALE</th>`;
+    });
+    
+    headerHTML += `
+            <th class="text-end" style="background-color: #4472C4; color: white;">Manifested</th>
+            <th class="text-end" style="background-color: #4472C4; color: white;">Total</th>
+            <th class="text-end" style="background-color: #4472C4; color: white;">Percentage</th>
         </tr>
     `;
+    
+    thead.innerHTML = headerHTML;
 
     // Sort segments by weight descending
     const sortedSegments = Array.from(segmentData.entries())
@@ -1459,21 +1525,33 @@ function renderSegmentWiseCollapsibleTable(data) {
     tbody.innerHTML = '';
     
     sortedSegments.forEach(function([segment, segInfo], index) {
-        const percentage = grandTotalWeight > 0 ? ((segInfo.totalWeight / grandTotalWeight) * 100) : 0;
         const segmentId = `segment-${index}`;
+        const percentage = grandTotalWeight > 0 ? ((segInfo.totalWeight / grandTotalWeight) * 100) : 0;
         
         // Main segment row
         const segmentRow = document.createElement('tr');
         segmentRow.style.cssText = 'cursor: pointer; background-color: #f8f9fa; font-weight: bold;';
-        segmentRow.innerHTML = `
+        
+        let segmentRowHTML = `
             <td>
                 <i class="fa fa-angle-right segment-toggle" id="toggle-${segmentId}" style="margin-right: 8px;"></i>
                 ${escapeHtml(segment)}
             </td>
-            <td class="text-end">${formatNumber(segInfo.totalWeight)}</td>
+        `;
+        
+        sortedWeeks.forEach(function(week) {
+            const weekKey = `W${week}`;
+            const weekSale = segInfo.weekTotals[weekKey] || 0;
+            segmentRowHTML += `<td class="text-end">${formatNumber(weekSale)}</td>`;
+        });
+        
+        segmentRowHTML += `
             <td class="text-end">${formatNumber(segInfo.totalManifested)}</td>
+            <td class="text-end">${formatNumber(segInfo.totalWeight)}</td>
             <td class="text-end">${percentage.toFixed(2)}%</td>
         `;
+        
+        segmentRow.innerHTML = segmentRowHTML;
         tbody.appendChild(segmentRow);
 
         // Create collapsible container for buyers
@@ -1484,18 +1562,25 @@ function renderSegmentWiseCollapsibleTable(data) {
         
         // Create nested table for buyers
         const buyersTableCell = document.createElement('td');
-        buyersTableCell.colSpan = 4;
+        buyersTableCell.colSpan = sortedWeeks.length + 4;
         buyersTableCell.style.padding = '0';
         
         let buyersTableHTML = `
             <table class="table table-sm mb-0" style="margin-left: 20px; width: calc(100% - 30px);">
                 <thead>
                     <tr style="background-color: #5B9BD5; color: white;">
-                        <th style="width: 5%;">#</th>
-                        <th style="width: 42%;">Buyers Name</th>
-                        <th class="text-end" style="width: 17.66%;">Weight</th>
-                        <th class="text-end" style="width: 17.66%;">Manifested Weight</th>
-                        <th class="text-end" style="width: 17.66%;">Percentage</th>
+                        <th>#</th>
+                        <th>Buyers Name</th>
+        `;
+        
+        sortedWeeks.forEach(function(week) {
+            buyersTableHTML += `<th class="text-end">W${week} SALE</th>`;
+        });
+        
+        buyersTableHTML += `
+                        <th class="text-end">Manifested</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">Percentage</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1507,12 +1592,22 @@ function renderSegmentWiseCollapsibleTable(data) {
         
         sortedBuyers.forEach(function([buyerName, buyerInfo], buyerIndex) {
             const buyerPercentage = segInfo.totalWeight > 0 ? ((buyerInfo.weight / segInfo.totalWeight) * 100) : 0;
+            
             buyersTableHTML += `
                 <tr>
                     <td>${buyerIndex + 1}</td>
                     <td>${escapeHtml(buyerName)}</td>
-                    <td class="text-end">${formatNumber(buyerInfo.weight)}</td>
+            `;
+            
+            sortedWeeks.forEach(function(week) {
+                const weekKey = `W${week}`;
+                const weekSale = buyerInfo.weekSales[weekKey] || 0;
+                buyersTableHTML += `<td class="text-end">${formatNumber(weekSale)}</td>`;
+            });
+            
+            buyersTableHTML += `
                     <td class="text-end">${formatNumber(buyerInfo.manifested)}</td>
+                    <td class="text-end">${formatNumber(buyerInfo.weight)}</td>
                     <td class="text-end">${buyerPercentage.toFixed(2)}%</td>
                 </tr>
             `;
@@ -1547,12 +1642,22 @@ function renderSegmentWiseCollapsibleTable(data) {
     // Add grand total row
     const grandTotalRow = document.createElement('tr');
     grandTotalRow.style.cssText = 'background-color: #d4edda; font-weight: bold; border-top: 2px solid #333;';
-    grandTotalRow.innerHTML = `
-        <td><strong>Grand Total</strong></td>
-        <td class="text-end"><strong>${formatNumber(grandTotalWeight)}</strong></td>
+    
+    let grandTotalHTML = `<td><strong>Grand Total</strong></td>`;
+    
+    sortedWeeks.forEach(function(week) {
+        const weekKey = `W${week}`;
+        const weekTotal = grandWeekTotals[weekKey] || 0;
+        grandTotalHTML += `<td class="text-end"><strong>${formatNumber(weekTotal)}</strong></td>`;
+    });
+    
+    grandTotalHTML += `
         <td class="text-end"><strong>${formatNumber(grandTotalManifested)}</strong></td>
+        <td class="text-end"><strong>${formatNumber(grandTotalWeight)}</strong></td>
         <td class="text-end"><strong>100.00%</strong></td>
     `;
+    
+    grandTotalRow.innerHTML = grandTotalHTML;
     tbody.appendChild(grandTotalRow);
 }
 

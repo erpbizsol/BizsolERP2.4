@@ -22,6 +22,10 @@
             border-color: #86b7fe;
             box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
         }
+
+    .btn-height{
+        height: 28px;
+    }
 </style>
 <div id="locateIndentMaster">
     <div class="card col-md-12">
@@ -93,8 +97,20 @@
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label for="ddlGrade" class="col-form-label-sm fw-bold">Grade:<span class="text-danger">*</span></label>
-                            <select id="ddlGrade" name="ddlGrade" class="box_border form-control form-control-sm"></select>
+                        <label for="txtGrade" class="col-form-label-sm fw-bold">Grade:<span class="text-danger">*</span></label>
+                            <input id="txtGrade" name="txtGrade" class="box_border form-control form-control-sm" readonly/>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="txtMake" class="col-form-label-sm fw-bold">Make:<span class="text-danger">*</span></label>
+                            <input id="txtMake" name="txtMake" class="box_border form-control form-control-sm" readonly/>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                            <label for="txtWidth" class="col-form-label-sm fw-bold">Width:<span class="text-danger">*</span></label>
+                            <input id="txtWidth" name="txtWidth" class="box_border form-control form-control-sm" readonly/>
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -109,6 +125,17 @@
                             <input id="txtRemarks" name="txtRemarks" class="box_border form-control form-control-sm" autocomplete="off" required />
                     </div>
                 </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                            <label for="txtSizeControl" class="col-form-label-sm fw-bold">Update Size :<span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input id="txtSizeControl" name="txtSizeControl" class="box_border form-control form-control-sm" readonly/>&nbsp;
+                                <button type="button" id="btnShowSizeControl" class="btn btn-primary btn-height" title="New Size" onclick="ShowSizeControlModal(this);"> <i class="fa fa-plus-square"></i></button>
+                            </div>
+                            <input id="hfSizeControlCode" type="hidden" name="hfSizeControlCode"/>
+                            <input id="hfItemMasterCode" type="hidden" name="hfItemMasterCode"/>
+                    </div>
+                </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -118,3 +145,5 @@
         </div>
     </div>
 </div>
+
+<div id="DivSizeControlmodal"></div>

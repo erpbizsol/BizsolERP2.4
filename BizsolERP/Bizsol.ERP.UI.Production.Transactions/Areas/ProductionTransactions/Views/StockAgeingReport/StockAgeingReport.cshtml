@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -21,11 +21,11 @@
         <div class="row">
             <div class="col-md-3">
                 <label for="ddlCategory" class="form-label filter-label">Category <span class="text-danger">*</span></label>
-                <select id="ddlCategory" name="ddlCategory" class="form-control form-control-sm box_border" placeholder="Select.." multiple style="width: 300px;" autocomplete="off" required></select>
+                <select id="ddlCategory" name="ddlCategory" class="form-control form-control-sm box_border" placeholder="Select.." multiple style="width: 300px;" autocomplete="off" required onchange="Bind_ddlItemMaster();"></select>
             </div>
             <div class="col-md-3">
                 <label for="ddlItemName" class="form-label filter-label">Item Type <span class="text-danger">*</span></label>
-                <select id="ddlItemName" name="ddlSize" class="form-control form-control-sm box_border" multiple style="width: 300px;" placeholder="Select.." autocomplete="off" required></select>
+                <select id="ddlItemName" name="ddlSize" class="form-control form-control-sm box_border" multiple style="width: 300px;" placeholder="Select.." autocomplete="off" required onchange="Bind_ddlItemMaster();"></select>
             </div>
             <div class="col-md-3">
                 <label for="ddlWarehouse" class="form-label filter-label">Warehouse <span class="text-danger">*</span></label>
@@ -34,6 +34,14 @@
             <div class="col-md-3">
                 <label for="txtAsOnDate" class="form-label">As On Date <span class="text-danger">*</span></label>
                 <input id="txtAsOnDate" name="txtAsOnDate" type="date"class="form-control form-control-sm box_border" placeholder="As On Date" autocomplete="off" required />
+            </div>
+            <div class="col-md-3">
+                <label for="ddlItemNameFilter" class="form-label filter-label">Item Name <span class="text-danger">*</span></label>
+                <select id="ddlItemNameFilter" name="ddlItemNameFilter" class="form-control form-control-sm box_border" placeholder="Select.." autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlReportOption" class="form-label filter-label">Report Option <span class="text-danger">*</span></label>
+                <select id="ddlReportOption" name="ddlReportOption" class="form-control form-control-sm box_border" placeholder="Select.." autocomplete="off" required></select>
             </div>
 
             <div class="col-md-12" style="text-align:right">
