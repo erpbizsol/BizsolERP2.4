@@ -13,5 +13,9 @@ namespace Bizsol.WebERP.UI.Common.Masters.Areas.CommonMasters.Controllers
         {
             return View();
         }
+        public IActionResult MachineMaintenanceRequest()
+        {
+            return View();
+        }
     }
 }
