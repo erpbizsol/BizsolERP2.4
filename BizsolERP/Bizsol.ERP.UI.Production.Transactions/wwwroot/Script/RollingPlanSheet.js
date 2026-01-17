@@ -54,10 +54,12 @@ $(document).ready(function () {
         $('#btnDownload').show();
         $('#from-date-to-date-filter-bar').show();
         setCurrentDatePendingPlans()
-        GetPendingPlansReportList(G_FromDate, G_ToDate);
+        var Status = $("#ddlStatus").val() == null ? 'Pending' : $("#ddlStatus").val();
+        var ItemMaster_Code = $("#ddlItemName").val() == null ? "0" : $("#ddlItemName").val();
+        GetPendingPlansReportList(G_FromDate, G_ToDate, Status, ItemMaster_Code);
         const $wrapper = $('.table-wrapper');
         $wrapper.css({ width: '100%' });
-
+        GetItemName();
     });
     $(document).on('click', '#btnShowDateMillReport', function () {
         const d = $('#rpToDate').val();
@@ -70,7 +72,9 @@ $(document).ready(function () {
     $(document).on('click', '#btnShowDatePendingPlansReport', function () {
         G_FromDate = $('#fromDate').val();
         G_ToDate = $('#toDate').val();
-        GetPendingPlansReportList(G_FromDate, G_ToDate);
+        var Status = $("#ddlStatus").val();
+        var ItemMaster_Code = $("#ddlItemName").val();
+        GetPendingPlansReportList(G_FromDate, G_ToDate, Status, ItemMaster_Code);
     });
     $(document).on('change', '#rpToDate', function () {
         const d = $(this).val();
@@ -97,7 +101,17 @@ function GetRollingPlanSheetList() {
             const showButtons = [];
             const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
 
+            // Calculate distinct Order No count
+            const distinctOrderNos = new Set();
+            response.forEach(item => {
+                const orderNo = item["Order No"] || item["OrderNo"] || item["Order_No"];
+                if (orderNo && orderNo.toString().trim() !== '') {
+                    distinctOrderNos.add(orderNo.toString().trim());
+                }
+            });
+
             const totals = calculateTotals(response);
+            totals.distinctOrderNoCount = distinctOrderNos.size;
 
             const formattedResponse = formatRowsByColumns(response, numericFilterColumn).map(r => {
                 const row = formatQuantityFields(r);
@@ -430,6 +444,16 @@ function addTotalsRow(totals, hiddenColumns = []) {
                 cell.style.textAlign = 'right';
                 cell.style.backgroundColor = '#fff2cc';
                 cell.style.fontWeight = 'bold';
+            } else if (headerText.includes('Order No') || headerText.includes('OrderNo') || headerText.includes('Order_No')) {
+                if (totals.distinctOrderNoCount !== undefined) {
+                    cell.textContent = `Order - ${totals.distinctOrderNoCount}`;
+                    cell.style.textAlign = 'center';
+                    cell.style.backgroundColor = '#fff2cc';
+                    cell.style.fontWeight = 'bold';
+                } else {
+                    cell.textContent = '';
+                    cell.style.backgroundColor = '#e8f4fd';
+                }
             } else if (headerText.includes('Plan Status') || headerText.includes('PlanStatus') || headerText.includes('planStatus')) {
                 cell.textContent = '';
                 cell.style.fontWeight = 'bold';
@@ -441,7 +465,8 @@ function addTotalsRow(totals, hiddenColumns = []) {
                 cell.style.backgroundColor = '#d5dde5';
                 cell.style.textAlign = 'center';
             } else if (i === 0) {
-                cell.textContent = 'Rows';
+                const rowCount = countTableTr();
+                cell.textContent = `${rowCount}`;
                 cell.style.fontWeight = 'bold';
                 cell.style.backgroundColor = '#d5dde5';
                 cell.style.textAlign = 'center';
@@ -533,6 +558,17 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
             return;
         }
         const totals = calculateTotals(filteredData);
+        
+        // Calculate distinct Order No count from filtered data
+        const distinctOrderNos = new Set();
+        filteredData.forEach(item => {
+            const orderNo = item["Order No"] || item["OrderNo"] || item["Order_No"];
+            if (orderNo && orderNo.toString().trim() !== '') {
+                distinctOrderNos.add(orderNo.toString().trim());
+            }
+        });
+        totals.distinctOrderNoCount = distinctOrderNos.size;
+        
         const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         addTotalsRow(totals, hiddenColumns);
         adjustFilterDropdownPosition();
@@ -557,6 +593,17 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
             return;
         }
         const totals = calculateTotals(filteredData);
+        
+        // Calculate distinct Order No count from filtered data
+        const distinctOrderNos = new Set();
+        filteredData.forEach(item => {
+            const orderNo = item["Order No"] || item["OrderNo"] || item["Order_No"];
+            if (orderNo && orderNo.toString().trim() !== '') {
+                distinctOrderNos.add(orderNo.toString().trim());
+            }
+        });
+        totals.distinctOrderNoCount = distinctOrderNos.size;
+        
         const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         addTotalsRow(totals, hiddenColumns);
         adjustFilterDropdownPosition();
@@ -756,6 +803,8 @@ function ExportExcel() {
     } else if (isPendingPlansTabActive) {
         const fromDate = $('#fromDate').val();
         const toDate = $('#toDate').val();
+        const Status = $('#ddlStatus').val();
+        const ItemMaster_Code = $('#ddlItemName').val();
         
         if (!fromDate || !toDate) {
             toastr.warning('Please select From Date and To Date');
@@ -763,7 +812,7 @@ function ExportExcel() {
         }
         
         const hiddenFields = [];
-        RollingPlanSheetService.GetPendingPlansReportList(fromDate, toDate).then(function (response) {
+        RollingPlanSheetService.GetPendingPlansReportList(fromDate, toDate, Status, ItemMaster_Code).then(function (response) {
             if (response && response.length > 0) {
                 ExportToExcelControl.ExportToExcel(response, hiddenFields, "PendingPlansRollingPlan");
             } else {
@@ -967,9 +1016,9 @@ function setCurrentDatePendingPlans() {
     G_FromDate = $('#fromDate').val();
     G_ToDate = $('#toDate').val();
 }
-function GetPendingPlansReportList(G_FromDate, G_ToDate) {
+function GetPendingPlansReportList(G_FromDate, G_ToDate,Status,ItemMaster_Code) {
     Showloader();
-    RollingPlanSheetService.GetPendingPlansReportList(G_FromDate, G_ToDate).then(function (response) {
+    RollingPlanSheetService.GetPendingPlansReportList(G_FromDate, G_ToDate, Status, ItemMaster_Code).then(function (response) {
         if (response && response.length > 0) {
             const stringFilterColumn = ["Plan No", "Order No", "Item Name", "Size Desp", "Order PC", "Status"];
             const numericFilterColumn = ["Order MT", "Planned PC", "Planned MT", "Rolled PC", "Rolled MT", "Balance PC", "Balance MT"];
@@ -981,7 +1030,7 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
             
             const allowedColumns = [
                 "SNo", "Plan Date", "Plan No", "Order No", "Item Name", "Size Desp", 
-                "Order PC", "Order MT", "Planned PC", "Planned MT", "Rolled PC", "Rolled MT", "Balance PC", "Balance MT", "Status"
+                "Order PC", "Order MT", "Planned PC", "Planned MT", "Rolled PC", "Rolled MT", "Balance PC", "Balance MT", "Production Date", "Status"
             ];
             
             response = response.map((item, index) => {
@@ -1011,6 +1060,11 @@ function GetPendingPlansReportList(G_FromDate, G_ToDate) {
                 if (filteredItem["Plan No"]) {
                     const rawValue = filteredItem["Plan No"];
                     filteredItem["Plan No"] = `<a href="javascript:void(0)" onclick="GetRollingPlanNoDetail('${escapeHtml(rawValue)}')">${rawValue}</a>`;
+                }
+                if (filteredItem["Production Date"] == "Multiple") {
+                    const rawValue = filteredItem["Production Date"];
+                    const codeValue = item["Code"] || ''; // Get Code from original item, not filteredItem
+                    filteredItem["Production Date"] = `<a href="javascript:void(0)" onclick="GetRollingPlanProductionDetails('${escapeHtml(codeValue)}')">${rawValue}</a>`;
                 }
                 if (filteredItem["Order No"]) {
                     const partyName = (item["Party Name"] ?? item["PartyName"] ?? '').toString().trim();
@@ -1235,10 +1289,284 @@ function PlanNoCloseModal() {
     }
     $('#planNoDetails').modal('hide');
 }
+function GetItemName() {
+    const $itemName = $('#ddlItemName');
+    if (!$itemName.length) {
+        return;
+    }
+    Showloader();
+    RollingPlanSheetService.GetRollingPlanItemName()
+        .then(function (response) {
+            HideLoader();
+            if (response && Array.isArray(response) && response.length > 0) {
+                bindItemDropdown(response);
+            } else {
+                $itemName.html('<option value="0">No item available</option>');
+            }
+        })
+        .catch(function () {
+            HideLoader();
+            $itemName.html('<option value="0">Please select..</option>');
+        });
+}
+function bindItemDropdown(list) {
+    const $itemName = $('#ddlItemName');
+    if (!$itemName.length) {
+        return;
+    }
+
+    $itemName.off('change select2:select');
+    $itemName.off('select2:open select2:close');
+
+    let options = '<option value="0">Please select..</option>';
+
+    (list || []).forEach(function (item) {
+        const code = item.Code || item.code || 0;
+        const itemName = item.ItemName || item.itemName || '';
+
+        if (code && itemName) {
+            options += `<option value="${code}" data-code="${code}" data-item-id="${code}">${itemName}</option>`;
+        }
+    });
+
+    $itemName.html(options);
+
+    try {
+        if ($.fn.select2) {
+            if ($itemName.hasClass('select2-hidden-accessible')) {
+                $itemName.select2('destroy');
+            }
+
+            $itemName.select2({
+                width: '100%',
+                dropdownParent: $(document.body)
+            });
+
+            if (typeof attachSelect2ScrollPrevention === 'function') {
+                attachSelect2ScrollPrevention($itemName);
+            } else {
+                function preventScroll() {
+                    const scrollY = window.scrollY || window.pageYOffset;
+                    document.documentElement.style.overflow = 'hidden';
+                    document.body.style.position = 'fixed';
+                    document.body.style.top = `-${scrollY}px`;
+                    document.body.style.width = '100%';
+                    document.body.setAttribute('data-scroll-y', scrollY);
+                }
+
+                function restoreScroll() {
+                    const scrollY = document.body.getAttribute('data-scroll-y') || '0';
+                    document.documentElement.style.overflow = '';
+                    document.body.style.position = '';
+                    document.body.style.top = '';
+                    document.body.style.width = '';
+                    window.scrollTo(0, parseInt(scrollY));
+                    document.body.removeAttribute('data-scroll-y');
+                }
+
+                $itemName.on('select2:open', preventScroll);
+                $itemName.on('select2:close', restoreScroll);
+            }
+        }
+    } catch (e) {
+        toastr.error('Error initializing select2 for Item Name');
+    }
+}
+
+function GetRollingPlanProductionDetails(Code) {
+    Showloader();
+    RollingPlanSheetService.GetRollingPlanProductionDetails(Code).then(function (response) {
+        if (response && response.length > 0) {
+            let totalQtyPC = 0;
+            let totalQtyMT = 0;
+            let totalQtyMTRS = 0;
+
+            // Format the response data
+            const formattedResponse = response.map(function (item) {
+                const formattedItem = { ...item };
+
+                // Format Qty MT to 3 decimal places
+                if (formattedItem["Qty MT"] !== undefined && formattedItem["Qty MT"] !== null && !isNaN(formattedItem["Qty MT"])) {
+                    const qtyMT = parseFloat(formattedItem["Qty MT"]);
+                    formattedItem["Qty MT"] = qtyMT.toFixed(3);
+                    totalQtyMT += qtyMT;
+                }
+
+                // Format Qty PC to integer (no decimals)
+                if (formattedItem["Qty PC"] !== undefined && formattedItem["Qty PC"] !== null && !isNaN(formattedItem["Qty PC"])) {
+                    const qtyPC = parseFloat(formattedItem["Qty PC"]);
+                    formattedItem["Qty PC"] = Math.round(qtyPC).toString();
+                    totalQtyPC += qtyPC;
+                }
+
+                // Format Qty MTRS to integer (no decimals)
+                if (formattedItem["Qty MTRS"] !== undefined && formattedItem["Qty MTRS"] !== null && !isNaN(formattedItem["Qty MTRS"])) {
+                    const qtyMTRS = parseFloat(formattedItem["Qty MTRS"]);
+                    formattedItem["Qty MTRS"] = Math.round(qtyMTRS).toString();
+                    totalQtyMTRS += qtyMTRS;
+                }
+
+                return formattedItem;
+            });
+
+            const stringFilterColumn = ["Qty PC", "Qty MTRS"];
+            const numericFilterColumn = ["Qty MT"];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+
+            const columnAlignment = {
+                "Qty MT": 'right',
+                "Qty PC": 'right',
+                "Qty MTRS": 'right',
+                "SNo.": 'center'
+            };
+
+            BizsolCustomFilterGrid.CreateDataTable("ProductionDetailsTable-head", "ProductionDetails-body", formattedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+
+            setTimeout(function () {
+                formatProductionDetailsCells();
+                addProductionDetailsFooter(totalQtyPC, totalQtyMT, totalQtyMTRS);
+            }, 300);
+
+            HideLoader();
+            $('#ProductionDetails').modal({ backdrop: 'static' });
+            $('#ProductionDetails').modal('show');
+        } else {
+            HideLoader();
+            toastr.error('No Data Found');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error During Get Rolling Plan Production Details');
+    });
+}
+function ProductionDetailsCloseModal() {
+    const tfoot = document.getElementById('ProductionDetails-foot');
+    if (tfoot) {
+        tfoot.innerHTML = '';
+    }
+    $('#ProductionDetails').modal('hide');
+}
+function formatProductionDetailsCells() {
+    const tbody = document.getElementById('ProductionDetails-body');
+    const thead = document.getElementById('ProductionDetailsTable-head');
+    
+    if (!tbody || !thead) {
+        return;
+    }
+    
+    // Find column indices
+    const headerRow = thead.querySelector('tr');
+    if (!headerRow) {
+        return;
+    }
+    
+    let qtyPCIndex = -1;
+    let qtyMTRSIndex = -1;
+    
+    for (let i = 0; i < headerRow.children.length; i++) {
+        const headerText = headerRow.children[i].textContent.trim().toLowerCase();
+        if (headerText.includes('qty pc') || headerText.includes('qtypc')) {
+            qtyPCIndex = i;
+        }
+        if (headerText.includes('qty mtrs') || headerText.includes('qtymtrs')) {
+            qtyMTRSIndex = i;
+        }
+    }
+    
+    // Format cells in tbody
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(function (row) {
+        const cells = row.querySelectorAll('td');
+        
+        if (qtyPCIndex >= 0 && cells[qtyPCIndex]) {
+            const value = parseFloat(cells[qtyPCIndex].textContent);
+            if (!isNaN(value)) {
+                cells[qtyPCIndex].textContent = Math.round(value).toString();
+            }
+        }
+        
+        if (qtyMTRSIndex >= 0 && cells[qtyMTRSIndex]) {
+            const value = parseFloat(cells[qtyMTRSIndex].textContent);
+            if (!isNaN(value)) {
+                cells[qtyMTRSIndex].textContent = Math.round(value).toString();
+            }
+        }
+    });
+}
+function addProductionDetailsFooter(totalQtyPC, totalQtyMT, totalQtyMTRS) {
+    const tfoot = document.getElementById('ProductionDetails-foot');
+    const thead = document.getElementById('ProductionDetailsTable-head');
+    
+    if (!tfoot || !thead) {
+        return;
+    }
+    
+    tfoot.innerHTML = '';
+    
+    const headerRow = thead.querySelector('tr');
+    if (!headerRow) {
+        return;
+    }
+    
+    const columnCount = headerRow.children.length;
+    const footerRow = document.createElement('tr');
+    
+    let qtyPCIndex = -1;
+    let qtyMTIndex = -1;
+    let qtyMTRSIndex = -1;
+    
+    for (let i = 0; i < headerRow.children.length; i++) {
+        const headerText = headerRow.children[i].textContent.trim().toLowerCase();
+        if (headerText.includes('qty pc') || headerText.includes('qtypc')) {
+            qtyPCIndex = i;
+        }
+        if (headerText.includes('qty mt') && !headerText.includes('qty mtrs')) {
+            qtyMTIndex = i;
+        }
+        if (headerText.includes('qty mtrs') || headerText.includes('qtymtrs')) {
+            qtyMTRSIndex = i;
+        }
+    }
+    
+    for (let i = 0; i < columnCount; i++) {
+        const cell = document.createElement('td');
+        
+        if (i === 0) {
+            cell.textContent = 'Total';
+            cell.style.textAlign = 'center';
+            cell.style.fontWeight = 'bold';
+        } else if (i === qtyPCIndex) {
+            cell.textContent = Math.round(totalQtyPC).toString();
+            cell.style.textAlign = 'right';
+            cell.style.fontWeight = 'bold';
+        } else if (i === qtyMTIndex) {
+            cell.textContent = totalQtyMT.toFixed(3);
+            cell.style.textAlign = 'right';
+            cell.style.fontWeight = 'bold';
+        } else if (i === qtyMTRSIndex) {
+            cell.textContent = Math.round(totalQtyMTRS).toString();
+            cell.style.textAlign = 'right';
+            cell.style.fontWeight = 'bold';
+        } else {
+            cell.textContent = '';
+        }
+        
+        footerRow.appendChild(cell);
+    }
+    
+    tfoot.appendChild(footerRow);
+}
+
 window.ExportExcel = ExportExcel;
 window.OpenModal = OpenModal;
 window.CloseModal = CloseModal;
 window.GetRollingPlanNoDetail = GetRollingPlanNoDetail;
 window.PlanNoCloseModal = PlanNoCloseModal;
-
-
+window.GetItemName = GetItemName;
+window.bindItemDropdown = bindItemDropdown;
+window.GetRollingPlanProductionDetails = GetRollingPlanProductionDetails;
+window.ProductionDetailsCloseModal = ProductionDetailsCloseModal;
