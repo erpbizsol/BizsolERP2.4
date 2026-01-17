@@ -285,7 +285,7 @@ function buildDynamicTableHeader(propertyMap, propertyNames) {
                 testTypeName = testType.name;
             }
             
-            row2 += `<th class="qc-property-subheader text-center" style="min-width: 150px;">${testTypeName}</th>`;
+            row2 += `<th class="qc-property-subheader text-center" style="min-width: 100px;">${testTypeName}</th>`;
         });
     });
     
