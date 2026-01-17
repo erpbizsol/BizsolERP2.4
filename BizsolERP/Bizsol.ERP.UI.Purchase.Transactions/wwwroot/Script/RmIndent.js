@@ -2,6 +2,8 @@ import { RmIndentService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/RmI
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
+var baseUrl = sessionStorage.getItem('AppBaseURL');
+
 let today = '';
 let G_IndentStatusType = [];
 $(document).ready(function () {
@@ -35,7 +37,6 @@ $(document).ready(function () {
             $("#txtRemarks").focus();
         }
     });
-    GetGradeList();
 });
 function setCurrentDate() {
     let today = new Date();
@@ -84,10 +85,10 @@ function GetRMIndentListTable(Status, DateType, FromDate, ToDate) {
             const showButtons = [];
             let hiddenColumns = [];
             if (Status == 'U' || Status == '0') {
-                hiddenColumns = ["Code", "Purchased Date", "Qty PC", "Qty MTRS", "SizeDesp", "ClientName", "Vendor Name", "Rate","Verification"];
+                hiddenColumns = ["Code", "Purchased Date", "Qty PC", "Qty MTRS", "SizeDesp", "ClientName", "Vendor Name", "Rate", "Verification","ItemMaster_Code","ItemSizeMaster_Code"];
                 stringFilterColumn = ["Item Name", "THICKNESS", "GRADE", "MAKE", "WIDTH", "Status","Order No","Order Item","Order Size"];
             } else {
-                hiddenColumns = ["Code", "Purchased Date", "Qty PC", "Qty MTRS", "SizeDesp", "Action", "ClientName"];
+                hiddenColumns = ["Code", "Purchased Date", "Qty PC", "Qty MTRS", "SizeDesp", "Action", "ClientName", "ItemMaster_Code", "ItemSizeMaster_Code"];
                 stringFilterColumn = ["Item Name", "THICKNESS", "GRADE", "MAKE", "WIDTH", "Status", "Vendor Name", "Rate", "Order No", "Order Item", "Order Size"];
             }
             const columnAlignment = {
@@ -102,7 +103,8 @@ function GetRMIndentListTable(Status, DateType, FromDate, ToDate) {
 			const updatedResponse = response.map((item, index) => {
                 const orderNo = item?.['ClientName'];
                 const orderNoWithTooltip = orderNo ? `<span title="${orderNo}">${item?.['Order No']}</span>` : (item?.['Order No'] || '');
-				let ActionHtml = `<button type="button" class='btn btn-success btn-height'  title="Verify" onclick="Verify('${item.Code}','${item?.['Qty MT']}','${item?.['GRADE']}');" >Verify</button>&nbsp;
+                const itemMasterCode = item?.['ItemMaster_Code'] || item?.ItemMaster_Code || '0';
+                let ActionHtml = `<button type="button" class='btn btn-success btn-height'  title="Verify" onclick="Verify('${item.Code}','${item?.['Qty MT']}','${item?.['GRADE']}','${item?.['MAKE']}','${item?.['WIDTH']}','${itemMasterCode}','${item?.['ItemSizeMaster_Code']}','${item?.['SizeDesp']}');" >Verify</button>&nbsp;
 					<button type="button" class='btn btn-danger btn-height' title="Reject" onclick="Reject('${item.Code}')">Reject</button>`;
 				return {
 					...item,
@@ -228,7 +230,7 @@ function Reject(Code) {
         }
     });
 }
-function Verify(Code,qtyMT,Grade) {
+function Verify(Code, qtyMT, Grade, Make, Width, ItemMaster_Code, ItemSizeMaster_Code, SizeDesp) {
     var ModuleName = "Indent (Raw Material)",
         OptionName = "Verify",
         ShowMsg = "Y",
@@ -238,20 +240,29 @@ function Verify(Code,qtyMT,Grade) {
             toastr.error(response.Msg);
             return false;
         } else {
-            ShowModelVenderDetails(Code, qtyMT,Grade)
+            ShowModelVenderDetails(Code, qtyMT, Grade, Make, Width, ItemMaster_Code, ItemSizeMaster_Code, SizeDesp)
         }
     });
     FillVendorNameList();
     
 }
-function ShowModelVenderDetails(code, qtyMT,Grade) {
+function ShowModelVenderDetails(code, qtyMT, Grade, Make, Width, ItemMaster_Code, ItemSizeMaster_Code, SizeDesp) {
     $('#hfCode').val(code);
     $('#txtQtyMT').val(qtyMT || '');
     $('#myModal').modal({
         backdrop: 'static',
     });
     $('#myModal').modal('show');
-    BizSolHelperFunction.SelectOptionByText('ddlGrade',Grade);
+    $('#txtGrade').val(Grade);
+    $('#txtMake').val(Make);
+    $('#txtWidth').val(Width);
+    $('#txtSizeControl').val(SizeDesp);
+    $('#hfSizeControlCode').val(ItemSizeMaster_Code);
+    if (ItemMaster_Code) {
+        $('#hfItemMasterCode').val(ItemMaster_Code);
+    } else {
+        $('#hfItemMasterCode').val('');
+    }
 }
 function FillVendorNameList() {
     RmIndentService.GetVendorList().then(function (response) {
@@ -262,23 +273,6 @@ function FillVendorNameList() {
                 dropdownParent: $('#myModal'),
                 width: '-webkit-fill-available'
             });
-        } else {
-            toastr.error('No data received or empty response');
-        }
-    }).catch(function (error) {
-        toastr.error('Error fetching user list:', error);
-    });
-}
-function GetGradeList() {
-    RmIndentService.GetGradeList().then(function (response) {
-        if (response && response.length > 0) {
-            BindSelectList1($('#ddlGrade')[0], response.map((item) => ({ Code: item.Code, Desp: item.Desp })));
-
-            $('#ddlGrade').select2({
-                dropdownParent: $('#myModal'),
-                width: '-webkit-fill-available'
-            });
-           
         } else {
             toastr.error('No data received or empty response');
         }
@@ -330,10 +324,10 @@ function SaveModal_IndentMaster() {
     let QtyMT = $('#txtQtyMT').val();
     let TransactionCode = $('#hfCode').val();
     let Rate = $('#txtRate').val();
-    let Grade = $('#ddlGrade').val();
     let Remarks = $('#txtRemarks').val();
+    let SizeControlCode = $('#hfSizeControlCode').val();
 
-    if (VendorName === '' || VendorName == '0' || QtyMT === '' || Grade === '' || Grade === '0' || Rate === '') {
+    if (VendorName === '' || VendorName == '0' || QtyMT === '' || Rate === ''|| SizeControlCode === '' || SizeControlCode == '0') {
         toastr.warning("Fill All Fields");
         return false;
     }
@@ -344,7 +338,7 @@ function SaveModal_IndentMaster() {
         VendorMaster_Code: VendorName,
         Rate: parseFloat(Rate),
         QtyMT: parseFloat(QtyMT),
-        ItemParameterValueMaster_CodeGrade: Grade,
+        ItemSizeMaster_Code: SizeControlCode,
         Remarks: Remarks
     };
 
@@ -372,6 +366,9 @@ function getUrlVars() {
 function ClearFormModal() {
     $('#txtRate').val('');
     $('#txtRemarks').val('');
+    $('#txtSizeControl').val('');
+    $('#hfSizeControlCode').val('');
+    $('#hfItemMasterCode').val('');
 }
 function BindSelectList(element, list) {
     let option = '';
@@ -405,6 +402,39 @@ function getFinancialYear() {
     }
     return startYear + "-" + (startYear + 1);
 }
+function InitSizeControl(itemMaster_Code, itemSizeMaster_Code, callBackFunctionName_btnDone, rowNo) {
+
+    console.log("ItemMaster_Code:" + itemMaster_Code);
+
+    console.log("ItemSizeMaster_Code:" + itemSizeMaster_Code);
+
+    // var url = '@Url.Action("SizeControl", "CustomControl")';
+    var url = baseUrl + '/CustomControl/SizeControl';
+
+    $('#DivSizeControlmodal').load(url, { ItemMaster_Code: itemMaster_Code, ItemSizeMaster_Code: itemSizeMaster_Code, CallBackFunctionName_btnDone: callBackFunctionName_btnDone, RowNo: rowNo });
+
+}
+function ShowSizeControlModal(x) {
+    var ItemMaster_Code = $('#hfItemMasterCode').val();
+    var ItemSizeMaster_Code = $('#hfSizeControlCode').val();
+    
+    if (ItemMaster_Code == undefined || ItemMaster_Code == null || ItemMaster_Code == "" || ItemMaster_Code == "0") {
+        toastr.warning("Item Master Code is required for Size Control");
+        return false;
+    }
+    
+    if (ItemSizeMaster_Code == undefined || ItemSizeMaster_Code == null || ItemSizeMaster_Code == "") {
+        ItemSizeMaster_Code = 0;
+    }
+    
+    InitSizeControl(ItemMaster_Code, ItemSizeMaster_Code, "SizeCallBackModal", 0);
+}
+function SizeCallBackModal() {
+    if (window.SizeControl_NewSizeMaster_Code && window.SizeControl_NewSizeDesp) {
+        $('#hfSizeControlCode').val(window.SizeControl_NewSizeMaster_Code);
+        $('#txtSizeControl').val(window.SizeControl_NewSizeDesp);
+    }
+}
 
 window.ListStatus_IndentMaster = ListStatus_IndentMaster;
 window.ShowModelVenderDetails = ShowModelVenderDetails;
@@ -416,3 +446,6 @@ window.validateIntegerInput = validateIntegerInput;
 window.validateDecimalRateInput = validateDecimalRateInput;
 window.Reject = Reject;
 window.Verify = Verify;
+window.InitSizeControl = InitSizeControl;
+window.ShowSizeControlModal = ShowSizeControlModal;
+window.SizeCallBackModal = SizeCallBackModal;

@@ -1,4 +1,4 @@
-﻿import { StockAgeingReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_StockAgeingReportService.js';
+import { StockAgeingReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_StockAgeingReportService.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
@@ -8,6 +8,8 @@ $(document).ready(function () {
     GetCategoryList();
     GetItemTypeList();
     GetWarehouseList();
+    GetReportOptionList();
+    Bind_ddlItemMaster();
     $('#StockAgeingReportTableCard').hide();
     $("#btnStockAgeingReportShow").click(function () {
         GetStockAgeingReportList();
@@ -74,13 +76,65 @@ function GetWarehouseList() {
         toastr.error(error.Msg || 'Error fetching warehouse list');
     });
 }
+function GetReportOptionList() {
+    StockAgeingReportService.GetReportOptionList().then(function (response) {
+        if (response && response.length > 0) {
+            BindSelectList1($('#ddlReportOption')[0], response.map((item) => ({ Code: item.Code, Desp: item.DisplayName })));
+
+            $('#ddlReportOption').select2({
+                width: '-webkit-fill-available'
+            });
+        } else {
+            toastr.error('No data received or empty response');
+        }
+    }).catch(function (error) {
+        toastr.error(error.Msg || 'Error fetching warehouse list');
+    });
+}
+function Bind_ddlItemMaster() {
+    let Category = $('#ddlCategory').val() || 'All';
+    let ItemType = $('#ddlItemName').val() || 'All';
+    
+    // Check if Category and ItemType are selected
+    if (!Category || Category.length === 0 || !ItemType || ItemType.length === 0) {
+        // Clear the Item Name filter if Category or ItemType is not selected
+        $('#ddlItemNameFilter').empty();
+        $('#ddlItemNameFilter').select2({
+            width: '-webkit-fill-available'
+        });
+        return;
+    }
+    
+    StockAgeingReportService.GetItemNameList(Category, ItemType).then(function (response) {
+        if (response && response.length > 0) {
+            BindSelectList1($('#ddlItemNameFilter')[0], response.map((item) => ({ Code: item.Code, Desp: item.ItemName })));
+            $('#ddlItemNameFilter').select2({
+                width: '-webkit-fill-available'
+            });
+        }
+        else {
+            $('#ddlItemNameFilter').empty();
+            $('#ddlItemNameFilter').select2({
+                width: '-webkit-fill-available'
+            });
+            toastr.warning('No items found for the selected Category and Item Type');
+        }
+    }).catch(function (error) {
+        toastr.error(error.Msg || 'An error occurred while fetching item name list');
+    });
+}
 function GetStockAgeingReportList() {
     let CategoryName = $('#ddlCategory').val();
     let ItemTypeName = $('#ddlItemName').val();
     let WarehouseName = $('#ddlWarehouse').val();
+    let ItemName = $('#ddlItemNameFilter').val();
+    // If ItemName is "All", bind 0 instead
+    if (ItemName === 'All' || (Array.isArray(ItemName) && ItemName.includes('All'))) {
+        ItemName = 0;
+    }
     let AsOnDate = $('#txtAsOnDate').val();
     Showloader();
-    StockAgeingReportService.GetStockAgeingReportList(CategoryName, ItemTypeName, WarehouseName, AsOnDate).then(function (response) {
+    StockAgeingReportService.GetStockAgeingReportList(CategoryName, ItemTypeName, WarehouseName, ItemName, AsOnDate).then(function (response) {
         HideLoader();
         $('#StockAgeingReportTableCard').show();
         $('#StockAgeingReport').show();
@@ -135,8 +189,13 @@ function ExportExcel() {
     let CategoryName = $('#ddlCategory').val();
     let ItemTypeName = $('#ddlItemName').val();
     let WarehouseName = $('#ddlWarehouse').val();
+    let ItemName = $('#ddlItemNameFilter').val();
+    // If ItemName is "All", bind 0 instead
+    if (ItemName === 'All' || (Array.isArray(ItemName) && ItemName.includes('All'))) {
+        ItemName = 0;
+    }
     let AsOnDate = $('#txtAsOnDate').val();
-    StockAgeingReportService.GetStockAgeingReportList(CategoryName, ItemTypeName, WarehouseName, AsOnDate).then(function (response) {
+    StockAgeingReportService.GetStockAgeingReportList(CategoryName, ItemTypeName, WarehouseName, ItemName, AsOnDate).then(function (response) {
         if (response && response.length > 0) {
             ExportToExcelControl.ExportToExcel(response, hiddenFields, "StockAgeingReport");
         } else {
@@ -204,4 +263,5 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
         }, 300);
 });
 window.ExportExcel = ExportExcel;
+window.Bind_ddlItemMaster = Bind_ddlItemMaster;
 

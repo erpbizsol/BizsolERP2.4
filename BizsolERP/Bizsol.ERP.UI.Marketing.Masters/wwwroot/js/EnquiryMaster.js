@@ -581,14 +581,17 @@ function GetNestedMarketingManList() {
             $('#ddlSalesPerson').select2({
                 width: '-webkit-fill-available'
             });
+            BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlSalesPerson'));
             BindSelectList($('#ddlAssignSalesman')[0], response.map((item) => ({ Code: item.PersonName, Desp: item.PersonName })));
             $('#ddlAssignSalesman').select2({
                 width: '-webkit-fill-available'
             });
+            BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlAssignSalesman'));
             BindSelectList($('#ddlAssignTo')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })));
             $('#ddlAssignTo').select2({
                 width: '-webkit-fill-available'
             });
+            BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlAssignTo'));
         }
         GetLeadMasterList($("#ddlSalesPerson").val());
     });
@@ -732,6 +735,7 @@ function Bind_ddlCustomer() {
         $('#ddlCompanyName').select2({
             width: '-webkit-fill-available'
         });
+        BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlCompanyName'));
     });
 }
 //function Bind_ddlCustomerType() {
@@ -780,6 +784,7 @@ function Bind_ddlCountry() {
         $('#ddlCountry').select2({
             width: '-webkit-fill-available'
         });
+        BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlCountry'));
     });
 }
 
@@ -794,6 +799,7 @@ async function Bind_ddlState(CountryName) {
         $('#ddlState').select2({
             width: '-webkit-fill-available'
         });
+        BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlState'));
     } catch (error) {
         console.error("Error loading states:", error);
         toastr.error(error.Msg || 'Failed to load states');
@@ -812,6 +818,7 @@ async function Bind_ddlCity(CountryName, StateName) {
         $('#ddlCity').select2({
             width: '-webkit-fill-available'
         });
+        BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlCity'));
 
         return resObj; // return data if needed
     } catch (error) {
@@ -832,6 +839,7 @@ async function Bind_ddlItemSizeMaster(itemName) {
         $('#ddlSpecification').select2({
             width: '-webkit-fill-available'
         });
+        BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlSpecification'));
 
         return resObj; // return data if needed
     } catch (error) {
@@ -1013,9 +1021,11 @@ function SelectOptionByText(Id, FindText) {
             break;
         }
     }
-    $('#' + Id).select2({
+    var $element = $('#' + Id);
+    $element.select2({
         width: '-webkit-fill-available'
-    })
+    });
+    BizSolHelperFunction.attachSelect2ScrollPrevention($element);
 }
 function CompanyBlank() {
     $("#txtPinCode").val("");
@@ -2210,6 +2220,7 @@ function BindUOMDropdownsInGrid() {
                 width: '-webkit-fill-available',
                 placeholder: 'Select UOM'
             });
+            BizSolHelperFunction.attachSelect2ScrollPrevention($element);
         } else {
             // If UOM data is not loaded, fetch it first
             LeadMasterService.GetUOMMasterList().then(function (resObj) {
@@ -2226,6 +2237,7 @@ function BindUOMDropdownsInGrid() {
                     width: '-webkit-fill-available',
                     placeholder: 'Select UOM'
                 });
+                BizSolHelperFunction.attachSelect2ScrollPrevention($element);
             }).catch(function(error) {
                 toastr.error(error.Msg || 'An error occurred while fetching UOM list');
             });
@@ -2253,6 +2265,7 @@ function BindItemDropdownsInGrid() {
                 width: '-webkit-fill-available',
                 placeholder: 'Select product'
             });
+            BizSolHelperFunction.attachSelect2ScrollPrevention($element);
         }
 
         if (typeof G_ItemMasterList !== 'undefined' && G_ItemMasterList.length > 0) {
