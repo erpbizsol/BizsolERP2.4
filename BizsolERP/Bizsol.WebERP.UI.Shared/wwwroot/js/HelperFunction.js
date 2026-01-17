@@ -10,9 +10,42 @@
                 break;
             }
         }
-        $('#' + Id).select2({
+        var $element = $('#' + Id);
+        $element.select2({
             width: '-webkit-fill-available'
-        })
+        });
+        this.attachSelect2ScrollPrevention($element);
+    },
+    /**
+     * Prevents page scrolling when select2 dropdown is opened
+     * @param {jQuery} $element - jQuery element with select2 initialized
+     */
+    attachSelect2ScrollPrevention: function attachSelect2ScrollPrevention($element) {
+        if (!$element || !$element.length) {
+            return;
+        }
+        
+        function preventScroll() {
+            const scrollY = window.scrollY || window.pageYOffset;
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.top = '-' + scrollY + 'px';
+            document.body.style.width = '100%';
+            document.body.setAttribute('data-scroll-y', scrollY);
+        }
+        
+        function restoreScroll() {
+            const scrollY = document.body.getAttribute('data-scroll-y') || '0';
+            document.documentElement.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            window.scrollTo(0, parseInt(scrollY));
+            document.body.removeAttribute('data-scroll-y');
+        }
+        
+        $element.on('select2:open', preventScroll);
+        $element.on('select2:close', restoreScroll);
     },
     HideOrShowConfigurationSettingBtn: function HideOrShowConfigurationSettingBtn(Id) {
         let userDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
