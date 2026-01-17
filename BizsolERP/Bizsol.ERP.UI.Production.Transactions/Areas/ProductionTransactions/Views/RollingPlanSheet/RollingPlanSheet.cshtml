@@ -325,7 +325,7 @@
         <div class="nav nav-tabs">
             <div class="nav-item" role="presentation">
                 <button class="nav-link active" id="current-stock-tab" data-bs-toggle="tab" data-bs-target="#current-stock" type="button" role="tab" aria-controls="current-stock" aria-selected="true">
-                    <i class="fa fa-file-text" aria-hidden="true"></i> Order Wise Slitting Sheet
+                    <i class="fa fa-file-text" aria-hidden="true"></i> O2D sheet
                 </button>
             </div>
             <div class="nav-item" role="presentation">
@@ -363,17 +363,22 @@
                     <label for="toDate" class="form-label">To Date</label>
                     <input type="date" id="toDate" class="form-control form-control-sm box_border" />
                 </div>
-                <div class="col-md-1" style="margin-top:1.8rem">
+                <div class="col-md-3">
+                    <label for="ddlStatus" class="form-label">Status</label>
+                    <select id="ddlStatus" class="form-control form-control-sm box_border">
+                        <option value="Pending">Pending</option>
+                        <option value="Complete">Complete</option>
+                        <option value="Both">Both</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlItemName" class="form-label">Item Name</label>
+                    <select id="ddlItemName" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+                <div class="col-md-1" style="margin-top:5px">
                     <button type="button" id="btnShowDatePendingPlansReport" class="btn btn-primary btn-height">Show</button>
                 </div>
-                @* <div class="col-md-4" style="margin-top:1.8rem">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="exampleCheckPendingPlan" />
-                        <label class="form-check-label" for="exampleCheckPendingPlan">
-                            Show Pending Plans Production is Not Done
-                        </label>
-                    </div>
-                </div> *@
             </div> 
 
             <div id="btnDownload" class="row mb-1" style="display:block" >
@@ -395,7 +400,6 @@
             </div>
         </div>
     </div>
-    
 </div>
 <div class="modal fade rps-detail-modal" id="DetailModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
     <div class="modal-dialog modal-dialog-centered">
@@ -445,6 +449,33 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger icon-height" onclick="PlanNoCloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="ProductionDetails" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm" style="min-width:550px">
+            <div class="modal-header">
+                <h5 class="modal-title">Rolling Plan Production Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper">
+                    <table id="ProductionDetailsTable" class="fixed-width-table table">
+                        <thead id="ProductionDetailsTable-head">
+                        </thead>
+                        <tbody id="ProductionDetails-body">
+                        </tbody>
+                        <tfoot id="ProductionDetails-foot">
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-ProductionDetailsTable">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger icon-height" onclick="ProductionDetailsCloseModal()">Cancel</button>
             </div>
         </div>
     </div>

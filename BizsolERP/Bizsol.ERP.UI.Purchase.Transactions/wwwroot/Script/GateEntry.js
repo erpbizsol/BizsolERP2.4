@@ -11,7 +11,7 @@ let ConfigGateEntry = [];
 let IsWithPo = false;
 let GateEntryMaster_Code = 0;
 let LoginGodownMaster_Code = 0;
-
+let G_PendingPONOList = [];
 let ExcelExportDataArry = [];
 let doctype = [
     { name: "Invoice" },
@@ -319,7 +319,7 @@ function LoadedInNew() {
         
         GateEntryService.GetPendingPONO().then(function (response) {
             //console.log(response);
-
+            G_PendingPONOList = response;
             BindSelectList($('#frmLoadedIn_ddlPurchaseOrder')[0], response.map((item) => ({ Code: item.PurchaseOrderMaster_Code, Desp: item.PONo, VendorName: item.VendorName })));
             $('#frmLoadedIn_ddlPurchaseOrder').select2({
                 width: '-webkit-fill-available'
@@ -361,6 +361,7 @@ function LoadedInNew() {
             function (selectedItem) {
                 if (selectedItem) {
                     $('#frmLoadedIn_ddlPurchaseOrder').val('').trigger('change');
+                    chnage_VendorNameGetPOByVendor();
                 }
             }
         );
@@ -1424,9 +1425,9 @@ function GateEntry_SaveData(Mode) {
                 var tbPOItemsUpdateRow = tbPOItems.rows[i];
                 
                 var BalQty = tbPOItemsUpdateRow.cells[4].innerHTML.trim();
-                var RecvQty = tbPOItemsUpdateRow.cells[6].getElementsByTagName('input')[0].value;
-                var purchaseOrderMaster = tbPOItemsUpdateRow.cells[6].getElementsByTagName('input')[1].value;
-                var purchaseOrderTransaction = tbPOItemsUpdateRow.cells[6].getElementsByTagName('input')[2].value;
+                var RecvQty = tbPOItemsUpdateRow.cells[8].getElementsByTagName('input')[0].value;
+                var purchaseOrderMaster = tbPOItemsUpdateRow.cells[8].getElementsByTagName('input')[1].value;
+                var purchaseOrderTransaction = tbPOItemsUpdateRow.cells[8].getElementsByTagName('input')[2].value;
 
                 if (parseInt(RecvQty) > -1) {
                     POItemsData += 'PurchaseOrderMaster' + '*' + purchaseOrderMaster + '*' + 'PurchaseOrderTransaction' + '*' + purchaseOrderTransaction + '*' + BalQty + '*' + RecvQty + '(';
@@ -1707,31 +1708,66 @@ function ConvertFileToByteArry(File) {
 
 function GateEntry_frmLoadedIn_ddlPurchaseOrder_Change() {
     let frmLoadedIn_ddlPurchaseOrder = document.getElementById("frmLoadedIn_ddlPurchaseOrder");
-    let frmLoadedIn_ddlPurchaseOrder_VendorName = frmLoadedIn_ddlPurchaseOrder.options[frmLoadedIn_ddlPurchaseOrder.selectedIndex].attributes["vendorname"].value;
-
-    let purchaseOrderMaster_Code = $('#frmLoadedIn_ddlPurchaseOrder').val();
-
-    GateEntryService.GetPOItems(purchaseOrderMaster_Code).then(function (response) {
-            //console.log(response)
-        $('#RowfrmLoadedInPoItemGrid').show();
-        $('#frmLoadedIn_txtVendorName').val(frmLoadedIn_ddlPurchaseOrder_VendorName);
-        $('#frmLoadedIn_txtVendorName').attr('readonly', 'readonly');
-
-        response.forEach(item => {
-            item["BiLLED QTY"] = '<input class="BizSolFormControl form-control form-control-sm" type="text" onchange="BizSolInputControl.OnChangeFloatTextBox(this,2)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" autocomplete="off" maxlength="7"><input type="hidden" value="' + item.PurchaseOrderMaster_Code + '" id="hfPurchaseOrderMaster_Code"/><input type="hidden" value="' + item.PurchaseOrderTransaction_Code +'" id="hfPurchaseOrderTransaction_Code"/>';
-        });
+    if (!frmLoadedIn_ddlPurchaseOrder) {
+        return;
+    }
+    
+    let frmLoadedIn_ddlPurchaseOrder_VendorName = '';
+    let selectedIndex = frmLoadedIn_ddlPurchaseOrder.selectedIndex;
+    
+    if (selectedIndex >= 0 && frmLoadedIn_ddlPurchaseOrder.options[selectedIndex]) {
+        let selectedOption = frmLoadedIn_ddlPurchaseOrder.options[selectedIndex];
+        // Try to get vendorname from attribute (HTML attributes are case-insensitive, but check both)
+        if (selectedOption.attributes) {
+            let vendorNameAttr = selectedOption.attributes["vendorname"] || selectedOption.attributes["VendorName"];
+            if (vendorNameAttr && vendorNameAttr.value) {
+                frmLoadedIn_ddlPurchaseOrder_VendorName = vendorNameAttr.value;
+            }
+        }
         
-        const StringFilterColumn = [];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = [];
-        const Button = false;
-        const showButtons = []
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["PurchaseOrderMaster_Code", "PurchaseOrderTransaction_Code","BILLED QTY"];
-        const ColumnAlignment = {};
-        BizsolCustomFilterGrid.CreateDataTable("tbGateEntyLoadedInPoItemHeader", "tbGateEntyLoadedInPoItemBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
-    });
+        // If not found in attributes, try dataset
+        if (!frmLoadedIn_ddlPurchaseOrder_VendorName && selectedOption.dataset && selectedOption.dataset.vendorname) {
+            frmLoadedIn_ddlPurchaseOrder_VendorName = selectedOption.dataset.vendorname;
+        }
+        
+        // If still not found, get from the original data array
+        if (!frmLoadedIn_ddlPurchaseOrder_VendorName) {
+            let selectedValue = $('#frmLoadedIn_ddlPurchaseOrder').val();
+            if (selectedValue && G_PendingPONOList && G_PendingPONOList.length > 0) {
+                let selectedItem = G_PendingPONOList.find(item => item.PurchaseOrderMaster_Code == selectedValue);
+                if (selectedItem && selectedItem.VendorName) {
+                    frmLoadedIn_ddlPurchaseOrder_VendorName = selectedItem.VendorName;
+                }
+            }
+        }
+    }
 
+    let purchaseOrderMaster_Code = $('#frmLoadedIn_ddlPurchaseOrder').val() == null ? "0" : $('#frmLoadedIn_ddlPurchaseOrder').val();
+
+    $("#tbGateEntyLoadedInPoItemHeader").empty();
+    $("#tbGateEntyLoadedInPoItemBody").empty();
+    if (purchaseOrderMaster_Code > 0) {
+        GateEntryService.GetPOItems(purchaseOrderMaster_Code).then(function (response) {
+            //console.log(response)
+            $('#RowfrmLoadedInPoItemGrid').show();
+            $('#frmLoadedIn_txtVendorName').val(frmLoadedIn_ddlPurchaseOrder_VendorName);
+            $('#frmLoadedIn_txtVendorName').attr('readonly', 'readonly');
+
+            response.forEach(item => {
+                item["BiLLED QTY"] = '<input class="BizSolFormControl form-control form-control-sm" type="text" onchange="BizSolInputControl.OnChangeFloatTextBox(this,2)" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" autocomplete="off" maxlength="7"><input type="hidden" value="' + item.PurchaseOrderMaster_Code + '" id="hfPurchaseOrderMaster_Code"/><input type="hidden" value="' + item.PurchaseOrderTransaction_Code + '" id="hfPurchaseOrderTransaction_Code"/>';
+            });
+
+            const StringFilterColumn = [];
+            const NumericFilterColumn = [];
+            const DateFilterColumn = [];
+            const Button = false;
+            const showButtons = []
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = ["PurchaseOrderMaster_Code", "PurchaseOrderTransaction_Code", "BILLED QTY"];
+            const ColumnAlignment = {};
+            BizsolCustomFilterGrid.CreateDataTable("tbGateEntyLoadedInPoItemHeader", "tbGateEntyLoadedInPoItemBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+        });
+    }
 }
 
 $('#frmEmptyIn_fileVehiclePhoto').bind('change', function () {
@@ -1945,8 +1981,11 @@ $('#frmLoadedOut_ddlDocumentType').on('change', function () {
 
 function frmLoadedIn_ddlDocumentType(callby) {
     let elementValue = $('#frmLoadedIn_ddlDocumentType').val();
-
+    let oldlable = $('#DivfrmLoadedIn_Vendor').text().replace(/\*/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
     if (elementValue.toLowerCase() === 'sales return') {
+
         $('#DivfrmLoadedIn_Vendor')[0].innerHTML = 'Customer Name'
         GateEntryService.GetVendorOrClientNameListData('CLIENT').then(function (response) {
             AutoSuggestionControl.SetUpAutoSuggestion(
@@ -1997,8 +2036,15 @@ function frmLoadedIn_ddlDocumentType(callby) {
             );
         });
     }
+
     if (typeof callby === 'undefined' || callby === '') {
-        $('#frmLoadedIn_txtVendorName').val('');
+        let lableName = $('#DivfrmLoadedIn_Vendor').text().replace(/\*/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+        if (lableName != oldlable) {//"Vendor Name"
+            $('#frmLoadedIn_txtVendorName').val('');
+            chnage_VendorNameGetPOByVendor();
+        }
     }
     
 }
@@ -2585,7 +2631,6 @@ function EnableScaleWeight() {
     }
     
 }
-
 function LoadListDriverDetailsByVehicleNo() {
 
     GateEntryService.GetDriverDetailsByVehicleNo("GETVEHICLENO", "0").then(function (response) {
@@ -2794,7 +2839,6 @@ function applyAlphaNumUppercase(selector) {
 
     });
 }
-
 function GateEnty_PrintPreviewToken(Code) {
     GateEntryService.GetGateEntryDetails(Code).then(function (response) {
         if (!response || response.length === 0) {
@@ -2983,7 +3027,6 @@ function BindddlVehiclesStatusInFectory() {
     //    width: '-webkit-fill-available'
     //});
 }
-
 function CopyWeightmentSlip(transactionType) {
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'CopyWeightmentSlip').PerameterValue === 'Y') {
@@ -3010,8 +3053,6 @@ function CopyWeightmentSlip(transactionType) {
 
     
 }
-
-
 function GateEntry_changeDocumentType() {
     G_TableName = '';
     G_TableCode = 0;
@@ -3132,7 +3173,6 @@ function GateEntry_changeDocumentType() {
 
     
 }
-
 function GateEntry_GetNetWeight() {
     let EmptyWeight = 0;
     let LoadedWeight = 0;
@@ -3144,6 +3184,23 @@ function GateEntry_GetNetWeight() {
     NetWeight = LoadedWeight - EmptyWeight;
 
     $('#frmLoadedOut_txtNetWeightLoadedOut').val(parseFloat(NetWeight).toFixed(2));
+}
+function chnage_VendorNameGetPOByVendor() {
+    var VendorName = document.getElementById("frmLoadedIn_txtVendorName").value;
+    if (VendorName == "") {
+        BindSelectList($('#frmLoadedIn_ddlPurchaseOrder')[0], G_PendingPONOList.map((item) => ({ Code: item.PurchaseOrderMaster_Code, Desp: item.PONo, VendorName: item.VendorName })));
+        $('#frmLoadedIn_ddlPurchaseOrder').select2({
+            width: '-webkit-fill-available'
+        });
+    } else {
+        // Filter POs by matching VendorName
+        let PendingPONOList = G_PendingPONOList.filter((item) => item.VendorName === VendorName);
+
+        BindSelectList($('#frmLoadedIn_ddlPurchaseOrder')[0], PendingPONOList.map((item) => ({ Code: item.PurchaseOrderMaster_Code, Desp: item.PONo, VendorName: item.VendorName })));
+        $('#frmLoadedIn_ddlPurchaseOrder').select2({
+            width: '-webkit-fill-available'
+        });
+    }
 }
 // Apply to all inputs with this class
 applyAlphaNumUppercase(".alphanum-uppercase");
