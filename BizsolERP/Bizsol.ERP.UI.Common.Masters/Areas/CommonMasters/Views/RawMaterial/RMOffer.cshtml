@@ -4,8 +4,7 @@
 
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-@* <script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/RMOffer.js"></script> *@
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/QCPropertyItemConfiguration.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/RMOffer.js"></script>
 <style>
     .select2-container--open .select2-dropdown {
         z-index: 9999 !important;
@@ -112,30 +111,30 @@
     <div id="dvFrom" style="display:none;">
         <div class="row g-2">
             <div class="col-md-3">
-                <label for="txtClientName" class="form-label fw-semibold">Client Name <span class="text-danger">*</span></label>
-                <select id="txtClientName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+                <label for="ddlClientName" class="form-label fw-semibold">Client Name <span class="text-danger">*</span></label>
+                <select id="ddlClientName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
             </div>
             <div class="col-md-3">
-                <label for="txtOrderNo" class="form-label fw-semibold">Order No. <span class="text-danger">*</span></label>
-                <select id="txtOrderNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+                <label for="ddlOrderNo" class="form-label fw-semibold">Order No. <span class="text-danger">*</span></label>
+                <select id="ddlOrderNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
             </div>
             <div class="col-md-3">
-                <label for="txtProjectNo" class="form-label fw-semibold">Project No. <span class="text-danger">*</span></label>
-                <select id="txtProjectNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+                <label for="ddlProjectNo" class="form-label fw-semibold">Project No. <span class="text-danger">*</span></label>
+                <select id="ddlProjectNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
             </div>
-            <div class="col-md-3 text-end mt-5">
+            <div class="col-md-3" style="margin-top: 34px !important;">
                 <button type="button" id="btnRMOfferShow" class="btn btn-primary btn-height mb-1">Show</button>
-                <button class="btn btn-success icon-height mb-1" title="Edit" id="btnSave" onclick="SaveData()">Save</button>
-                <button class="btn btn-danger icon-height mb-1" title="Edit" id="btnBack" onclick="Back()">Back</button>
+                @* <button class="btn btn-success icon-height mb-1" title="Edit" id="btnSave" onclick="SaveData()">Save</button>
+                <button class="btn btn-danger icon-height mb-1" title="Edit" id="btnBack" onclick="Back()">Back</button> *@
             </div>
         </div>
-        <div class="row g-2">
+        <div class="row mt-2">
             <div class="col-md-3">
                 <label for="txtTicketNo" class="form-label fw-semibold">Ticket No. <span class="text-danger">*</span></label>
                 <input type="text" id="txtTicketNo" class="form-control form-control-sm box_border" readonly />
             </div>
             <div class="col-md-3">
-                <label for="txtDate" class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
+                <label for="txtDate" class="form-label fw-semibold">Date (Entry Date) <span class="text-danger">*</span></label>
                 <input type="date" id="txtDate" class="form-control form-control-sm box_border" />
             </div>
             <div class="col-md-3">
