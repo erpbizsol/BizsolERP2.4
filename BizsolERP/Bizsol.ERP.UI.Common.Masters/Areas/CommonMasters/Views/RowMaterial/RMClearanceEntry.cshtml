@@ -4,6 +4,7 @@
 
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+@* <script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/RMOffer.js"></script> *@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/QCPropertyItemConfiguration.js"></script>
 <style>
     .select2-container--open .select2-dropdown {
@@ -83,54 +84,83 @@
     }
 </style>
 <div>
-    <div class="row g-2 mb-3" id="dvIsProperty" style="display:block;">
-        <div class="col-md-2">
-            <input type="checkbox" id="chkIsProperty" checked />
-            <label for="chkIsProperty" class="form-label fw-semibold"> Without Property <span class="text-danger">*</span></label>
+    <div class="row g-2" id="dvIsProperty" style="display:block;">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="txtClientName" class="form-label fw-semibold">Client Name <span class="text-danger">*</span></label>
+                <select id="txtClientName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+            </div>
+            <div class="col-md-3">
+                <label for="txtOrderNo" class="form-label fw-semibold">Order No. <span class="text-danger">*</span></label>
+                <select id="txtOrderNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+            </div>
+            <div class="col-md-3">
+                <label for="txtProjectNo" class="form-label fw-semibold">Project No. <span class="text-danger">*</span></label>
+                <select id="txtProjectNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+            </div>
+            <div class="col-md-3 text-end mt-4">
+                <button type="button" id="btnRMOfferShow" class="btn btn-primary btn-height mb-1">Show</button>
+                <button class="btn btn-success icon-height mb-1" title="Create New" onclick="CreateNew()">Create New</button>
+                <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
+            </div>
         </div>
     </div>
 </div>
 <div class="card p-2">
     <div id="dvGrid" style="display:block;">
-        <div class="row text-end">
+        @* <div class="row text-end">
             <div class="col-md-12">
-                <button class="btn btn-success icon-height mb-1" title="Create New" onclick="CreateNew()">Create New</button>
-                <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
             </div>
-        </div>
+        </div> *@
         <div class="table-wrapper ">
-            <table id="tblItemConfiguration" class="fixed-width-table table">
+            <table id="tblRMOffer" class="fixed-width-table table">
                 <thead id="table-header">
                 </thead>
                 <tbody id="table-body">
                 </tbody>
             </table>
         </div>
-        <div class="paginator" id="paginator-tblItemConfiguration">
+        <div class="paginator" id="paginator-tblRMOffer">
         </div>
     </div>
     <div id="dvFrom" style="display:none;">
-        <div class="row g-2 mb-3">
-            <div class="col-md-3">
-                <label for="txtItemName" class="form-label fw-semibold">Item Name <span class="text-danger">*</span></label>
-                <select id="txtItemName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+        <div class="row g-2">
+            <div class="col-md-2">
+                <label for="txtRMOfferTicketNo" class="form-label fw-semibold">RM Offer Ticket No. <span class="text-danger">*</span></label>
+                <input type="text" id="txtRMOfferTicketNo" class="form-control form-control-sm box_border" readonly />
+            </div>
+            <div class="col-md-2">
+                <label for="txtRMClearanceTicketNo" class="form-label fw-semibold">RM Clearance Ticket No. <span class="text-danger">*</span></label>
+                <input type="text" id="txtRMClearanceTicketNo" class="form-control form-control-sm box_border" readonly />
+            </div>
+            <div class="col-md-2">
+                <label for="txtDate" class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
+                <input type="date" id="txtDate" class="form-control form-control-sm box_border" readonly/>
+            </div>
+            <div class="col-md-2">
+                <label for="txtInspectionDate" class="form-label fw-semibold">Inspection Date <span class="text-danger">*</span></label>
+                <input type="date" id="txtInspectionDate" class="form-control form-control-sm box_border" readonly/>
+            </div>
+            <div class="col-md-2">
+                <label for="txtInspectionLocation" class="form-label fw-semibold">Inspection Location <span class="text-danger">*</span></label>
+                <input id="txtInspectionLocation" class="form-control form-control-sm box_border" autocomplete="off" readonly/>
+            </div>
+            <div class="col-md-2 text-end" style="margin-top:37px">
+                <button class="btn btn-success icon-height" title="Save" id="btnSave" onclick="SaveData()">Save</button>
+                <button class="btn btn-danger icon-height" title="Edit" id="btnBack" onclick="Back()">Back</button>
             </div>
         </div>
         <div class="row text-end">
-            <div class="col-md-12">
-                <button class="btn btn-success icon-height mb-1" title="Edit" id="btnSave" onclick="SaveData()">Save</button>
-                <button class="btn btn-danger icon-height mb-1" title="Edit" id="btnBack" onclick="Back()">Back</button>
-            </div>
         </div>
         <div class="table-wrapper">
-            <table id="tblItemConfigurationEditable" class="fixed-width-table table">
+            <table id="tblRMOfferEditable" class="fixed-width-table table">
                 <thead id="table-headerEditable">
                 </thead>
                 <tbody id="table-bodyEditable">
                 </tbody>
             </table>
         </div>
-        <div class="paginator" id="paginator-tblItemConfigurationEditable">
+        <div class="paginator" id="paginator-tblRMOfferEditable">
         </div>
     </div>
 </div>
@@ -148,7 +178,7 @@
                     <input type="hidden" id="hfCode" class="form-control form-control-sm box_border" />
                 </div>
                 <div class="col-md-12 text-end">
-                    <button type="button" class="btn btn-success icon-height" onclick="DeleteItemConfiguration()">Ok</button>
+                    <button type="button" class="btn btn-success icon-height" onclick="DeleteRMOffer()">Ok</button>
                     <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
                 </div>
             </div>
