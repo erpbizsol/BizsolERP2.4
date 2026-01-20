@@ -1,10 +1,11 @@
 ﻿const BizsolCustomFilterGrid = {
-    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true) {
+    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null) {
         const columns = Object.keys(data[0]);
         const tableId = $('#' + bodyId).closest('table').attr('id');
         renderTableHeader(HiddenColumns, headerId, bodyId, columns, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
         window[`hiddenColumns_${bodyId}`] = HiddenColumns;
         window[`columnAlignment_${bodyId}`] = ColumnAlignment;
+        window[`totalColumns_${bodyId}`] = TotalColumns;
         renderTable(data, bodyId);
         window[`button_${tableId}`] = Button;
         window[`ShowButtons_${bodyId}`] = ShowButtons;
@@ -624,7 +625,7 @@ window.sortTable = function sortTable(columnIndex, order, tbodyId) {
 window.stopPropagationdouble = function stopPropagationdouble(event) {
     event.stopPropagation();
 };
-window.renderTable = function renderTable(items, bodyId) {
+window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
     let showButtons = ''
     const tableId = $('#' + bodyId).closest('table').attr('id');
     var button = window[`button_${tableId}`];
@@ -632,7 +633,26 @@ window.renderTable = function renderTable(items, bodyId) {
         showButtons = window[`ShowButtons_${bodyId}`]
     }
 
-    const rows = items.map((item, index) => {
+    const totalColumns = window[`totalColumns_${bodyId}`];
+    const columnTotals = {};
+
+    // Calculate totals for specified columns (if not skipping)
+    if (totalColumns && Array.isArray(totalColumns) && totalColumns.length > 0 && !skipTotalRow) {
+        totalColumns.forEach(colName => {
+            columnTotals[colName] = 0;
+        });
+
+        items.forEach(item => {
+            totalColumns.forEach(colName => {
+                const value = parseFloat(item[colName]);
+                if (!isNaN(value) && isFinite(value)) {
+                    columnTotals[colName] += value;
+                }
+            });
+        });
+    }
+
+    let rows = items.map((item, index) => {
         const row = Object.keys(item).map((key) => {
             const alignment = window[`columnAlignment_${bodyId}`][key] || 'left';
             const style = window[`hiddenColumns_${bodyId}`].includes(key)
@@ -666,7 +686,7 @@ window.renderTable = function renderTable(items, bodyId) {
                 buttons += `<button class="btn btn-success icon-height mb-1" title="Verify"><i class="fa fa-check" type="button" onclick="VerifyData('${item.Code}')" value="Verify"/></i></button> `;
             }
             if (showButtons.includes('A')) {
-                buttons += `<button class="btn btn-warning icon-height mb-1" title="Approve"><i class="fa fa-check-square-o" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/></i></button> `;
+                buttons += `<button class="btn btn-warning icon-height mb-1" title="Approve"><i class="fa-check-square-o" type="button" onclick="ApproveData('${item.Code}')" value="Approve"/></i></button> `;
             }
             if (showButtons.includes('M')) {
                 buttons += `<button class="btn btn-info icon-height mb-1" title="More Info"><i class="" type="button" onclick="MoreData('${item.Code}')" value="..."/></i></button> `;
@@ -678,7 +698,104 @@ window.renderTable = function renderTable(items, bodyId) {
         return `<tr data-index="${index}">${row}${buttons}</tr>`;
     }).join('');
 
+    // Add total row if totalColumns is specified and not skipping
+    if (totalColumns && Array.isArray(totalColumns) && totalColumns.length > 0 && items.length > 0 && !skipTotalRow) {
+        const firstItem = items[0];
+        const totalRow = Object.keys(firstItem).map((key, colIndex) => {
+            const alignment = window[`columnAlignment_${bodyId}`][key] || 'left';
+            const style = window[`hiddenColumns_${bodyId}`].includes(key)
+                ? 'display:none'
+                : `text-align:${alignment}`;
+
+            let cellContent = '';
+            
+            if (colIndex === 0) {
+                // First column shows "Total" label
+                cellContent = '<strong>Total</strong>';
+            } else if (totalColumns.includes(key)) {
+                // Show total for specified columns
+                const totalValue = columnTotals[key].toFixed(2);
+                cellContent = `<strong>${totalValue}</strong>`;
+            }
+
+            return `<td style="${style}; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #333;">${cellContent}</td>`;
+        }).join('');
+
+        let totalButtons = '';
+        if (button == true && Array.isArray(showButtons) && showButtons.length > 0) {
+            totalButtons = '<td style="background-color: #f8f9fa; border-top: 2px solid #333;"></td>';
+        }
+
+        rows += `<tr class="total-row">${totalRow}${totalButtons}</tr>`;
+    }
+
     $(`#${bodyId}`).html(rows);
+}
+window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
+    const totalColumns = window[`totalColumns_${bodyId}`];
+    const filteredData = window[`filteredData_${tableId}`];
+    const isPaginated = window[`Paginator_${tableId}`];
+    
+    console.log('renderGrandTotalRow called:', { tableId, bodyId, isPaginated, totalColumns, dataLength: filteredData?.length });
+    
+    // Only render grand total if pagination is enabled and totalColumns is specified
+    if (!isPaginated || !totalColumns || !Array.isArray(totalColumns) || totalColumns.length === 0 || !filteredData || filteredData.length === 0) {
+        console.log('renderGrandTotalRow: Skipping grand total row', { isPaginated, hasTotalColumns: !!totalColumns, hasData: !!filteredData });
+        return;
+    }
+
+    var button = window[`button_${tableId}`];
+    var showButtons = window[`ShowButtons_${bodyId}`];
+
+    // Calculate grand totals from ALL filtered data
+    const grandTotals = {};
+    totalColumns.forEach(colName => {
+        grandTotals[colName] = 0;
+    });
+
+    filteredData.forEach(item => {
+        totalColumns.forEach(colName => {
+            const value = parseFloat(item[colName]);
+            if (!isNaN(value) && isFinite(value)) {
+                grandTotals[colName] += value;
+            }
+        });
+    });
+
+    console.log('Grand Totals calculated:', grandTotals);
+
+    // Build grand total row
+    const firstItem = filteredData[0];
+    const grandTotalRow = Object.keys(firstItem).map((key, colIndex) => {
+        const alignment = window[`columnAlignment_${bodyId}`][key] || 'left';
+        const style = window[`hiddenColumns_${bodyId}`].includes(key)
+            ? 'display:none'
+            : `text-align:${alignment}`;
+
+        let cellContent = '';
+        
+        if (colIndex === 0) {
+            // First column shows "Grand Total" label
+            cellContent = '<strong>Grand Total</strong>';
+        } else if (totalColumns.includes(key)) {
+            // Show grand total for specified columns
+            const totalValue = grandTotals[key].toFixed(2);
+            cellContent = `<strong>${totalValue}</strong>`;
+        }
+
+        return `<td style="${style}; font-weight: bold; background-color: #d4edda; border-top: 3px solid #28a745;">${cellContent}</td>`;
+    }).join('');
+
+    let totalButtons = '';
+    if (button == true && Array.isArray(showButtons) && showButtons.length > 0) {
+        totalButtons = '<td style="background-color: #d4edda; border-top: 3px solid #28a745;"></td>';
+    }
+
+    const grandTotalRowHtml = `<tr class="grand-total-row">${grandTotalRow}${totalButtons}</tr>`;
+    
+    console.log('Appending grand total row to:', bodyId);
+    // Append grand total row to tbody
+    $(`#${bodyId}`).append(grandTotalRowHtml);
 }
 window.updatePageInfo = function updatePageInfo(tableId) {
     var filteredData = window[`filteredData_${tableId}`];
@@ -712,7 +829,10 @@ window.renderTableWithPagination = function renderTableWithPagination(tableId, b
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const itemsToDisplay = filteredData.slice(start, end);
-    renderTable(itemsToDisplay, bodyId);
+    renderTable(itemsToDisplay, bodyId, false); // Pass false to show total row for current page
+
+    // Add grand total row after paginated data (shows total of ALL data)
+    renderGrandTotalRow(tableId, bodyId);
 
     updateButtons(tableId);
 }
