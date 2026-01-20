@@ -116,6 +116,7 @@ let UrlService = {
     API_ENDPOINT_QCPropertyGroupMaster: `${environment.BASE_URL}/QCPropertyGroupMaster`,
     API_ENDPOINT_QCPropertyMaster: `${environment.BASE_URL}/QCPropertyMaster`,
     API_ENDPOINT_QCPropertyTestTypeMaster: `${environment.BASE_URL}/QCPropertyTestTypeMaster`,
+    API_ENDPOINT_RawMaterialOffer: `${environment.BASE_URL}/RawMaterialOffer`,
 }
 
 export { UrlService  }
