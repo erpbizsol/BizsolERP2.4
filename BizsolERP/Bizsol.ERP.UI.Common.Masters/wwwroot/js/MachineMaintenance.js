@@ -1,4 +1,4 @@
-﻿import { MachineMaintenanceService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MachineMaintenanceService.js';
+import { MachineMaintenanceService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MachineMaintenanceService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 
@@ -80,7 +80,7 @@ function GetMachineMaintenanceList() {
         if (response.length > 0) {
 
             const StringFilterColumn = [""];
-            const NumericFilterColumn = [""];
+            const NumericFilterColumn = ["Status","Reason","Department","Entry No", "Entry Date", "Request Date", "Work Start Date", "Machine Failed Date","Machine No"];
             const DateFilterColumn = [""];
             const Button = false;
             const showButtons = [""];
@@ -118,19 +118,38 @@ function BackMaster() {
     GetMachineMaintenanceList();
 }
 function ClearData() {
+    // Reset basic values
     $('#hftxtCode').val('0');
-    $('#txtEntryNo').val('');
-    $('#txtEntryDate').val(getTodayDateForInput());
-    $('#txtRequestDate').val(getTodayDateForInput());
-    $('#txtStatus').val('Under Maintenance');
-    $('#txtMCFailedDate').val(getTodayDateForInput());
-    $('#txtMCFailedTime').val('');
-    $('#txtJobAssignedTo').val('');
+    $('#txtEntryNo').val('').prop('readonly', true);
+    $('#txtEntryDate').val(getTodayDateForInput()).prop('readonly', false);
+    $('#txtRequestDate').val(getTodayDateForInput()).prop('readonly', false);
+    $('#txtStatus').val('Under Maintenance').prop('readonly', false);
+    $('#txtMCFailedDate').val(getTodayDateForInput()).prop('readonly', false);
+    $('#txtMCFailedTime').val('').prop('readonly', false);
+    $('#txtJobAssignedTo').val('').prop('readonly', false);
+
+    // Enable dropdowns and reset selection
+    $('#txtddlMachineNo').prop('disabled', false);
+    $('#txtddlComplaintDepartment').prop('disabled', false);
+    $('#txtddlComplaintReason').prop('disabled', false);
     SelectOptionByText('txtddlMachineNo', "select");
     SelectOptionByText('txtddlComplaintDepartment', "select");
     SelectOptionByText('txtddlComplaintReason', "select");
+
+    // Reset text areas / inputs
     $("#txtRemark").val("");
     $("#txtSectionInchargeSignature").val("");
+    $("#txtDescriptionWorkDone").val("");
+    $("#txtERemark").val("");
+    $('#txtMachineStartDate').val(getTodayDateForInput());
+    $('#txtMachineStartTime').val('');
+
+    // Restore default visibility (for normal create / edit mode)
+    $("#txthideMachineStartDate").hide();
+    $("#txthideMachineStartTime").hide();
+    $("#txthideRemark").hide();
+    $("#txthideDescriptionWorkDone").hide();
+    $("#txtdRemark").show();
 }
 function getTodayDateForInput() {
     var today = new Date();
@@ -172,8 +191,9 @@ function SaveMachineMaintenance() {
     MachineMaintenanceService.SaveMachineMaintenance(payload).then(function (response) {
         if (response.Status === 'Y') {
             toastr.success(response.Msg || "Contact person details saved successfully.");
-            GetMachineMaintenanceList();
-            ClearData();
+
+            // After successful save, go back to listing screen
+            BackMaster();
         } else {
             toastr.error(response.Msg || "Save failed for contact person details.");
         }
@@ -203,6 +223,7 @@ function Edit(Code) {
             SelectOptionByText('txtddlComplaintReason', data.ReasonName);
             $('#txtRemark').val(data.FailedRemark);
             //$('#txtSectionInchargeSignature').val(data.sectionInchargeSignature);
+            GetMachineMaintenanceList();
         } else {
             toastr.error("Save failed for contact person details.");
         }
@@ -214,7 +235,7 @@ function Edit(Code) {
 function Done(Code) {
     $("#txtPreparedBy").val(G_UserName);
     $("#dvGrid").hide();
-    $("#txtRemark").hide();
+    $("#txtdRemark").hide();
     $("#dvFromNEW").show();
     $("#txthideMachineStartDate").show();
     $("#txthideMachineStartTime").show();
@@ -237,13 +258,14 @@ function Done(Code) {
             SelectOptionByText('txtddlMachineNo', data.MachineNo);
             SelectOptionByText('txtddlComplaintDepartment', data.DepartmentName);
             SelectOptionByText('txtddlComplaintReason', data.ReasonName);
+            $('#txtRemark').val(data.FailedRemark);
             //$('#txtSectionInchargeSignature').val(data.sectionInchargeSignature);
-            $('#txtStatus').val(data.Status);
+            $('#txtStatus').val(data.Status).prop('readonly', true);
             $('#txtERemark').val(),
             $("#txtMachineStartDate").val(),
             $("#txtMachineStartTime").val(),
             $('#txtDescriptionWorkDone').val()
-            
+            GetMachineMaintenanceList();
         } else {
             toastr.error("Save failed for contact person details.");
         }
