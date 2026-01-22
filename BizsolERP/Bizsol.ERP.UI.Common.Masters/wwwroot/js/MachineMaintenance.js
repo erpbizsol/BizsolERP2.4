@@ -182,7 +182,7 @@ function SaveMachineMaintenance() {
         JobAssignedTo: $("#txtJobAssignedTo").val() || "",
         ReasonMaster_Code: $("#txtddlComplaintReason").val() || "",
         FailedRemark: $("#txtRemark").val() || "",
-        WorkStartDate: null,
+        WorkStartDate: workStartDate,
         WorkStartTime: workStartTime,
         DescriptionofWorkDone: $("#txtDescriptionWorkDone").val() || "",
         StartRemark: $("#txtERemark").val() || "",
