@@ -1,7 +1,9 @@
 import { MachineMaintenanceService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MachineMaintenanceService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
-
+let files = [];
+let fileName = '';
+let imageBase64Data = [];
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
 var G_UserMasterCode = authKeyData.UserMaster_Code;
@@ -136,7 +138,6 @@ function ClearData() {
 
     // Reset text areas / inputs
     $("#txtRemark").val("");
-    $("#txtSectionInchargeSignature").val("");
     $("#txtDescriptionWorkDone").val("");
     $("#txtERemark").val("");
     $('#txtMachineStartDate').val(getTodayDateForInput());
@@ -148,6 +149,7 @@ function ClearData() {
     $("#txthideRemark").hide();
     $("#txthideDescriptionWorkDone").hide();
     $("#txtdRemark").show();
+    $("#txtSectionInchargeSignature").val('');
 }
 function getTodayDateForInput() {
     var today = new Date();
@@ -183,7 +185,11 @@ function SaveMachineMaintenance() {
         WorkStartTime: workStartTime,
         DescriptionofWorkDone: $("#txtDescriptionWorkDone").val() || "",
         StartRemark: $("#txtERemark").val() || "",
-        sectionInchargeSignature: $("#txtSectionInchargeSignature").val() || "",
+        attachFileName: fileName,
+        attachData: imageBase64Data,
+        companyCode: JSON.parse(sessionStorage.getItem('authKey')).CompanyCode,
+        UserMaster_Code: JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code,
+        //sectionInchargeSignature: $("#txtSectionInchargeSignature").val() || "",
         
     }];
     if (!payload[0].EntryDate) {
@@ -225,8 +231,11 @@ function SaveMachineMaintenance() {
         toastr.error("Please select reason.");
         $("#txtddlComplaintReason").focus();
         return;
+    } if (!payload[0].ReasonMaster_Code) {
+        toastr.error("Please select reason.");
+        $("#sectionInchargeSignature").focus();
+        return;
     }
-  
     MachineMaintenanceService.SaveMachineMaintenance(payload).then(function (response) {
         if (response.Status === 'Y') {
             toastr.success(response.Msg || "Contact person details saved successfully.");
@@ -365,52 +374,41 @@ function getFinancialYear() {
     }
     return startYear + "-" + (startYear + 1);
 }
-//function triggerFileInputClick() {
-//    document.getElementById('txtSectionInchargeSignature').click();
-//}
-//function ConvertFileToByteArry(File) {
-//    return new Promise(function (resolve, reject) {
-//        var fileByteArray = [];
-//        var reader = new FileReader();
-
-//        reader.readAsArrayBuffer(File);
-//        reader.onloadend = function (evt) {
-//            if (evt.target.readyState == FileReader.DONE) {
-//                var arrayBuffer = evt.target.result,
-//                    array = new Uint8Array(arrayBuffer);
-//                for (var i = 0; i < array.length; i++) {
-//                    fileByteArray.push(array[i]);
-//                }
-//                resolve(fileByteArray);
-//            }
-//        }
-//    });
-//}
-//function FileUploadChange(event) {
-//    const target = event.target;
-//    files = target.files;
-//    fileName = files?.[0]?.name;
-//    if (files && files.length > 0) {
-//        OptimizeImage.reduceFileSize(files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
-//            ConvertFileToByteArry(blob).then(function (ByteArray) {
-//                imageBase64Data = ByteArray;
-//            })
+function triggerFileInputClick() {
+    document.getElementById('txtSectionInchargeSignature').click();
+}
+function FileUploadChange(event) {
+    const target = event.target;
+    files = target.files;
+    fileName = files?.[0]?.name;
+    if (files && files.length > 0) {
+        OptimizeImage.reduceFileSize(files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+            ConvertFileToByteArry(blob).then(function (ByteArray) {
+                imageBase64Data = ByteArray;
+            })
 
 
-//        });
-//    }
+        });
+    }
+}
+function ConvertFileToByteArry(File) {
+    return new Promise(function (resolve, reject) {
+        var fileByteArray = [];
+        var reader = new FileReader();
 
-//    //if (files && files.length > 0) {
-//    //    const file = files[0];
-//    //    const reader = new FileReader();
-//    //    reader.onload = (e) => {
-//    //        const arrayBuffer = e.target?.result;
-//    //        const byteArray = new Uint8Array(arrayBuffer);
-//    //        imageBase64Data = Array.from(byteArray);
-//    //    };
-//    //    reader.readAsArrayBuffer(file);
-//    //}
-//}
+        reader.readAsArrayBuffer(File);
+        reader.onloadend = function (evt) {
+            if (evt.target.readyState == FileReader.DONE) {
+                var arrayBuffer = evt.target.result,
+                    array = new Uint8Array(arrayBuffer);
+                for (var i = 0; i < array.length; i++) {
+                    fileByteArray.push(array[i]);
+                }
+                resolve(fileByteArray);
+            }
+        }
+    });
+}
 window.CreateNew = CreateNew;
 window.BackMaster = BackMaster;
 window.SaveMachineMaintenance = SaveMachineMaintenance;
@@ -419,6 +417,6 @@ window.Done = Done;
 window.Delete = Delete;
 window.CloseModalDelete = CloseModalDelete;
 window.SaveModalDelete = SaveModalDelete;
-//window.formatDateForInput = formatDateForInput;
-//window.FileUploadChange = FileUploadChange;
-//window.triggerFileInputClick = triggerFileInputClick;
+window.formatDateForInput = formatDateForInput;
+window.triggerFileInputClick = triggerFileInputClick;
+window.FileUploadChange = FileUploadChange;
