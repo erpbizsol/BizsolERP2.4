@@ -991,6 +991,77 @@ function bindEmptyEditableRow() {
     initializeEditableRow($tbody.find('tr.editable-row').last(), null);
     updateButtonVisibility();
 }
+// Helper function to get all selected Identification Nos from all rows except the current row
+function getSelectedIdentificationNos(excludeRow) {
+    const selectedIds = [];
+    const $tbody = $('#DetailTable-body');
+    if ($tbody && $tbody.length) {
+        $tbody.find('tr.editable-row').each(function() {
+            const $currentRow = $(this);
+            // Skip the excluded row
+            if (excludeRow && $currentRow[0] === excludeRow[0]) {
+                return;
+            }
+            const $identificationNo = $currentRow.find('.identification-no');
+            if ($identificationNo && $identificationNo.length) {
+                const selectedId = $identificationNo.val() || '';
+                if (selectedId && selectedId !== '') {
+                    selectedIds.push(selectedId);
+                }
+            }
+        });
+    }
+    return selectedIds;
+}
+
+// Helper function to update Identification dropdown options to disable already selected ones
+function updateIdentificationDropdownOptions($identificationNo, excludeRow) {
+    if (!$identificationNo || !$identificationNo.length) {
+        return;
+    }
+    
+    const selectedIds = getSelectedIdentificationNos(excludeRow);
+    const currentValue = $identificationNo.val() || '';
+    
+    // Update each option to disable if already selected in another row
+    $identificationNo.find('option').each(function() {
+        const $option = $(this);
+        const optionValue = $option.val() || '';
+        
+        // Don't disable empty option or the currently selected option in this row
+        if (optionValue === '' || optionValue === currentValue) {
+            $option.prop('disabled', false);
+        } else {
+            // Disable if this Identification No is selected in another row
+            $option.prop('disabled', selectedIds.indexOf(optionValue) >= 0);
+        }
+    });
+    
+    // Refresh Select2 if initialized to update disabled state
+    if ($.fn.select2 && $identificationNo.hasClass('select2-hidden-accessible')) {
+        // Force Select2 to re-read the options
+        $identificationNo.trigger('change.select2');
+        // Also trigger a select2:update event to refresh the dropdown
+        setTimeout(function() {
+            $identificationNo.trigger('select2:update');
+        }, 0);
+    }
+}
+
+// Function to update all Identification dropdowns to prevent duplicates
+function updateAllIdentificationDropdowns(excludeRow) {
+    const $tbody = $('#DetailTable-body');
+    if ($tbody && $tbody.length) {
+        $tbody.find('tr.editable-row').each(function() {
+            const $currentRow = $(this);
+            const $identificationNo = $currentRow.find('.identification-no');
+            if ($identificationNo && $identificationNo.length) {
+                updateIdentificationDropdownOptions($identificationNo, excludeRow || $currentRow);
+            }
+        });
+    }
+}
+
 function initializeEditableRow($row, detail) {
     if (!$row || !$row.length) {
         return;
@@ -1080,6 +1151,9 @@ function initializeEditableRow($row, detail) {
                 console.error('Error initializing select2 for identification-no:', e);
             }
         }
+        
+        // Update options to disable already selected Identification Nos
+        updateIdentificationDropdownOptions($identificationNo, $row);
     }
 
     // Get references to fields
@@ -1109,6 +1183,18 @@ function initializeEditableRow($row, detail) {
     // On Identification change, auto-set Godown (Location of Coil) and BalQtyMT (Coil Wt.)
     function handleIdentificationChange() {
         const selectedId = $identificationNo.val() || '';
+        
+        // Check if this Identification No is already selected in another row
+        const selectedIds = getSelectedIdentificationNos($row);
+        if (selectedId && selectedIds.indexOf(selectedId) >= 0) {
+            toastr.warning('This Identification No is already selected in another row. Please select a different one.');
+            $identificationNo.val('');
+            if ($.fn.select2 && $identificationNo.hasClass('select2-hidden-accessible')) {
+                $identificationNo.trigger('change.select2');
+            }
+            return;
+        }
+        
         if (selectedId) {
             const match = (G_IdentificationList || []).find(function (item) {
                 const idVal = item.IdentificationNo || item.IdentificationNos || '';
@@ -1149,6 +1235,10 @@ function initializeEditableRow($row, detail) {
             $coilWt.removeAttr('max');
             $coilWt.removeData('max-bal-qty');
         }
+        
+        // Update all other rows to disable/enable options based on current selection
+        updateAllIdentificationDropdowns($row);
+        
         checkRowComplete();
     }
 
@@ -1345,12 +1435,15 @@ function addNewEditableRow() {
     $tbody.append(rowHtml);
 
     // Initialize the new row
-    initializeEditableRow($tbody.find('tr.editable-row').last(), null);
+    const $newRow = $tbody.find('tr.editable-row').last();
+    initializeEditableRow($newRow, null);
 
     // Update all row numbers
     updateRowNumbers();
     // Update button visibility after adding new row
     updateButtonVisibility();
+    // Update all Identification dropdowns to disable already selected options
+    updateAllIdentificationDropdowns();
 }
 function updateRowNumbers() {
     const $tbody = $('#DetailTable-body');
@@ -1475,6 +1568,8 @@ function deleteEditableRow($row) {
             $row.remove();
             updateRowNumbers();
             updateButtonVisibility();
+            // Update all Identification dropdowns to enable previously disabled options
+            updateAllIdentificationDropdowns();
             return;
         }
 
@@ -1520,6 +1615,8 @@ function deleteEditableRow($row) {
                 $row.remove();
                 updateRowNumbers();
                 updateButtonVisibility();
+                // Update all Identification dropdowns to enable previously disabled options
+                updateAllIdentificationDropdowns();
             } else {
                 toastr.error((response && response.Msg) || 'Failed to delete detail row');
             }
@@ -1613,6 +1710,8 @@ function bindExistingEditableRows(detailResponse) {
     addNewEditableRow();
     // Update button visibility after binding existing rows
     updateButtonVisibility();
+    // Update all Identification dropdowns to disable already selected options
+    updateAllIdentificationDropdowns();
 }
 function UpdateCoilDetail(Grade_Code, Code, balanceToInspectWt) {
     var ModuleName = "RM Offer",
