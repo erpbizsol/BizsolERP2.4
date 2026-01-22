@@ -94,7 +94,7 @@
         <div class="row text-end">
             <div class="col-md-12">
                 <button class="btn btn-success icon-height mb-1" title="Create New" onclick="CreateNew()">Create New</button>
-                <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
+                @* <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button> *@
             </div>
         </div>
         <div class="table-wrapper ">
@@ -124,26 +124,25 @@
             </div>
             <div class="col-md-3" style="margin-top: 34px !important;">
                 <button type="button" id="btnRMOfferShow" class="btn btn-primary btn-height mb-1">Show</button>
-                @* <button class="btn btn-success icon-height mb-1" title="Edit" id="btnSave" onclick="SaveData()">Save</button>
-                <button class="btn btn-danger icon-height mb-1" title="Edit" id="btnBack" onclick="Back()">Back</button> *@
+                <button class="btn btn-danger icon-height mb-1" title="Edit" id="btnBack" onclick="Back()">Back</button> 
             </div>
         </div>
         <div class="row mt-2">
             <div class="col-md-3">
-                <label for="txtTicketNo" class="form-label fw-semibold">Ticket No. <span class="text-danger">*</span></label>
+                <label for="txtTicketNo" class="form-label fw-semibold">Entry No. <span class="text-danger">*</span></label>
                 <input type="text" id="txtTicketNo" class="form-control form-control-sm box_border" readonly />
             </div>
             <div class="col-md-3">
                 <label for="txtDate" class="form-label fw-semibold">Date (Entry Date) <span class="text-danger">*</span></label>
-                <input type="date" id="txtDate" class="form-control form-control-sm box_border" />
+                <input type="date" id="txtDate" class="form-control form-control-sm box_border" readonly />
             </div>
             <div class="col-md-3">
                 <label for="txtInspectionDate" class="form-label fw-semibold">Inspection Date <span class="text-danger">*</span></label>
                 <input type="date" id="txtInspectionDate" class="form-control form-control-sm box_border" />
             </div>
             <div class="col-md-3">
-                <label for="txtInspectionLocation" class="form-label fw-semibold">Inspection Location <span class="text-danger">*</span></label>
-                <select id="txtInspectionLocation" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+                <label for="ddlInspectionLocation" class="form-label fw-semibold">Inspection Location <span class="text-danger">*</span></label>
+                <select id="ddlInspectionLocation" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
             </div>
         </div>
         
@@ -180,4 +179,31 @@
         </div>
     </div>
 </div>
+<div class="modal fade rps-detail-modal" id="DetailModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper" style="min-height:200px !important;">
+                    <table id="DetailTable" class="fixed-width-table table">
+                        <thead id="DetailTable-head">
+                        </thead>
+                        <tbody id="DetailTable-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-DetailTable">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveRMInspectionRequest()">Save</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
