@@ -44,6 +44,64 @@ const RawMaterialOfferService = {
             }
         );
     },
+    },
+    GetBOMMasterDataOrderWise: function GetBOMMasterDataOrderWise(AccountMaster_Code,OrderNo,ProjectNo,Code) {
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + `/GetBOMMasterDataOrderWise?AccountMaster_Code=${AccountMaster_Code}&OrderNo=${encodeURIComponent(OrderNo)}&ProjectNo=${encodeURIComponent(ProjectNo)}&Code=${encodeURIComponent(Code)}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetBOMMasterIdentificationNo: function GetBOMMasterIdentificationNo(BomTransactionOrderWise_Code) {
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + `/GetBOMMasterIdentificationNo?BomTransactionOrderWise_Code=${BomTransactionOrderWise_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SaveRMInspectionRequest: function SaveRMInspectionRequest(saveData) {
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + "/SaveRawMaterialOffer";
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(saveData)).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRawMaterialOfferList: function GetRawMaterialOfferList() {
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + `/GetRawMaterialOfferList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRMInspectionRequestDetailsEdit: function GetRMInspectionRequestDetailsEdit(Code, BomTransactionOrderWise_Code) {
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + `/GetRMInspectionRequestDetailsEdit?Code=${Code}&BomTransactionOrderWise_Code=${BomTransactionOrderWise_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRMInspectionRequestMasterEdit: function GetRMInspectionRequestMasterEdit(Code) {
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + `/GetRMInspectionRequestMasterEdit?Code=${Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    DeleteRawMaterialOffer: function DeleteRawMaterialOffer(Code, ReasonForDelete,Mode, IPAddress, Location) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + `/DeleteRawMaterialDetailsByCode?Code=${Code}&UserMaster_Code=${userCode}&ReasonForDelete=${ReasonForDelete}&Mode=${Mode}&IPAddress=1&Location=1`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { RawMaterialOfferService }
