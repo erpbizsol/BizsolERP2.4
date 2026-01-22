@@ -23,6 +23,7 @@ function CreateNew() {
     $("#dvGrid").hide();
     $("#dvFromNEW").show();
     ClearData();
+    lockStatus();
 }
 function GetDepartmentMasterList() {
 
@@ -181,7 +182,7 @@ function SaveMachineMaintenance() {
         JobAssignedTo: $("#txtJobAssignedTo").val() || "",
         ReasonMaster_Code: $("#txtddlComplaintReason").val() || "",
         FailedRemark: $("#txtRemark").val() || "",
-        WorkStartDate: workStartDate,
+        WorkStartDate: null,
         WorkStartTime: workStartTime,
         DescriptionofWorkDone: $("#txtDescriptionWorkDone").val() || "",
         StartRemark: $("#txtERemark").val() || "",
@@ -189,7 +190,6 @@ function SaveMachineMaintenance() {
         attachData: imageBase64Data,
         companyCode: JSON.parse(sessionStorage.getItem('authKey')).CompanyCode,
         UserMaster_Code: JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code,
-        //sectionInchargeSignature: $("#txtSectionInchargeSignature").val() || "",
         
     }];
     if (!payload[0].EntryDate) {
@@ -231,11 +231,12 @@ function SaveMachineMaintenance() {
         toastr.error("Please select reason.");
         $("#txtddlComplaintReason").focus();
         return;
-    } if (!payload[0].ReasonMaster_Code) {
-        toastr.error("Please select reason.");
-        $("#sectionInchargeSignature").focus();
-        return;
     }
+    //if (!payload[0].ReasonMaster_Code) {
+    //    toastr.error("Please select reason.");
+    //    $("#sectionInchargeSignature").focus();
+    //    return;
+    //}
     MachineMaintenanceService.SaveMachineMaintenance(payload).then(function (response) {
         if (response.Status === 'Y') {
             toastr.success(response.Msg || "Contact person details saved successfully.");
@@ -247,8 +248,15 @@ function SaveMachineMaintenance() {
         toastr.error(error.Msg || "An error occurred while saving contact person details.");
     });
 }
+function lockStatus() {
+    $('#txtStatus').prop('disabled', true);
+}
+function unlockStatus() {
+    $('#txtStatus').prop('disabled', false);
+}
 function Edit(Code) {
-    $("#txtPreparedBy").val(G_UserName);
+    lockStatus();
+    //$("#txtPreparedBy").val(G_UserName);
     $("#dvGrid").hide();
     $("#dvFromNEW").show();
     MachineMaintenanceService.GetMachineMaintenanceByCode(Code).then(function (response) {
@@ -267,7 +275,7 @@ function Edit(Code) {
             $('#txtJobAssignedTo').val(data.JobAssignedTo);
             SelectOptionByText('txtddlComplaintReason', data.ReasonName);
             $('#txtRemark').val(data.FailedRemark);
-            //$('#txtSectionInchargeSignature').val(data.sectionInchargeSignature);
+            $("#txtPreparedBy").val(data.UpdatedByName);
             GetMachineMaintenanceList();
         } else {
             toastr.error("Save failed for contact person details.");
@@ -277,7 +285,8 @@ function Edit(Code) {
     });
 }
 function Done(Code) {
-    $("#txtPreparedBy").val(G_UserName);
+    unlockStatus();
+    //$("#txtPreparedBy").val(G_UserName);
     $("#dvGrid").hide();
     $("#txtdRemark").hide();
     $("#dvFromNEW").show();
@@ -303,7 +312,7 @@ function Done(Code) {
             SelectOptionByText('txtddlComplaintDepartment', data.DepartmentName);
             SelectOptionByText('txtddlComplaintReason', data.ReasonName);
             $('#txtRemark').val(data.FailedRemark);
-            //$('#txtSectionInchargeSignature').val(data.sectionInchargeSignature);
+            $("#txtPreparedBy").val(data.UpdatedByName);
             $('#txtStatus').val(data.Status).prop('readonly', true);
             $('#txtERemark').val(),
             $("#txtMachineStartDate").val(),
@@ -421,3 +430,5 @@ window.SaveModalDelete = SaveModalDelete;
 window.formatDateForInput = formatDateForInput;
 window.triggerFileInputClick = triggerFileInputClick;
 window.FileUploadChange = FileUploadChange;
+window.lockStatus = lockStatus;
+window.unlockStatus = unlockStatus;
