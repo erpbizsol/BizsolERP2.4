@@ -419,7 +419,7 @@ function renderSummaryReport() {
         // Update date range display
         updateReportDateRangeDisplay();
 
-        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man","Location"];
+        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location", "NBD/CRR","Lost Client"];
         const NumericFilterColumn = [];
         const DateFilterColumn = [];
         const Button = false;
@@ -509,7 +509,7 @@ function renderPartyScoring() {
 
         // Render main Party Scoring table
         const StringFilterColumn = ["Party Name", "Segment", "Marketing Man","Location"];
-        const NumericFilterColumn = [];
+        const NumericFilterColumn = ["Score"];
         const DateFilterColumn = [];
         const Button = false;
         const showButtons = [];
@@ -1144,9 +1144,9 @@ function renderManifesteTable(data) {
         'NotAchieved': 'right',
         'NotDone': 'right'
     };
-
+    const TotalColumns = ['Actual', 'Current_M']; // Pass column names to show totals
     if (typeof BizsolCustomFilterGrid !== 'undefined') {
-        BizsolCustomFilterGrid.CreateDataTable("manifesteTableHeader", "manifesteTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        BizsolCustomFilterGrid.CreateDataTable("manifesteTableHeader", "manifesteTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, true, TotalColumns);
     }
 }
 
@@ -1169,9 +1169,10 @@ function renderOrderSheetTable(data) {
         'Invoice Amount': 'right',
         'InvoiceAmount': 'right'
     };
+    const TotalColumns = ['Weight','Invoice Amount']; // Pass column names to show totals
 
     if (typeof BizsolCustomFilterGrid !== 'undefined') {
-        BizsolCustomFilterGrid.CreateDataTable("orderSheetTableHeader", "orderSheetTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        BizsolCustomFilterGrid.CreateDataTable("orderSheetTableHeader", "orderSheetTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, true, TotalColumns);
     }
 }
 
@@ -1361,8 +1362,9 @@ function renderNBDCRROrderDetailsTable(data) {
         'ManifestedWeight': 'right'
     };
 
+    const TotalColumns = ['Weight', 'Invoice Amount','Manifested Weight']; // Pass column names to show totals
     if (typeof BizsolCustomFilterGrid !== 'undefined') {
-        BizsolCustomFilterGrid.CreateDataTable("nbdCrrOrderDetailsTableHeader", "nbdCrrOrderDetailsTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        BizsolCustomFilterGrid.CreateDataTable("nbdCrrOrderDetailsTableHeader", "nbdCrrOrderDetailsTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, true, TotalColumns);
     }
 }
 

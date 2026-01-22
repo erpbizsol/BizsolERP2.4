@@ -1,5 +1,224 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/OptimizeImage.js"></script>
+<style>
+    .select2-container--open .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+
+    .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+
+    .card {
+        overflow: visible !important;
+    }
+
+    .card-body {
+        overflow: visible !important;
+    }
+
+    #dvFrom {
+        overflow: visible !important;
+    }
+
+    .row {
+        overflow: visible !important;
+    }
+
+    .select2-results {
+        max-height: 200px !important;
+        overflow-y: auto !important;
+    }
+
+    .select2-dropdown {
+        position: absolute !important;
+    }
+
+    .form-control-sm {
+        position: relative;
+    }
+
+    .main-content {
+        overflow: visible !important;
+    }
+
+    .col-md-3, .col-md-2 {
+        overflow: visible !important;
+    }
+
+    /* Responsive table height based on screen height (excluding header, paginator and footer) */
+    #dvGrid .table-wrapper {
+        max-height: calc(100vh - 320px);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+    #dvFrom .table-wrapper {
+        max-height: calc(100vh - 390px);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+        /* Sticky table header */
+        #dvGrid .table-wrapper thead,
+        #dvFrom .table-wrapper thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #fff;
+        }
+
+    .paginator {
+        position: sticky;
+        bottom: 15px;
+        background-color: #fff;
+        z-index: 5;
+    }
+</style>
+<div class="card p-2">
+    <div id="dvGrid" style="display:block;">
+        <div class="row text-end">
+            <div class="col-md-12">
+                <button class="btn btn-success icon-height mb-1" title="Create New" onclick="CreateNew()">Create New</button>
+            </div>
+        </div>
+        <div class="table-wrapper ">
+            <table id="tblMachineMaintenance" class="fixed-width-table table">
+                <thead id="table-header">
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tblMachineMaintenance">
+        </div>
+    </div>
+
+    <div id="dvFromNEW" style="display:none;">
+
+        <fieldset class="rounded-1">
+            <legend class="float-none w-auto px-2">Entry Details</legend>
+            <div class="row">
+                <div class="col-md-3 col-sm-6 col-6">
+                    <label for="txtEntryNo" class="col-form-label-sm fw-bold">Entry No <span class="text-danger">*</span></label>
+                    <input type="text" id="txtEntryNo" readonly class="form-control form-control-sm">
+                    <input type="hidden" id="hftxtCode" class="form-control form-control-sm" value="0">
+                </div>
+                <div class="col-md-3 col-sm-6 col-6">
+                    <label for="txtEntryDate" class="col-form-label-sm fw-bold">Entry Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtEntryDate" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-md-3 col-sm-6 col-6">
+                    <label for="txtRequestDate" class="col-form-label-sm fw-bold">Request Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtRequestDate" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-md-3 col-sm-6 col-6">
+                    <label for="txtddlMachineNo" class="col-form-label-sm fw-bold">Machine No <span class="text-danger">*</span></label>
+                    <select id="txtddlMachineNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+
+                </div>
+                <div class="col-md-3 col-sm-6 col-6">
+                    <label for="txtddlComplaintDepartment" class="col-form-label-sm fw-bold">Complaint Department <span class="text-danger">*</span></label>
+                    <select id="txtddlComplaintDepartment" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+
+                </div>
+                <div class="col-md-3 col-sm-6 col-6">
+                    <label for="txtStatus" class="col-form-label-sm fw-bold">Status <span class="text-danger">*</span></label>
+                    <select id="txtStatus" class="form-control form-control-sm">
+                        <option value="Under Maintenance" selected>Under Maintenance</option>
+                        <option value="Working" selected>Working</option>
+                    </select>
+                </div>
+                <div class="col-md-2 col-sm-6 col-6">
+                    <label for="txtMCFailedDate" class="col-form-label-sm fw-bold">Machine Failed Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtMCFailedDate" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-md-1 col-sm-6 col-6">
+                    <label for="txtMCFailedTime" class="col-form-label-sm fw-bold">Time <span class="text-danger">*</span></label>
+                    <input type="time" id="txtMCFailedTime" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-md-2 col-sm-6 col-6" style="display:none" id="txthideMachineStartDate">
+                    <label for="txtMachineStartDate" class="col-form-label-sm fw-bold">Machine Start Date</label>
+                    <input type="date" id="txtMachineStartDate" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-md-1 col-sm-6 col-6" style="display:none" id="txthideMachineStartTime">
+                    <label for="txtMachineStartTime" class="col-form-label-sm fw-bold">Time</label>
+                    <input type="time" id="txtMachineStartTime" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-md-3 col-sm-6 col-6" style="display:none" id="txthideRemark">
+                    <label for="txtERemark" class="col-form-label-sm fw-bold">Remark</label>
+                    <textarea id="txtERemark" class="form-control form-control-sm" rows="1" autocomplete="off"></textarea>
+                </div>
+                <div class="col-md-3 col-sm-6 col-6" style="display:none" id="txthideDescriptionWorkDone">
+                    <label for="txtDescriptionWorkDone" class="col-form-label-sm fw-bold">Description of Work Done</label>
+                    <textarea id="txtDescriptionWorkDone" class="form-control form-control-sm" rows="1" autocomplete="off"></textarea>
+                </div>
+                <div class="col-md-3 col-sm-6 col-6">
+                    <label for="txtJobAssignedTo" class="col-form-label-sm fw-bold">Job Assigned To</label>
+                    <input type="text" id="txtJobAssignedTo" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-md-3 col-sm-6 col-6">
+                    <label for="txtddlComplaintReason" class="col-form-label-sm fw-bold">Complaint Reason <span class="text-danger">*</span></label>
+                    <select id="txtddlComplaintReason" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+                </div>
+                <div class="col-md-3 col-sm-6 col-6" id="txtdRemark">
+                    <label for="txtRemark" class="col-form-label-sm fw-bold">Remark</label>
+                    <textarea id="txtRemark" class="form-control form-control-sm" rows="1" autocomplete="off"></textarea>
+                </div>
+                <div class="col-md-3 col-sm-6 col-6">
+                    <label for="txtPreparedBy" class="col-form-label-sm fw-bold">Prepared By</label>
+                    <input type="text" id="txtPreparedBy" class="form-control form-control-sm" readonly value="Login User Name">
+                </div>
+
+                <!-- Attachment Field -->
+                <div class="col-md-3 form-group">
+                    <label for="attachment" class="form-label">Section Incharge Signature <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text" onclick="triggerFileInputClick()" style="cursor: pointer; height:28px">
+                            <i class="fa fa-camera"></i>
+                        </span>
+                        <input type="file" accept=".jpg, .png, .jpeg" capture="camera" onchange="FileUploadChange(event)" class="form-control form-control-sm box_border" id="txtSectionInchargeSignature" />
+                    </div>
+                </div>
+               @*  <div class="col-md-3 col-sm-6 col-6">
+                    <label for="txtSectionInchargeSignature" class="col-form-label-sm fw-bold">Section Incharge Signature</label>
+                    <input type="text" id="txtSectionInchargeSignature" class="form-control form-control-sm" autocomplete="off">
+                </div> *@
+                <div class="col-md-12 text-end mt-1">
+                    <button type="button" class="btn btn-primary icon-height" onclick="SaveMachineMaintenance()">Save</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="BackMaster()">Back</button>
+                </div>
+            </div>
+
+        </fieldset>
+    </div>
+
+ 
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="reasonForDeleteInput" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveModalDelete()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModalDelete()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/MachineMaintenance.js"></script>
