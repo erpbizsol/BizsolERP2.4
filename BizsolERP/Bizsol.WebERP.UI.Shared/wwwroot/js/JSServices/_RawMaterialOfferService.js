@@ -101,6 +101,15 @@ const RawMaterialOfferService = {
             }
         );
     },
+    SaveInspectedRemark: function SaveInspectedRemark(Code, InspectedRemark) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + "/SaveInspectedRemark?Code=" + Code + "&InspectedRemark=" + encodeURIComponent(InspectedRemark) + "&UserMaster_Code=" + userCode;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { RawMaterialOfferService }

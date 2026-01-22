@@ -1847,6 +1847,42 @@ function loadStockSummaryData() {
 
         });
 }
+//function loadStockSlittedCoilsStockSummary() {
+//    calculateStockSummary(); 
+//    Showloader();
+//    RMStockService.GetRMStockSlittedCoilsStockSummary().then(function (response) {
+//        HideLoader();
+//        if (response.length > 0) {
+//            $('#tblSummaryData').show();
+//            const stringFilterColumn = ["Item Name", "No OF PC/Coil", "Total Weight", "No OF PC"];
+//            const numericFilterColumn = [];
+//            const dateFilterColumn = [];
+//            const button = false;
+//            const stringDoubleFilterColumn = [];
+//            const showButtons = [];
+//            let hiddenColumns = []
+//            const columnAlignment = {
+//                "Item Name":";width:20px",
+//                "Total Weight":"right;width:20px",
+//                "No OF PC":"right;width:20px",
+//            };
+//            const Total = { 'No OF PC', 'Total Weight'};
+
+//            BizsolCustomFilterGrid.CreateDataTable("table-header-SlittedCoilsStockSummary", "table-body-SlittedCoilsStockSummary", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, Total);
+//            PopulateTableForPrint(response);
+//        } else {
+//            HideLoader();
+//            toastr.error('No Data Found');
+//            $('#tblSummaryData').hide();
+//        }
+//    })
+//        .catch(function (error) {
+//            HideLoader();
+//            toastr.error(error.Msg || 'Error during SlittedCoilsStockSummary');
+//            $('#tblSummaryData').hide();
+
+//        });
+//}
 function calculateTotalFooterStockSummary(rows) {
     try {
         let totalWeightStock = 0;
