@@ -390,6 +390,7 @@ function FileUploadChange(event) {
 
         });
     }
+
 }
 function ConvertFileToByteArry(File) {
     return new Promise(function (resolve, reject) {
