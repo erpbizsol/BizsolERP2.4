@@ -1,7 +1,9 @@
 import { MachineMaintenanceService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MachineMaintenanceService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
-
+let files = [];
+let fileName = '';
+let imageBase64Data = [];
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
 var G_UserMasterCode = authKeyData.UserMaster_Code;
@@ -15,7 +17,6 @@ $(document).ready(function () {
     GetReasonMaster();
     GetDepartmentMasterList();
     GetMachineMasterList();
-
 });
 function CreateNew() {
     $("#txtPreparedBy").val(G_UserName);
@@ -92,7 +93,7 @@ function GetMachineMaintenanceList() {
             const updatedResponse = response.map(item => {
                 let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="Edit(${item.Code})"><i class="fa fa-pencil"></i></button>
                 <button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete(${item.Code})" ><i class="fa fa-times"></i></button>
-                <button class="btn btn-primary icon-height mb-1" title="Done"  onclick="Done(${item.Code})"><i class="fa fa-pencil"></i></button>
+                <button class="btn btn-info icon-height mb-1" title="Done"  onclick="Done(${item.Code})">Done</button>
                 `;
                 return {
                     ...item,
@@ -109,7 +110,6 @@ function GetMachineMaintenanceList() {
 
     });
 }
-
 function BackMaster() {
     $("#dvGrid").show();
     $("#dvFromNEW").hide();
@@ -138,7 +138,6 @@ function ClearData() {
 
     // Reset text areas / inputs
     $("#txtRemark").val("");
-    $("#txtSectionInchargeSignature").val("");
     $("#txtDescriptionWorkDone").val("");
     $("#txtERemark").val("");
     $('#txtMachineStartDate').val(getTodayDateForInput());
@@ -150,6 +149,7 @@ function ClearData() {
     $("#txthideRemark").hide();
     $("#txthideDescriptionWorkDone").hide();
     $("#txtdRemark").show();
+    $("#txtSectionInchargeSignature").val('');
 }
 function getTodayDateForInput() {
     var today = new Date();
@@ -185,14 +185,60 @@ function SaveMachineMaintenance() {
         WorkStartTime: workStartTime,
         DescriptionofWorkDone: $("#txtDescriptionWorkDone").val() || "",
         StartRemark: $("#txtERemark").val() || "",
-        sectionInchargeSignature: $("#txtSectionInchargeSignature").val() || "",
+        attachFileName: fileName,
+        attachData: imageBase64Data,
+        companyCode: JSON.parse(sessionStorage.getItem('authKey')).CompanyCode,
+        UserMaster_Code: JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code,
+        //sectionInchargeSignature: $("#txtSectionInchargeSignature").val() || "",
         
     }];
+    if (!payload[0].EntryDate) {
+        toastr.error("Please select entry date.");
+        $("#txtEntryDate").focus();
+        return;
+    }
+    if (!payload[0].RequestDate) {
+        toastr.error("Please select request date.");
+        $("#txtRequestDate").focus();
+        return;
+    }
+    if (!payload[0].MachineMaster_Code) {
+        toastr.error("Please select machine no.");
+        $("#txtddlMachineNo").focus();
+        return;
+    }
+    if (!payload[0].DepartmentMaster_Code) {
+        toastr.error("Please select department.");
+        $("#txtddlComplaintDepartment").focus();
+        return;
+    }
+    if (!payload[0].Status) {
+        toastr.error("Please select designation.");
+        $("#txtStatus").focus();
+        return;
+    }
+    if (!payload[0].MachineFailedDate) {
+        toastr.error("Please select Machin failed date.");
+        $("#txtMCFailedDate").focus();
+        return;
+    }
+    if (!payload[0].MachineFailedTime) {
+        toastr.error("Please select machine failed time.");
+        $("#txtMCFailedTime").focus();
+        return;
+    }
+    if (!payload[0].ReasonMaster_Code) {
+        toastr.error("Please select reason.");
+        $("#txtddlComplaintReason").focus();
+        return;
+    } if (!payload[0].ReasonMaster_Code) {
+        toastr.error("Please select reason.");
+        $("#sectionInchargeSignature").focus();
+        return;
+    }
     MachineMaintenanceService.SaveMachineMaintenance(payload).then(function (response) {
         if (response.Status === 'Y') {
             toastr.success(response.Msg || "Contact person details saved successfully.");
-
-            // After successful save, go back to listing screen
             BackMaster();
         } else {
             toastr.error(response.Msg || "Save failed for contact person details.");
@@ -201,7 +247,6 @@ function SaveMachineMaintenance() {
         toastr.error(error.Msg || "An error occurred while saving contact person details.");
     });
 }
-
 function Edit(Code) {
     $("#txtPreparedBy").val(G_UserName);
     $("#dvGrid").hide();
@@ -231,7 +276,6 @@ function Edit(Code) {
         toastr.error(error.Msg || "An error occurred while saving contact person details.");
     });
 }
-
 function Done(Code) {
     $("#txtPreparedBy").val(G_UserName);
     $("#dvGrid").hide();
@@ -276,29 +320,6 @@ function Done(Code) {
 function CloseModalDelete() {
     $('#myModal').modal('hide');
     $('#reasonForDeleteInput').val('');
-
-}
-function SaveModalDelete() {
-    let reasonForDelete = $('#reasonForDeleteInput').val();
-    let code = $('#myModal').data('code');
-
-    if (!reasonForDelete) {
-        toastr.warning("Please Provide a Reason For Delete.");
-        $('#reasonForDeleteInput').focus();
-        return;
-    }
-
-    MachineMaintenanceService.DeleteMachineMaintenance(code, reasonForDelete).then(function (response) {
-        if (response.Status === 'Y') {
-            toastr.success(response.Msg);
-            CloseModalDelete();
-            GetMachineMaintenanceList();
-        } else {
-            toastr.warning(response.Msg || 'Error during deletion');
-        }
-    }).catch(function (error) {
-        toastr.error(error.Msg || 'Error during QCGroup delete');
-    });
 }
 function Delete(Code) {
     if (!Code) {
@@ -322,6 +343,28 @@ function Delete(Code) {
         }
     });
 }
+function SaveModalDelete() {
+    let reasonForDelete = $('#reasonForDeleteInput').val();
+    let code = $('#myModal').data('code');
+
+    if (!reasonForDelete) {
+        toastr.warning("Please Provide a Reason For Delete.");
+        $('#reasonForDeleteInput').focus();
+        return;
+    }
+
+    MachineMaintenanceService.DeleteMachineMaintenance(code, reasonForDelete).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+            CloseModalDelete();
+            GetMachineMaintenanceList();
+        } else {
+            toastr.warning(response.Msg || 'Error during deletion');
+        }
+    }).catch(function (error) {
+        toastr.error(error.Msg || 'Error during QCGroup delete');
+    });
+}
 function getFinancialYear() {
     var currentDate = new Date();
     var currentMonth = currentDate.getMonth();
@@ -331,7 +374,41 @@ function getFinancialYear() {
     }
     return startYear + "-" + (startYear + 1);
 }
+function triggerFileInputClick() {
+    document.getElementById('txtSectionInchargeSignature').click();
+}
+function FileUploadChange(event) {
+    const target = event.target;
+    files = target.files;
+    fileName = files?.[0]?.name;
+    if (files && files.length > 0) {
+        OptimizeImage.reduceFileSize(files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+            ConvertFileToByteArry(blob).then(function (ByteArray) {
+                imageBase64Data = ByteArray;
+            })
 
+
+        });
+    }
+}
+function ConvertFileToByteArry(File) {
+    return new Promise(function (resolve, reject) {
+        var fileByteArray = [];
+        var reader = new FileReader();
+
+        reader.readAsArrayBuffer(File);
+        reader.onloadend = function (evt) {
+            if (evt.target.readyState == FileReader.DONE) {
+                var arrayBuffer = evt.target.result,
+                    array = new Uint8Array(arrayBuffer);
+                for (var i = 0; i < array.length; i++) {
+                    fileByteArray.push(array[i]);
+                }
+                resolve(fileByteArray);
+            }
+        }
+    });
+}
 window.CreateNew = CreateNew;
 window.BackMaster = BackMaster;
 window.SaveMachineMaintenance = SaveMachineMaintenance;
@@ -341,3 +418,5 @@ window.Delete = Delete;
 window.CloseModalDelete = CloseModalDelete;
 window.SaveModalDelete = SaveModalDelete;
 window.formatDateForInput = formatDateForInput;
+window.triggerFileInputClick = triggerFileInputClick;
+window.FileUploadChange = FileUploadChange;
