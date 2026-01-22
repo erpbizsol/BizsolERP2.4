@@ -44,7 +44,6 @@ const RawMaterialOfferService = {
             }
         );
     },
-    },
     GetBOMMasterDataOrderWise: function GetBOMMasterDataOrderWise(AccountMaster_Code,OrderNo,ProjectNo,Code) {
         var URL = UrlService.API_ENDPOINT_RawMaterialOffer + `/GetBOMMasterDataOrderWise?AccountMaster_Code=${AccountMaster_Code}&OrderNo=${encodeURIComponent(OrderNo)}&ProjectNo=${encodeURIComponent(ProjectNo)}&Code=${encodeURIComponent(Code)}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
