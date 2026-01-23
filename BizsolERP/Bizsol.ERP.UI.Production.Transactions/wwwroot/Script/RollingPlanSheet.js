@@ -89,10 +89,10 @@ function GetRollingPlanSheetList() {
         if (response && response.length > 0) {
             HideLoader();
 
-            const stringFilterColumn = ["Order No", "Item Name", "Size", "Thk", "Mkt_Man", "Status"];
+            const stringFilterColumn = ["Order No", "Item Name", "Size", "Thk", "Mkt_Man", "Status","Against Stock"];
             const numericFilterColumn = [
                 "Ord Qty", "Rld Qty", "Pld Qty", "Pld Bal Qty", "Rld Bal Qty",
-                "Dispatch Qty", "Avl stock for dispatch", "Bal Dispatch Qty"
+                "Dispatch Qty", "Avl stock for dispatch", "Bal Dispatch Qty","Bal Production"
             ];
 
             const dateFilterColumn = ["Order Date", "Dispatch Date"];
@@ -149,6 +149,7 @@ function GetRollingPlanSheetList() {
                 "Dispatch Qty": "right;",
                 "Avl stock for dispatch": "right;",
                 "Availiable stock for dispatch": "right;",
+                "Bal Production": "right;",
                 "Bal Dispatch Qty": "right;",
                 "SNo": ";width:15px;",
                 "Status": ";width:15px;"
@@ -281,6 +282,7 @@ function calculateTotals(data) {
         rldplannedQty: 0,   // Rld Bal Qty
         dispatchQty: 0,     // Dispatch Qty
         availableStockForDispatch: 0, // Avl stock for dispatch
+        balProduction: 0, // balProduction
         balanceDispatchQty: 0 // Bal Dispatch Qty
     };
 
@@ -302,6 +304,9 @@ function calculateTotals(data) {
         const availableStockForDispatch = Number(
             item["Avl stock for dispatch"] ?? item["Availiable stock for dispatch"] ?? item["AvailableStockForDispatch"] ?? item["Avail_Stock_For_Dispatch"] ?? 0
         );
+        const balProduction = Number(
+            item["Bal Production"] ?? item["Balance Production"] ?? item["BalanceProduction"] ?? item["Balance_Production"] ?? 0
+        );
         const balanceDispatchQty = Number(item["Bal Dispatch Qty"] ?? item["BalanceDispatchQty"] ?? item["Bal_Dispatch_Qty"] ?? 0);
 
         if (!isNaN(totalQty)) totals.totalQty += totalQty;
@@ -312,6 +317,7 @@ function calculateTotals(data) {
         if (!isNaN(rldplannedQty)) totals.rldplannedQty += rldplannedQty;
         if (!isNaN(dispatchQty)) totals.dispatchQty += dispatchQty;
         if (!isNaN(availableStockForDispatch)) totals.availableStockForDispatch += availableStockForDispatch;
+        if (!isNaN(balProduction)) totals.balProduction += balProduction;
         if (!isNaN(balanceDispatchQty)) totals.balanceDispatchQty += balanceDispatchQty;
 
     });
@@ -322,7 +328,7 @@ function formatQuantityFields(row) {
     const clone = { ...row };
     const qtyFields = [
         "Ord Qty", "Ord Bal Qty", "Rld Qty", "Pld Qty"
-        , "Pld Bal Qty", "Rld Bal Qty", "Dispatch Qty", "Avl stock for dispatch", "Availiable stock for dispatch", "Bal Dispatch Qty"
+        , "Pld Bal Qty", "Rld Bal Qty", "Dispatch Qty", "Avl stock for dispatch", "Availiable stock for dispatch","Bal Production", "Bal Dispatch Qty"
     ];
     qtyFields.forEach(k => {
         if (k in clone && clone[k] != null && clone[k] !== '') {
@@ -444,6 +450,11 @@ function addTotalsRow(totals, hiddenColumns = []) {
                 cell.style.textAlign = 'right';
                 cell.style.backgroundColor = '#fff2cc';
                 cell.style.fontWeight = 'bold';
+            } else if (headerText.includes('Bal Production') || headerText.includes('Balance Production')) {
+                cell.textContent = totals.balProduction.toFixed(3);
+                cell.style.textAlign = 'right';
+                cell.style.backgroundColor = '#fff2cc';
+                cell.style.fontWeight = 'bold';
             } else if (headerText.includes('Order No') || headerText.includes('OrderNo') || headerText.includes('Order_No')) {
                 if (totals.distinctOrderNoCount !== undefined) {
                     cell.textContent = `Order - ${totals.distinctOrderNoCount}`;
@@ -511,7 +522,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 function ChangecolorTr() {
     const table = document.getElementById("table-body");
-    let statusColIndex = 21;
+    let statusColIndex = 22;
 
     const rows = table.querySelectorAll("tr");
     rows.forEach((row) => {
