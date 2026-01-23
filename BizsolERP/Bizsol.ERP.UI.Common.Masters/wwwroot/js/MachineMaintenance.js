@@ -85,12 +85,12 @@ function GetMachineMaintenanceList() {
         if (response.length > 0) {
 
             const StringFilterColumn = [""];
-            const NumericFilterColumn = ["Status","Reason","Department","Entry No", "Entry Date", "Request Date", "Work Start Date", "Machine Failed Date","Machine No"];
+            const NumericFilterColumn = ["Status","Reason","Department","Entry No", "Entry Date","Machine No"];
             const DateFilterColumn = [""];
             const Button = false;
             const showButtons = [""];
             const StringdoubleFilterColumn = [""];
-            const hiddenColumns = ["Code"];
+            const hiddenColumns = ["Code", "Job Assigned", "Request Date", "Work Start Date", "Machine Failed Date", "Failed Remark", "Start Remark","Description"];
             const ColumnAlignment = {
                 Action: "width:100px;",
                 EntryNo: "width:50px;"
@@ -125,7 +125,7 @@ function BackMaster() {
 function ClearData() {
     $('#hftxtCode').val('0');
     $('#txtEntryNo').val('').prop('readonly', true);
-    $('#txtEntryDate').val(getTodayDateForInput()).prop('readonly', false);
+    $('#txtEntryDate').val(getTodayDateForInput()).prop('readonly', true);
     $('#txtRequestDate').val(getTodayDateForInput()).prop('readonly', false);
     $('#txtStatus').val('Under Maintenance').prop('readonly', false);
     $('#txtMCFailedDate').val(getTodayDateForInput()).prop('readonly', false);
@@ -204,6 +204,30 @@ function SaveMachineMaintenance() {
         UserMaster_Code: JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code,
         
     }];
+
+    var isDoneModeForSave = $('#txtEntryNo').prop('readonly') === true && $("#txthideMachineStartDate").is(':visible');
+    if (isDoneModeForSave) {
+        var startRemarkVal = $("#txtERemark").val().trim();
+        var startDateVal = $("#txtMachineStartDate").val().trim();
+        var startTimeVal = $("#txtMachineStartTime").val().trim();
+
+        if (!startDateVal) {
+            toastr.error("Please select machine start date.");
+            $("#txtMachineStartDate").focus();
+            return;
+        }
+        if (!startTimeVal) {
+            toastr.error("Please select machine start time.");
+            $("#txtMachineStartTime").focus();
+            return;
+        }
+        if (!startRemarkVal) {
+            toastr.error("Please enter start remark.");
+            $("#txtERemark").focus();
+            return;
+        }
+    }
+
     if (!payload[0].EntryDate) {
         toastr.error("Please select entry date.");
         $("#txtEntryDate").focus();
@@ -349,9 +373,12 @@ function Done(Code) {
             $('#txtRemark').val(data.FailedRemark);
             $("#txtPreparedBy").val(data.UpdatedByName);
             $('#txtStatus').val(data.Status).prop('readonly', true);
-            $('#txtERemark').val(data.StartRemark || '');
-            $("#txtMachineStartDate").val(data.WorkStartDate ? formatDateForInput(data.WorkStartDate) : '');
-            $("#txtMachineStartTime").val(data.WorkStartTime || '');
+
+         
+            $('#txtERemark').val('');
+            $("#txtMachineStartDate").val('');
+            $("#txtMachineStartTime").val('');
+
             $('#txtDescriptionWorkDone').val(data.DescriptionofWorkDone || '');
             
             LoadExistingImage(data);
