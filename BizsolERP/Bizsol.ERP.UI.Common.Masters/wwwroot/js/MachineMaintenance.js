@@ -85,12 +85,12 @@ function GetMachineMaintenanceList() {
         if (response.length > 0) {
 
             const StringFilterColumn = [""];
-            const NumericFilterColumn = ["Status","Reason","Department","Entry No", "Entry Date", "Request Date", "Work Start Date", "Machine Failed Date","Machine No"];
+            const NumericFilterColumn = ["Status","Reason","Department","Entry No", "Entry Date","Machine No"];
             const DateFilterColumn = [""];
             const Button = false;
             const showButtons = [""];
             const StringdoubleFilterColumn = [""];
-            const hiddenColumns = ["Code"];
+            const hiddenColumns = ["Code", "Job Assigned", "Request Date", "Work Start Date", "Machine Failed Date", "Failed Remark", "Start Remark","Description"];
             const ColumnAlignment = {
                 Action: "width:100px;",
                 EntryNo: "width:50px;"
@@ -125,7 +125,7 @@ function BackMaster() {
 function ClearData() {
     $('#hftxtCode').val('0');
     $('#txtEntryNo').val('').prop('readonly', true);
-    $('#txtEntryDate').val(getTodayDateForInput()).prop('readonly', false);
+    $('#txtEntryDate').val(getTodayDateForInput()).prop('readonly', true);
     $('#txtRequestDate').val(getTodayDateForInput()).prop('readonly', false);
     $('#txtStatus').val('Under Maintenance').prop('readonly', false);
     $('#txtMCFailedDate').val(getTodayDateForInput()).prop('readonly', false);
