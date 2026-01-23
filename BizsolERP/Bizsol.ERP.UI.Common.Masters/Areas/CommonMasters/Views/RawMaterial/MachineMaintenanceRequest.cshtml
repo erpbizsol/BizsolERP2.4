@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
@@ -79,6 +79,66 @@
         bottom: 15px;
         background-color: #fff;
         z-index: 5;
+    }
+
+    /* Image Modal Styles */
+    #imgModal .modal-dialog {
+        max-width: 900px;
+    }
+
+    #imgModal .modal-body {
+        max-height: 70vh;
+        overflow: auto;
+        padding: 15px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #imgModalImage {
+        max-width: 100% !important;
+        max-height: 65vh !important;
+        width: auto !important;
+        height: auto !important;
+        object-fit: contain;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin: 0 auto;
+        display: block;
+    }
+
+    /* Image Preview in Form */
+    #imgPreview {
+        width: 120px !important;
+        height: 120px !important;
+        max-width: 120px !important;
+        max-height: 120px !important;
+        object-fit: contain;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 5px;
+        background-color: #f8f9fa;
+        display: block;
+    }
+
+    #imgPreviewContainer {
+        margin-top: 8px;
+    }
+
+    /* Eye Icon Button Styles */
+    #viewImageBtn {
+        cursor: pointer;
+        height: 28px;
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #viewImageBtn:hover {
+        background-color: #e9ecef;
     }
 </style>
 <div class="card p-2">
@@ -179,10 +239,16 @@
                 <div class="col-md-3 col-sm-6 col-6 form-group">
                     <label for="attachment" class="form-label col-form-label-sm fw-bold">Section Incharge Signature <span class="text-danger">*</span></label>
                     <div class="input-group">
-                        <span class="input-group-text" onclick="triggerFileInputClick()" style="cursor: pointer; height:28px">
+                        <span class="input-group-text" onclick="triggerFileInputClick()" style="cursor: pointer; height:28px" title="Select Image">
                             <i class="fa fa-camera"></i>
                         </span>
                         <input type="file" accept=".jpg, .png, .jpeg" capture="camera" onchange="FileUploadChange(event)" class="form-control form-control-sm box_border" id="txtSectionInchargeSignature" />
+                        <span class="input-group-text" id="viewImageBtn" onclick="ViewAttachedImage()" style="cursor: pointer; height:28px; display: none !important;" title="View Image">
+                            <i class="fa fa-eye"></i>
+                        </span>
+                    </div>
+                    <div class="mt-2" id="imgPreviewContainer" style="display:none;">
+                        <img id="imgPreview" style="width:120px; height:120px; object-fit: contain; border: 1px solid #ddd; border-radius: 4px; padding: 5px; background-color: #f8f9fa;" />
                     </div>
                 </div>
                @*  <div class="col-md-3 col-sm-6 col-6">
@@ -214,6 +280,31 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-success icon-height" onclick="SaveModalDelete()">Ok</button>
                 <button type="button" class="btn btn-danger icon-height" onclick="CloseModalDelete()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Display Modal -->
+<div class="modal fade" id="imgModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imgModalTitle">Image</h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseImageModal()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center" style="min-height: 300px; max-height: 70vh; overflow: auto; padding: 15px;">
+                <div id="imgModalLoading" style="display: flex; justify-content: center; align-items: center; min-height: 300px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+                <img id="imgModalImage" src="" alt="Image" style="max-width: 100%; max-height: 65vh; width: auto; height: auto; object-fit: contain; display: none; border: 1px solid #ddd; border-radius: 4px;" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary icon-height" onclick="CloseImageModal()">Close</button>
             </div>
         </div>
     </div>
