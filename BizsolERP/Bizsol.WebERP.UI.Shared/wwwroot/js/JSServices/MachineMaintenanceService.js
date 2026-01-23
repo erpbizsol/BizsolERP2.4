@@ -80,6 +80,16 @@ const MachineMaintenanceService = {
             }
         );
     },
+    GetMachineMaintenanceImageByCode: function GetMachineMaintenanceImageByCode(Code) {
+
+        var URL = UrlService.API_ENDPOINT_MachineMaintenance +
+            "/GetMachineMaintenanceImageByCode?Code=" + Code;
+
+        return promiseAjaxCallApi.CallAPI('GET', URL, null)
+            .then(function (value) {
+                return value;
+            });
+    },
    
 }
 export { MachineMaintenanceService }

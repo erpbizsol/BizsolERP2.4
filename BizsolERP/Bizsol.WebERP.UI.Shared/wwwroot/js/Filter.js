@@ -717,7 +717,7 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
             let cellValue = item[key];
             //if (alignment === 'right' && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
             if (cellValue.toString().includes('.')==true && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
-                cellValue = parseFloat(cellValue).toFixed(2);
+                cellValue = parseFloat(cellValue).toFixed(3);
             }
 
             return `<td style="${style}">${cellValue}</td>`;
@@ -768,7 +768,7 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
                 cellContent = '<strong>Total</strong>';
             } else if (totalColumns.includes(key)) {
                 // Show total for specified columns
-                const totalValue = columnTotals[key].toFixed(2);
+                const totalValue = columnTotals[key].toFixed(3);
                 cellContent = `<strong>${totalValue}</strong>`;
             }
 
