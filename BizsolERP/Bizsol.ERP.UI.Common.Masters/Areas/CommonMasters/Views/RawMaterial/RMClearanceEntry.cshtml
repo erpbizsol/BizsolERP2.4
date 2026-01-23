@@ -139,4 +139,25 @@
         </div>
     </div>
 </div>
+<div class="modal fade rps-detail-modal" id="dvInspectedRemark" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="inspected-modal-title">Inspection Remark</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="txtInspectedRemark" class="form-label filter-label">Inspection Remark </label> <span class="text-danger">*</span>
+                    <input type="text" id="txtInspectedRemark" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" />
+                    <input type="hidden" id="hfInspectedCode" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-12 text-end">
+                    <button type="button" class="btn btn-success icon-height" onclick="SaveInspectedRemark()">Ok</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="CloseInspectedModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

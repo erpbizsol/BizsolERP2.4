@@ -13,6 +13,15 @@ $(document).ready(function () {
     $('#btnRMClearanceShow').on("click", function () {
         GetRawMaterialClearanceList();
     });
+    $('#dvInspectedRemark').on('hidden.bs.modal', function () {
+        var checkboxElement = $(this).data('CheckboxElement');
+        if (checkboxElement) {
+            checkboxElement.checked = false;
+            $(this).removeData('CheckboxElement');
+        }
+        $("#txtInspectedRemark").val("");
+        $("#hfInspectedCode").val(0);
+    });
 });
 function GetRawMaterialDropDown() {
     RawMaterialOfferService.GetRawMaterialDropDown()
@@ -475,12 +484,20 @@ function GetRawMaterialClearanceList() {
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Code", "Thickness_Code", "Grade_Code","RMInspectionRequestMaster_Code"];
-            const ColumnAlignment = { 'S.No.': 'center;width:10px', "Entry Date": 'center', "Inspection Date": 'center', "Entry No": 'center', 'P.O. Qty(Wt.)': 'right', 'Balance to Inspect (Wt.)': 'right','Coil Wt.':'right' };
+            const hiddenColumns = ["Code", "Thickness_Code", "Grade_Code","RMInspectionRequestMaster_Code", "IsInspected"];
+            const ColumnAlignment = { 'S.No.': 'center;width:10px', "Entry Date": 'center', "Inspection Date": 'center', "Entry No": 'center', 'P.O. Qty(Wt.)': 'right', 'Balance to Inspect (Wt.)': 'right','Coil Wt.':'right', 'Is Inspected': 'center' };
             const updatedResponse = response.map((item) => {
-                let InputHTML = `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item.Code})">Verify</button>&nbsp;&nbsp;<button class="btn btn-danger icon-height mb-1" title="Reject" onclick="OpenModalReject(${item.Code})">Reject</button>`;
+                let InputHTML = '';
+                let IsInspectedHTML = '';
+                if (item.IsInspected === 'Y') {
+                    InputHTML = `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item.Code})">Verify</button>&nbsp;&nbsp;<button class="btn btn-danger icon-height mb-1" title="Reject" onclick="OpenModalReject(${item.Code})">Reject</button>`;
+                    IsInspectedHTML = `<input type="checkbox" class="form-check-input" checked disabled />`;
+                } else {
+                    IsInspectedHTML = `<input type="checkbox" class="form-check-input" onclick="OpenModalInspectedRemark(${item.Code}, this)" />`;
+                }
                 return {
                     ...item,
+                    'Is Inspected': IsInspectedHTML,
                     'Action': InputHTML,
                 };
             });
@@ -547,6 +564,43 @@ function CloseModal() {
     $('#dvRemark').modal('hide');
     $("#txtRemark").val("");
 }
+function OpenModalInspectedRemark(Code, checkboxElement) {
+    checkboxElement.checked = true;
+    $('#dvInspectedRemark').data('Code', Code);
+    $('#dvInspectedRemark').data('CheckboxElement', checkboxElement);
+    $('#dvInspectedRemark').modal({ backdrop: 'static', keyboard: false });
+    $('#dvInspectedRemark').modal('show');
+    $('#hfInspectedCode').val(Code);
+    $('#txtInspectedRemark').val('');
+}
+function SaveInspectedRemark() {
+    var remark = $("#txtInspectedRemark").val();
+    var Code = $("#hfInspectedCode").val();
+    if (remark == "") {
+        toastr.error('Please enter an inspection remark before proceeding.');
+        return;
+    }
+    RawMaterialOfferService.SaveInspectedRemark(Code, remark).then(function (response) {
+        if (response.Status == 'Y') {
+            toastr.success(response.Msg);
+            $('#dvInspectedRemark').removeData('CheckboxElement');
+            CloseInspectedModal();
+            GetRawMaterialClearanceList();
+        } else {
+            toastr.error(response.Msg);
+        }
+    });
+}
+function CloseInspectedModal() {
+    var checkboxElement = $('#dvInspectedRemark').data('CheckboxElement');
+    if (checkboxElement) {
+        checkboxElement.checked = false;
+    }
+    $('#dvInspectedRemark').modal('hide');
+    $("#txtInspectedRemark").val("");
+    $("#hfInspectedCode").val(0);
+    $('#dvInspectedRemark').removeData('CheckboxElement');
+}
 function Download() {
     const hiddenFields = [
         "Code"
@@ -559,3 +613,6 @@ window.CloseModal = CloseModal;
 window.OpenModalReject = OpenModalReject;
 window.Download = Download;
 window.RejectRMClearance = RejectRMClearance;
+window.OpenModalInspectedRemark = OpenModalInspectedRemark;
+window.SaveInspectedRemark = SaveInspectedRemark;
+window.CloseInspectedModal = CloseInspectedModal;

@@ -44,7 +44,6 @@ const RawMaterialOfferService = {
             }
         );
     },
-    },
     GetBOMMasterDataOrderWise: function GetBOMMasterDataOrderWise(AccountMaster_Code,OrderNo,ProjectNo,Code) {
         var URL = UrlService.API_ENDPOINT_RawMaterialOffer + `/GetBOMMasterDataOrderWise?AccountMaster_Code=${AccountMaster_Code}&OrderNo=${encodeURIComponent(OrderNo)}&ProjectNo=${encodeURIComponent(ProjectNo)}&Code=${encodeURIComponent(Code)}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
@@ -97,6 +96,15 @@ const RawMaterialOfferService = {
         let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
         var URL = UrlService.API_ENDPOINT_RawMaterialOffer + `/DeleteRawMaterialDetailsByCode?Code=${Code}&UserMaster_Code=${userCode}&ReasonForDelete=${ReasonForDelete}&Mode=${Mode}&IPAddress=1&Location=1`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SaveInspectedRemark: function SaveInspectedRemark(Code, InspectedRemark) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + "/SaveInspectedRemark?Code=" + Code + "&InspectedRemark=" + encodeURIComponent(InspectedRemark) + "&UserMaster_Code=" + userCode;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
             }
