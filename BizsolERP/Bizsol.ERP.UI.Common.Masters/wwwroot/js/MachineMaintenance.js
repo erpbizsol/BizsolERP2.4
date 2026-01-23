@@ -204,6 +204,30 @@ function SaveMachineMaintenance() {
         UserMaster_Code: JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code,
         
     }];
+
+    var isDoneModeForSave = $('#txtEntryNo').prop('readonly') === true && $("#txthideMachineStartDate").is(':visible');
+    if (isDoneModeForSave) {
+        var startRemarkVal = $("#txtERemark").val().trim();
+        var startDateVal = $("#txtMachineStartDate").val().trim();
+        var startTimeVal = $("#txtMachineStartTime").val().trim();
+
+        if (!startDateVal) {
+            toastr.error("Please select machine start date.");
+            $("#txtMachineStartDate").focus();
+            return;
+        }
+        if (!startTimeVal) {
+            toastr.error("Please select machine start time.");
+            $("#txtMachineStartTime").focus();
+            return;
+        }
+        if (!startRemarkVal) {
+            toastr.error("Please enter start remark.");
+            $("#txtERemark").focus();
+            return;
+        }
+    }
+
     if (!payload[0].EntryDate) {
         toastr.error("Please select entry date.");
         $("#txtEntryDate").focus();
@@ -349,9 +373,12 @@ function Done(Code) {
             $('#txtRemark').val(data.FailedRemark);
             $("#txtPreparedBy").val(data.UpdatedByName);
             $('#txtStatus').val(data.Status).prop('readonly', true);
-            $('#txtERemark').val(data.StartRemark || '');
-            $("#txtMachineStartDate").val(data.WorkStartDate ? formatDateForInput(data.WorkStartDate) : '');
-            $("#txtMachineStartTime").val(data.WorkStartTime || '');
+
+         
+            $('#txtERemark').val('');
+            $("#txtMachineStartDate").val('');
+            $("#txtMachineStartTime").val('');
+
             $('#txtDescriptionWorkDone').val(data.DescriptionofWorkDone || '');
             
             LoadExistingImage(data);
