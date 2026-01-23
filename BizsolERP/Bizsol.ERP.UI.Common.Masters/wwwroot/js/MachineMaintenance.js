@@ -83,7 +83,6 @@ function GetMachineMaintenanceList() {
     MachineMaintenanceService.GetMachineMaintenanceList().then(function (response) {
         $("#tblMachineMaintenance").show();
         if (response.length > 0) {
-
             const StringFilterColumn = [""];
             const NumericFilterColumn = ["Status","Reason","Department","Entry No", "Entry Date","Machine No"];
             const DateFilterColumn = [""];
