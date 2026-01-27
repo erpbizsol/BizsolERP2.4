@@ -82,26 +82,36 @@
         z-index: 5;
     }
 </style>
-<div>
-    <div class="row g-2" id="dvIsProperty" style="display:block;">
-        <div class="row mb-1">
-            <div class="col-md-3">
-                <label for="txtClientName" class="form-label fw-semibold">Client Name <span class="text-danger">*</span></label>
-                <select id="txtClientName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
-            </div>
-            <div class="col-md-3">
-                <label for="txtOrderNo" class="form-label fw-semibold">Order No. <span class="text-danger">*</span></label>
-                <select id="txtOrderNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
-            </div>
-            <div class="col-md-3">
-                <label for="txtProjectNo" class="form-label fw-semibold">Project No. <span class="text-danger">*</span></label>
-                <select id="txtProjectNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
-            </div>
-            <div class="col-md-3 text-end mt-4">
-                <button type="button" id="btnRMClearanceShow" class="btn btn-primary btn-height mb-1">Show</button>
-                <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
-            </div>
-        </div>
+<div class="row">
+    <div class="col-md-3">
+        <input type="checkbox" id="chkCompleted" autocomplete="off" tabindex="1"/>
+        <label for="chkCompleted" class="form-label fw-semibold">Completed </label>
+    </div>
+</div>
+<div class="row mb-1">
+    <div class="col-md-3">
+        <label for="txtClientName" class="form-label fw-semibold">Client Name <span class="text-danger">*</span></label>
+        <select id="txtClientName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+    </div>
+    <div class="col-md-3">
+        <label for="txtOrderNo" class="form-label fw-semibold">Order No. <span class="text-danger">*</span></label>
+        <select id="txtOrderNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+    </div>
+    <div class="col-md-3">
+        <label for="txtProjectNo" class="form-label fw-semibold">Project No. <span class="text-danger">*</span></label>
+        <select id="txtProjectNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+    </div>
+    <div class="col-md-3">
+        <label for="txtFromDate" class="form-label fw-semibold">From Date <span class="text-danger">*</span></label>
+        <input id="txtFromDate" type="date" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"/>
+    </div>
+    <div class="col-md-3">
+        <label for="txtToDate" class="form-label fw-semibold">To Date <span class="text-danger">*</span></label>
+        <input id="txtToDate" type="date" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" />
+    </div>
+    <div class="col-md-3" style="margin-top:26px;">
+        <button type="button" id="btnRMClearanceShow" class="btn btn-primary btn-height mb-1">Show</button>
+        <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
     </div>
 </div>
 <div class="card p-2 mt-2">
@@ -122,7 +132,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-content-width-sm">
             <div class="modal-header">
-                <h5 class="modal-title" id="detail-modal-title">Remark</h5>
+                <h5 class="modal-title" id="detail-modal-title">Reject Remark</h5>
                 <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
             </div>
             <div class="modal-body">
@@ -139,22 +149,22 @@
         </div>
     </div>
 </div>
-<div class="modal fade rps-detail-modal" id="dvInspectedRemark" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+<div class="modal fade rps-detail-modal" id="dvVerifyRemark" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-content-width-sm">
             <div class="modal-header">
-                <h5 class="modal-title" id="inspected-modal-title">Inspection Remark</h5>
+                <h5 class="modal-title" id="detail-modal-title">Verify Remark</h5>
                 <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
             </div>
             <div class="modal-body">
                 <div class="col-md-12">
-                    <label for="txtInspectedRemark" class="form-label filter-label">Inspection Remark </label> <span class="text-danger">*</span>
-                    <input type="text" id="txtInspectedRemark" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" />
-                    <input type="hidden" id="hfInspectedCode" class="form-control form-control-sm box_border" />
+                    <label for="txtRemark" class="form-label filter-label">Remark </label> <span class="text-danger">*</span>
+                    <input type="text" id="txtVerifyRemark" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" />
+                    <input type="hidden" id="hfVerifyCode" class="form-control form-control-sm box_border" />
                 </div>
                 <div class="col-md-12 text-end">
-                    <button type="button" class="btn btn-success icon-height" onclick="SaveInspectedRemark()">Ok</button>
-                    <button type="button" class="btn btn-danger icon-height" onclick="CloseInspectedModal()">Close</button>
+                    <button type="button" class="btn btn-success icon-height" onclick="VerifyRMClearance()">Ok</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="CloseVerifyModal()">Close</button>
                 </div>
             </div>
         </div>

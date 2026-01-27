@@ -18,17 +18,17 @@ const RawMaterialOfferService = {
             }
         );
     },
-    GetRawMaterialClearanceList: function GetRawMaterialClearanceList(AccountMaster_Code, OrderNo, ProjectNo) {
-        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + "/GetRawMaterialClearanceList?AccountMaster_Code=" + AccountMaster_Code + "&OrderNo=" + OrderNo + "&ProjectNo=" + ProjectNo;
+    GetRawMaterialClearanceList: function GetRawMaterialClearanceList(AccountMaster_Code, OrderNo, ProjectNo, FromDate, ToDate, IsCompleted) {
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + "/GetRawMaterialClearanceList?AccountMaster_Code=" + AccountMaster_Code + "&OrderNo=" + OrderNo + "&ProjectNo=" + ProjectNo + "&FromDate=" + FromDate + "&ToDate=" + ToDate + "&IsCompleted=" + IsCompleted;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
             }
         );
     },
-    GetRawMaterialClearanceVerify: function GetRawMaterialClearanceVerify(Code) {
+    GetRawMaterialClearanceVerify: function GetRawMaterialClearanceVerify(Code, RejectRemark) {
         let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + "/GetRawMaterialClearanceVerify?Code=" + Code + "&UserMaster_Code=" + userCode;
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + "/GetRawMaterialClearanceVerify?Code=" + Code + "&RejectRemark=" + RejectRemark + "&UserMaster_Code=" + userCode;
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
@@ -101,9 +101,9 @@ const RawMaterialOfferService = {
             }
         );
     },
-    SaveInspectedRemark: function SaveInspectedRemark(Code, InspectedRemark) {
+    SaveInspectedRemark: function SaveInspectedRemark(Code) {
         let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + "/SaveInspectedRemark?Code=" + Code + "&InspectedRemark=" + encodeURIComponent(InspectedRemark) + "&UserMaster_Code=" + userCode;
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + "/SaveInspectedRemark?Code=" + Code + "&UserMaster_Code=" + userCode;
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
