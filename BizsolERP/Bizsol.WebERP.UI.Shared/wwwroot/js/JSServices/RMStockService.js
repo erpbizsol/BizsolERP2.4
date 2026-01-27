@@ -172,6 +172,14 @@ const RMStockService = {
             }
         );
     },
+    GetRMStockSlittedCoilsStockSummary: function GetRMStockSlittedCoilsStockSummary() {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockSlittedCoilsStockSummary";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { RMStockService }
