@@ -165,71 +165,67 @@
         <fieldset class="rounded-1">
             <legend class="float-none w-auto px-2">Entry Details</legend>
             <div class="row">
-
                 <div class="col-md-3 col-sm-6 col-6">
                     <label for="txtEntryNo" class="col-form-label-sm fw-bold">Entry No <span class="text-danger">*</span></label>
-                    <input type="text" id="txtEntryNo" readonly class="form-control form-control-sm">
+                    <input type="text" id="txtEntryNo" readonly class="form-control form-control-sm" maxlength="10">
                     <input type="hidden" id="hftxtCode" class="form-control form-control-sm" value="0">
                 </div>
                 <div class="col-md-3 col-sm-6 col-6">
                     <label for="txtEntryDate" class="col-form-label-sm fw-bold">Entry Date <span class="text-danger">*</span></label>
-                    <input type="date" readonly id="txtEntryDate" class="form-control form-control-sm" autocomplete="off">
+                    <input type="date" readonly id="txtEntryDate" class="form-control form-control-sm" autocomplete="off" maxlength="10">
                 </div>
                 <div class="col-md-3 col-sm-6 col-6">
                     <label for="txtRequestDate" class="col-form-label-sm fw-bold">Request Date <span class="text-danger">*</span></label>
-                    <input type="date" id="txtRequestDate" class="form-control form-control-sm" autocomplete="off">
+                    <input type="date" id="txtRequestDate" class="form-control form-control-sm" autocomplete="off" maxlength="10">
                 </div>
                 <div class="col-md-3 col-sm-6 col-6">
                     <label for="txtddlMachineNo" class="col-form-label-sm fw-bold">Machine No <span class="text-danger">*</span></label>
-                    <select id="txtddlMachineNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+                    <select id="txtddlMachineNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
 
                 </div>
                 <div class="col-md-3 col-sm-6 col-6">
                     <label for="txtddlComplaintDepartment" class="col-form-label-sm fw-bold">Complaint Department <span class="text-danger">*</span></label>
-                    <select id="txtddlComplaintDepartment" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+                    <select id="txtddlComplaintDepartment" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
                 </div>
                 <div class="col-md-3 col-sm-6 col-6">
-                    <label for="txtStatus" class="col-form-label-sm fw-bold">Status <span class="text-danger">*</span></label>
-                    <select id="txtStatus" class="form-control form-control-sm">
-                        <option value="Under Maintenance" selected>Under Maintenance</option>
-                        <option value="Working" selected>Working</option>
-                    </select>
+                    <label for="ddlStatus" class="col-form-label-sm fw-bold">Status <span class="text-danger">*</span></label>
+                    <select id="ddlStatus" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="50"> </select>
                 </div>
                 <div class="col-md-2 col-sm-6 col-6">
                     <label for="txtMCFailedDate" class="col-form-label-sm fw-bold">Machine Failed Date <span class="text-danger">*</span></label>
-                    <input type="date" id="txtMCFailedDate" class="form-control form-control-sm" autocomplete="off">
+                    <input type="date" id="txtMCFailedDate" class="form-control form-control-sm" autocomplete="off" maxlength="10">
                 </div>
                 <div class="col-md-1 col-sm-6 col-6">
                     <label for="txtMCFailedTime" class="col-form-label-sm fw-bold">Time <span class="text-danger">*</span></label>
-                    <input type="time" id="txtMCFailedTime" class="form-control form-control-sm" autocomplete="off">
+                    <input type="time" id="txtMCFailedTime" class="form-control form-control-sm" autocomplete="off" maxlength="5">
                 </div>
                 <div class="col-md-2 col-sm-6 col-6" style="display:none" id="txthideMachineStartDate">
                     <label for="txtMachineStartDate" class="col-form-label-sm fw-bold">Machine Start Date <span class="text-danger">*</span></label>
-                    <input type="date" id="txtMachineStartDate" class="form-control form-control-sm" autocomplete="off">
+                    <input type="date" id="txtMachineStartDate" class="form-control form-control-sm" autocomplete="off" maxlength="10">
                 </div>
                 <div class="col-md-1 col-sm-6 col-6" style="display:none" id="txthideMachineStartTime">
                     <label for="txtMachineStartTime" class="col-form-label-sm fw-bold">Time <span class="text-danger">*</span></label>
-                    <input type="time" id="txtMachineStartTime" class="form-control form-control-sm" autocomplete="off">
+                    <input type="time" id="txtMachineStartTime" class="form-control form-control-sm" autocomplete="off" maxlength="5">
                 </div>
                 <div class="col-md-3 col-sm-6 col-6" style="display:none" id="txthideRemark">
                     <label for="txtERemark" class="col-form-label-sm fw-bold">Remark <span class="text-danger">*</span></label>
-                    <textarea id="txtERemark" class="form-control form-control-sm" rows="1" autocomplete="off"></textarea>
+                    <textarea id="txtERemark" class="form-control form-control-sm" rows="1" autocomplete="off" maxlength="1000"></textarea>
                 </div>
                 <div class="col-md-3 col-sm-6 col-6" style="display:none" id="txthideDescriptionWorkDone">
                     <label for="txtDescriptionWorkDone" class="col-form-label-sm fw-bold">Description of Work Done</label>
-                    <textarea id="txtDescriptionWorkDone" class="form-control form-control-sm" rows="1" autocomplete="off"></textarea>
+                    <textarea id="txtDescriptionWorkDone" class="form-control form-control-sm" rows="1" autocomplete="off" maxlength="1000"></textarea>
                 </div>
                 <div class="col-md-3 col-sm-6 col-6">
                     <label for="txtJobAssignedTo" class="col-form-label-sm fw-bold">Job Assigned To</label>
-                    <input type="text" id="txtJobAssignedTo" class="form-control form-control-sm" autocomplete="off">
+                    <input type="text" id="txtJobAssignedTo" class="form-control form-control-sm" autocomplete="off" maxlength="50">
                 </div>
                 <div class="col-md-3 col-sm-6 col-6">
                     <label for="txtddlComplaintReason" class="col-form-label-sm fw-bold">Complaint Reason <span class="text-danger">*</span></label>
-                    <select id="txtddlComplaintReason" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+                    <select id="txtddlComplaintReason" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
                 </div>
                 <div class="col-md-3 col-sm-6 col-6" id="txtdRemark">
                     <label for="txtRemark" class="col-form-label-sm fw-bold">Remark</label>
-                    <textarea id="txtRemark" class="form-control form-control-sm" rows="1" autocomplete="off"></textarea>
+                    <textarea id="txtRemark" class="form-control form-control-sm" rows="1" autocomplete="off" maxlength="1000"></textarea>
                 </div>
                 <div class="col-md-3 col-sm-6 col-6">
                     <label for="txtPreparedBy" class="col-form-label-sm fw-bold">Prepared By</label>
@@ -252,10 +248,6 @@
                         <img id="imgPreview" style="width:120px; height:120px; object-fit: contain; border: 1px solid #ddd; border-radius: 4px; padding: 5px; background-color: #f8f9fa;" />
                     </div>
                 </div>
-               @*  <div class="col-md-3 col-sm-6 col-6">
-                    <label for="txtSectionInchargeSignature" class="col-form-label-sm fw-bold">Section Incharge Signature</label>
-                    <input type="text" id="txtSectionInchargeSignature" class="form-control form-control-sm" autocomplete="off">
-                </div> *@
                 <div class="col-md-12 text-end mt-1">
                     <button type="button" class="btn btn-primary icon-height" onclick="SaveMachineMaintenance()">Save</button>
                     <button type="button" class="btn btn-danger icon-height" onclick="BackMaster()">Back</button>
