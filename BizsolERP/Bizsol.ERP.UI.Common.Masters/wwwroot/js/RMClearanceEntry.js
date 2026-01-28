@@ -530,7 +530,12 @@ function GetRawMaterialClearanceList() {
                     ...item
                 };
             });
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            const TotalColumns = [
+                "P.O. Qty(Wt.)",
+                "Balance to Inspect (Wt.)",
+                "Coil Wt."	
+            ]
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, true, TotalColumns);
         } else {
             $('#tblRMClearance').hide();
             $('#paginator-tblRMClearance').hide();
