@@ -6,23 +6,37 @@ import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToE
 let G_RawMaterialDropDown = [];
 let G_ClientOrderProjectData = [];
 let G_RMClearanceDataList = [];
+let G_TodayDate = [];
+let G_StartOfMonth = [];
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     GetRawMaterialDropDown();
-    GetRawMaterialClearanceList();
+   
     $('#btnRMClearanceShow').on("click", function () {
         GetRawMaterialClearanceList();
     });
-    $('#dvInspectedRemark').on('hidden.bs.modal', function () {
-        var checkboxElement = $(this).data('CheckboxElement');
-        if (checkboxElement) {
-            checkboxElement.checked = false;
-            $(this).removeData('CheckboxElement');
-        }
-        $("#txtInspectedRemark").val("");
-        $("#hfInspectedCode").val(0);
+    $('#chkCompleted').on("change", function () {
+        GetRawMaterialClearanceList();
     });
+    setDefaultDateRange();
 });
+function setDefaultDateRange() {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    function formatDate(d) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+    
+    $('#txtFromDate').val(formatDate(startOfMonth));
+    $('#txtToDate').val(formatDate(today));
+    G_TodayDate = formatDate(today);    
+    G_StartOfMonth = formatDate(startOfMonth);
+    GetRawMaterialClearanceList();
+}
 function GetRawMaterialDropDown() {
     RawMaterialOfferService.GetRawMaterialDropDown()
         .then(function (response) {
@@ -439,19 +453,10 @@ function Verify(Code) {
             toastr.error(response.Msg);
             return false;
         } else {
-            var isConfirmed = confirm("Do You Want to Verify");
-            if (isConfirmed == false) {
-                return false;
-            }
-            RawMaterialOfferService.GetRawMaterialClearanceVerify(Code).then(function (response) {
-                if (response.Status === 'Y') {
-                    toastr.success(response.Msg);
-                    GetRawMaterialClearanceList();
-                }
-                else if (response.Status === 'N') {
-                    toastr.danger(response.Msg);
-                }
-            });
+            $('#dvVerifyRemark').data('Code', Code);
+            $('#dvVerifyRemark').modal({ backdrop: 'static', keyboard: false });
+            $('#dvVerifyRemark').modal('show');
+            $('#hfVerifyCode').val(Code);
         }
     });
 }
@@ -459,8 +464,10 @@ function GetRawMaterialClearanceList() {
     let AccountMaster_Code = $('#txtClientName').val();
     let OrderNo = $('#txtOrderNo').val();
     let ProjectNo = $('#txtProjectNo').val();
-    
-    // Ensure values are bound, not null
+    let FromDate = $('#txtFromDate').val();
+    let ToDate = $('#txtToDate').val();
+    let IsCompleted = $('#chkCompleted').is(':checked') == true ? 'Y' : 'N';
+
     if (AccountMaster_Code === null || AccountMaster_Code === undefined || AccountMaster_Code === '') {
         AccountMaster_Code = '0';
     }
@@ -470,35 +477,57 @@ function GetRawMaterialClearanceList() {
     if (ProjectNo === null || ProjectNo === undefined || ProjectNo === '') {
         ProjectNo = 'All';
     }
-    
+    if (FromDate === null || FromDate === undefined || FromDate === '') {
+        FromDate = G_StartOfMonth;
+    }
+    if (ToDate === null || ToDate === undefined || ToDate === '') {
+        ToDate = G_TodayDate;
+    }
+    if (IsCompleted === null || IsCompleted === undefined || IsCompleted === '') {
+        IsCompleted = 'N';
+    }
     Showloader();
-    RawMaterialOfferService.GetRawMaterialClearanceList(AccountMaster_Code, OrderNo, ProjectNo).then(function (response) {
+    RawMaterialOfferService.GetRawMaterialClearanceList(AccountMaster_Code, OrderNo, ProjectNo, FromDate, ToDate, IsCompleted).then(function (response) {
         HideLoader();
         if (response && response.length > 0) {
             $('#tblRMClearance').show();
             $('#paginator-tblRMClearance').show();
             G_RMClearanceDataList = response;
-            const StringFilterColumn = ["Inspection Location", "Client Name", "Order No", "Project No", "Mark No", "Thickness", "Grade", "IdentificationNo","Location of Coil"];
+            let StringFilterColumn = [];
             const NumericFilterColumn = ["Entry No"];
             const DateFilterColumn = ["Entry Date","Inspection Date"];
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Code", "Thickness_Code", "Grade_Code","RMInspectionRequestMaster_Code", "IsInspected"];
+            let hiddenColumns = [];
+            if (IsCompleted == 'N') {
+                hiddenColumns = ["Code", "Thickness_Code", "Grade_Code", "RMInspectionRequestMaster_Code", "IsInspected", "Status","Verify/Rejected By","Verify/Rejected On","Remark"];
+                StringFilterColumn = ["Inspection Location", "Client Name", "Order No", "Project No", "Mark No", "Thickness", "Grade", "IdentificationNo", "Location of Coil"];
+
+            } else {
+                hiddenColumns = ["Code", "Thickness_Code", "Grade_Code","RMInspectionRequestMaster_Code", "IsInspected",];
+                StringFilterColumn = ["Inspection Location", "Client Name", "Order No", "Project No", "Mark No", "Thickness", "Grade", "IdentificationNo", "Location of Coil","Status"];
+
+            }
             const ColumnAlignment = { 'S.No.': 'center;width:10px', "Entry Date": 'center', "Inspection Date": 'center', "Entry No": 'center', 'P.O. Qty(Wt.)': 'right', 'Balance to Inspect (Wt.)': 'right','Coil Wt.':'right', 'Is Inspected': 'center' };
             const updatedResponse = response.map((item) => {
                 let InputHTML = '';
                 let IsInspectedHTML = '';
-                if (item.IsInspected === 'Y') {
-                    InputHTML = `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item.Code})">Verify</button>&nbsp;&nbsp;<button class="btn btn-danger icon-height mb-1" title="Reject" onclick="OpenModalReject(${item.Code})">Reject</button>`;
-                    IsInspectedHTML = `<input type="checkbox" class="form-check-input" checked disabled />`;
-                } else {
-                    IsInspectedHTML = `<input type="checkbox" class="form-check-input" onclick="OpenModalInspectedRemark(${item.Code}, this)" />`;
+                if (IsCompleted == 'N') {
+                    if (item.IsInspected === 'Y') {
+                        InputHTML = `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item.Code})">Verify</button>&nbsp;&nbsp;<button class="btn btn-danger icon-height mb-1" title="Reject" onclick="OpenModalReject(${item.Code})">Reject</button>`;
+                        IsInspectedHTML = `<input type="checkbox" class="form-check-input" checked disabled />`;
+                    } else {
+                        IsInspectedHTML = `<input type="checkbox" class="form-check-input" onclick="OpenModalInspectedRemark(${item.Code})" />`;
+                    }
+                    return {
+                        ...item,
+                        'Is Inspected': IsInspectedHTML,
+                        'Action': InputHTML,
+                    };
                 }
                 return {
-                    ...item,
-                    'Is Inspected': IsInspectedHTML,
-                    'Action': InputHTML,
+                    ...item
                 };
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
@@ -560,51 +589,66 @@ function RejectRMClearance(){
         }
     });
 }
+function VerifyRMClearance() {
+    var reason = $("#txtVerifyRemark").val();
+    var Code = $("#hfVerifyCode").val();
+    if (reason == "") {
+        toastr.error('Please enter a reason before proceeding.');
+        return;
+    }
+    RawMaterialOfferService.GetRawMaterialClearanceVerify(Code, reason).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+            CloseVerifyModal();
+            GetRawMaterialClearanceList();
+            $("#txtVerifyRemark").val('')
+            $("#hfVerifyCode").val(0);
+        }
+        else if (response.Status === 'N') {
+            toastr.danger(response.Msg);
+        }
+    });
+}
 function CloseModal() {
     $('#dvRemark').modal('hide');
     $("#txtRemark").val("");
 }
-function OpenModalInspectedRemark(Code, checkboxElement) {
-    checkboxElement.checked = true;
-    $('#dvInspectedRemark').data('Code', Code);
-    $('#dvInspectedRemark').data('CheckboxElement', checkboxElement);
-    $('#dvInspectedRemark').modal({ backdrop: 'static', keyboard: false });
-    $('#dvInspectedRemark').modal('show');
-    $('#hfInspectedCode').val(Code);
-    $('#txtInspectedRemark').val('');
+function CloseVerifyModal() {
+    $('#dvVerifyRemark').modal('hide');
+    $("#txtVerifyRemark").val("");
 }
-function SaveInspectedRemark() {
-    var remark = $("#txtInspectedRemark").val();
-    var Code = $("#hfInspectedCode").val();
-    if (remark == "") {
-        toastr.error('Please enter an inspection remark before proceeding.');
-        return;
-    }
-    RawMaterialOfferService.SaveInspectedRemark(Code, remark).then(function (response) {
+function OpenModalInspectedRemark(Code) {
+    var ModuleName = "RM Clearance Entry",
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+        MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            SaveInspectedRemark(Code);
+        }
+    });
+}
+function SaveInspectedRemark(Code) {
+    RawMaterialOfferService.SaveInspectedRemark(Code).then(function (response) {
         if (response.Status == 'Y') {
             toastr.success(response.Msg);
-            $('#dvInspectedRemark').removeData('CheckboxElement');
-            CloseInspectedModal();
             GetRawMaterialClearanceList();
         } else {
             toastr.error(response.Msg);
         }
     });
 }
-function CloseInspectedModal() {
-    var checkboxElement = $('#dvInspectedRemark').data('CheckboxElement');
-    if (checkboxElement) {
-        checkboxElement.checked = false;
-    }
-    $('#dvInspectedRemark').modal('hide');
-    $("#txtInspectedRemark").val("");
-    $("#hfInspectedCode").val(0);
-    $('#dvInspectedRemark').removeData('CheckboxElement');
-}
 function Download() {
-    const hiddenFields = [
-        "Code"
-    ];
+    let hiddenFields = [];
+    let IsCompleted = $('#chkCompleted').is(':checked') == true ? 'Y' : 'N';
+    if (IsCompleted == 'N') {
+        hiddenFields = ["Code", "Thickness_Code", "Grade_Code", "RMInspectionRequestMaster_Code", "IsInspected", "Status", "Verify/Rejected By", "Verify/Rejected On", "Remark"];
+    } else {
+        hiddenFields = ["Code", "Thickness_Code", "Grade_Code", "RMInspectionRequestMaster_Code", "IsInspected",];
+    }
     ExportToExcelControl.ExportToExcel(G_RMClearanceDataList, hiddenFields, "RawMaterialClearance");
 }
 
@@ -613,6 +657,7 @@ window.CloseModal = CloseModal;
 window.OpenModalReject = OpenModalReject;
 window.Download = Download;
 window.RejectRMClearance = RejectRMClearance;
+window.VerifyRMClearance = VerifyRMClearance;
+window.CloseVerifyModal = CloseVerifyModal;
 window.OpenModalInspectedRemark = OpenModalInspectedRemark;
 window.SaveInspectedRemark = SaveInspectedRemark;
-window.CloseInspectedModal = CloseInspectedModal;
