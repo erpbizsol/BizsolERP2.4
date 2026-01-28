@@ -6,8 +6,29 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.css" rel="stylesheet" />
 <link href="~/_content/Bizsol.WebERP.UI.Shared/components/FilterSidePanelControl/FilterSidePanelControl.css" rel="stylesheet" />
 <style>
-    /* Use CSS class instead of inline style to avoid linter warnings and ensure consistent behavior */
-    .chart-scroll {
+/* Prevent black screen overlay during zoom on mobile */
+body {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure loader is properly styled and doesn't cause black screen */
+.loader-wrapper, #loader {
+    z-index: 9998 !important;
+}
+
+/* Prevent loader from showing during zoom gestures */
+body.zooming #loader {
+    visibility: hidden !important;
+    display: none !important;
+}
+
+/* Prevent any modal backdrops from interfering */
+.modal-backdrop {
+    z-index: 9997 !important;
+}
+
+/* Use CSS class instead of inline style to avoid linter warnings and ensure consistent behavior */
+.chart-scroll {
         overflow-x: auto;
         width: 100%;
     }
@@ -34,6 +55,121 @@
         font-size: 34px;
         letter-spacing: 1px;
     }
+
+    /* Mobile-friendly tabs styling */
+    #customerDashboardTabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    #customerDashboardTabs::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    #customerDashboardTabs::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 4px;
+    }
+
+    #customerDashboardTabs .nav-item {
+        flex-shrink: 0;
+    }
+
+    #customerDashboardTabs .nav-link {
+        white-space: nowrap;
+        border-radius: 8px 8px 0 0;
+        padding: 12px 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        margin-right: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    #customerDashboardTabs .nav-link i {
+        font-size: 16px;
+    }
+
+    #customerDashboardTabs .nav-link:not(.active) {
+        background-color: #f8f9fa;
+        color: #495057;
+    }
+
+    #customerDashboardTabs .nav-link:not(.active):hover {
+        background-color: #e9ecef;
+        color: #212529;
+    }
+
+    #customerDashboardTabs .nav-link.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Mobile specific styles */
+    @@media (max-width: 768px) {
+        #customerDashboardTabs .nav-link {
+            font-size: 13px;
+            padding: 10px 16px;
+            gap: 6px;
+        }
+
+        #customerDashboardTabs .nav-link i {
+            font-size: 14px;
+        }
+
+        .top-client {
+            font-size: 24px;
+        }
+
+        .card-body h3, .card-body h5 {
+            font-size: 1.1rem;
+        }
+
+        .card-body h6 {
+            font-size: 0.85rem;
+        }
+
+        /* Reduce chart min-width on mobile for better fit */
+        .chart-minwide-800 {
+            min-width: 600px;
+        }
+
+        .chart-minwide-600 {
+            min-width: 450px;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        #customerDashboardTabs {
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        #customerDashboardTabs .nav-link {
+            font-size: 11px;
+            padding: 8px 12px;
+            margin-right: 2px;
+            gap: 4px;
+        }
+
+        #customerDashboardTabs .nav-link i {
+            font-size: 13px;
+        }
+
+        .chart-minwide-800 {
+            min-width: 500px;
+        }
+
+        .chart-minwide-600 {
+            min-width: 400px;
+        }
+    }
 </style>
 
 <!-- FilterSidePanelControl Web Component - Provides floating button and side panel with all filters -->
@@ -43,28 +179,28 @@
 <ul class="nav nav-tabs" id="customerDashboardTabs" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active" id="Sales-tab" data-bs-toggle="tab" data-bs-target="#Sales" type="button" role="tab" aria-controls="Sales" aria-selected="true">
-            Sales Analysis
+            <i class="fas fa-chart-line me-2"></i>Sales Analysis
         </button>
     </li>
 
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="regional-tab" data-bs-toggle="tab" data-bs-target="#regional" type="button" role="tab" aria-controls="regional" aria-selected="false">
-            Regional Analysis
+            <i class="fas fa-map-marked-alt me-2"></i>Regional Analysis
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="client-tab" data-bs-toggle="tab" data-bs-target="#client" type="button" role="tab" aria-controls="client" aria-selected="false">
-            Client Analysis
+            <i class="fas fa-users me-2"></i>Client Analysis
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="target-growth-tab" data-bs-toggle="tab" data-bs-target="#target-growth" type="button" role="tab" aria-controls="target-growth" aria-selected="false">
-            Target and Growth Analysis
+            <i class="fas fa-bullseye me-2"></i>Target and Growth Analysis
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="product-tab" data-bs-toggle="tab" data-bs-target="#product" type="button" role="tab" aria-controls="product" aria-selected="false">
-            Product Analysis
+            <i class="fas fa-box me-2"></i>Product Analysis
         </button>
     </li>
 </ul>
@@ -393,6 +529,7 @@
 
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>

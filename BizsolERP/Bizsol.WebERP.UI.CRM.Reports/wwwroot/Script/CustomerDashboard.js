@@ -334,11 +334,134 @@ if (document.readyState === 'loading') {
  document.addEventListener('DOMContentLoaded', () => {
  initFilterSidePanelControl();
  initDateRangeControl();
+ initMobileTabScrolling();
+ initZoomProtection();
  });
 } else {
     initFilterSidePanelControl();
     initDateRangeControl();
+    initMobileTabScrolling();
+    initZoomProtection();
 }
+
+// Initialize zoom protection to prevent black screen
+function initZoomProtection() {
+    // Override Showloader temporarily during zoom
+    let originalShowloader = window.Showloader;
+    
+    window.Showloader = function() {
+        if (isZooming || document.body.classList.contains('zooming')) {
+            console.log('Showloader blocked during zoom');
+            return;
+        }
+        if (originalShowloader) {
+            originalShowloader();
+        }
+    };
+}
+
+// Mobile-friendly tab scrolling - scroll active tab into view
+function initMobileTabScrolling() {
+    const tabsContainer = document.getElementById('customerDashboardTabs');
+    
+    if (tabsContainer) {
+        // Function to scroll active tab into view
+        function scrollActiveTabIntoView() {
+            const activeTab = tabsContainer.querySelector('.nav-link.active');
+            if (activeTab && window.innerWidth < 768) {
+                // Smooth scroll the active tab into view
+                activeTab.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'nearest', 
+                    inline: 'center' 
+                });
+            }
+        }
+        
+        // Listen for tab change events
+        const tabButtons = tabsContainer.querySelectorAll('.nav-link');
+        tabButtons.forEach(function(button) {
+            button.addEventListener('shown.bs.tab', function() {
+                scrollActiveTabIntoView();
+            });
+        });
+        
+        // Scroll to active tab on page load
+        setTimeout(scrollActiveTabIntoView, 300);
+    }
+}
+
+// Add window resize handler for responsive chart updates
+let resizeTimeout;
+let lastWidth = window.innerWidth;
+let isZooming = false;
+
+// Detect zoom/pinch events to prevent unwanted redraws
+document.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) {
+        isZooming = true;
+        document.body.classList.add('zooming');
+        // Force hide loader during zoom
+        try {
+            if (typeof HideLoader === 'function') {
+                HideLoader();
+            }
+            const loader = document.getElementById('loader');
+            if (loader) {
+                loader.style.visibility = 'hidden';
+                loader.style.display = 'none';
+            }
+        } catch (e) {
+            console.warn('Could not hide loader:', e);
+        }
+    }
+});
+
+document.addEventListener('touchend', function() {
+    setTimeout(function() {
+        isZooming = false;
+        document.body.classList.remove('zooming');
+    }, 500); // Increased delay to ensure smooth experience
+});
+
+// Also detect browser zoom via visualViewport API
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', function() {
+        // This fires during pinch zoom
+        if (isZooming) {
+            try {
+                if (typeof HideLoader === 'function') {
+                    HideLoader();
+                }
+            } catch (e) {
+                console.warn('Could not hide loader:', e);
+            }
+        }
+    });
+}
+
+window.addEventListener('resize', function() {
+    // Skip resize handling during zoom gestures
+    if (isZooming) {
+        return;
+    }
+    
+    // Debounce resize events to avoid too many redraws
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+        // Only redraw if width actually changed (not just zoom/scroll)
+        const currentWidth = window.innerWidth;
+        if (Math.abs(currentWidth - lastWidth) > 10 && G_IsDataLoaded && window.barChartInstance) {
+            lastWidth = currentWidth;
+            // Redraw the bar chart with new responsive settings without showing loader
+            try {
+                renderBarChart();
+            } catch (e) {
+                console.warn('Chart resize failed:', e);
+            }
+        }
+    }, 500); // Increased debounce time to 500ms for better stability
+});
 
 // Function to load raw dashboard data
 async function LoadRawDashboardData() {
@@ -548,6 +671,16 @@ const chartRows = processRawDataForSalesTab(G_RawDashboardData);
 
         const ctx = canvas.getContext('2d');
 
+        // Adjust canvas height for mobile devices
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+            canvas.style.height = '250px';
+            canvas.setAttribute('height', '250');
+        } else {
+            canvas.style.height = '320px';
+            canvas.setAttribute('height', '320');
+        }
+
         // Convert input rows into arrays suitable for Chart.js
         let monthLabels = [];
         let currentFY = [];
@@ -621,14 +754,104 @@ const chartRows = processRawDataForSalesTab(G_RawDashboardData);
                     },
                     datalabels: {
                         anchor: 'end',
-                        align: 'end',
-                        offset: -6,
-                        color: '#222',
-                        font: { weight: 'bold', size:12 },
-                        formatter: function (value) {
+                        align: function(context) {
+                            // Align labels based on available space to prevent overlap
+                            const value = context.dataset.data[context.dataIndex];
+                            const maxValue = Math.max(...context.chart.data.datasets[0].data, ...context.chart.data.datasets[1].data);
+                            
+                            // For smaller values, place labels inside the bar to save space
+                            if (value < maxValue * 0.15) {
+                                return 'start';
+                            }
+                            return 'end';
+                        },
+                        offset: function(context) {
+                            const value = context.dataset.data[context.dataIndex];
+                            const maxValue = Math.max(...context.chart.data.datasets[0].data, ...context.chart.data.datasets[1].data);
+                            
+                            // Adjust offset based on bar height
+                            if (value < maxValue * 0.15) {
+                                return 4; // Inside bar
+                            }
+                            return -2; // Outside bar
+                        },
+                        color: function(context) {
+                            const value = context.dataset.data[context.dataIndex];
+                            const maxValue = Math.max(...context.chart.data.datasets[0].data, ...context.chart.data.datasets[1].data);
+                            
+                            // White text for labels inside bars
+                            if (value < maxValue * 0.15) {
+                                return '#fff';
+                            }
+                            return '#222';
+                        },
+                        font: function(context) {
+                            // Responsive font sizing based on screen width
+                            const width = context.chart.width;
+                            let size = 11;
+                            if (width < 400) {
+                                size = 8;
+                            } else if (width < 600) {
+                                size = 9;
+                            } else if (width < 800) {
+                                size = 10;
+                            }
+                            return {
+                                weight: 'bold',
+                                size: size
+                            };
+                        },
+                        formatter: function (value, context) {
                             if (value === null || value === undefined) return '';
-                            return Number(value).toLocaleString('en-US', { maximumFractionDigits:2 });
-                        }
+                            
+                            // On mobile, show labels only if screen is wide enough or alternate labels
+                            const chartWidth = context.chart.width;
+                            const isMobile = window.innerWidth < 768;
+                            
+                            // For very narrow charts on mobile, show every other label
+                            if (isMobile && chartWidth < 500) {
+                                const dataIndex = context.dataIndex;
+                                // Show label for even indices only
+                                if (dataIndex % 2 !== 0) {
+                                    return '';
+                                }
+                            }
+                            
+                            // Format number - show shorter format on mobile or desktop with many bars
+                            const num = Number(value);
+                            const barCount = context.chart.data.labels.length;
+                            
+                            // Use compact format for crowded charts or mobile
+                            if ((isMobile && num >= 1000) || (barCount > 8 && num >= 1000)) {
+                                // Show abbreviated format (e.g., 5.6k)
+                                if (num >= 1000000) {
+                                    return (num / 1000000).toFixed(1) + 'M';
+                                }
+                                return (num / 1000).toFixed(1) + 'k';
+                            }
+                            
+                            return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                        },
+                        display: function(context) {
+                            // Hide labels if value is too small or on very narrow mobile screens
+                            const value = context.dataset.data[context.dataIndex];
+                            if (!value || value < 1) return false;
+                            
+                            const isMobile = window.innerWidth < 768;
+                            const chartWidth = context.chart.width;
+                            
+                            // On very small screens, be more selective
+                            if (isMobile && chartWidth < 400) {
+                                // Only show labels for larger values
+                                const maxValue = Math.max(...context.dataset.data.filter(v => v));
+                                return value >= maxValue * 0.3;
+                            }
+                            
+                            return true;
+                        },
+                        rotation: 0,
+                        clamp: true,
+                        clip: true
                     }
                 },
                 scales: {
@@ -879,14 +1102,67 @@ const regionalData = processRawDataForRegionalTab(G_RawDashboardData);
                             // Configure datalabels here (works if plugin registered)
                             datalabels: {
                                 display: true,
-                                anchor: 'center',
-                                align: 'center',
-                                color: '#fff',
-                                formatter: function (value) {
-                                    if (value === null || value === undefined) return '';
-                                    return Number(value).toLocaleString('en-US', { maximumFractionDigits:2 });
+                                anchor: function(context) {
+                                    const value = context.dataset.data[context.dataIndex];
+                                    const maxValue = Math.max(...context.dataset.data);
+                                    // For small bars, position outside
+                                    if (value < maxValue * 0.2) {
+                                        return 'end';
+                                    }
+                                    return 'center';
                                 },
-                                font: { weight: 'bold' }
+                                align: function(context) {
+                                    const value = context.dataset.data[context.dataIndex];
+                                    const maxValue = Math.max(...context.dataset.data);
+                                    // For small bars, position labels outside to the right
+                                    if (value < maxValue * 0.2) {
+                                        return 'end';
+                                    }
+                                    return 'center';
+                                },
+                                offset: function(context) {
+                                    const value = context.dataset.data[context.dataIndex];
+                                    const maxValue = Math.max(...context.dataset.data);
+                                    // Push labels outside for small bars
+                                    if (value < maxValue * 0.2) {
+                                        return 5;
+                                    }
+                                    return 0;
+                                },
+                                color: function(context) {
+                                    const value = context.dataset.data[context.dataIndex];
+                                    const maxValue = Math.max(...context.dataset.data);
+                                    // Dark text for outside labels, white for inside
+                                    if (value < maxValue * 0.2) {
+                                        return '#333';
+                                    }
+                                    return '#fff';
+                                },
+                                formatter: function (value, context) {
+                                    if (value === null || value === undefined) return '';
+                                    
+                                    const num = Number(value);
+                                    const isMobile = window.innerWidth < 768;
+                                    
+                                    // Use compact format for large numbers or mobile
+                                    if (num >= 10000 || isMobile) {
+                                        if (num >= 1000000) {
+                                            return (num / 1000000).toFixed(1) + 'M';
+                                        }
+                                        return (num / 1000).toFixed(1) + 'k';
+                                    }
+                                    
+                                    return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                                },
+                                font: function(context) {
+                                    const isMobile = window.innerWidth < 768;
+                                    return { 
+                                        weight: 'bold',
+                                        size: isMobile ? 9 : 11
+                                    };
+                                },
+                                clip: true,
+                                clamp: true
                             },
                             tooltip: { enabled: true }
                         },
@@ -1280,25 +1556,83 @@ if (!response || response.length === 0) {
                     maintainAspectRatio: false,
                     layout: {
                         padding: {
-                            top: 20,
-                            bottom: 20,
-                            left: 20,
-                            right: 20
+                            top: 40,
+                            bottom: 40,
+                            left: 40,
+                            right: 40
                         }
                     },
                     plugins: {
-                        legend: { position: 'right' },
+                        legend: { 
+                            position: 'right',
+                            labels: {
+                                boxWidth: 15,
+                                padding: 10,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
                         datalabels: {
-                            anchor: 'center',
-                            align: 'end',
-                            offset: 45,
-                            color: '#818181',
-                            font: { weight: 'bold', size: 12 },
-                            formatter: function (value) {
-                                if (value === null || value === undefined) return '';
-                                return formatNumber(value);
+                            anchor: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage < 15 ? 'end' : 'center';
                             },
-                            clip: false
+                            align: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage < 15 ? 'start' : 'center';
+                            },
+                            offset: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage < 15 ? 10 : 0;
+                            },
+                            color: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage < 15 ? '#333' : '#fff';
+                            },
+                            font: function(context) {
+                                const isMobile = window.innerWidth < 768;
+                                return { 
+                                    weight: 'bold', 
+                                    size: isMobile ? 9 : 10
+                                };
+                            },
+                            formatter: function (value, context) {
+                                if (value === null || value === undefined) return '';
+                                
+                                const num = Number(value);
+                                const isMobile = window.innerWidth < 768;
+                                
+                                if (num >= 5000 || isMobile) {
+                                    if (num >= 1000000) {
+                                        return (num / 1000000).toFixed(1) + 'M';
+                                    }
+                                    return (num / 1000).toFixed(1) + 'k';
+                                }
+                                
+                                return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                            },
+                            clip: false,
+                            display: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                
+                                return percentage > 2;
+                            }
                         }
                     }
                 },
@@ -1342,25 +1676,72 @@ if (!response || response.length === 0) {
                     maintainAspectRatio: false,
                     layout: {
                         padding: {
-                            top: 20,
-                            bottom: 20,
-                            left: 20,
-                            right: 20
+                            top: 40,
+                            bottom: 40,
+                            left: 40,
+                            right: 40
                         }
                     },
                     plugins: {
-                        legend: { position: 'right' },
+                        legend: { 
+                            position: 'right',
+                            labels: {
+                                boxWidth: 15,
+                                padding: 10,
+                                font: { size: 11 }
+                            }
+                        },
                         datalabels: {
-                            anchor: 'center',
-                            align: 'end',
-                            offset: 45,
-                            color: '#818181',
-                            font: { weight: 'bold', size: 12 },
-                            formatter: function (value) {
-                                if (value === null || value === undefined) return '';
-                                return formatNumber(value);
+                            anchor: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage < 15 ? 'end' : 'center';
                             },
-                            clip: false
+                            align: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage < 15 ? 'start' : 'center';
+                            },
+                            offset: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage < 15 ? 10 : 0;
+                            },
+                            color: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage < 15 ? '#333' : '#fff';
+                            },
+                            font: function(context) {
+                                const isMobile = window.innerWidth < 768;
+                                return { weight: 'bold', size: isMobile ? 9 : 10 };
+                            },
+                            formatter: function (value, context) {
+                                if (value === null || value === undefined) return '';
+                                const num = Number(value);
+                                const isMobile = window.innerWidth < 768;
+                                if (num >= 5000 || isMobile) {
+                                    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+                                    return (num / 1000).toFixed(1) + 'k';
+                                }
+                                return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                            },
+                            clip: false,
+                            display: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage > 2;
+                            }
                         }
                     }
                 },
@@ -1521,25 +1902,83 @@ if (!response || response.length === 0) {
                     maintainAspectRatio: false,
                     layout: {
                         padding: {
-                            top: 20,
-                            bottom: 20,
-                            left: 20,
-                            right: 20
+                            top: 40,
+                            bottom: 40,
+                            left: 40,
+                            right: 40
                         }
                     },
                     plugins: {
-                        legend: { position: 'right' },
+                        legend: { 
+                            position: 'right',
+                            labels: {
+                                boxWidth: 15,
+                                padding: 10,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
                         datalabels: {
-                            anchor: 'center',
-                            align: 'end',
-                            offset: 55,
-                            color: '#818181',
-                            font: { weight: 'bold', size: 12 },
-                            formatter: function (value) {
-                                if (value === null || value === undefined) return '';
-                                return formatNumber(value);
+                            anchor: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage < 15 ? 'end' : 'center';
                             },
-                            clip: false
+                            align: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage < 15 ? 'start' : 'center';
+                            },
+                            offset: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage < 15 ? 10 : 0;
+                            },
+                            color: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                return percentage < 15 ? '#333' : '#fff';
+                            },
+                            font: function(context) {
+                                const isMobile = window.innerWidth < 768;
+                                return { 
+                                    weight: 'bold', 
+                                    size: isMobile ? 9 : 10
+                                };
+                            },
+                            formatter: function (value, context) {
+                                if (value === null || value === undefined) return '';
+                                
+                                const num = Number(value);
+                                const isMobile = window.innerWidth < 768;
+                                
+                                if (num >= 5000 || isMobile) {
+                                    if (num >= 1000000) {
+                                        return (num / 1000000).toFixed(1) + 'M';
+                                    }
+                                    return (num / 1000).toFixed(1) + 'k';
+                                }
+                                
+                                return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                            },
+                            clip: false,
+                            display: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = dataset.data[context.dataIndex];
+                                const percentage = (value / total) * 100;
+                                
+                                return percentage > 2;
+                            }
                         }
                     }
                 },
