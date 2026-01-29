@@ -1,9 +1,11 @@
-import { RollingPlanSheetService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RollingPlanSheetService.js';
+﻿import { RollingPlanSheetService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RollingPlanSheetService.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 let G_FromDate = '';
 let G_ToDate = '';
+let A_FromDate = '';
+let A_ToDate = '';
 $(document).ready(function () {
     GetRollingPlanSheetList();
     var urlParams = BizSolHelperFunction.getUrlVars();
@@ -18,6 +20,7 @@ $(document).ready(function () {
         $('#date-filter-bar').show();
         $('#btnDownload').hide();
         $('#from-date-to-date-filter-bar').hide();
+        $('#from-date-to-date-filter-bar-Ageing').hide();
         const today = new Date();
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -32,6 +35,7 @@ $(document).ready(function () {
         clearTable();
         $('#date-filter-bar').hide();
         $('#from-date-to-date-filter-bar').hide();
+        $('#from-date-to-date-filter-bar-Ageing').hide();
         $('#btnDownload').show();
         GetRollingPlanSheetList();
         const $wrapper = $('.table-wrapper');
@@ -42,6 +46,7 @@ $(document).ready(function () {
         clearTable();
         $('#date-filter-bar').hide();
         $('#from-date-to-date-filter-bar').hide();
+        $('#from-date-to-date-filter-bar-Ageing').hide();
         $('#btnDownload').show();
         GetPipeStockRollingPlanList();
         const $wrapper = $('.table-wrapper');
@@ -53,6 +58,7 @@ $(document).ready(function () {
         $('#date-filter-bar').hide();
         $('#btnDownload').show();
         $('#from-date-to-date-filter-bar').show();
+        $('#from-date-to-date-filter-bar-Ageing').hide();
         setCurrentDatePendingPlans()
         var Status = $("#ddlStatus").val() == null ? 'Pending' : $("#ddlStatus").val();
         var ItemMaster_Code = $("#ddlItemName").val() == null ? "0" : $("#ddlItemName").val();
@@ -61,6 +67,19 @@ $(document).ready(function () {
         $wrapper.css({ width: '100%' });
         GetItemName();
     });
+    $(document).on('click', '#ageing-report-tab', function () {
+        clearTable();
+        $('#date-filter-bar').hide();
+        $('#from-date-to-date-filter-bar').hide();
+        $('#from-date-to-date-filter-bar-Ageing').show();
+        $('#btnDownload').show();
+        setCurrentDatePendingPlans()
+        GetAgeingReportList(A_FromDate, A_ToDate);
+        const $wrapper = $('.table-wrapper');
+        $wrapper.css({ width: '100%' });
+
+    });
+  
     $(document).on('click', '#btnShowDateMillReport', function () {
         const d = $('#rpToDate').val();
         if (!d) {
@@ -82,6 +101,12 @@ $(document).ready(function () {
             GetDateAndMillWiseReportList(d);
         }
     });
+
+    $(document).on('change', '#txtfromDate,txttoDate', function () {
+        A_FromDate = $('#txtfromDate').val();
+        A_ToDate = $('#txttoDate').val();
+        GetAgeingReportList(A_FromDate, A_ToDate);
+    });
 });
 function GetRollingPlanSheetList() {
     Showloader();
@@ -89,10 +114,10 @@ function GetRollingPlanSheetList() {
         if (response && response.length > 0) {
             HideLoader();
 
-            const stringFilterColumn = ["Order No", "Item Name", "Size", "Thk", "Mkt_Man", "Status"];
+            const stringFilterColumn = ["Order No", "Item Name", "Size", "Thk", "Mkt_Man", "Status","Against Stock"];
             const numericFilterColumn = [
                 "Ord Qty", "Rld Qty", "Pld Qty", "Pld Bal Qty", "Rld Bal Qty",
-                "Dispatch Qty", "Avl stock for dispatch", "Bal Dispatch Qty"
+                "Dispatch Qty", "Avl stock for dispatch", "Bal Dispatch Qty","Bal Production"
             ];
 
             const dateFilterColumn = ["Order Date", "Dispatch Date"];
@@ -149,6 +174,7 @@ function GetRollingPlanSheetList() {
                 "Dispatch Qty": "right;",
                 "Avl stock for dispatch": "right;",
                 "Availiable stock for dispatch": "right;",
+                "Bal Production": "right;",
                 "Bal Dispatch Qty": "right;",
                 "SNo": ";width:15px;",
                 "Status": ";width:15px;"
@@ -281,6 +307,7 @@ function calculateTotals(data) {
         rldplannedQty: 0,   // Rld Bal Qty
         dispatchQty: 0,     // Dispatch Qty
         availableStockForDispatch: 0, // Avl stock for dispatch
+        balProduction: 0, // balProduction
         balanceDispatchQty: 0 // Bal Dispatch Qty
     };
 
@@ -302,6 +329,9 @@ function calculateTotals(data) {
         const availableStockForDispatch = Number(
             item["Avl stock for dispatch"] ?? item["Availiable stock for dispatch"] ?? item["AvailableStockForDispatch"] ?? item["Avail_Stock_For_Dispatch"] ?? 0
         );
+        const balProduction = Number(
+            item["Bal Production"] ?? item["Balance Production"] ?? item["BalanceProduction"] ?? item["Balance_Production"] ?? 0
+        );
         const balanceDispatchQty = Number(item["Bal Dispatch Qty"] ?? item["BalanceDispatchQty"] ?? item["Bal_Dispatch_Qty"] ?? 0);
 
         if (!isNaN(totalQty)) totals.totalQty += totalQty;
@@ -312,6 +342,7 @@ function calculateTotals(data) {
         if (!isNaN(rldplannedQty)) totals.rldplannedQty += rldplannedQty;
         if (!isNaN(dispatchQty)) totals.dispatchQty += dispatchQty;
         if (!isNaN(availableStockForDispatch)) totals.availableStockForDispatch += availableStockForDispatch;
+        if (!isNaN(balProduction)) totals.balProduction += balProduction;
         if (!isNaN(balanceDispatchQty)) totals.balanceDispatchQty += balanceDispatchQty;
 
     });
@@ -322,7 +353,7 @@ function formatQuantityFields(row) {
     const clone = { ...row };
     const qtyFields = [
         "Ord Qty", "Ord Bal Qty", "Rld Qty", "Pld Qty"
-        , "Pld Bal Qty", "Rld Bal Qty", "Dispatch Qty", "Avl stock for dispatch", "Availiable stock for dispatch", "Bal Dispatch Qty"
+        , "Pld Bal Qty", "Rld Bal Qty", "Dispatch Qty", "Avl stock for dispatch", "Availiable stock for dispatch","Bal Production", "Bal Dispatch Qty"
     ];
     qtyFields.forEach(k => {
         if (k in clone && clone[k] != null && clone[k] !== '') {
@@ -444,6 +475,11 @@ function addTotalsRow(totals, hiddenColumns = []) {
                 cell.style.textAlign = 'right';
                 cell.style.backgroundColor = '#fff2cc';
                 cell.style.fontWeight = 'bold';
+            } else if (headerText.includes('Bal Production') || headerText.includes('Balance Production')) {
+                cell.textContent = totals.balProduction.toFixed(3);
+                cell.style.textAlign = 'right';
+                cell.style.backgroundColor = '#fff2cc';
+                cell.style.fontWeight = 'bold';
             } else if (headerText.includes('Order No') || headerText.includes('OrderNo') || headerText.includes('Order_No')) {
                 if (totals.distinctOrderNoCount !== undefined) {
                     cell.textContent = `Order - ${totals.distinctOrderNoCount}`;
@@ -511,7 +547,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 function ChangecolorTr() {
     const table = document.getElementById("table-body");
-    let statusColIndex = 21;
+    let statusColIndex = 22;
 
     const rows = table.querySelectorAll("tr");
     rows.forEach((row) => {
@@ -541,75 +577,179 @@ function countTableTr() {
     return $('#table-body tr').length;
 }
 
-$(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
-    const isPipeStock = $('#pipe-stock-tab').hasClass('active');
-    const isPendingPlans = $('#pending-plans-tab').hasClass('active');
+//$(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
+//    const isPipeStock = $('#pipe-stock-tab').hasClass('active');
+//    const isPendingPlans = $('#pending-plans-tab').hasClass('active');
 
-    setTimeout(() => {
-        const filteredData = window['filteredData_tblTable'] || [];
-        if (isPipeStock) {
-            updatePipeStockFooterFromFiltered(filteredData);
+//    setTimeout(() => {
+//        const filteredData = window['filteredData_tblTable'] || [];
+//        if (isPipeStock) {
+//            updatePipeStockFooterFromFiltered(filteredData);
+//            adjustFilterDropdownPosition();
+//            applyTooltipsToGridCells();
+//            return;
+//        }
+//        if (isPendingPlans) {
+//            updatePendingPlansFooterFromFiltered(filteredData);
+//            return;
+//        }
+//        const totals = calculateTotals(filteredData);
+        
+//        // Calculate distinct Order No count from filtered data
+//        const distinctOrderNos = new Set();
+//        filteredData.forEach(item => {
+//            const orderNo = item["Order No"] || item["OrderNo"] || item["Order_No"];
+//            if (orderNo && orderNo.toString().trim() !== '') {
+//                distinctOrderNos.add(orderNo.toString().trim());
+//            }
+//        });
+//        totals.distinctOrderNoCount = distinctOrderNos.size;
+        
+//        const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
+//        addTotalsRow(totals, hiddenColumns);
+//        adjustFilterDropdownPosition();
+//        applyTooltipsToGridCells();
+//    }, 300);
+//});
+
+//$(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"], [id^="nextBtn-"], [id^="lastBtn-"]', function () {
+//    const isPipeStock = $('#pipe-stock-tab').hasClass('active');
+//    const isPendingPlans = $('#pending-plans-tab').hasClass('active');
+
+//    setTimeout(() => {
+//        const filteredData = window['filteredData_tblTable'] || [];
+//        if (isPipeStock) {
+//            updatePipeStockFooterFromFiltered(filteredData);
+//            adjustFilterDropdownPosition();
+//            applyTooltipsToGridCells();
+//            return;
+//        }
+//        if (isPendingPlans) {
+//            updatePendingPlansFooterFromFiltered(filteredData);
+//            return;
+//        }
+//        const totals = calculateTotals(filteredData);
+        
+//        // Calculate distinct Order No count from filtered data
+//        const distinctOrderNos = new Set();
+//        filteredData.forEach(item => {
+//            const orderNo = item["Order No"] || item["OrderNo"] || item["Order_No"];
+//            if (orderNo && orderNo.toString().trim() !== '') {
+//                distinctOrderNos.add(orderNo.toString().trim());
+//            }
+//        });
+//        totals.distinctOrderNoCount = distinctOrderNos.size;
+        
+//        const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
+//        addTotalsRow(totals, hiddenColumns);
+//        adjustFilterDropdownPosition();
+//        applyTooltipsToGridCells();
+//    }, 300);
+//});
+
+$(document).on(
+    'click',
+    '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]',
+    function () {
+
+        const isPipeStock = $('#pipe-stock-tab').hasClass('active');
+        const isPendingPlans = $('#pending-plans-tab').hasClass('active');
+        const isAgeingReport = $('#ageing-report-tab').hasClass('active');
+
+        // ❌ Ageing Report ke liye kuch bhi nahi karna
+        if (isAgeingReport) return;
+
+        setTimeout(() => {
+            const filteredData = window['filteredData_tblTable'] || [];
+
+            if (isPipeStock) {
+                updatePipeStockFooterFromFiltered(filteredData);
+                adjustFilterDropdownPosition();
+                applyTooltipsToGridCells();
+                return;
+            }
+
+            if (isPendingPlans) {
+                updatePendingPlansFooterFromFiltered(filteredData);
+                return;
+            }
+
+            const totals = calculateTotals(filteredData);
+
+            const distinctOrderNos = new Set();
+            filteredData.forEach(item => {
+                const orderNo = item["Order No"] || item["OrderNo"] || item["Order_No"];
+                if (orderNo && orderNo.toString().trim() !== '') {
+                    distinctOrderNos.add(orderNo.toString().trim());
+                }
+            });
+            totals.distinctOrderNoCount = distinctOrderNos.size;
+
+            const hiddenColumns = [
+                "BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR",
+                "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw",
+                "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"
+            ];
+
+            addTotalsRow(totals, hiddenColumns);
             adjustFilterDropdownPosition();
             applyTooltipsToGridCells();
-            return;
-        }
-        if (isPendingPlans) {
-            updatePendingPlansFooterFromFiltered(filteredData);
-            return;
-        }
-        const totals = calculateTotals(filteredData);
-        
-        // Calculate distinct Order No count from filtered data
-        const distinctOrderNos = new Set();
-        filteredData.forEach(item => {
-            const orderNo = item["Order No"] || item["OrderNo"] || item["Order_No"];
-            if (orderNo && orderNo.toString().trim() !== '') {
-                distinctOrderNos.add(orderNo.toString().trim());
+
+        }, 300);
+    }
+);
+$(document).on(
+    'click',
+    '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"], [id^="nextBtn-"], [id^="lastBtn-"]',
+    function () {
+
+        const isPipeStock = $('#pipe-stock-tab').hasClass('active');
+        const isPendingPlans = $('#pending-plans-tab').hasClass('active');
+        const isAgeingReport = $('#ageing-report-tab').hasClass('active');
+
+        // ❌ Ageing Report skip
+        if (isAgeingReport) return;
+
+        setTimeout(() => {
+            const filteredData = window['filteredData_tblTable'] || [];
+
+            if (isPipeStock) {
+                updatePipeStockFooterFromFiltered(filteredData);
+                adjustFilterDropdownPosition();
+                applyTooltipsToGridCells();
+                return;
             }
-        });
-        totals.distinctOrderNoCount = distinctOrderNos.size;
-        
-        const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
-        addTotalsRow(totals, hiddenColumns);
-        adjustFilterDropdownPosition();
-        applyTooltipsToGridCells();
-    }, 300);
-});
 
-$(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"], [id^="nextBtn-"], [id^="lastBtn-"]', function () {
-    const isPipeStock = $('#pipe-stock-tab').hasClass('active');
-    const isPendingPlans = $('#pending-plans-tab').hasClass('active');
+            if (isPendingPlans) {
+                updatePendingPlansFooterFromFiltered(filteredData);
+                return;
+            }
 
-    setTimeout(() => {
-        const filteredData = window['filteredData_tblTable'] || [];
-        if (isPipeStock) {
-            updatePipeStockFooterFromFiltered(filteredData);
+            const totals = calculateTotals(filteredData);
+
+            const distinctOrderNos = new Set();
+            filteredData.forEach(item => {
+                const orderNo = item["Order No"] || item["OrderNo"] || item["Order_No"];
+                if (orderNo && orderNo.toString().trim() !== '') {
+                    distinctOrderNos.add(orderNo.toString().trim());
+                }
+            });
+            totals.distinctOrderNoCount = distinctOrderNos.size;
+
+            const hiddenColumns = [
+                "BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR",
+                "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw",
+                "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"
+            ];
+
+            addTotalsRow(totals, hiddenColumns);
             adjustFilterDropdownPosition();
             applyTooltipsToGridCells();
-            return;
-        }
-        if (isPendingPlans) {
-            updatePendingPlansFooterFromFiltered(filteredData);
-            return;
-        }
-        const totals = calculateTotals(filteredData);
-        
-        // Calculate distinct Order No count from filtered data
-        const distinctOrderNos = new Set();
-        filteredData.forEach(item => {
-            const orderNo = item["Order No"] || item["OrderNo"] || item["Order_No"];
-            if (orderNo && orderNo.toString().trim() !== '') {
-                distinctOrderNos.add(orderNo.toString().trim());
-            }
-        });
-        totals.distinctOrderNoCount = distinctOrderNos.size;
-        
-        const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
-        addTotalsRow(totals, hiddenColumns);
-        adjustFilterDropdownPosition();
-        applyTooltipsToGridCells();
-    }, 300);
-});
+
+        }, 300);
+    }
+);
+
 
 function updatePipeStockFooterFromFiltered(rows) {
     if (!Array.isArray(rows) || rows.length === 0) {
@@ -788,6 +928,7 @@ function adjustFilterDropdownPosition() {
 function ExportExcel() {
     const isPipeStockTabActive = $('#pipe-stock-tab').hasClass('active');
     const isPendingPlansTabActive = $('#pending-plans-tab').hasClass('active');
+    const isPendingPlansTabAgeingActive = $('#ageing-report-tab').hasClass('active');
     
     if (isPipeStockTabActive) {
         const hiddenFields = [];
@@ -821,7 +962,26 @@ function ExportExcel() {
         }).catch(function (error) {
             toastr.error(error.Msg || 'Error During Export Pending Plans Data');
         });
-    } else {
+    } else if (isPendingPlansTabAgeingActive) {
+        const fromDate = $('#txtfromDate').val();
+        const toDate = $('#txttoDate').val();
+
+        if (!fromDate || !toDate) {
+            toastr.warning('Please select From Date and To Date');
+            return;
+        }
+
+        const hiddenFields = [];
+        RollingPlanSheetService.GetRollingPlanAgeingReportList(fromDate, toDate).then(function (response) {
+            if (response && response.length > 0) {
+                ExportToExcelControl.ExportToExcel(response, hiddenFields, "RollingPlanAgeingReport");
+            } else {
+                toastr.error('No Data Found');
+            }
+        }).catch(function (error) {
+            toastr.error(error.Msg || 'Error During Export Pending Plans Data');
+        });
+    }else {
         const hiddenFields = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
         RollingPlanSheetService.GetRollingPlanSheetList().then(function (response) {
             if (response && response.length > 0) {
@@ -1011,10 +1171,16 @@ function setCurrentDatePendingPlans() {
         return `${year}-${month}-${day}`;
     }
 
+    $('#txtfromDate').val(formatDate(firstOfMonth));
+    $('#txttoDate').val(formatDate(today));
     $('#fromDate').val(formatDate(firstOfMonth));
     $('#toDate').val(formatDate(today));
     G_FromDate = $('#fromDate').val();
     G_ToDate = $('#toDate').val();
+    A_FromDate = $('#txtfromDate').val();
+    A_ToDate = $('#txttoDate').val();
+    
+   
 }
 function GetPendingPlansReportList(G_FromDate, G_ToDate,Status,ItemMaster_Code) {
     Showloader();
@@ -1560,6 +1726,36 @@ function addProductionDetailsFooter(totalQtyPC, totalQtyMT, totalQtyMTRS) {
     
     tfoot.appendChild(footerRow);
 }
+function GetAgeingReportList(A_FromDate, A_ToDate) {
+    Showloader();
+    RollingPlanSheetService.GetRollingPlanAgeingReportList(A_FromDate, A_ToDate).then(function (response) {
+        if (response && response.length > 0) {
+            const stringFilterColumn = ["Marketing Man", "Item Name","Size"];
+            const numericFilterColumn = ["Bal Qty", "Ord Dispatch Qty", "Prod Qty", "Ord Qty", "Ord No","Plan No"];
+            const dateFilterColumn = ["Production Date"];
+            const button = false;
+            const stringDoubleFilterColumn = ["Plan No"];
+            const showButtons = [];
+            const hiddenColumns = ["ItemMaster_Code"];
+            const columnAlignment = {
+                "Size": ";width:15px;",
+                "Prod Qty": 'right', "Ord Dispatch Qty": 'right', "Aging": 'right', "Bal Qty": 'right', "Ord Qty": 'right'
+            };
+            const TotalColums = ["Bal Qty", "Ord Dispatch Qty", "Prod Qty", "Ord Qty"];
+            BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, TotalColums);
+            $('.totals-row').remove();
+            HideLoader();
+        } else {
+            HideLoader();
+            clearTable();
+            toastr.error('No Data Found');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        clearTable();
+        toastr.error(error.Msg || 'Error During Get Pending Plan Sheet');
+    });
+}
 
 window.ExportExcel = ExportExcel;
 window.OpenModal = OpenModal;
@@ -1570,3 +1766,4 @@ window.GetItemName = GetItemName;
 window.bindItemDropdown = bindItemDropdown;
 window.GetRollingPlanProductionDetails = GetRollingPlanProductionDetails;
 window.ProductionDetailsCloseModal = ProductionDetailsCloseModal;
+window.GetAgeingReportList = GetAgeingReportList;

@@ -355,6 +355,8 @@ window.ClearFilter = function ClearFilter(bodyId) {
     $('.filter-input').val('');
     $('.filter-input-double').val('');
     $('.filter-dropdown-double').hide();
+    // Clear stored column filters (used by date filters)
+    columnFilters = {};
     const tableId = $('#' + bodyId).closest('table').attr('id');
     window[`filteredData_${tableId}`] = window[`filteredDataTemp_${tableId}`];
     renderTable(window[`filteredData_${tableId}`], bodyId);
@@ -490,11 +492,19 @@ window.closeAllFiltersDouble = function closeAllFiltersDouble() {
 window.applyfilterdate = function applyfilterdate(columnName, bodyId) {
     var column = columnName;
     var selectedValues = [];
-    $('#checkbox-container-' + column.replace(/\s+/g, '') + ' input:checked').each(function () {
+
+    // Use the same ID pattern as populateDateFilter / renderTableHeader
+    const tableId = $('#' + bodyId).closest('table').attr('id');
+    const colId = column.replace(/\s+/g, '');
+    const uniqueId = `${tableId}-${colId}`;
+    const escapedId = escapeId(uniqueId);
+
+    $('#checkbox-container-' + escapedId + ' input:checked').each(function () {
         if ($(this).val() != "All") {
             selectedValues.push($(this).val());
         }
     });
+
     columnFilters[column] = selectedValues;
     applyFilters(bodyId);
     closeAllFilters();
@@ -716,8 +726,8 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
             // Format numeric values to 2 decimal places
             let cellValue = item[key];
             //if (alignment === 'right' && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
-            if (cellValue.toString().includes('.')==true && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
-                cellValue = parseFloat(cellValue).toFixed(2);
+            if (cellValue !== null && cellValue !== undefined && cellValue.toString().includes('.')==true && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
+                cellValue = parseFloat(cellValue).toFixed(3);
             }
 
             return `<td style="${style}">${cellValue}</td>`;
@@ -768,7 +778,7 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
                 cellContent = '<strong>Total</strong>';
             } else if (totalColumns.includes(key)) {
                 // Show total for specified columns
-                const totalValue = columnTotals[key].toFixed(2);
+                const totalValue = columnTotals[key].toFixed(3);
                 cellContent = `<strong>${totalValue}</strong>`;
             }
 

@@ -289,7 +289,8 @@
     #JobWorkData tfoot td,
     #JobWorkData tfoot th,
     #SummaryData tfoot td,
-    #SummaryData tfoot th{
+    #SummaryData tfoot th,
+    #SlittedCoilsStockSummary .total-row td{
         color: #fff !important;
         background-color: #5c95ce !important;
         border-color: #5c95ce !important;
@@ -570,26 +571,43 @@
 
                     <!-- Stock Summary Tab -->
                     <div class="tab-pane fade" id="stock-summary" role="tabpanel" aria-labelledby="stock-summary-tab">
-                        <div class="table-responsive" style="width: auto;">
-                            <div id="tblSummaryData">
-                                <div class="table-wrapper">
-                                    <table id="SummaryData" class="fixed-width-table table" style="min-width:300px; width: auto;">
-                                        <thead id="table-header-SummaryData">
-                                        </thead>
-                                        <tbody id="table-body-SummaryData">
-                                        </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <td colspan="1" class="text-end">Totals</td>
-                                                <td id="totalNoOFPCCoil" class="text-end">0</td>
-                                                <td id="totalWeightStock" class="text-end">0.000</td>
-                                                <td id="totalNoOFPC" class="text-end">0</td>
-                                                <td id="totalWtStock" class="text-end">0.000</td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
+                        <div id="tblSummaryData">
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <div class="table-responsive">
+                                        <div class="table-wrapper">
+                                            <table id="SummaryData" class="fixed-width-table table" style="min-width:300px; width: 100%;">
+                                                <thead id="table-header-SummaryData">
+                                                </thead>
+                                                <tbody id="table-body-SummaryData">
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <td colspan="1" class="text-end">Totals</td>
+                                                        <td id="totalNoOFPCCoil" class="text-end">0</td>
+                                                        <td id="totalWeightStock" class="text-end">0.000</td>
+                                                        <td id="totalNoOFPC" class="text-end">0</td>
+                                                        <td id="totalWtStock" class="text-end">0.000</td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                        <div class="paginator" id="paginator-SummaryData"></div>
+                                    </div>
                                 </div>
-                                <div class="paginator" id="paginator-SummaryData"></div>
+                                <div class="col-md-4">
+                                    <div class="table-responsive">
+                                        <div class="table-wrapper">
+                                            <table id="SlittedCoilsStockSummary" class="fixed-width-table table" style="min-width:300px; width: 100%;">
+                                                <thead id="table-header-SlittedCoilsStockSummary">
+                                                </thead>
+                                                <tbody id="table-body-SlittedCoilsStockSummary">
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="paginator" id="paginator-SlittedCoilsStockSummary"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

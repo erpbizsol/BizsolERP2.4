@@ -343,6 +343,13 @@
                     <i class="fas fa-clipboard-list"></i> Rolling Plan Details
                 </button>
             </div>
+            <div class="nav-item" role="presentation">
+                <button class="nav-link" id="ageing-report-tab" data-bs-toggle="tab" data-bs-target="#pending-plans" type="button" role="tab" aria-controls="ageing-report" aria-selected="false">
+                    <i class="fas fa-clipboard-list"></i> Ageing Report
+                </button>
+            </div>
+            
+
         </div>
         <div class="card p-1" id="rmStockTabContent">
             <div id="date-filter-bar" class="row mb-1" style="display:none">
@@ -379,8 +386,18 @@
                 <div class="col-md-1" style="margin-top:5px">
                     <button type="button" id="btnShowDatePendingPlansReport" class="btn btn-primary btn-height">Show</button>
                 </div>
-            </div> 
-
+            </div>
+            <div id="from-date-to-date-filter-bar-Ageing" class="row mb-1" style="display:none">
+                <div class="col-md-3">
+                    <label for="txtfromDate" class="form-label">From Date</label>
+                    <input type="date" id="txtfromDate" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-3">
+                    <label for="txttoDate" class="form-label">To Date</label>
+                    <input type="date" id="txttoDate" class="form-control form-control-sm box_border" />
+                </div>
+              
+            </div>
             <div id="btnDownload" class="row mb-1" style="display:block" >
                 <div class="col-md-12" style="text-align:right">
                     <button type="button" id="btn" class="btn btn-primary btn-height" onclick="ExportExcel();">Download</button>

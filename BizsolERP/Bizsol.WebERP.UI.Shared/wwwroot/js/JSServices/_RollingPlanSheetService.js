@@ -83,6 +83,14 @@ const RollingPlanSheetService = {
             }
         );
     },
+    GetRollingPlanAgeingReportList: function GetRollingPlanAgeingReportList(FromDate, ToDate) {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetRollingPlanAgeingReportList?FromDate=" + FromDate + "&ToDate=" + ToDate;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { RollingPlanSheetService }

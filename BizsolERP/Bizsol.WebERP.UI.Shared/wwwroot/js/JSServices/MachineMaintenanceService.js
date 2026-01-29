@@ -2,8 +2,6 @@
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const MachineMaintenanceService = {
-  
-   
     GetReasonMaster: function GetReasonMaster() {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
@@ -79,6 +77,27 @@ const MachineMaintenanceService = {
                 return value;
             }
         );
+    },
+    GetMachineMaintenanceImageByCode: function GetMachineMaintenanceImageByCode(Code) {
+
+        var URL = UrlService.API_ENDPOINT_MachineMaintenance +
+            "/GetMachineMaintenanceImageByCode?Code=" + Code;
+
+        return promiseAjaxCallApi.CallAPI('GET', URL, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+    GetStatusMaster: function GetStatusMaster() {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_MachineMaintenance + `/GetStatusMaster`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+
     },
    
 }
