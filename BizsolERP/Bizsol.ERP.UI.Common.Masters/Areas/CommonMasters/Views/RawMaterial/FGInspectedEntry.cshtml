@@ -4,7 +4,7 @@
 
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/RMClearanceEntry.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/FGInspectedEntry.js"></script>
 <style>
     .select2-container--open .select2-dropdown {
         z-index: 9999 !important;
@@ -84,12 +84,12 @@
 
     .form-check-input[type=checkbox] {
         border-radius: .25em;
-        border: 1px solid black!important;
+        border: 1px solid black !important;
     }
 </style>
 <div class="row">
     <div class="col-md-3">
-        <input type="checkbox" id="chkCompleted" autocomplete="off" tabindex="1"/>
+        <input type="checkbox" id="chkCompleted" autocomplete="off" tabindex="1" />
         <label for="chkCompleted" class="form-label fw-semibold">Completed </label>
     </div>
 </div>
@@ -108,7 +108,7 @@
     </div>
     <div class="col-md-3">
         <label for="txtFromDate" class="form-label fw-semibold">From Date <span class="text-danger">*</span></label>
-        <input id="txtFromDate" type="date" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"/>
+        <input id="txtFromDate" type="date" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" />
     </div>
     <div class="col-md-3">
         <label for="txtToDate" class="form-label fw-semibold">To Date <span class="text-danger">*</span></label>
@@ -119,21 +119,19 @@
         <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
     </div>
 </div>
-<div class="card p-2 mt-2">
-    <div id="dvGrid" style="display:block;">
-        <div class="col-md-12 text-end" id="btnVerifyall" style="display:block;">
-            <button class="btn btn-success icon-height mb-1" title="Verify All" onclick="VerifyAll()">Verify All</button>
-        </div>
-        <div class="table-wrapper ">
-            <table id="tblRMClearance" class="fixed-width-table table">
-                <thead id="table-header">
-                </thead>
-                <tbody id="table-body">
-                </tbody>
-            </table>
-        </div>
-        <div class="paginator" id="paginator-tblRMClearance">
-        </div>
+<div class ="card p-2 mt-2" id="dvGrid" style="display:block;">
+    <div class="col-md-12 text-end" id="btnVerifyall" style="display:block;">
+        <button class="btn btn-success icon-height mb-1" title="Verify All" onclick="VerifyAll()">Verify All</button>
+    </div>
+    <div class="table-wrapper ">
+        <table id="tblRMClearance" class="fixed-width-table table">
+            <thead id="table-header">
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-tblRMClearance">
     </div>
 </div>
 <div class="modal fade rps-detail-modal" id="dvRemark" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">

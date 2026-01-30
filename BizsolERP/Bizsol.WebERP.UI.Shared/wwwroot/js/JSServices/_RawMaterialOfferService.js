@@ -110,6 +110,15 @@ const RawMaterialOfferService = {
             }
         );
     },
+    GetAllRawMaterialClearanceVerify: function GetAllRawMaterialClearanceVerify(Codes, Remark) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + "/GetAllRawMaterialClearanceVerify?Codes=" + Codes + "&Remark=" +Remark + "&UserMaster_Code=" + userCode;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { RawMaterialOfferService }
