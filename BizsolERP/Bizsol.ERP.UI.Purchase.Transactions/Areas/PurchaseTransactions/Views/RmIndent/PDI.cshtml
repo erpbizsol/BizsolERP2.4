@@ -8,7 +8,38 @@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/PDI.js"></script>
 <script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 
-<div class="container-fluid">
+<div class="card p-2" id="LocatePDI">
+    <div style="display:block;">
+        <div class="row">
+            <div class="col-md-2">
+                <label for="txtFromDatePDI" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+                <input type="date" id="txtFromDatePDI" name="txtFromDatePDI" class="box_border form-control form-control-sm" required />
+            </div>
+            <div class="col-md-2">
+                <label for="txtToDatePDI" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+                <input type="date" id="txtToDatePDI" name="txtToDatePDI" class="box_border form-control form-control-sm" required />
+            </div>
+            <div class="col-md-8 text-end mt-4">
+                <button type="button" id="btnPDIShow" class="btn btn-primary btn-height mb-1">Show</button>
+                <button class="btn btn-success icon-height mb-1" title="Create New" onclick="CreateNew()">Create New</button>
+                <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
+            </div>
+        </div>
+        <div class="row text-end">
+        </div>
+        <div class="table-wrapper ">
+            <table id="tblPDI" class="fixed-width-table table">
+                <thead id="table-header">
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tblPDI">
+        </div>
+    </div>
+</div>
+<div class="container-fluid" id="createPDI" style="display:none;">
     <div class="row justify-content-center">
         <div class="col-md-4">
             <div class="card">
@@ -39,7 +70,7 @@
                             <label for="ddlQty" class="col-form-label-sm fw-bold">
                                 Quantity in MT <span class="text-danger">*</span>
                             </label>
-                            <select id="ddlQty" name="ddlQty" class="box_border form-control form-control-sm" disabled></select>
+                            <input type="text" id="ddlQty" name="ddlQty" class="box_border form-control form-control-sm" autocomplete="off" required oninput="validateNumericInput(this)" />
                         </div>
 
                         <div class="col-12">
@@ -62,9 +93,81 @@
                         </div>
 
 
-                        <div class="col-12 text-end">
-                            <button id="btnSave" type="button" class="btn btn-primary icon-height mt-3">
+                        <div class="col-12 text-end mt-3">
+                            <button id="btnSave" type="button" class="btn btn-primary icon-height">
                                 Submit
+                            </button>
+                            <button class="btn btn-danger icon-height" title="Back" id="btnBack" onclick="Back()">
+                                Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid" id="EditPDI" style="display:none;">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="txtDespatchNo" class="col-form-label-sm fw-bold">
+                                Despatch Advice No <span class="text-danger">*</span>
+                            </label>
+                            <input id="txtDespatchNo" type="text" class="box_border form-control form-control-sm" readonly />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtOrderNo" class="col-form-label-sm fw-bold">
+                                Order No <span class="text-danger">*</span>
+                            </label>
+                            <input id="txtOrderNo" name="txtOrderNo" class="box_border form-control form-control-sm" required readonly />
+                            <input type="hidden" id="txtOrderNo_Code" name="txtOrderNo_Code" class="box_border form-control form-control-sm" />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtTruckNo" class="col-form-label-sm fw-bold">
+                                Truck No <span class="text-danger">*</span>
+                            </label>
+                            <input id="txtTruckNo" name="txtTruckNo" class="box_border form-control form-control-sm" required readonly />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtQty" class="col-form-label-sm fw-bold">
+                                Quantity in MT <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="txtQty" name="txtQty" class="box_border form-control form-control-sm" autocomplete="off" required oninput="validateNumericInput(this)" />
+                        </div>
+
+                        <div class="col-12">
+                           <label for="attachment" class="form-label">Attachment <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text" onclick="triggerFileInputClick()" style="cursor: pointer; height:28px">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input type="file" accept=".jpg, .png, .jpeg" capture="camera" onchange="FileUploadChange(event)" class="form-control form-control-sm box_border" id="fileInputEdit" />
+                                
+                            </div>
+                            <a href="javascript:void(0);" id="txtImageCheckEdit" onclick="ShowPDIImage()" class="text-decoration-underline" style="cursor: pointer; display:none;">
+                                Click to view
+                            </a>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtEditRemark" class="col-form-label-sm fw-bold">Remark</label>
+                            <textarea id="txtEditRemark" class="box_border form-control form-control-sm" rows="2" maxlength="250"></textarea>
+                        </div>
+
+
+                        <div class="col-12 text-end mt-3">
+                            <button id="btnUpdate" type="button" class="btn btn-primary icon-height">
+                                Update
+                            </button>
+                            <button class="btn btn-danger icon-height" title="Back" onclick="Back()">
+                                Back
                             </button>
                         </div>
                     </div>
@@ -89,4 +192,6 @@
             </div>
         </div>
     </div>
-</div>  
+</div>
+
+<div id="PDI_AttachmentControlmodal"></div>

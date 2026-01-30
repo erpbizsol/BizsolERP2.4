@@ -2,8 +2,8 @@ import { UrlService } from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const PDIService = {
-    GetPDIList: function GetPDIList() {
-        var URL = UrlService.API_ENDPOINT_PDI + "/GetPDIList";
+    GetPDICurrentList: function GetPDICurrentList(Fromdate, ToDate) {
+        var URL = UrlService.API_ENDPOINT_PDI + "/GetPDICurrentList?FromDate=" + Fromdate + "&ToDate=" + ToDate;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -12,6 +12,14 @@ const PDIService = {
     },
     GetPDIOrderList: function GetPDIOrderList() {
         var URL = UrlService.API_ENDPOINT_PDI + "/GetPDIOrderList";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetPDIEditList: function GetPDIEditList(Code) {
+        var URL = UrlService.API_ENDPOINT_PDI + "/GetPDIEditList?Code=" + Code;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

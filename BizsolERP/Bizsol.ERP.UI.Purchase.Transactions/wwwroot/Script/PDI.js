@@ -1,5 +1,6 @@
 import { PDIService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PDIService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { UrlService } from '../../Bizsol.WebERP.UI.Shared/js/URL.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
@@ -10,36 +11,43 @@ let G_PDIOrderData = []; // Store the complete order data
 let G_IsUpdating = false; // Flag to prevent infinite loop
 let G_PDIImageData = null; // Store the fetched PDI image data
 let G_PDIImageSrc = '';
+let G_PDIDataList = [];
 
 $(document).ready(function () {
-    var urlParams = getUrlVars();
-    var menuValue = decodeURI(urlParams['menu']);
-    
-    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
-        $("#ERPHeading").text(menuValue);
-    } else {
-        $("#ERPHeading").text("PDI");
-    }
-   
+    BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+
     GetPDIOrderList();
-    
-    // Event handlers for dropdowns
+    setCurrentDate();
+    GetPDICurrentList();
     $('#ddlOrderNo').on('change', onOrderNoChange);
     $('#ddlDespatchNo').on('change', onAdviceNoChange);
     $('#ddlTruckNo').on('change', onTruckNoChange);
     
     $('#btnSave').on('click', savePDI);
     $('#btnClear').on('click', clearPDIForm);
+    $('#btnPDIShow').on('click', GetPDICurrentList);
+    $('#btnUpdate').on('click', UpdatePDI);
 });
+function setCurrentDate() {
+    let today = new Date();
+    let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    function formatDate(date) {
+        let day = String(date.getDate()).padStart(2, '0');
+        let month = String(date.getMonth() + 1).padStart(2, '0');
+        let year = date.getFullYear();
+        return `${year}-${month}-${day}`;
+    }
+        $('#txtFromDatePDI').val(formatDate(firstOfMonth));
+        $('#txtToDatePDI').val(formatDate(today));
+}
 function GetPDIOrderList() {
     Showloader();
     PDIService.GetPDIOrderList().then(function (response) {
         HideLoader();
         if (response && response.length > 0) {
-            // Store the complete data globally for reference
             G_PDIOrderData = response;
             
-            // Bind Order No dropdown with OrderNo as display text
             BindSelectList($('#ddlOrderNo')[0], response.map((item) => ({ 
                 Code: item.Code, 
                 Desp: item.OrderNo 
@@ -50,46 +58,29 @@ function GetPDIOrderList() {
                 Desp: item.DespatchAdviceNo 
             })));
 
-            // Bind Truck No dropdown with "Vehical No" (note the spelling from API) as display text
             BindSelectList($('#ddlTruckNo')[0], response.map((item) => ({ 
                 Code: item.Code, 
                 Desp: item["Vehical No"] || item.VehicalNo || item.TruckNo || '' 
             })));
 
-            // Bind Qty dropdown with "Qty MT" as display text (formatted to 3 decimal places)
-            BindSelectList($('#ddlQty')[0], response.map((item) => {
-                var qtyValue = item["Qty MT"] || item.QtyMT || '0';
-                var formattedQty = parseFloat(qtyValue).toFixed(3);
-                return { 
-                    Code: item.Code, 
-                    Desp: formattedQty 
-                };
-            }));
-
-            // Initialize Select2 for all dropdowns
             $('#ddlOrderNo').select2({
                 placeholder: 'Select Order No',
-                allowClear: true,
+                allowClear: false,
                 width: '100%'
             });
 
             $('#ddlDespatchNo').select2({
                 placeholder: 'Select Advice No',
-                allowClear: true,
+                allowClear: false,
                 width: '100%'
             });
             
             $('#ddlTruckNo').select2({
                 placeholder: 'Select Truck No',
-                allowClear: true,
+                allowClear: false,
                 width: '100%'
             });
 
-            $('#ddlQty').select2({
-                placeholder: 'Select Qty MT',
-                allowClear: true,
-                width: '100%'
-            });
         } else {
             toastr.error('No PDI orders available');
         }
@@ -98,9 +89,7 @@ function GetPDIOrderList() {
         toastr.error('Error fetching PDI order list: ' + error);
     });
 }
-// Auto-complete Truck No and Qty when Order No is selected
 function onOrderNoChange() {
-    // Prevent infinite loop
     if (G_IsUpdating) {
         return;
     }
@@ -112,29 +101,23 @@ function onOrderNoChange() {
         return;
     }
     
-    // Find the matching record by Code
     var selectedRecord = G_PDIOrderData.find(item => item.Code == selectedCode);
     
     if (selectedRecord) {
-        // Set flag to prevent infinite loop
         G_IsUpdating = true;
         
-        // Auto-select the corresponding Truck No and Qty (all have same Code)
         $('#ddlDespatchNo').val(selectedRecord.Code).trigger('change.select2');
         $('#ddlTruckNo').val(selectedRecord.Code).trigger('change.select2');
-        $('#ddlQty').val(selectedRecord.Code).trigger('change.select2');
+        $('#ddlQty').val(selectedRecord?.["Qty MT"]);
         
-        // Check PDI upload status and show image if available
         checkPDIUploadStatus(selectedRecord);
         
-        // Reset flag after a short delay
         setTimeout(function() {
             G_IsUpdating = false;
         }, 100);
     }
 }
 function onAdviceNoChange() {
-    // Prevent infinite loop
     if (G_IsUpdating) {
         return;
     }
@@ -146,31 +129,23 @@ function onAdviceNoChange() {
         return;
     }
     
-    // Find the matching record by Code
     var selectedRecord = G_PDIOrderData.find(item => item.Code == selectedCode);
     
     if (selectedRecord) {
-        // Set flag to prevent infinite loop
         G_IsUpdating = true;
         
-        // Auto-select the corresponding Truck No and Qty (all have same Code)
         $('#ddlOrderNo').val(selectedRecord.Code).trigger('change.select2');
         $('#ddlTruckNo').val(selectedRecord.Code).trigger('change.select2');
-        $('#ddlQty').val(selectedRecord.Code).trigger('change.select2');
+        $('#ddlQty').val(selectedRecord?.["Qty MT"]);
         
-        // Check PDI upload status and show image if available
         checkPDIUploadStatus(selectedRecord);
         
-        // Reset flag after a short delay
         setTimeout(function() {
             G_IsUpdating = false;
         }, 100);
     }
 }
-
-// Auto-complete Order No and Qty when Truck No is selected
 function onTruckNoChange() {
-    // Prevent infinite loop
     if (G_IsUpdating) {
         return;
     }
@@ -182,22 +157,17 @@ function onTruckNoChange() {
         return;
     }
     
-    // Find the matching record by Code
     var selectedRecord = G_PDIOrderData.find(item => item.Code == selectedCode);
     
     if (selectedRecord) {
-        // Set flag to prevent infinite loop
         G_IsUpdating = true;
         
-        // Auto-select the corresponding Order No and Qty (all have same Code)
         $('#ddlOrderNo').val(selectedRecord.Code).trigger('change.select2');
         $('#ddlDespatchNo').val(selectedRecord.Code).trigger('change.select2');
-        $('#ddlQty').val(selectedRecord.Code).trigger('change.select2');
+        $('#ddlQty').val(selectedRecord?.["Qty MT"]);
         
-        // Check PDI upload status and show image if available
         checkPDIUploadStatus(selectedRecord);
         
-        // Reset flag after a short delay
         setTimeout(function() {
             G_IsUpdating = false;
         }, 100);
@@ -211,23 +181,16 @@ function FileUploadChange(event) {
     files = target.files;
     var originalFileName = files?.[0]?.name || '';
     if (files && files.length > 0) {
-        // Extract extension from original file name
         var fileExtension = '';
         var lastDotIndex = originalFileName.lastIndexOf('.');
         if (lastDotIndex > 0 && lastDotIndex < originalFileName.length - 1) {
             fileExtension = originalFileName.substring(lastDotIndex);
         }
-        // Set fileName to "PDI" + extension
         fileName = 'PDI' + fileExtension;
-        console.log('File selected:', originalFileName);
-        console.log('File name set to:', fileName);
         OptimizeImage.reduceFileSize(files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
-            console.log('Image optimized, size:', blob.size);
             ConvertFileToByteArry(blob).then(function (ByteArray) {
                 imageBase64Data = ByteArray;
-                console.log('Image converted to byte array, length:', ByteArray.length);
             }).catch(function(error) {
-                console.error('Error converting file to byte array:', error);
                 toastr.error('Error processing image file');
             });
         });
@@ -251,47 +214,94 @@ function ConvertFileToByteArry(File) {
         }
     });
 }
+function validateNumericInput(input) {
+    var value = input.value;
+    value = value.replace(/[^0-9.]/g, '');
+    
+    var parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    
+    if (parts.length === 2 && parts[1].length > 3) {
+        value = parts[0] + '.' + parts[1].substring(0, 3);
+    }
+    
+    input.value = value;
+}
 function validatePDIInputs() {
+    if (!$('#ddlDespatchNo').val() || $('#ddlDespatchNo').val() === '0') { toastr.error('Despatch Advice No is required'); return false; }
     if (!$('#ddlOrderNo').val() || $('#ddlOrderNo').val() === '0') { toastr.error('Order No is required'); return false; }
     if (!$('#ddlTruckNo').val() || $('#ddlTruckNo').val() === '0') { toastr.error('Truck No is required'); return false; }
-    if (!$('#ddlQty').val() || $('#ddlQty').val() === '0') { toastr.error('Quantity is required'); return false; }
+    var qtyValue = $('#ddlQty').val();
+    if (!qtyValue || qtyValue.trim() === '' || parseFloat(qtyValue) <= 0) { toastr.error('Quantity is required and must be greater than 0'); return false; }
+    if (!/^\d+(\.\d{1,3})?$/.test(qtyValue)) { toastr.error('Quantity must be a valid number with maximum 3 decimal places'); return false; }
     if (!imageBase64Data || imageBase64Data.length === 0) { toastr.error('Please select an image file'); return false; }
     if (!fileName || fileName === '') { toastr.error('File name is missing'); return false; }
     return true;
 }
-
+function validatePDIInputsEdit() {
+    if (!$('#txtDespatchNo').val() || $('#txtDespatchNo').val() === '0') { toastr.error('Despatch Advice No is required'); return false; }
+    if (!$('#txtOrderNo').val() || $('#txtOrderNo').val() === '0') { toastr.error('Order No is required'); return false; }
+    if (!$('#txtTruckNo').val() || $('#txtTruckNo').val() === '0') { toastr.error('Truck No is required'); return false; }
+    var qtyValue = $('#txtQty').val();
+    if (!qtyValue || qtyValue.trim() === '' || parseFloat(qtyValue) <= 0) { toastr.error('Quantity is required and must be greater than 0'); return false; }
+    if (!/^\d+(\.\d{1,3})?$/.test(qtyValue)) { toastr.error('Quantity must be a valid number with maximum 3 decimal places'); return false; }
+    return true;
+}
 function savePDI() {
     if (!validatePDIInputs()) { return; }
 
-    // Prepare payload data
     var PayloadPDIData = {
         Code: $('#ddlOrderNo').val(), 
+        PDIWeight: $('#ddlQty').val(), 
         PDIRemark: $('#txtRemark').val() || '',
         attachFileName: fileName,
         attachData: imageBase64Data,
     };
 
-    console.log('Saving PDI data:', {
-        Code: PayloadPDIData.Code,
-        PDIRemark: PayloadPDIData.PDIRemark,
-        attachFileName: PayloadPDIData.attachFileName,
-        attachDataLength: PayloadPDIData.attachData.length
-    });
-
     Showloader();
     PDIService.SavePDIData(PayloadPDIData).then(function (response) {
         HideLoader();
-        console.log('Save response:', response);
         if (response.Status === 'Y') {
             toastr.success(response.Message || 'PDI saved successfully');
             clearPDIForm();
+            GetPDICurrentList();
         } else {
             toastr.error(response.Message || 'Save failed');
         }
     }).catch(function (error) {
         HideLoader();
-        console.error('Save error:', error);
         toastr.error((error && error.Message) || 'Error saving data');
+    });
+}
+function UpdatePDI() {
+    if (!validatePDIInputsEdit()) { return; }
+
+    var PayloadPDIData = {
+        Code: $('#txtOrderNo_Code').val(), 
+        PDIWeight: $('#txtQty').val(), 
+        PDIRemark: $('#txtEditRemark').val() || '',
+        attachFileName: fileName,
+        attachData: imageBase64Data,
+    };
+
+    Showloader();
+    PDIService.SavePDIData(PayloadPDIData).then(function (response) {
+        HideLoader();
+        if (response.Status === 'Y') {
+            toastr.success(response.Message || 'PDI Update successfully');
+            clearPDIForm();
+            $('#LocatePDI').show();
+            $('#createPDI').hide();
+            $('#EditPDI').hide();
+            GetPDICurrentList();
+        } else {
+            toastr.error(response.Message || 'Update failed');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error((error && error.Message) || 'Error Update data');
     });
 }
 //function ViewAttachment() {
@@ -310,81 +320,63 @@ function savePDI() {
 //}
 
 function clearPDIForm() {
-    // Clear form fields
     $('#ddlOrderNo').val('0').trigger('change');
     $('#ddlDespatchNo').val('0').trigger('change');
     $('#ddlTruckNo').val('0').trigger('change');
-    $('#ddlQty').val('0').trigger('change');
+    $('#ddlQty').val('0');
     $('#txtRemark').val('');
+    $('#txtOrderNo_Code').val(0);
+    $('#txtOrderNo').val('0').trigger('change');
+    $('#txtDespatchNo').val('0').trigger('change');
+    $('#txtTruckNo').val('0').trigger('change');
+    $('#txtQty').val('');
+    $('#txtEditRemark').val('');
     
-    // Clear image data
     imageBase64Data = [];
     fileName = '';
     files = [];
     
-    // Clear file input
     $('#fileInput').val('');
+    $('#fileInputEdit').val('');
     
-    // Hide image check div
     hideImageCheck();
-    
-    console.log('Form cleared');
 }
-
-// Function to check PDI upload status and display image
 function checkPDIUploadStatus(selectedRecord) {
-    console.log('Checking PDI upload status for record:', selectedRecord);
-    
     if (selectedRecord.PDIUploaded === 'Y') {
         showImageCheck();
-        // Fetch and store the PDI image data
         fetchPDIImage(selectedRecord.Code);
     } else {
         hideImageCheck();
     }
 }
-
-// Function to show image check div
 function showImageCheck() {
-    $('#divImageCheck').show();
+    $('#txtImageCheck').show();
 }
-
-// Function to hide image check div
 function hideImageCheck() {
-    $('#divImageCheck').hide();
     G_PDIImageData = null;
     G_PDIImageSrc = '';
     $('#txtImageCheck').hide();
 }
-
-// Function to fetch PDI image
 function fetchPDIImage(despatchAdviceCode) {
-    console.log('Fetching PDI image for code:', despatchAdviceCode);
     $('#txtImageCheck').hide();
     G_PDIImageSrc = '';
-    // Use PDIService to fetch PDI image
     PDIService.GetPDIImage(despatchAdviceCode).then(function(data) {
-        console.log('PDI image response:', data);
         
         var base64FromApi = null;
 
-        // Case 1: API returns { Status: 'Y', ImageDataBase64: '...' }
         if (data && data.Status === 'Y' && typeof data.ImageDataBase64 === 'string' && data.ImageDataBase64.length > 0) {
             base64FromApi = data.ImageDataBase64;
         }
 
-        // Case 2: API returns { Status: 'Y', ImageData: byte[] as array of numbers }
         if (!base64FromApi && data && data.Status === 'Y' && data.ImageData && Array.isArray(data.ImageData)) {
             try {
                 var byteArray = data.ImageData;
                 var binaryString = String.fromCharCode.apply(null, byteArray);
                 base64FromApi = btoa(binaryString);
             } catch (e1) {
-                console.error('Error converting ImageData array to base64:', e1);
             }
         }
 
-        // Case 3: API returns an array of rows: [{ DocumentContent: base64String }]
         if (!base64FromApi && Array.isArray(data) && data.length > 0 && typeof data[0].DocumentContent === 'string') {
             base64FromApi = data[0].DocumentContent;
         }
@@ -394,7 +386,6 @@ function fetchPDIImage(despatchAdviceCode) {
                 var bin = String.fromCharCode.apply(null, bytes);
                 base64FromApi = btoa(bin);
             } catch (e2) {
-                console.error('Error converting DocumentContent array to base64:', e2);
             }
         }
 
@@ -405,13 +396,11 @@ function fetchPDIImage(despatchAdviceCode) {
             $('#txtImageCheck').hide();
         }
     }).catch(function(error) {
-        console.error('Error fetching PDI image:', error);
         G_PDIImageData = null;
         G_PDIImageSrc = '';
         $('#txtImageCheck').hide();
     });
 }
-
 function ShowPDIImage() {
     if (!G_PDIImageSrc || G_PDIImageSrc === '') {
         toastr.warning('No image to display');
@@ -421,12 +410,10 @@ function ShowPDIImage() {
     var $dialog = $('#myModalImageShow .modal-dialog');
     var $body = $('#myModalImageShow .modal-body');
 
-    // Reset any previous sizing
     $dialog.css({ maxWidth: '', width: '' });
     $body.css({ maxHeight: '', overflowY: '' });
     $img.css({ maxWidth: '100%', height: 'auto' });
 
-    // Bind load to size modal according to image natural size
     $img.off('load').on('load', function () {
         var naturalW = this.naturalWidth || 0;
         var naturalH = this.naturalHeight || 0;
@@ -444,7 +431,6 @@ function ShowPDIImage() {
         $body.css({ maxHeight: modalH + 'px', overflowY: naturalH > modalH ? 'auto' : 'visible' });
     });
 
-    // Set src last so load triggers after handlers are attached
     $img.attr('src', G_PDIImageSrc);
     try {
         var modalElement = document.getElementById('myModalImageShow');
@@ -458,7 +444,6 @@ function ShowPDIImage() {
         $('#myModalImageShow').modal('show');
     }
 }
-
 function CloseModal() {
     try {
         var modalElement = document.getElementById('myModalImageShow');
@@ -472,32 +457,147 @@ function CloseModal() {
         $('#myModalImageShow').modal('hide');
     }
 }
-
 function DeleteModal() {
     CloseModal();
 }
-
-// No modal behavior; link opens image in new tab
-function getUrlVars() {
-    var vars = {};
-    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
-    for (var i = 0; i < hashes.length; i++) {
-        var hash = hashes[i].split('=');
-        vars[hash[0]] = hash[1];
-    }
-    return vars;
-}
 function BindSelectList(element, list) {
-    let option = '<option value="0"></option>';
+    let option = '<option value="0">Please select...</option>';
     $.each(list, function (key, val) {
         option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
     });
     element.innerHTML = option;
 }
+function CreateNew() {
+    var ModuleName = "PDI",
+        OptionName = "New",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
 
-//window.ViewAttachment = ViewAttachment;
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            $('#LocatePDI').hide();
+            $('#EditPDI').hide();
+            $('#createPDI').show();
+        }
+    });
+}
+function getFinancialYear() {
+    var currentDate = new Date();
+    var currentMonth = currentDate.getMonth();
+    var startYear = currentDate.getFullYear();
+    if (currentMonth < 3) {
+        startYear = startYear - 1;
+    }
+    return startYear + "-" + (startYear + 1);
+}
+function Back() {
+    clearPDIForm();
+    $('#LocatePDI').show();
+    $('#createPDI').hide();
+    $('#EditPDI').hide();
+}
+function GetPDICurrentList() {
+    let Fromdate = $('#txtFromDatePDI').val();
+    let Todate = $('#txtToDatePDI').val();
+    Showloader();
+    PDIService.GetPDICurrentList(Fromdate, Todate).then(function (response) {
+        if (response && response.length > 0) {
+            $('#tblPDI').show();
+            $('#paginator-tblPDI').show();
+            G_PDIDataList = response;
+            HideLoader();
+            const stringFilterColumn = ["Order No","Vehical No"];
+            const numericFilterColumn = [];
+            const dateFilterColumn = ["Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = ["Code"];
+            const columnAlignment = {
+                'S.No.': "center", 'Date': "center",'Qty MT':"right"
+            };
+            const updatedResponse = (response).map(function (item) {
+                let imageURLHtml = '<a href="javascript:void(0);" class="text-decoration-underline icon-height" title="Image PDI" onclick="ViewAttachment_PDI(' + item.Code + ')">View Image</a>';
+                let actionHtml = '<button class="btn btn-primary icon-height mb-1" title="Edit PDI" onclick="EditPDI(' + item.Code + ')"><i class="fa fa-pencil"></i></button>';
+
+                return {
+                    ...item,
+                    'PDI Uploaded': imageURLHtml,
+                    'Action': actionHtml,
+                };
+            });
+            const TotalColumns = ["Qty MT"];
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, TotalColumns);
+        } else {
+            $('#tblPDI').hide();
+            $('#paginator-tblPDI').hide();
+            toastr.error('No Data Found');
+            HideLoader();
+        }
+
+    }).catch(function (error) {
+        $('#tblPDI').hide();
+        $('#paginator-tblPDI').hide();
+        toastr.error(error);
+        HideLoader();
+    });
+}
+function Download() {
+    const hiddenFields = [
+        "Code","PDI Uploaded"
+    ];
+    ExportToExcelControl.ExportToExcel(G_PDIDataList, hiddenFields, "PDIReport");
+}
+function ViewAttachment_PDI(Code, sourceDownloadFileName) {
+    InitAttachmentControl('DespatchAdviceMaster', Code, '', 0, 0, '', "View", sourceDownloadFileName);
+
+}
+function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode, sourceDownloadFileName) {
+    var url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
+    $('#PDI_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode, SourceDownloadFileName: sourceDownloadFileName });
+}
+function EditPDI(Code) {
+    var ModuleName = "PDI",
+        OptionName = "New",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            $('#LocatePDI').hide();
+            $('#createPDI').hide();
+            $('#EditPDI').show();
+            GetPDIEditList(Code);
+        }
+    });
+}
+function GetPDIEditList(Code) {
+    PDIService.GetPDIEditList(Code).then(function (response) {
+        if (response.length > 0) {
+            $('#txtOrderNo_Code').val(response[0].Code);
+            $('#txtOrderNo').val(response[0].OrderNo);
+            $('#txtDespatchNo').val(response[0].DespatchAdviceNo);
+            $('#txtTruckNo').val(response[0].TruckNo);
+            $('#txtQty').val(response[0]?.['Qty MT']);
+            $('#txtEditRemark').val(response[0].PDIRemark);
+        }
+    });
+}
+
+window.ViewAttachment_PDI = ViewAttachment_PDI;
 window.FileUploadChange = FileUploadChange;
 window.triggerFileInputClick = triggerFileInputClick;
 window.ShowPDIImage = ShowPDIImage;
 window.CloseModal = CloseModal;
 window.DeleteModal = DeleteModal;
+window.CreateNew = CreateNew;
+window.Back = Back;
+window.Download = Download;
+window.validateNumericInput = validateNumericInput;
+window.EditPDI = EditPDI;

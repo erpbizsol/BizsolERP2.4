@@ -49,7 +49,7 @@ function initFilterSidePanelControl() {
     console.log('Setting filters:', filters);
     filterPanel.setFilters(filters);
 
-    // Set default date range to financial year (from FY start to current date)
+    // Set default date range to financial year
     setTimeout(() => {
         console.log('Setting default date range...');
         try {
@@ -59,11 +59,11 @@ function initFilterSidePanelControl() {
                 const month = now.getMonth() + 1;
                 const year = now.getFullYear();
                 const fyStartYear = (month >= 4) ? year : (year - 1);
+                const fyEndYear = fyStartYear + 1;
                 const fyFrom = fyStartYear + '-04-01';
-                // Set FyTo to current date instead of financial year end
-                const fyTo = now.toISOString().slice(0, 10);
+                const fyTo = fyEndYear + '-03-31';
 
-                console.log(`Setting financial year range: ${fyFrom} to ${fyTo} (current date)`);
+                console.log(`Setting financial year range: ${fyFrom} to ${fyTo}`);
                 dateRangeEl.setRange({ fromDate: fyFrom, toDate: fyTo });
                 fromDate = fyFrom;
                 toDate = fyTo;
@@ -276,15 +276,15 @@ function initDateRangeControl() {
     // If you want default from/to to be today, uncomment:
     // dr.setRange({ fromDate: todayISO, toDate: todayISO });
 
-    // --- Set default to current financial year (Apr1 - Current Date) ---
+    // --- Set default to current financial year (Apr1 - Mar31) ---
     try {
         const now = new Date();
         const month = now.getMonth() + 1; //1-12
         const year = now.getFullYear();
         const fyStartYear = (month >= 4) ? year : (year - 1);
+        const fyEndYear = fyStartYear + 1;
         const fyFrom = fyStartYear + '-04-01';
-        // Set FyTo to current date instead of financial year end
-        const fyTo = now.toISOString().slice(0, 10);
+        const fyTo = fyEndYear + '-03-31';
 
         // Try to set the webcomponent range (some implementations expose setRange)
         try { dr.setRange({ fromDate: fyFrom, toDate: fyTo }); } catch (e) { /* ignore if not available */ }
@@ -587,6 +587,11 @@ function clearAllTabs() {
         $('#regional-state-max').text('-');
         $('#regional-city-max').text('-');
 
+        if (window.regionSalesChartInstance) {
+            window.regionSalesChartInstance.destroy();
+            window.regionSalesChartInstance = null;
+        }
+
         if (window._regionalLayerGroup) {
             window._regionalLayerGroup.clearLayers();
         }
@@ -735,47 +740,13 @@ function renderBarChart() {
     if (Array.isArray(chartRows) && chartRows.length > 0) {
         // Ensure sorted by MonthOrder (Apr..Mar)
         chartRows.sort((a, b) => (Number(a.MonthOrder) || 0) - (Number(b.MonthOrder) || 0));
-        
-        // Filter to only show months within the selected date range
-        // This prevents showing previous year data for future months that haven't occurred yet
-        const filters = GetAllFilters();
-        const toDate = filters.toDate && filters.toDate !== '0' ? new Date(filters.toDate) : new Date();
-        const toMonth = toDate.getMonth() + 1; // 1-12
-        const toYear = toDate.getFullYear();
-        
-        // Determine current FY year for comparison
-        const currentFYYear = (toMonth >= 4) ? toYear : (toYear - 1);
-        
-        // Month number mapping (1-12 calendar months)
-        const monthNameToNumber = {
-            'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
-            'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
-        };
-        
-        // Filter chartRows to only include months up to the selected toDate
-        const filteredRows = chartRows.filter(r => {
-            const monthNum = monthNameToNumber[r.MonthName];
-            if (!monthNum) return false;
-            
-            // For FY starting in April:
-            // If month is Apr-Dec, it belongs to current calendar year
-            // If month is Jan-Mar, it belongs to next calendar year
-            const monthYear = (monthNum >= 4) ? currentFYYear : (currentFYYear + 1);
-            
-            // Create a date for the last day of this month
-            const monthEndDate = new Date(monthYear, monthNum, 0); // Day 0 of next month = last day of current month
-            
-            // Only include if this month's end is before or equal to toDate
-            return monthEndDate <= toDate;
-        });
-        
-        monthLabels = filteredRows.map(r => r.MonthName || '');
+        monthLabels = chartRows.map(r => r.MonthName || '');
 
-        currentFY = filteredRows.map(r => {
+        currentFY = chartRows.map(r => {
             const v = r.CurrentFYQty;
             return (v === null || v === undefined || v === '') ? 0 : Number(v);
         });
-        prevFY = filteredRows.map(r => {
+        prevFY = chartRows.map(r => {
             const v = r.PrevFYQty;
             return (v === null || v === undefined || v === '') ? 0 : Number(v);
         });
@@ -797,24 +768,6 @@ function renderBarChart() {
     }
 
     // Create bar chart comparing current and previous financial year month-wise
-    // Use stunning multi-stop gradients for professional appearance
-    
-    // Current FY - Vibrant Red to Orange gradient with shine effect
-    const currentFYGradient = ctx.createLinearGradient(0, 0, 0, 400);
-    currentFYGradient.addColorStop(0, 'rgba(255, 107, 107, 1)');      // Bright coral red (top shine)
-    currentFYGradient.addColorStop(0.15, 'rgba(255, 118, 117, 0.98)'); // Light coral
-    currentFYGradient.addColorStop(0.5, 'rgba(239, 87, 119, 0.95)');   // Vibrant pink-red (middle)
-    currentFYGradient.addColorStop(0.85, 'rgba(192, 57, 43, 0.92)');   // Deep red
-    currentFYGradient.addColorStop(1, 'rgba(165, 42, 42, 0.9)');       // Dark red (bottom depth)
-
-    // Previous FY - Rich Blue to Cyan gradient with glass effect
-    const prevFYGradient = ctx.createLinearGradient(0, 0, 0, 400);
-    prevFYGradient.addColorStop(0, 'rgba(116, 185, 255, 1)');          // Sky blue (top shine)
-    prevFYGradient.addColorStop(0.15, 'rgba(99, 179, 237, 0.98)');     // Light blue
-    prevFYGradient.addColorStop(0.5, 'rgba(52, 152, 219, 0.95)');      // Azure blue (middle)
-    prevFYGradient.addColorStop(0.85, 'rgba(41, 128, 185, 0.92)');     // Deep blue
-    prevFYGradient.addColorStop(1, 'rgba(30, 95, 145, 0.9)');          // Navy blue (bottom depth)
-
     window.barChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -823,59 +776,25 @@ function renderBarChart() {
                 {
                     label: 'Current FY Sales',
                     data: currentFY,
-                    backgroundColor: currentFYGradient,
-                    borderColor: 'rgba(255, 107, 107, 1)',
-                    borderWidth: 3,
-                    borderRadius: 12,
-                    borderSkipped: false,
-                    barPercentage: 0.75,
-                    categoryPercentage: 0.85
+                    backgroundColor: 'rgba(192,57,43,0.85)',
+                    borderColor: 'rgba(192,57,43,1)',
+                    borderWidth: 1
                 },
                 {
                     label: 'Previous FY Sales',
                     data: prevFY,
-                    backgroundColor: prevFYGradient,
-                    borderColor: 'rgba(116, 185, 255, 1)',
-                    borderWidth: 3,
-                    borderRadius: 12,
-                    borderSkipped: false,
-                    barPercentage: 0.75,
-                    categoryPercentage: 0.85
+                    backgroundColor: 'rgba(24,67,135,0.95)',
+                    borderColor: 'rgba(24,67,135,1)',
+                    borderWidth: 1
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
             plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 15,
-                        font: {
-                            size: 13,
-                            weight: '600'
-                        }
-                    }
-                },
+                legend: { position: 'top' },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
-                    titleFont: {
-                        size: 14,
-                        weight: 'bold'
-                    },
-                    bodyFont: {
-                        size: 13
-                    },
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                    borderWidth: 1,
-                    cornerRadius: 8,
                     callbacks: {
                         label: function (ctx) {
                             const val = ctx.raw;
@@ -987,106 +906,20 @@ function renderBarChart() {
                 }
             },
             scales: {
-                x: {
-                    grid: {
-                        display: false,
-                        drawBorder: true,
-                        borderColor: '#e0e0e0',
-                        borderWidth: 2
-                    },
-                    ticks: {
-                        font: {
-                            size: window.innerWidth < 768 ? 11 : 12,
-                            weight: '600'
-                        },
-                        color: '#495057',
-                        padding: 8
-                    }
-                },
+                x: { grid: { display: false } },
                 y: {
                     beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)',
-                        drawBorder: true,
-                        borderColor: '#e0e0e0',
-                        borderWidth: 2
-                    },
                     ticks: {
                         callback: function (value) {
                             if (value === null || value === undefined) return '';
-                            const num = Number(value);
-                            
-                            // Use compact format (K/M) for better space usage on mobile
-                            if (num >= 1000000) {
-                                return (num / 1000000).toFixed(1) + 'M';
-                            } else if (num >= 1000) {
-                                return (num / 1000).toFixed(1) + 'K';
-                            }
-                            
-                            return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
-                        },
-                        font: {
-                            size: window.innerWidth < 768 ? 10 : 12,
-                            weight: '500'
-                        },
-                        color: '#6c757d',
-                        padding: 8
+                            return Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        }
                     },
-                    title: {
-                        display: true,
-                        text: 'Sales',
-                        font: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        color: '#495057'
-                    }
+                    title: { display: true, text: 'Sales' }
                 }
             }
         },
-        plugins: [
-            // Custom plugin for bar shadows and 3D effect
-            {
-                id: 'barShadowPlugin',
-                beforeDatasetsDraw: function(chart) {
-                    const ctx = chart.ctx;
-                    ctx.save();
-                    
-                    chart.data.datasets.forEach((dataset, datasetIndex) => {
-                        const meta = chart.getDatasetMeta(datasetIndex);
-                        if (!meta.hidden) {
-                            meta.data.forEach((element) => {
-                                // Draw shadow
-                                ctx.shadowColor = datasetIndex === 0 ? 'rgba(192, 57, 43, 0.4)' : 'rgba(41, 128, 185, 0.4)';
-                                ctx.shadowBlur = 15;
-                                ctx.shadowOffsetX = 0;
-                                ctx.shadowOffsetY = 4;
-                                
-                                // Create path for rounded rectangle shadow
-                                const {x, y, base, width, height} = element;
-                                const radius = 12;
-                                
-                                ctx.beginPath();
-                                ctx.moveTo(x - width/2 + radius, base);
-                                ctx.lineTo(x - width/2 + radius, y + radius);
-                                ctx.quadraticCurveTo(x - width/2, y, x - width/2 + radius, y);
-                                ctx.lineTo(x + width/2 - radius, y);
-                                ctx.quadraticCurveTo(x + width/2, y, x + width/2, y + radius);
-                                ctx.lineTo(x + width/2, base);
-                                ctx.closePath();
-                                
-                                ctx.fillStyle = datasetIndex === 0 ? 
-                                    'rgba(192, 57, 43, 0.1)' : 'rgba(41, 128, 185, 0.1)';
-                                ctx.fill();
-                            });
-                        }
-                    });
-                    
-                    ctx.restore();
-                }
-            },
-            ...(typeof ChartDataLabels !== 'undefined' ? [window.ChartDataLabels] : [])
-        ]
+        plugins: (typeof ChartDataLabels !== 'undefined') ? [window.ChartDataLabels] : []
     });
 
     // Ensure the chart is sized correctly after insertion
@@ -1103,34 +936,9 @@ function processRawDataForSalesTab(rawData) {
         'Oct': 7, 'Nov': 8, 'Dec': 9, 'Jan': 10, 'Feb': 11, 'Mar': 12
     };
 
-    // Month name mapping to ensure 3-letter abbreviations
-    const monthAbbreviations = {
-        'January': 'Jan', 'February': 'Feb', 'March': 'Mar', 'April': 'Apr',
-        'May': 'May', 'June': 'Jun', 'July': 'Jul', 'August': 'Aug',
-        'September': 'Sep', 'October': 'Oct', 'November': 'Nov', 'December': 'Dec',
-        // Also handle already abbreviated months
-        'Jan': 'Jan', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Apr',
-        'Jun': 'Jun', 'Jul': 'Jul', 'Aug': 'Aug',
-        'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Dec'
-    };
-
-    // Handle numeric month numbers (1-12) - FY starts in April
-    const monthNumberToName = {
-        1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
-        7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
-    };
-
     rawData.forEach(row => {
-        let month = row.InvoiceMonth;
-        if (!month && month !== 0) return;
-
-        // Convert numeric month to name
-        if (typeof month === 'number' || !isNaN(month)) {
-            month = monthNumberToName[parseInt(month)] || month;
-        }
-
-        // Convert to 3-letter abbreviation if needed
-        month = monthAbbreviations[month] || month;
+        const month = row.InvoiceMonth;
+        if (!month) return;
 
         if (!monthMap.has(month)) {
             monthMap.set(month, {
@@ -1296,82 +1104,139 @@ async function renderRegionalSection() {
     if (stateEl) stateEl.textContent = stateMax;
     if (cityEl) cityEl.textContent = cityMax;
 
-    // Render attractive regional cards (top regions)
-    renderRegionalCards(regionalData);
+    // Build region sales chart data from all rows
+    const regionLabels = [];
+    const regionSalesData = [];
+    regionalData.forEach(function (item) {
+        const cityName = item.ConsigneeCityName || '';
+        const sales = Number(item.CurrentYearSales || 0);
+        if (cityName) {
+            regionLabels.push(cityName);
+            regionSalesData.push(sales);
+        }
+    });
+
+    // Region sales horizontal bar
+    try {
+        const regionCanvas = document.getElementById('regionSalesChart');
+        if (regionCanvas) {
+            regionCanvas.style.minWidth = regionCanvas.style.minWidth || '600px';
+
+            const ctx2 = regionCanvas.getContext('2d');
+            if (window.regionSalesChartInstance) {
+                try { window.regionSalesChartInstance.destroy(); } catch (e) { }
+            }
+
+            // Ensure datalabels plugin is registered globally so labels render
+            if (typeof ChartDataLabels !== 'undefined') {
+                try { Chart.register(ChartDataLabels); } catch (e) { /* already registered */ }
+            }
+
+            window.regionSalesChartInstance = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: regionLabels.length > 0 ? regionLabels : ['-'],
+                    datasets: [{
+                        label: 'Sales',
+                        data: regionSalesData.length > 0 ? regionSalesData : [0],
+                        backgroundColor: 'rgba(24,67,135,0.95)',
+                        borderColor: 'rgba(24,67,135,1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        // Configure datalabels here (works if plugin registered)
+                        datalabels: {
+                            display: true,
+                            anchor: function (context) {
+                                const value = context.dataset.data[context.dataIndex];
+                                const maxValue = Math.max(...context.dataset.data);
+                                // For small bars, position outside
+                                if (value < maxValue * 0.2) {
+                                    return 'end';
+                                }
+                                return 'center';
+                            },
+                            align: function (context) {
+                                const value = context.dataset.data[context.dataIndex];
+                                const maxValue = Math.max(...context.dataset.data);
+                                // For small bars, position labels outside to the right
+                                if (value < maxValue * 0.2) {
+                                    return 'end';
+                                }
+                                return 'center';
+                            },
+                            offset: function (context) {
+                                const value = context.dataset.data[context.dataIndex];
+                                const maxValue = Math.max(...context.dataset.data);
+                                // Push labels outside for small bars
+                                if (value < maxValue * 0.2) {
+                                    return 5;
+                                }
+                                return 0;
+                            },
+                            color: function (context) {
+                                const value = context.dataset.data[context.dataIndex];
+                                const maxValue = Math.max(...context.dataset.data);
+                                // Dark text for outside labels, white for inside
+                                if (value < maxValue * 0.2) {
+                                    return '#333';
+                                }
+                                return '#fff';
+                            },
+                            formatter: function (value, context) {
+                                if (value === null || value === undefined) return '';
+
+                                const num = Number(value);
+                                const isMobile = window.innerWidth < 768;
+
+                                // Use compact format for large numbers or mobile
+                                if (num >= 10000 || isMobile) {
+                                    if (num >= 1000000) {
+                                        return (num / 1000000).toFixed(1) + 'M';
+                                    }
+                                    return (num / 1000).toFixed(1) + 'k';
+                                }
+
+                                return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                            },
+                            font: function (context) {
+                                const isMobile = window.innerWidth < 768;
+                                return {
+                                    weight: 'bold',
+                                    size: isMobile ? 9 : 11
+                                };
+                            },
+                            clip: true,
+                            clamp: true
+                        },
+                        tooltip: { enabled: true }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Sales' }
+                        },
+                        y: { grid: { display: false } }
+                    }
+                },
+                // If plugin variable exists, also add to chart plugins array to be safe
+                plugins: (typeof ChartDataLabels !== 'undefined') ? [ChartDataLabels] : []
+            });
+
+            try { window.regionSalesChartInstance.resize(); window.regionSalesChartInstance.update(); } catch (e) { }
+        }
+    } catch (e) {
+        console.warn('region sales chart failed', e);
+    }
 
     // Render map with marker clustering for better performance
     await renderOptimizedMap(regionalData);
-}
-
-// Render attractive regional cards for top regions
-function renderRegionalCards(regionalData) {
-    const container = document.getElementById('regionalCardsContainer');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    if (!regionalData || regionalData.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">No regional data available</div>';
-        return;
-    }
-
-    // Take top 10 regions for display
-    const topRegions = regionalData.slice(0, 10);
-    const maxSales = topRegions.length > 0 ? topRegions[0].CurrentYearSales : 1;
-
-    // Medal icons for top 3
-    const rankIcons = {
-        1: '🥇',
-        2: '🥈',
-        3: '🥉'
-    };
-
-    topRegions.forEach((region, index) => {
-        const rank = index + 1;
-        const cityName = region.ConsigneeCityName || 'Unknown';
-        const stateName = region.ConsigneeStateName || '';
-        const sales = Number(region.CurrentYearSales || 0);
-        const percentage = maxSales > 0 ? (sales / maxSales) * 100 : 0;
-
-        // Format sales value
-        const salesFormatted = formatNumber(sales);
-
-        // Create card element
-        const card = document.createElement('div');
-        card.className = `regional-card rank-${Math.min(rank, 5)}`;
-        card.style.animationDelay = `${index * 0.1}s`;
-
-        card.innerHTML = `
-            <div class="regional-card-header">
-                <div class="regional-card-city">
-                    ${escapeHtml(cityName)}
-                </div>
-                <div class="regional-card-rank">
-                    ${rank <= 3 ? rankIcons[rank] : '#' + rank}
-                </div>
-            </div>
-            <div class="regional-card-sales">
-                ${salesFormatted}
-            </div>
-            <div class="regional-card-state">
-                <i class="fas fa-map-marker-alt me-1"></i>${escapeHtml(stateName)}
-            </div>
-            <div class="regional-card-bar">
-                <div class="regional-card-bar-fill" style="width: 0%" data-width="${percentage.toFixed(1)}%"></div>
-            </div>
-        `;
-
-        container.appendChild(card);
-    });
-
-    // Animate progress bars after a short delay
-    setTimeout(() => {
-        const bars = container.querySelectorAll('.regional-card-bar-fill');
-        bars.forEach(bar => {
-            const targetWidth = bar.getAttribute('data-width');
-            bar.style.width = targetWidth;
-        });
-    }, 100);
 }
 
 // NEW: Optimized map rendering with marker clustering and progressive loading
