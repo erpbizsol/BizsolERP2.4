@@ -49,12 +49,118 @@
     .client-table-container {
         max-height: 150px;
         overflow-y: auto;
+        overflow-x: auto;
         border: 1px solid #e6e6e6;
     }
 
     .top-client {
         font-size: 34px;
         letter-spacing: 1px;
+    }
+
+    /* Table column width adjustments to minimize horizontal scrolling */
+    #clientSalesTable {
+        min-width: 100% !important;
+        width: 100%;
+    }
+
+    #targetAnalysisTable {
+        min-width: 100% !important;
+        width: 100%;
+    }
+
+        #targetAnalysisTable th:nth-child(1),
+        #targetAnalysisTable td:nth-child(1) {
+            width: 35%;
+            min-width: 120px;
+        }
+
+        #targetAnalysisTable th:nth-child(2),
+        #targetAnalysisTable td:nth-child(2),
+        #targetAnalysisTable th:nth-child(3),
+        #targetAnalysisTable td:nth-child(3) {
+            width: 25%;
+            min-width: 90px;
+        }
+
+        #targetAnalysisTable th:nth-child(4),
+        #targetAnalysisTable td:nth-child(4) {
+            width: 15%;
+            min-width: 80px;
+        }
+
+    #salesWithoutTargetTable {
+        min-width: 100% !important;
+        width: 100%;
+    }
+
+        #salesWithoutTargetTable th:nth-child(1),
+        #salesWithoutTargetTable td:nth-child(1) {
+            width: 60%;
+            min-width: 120px;
+        }
+
+        #salesWithoutTargetTable th:nth-child(2),
+        #salesWithoutTargetTable td:nth-child(2) {
+            width: 40%;
+            min-width: 80px;
+        }
+
+    #marketingGrowthTable {
+        min-width: 100% !important;
+        width: 100%;
+    }
+
+        #marketingGrowthTable th:nth-child(1),
+        #marketingGrowthTable td:nth-child(1) {
+            width: 30%;
+            min-width: 100px;
+        }
+
+        #marketingGrowthTable th:nth-child(2),
+        #marketingGrowthTable td:nth-child(2),
+        #marketingGrowthTable th:nth-child(3),
+        #marketingGrowthTable td:nth-child(3),
+        #marketingGrowthTable th:nth-child(4),
+        #marketingGrowthTable td:nth-child(4) {
+            width: 23.33%;
+            min-width: 85px;
+        }
+
+    #productSalesTable,
+    #productSpecTable {
+        min-width: 100% !important;
+        width: 100%;
+    }
+
+    /* Responsive table adjustments */
+    @@media (max-width: 1200px) {
+        .client-table-container {
+            overflow-x: auto;
+        }
+
+        #targetAnalysisTable,
+        #marketingGrowthTable,
+        #productSalesTable,
+        #productSpecTable {
+            min-width: 700px !important;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        #targetAnalysisTable,
+        #marketingGrowthTable {
+            min-width: 600px !important;
+        }
+
+        #productSalesTable,
+        #productSpecTable {
+            min-width: 550px !important;
+        }
+
+        #salesWithoutTargetTable {
+            min-width: 300px !important;
+        }
     }
 
     /* Map loading skeleton animation */
@@ -326,6 +432,21 @@
         -webkit-overflow-scrolling: touch;
         scrollbar-width: thin;
         border-bottom: 2px solid #dee2e6;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Add padding to tab content on mobile to prevent filter button overlap */
+    @@media (max-width: 768px) {
+        .tab-content {
+            padding-bottom: 80px !important;
+        }
+    }
+    
+    @@media (max-width: 576px) {
+        .tab-content {
+            padding-bottom: 70px !important;
+        }
     }
 
         #customerDashboardTabs::-webkit-scrollbar {
@@ -572,7 +693,7 @@
             <div class="card-body">
                 <small class="text-muted">Client Wise Sales</small>
                 <div class="client-table-container mt-2">
-                    <table id="clientSalesTable" class="table table-sm table-striped mb-0 fixed-width-table" style="min-width:800px;">
+                    <table id="clientSalesTable" class="table table-sm table-striped mb-0 fixed-width-table">
                         <thead class="table-secondary" id="clientSalesTableHeader">
                             @* <tr>
                                 <th>Client Name</th>
@@ -640,7 +761,7 @@
                             </small>
                         </div>
                         <div class="client-table-container mt-2">
-                            <table id="targetAnalysisTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                            <table id="targetAnalysisTable" class="table table-sm table-striped mb-0">
                                 <thead class="table-secondary">
                                     <tr>
                                         <th>Marketing Man</th>
@@ -661,7 +782,7 @@
                     <div class="card-body">
                         <small class="text-muted">Sales without Assigned Target</small>
                         <div class="client-table-container mt-2">
-                            <table id="salesWithoutTargetTable" class="table table-sm table-striped mb-0" style="min-width:480px;">
+                            <table id="salesWithoutTargetTable" class="table table-sm table-striped mb-0">
                                 <thead class="table-secondary">
                                     <tr>
                                         <th>Marketing Man</th>
@@ -682,7 +803,7 @@
             <div class="card-body">
                 <small class="text-muted">Marketing Men's Growth</small>
                 <div class="client-table-container mt-2">
-                    <table id="marketingGrowthTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
+                    <table id="marketingGrowthTable" class="table table-sm table-striped mb-0">
                         <thead class="table-secondary">
                             <tr>
                                 <th>Marketing Man</th>
@@ -775,7 +896,7 @@
                     <div class="card-body">
                         <small class="text-muted">Product Wise Sales</small>
                         <div class="client-table-container mt-2">
-                            <table id="productSalesTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
+                            <table id="productSalesTable" class="table table-sm table-striped mb-0">
                                 <thead class="table-secondary" id="productSalesTableHeader">
                                 </thead>
                                 <tbody id="productSalesTableBody">
@@ -792,7 +913,7 @@
                     <div class="card-body">
                         <small class="text-muted">Product Wise Sales (Sizes and Thickness)</small>
                         <div class="client-table-container mt-2">
-                            <table id="productSpecTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
+                            <table id="productSpecTable" class="table table-sm table-striped mb-0">
                                 <thead class="table-secondary" id="productSpecTableHeader">
                                 </thead>
                                 <tbody id="productSpecTableBody"></tbody>

@@ -225,20 +225,56 @@ template.innerHTML = `
     margin-right: 6px;
 }
 
+/* Mobile responsive adjustments */
 @media (max-width: 768px) {
     .filter-floating-btn {
-        right: 15px;
-        top: 80px;
-        width: 40px;
-        height: 40px;
+        right: 16px;
+        top: auto;
+        bottom: 24px;
+        width: 50px;
+        height: 50px;
+        z-index: 1040;
     }
     
     .filter-floating-btn i {
-        font-size: 16px;
+        font-size: 20px;
     }
     
     .filter-offcanvas {
         width: 90% !important;
+        max-width: 380px;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 576px) {
+    .filter-floating-btn {
+        right: 12px;
+        bottom: 20px;
+        width: 48px;
+        height: 48px;
+    }
+    
+    .filter-floating-btn i {
+        font-size: 18px;
+    }
+    
+    .filter-offcanvas {
+        width: 95% !important;
+    }
+}
+
+/* Landscape mobile orientation */
+@media (max-height: 500px) and (orientation: landscape) {
+    .filter-floating-btn {
+        width: 40px;
+        height: 40px;
+        bottom: 16px;
+        right: 12px;
+    }
+    
+    .filter-floating-btn i {
+        font-size: 16px;
     }
 }
 </style>
