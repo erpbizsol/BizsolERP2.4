@@ -35,6 +35,14 @@ const PurchaseQualityCheckService = {
             }
         );
     },
+    GetGodownNameList: function GetGodownNameList() {
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetGodownNameList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     SaveMRNQCPropertyResult: function SaveMRNQCPropertyResult(data) {
         const authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
         const userMasterCode = authKeyData.UserMaster_Code || 0;

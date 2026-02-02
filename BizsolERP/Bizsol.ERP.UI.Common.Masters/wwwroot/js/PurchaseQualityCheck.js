@@ -34,6 +34,9 @@ $(document).ready(function () {
     $('#btnReset').on('click', function() {
         resetGrid();
     });
+    $('#btnPrint').on('click', function() {
+        printGrid();
+    });
     $("#ddlFinYear").change(function () {
         loadMRNMasterList();
         clearTable();
@@ -273,6 +276,7 @@ function buildQualityCheckTable(data) {
     $('.table-wrapper').show();
     $('#btnSaveQualityCheck').show();
     $('#btnReset').show();
+    $('#btnPrint').show();
     
     G_ChangedInputs = [];
     
@@ -291,6 +295,7 @@ function buildDynamicTableHeader(propertyMap, propertyNames) {
                '<th rowspan="2" class="qc-item-cell align-middle text-center" style="min-width: 40px;">SNo</th>' +
                '<th rowspan="2" class="qc-item-cell align-middle" style="min-width: 80px;">Item Code</th>' +
                '<th rowspan="2" class="qc-item-cell align-middle" style="min-width: 200px;">Item Name</th>'+
+               '<th rowspan="2" class="qc-item-cell align-middle" style="min-width: 200px;">Specification</th>'+
                '<th rowspan="2" class="qc-item-cell align-middle" style="min-width: 80px;">Status</th>'+
                '<th rowspan="2" class="qc-item-cell align-middle" style="min-width: 120px;">Warehouse</th>';
     
@@ -341,26 +346,40 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
         
         const itemCode = item.ItemCode || '';
         row += `<td class="qc-item-cell">${itemCode}</td>`;
-        
+
         const itemName = item.ItemName || '';
         row += `<td class="qc-item-cell">${itemName}</td>`;
 
+        const specification = item.Specification || '';
+        row += `<td class="qc-item-cell">${specification}</td>`;
+        
         const status = item.Status || '';
-        // Correct status select markup and give it a distinct class 'status-select' so it is not treated as a property input
+        // Fixed status select - ensure only the correct option is selected
+        const isAccepted = status === 'A' || status === 'a';
+        const isRejected = status === 'R' || status === 'r';
+        
+        // Use unique ID with MRNDetail_Code to avoid conflicts
+        const statusSelectId = `status_${item.MRNDetail_Code}_${item.ItemMaster_Code}`;
         row += `<td class="qc-item-cell">
-                    <select class="form-control form-control-sm status-select" id="status_${item.ItemMaster_Code}" data-mrn-detail-code="${item.MRNDetail_Code || ''}" data-item-code="${item.ItemMaster_Code || ''}">
+                    <select class="form-control form-control-sm status-select" 
+                            id="${statusSelectId}" 
+                            data-mrn-detail-code="${item.MRNDetail_Code || ''}" 
+                            data-item-code="${item.ItemMaster_Code || ''}">
                         <option value="">Select...</option>
-                        <option value="A" ${status === 'A' ? 'selected' : ''}>Accepted</option>
-                        <option value="R" ${status === 'R' ? 'selected' : ''}>Rejected</option>
+                        <option value="A" ${isAccepted ? 'selected' : ''}>Accepted</option>
+                        <option value="R" ${isRejected ? 'selected' : ''}>Rejected</option>
                     </select>
                 </td>`;
 
         // Render a dropdown for Godown/Warehouse. We'll populate options after table body is created.
         const currentGodownName = item.GodownName || '';
-        const currentGodownCode = item.Godown_Code || item.GodownCode || item.GodownId || '';
+        const currentGodownCode = item.Godown_Code || item.WarehouseMaster_Code || item.GodownId || '';
+        
+        // Use unique ID with MRNDetail_Code to avoid conflicts
+        const godownSelectId = `godown_${item.MRNDetail_Code}_${item.ItemMaster_Code}`;
         row += `<td class="qc-item-cell">
                     <select class="form-control form-control-sm godown-select" 
-                            id="godown_${item.ItemMaster_Code}" 
+                            id="${godownSelectId}" 
                             data-item-code="${item.ItemMaster_Code || ''}"
                             data-mrn-detail-code="${item.MRNDetail_Code || ''}"
                             data-current-name="${currentGodownName}"
@@ -401,8 +420,8 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
                 const isDisabled = fieldValue === '[DISABLED]';
                 const cellClass = isDisabled ? 'qc-disabled' : 'qc-property-cell';
                 
-                // Create unique input ID
-                const inputId = `qc_${propertyName.replace(/\s+/g, '_')}_${testTypeCode}_${item.ItemMaster_Code}`;
+                // Create unique input ID with MRNDetail_Code
+                const inputId = `qc_${propertyName.replace(/\s+/g, '_')}_${testTypeCode}_${item.MRNDetail_Code}_${item.ItemMaster_Code}`;
                 
                 if (isDisabled) {
                     // Disabled cell
@@ -495,7 +514,7 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
 
                 let options = '<option value="">Please select...</option>';
                 godownList.forEach(function(g) {
-                    const code = g.Code || g.code || g.GodownCode || g.GodownId || 0;
+                    const code = g.Code || g.code || g.WarehouseMaster_Code || g.GodownId || 0;
                     const name = g.GodownName || g.godownName || g.Name || g.Description || '';
                     if (!name) return;
                     const selected = (String(code) === String(currentCode) || String(name) === String(currentName)) ? 'selected' : '';
@@ -505,12 +524,20 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
                 $sel.html(options);
             });
 
-            // Optional: handle change event to mark changed inputs
-            $tbody.find('.godown-select').off('change').on('change', function() {
+            // Handle change event to mark changed inputs - use event delegation to prevent conflicts
+            $tbody.off('change', '.godown-select').on('change', '.godown-select', function(e) {
+                e.stopPropagation(); // Prevent event bubbling
                 const $s = $(this);
                 $s.addClass('changed-input');
-                // You can track change details similarly to property inputs if needed
-                console.log('Godown changed for item', $s.data('item-code'), 'value', $s.val());
+                console.log('Godown changed for MRNDetail', $s.data('mrn-detail-code'), 'value', $s.val());
+            });
+
+            // Mark status selects as changed when user changes them - use event delegation
+            $tbody.off('change', '.status-select').on('change', '.status-select', function(e) {
+                e.stopPropagation(); // Prevent event bubbling
+                const $s = $(this);
+                $s.addClass('changed-input');
+                console.log('Status changed for MRNDetail', $s.data('mrn-detail-code'), 'value', $s.val());
             });
         } catch (ex) {
             console.error('Error populating godown selects', ex);
@@ -660,33 +687,9 @@ function handlePropertyInputChange($input) {
     $input.addClass('changed-input');
     
     console.log('Tracked changes:', G_ChangedInputs.length);
-
-    // Update status select in the same row based on other property inputs
-    try {
-        const $row = $input.closest('tr');
-        const $statusSelect = $row.find('.status-select');
-        if ($statusSelect.length) {
-            // If any input in the row is invalid mark Rejected
-            const hasInvalid = $row.find('.is-invalid').length > 0;
-            if (hasInvalid) {
-                $statusSelect.val('R');
-            } else {
-                // If any property-input in the row has a non-empty value set Accepted, otherwise clear
-                const hasValue = $row.find('.property-input').filter(function () {
-                    const v = $(this).val();
-                    return v !== null && v !== undefined && v.toString().trim() !== '';
-                }).length > 0;
-
-                if (hasValue) {
-                    $statusSelect.val('A');
-                } else {
-                    $statusSelect.val('');
-                }
-            }
-        }
-    } catch (ex) {
-        console.error('Error updating status select:', ex);
-    }
+    
+    // DO NOT auto-update status - let user control it manually
+    // Removed all auto-status update logic to prevent interference with dropdown selections
 }
 function GetQCPropertyTestTypeMaster() {
     const $container = $('#chkTestType');
@@ -856,6 +859,7 @@ function clearTable() {
     $('.table-wrapper').hide();
     $('#btnSaveQualityCheck').hide();
     $('#btnReset').hide();
+    $('#btnPrint').hide();
     G_PurchaseQualityCheckData = [];
     G_PropertyColumns = [];
 }
@@ -881,6 +885,29 @@ function saveQualityCheckData() {
             }
 
             const dataToSave = [];
+            
+            // Group by MRNDetail to collect status and godown per row
+            const detailMap = new Map();
+            
+            // First collect status and godown per detail
+            $('#table-body tr').each(function () {
+                const $tr = $(this);
+                const mrnDetailCode = $tr.data('mrn-detail-code') || 0;
+                if (!mrnDetailCode) return;
+                
+                const $status = $tr.find('.status-select');
+                const $godown = $tr.find('.godown-select');
+                
+                const statusVal = $status.length ? $status.val() : '';
+                const godownVal = $godown.length ? $godown.val() : '';
+                
+                detailMap.set(mrnDetailCode, {
+                    status: statusVal || null,
+                    WarehouseMaster_Code: godownVal ? parseInt(godownVal) : null
+                });
+            });
+            
+            // Now collect property inputs and merge with detail info
             $('.property-input').each(function () {
                 const $input = $(this);
                 const value = $input.val();
@@ -899,57 +926,31 @@ function saveQualityCheckData() {
                 const testType = $input.data('testtype');
                 const mrnMasterCode = $input.data('mrn-master-code');
                 const mrnDetailCode = $input.data('mrn-detail-code');
-                const $status = $tr.find('.status-select');
-                const $godown = $tr.find('.godown-select');
 
-                const statusVal = $status.length ? $status.val() : '';
-                const godownVal = $godown.length ? $godown.val() : '';
                 // Only add if we have all required data
                 if (propertyCode && testType && mrnMasterCode && mrnDetailCode) {
-                    dataToSave.push({
+                    const detailInfo = detailMap.get(mrnDetailCode) || {};
+                    
+                    const record = {
                         code: 0,
                         mrnMaster_Code: parseInt(mrnMasterCode) || 0,
                         mrnDetail_Code: parseInt(mrnDetailCode) || 0,
                         qcPropertyMaster_Code: parseInt(propertyCode) || 0,
                         testTypeMaster_Code: parseInt(testType) || 0,
-                        result: value.trim(),
-                        status: statusVal || '',
-                        godown_Code: godownVal ? parseInt(godownVal) || 0 : 0
-                    });
-                }
-            });
-
-            // Collect per-row Status and Godown (warehouse) values and add as detail updates
-            $('#table-body tr').each(function () {
-                const $tr = $(this);
-                const value = $tr.val();
-                const mrnMasterCode = $tr.data('mrn-master-code') || $('#hfMRNMasterCode').val() || 0;
-                const mrnDetailCode = $tr.data('mrn-detail-code') || 0;
-                const propertyCode = $tr.data('property-code') || 0;
-                const testType = $tr.data('testtype') || 0;
-
-                if (!mrnDetailCode) return;
-
-                const $status = $tr.find('.status-select');
-                const $godown = $tr.find('.godown-select');
-
-                const statusVal = $status.length ? $status.val() : '';
-                const godownVal = $godown.length ? $godown.val() : '';
-
-                // Only add detail update if status or godown has a value or select was changed (has changed-input class)
-                const changed = ($status.length && $status.hasClass('changed-input')) || ($godown.length && $godown.hasClass('changed-input'));
-
-                if ((statusVal && statusVal !== '') || (godownVal && godownVal !== '') || changed) {
-                    dataToSave.push({
-                        code: 0,
-                        mrnMaster_Code: parseInt(mrnMasterCode) || 0,
-                        mrnDetail_Code: parseInt(mrnDetailCode) || 0,
-                        qcPropertyMaster_Code: parseInt(propertyCode) || 0,
-                        testTypeMaster_Code: parseInt(testType) || 0,
-                        result: value.trim(),
-                        status: statusVal || '',
-                        godown_Code: godownVal ? parseInt(godownVal) || 0 : 0
-                    });
+                        result: value.trim()
+                    };
+                    
+                    // Add status only if it has a value (backend expects char, so send single char or null)
+                    if (detailInfo.status && detailInfo.status !== '') {
+                        record.status = detailInfo.status.charAt(0); // Take first character only
+                    }
+                    
+                    // Add WarehouseMaster_Code only if it has a value
+                    if (detailInfo.WarehouseMaster_Code !== null && detailInfo.WarehouseMaster_Code !== undefined) {
+                        record.WarehouseMaster_Code = detailInfo.WarehouseMaster_Code;
+                    }
+                    
+                    dataToSave.push(record);
                 }
             });
 
@@ -958,22 +959,19 @@ function saveQualityCheckData() {
                 return;
             }
 
-            const invalidRecords = dataToSave.filter(item => {
-                // Skip validation for detail-only records
-                if (item.isDetail) return false;
-                return (
-                    !item.qcPropertyMaster_Code || item.qcPropertyMaster_Code === 0 ||
-                    !item.mrnMaster_Code || item.mrnMaster_Code === 0 ||
-                    !item.mrnDetail_Code || item.mrnDetail_Code === 0 ||
-                    !item.testTypeMaster_Code || item.testTypeMaster_Code === 0
-                );
-            });
+            const invalidRecords = dataToSave.filter(item =>
+                !item.qcPropertyMaster_Code || item.qcPropertyMaster_Code === 0 ||
+                !item.mrnMaster_Code || item.mrnMaster_Code === 0 ||
+                !item.mrnDetail_Code || item.mrnDetail_Code === 0 ||
+                !item.testTypeMaster_Code || item.testTypeMaster_Code === 0
+            );
 
             if (invalidRecords.length > 0) {
                 toastr.error('Some records are missing required data. Please check the data.');
                 return;
             }
 
+            // Send the array directly, NOT wrapped in an object
             Showloader();
 
             PurchaseQualityCheckService.SaveMRNQCPropertyResult(dataToSave)
@@ -1022,6 +1020,19 @@ function resetGrid() {
             loadPurchaseQualityCheckData(mrnMasterCode);
         }
     }
+}
+function printGrid() {
+    if (!confirm('Are you sure you want to Print the grid')) {
+        return;
+    }
+    G_ChangedInputs = [];
+    const mrnNo = $('#txtMRNNo').val();
+    ////if (mrnNo && mrnNo !== '0' && mrnNo !== '') {
+    ////    const mrnMasterCode = mrnNo;
+    ////    if (mrnMasterCode && mrnMasterCode !== 0) {
+    ////        loadPurchaseQualityCheckData(mrnMasterCode);
+    ////    }
+    //}
 }
 function SavePurchaseQualityCheck() {
     saveQualityCheckData();
