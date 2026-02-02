@@ -13,6 +13,7 @@ const MachineMaintenanceService = {
         );
 
     },
+
     GetDepartmentMasterList: function GetDepartmentMasterList() {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;

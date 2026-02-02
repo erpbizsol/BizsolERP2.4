@@ -2,6 +2,7 @@ import { MachineMaintenanceService } from '../../Bizsol.WebERP.UI.Shared/js/JSSe
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 let files = [];
+
 let fileName = '';
 let imageBase64Data = [];
 let existingImageData = []; // Store existing image data during edit
