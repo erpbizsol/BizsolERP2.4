@@ -111,9 +111,13 @@ class DateRangeControlHTMLElement extends HTMLElement {
 
  try { this.clearBtn.style.display = 'none'; } catch (e) { }
 
+ // Clean up any orphaned overlays on component initialization
+ this._cleanupOrphanedOverlay();
+
  this._loadFlatpickr().then(() => this._initFlatpickr()).catch(() => { });
  this._syncToMin();
  window.addEventListener('resize', this._onWindowResize);
+ window.addEventListener('orientationchange', this._onWindowResize);
  }
 
  disconnectedCallback() {
@@ -121,6 +125,9 @@ class DateRangeControlHTMLElement extends HTMLElement {
  this.toInput.removeEventListener('change', this._onToChange);
  this.clearBtn.removeEventListener('click', this._onClear);
  window.removeEventListener('resize', this._onWindowResize);
+ window.removeEventListener('orientationchange', this._onWindowResize);
+ // Clean up overlay on component disconnect
+ this._cleanupOrphanedOverlay();
  if (this._fp && typeof this._fp.destroy === 'function') this._fp.destroy();
  }
 
@@ -230,7 +237,12 @@ class DateRangeControlHTMLElement extends HTMLElement {
 
  _adjustMobilePosition(instance) {
  try {
- if (window.innerWidth > 640) return;
+ if (window.innerWidth > 640) {
+ // If not mobile, ensure no overlay exists
+ const overlay = document.getElementById('flatpickr-mobile-overlay');
+ if (overlay) overlay.remove();
+ return;
+ }
  const container = instance.calendarContainer;
  if (!container) return;
  
@@ -645,14 +657,43 @@ return [toIso(from), toIso(today)];
  getRange() { return { fromDate: this._from, toDate: this._to }; }
  setRange({ fromDate, toDate }) { this._setFromValue(this._normalizeDate(fromDate)); this._setToValue(this._normalizeDate(toDate)); this._syncToMin(); if (this._to && this._from && this._to < this._from) { this._setToValue(this._from); } if (this._fp && typeof this._fp.setDate === 'function') this._fp.setDate([this._from, this._to].filter(Boolean), true, 'Y-m-d'); this._emitChange(); }
 
+ // Helper method to clean up orphaned overlays
+ _cleanupOrphanedOverlay() {
+ try {
+ const overlay = document.getElementById('flatpickr-mobile-overlay');
+ if (overlay) {
+ overlay.remove();
+ document.body.style.overflow = '';
+ console.log('Cleaned up orphaned flatpickr overlay');
+ }
+ } catch (e) {
+ console.warn('Error cleaning up overlay:', e);
+ }
+ }
+
  _onWindowResize() {
  // On resize, if flatpickr is open, re-apply header/footer adjustments and consider reinitializing for month count
  try {
+ // Always clean up overlay on resize to prevent black screen
+ const overlay = document.getElementById('flatpickr-mobile-overlay');
+ const wasMobile = !!overlay;
+ 
  if (this._fp && this._fp.calendarContainer) {
  // if change between mobile and desktop sizes, re-init to change showMonths if necessary
  const mobile = (window.innerWidth <=640);
  const currentShowMonths = this._fp.config ? this._fp.config.showMonths : (this._fp.loadedPlugins && this._fp.loadedPlugins.showMonths);
+ 
+ // If transitioning from mobile to desktop, clean up overlay and close calendar
+ if (wasMobile && !mobile) {
+ if (overlay) overlay.remove();
+ document.body.style.overflow = '';
+ try { this._fp.close(); } catch (e) { }
+ }
+ 
  if ((mobile && this._fp.config.showMonths !==1) || (!mobile && this._fp.config.showMonths !==2)) {
+ // Clean up overlay before reinitializing
+ if (overlay) overlay.remove();
+ document.body.style.overflow = '';
  try { this._fp.destroy(); } catch (e) { }
  this._initFlatpickr();
  return;
@@ -660,8 +701,21 @@ return [toIso(from), toIso(today)];
  this._ensureCalendarHeader(this._fp);
  this._ensureCalendarFooter(this._fp);
  if (mobile) this._adjustMobilePosition(this._fp);
+ } else {
+ // If flatpickr is not open but overlay exists (orphaned), remove it
+ if (overlay) {
+ overlay.remove();
+ document.body.style.overflow = '';
  }
- } catch (e) { }
+ }
+ } catch (e) { 
+ // On error, ensure overlay is cleaned up
+ try {
+ const overlay = document.getElementById('flatpickr-mobile-overlay');
+ if (overlay) overlay.remove();
+ document.body.style.overflow = '';
+ } catch (cleanupErr) { }
+ }
  }
 }
 
