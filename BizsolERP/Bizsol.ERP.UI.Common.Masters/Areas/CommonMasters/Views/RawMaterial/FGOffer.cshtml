@@ -4,7 +4,7 @@
 
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/RMOffer.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/FGOffer.js"></script>
 <style>
     .select2-container--open .select2-dropdown {
         z-index: 9999 !important;
@@ -82,16 +82,30 @@
         z-index: 5;
     }
 
-    /* Ensure JS row background color is visible on editable table */
-    #tblRMOfferEditable {
-        --bs-table-bg: transparent; /* make cell backgrounds transparent */
+    /* Disabled state styling for verified records */
+    .opacity-50 {
+        opacity: 0.5;
     }
 
-    .fixed-width-table {
-        width: 100%;
-        min-width: max-content;
-        border-collapse: collapse;
-        table-layout: auto;
+    .cursor-not-allowed {
+        cursor: not-allowed !important;
+    }
+
+    input:disabled {
+        background-color: #e9ecef !important;
+        cursor: not-allowed !important;
+        color: #6c757d;
+    }
+
+    button:disabled {
+        cursor: not-allowed !important;
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    button:disabled:hover {
+        background-color: inherit !important;
+        border-color: inherit !important;
     }
 </style>
 <div class="card p-2">
@@ -129,7 +143,7 @@
             </div>
             <div class="col-md-3" style="margin-top: 34px !important;">
                 <button type="button" id="btnRMOfferShow" class="btn btn-primary btn-height mb-1">Show</button>
-                <button class="btn btn-danger icon-height mb-1" title="Edit" id="btnBack" onclick="Back()">Back</button> 
+                <button class="btn btn-danger icon-height mb-1" title="Edit" id="btnBack" onclick="Back()">Back</button>
             </div>
         </div>
         <div class="row mt-2">
@@ -150,6 +164,7 @@
                 <select id="ddlInspectionLocation" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
             </div>
         </div>
+
         <div class="table-wrapper">
             <table id="tblRMOfferEditable" class="fixed-width-table table">
                 <thead id="table-headerEditable">
@@ -176,7 +191,7 @@
                     <input type="hidden" id="hfCode" class="form-control form-control-sm box_border" />
                 </div>
                 <div class="col-md-12 text-end">
-                    <button type="button" class="btn btn-success icon-height" onclick="DeleteRMOffer()">Ok</button>
+                    <button type="button" class="btn btn-success icon-height" onclick="DeleteFGOfferModal()">Ok</button>
                     <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
                 </div>
             </div>
