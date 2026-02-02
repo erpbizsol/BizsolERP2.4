@@ -13,6 +13,7 @@ const MachineMaintenanceService = {
         );
 
     },
+
     GetDepartmentMasterList: function GetDepartmentMasterList() {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
@@ -78,11 +79,8 @@ const MachineMaintenanceService = {
             }
         );
     },
-    GetMachineMaintenanceImageByCode: function GetMachineMaintenanceImageByCode(Code) {
-
-        var URL = UrlService.API_ENDPOINT_MachineMaintenance +
-            "/GetMachineMaintenanceImageByCode?Code=" + Code;
-
+    GetMachineMaintenanceImageByCode: function GetMachineMaintenanceImageByCode(Code, Status) {
+        const URL = `${UrlService.API_ENDPOINT_MachineMaintenance}/GetMachineMaintenanceImageByCode?Code=${Code}&Status=${Status}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, null)
             .then(function (value) {
                 return value;

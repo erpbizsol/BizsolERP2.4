@@ -1,4 +1,5 @@
-import { RawMaterialOfferService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RawMaterialOfferService.js';
+﻿import { RawMaterialOfferService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RawMaterialOfferService.js';
+import { FGInspectedOfferService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_FGInspectedEntryService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
@@ -11,9 +12,9 @@ let G_StartOfMonth = [];
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     GetRawMaterialDropDown();
-   
+
     $('#btnRMClearanceShow').on("click", function () {
-        GetRawMaterialClearanceList();
+        GetFGInspectedOfferList();
     });
     $('#chkCompleted').on("change", function () {
         var IsChecked = $(this).is(':checked');
@@ -22,7 +23,7 @@ $(document).ready(function () {
         } else {
             $('#btnVerifyall').show();
         }
-        GetRawMaterialClearanceList();
+        GetFGInspectedOfferList();
     });
     setDefaultDateRange();
 });
@@ -36,12 +37,12 @@ function setDefaultDateRange() {
         const day = String(d.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     }
-    
+
     $('#txtFromDate').val(formatDate(startOfMonth));
     $('#txtToDate').val(formatDate(today));
-    G_TodayDate = formatDate(today);    
+    G_TodayDate = formatDate(today);
     G_StartOfMonth = formatDate(startOfMonth);
-    GetRawMaterialClearanceList();
+    GetFGInspectedOfferList();
 }
 function GetRawMaterialDropDown() {
     RawMaterialOfferService.GetRawMaterialDropDown()
@@ -466,7 +467,7 @@ function Verify(Code) {
         }
     });
 }
-function GetRawMaterialClearanceList() {
+function GetFGInspectedOfferList() {
     let AccountMaster_Code = $('#txtClientName').val();
     let OrderNo = $('#txtOrderNo').val();
     let ProjectNo = $('#txtProjectNo').val();
@@ -493,29 +494,38 @@ function GetRawMaterialClearanceList() {
         IsCompleted = 'N';
     }
     Showloader();
-    RawMaterialOfferService.GetRawMaterialClearanceList(AccountMaster_Code, OrderNo, ProjectNo, FromDate, ToDate, IsCompleted).then(function (response) {
+    FGInspectedOfferService.GetFGInspectedClearanceList(AccountMaster_Code, OrderNo, ProjectNo, FromDate, ToDate, IsCompleted).then(function (response) {
         HideLoader();
         if (response && response.length > 0) {
-            $('#tblRMClearance').show();
-            $('#paginator-tblRMClearance').show();
+            $('#dvGrid').show();
             G_RMClearanceDataList = response;
             let StringFilterColumn = [];
             const NumericFilterColumn = ["Entry No"];
-            const DateFilterColumn = ["Entry Date","Inspection Date"];
+            const DateFilterColumn = ["Entry Date", "Inspection Date"];
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
             let hiddenColumns = [];
             if (IsCompleted == 'N') {
-                hiddenColumns = ["Code", "Thickness_Code", "Grade_Code", "RMInspectionRequestMaster_Code", "IsInspected", "Status","Verify/Rejected By","Verify/Rejected On","Remark"];
+                hiddenColumns = ["Code", "Thickness_Code", "Grade_Code", "RMInspectionRequestMaster_Code", "IsInspected", "Status", "Verify/Rejected By", "Verify/Rejected On", "Remark"];
                 StringFilterColumn = ["Inspection Location", "Client Name", "Order No", "Project No", "Mark No", "Thickness", "Grade", "IdentificationNo", "Location of Coil"];
 
             } else {
-                hiddenColumns = ["Code", "Thickness_Code", "Grade_Code","RMInspectionRequestMaster_Code", "IsInspected",];
-                StringFilterColumn = ["Inspection Location", "Client Name", "Order No", "Project No", "Mark No", "Thickness", "Grade", "IdentificationNo", "Location of Coil","Status"];
+                hiddenColumns = ["Code", "Thickness_Code", "Grade_Code", "RMInspectionRequestMaster_Code", "IsInspected",];
+                StringFilterColumn = ["Inspection Location", "Client Name", "Order No", "Project No", "Mark No", "Thickness", "Grade", "IdentificationNo", "Location of Coil", "Status"];
 
             }
-            const ColumnAlignment = { 'S.No.': 'center;width:10px', "Entry Date": 'center', "Inspection Date": 'center', "Entry No": 'center', 'P.O. Qty(Wt.)': 'right', 'Balance to Inspect (Wt.)': 'right','Coil Wt.':'right', 'Is Inspected': 'center' };
+            const ColumnAlignment = {
+                'S.No.': 'center;width:10px',
+                "Entry Date": 'center',
+                "Inspection Date": 'center',
+                "Entry No": 'center',
+                'P.O.(PCS)': 'right;',
+                'Bal Qty for Inspection': 'right;',
+                'Offer Qty': 'right;',
+                'Is Inspected': 'center;'
+                		
+            };
             const updatedResponse = response.map((item) => {
                 let InputHTML = '';
                 let IsInspectedHTML = '';
@@ -537,19 +547,19 @@ function GetRawMaterialClearanceList() {
                 };
             });
             const TotalColumns = [
-                "P.O. Qty(Wt.)",
-                "Balance to Inspect (Wt.)",
-                "Coil Wt."	
+                "P.O.(PCS)",
+                "Bal Qty for Inspection",
+                "Offer Qty"		
             ]
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, true, TotalColumns);
         } else {
-            $('#tblRMClearance').hide();
-            $('#paginator-tblRMClearance').hide();
+            G_RMClearanceDataList = [];
+            $('#dvGrid').hide();
             toastr.error('No data found');
         }
     }).catch(function (error) {
-        $('#tblRMClearance').hide();
-        $('#paginator-tblRMClearance').hide();
+        G_RMClearanceDataList = [];
+        $('#dvGrid').hide();
         HideLoader();
         toastr.error('Error loading list. Please try again.');
     });
@@ -568,7 +578,7 @@ function OpenModalReject(Code) {
         OptionName = "Reject",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
-        MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
         if (response.CheckModuleOptionRight == 'N') {
             toastr.error(response.Msg);
             return false;
@@ -581,18 +591,18 @@ function OpenModalReject(Code) {
         }
     });
 }
-function RejectRMClearance(){
+function RejectRMClearance() {
     var reason = $("#txtRemark").val();
     var Code = $("#hfCode").val();
     if (reason == "") {
         toastr.error('Please enter a reason before proceeding.');
         return;
     }
-    RawMaterialOfferService.GetRawMaterialClearanceReject(Code, reason).then(function (response) {
+    FGInspectedOfferService.GetFGInspectedClearanceReject(Code, reason).then(function (response) {
         if (response.Status == 'Y') {
             toastr.success(response.Msg);
             CloseModal();
-            GetRawMaterialClearanceList();
+            GetFGInspectedOfferList();
             $("#txtRemark").val('')
             $("#hfCode").val(0);
         } else {
@@ -607,11 +617,11 @@ function VerifyRMClearance() {
         toastr.error('Please enter a reason before proceeding.');
         return;
     }
-    RawMaterialOfferService.GetRawMaterialClearanceVerify(Code, reason).then(function (response) {
+    FGInspectedOfferService.GetFGInspectedClearanceVerify(Code, reason).then(function (response) {
         if (response.Status === 'Y') {
             toastr.success(response.Msg);
             CloseVerifyModal();
-            GetRawMaterialClearanceList();
+            GetFGInspectedOfferList();
             $("#txtVerifyRemark").val('')
             $("#hfVerifyCode").val(0);
         }
@@ -628,12 +638,12 @@ function CloseVerifyModal() {
     $('#dvVerifyRemark').modal('hide');
     $("#txtVerifyRemark").val("");
 }
-function OpenModalInspectedRemark(Code,element) {
+function OpenModalInspectedRemark(Code, element) {
     var ModuleName = "RM Clearance Entry",
         OptionName = "Verify",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
-        MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
         if (response.CheckModuleOptionRight == 'N') {
             toastr.error(response.Msg);
             return false;
@@ -644,10 +654,10 @@ function OpenModalInspectedRemark(Code,element) {
 }
 function SaveInspectedRemark(Code, element) {
     if (confirm("Are you sure you want to inspect this?")) {
-        RawMaterialOfferService.SaveInspectedRemark(Code).then(function (response) {
+        FGInspectedOfferService.SaveInspectedRemark(Code).then(function (response) {
             if (response.Status == 'Y') {
                 toastr.success(response.Msg);
-                GetRawMaterialClearanceList();
+                GetFGInspectedOfferList();
             } else {
                 toastr.error(response.Msg);
                 $(element).prop("checked", false);
@@ -665,14 +675,14 @@ function Download() {
     } else {
         hiddenFields = ["Code", "Thickness_Code", "Grade_Code", "RMInspectionRequestMaster_Code", "IsInspected",];
     }
-    ExportToExcelControl.ExportToExcel(G_RMClearanceDataList, hiddenFields, "RawMaterialClearance");
+    ExportToExcelControl.ExportToExcel(G_RMClearanceDataList, hiddenFields, "FGInspectedEntry");
 }
-function VerifyAll(){
+function VerifyAll() {
     var ModuleName = "RM Clearance Entry",
         OptionName = "Verify",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
-        MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
         if (response.CheckModuleOptionRight == 'N') {
             toastr.error(response.Msg);
             return false;
@@ -699,11 +709,11 @@ function VerifyAllRMClearance() {
         return;
     }
     if (confirm("Are you sure you want to verify all ?")) {
-        RawMaterialOfferService.GetAllRawMaterialClearanceVerify(Codes, reason).then(function (response) { 
+        FGInspectedOfferService.GetAllFGClearanceVerify(Codes, reason).then(function (response) {
             if (response.Status === 'Y') {
                 toastr.success(response.Msg);
                 CloseAllVerifyModal();
-                GetRawMaterialClearanceList();
+                GetFGInspectedOfferList();
                 $("#txtRemarkAll").val('')
             } else if (response.Status === 'N') {
                 toastr.error(response.Msg);
