@@ -22,6 +22,12 @@ $(document).ready(function () {
     GetDepartmentMasterList();
     GetMachineMasterList();
     GetStatusMasterList();
+    
+});
+document.addEventListener('dblclick', function () {
+    if (document.activeElement?.type === 'time') {
+        document.activeElement.blur();
+    }
 });
 function CreateNew() {
     $("#txtPreparedBy").val(G_UserName);
@@ -108,7 +114,7 @@ function GetMachineMaintenanceList() {
             const updatedResponse = response.map(item => {
                 let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="Edit(${item.Code})"><i class="fa fa-pencil"></i></button>
                 <button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete(${item.Code})" ><i class="fa fa-times"></i></button>
-                <button class="btn btn-info icon-height mb-1" title="Updated Status"  onclick="Done(${item.Code})">Updated Status</button>
+                <button class="btn btn-info icon-height mb-1" title="Update Status"  onclick="Done(${item.Code})">Update Status</button>
                 `;
                 return {
                     ...item,
