@@ -2,6 +2,7 @@ import { MachineMaintenanceService } from '../../Bizsol.WebERP.UI.Shared/js/JSSe
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 let files = [];
+
 let fileName = '';
 let imageBase64Data = [];
 let existingImageData = []; // Store existing image data during edit
@@ -12,7 +13,7 @@ var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
 var G_UserMasterCode = authKeyData.UserMaster_Code;
 var UserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
 var G_UserName = UserDetails[0].UserName;
-
+var G_Status = 'SAVE';
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     $("#txtPreparedBy").val(G_UserName);
@@ -302,6 +303,7 @@ function SaveMachineMaintenance() {
 }
 
 function Edit(Code) {
+ 
     var ModuleName = "Machine Maintenance Request",
         OptionName = "Edit",
         ShowMsg = "Y",
@@ -311,10 +313,10 @@ function Edit(Code) {
             toastr.error(response.Msg);
             return false;
         } else {
-        
+           
             $("#dvGrid").hide();
             $("#dvFromNEW").show();
-
+            G_Status = 'SAVE';
             setTimeout(function () {
                 var eyeIcon = $('#viewImageBtn');
                 if (eyeIcon.length) {
@@ -343,7 +345,7 @@ function Edit(Code) {
                     SelectOptionByText('txtddlComplaintReason', data.ReasonName);
                     $('#txtRemark').val(data.FailedRemark);
                     $("#txtPreparedBy").val(data.CreatedByName);
-
+                   
                     setTimeout(function () {
                         var eyeIcon = $('#viewImageBtn');
                         if (eyeIcon.length) {
@@ -381,7 +383,7 @@ function Done(Code) {
             return false;
         }
         else {
-            
+            G_Status = 'UPDATESTATUS';
             $("#dvGrid").hide();
             $("#txtdRemark").hide();
             $("#dvFromNEW").show();
@@ -415,7 +417,7 @@ function Done(Code) {
                     $('#txtDescriptionWorkDone').val(data.DescriptionofWorkDone || '');
 
                     LoadExistingImage(data);
-
+                    
                     setTimeout(function () {
                         var eyeIcon = $('#viewImageBtn');
                         if (eyeIcon.length) {
@@ -429,6 +431,7 @@ function Done(Code) {
                     }, 150);
 
                     GetMachineMaintenanceList();
+                   
                 } else {
                     toastr.error("Save failed for contact person details.");
                 }
@@ -702,11 +705,6 @@ function CloseImageModal() {
 
 function ViewAttachedImage() {
     var code = $('#hftxtCode').val();
-
-    console.log('ViewAttachedImage called - Code:', code);
-    console.log('existingImageData length:', existingImageData ? existingImageData.length : 0);
-    console.log('Preview src:', $('#imgPreview').attr('src'));
-
     var imgTitle = 'Attached Image';
     if (existingFileName) {
         imgTitle = existingFileName;
@@ -778,7 +776,7 @@ function ViewAttachedImage() {
 
     if (hasCode) {
         console.log('Fetching from backend with code:', code);
-        MachineMaintenanceService.GetMachineMaintenanceImageByCode(code).then(function (response) {
+        MachineMaintenanceService.GetMachineMaintenanceImageByCode(code, G_Status).then(function (response) {
             console.log('Backend response:', response);
 
             if (!response || response.length === 0) {
