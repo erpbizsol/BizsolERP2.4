@@ -1,5 +1,4 @@
-﻿
-//import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
+﻿//import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 
 $(document).ready(function () {
@@ -101,8 +100,12 @@ function getChildMenu(value, masterCode, baseUrl) {
         if (item.MasterCode === masterCode && item.NotificationApplicable==='N') {
             var subChildMenuHtml = getChildMenu(value, item.Code);
             var hasArrow = subChildMenuHtml ? 'has-arrow' : '';
+            
+            // Check if FormToOpen already contains a query parameter
+            var separator = item.FormToOpen.indexOf('?') !== -1 ? '&' : '?';
+            
             childMenuHtml += '<li>';
-            childMenuHtml += '<a href="' + baseUrl + '/' + item.FormToOpen + '?ModuleDesp=' + item.ModuleDesp +'" class="menu-toggle ' + hasArrow + '">';
+            childMenuHtml += '<a href="' + baseUrl + '/' + item.FormToOpen + separator + 'ModuleDesp=' + item.ModuleDesp +'" class="menu-toggle ' + hasArrow + '">';
             childMenuHtml += '<span>' + item.ModuleDesp + '</span>';
             // Add arrow if submenu exists (always point right initially)
             //childMenuHtml += subChildMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';
