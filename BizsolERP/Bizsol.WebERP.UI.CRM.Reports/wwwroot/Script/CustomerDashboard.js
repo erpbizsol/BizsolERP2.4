@@ -329,59 +329,21 @@ function initDateRangeControl() {
     };
 }
 
-// Global helper to clean up flatpickr mobile overlay
-// IMPORTANT: This must be defined before initialization code
-function cleanupFlatpickrOverlay() {
-    try {
-        const overlay = document.getElementById('flatpickr-mobile-overlay');
-        if (overlay) {
-            overlay.remove();
-            document.body.style.overflow = '';
-            console.log('Cleaned up flatpickr overlay');
-        }
-    } catch (e) {
-        console.warn('Error cleaning up flatpickr overlay:', e);
-    }
-}
-
-// Handle page visibility changes (tab switching, minimizing)
-function initPageVisibilityHandler() {
-    document.addEventListener('visibilitychange', function() {
-        if (document.hidden) {
-            // Clean up overlay when page becomes hidden
-            cleanupFlatpickrOverlay();
-        }
-    });
-    
-    // Also handle when window loses focus
-    window.addEventListener('blur', function() {
-        cleanupFlatpickrOverlay();
-    });
-}
-
 // Initialize both FilterSidePanelControl and legacy DateRangeControl
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        // Clean up any existing overlays on page load
-        cleanupFlatpickrOverlay();
-        
         initFilterSidePanelControl();
         initDateRangeControl();
         initMobileTabScrolling();
-        initTabChangeHandlers(); // NEW: Fix map on tab change
-        initOrientationChangeHandler(); // NEW: Fix map on orientation change
-        initPageVisibilityHandler(); // NEW: Clean up overlay on tab switch
+        initTabChangeHandlers();
+        initOrientationChangeHandler();
     });
 } else {
-    // Clean up any existing overlays on page load
-    cleanupFlatpickrOverlay();
-    
     initFilterSidePanelControl();
     initDateRangeControl();
     initMobileTabScrolling();
-    initTabChangeHandlers(); // NEW: Fix map on tab change
-    initOrientationChangeHandler(); // NEW: Fix map on orientation change
-    initPageVisibilityHandler(); // NEW: Clean up overlay on tab switch
+    initTabChangeHandlers();
+    initOrientationChangeHandler();
 }
 
 
@@ -421,9 +383,8 @@ function initOrientationChangeHandler() {
     window.addEventListener('orientationchange', function() {
         console.log('Orientation changed');
         
-        // Clean up any orphaned flatpickr overlays on orientation change
-        cleanupFlatpickrOverlay();
-        
+        // Map invalidation for orientation change
+        // Note: Flatpickr overlay cleanup is now handled automatically by FilterSidePanelControl
         setTimeout(function() {
             if (window._regionalLeafletMap) {
                 try {
@@ -523,8 +484,7 @@ window.addEventListener('resize', function () {
         return;
     }
 
-    // Clean up flatpickr overlay on resize (especially when transitioning between mobile and desktop)
-    cleanupFlatpickrOverlay();
+    // Note: Flatpickr overlay cleanup is now handled automatically by FilterSidePanelControl
 
     // Debounce resize events to avoid too many redraws
     clearTimeout(resizeTimeout);

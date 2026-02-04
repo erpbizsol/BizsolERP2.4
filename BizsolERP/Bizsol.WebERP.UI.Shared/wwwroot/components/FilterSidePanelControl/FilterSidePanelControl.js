@@ -342,6 +342,28 @@ class FilterSidePanelControl extends HTMLElement {
             this._showFloatingButton = false;
         }
         
+        // CRITICAL FIX: Inject global CSS to forcefully hide flatpickr mobile overlay
+        // This is a nuclear option - if overlay is created, it will be invisible
+        if (!document.getElementById('flatpickr-mobile-overlay-killer')) {
+            const style = document.createElement('style');
+            style.id = 'flatpickr-mobile-overlay-killer';
+            style.textContent = `
+                /* Force hide flatpickr mobile overlay globally */
+                #flatpickr-mobile-overlay {
+                    display: none !important;
+                    opacity: 0 !important;
+                    visibility: hidden !important;
+                    pointer-events: none !important;
+                }
+                /* Also hide any orphaned overlays */
+                .flatpickr-mobile {
+                    display: none !important;
+                }
+            `;
+            document.head.appendChild(style);
+            console.log('Flatpickr mobile overlay killer CSS injected');
+        }
+        
         // Render floating button if needed
         if (this._showFloatingButton) {
             this._renderFloatingButton();
@@ -351,12 +373,100 @@ class FilterSidePanelControl extends HTMLElement {
         this._applyButton.addEventListener('click', this._handleApply);
         this._closeButton.addEventListener('click', this._closePanel);
         this._offcanvasBackdrop.addEventListener('click', this._handleBackdropClick);
+        
+        // IMPORTANT: Initialize automatic flatpickr cleanup handlers
+        // This prevents black screen issues on mobile without requiring manual setup
+        this._initializeFlatpickrCleanup();
     }
     
     disconnectedCallback() {
         this._applyButton.removeEventListener('click', this._handleApply);
         this._closeButton.removeEventListener('click', this._closePanel);
         this._offcanvasBackdrop.removeEventListener('click', this._handleBackdropClick);
+        
+        // Clear cleanup interval
+        if (this._cleanupInterval) {
+            clearInterval(this._cleanupInterval);
+        }
+        
+        // Clean up global event listeners for flatpickr cleanup
+        if (this._cleanupHandlers) {
+            document.removeEventListener('visibilitychange', this._cleanupHandlers.visibilityChange);
+            window.removeEventListener('blur', this._cleanupHandlers.blur);
+            window.removeEventListener('orientationchange', this._cleanupHandlers.orientationChange);
+            window.removeEventListener('resize', this._cleanupHandlers.resize);
+            if (this._cleanupHandlers.documentClick) {
+                document.removeEventListener('click', this._cleanupHandlers.documentClick, true);
+            }
+        }
+    }
+    
+    /**
+     * Initialize automatic flatpickr overlay cleanup handlers
+     * This prevents black screen issues on mobile devices
+     * Called automatically when component is connected - no manual setup needed
+     * @private
+     */
+    _initializeFlatpickrCleanup() {
+        // Clean up immediately on initialization
+        cleanupFlatpickrOverlay();
+        
+        // Set up aggressive continuous monitoring - check for overlay every 500ms
+        // This catches any overlay that appears unexpectedly
+        this._cleanupInterval = setInterval(() => {
+            cleanupFlatpickrOverlay();
+        }, 500);
+        
+        // Store handlers for cleanup on disconnect
+        this._cleanupHandlers = {
+            visibilityChange: () => {
+                if (document.hidden) {
+                    cleanupFlatpickrOverlay();
+                }
+            },
+            blur: () => {
+                cleanupFlatpickrOverlay();
+            },
+            orientationChange: () => {
+                console.log('Orientation changed - cleaning up flatpickr overlay');
+                cleanupFlatpickrOverlay();
+                // Multiple cleanup attempts after orientation change
+                setTimeout(() => cleanupFlatpickrOverlay(), 100);
+                setTimeout(() => cleanupFlatpickrOverlay(), 300);
+                setTimeout(() => cleanupFlatpickrOverlay(), 500);
+            },
+            resize: (() => {
+                let resizeTimeout;
+                return () => {
+                    // Clean up overlay on resize immediately
+                    cleanupFlatpickrOverlay();
+                    
+                    // Debounce additional resize handling with multiple attempts
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => {
+                        cleanupFlatpickrOverlay();
+                        setTimeout(() => cleanupFlatpickrOverlay(), 100);
+                    }, 300);
+                };
+            })()
+        };
+        
+        // Attach event listeners
+        document.addEventListener('visibilitychange', this._cleanupHandlers.visibilityChange);
+        window.addEventListener('blur', this._cleanupHandlers.blur);
+        window.addEventListener('orientationchange', this._cleanupHandlers.orientationChange);
+        window.addEventListener('resize', this._cleanupHandlers.resize);
+        
+        // Also monitor for clicks anywhere on document - flatpickr might create overlay on date click
+        this._cleanupHandlers.documentClick = (e) => {
+            // Small delay to let flatpickr create its overlay, then remove it
+            setTimeout(() => {
+                cleanupFlatpickrOverlay();
+            }, 50);
+        };
+        document.addEventListener('click', this._cleanupHandlers.documentClick, true);
+        
+        console.log('FilterSidePanelControl: Aggressive automatic flatpickr cleanup initialized');
     }
     
     _renderFloatingButton() {
@@ -372,15 +482,35 @@ class FilterSidePanelControl extends HTMLElement {
     }
     
     _openPanel() {
+        // Clean up any existing overlays before opening panel
+        cleanupFlatpickrOverlay();
+        
         this._offcanvasBackdrop.classList.add('show');
         this._offcanvasPanel.classList.add('show');
         document.body.style.overflow = 'hidden';
+        
+        // Clean up again after panel is fully opened
+        setTimeout(() => {
+            cleanupFlatpickrOverlay();
+        }, 100);
     }
     
     _closePanel() {
         this._offcanvasBackdrop.classList.remove('show');
         this._offcanvasPanel.classList.remove('show');
         document.body.style.overflow = '';
+        
+        // Aggressive cleanup when panel closes - multiple attempts
+        cleanupFlatpickrOverlay();
+        setTimeout(() => {
+            cleanupFlatpickrOverlay();
+        }, 50);
+        setTimeout(() => {
+            cleanupFlatpickrOverlay();
+        }, 150);
+        setTimeout(() => {
+            cleanupFlatpickrOverlay();
+        }, 300);
     }
     
     _handleBackdropClick() {
@@ -389,6 +519,21 @@ class FilterSidePanelControl extends HTMLElement {
     
     _handleApply() {
         const filterValues = this.getFilterValues();
+        
+        // Aggressive cleanup immediately when apply is clicked - multiple attempts
+        cleanupFlatpickrOverlay();
+        setTimeout(() => {
+            cleanupFlatpickrOverlay();
+        }, 10);
+        setTimeout(() => {
+            cleanupFlatpickrOverlay();
+        }, 50);
+        setTimeout(() => {
+            cleanupFlatpickrOverlay();
+        }, 100);
+        setTimeout(() => {
+            cleanupFlatpickrOverlay();
+        }, 200);
         
         // Emit custom event
         this.dispatchEvent(new CustomEvent('filtersapplied', {
@@ -702,6 +847,24 @@ class FilterSidePanelControl extends HTMLElement {
 // Register the custom element
 customElements.define('filter-side-panel-control', FilterSidePanelControl);
 
+/**
+ * Global helper to clean up flatpickr mobile overlay
+ * This prevents issues with orphaned overlays causing black screens on mobile
+ * Call this when the page becomes hidden, orientation changes, or window loses focus
+ */
+export function cleanupFlatpickrOverlay() {
+    try {
+        const overlay = document.getElementById('flatpickr-mobile-overlay');
+        if (overlay) {
+            overlay.remove();
+            document.body.style.overflow = '';
+            console.log('Cleaned up flatpickr overlay');
+        }
+    } catch (e) {
+        console.warn('Error cleaning up flatpickr overlay:', e);
+    }
+}
+
 // Export helper functions for external use
 export const FilterSidePanelControlHelper = {
     /**
@@ -728,5 +891,10 @@ export const FilterSidePanelControlHelper = {
         if (panel && typeof panel.updateFilterData === 'function') {
             panel.updateFilterData(filterId, data);
         }
-    }
+    },
+    
+    /**
+     * Clean up flatpickr overlay (utility function)
+     */
+    cleanupFlatpickrOverlay: cleanupFlatpickrOverlay
 };
