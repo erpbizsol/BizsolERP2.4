@@ -19,11 +19,11 @@ $(document).ready(function () {
     } else {
         $('#ERPHeading').text('QC Property Item Configuration');
     }
-    getItemMasterlist();
     QCGroupMasterlist();
     QCPropertyMasterlist(0);
     //handleValueTypeChange();
-    
+    GetQCPropertyItemCategory();
+
     $('#txtValueType').on('change', function() {
         handleValueTypeChange();
         attachMinMaxValidation();
@@ -54,11 +54,12 @@ function HideGrid() {
     $("#dvGrid").hide();
     $("#dvFrom").show();
     $("#dvIsProperty").hide();
-    // Initialize empty editable table
     buildEmptyEditableTable();
 }
 function getItemMasterlist() {
-    QCPropertyItemConfigurationService.GetItemMasterList()
+    var selectedCategory = $('#txtItemCategory').val() || '';
+
+    QCPropertyItemConfigurationService.GetItemMasterList(selectedCategory)
         .then(function (response) {
             G_ItemMasterList = Array.isArray(response) ? response : [];
             bindItemDropdowns(G_ItemMasterList);
@@ -66,6 +67,7 @@ function getItemMasterlist() {
         .catch(function (error) {
             console.error('Error loading item master list:', error);
             G_ItemMasterList = [];
+            bindItemDropdowns(G_ItemMasterList);
         });
 }
 function bindItemDropdowns(list) {
@@ -215,11 +217,9 @@ function getQCGroupMasterlist(list) {
                 dropdownParent: $(document.body)
             });
             
-            // Attach scroll prevention
             if (typeof attachSelect2ScrollPrevention === 'function') {
                 attachSelect2ScrollPrevention($code);
             } else {
-                // Inline fallback
                 function preventScroll() {
                     const scrollY = window.scrollY || window.pageYOffset;
                     document.documentElement.style.overflow = 'hidden';
@@ -280,11 +280,9 @@ function getQCPropertyMasterlist(list) {
                 dropdownParent: $(document.body)
             });
             
-            // Attach scroll prevention
             if (typeof attachSelect2ScrollPrevention === 'function') {
                 attachSelect2ScrollPrevention($code);
             } else {
-                // Inline fallback
                 function preventScroll() {
                     const scrollY = window.scrollY || window.pageYOffset;
                     document.documentElement.style.overflow = 'hidden';
@@ -323,7 +321,6 @@ $("#txtPropertyName").change(function () {
         return;
     }
     
-    // Find the property master by Code
     const QCPropertyMaster = (G_QCPropertyMasterList || []).find(function (x) {
         const propertyCode = x['Code'] || x.Code || 0;
         return parseInt(propertyCode) === parseInt(Code);
@@ -333,7 +330,6 @@ $("#txtPropertyName").change(function () {
         return;
     }
     
-    // Set Property Group first
     const targetGroupCode = QCPropertyMaster['QCPropertyGroupMaster_Code'] || QCPropertyMaster.QCPropertyGroupMaster_Code || '';
     
     if (targetGroupCode) {
@@ -346,8 +342,6 @@ $("#txtPropertyName").change(function () {
         }
     }
     
-    // Populate all form fields from the property master row
-    // Sort Order
     const sortOrder = QCPropertyMaster['Sort Order'] || QCPropertyMaster.SortOrder || QCPropertyMaster['SortOrder'] || '';
     if (sortOrder !== undefined && sortOrder !== null && sortOrder !== '') {
         const sortOrderValue = parseFloat(sortOrder);
@@ -358,14 +352,12 @@ $("#txtPropertyName").change(function () {
         }
     }
     
-    // Value Type
     const valueType = QCPropertyMaster['Value Type'] || QCPropertyMaster.ValueType || QCPropertyMaster['ValueType'] || '';
     if (valueType) {
         $('#txtValueType').val(valueType);
         handleValueTypeChange();
     }
     
-    // Min Value
     const minValue = QCPropertyMaster['Min Value'] || QCPropertyMaster.MinValue || QCPropertyMaster['MinValue'] || '';
     if (minValue !== undefined && minValue !== null && minValue !== '') {
         const minValueNum = parseFloat(minValue);
@@ -376,7 +368,6 @@ $("#txtPropertyName").change(function () {
         }
     }
     
-    // Max Value
     const maxValue = QCPropertyMaster['Max Value'] || QCPropertyMaster.MaxValue || QCPropertyMaster['MaxValue'] || '';
     if (maxValue !== undefined && maxValue !== null && maxValue !== '') {
         const maxValueNum = parseFloat(maxValue);
@@ -387,19 +378,16 @@ $("#txtPropertyName").change(function () {
         }
     }
     
-    // Default Value
     const defaultValue = QCPropertyMaster['Default Value'] || QCPropertyMaster.DefaultValue || QCPropertyMaster['DefaultValue'] || '';
     if (defaultValue !== undefined && defaultValue !== null && defaultValue !== '') {
         $('#txtDefaultValue').val(defaultValue);
     }
     
-    // LOV Values
     const lovValues = QCPropertyMaster['LOV Values'] || QCPropertyMaster.LovValues || QCPropertyMaster['LovValues'] || QCPropertyMaster['LOVValues'] || '';
     if (lovValues !== undefined && lovValues !== null && lovValues !== '') {
         $('#txtLovValues').val(lovValues);
     }
     
-    // Re-attach validations after populating values
     attachSortOrderValidation();
     attachMinMaxValidation();
 });
@@ -561,11 +549,9 @@ function attachMinMaxValidation() {
     const $maxField = $('#txtMaxValue');
     const valueType = $('#txtValueType').val() || '';
     
-    // Remove existing event handlers to avoid duplicates
     $minField.off('keypress keydown input paste blur');
     $maxField.off('keypress keydown input paste blur');
     
-    // Function to validate based on value type
     function validateField($field, e, eventType) {
         const currentValue = $field.val();
         
@@ -607,7 +593,6 @@ function attachMinMaxValidation() {
         // For Numeric and Decimal: allow decimal with max 2 decimal places
         if (valueType === 'Numeric' || valueType === 'Decimal') {
             if (eventType === 'keypress') {
-                // Allow: backspace, delete, tab, escape, enter, and arrow keys
                 if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
                     (e.keyCode === 65 && e.ctrlKey === true) ||
                     (e.keyCode === 67 && e.ctrlKey === true) ||
@@ -616,12 +601,10 @@ function attachMinMaxValidation() {
                     return true;
                 }
                 
-                // Allow digits (0-9)
                 if ((e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105)) {
                     const decimalIndex = currentValue.indexOf('.');
                     if (decimalIndex !== -1) {
                         const afterDecimal = currentValue.substring(decimalIndex + 1);
-                        // Limit to 2 decimal places
                         if (afterDecimal.length >= 2) {
                             e.preventDefault();
                             return false;
@@ -630,25 +613,20 @@ function attachMinMaxValidation() {
                     return true;
                 }
                 
-                // Allow decimal point only once
                 if ((e.keyCode === 46 || e.keyCode === 190) && currentValue.indexOf('.') === -1) {
                     return true;
                 }
                 
-                // Block all other characters
                 e.preventDefault();
                 return false;
             } else if (eventType === 'input') {
-                // Remove all non-numeric characters except decimal point
                 let value = currentValue.replace(/[^0-9.]/g, '');
                 
-                // Ensure only one decimal point
                 const parts = value.split('.');
                 if (parts.length > 2) {
                     value = parts[0] + '.' + parts.slice(1).join('').replace(/\./g, '');
                 }
                 
-                // Limit to 2 decimal places
                 if (parts.length === 2 && parts[1].length > 2) {
                     value = parts[0] + '.' + parts[1].substring(0, 2);
                 }
@@ -658,7 +636,6 @@ function attachMinMaxValidation() {
                 }
             } else if (eventType === 'paste') {
                 const pastedData = (e.originalEvent || e).clipboardData.getData('text');
-                // Allow decimal with max 2 decimal places
                 if (!/^-?\d+(\.\d{1,2})?$/.test(pastedData)) {
                     e.preventDefault();
                     return false;
@@ -674,7 +651,6 @@ function attachMinMaxValidation() {
         return true;
     }
     
-    // Apply validation to Min Value field
     $minField.on('keypress', function(e) {
         return validateField($(this), e, 'keypress');
     }).on('keydown', function(e) {
@@ -735,7 +711,6 @@ function attachMinMaxValidation() {
         }
     });
     
-    // Apply validation to Max Value field
     $maxField.on('keypress', function(e) {
         return validateField($(this), e, 'keypress');
     }).on('keydown', function(e) {
@@ -797,7 +772,6 @@ function attachMinMaxValidation() {
     });
 }
 function saveQCPropertyItemConfiguration() {
-    // Build payload from editable table rows
     const itemName = $('#txtItemName').val();
     if (!itemName || itemName === '0') {
         toastr.error('Please select Item Name.');
@@ -817,7 +791,6 @@ function saveQCPropertyItemConfiguration() {
         return;
     }
 
-    // Validate all rows first
     const validation = validateAllEditableTableRows();
     if (!validation.isValid) {
         toastr.warning(validation.message);
@@ -841,7 +814,6 @@ function saveQCPropertyItemConfiguration() {
         return;
     }
 
-    // Build payload array from each row
     const data = [];
     $rows.each(function () {
         const $row = $(this);
@@ -981,7 +953,6 @@ function buildEditableTable(data, itemMasterCode) {
     
     const $tableWrapper = $tbody.closest('.table-wrapper');
     if ($tableWrapper.length) {
-        // Remove any existing external "Add New Row" button if present
         $tableWrapper.find('.btn-add-row').remove();
     }
     
@@ -1243,12 +1214,10 @@ function addNewEditableRow(itemMasterCode, $tbody) {
         return;
     }
     
-    // Validate all existing rows before adding a new one
     const validation = validateAllEditableTableRows();
     if (!validation.isValid) {
         toastr.warning(validation.message);
         if (validation.$field) {
-            // Focus on the field
             setTimeout(function() {
                 if (validation.$field.is('select')) {
                     if (validation.$field.data('select2')) {
@@ -1259,7 +1228,6 @@ function addNewEditableRow(itemMasterCode, $tbody) {
                 } else {
                     validation.$field.focus();
                 }
-                // Highlight the field
                 validation.$field.addClass('is-invalid');
                 setTimeout(function() {
                     validation.$field.removeClass('is-invalid');
@@ -1269,13 +1237,11 @@ function addNewEditableRow(itemMasterCode, $tbody) {
         return;
     }
     
-    // Check if item is selected
     if (!itemMasterCode || itemMasterCode === '0') {
         toastr.warning('Please select an Item Name first.');
         return;
     }
     
-    // Get item details
     let itemCodeValue = '';
     let itemNameValue = '';
     if (itemMasterCode && itemMasterCode !== '0') {
@@ -1289,13 +1255,11 @@ function addNewEditableRow(itemMasterCode, $tbody) {
         }
     }
     
-    // Get current row count for serial number
     const currentRowCount = $tbody.find('tr').length;
     const serialNumber = currentRowCount + 1;
     const newRowIndex = currentRowCount;
     const newCode = 0; // New row has code 0
     
-    // Build Property Group dropdown options
     let propertyGroupOptions = '<option value="0">Please select..</option>';
     (G_QCGroupMasterList || []).forEach(function (groupItem) {
         const groupCode = groupItem['Code'] || 0;
@@ -1303,7 +1267,6 @@ function addNewEditableRow(itemMasterCode, $tbody) {
         propertyGroupOptions += `<option value="${groupCode}">${groupName}</option>`;
     });
     
-    // Value Type dropdown options (default to Numeric)
     const valueType = 'Numeric';
     const valueTypeOptions = [
         { value: 'Numeric', text: 'Numeric', selected: true },
@@ -1316,12 +1279,10 @@ function addNewEditableRow(itemMasterCode, $tbody) {
     });
     valueTypeSelect += '</select>';
     
-    // Determine which fields to show based on Value Type (Numeric by default)
     const showMinMax = true; // Numeric shows Min/Max
     const showDefault = false;
     const showLov = false;
     
-    // Build the new row
     let row = '<tr data-code="' + newCode + '" data-item-master-code="' + itemMasterCode + '" data-property-group-code="0" data-property-name-code="0">' +
         '<td class="text-center" style="width: 40px;">' + serialNumber + '</td>' +
         '<td class="text-left" style="width: 90px;">' +
@@ -1416,10 +1377,8 @@ function addNewEditableRow(itemMasterCode, $tbody) {
         '</td>' +
         '</tr>';
     
-    // Append the new row
     $tbody.append(row);
     
-    // Initialize select2 for dropdowns in the new row
     const $newRow = $tbody.find('tr').last();
     $newRow.find('select').each(function() {
         const $select = $(this);
@@ -1431,8 +1390,6 @@ function addNewEditableRow(itemMasterCode, $tbody) {
         }
     });
     
-    // Attach event handlers to the new row (they use event delegation, so they should work automatically)
-    // But we need to make sure the handlers are attached
     attachEditableTablePropertyGroupChange();
     attachEditableTableValueTypeChange();
     attachEditableTableNumericValidation();
@@ -1449,11 +1406,9 @@ function buildEmptyEditableTable(itemMasterCode) {
         return;
     }
     
-    // Clear existing content
     $thead.empty();
     $tbody.empty();
     
-    // Build table header
     let headerRow = '<tr>' +
         '<th class="text-center" style="width: 40px;">SNo</th>' +
         '<th class="text-left" style="width: 90px;">Item Code</th>' +
@@ -1471,7 +1426,6 @@ function buildEmptyEditableTable(itemMasterCode) {
     
     $thead.html(headerRow);
     
-    // Remove any external "Add New Row" button (we now use per-row Action column)
     const $tableWrapper = $tbody.closest('.table-wrapper');
     if ($tableWrapper.length) {
         $tableWrapper.find('.btn-add-row').remove();
@@ -1589,21 +1543,18 @@ function attachEditableTablePropertyGroupChange() {
         }
     });
     
-    // Track property name changes and prevent duplicate properties for same item
     $tbody.off('change', '.editable-property-name-select');
     $tbody.on('change', '.editable-property-name-select', function() {
         const $currentSelect = $(this);
         const $row = $currentSelect.closest('tr');
         const propertyNameCode = $currentSelect.val();
 
-        // If nothing selected, just clear stored value
         if (!propertyNameCode || propertyNameCode === '0') {
             $row.data('property-name-code', '0');
             $currentSelect.data('property-name-code', '0');
             return;
         }
 
-        // Determine item code for this row (from row data or main Item Name control)
         const currentItemCode = $row.data('item-master-code') || $('#txtItemName').val() || '0';
 
         let isDuplicate = false;
@@ -1626,7 +1577,6 @@ function attachEditableTablePropertyGroupChange() {
         if (isDuplicate) {
             toastr.warning('This property is already selected for the selected item.');
 
-            // Reset selection back to "Please select.."
             $currentSelect.val('0');
             $row.data('property-name-code', '0');
             $currentSelect.data('property-name-code', '0');
@@ -1639,7 +1589,6 @@ function attachEditableTablePropertyGroupChange() {
             return;
         }
 
-        // Store selected property code on row and element
         $row.data('property-name-code', propertyNameCode);
         $currentSelect.data('property-name-code', propertyNameCode);
     });
@@ -1659,13 +1608,11 @@ function attachEditableTableValueTypeChange() {
         const $defaultValue = $row.find('.editable-default-value');
         const $lovValues = $row.find('.editable-lov-values');
         
-        // Hide all fields first
         $minValue.hide();
         $maxValue.hide();
         $defaultValue.hide();
         $lovValues.hide();
         
-        // Show relevant fields based on value type
         if (valueType === 'Numeric' || valueType === 'Decimal') {
             $minValue.show();
             $maxValue.show();
@@ -1690,21 +1637,17 @@ function attachEditableTableNumericValidation() {
         return;
     }
     
-    // Apply numeric validation to Min Value and Max Value fields
     $tbody.find('.editable-min-value, .editable-max-value').on('input', function() {
         let value = $(this).val();
         const originalValue = value;
         
-        // Remove all non-numeric characters except decimal point
         value = value.replace(/[^0-9.]/g, '');
         
-        // Ensure only one decimal point
         const parts = value.split('.');
         if (parts.length > 2) {
             value = parts[0] + '.' + parts.slice(1).join('').replace(/\./g, '');
         }
         
-        // Limit to 2 decimal places
         if (parts.length === 2 && parts[1].length > 2) {
             value = parts[0] + '.' + parts[1].substring(0, 2);
         }
@@ -1734,16 +1677,13 @@ function attachEditableTableSortOrderValidation() {
         let value = $(this).val();
         const originalValue = value;
         
-        // Remove all non-numeric characters except decimal point
         value = value.replace(/[^0-9.]/g, '');
         
-        // Ensure only one decimal point
         const parts = value.split('.');
         if (parts.length > 2) {
             value = parts[0] + '.' + parts.slice(1).join('').replace(/\./g, '');
         }
         
-        // Limit to 1 decimal place
         if (parts.length === 2 && parts[1].length > 1) {
             value = parts[0] + '.' + parts[1].substring(0, 1);
         }
@@ -2051,7 +1991,6 @@ function attachEnterKeyNavigation() {
         if (!$field.length || !$field.is(':visible')) {
             return false;
         }
-        // Check if parent with 'hide' class is visible
         const $hiddenParent = $field.closest('.hide');
         if ($hiddenParent.length > 0 && !$hiddenParent.is(':visible')) {
             return false;
@@ -2136,11 +2075,11 @@ function buildQCPropertyItemConfigurationTable(data) {
 
     let headerRow = '<tr>' +
         '<th class="text-center" style="width: 40px;">SNo</th>' +
-        '<th class="text-left" style="min-width: 80px;">Item Code</th>' +
+        '<th class="text-left" style="min-width: 90px;">Item Code</th>' +
         '<th class="text-left" style="min-width: 160px;">Item Name</th>' +
         '<th class="text-left" style="min-width: 150px;">Property Group</th>' +
         '<th class="text-left" style="min-width: 150px;">Property Name</th>' +
-        '<th class="text-center" style="min-width: 50px;">Sort Order</th>' +
+        '<th class="text-center" style="min-width:90px;">Sort Order</th>' +
         '<th class="text-left" style="min-width: 100px;">Value Type</th>' +
         '<th class="text-right" style="min-width: 50px;">Min Value</th>' +
         '<th class="text-right" style="min-width: 50px;">Max Value</th>' +
@@ -2292,6 +2231,64 @@ function buildEmptyQCPropertyItemConfigurationTable() {
         '</tr>';
 
     $tbody.append(row);
+}
+function GetQCPropertyItemCategory() {
+    QCPropertyItemConfigurationService.GetQCPropertyItemCategory().then(function (response) {
+        if (response && response.length > 0) {
+            const categories = Array.from(new Set(response.map((item) => (item.Category || '').toString().trim()))).filter(x => x !== '');
+            const list = categories.map(cat => ({ Code: cat, Desp: cat }));
+
+            BindSelectList1($('#txtItemCategory')[0], list);
+
+            $('#txtItemCategory').select2({
+                width: '-webkit-fill-available'
+            });
+
+            var defaultValue = 'Raw Material';
+
+            const $options = $('#txtItemCategory option');
+            let foundValue = null;
+            $options.each(function () {
+                const optVal = ($(this).val() || '').toString().trim();
+                if (!optVal) return; // skip empty/all
+                if (optVal.toLowerCase() === defaultValue.toLowerCase()) {
+                    foundValue = optVal;
+                    return false; // break
+                }
+            });
+
+            if (foundValue) {
+                $('#txtItemCategory').val(foundValue);
+                if ($('#txtItemCategory').data('select2')) {
+                    $('#txtItemCategory').trigger('change.select2');
+                } else {
+                    $('#txtItemCategory').trigger('change');
+                }
+            } else {
+                if (categories.length > 0) {
+                    // optionally set to first category instead of All
+                    // $('#txtItemCategory').val(categories[0]).trigger('change');
+                }
+            }
+
+            $('#txtItemCategory').off('change.qcitem').on('change.qcitem', function () {
+                getItemMasterlist();
+            });
+
+            getItemMasterlist();
+        } else {
+            toastr.error('No data received or empty response');
+        }
+    }).catch(function (error) {
+        console.log('Error fetching warehouse data:', error);
+    });
+}
+function BindSelectList1(element, list) {
+    let option = '<option value="All">All</option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
 }
 
 window.Edit = Edit;
