@@ -166,6 +166,13 @@ class DateRangeControlHTMLElement extends HTMLElement {
  try {
  if (!window.flatpickr) return;
  if (this._fp && typeof this._fp.destroy === 'function') this._fp.destroy();
+ 
+ // CRITICAL FIX: Override flatpickr's mobile detection globally
+ // This forces flatpickr to NEVER use mobile mode (which creates the black overlay)
+ if (window.flatpickr && window.flatpickr.defaultConfig) {
+     window.flatpickr.defaultConfig.disableMobile = true;
+ }
+ 
  const that = this;
  const mobile = (window.innerWidth <=640);
  const options = {
@@ -175,6 +182,8 @@ class DateRangeControlHTMLElement extends HTMLElement {
  showMonths: mobile ? 1 : 2,
  position: 'auto',
  static: false,
+ disableMobile: true, // CRITICAL: Prevent mobile overlay from being created
+ inline: false, // Use popup, not inline
  positionElement: mobile ? undefined : this.fromInput,
  onChange: (selectedDates, dateStr, instance) => {
  // When both dates are selected, auto-close on mobile
