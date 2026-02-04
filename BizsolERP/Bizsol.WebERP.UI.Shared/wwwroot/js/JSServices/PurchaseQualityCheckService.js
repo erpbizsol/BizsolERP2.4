@@ -11,8 +11,8 @@ const PurchaseQualityCheckService = {
             }
         );
     },
-    GetMRNMasterDataForMRNNo: function GetMRNMasterDataForMRNNo(PartyMaster_Code, FinYear) {
-        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetMRNMasterDataForMRNNo?PartyMaster_Code=${PartyMaster_Code}&FinYear=${FinYear}`;
+    GetMRNMasterDataForMRNNo: function GetMRNMasterDataForMRNNo(PartyMaster_Code, FinYear, G_MRNType) {
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetMRNMasterDataForMRNNo?PartyMaster_Code=${PartyMaster_Code}&FinYear=${FinYear}&MRNType=${G_MRNType}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -21,6 +21,14 @@ const PurchaseQualityCheckService = {
     },
     GetMRNVendor: function GetMRNVendor() {
         var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetMRNVendor`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetMRNQCPropertyList: function GetMRNQCPropertyList(G_MRNType) {
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetMRNQCPropertyList?MRNType=${G_MRNType}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -49,6 +57,16 @@ const PurchaseQualityCheckService = {
         const json = JSON.stringify(data, null, 2);
         var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/SaveMRNQCPropertyResult?UserMaster_Code=${userMasterCode}`;
         return promiseAjaxCallApi.CallAPI('POST', URL, json).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    VerifyMRNQCPropertyResult: function VerifyMRNQCPropertyResult(Code) {
+        const authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+        const userMasterCode = authKeyData.UserMaster_Code || 0;
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + "/VerifyMRNQCPropertyResult?Code=" + Code + "&UserMaster_Code=" + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
             }
