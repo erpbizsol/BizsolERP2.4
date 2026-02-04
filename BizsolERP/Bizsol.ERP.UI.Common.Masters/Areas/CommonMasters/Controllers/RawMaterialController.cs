@@ -17,5 +17,13 @@ namespace Bizsol.WebERP.UI.Common.Masters.Areas.CommonMasters.Controllers
         {
             return View();
         }
+        public IActionResult FGOffer()
+        {
+            return View();
+        }
+        public IActionResult FGInspectedEntry()
+        {
+            return View();
+        }
     }
 }

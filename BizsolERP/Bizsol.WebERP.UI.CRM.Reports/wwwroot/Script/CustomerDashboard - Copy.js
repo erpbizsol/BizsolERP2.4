@@ -49,7 +49,7 @@ function initFilterSidePanelControl() {
     console.log('Setting filters:', filters);
     filterPanel.setFilters(filters);
 
-    // Set default date range to financial year (from FY start to current date)
+    // Set default date range to financial year
     setTimeout(() => {
         console.log('Setting default date range...');
         try {
@@ -59,11 +59,11 @@ function initFilterSidePanelControl() {
                 const month = now.getMonth() + 1;
                 const year = now.getFullYear();
                 const fyStartYear = (month >= 4) ? year : (year - 1);
+                const fyEndYear = fyStartYear + 1;
                 const fyFrom = fyStartYear + '-04-01';
-                // Set FyTo to current date instead of financial year end
-                const fyTo = now.toISOString().slice(0, 10);
+                const fyTo = fyEndYear + '-03-31';
 
-                console.log(`Setting financial year range: ${fyFrom} to ${fyTo} (current date)`);
+                console.log(`Setting financial year range: ${fyFrom} to ${fyTo}`);
                 dateRangeEl.setRange({ fromDate: fyFrom, toDate: fyTo });
                 fromDate = fyFrom;
                 toDate = fyTo;
@@ -276,15 +276,15 @@ function initDateRangeControl() {
     // If you want default from/to to be today, uncomment:
     // dr.setRange({ fromDate: todayISO, toDate: todayISO });
 
-    // --- Set default to current financial year (Apr1 - Current Date) ---
+    // --- Set default to current financial year (Apr1 - Mar31) ---
     try {
         const now = new Date();
         const month = now.getMonth() + 1; //1-12
         const year = now.getFullYear();
         const fyStartYear = (month >= 4) ? year : (year - 1);
+        const fyEndYear = fyStartYear + 1;
         const fyFrom = fyStartYear + '-04-01';
-        // Set FyTo to current date instead of financial year end
-        const fyTo = now.toISOString().slice(0, 10);
+        const fyTo = fyEndYear + '-03-31';
 
         // Try to set the webcomponent range (some implementations expose setRange)
         try { dr.setRange({ fromDate: fyFrom, toDate: fyTo }); } catch (e) { /* ignore if not available */ }
@@ -329,62 +329,40 @@ function initDateRangeControl() {
     };
 }
 
-// Global helper to clean up flatpickr mobile overlay
-// IMPORTANT: This must be defined before initialization code
-function cleanupFlatpickrOverlay() {
-    try {
-        const overlay = document.getElementById('flatpickr-mobile-overlay');
-        if (overlay) {
-            overlay.remove();
-            document.body.style.overflow = '';
-            console.log('Cleaned up flatpickr overlay');
-        }
-    } catch (e) {
-        console.warn('Error cleaning up flatpickr overlay:', e);
-    }
-}
-
-// Handle page visibility changes (tab switching, minimizing)
-function initPageVisibilityHandler() {
-    document.addEventListener('visibilitychange', function() {
-        if (document.hidden) {
-            // Clean up overlay when page becomes hidden
-            cleanupFlatpickrOverlay();
-        }
-    });
-    
-    // Also handle when window loses focus
-    window.addEventListener('blur', function() {
-        cleanupFlatpickrOverlay();
-    });
-}
-
 // Initialize both FilterSidePanelControl and legacy DateRangeControl
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        // Clean up any existing overlays on page load
-        cleanupFlatpickrOverlay();
-        
         initFilterSidePanelControl();
         initDateRangeControl();
         initMobileTabScrolling();
+        initZoomProtection();
         initTabChangeHandlers(); // NEW: Fix map on tab change
         initOrientationChangeHandler(); // NEW: Fix map on orientation change
-        initPageVisibilityHandler(); // NEW: Clean up overlay on tab switch
     });
 } else {
-    // Clean up any existing overlays on page load
-    cleanupFlatpickrOverlay();
-    
     initFilterSidePanelControl();
     initDateRangeControl();
     initMobileTabScrolling();
+    initZoomProtection();
     initTabChangeHandlers(); // NEW: Fix map on tab change
     initOrientationChangeHandler(); // NEW: Fix map on orientation change
-    initPageVisibilityHandler(); // NEW: Clean up overlay on tab switch
 }
 
+// Initialize zoom protection to prevent black screen
+function initZoomProtection() {
+    // Override Showloader temporarily during zoom
+    let originalShowloader = window.Showloader;
 
+    window.Showloader = function () {
+        if (isZooming || document.body.classList.contains('zooming')) {
+            console.log('Showloader blocked during zoom');
+            return;
+        }
+        if (originalShowloader) {
+            originalShowloader();
+        }
+    };
+}
 
 // Add event listeners for tab changes to fix map rendering on mobile
 function initTabChangeHandlers() {
@@ -420,10 +398,6 @@ function initTabChangeHandlers() {
 function initOrientationChangeHandler() {
     window.addEventListener('orientationchange', function() {
         console.log('Orientation changed');
-        
-        // Clean up any orphaned flatpickr overlays on orientation change
-        cleanupFlatpickrOverlay();
-        
         setTimeout(function() {
             if (window._regionalLeafletMap) {
                 try {
@@ -523,9 +497,6 @@ window.addEventListener('resize', function () {
         return;
     }
 
-    // Clean up flatpickr overlay on resize (especially when transitioning between mobile and desktop)
-    cleanupFlatpickrOverlay();
-
     // Debounce resize events to avoid too many redraws
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(function () {
@@ -615,6 +586,11 @@ function clearAllTabs() {
     try {
         $('#regional-state-max').text('-');
         $('#regional-city-max').text('-');
+
+        if (window.regionSalesChartInstance) {
+            window.regionSalesChartInstance.destroy();
+            window.regionSalesChartInstance = null;
+        }
 
         if (window._regionalLayerGroup) {
             window._regionalLayerGroup.clearLayers();
@@ -764,47 +740,13 @@ function renderBarChart() {
     if (Array.isArray(chartRows) && chartRows.length > 0) {
         // Ensure sorted by MonthOrder (Apr..Mar)
         chartRows.sort((a, b) => (Number(a.MonthOrder) || 0) - (Number(b.MonthOrder) || 0));
-        
-        // Filter to only show months within the selected date range
-        // This prevents showing previous year data for future months that haven't occurred yet
-        const filters = GetAllFilters();
-        const toDate = filters.toDate && filters.toDate !== '0' ? new Date(filters.toDate) : new Date();
-        const toMonth = toDate.getMonth() + 1; // 1-12
-        const toYear = toDate.getFullYear();
-        
-        // Determine current FY year for comparison
-        const currentFYYear = (toMonth >= 4) ? toYear : (toYear - 1);
-        
-        // Month number mapping (1-12 calendar months)
-        const monthNameToNumber = {
-            'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
-            'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
-        };
-        
-        // Filter chartRows to only include months up to the selected toDate
-        const filteredRows = chartRows.filter(r => {
-            const monthNum = monthNameToNumber[r.MonthName];
-            if (!monthNum) return false;
-            
-            // For FY starting in April:
-            // If month is Apr-Dec, it belongs to current calendar year
-            // If month is Jan-Mar, it belongs to next calendar year
-            const monthYear = (monthNum >= 4) ? currentFYYear : (currentFYYear + 1);
-            
-            // Create a date for the last day of this month
-            const monthEndDate = new Date(monthYear, monthNum, 0); // Day 0 of next month = last day of current month
-            
-            // Only include if this month's end is before or equal to toDate
-            return monthEndDate <= toDate;
-        });
-        
-        monthLabels = filteredRows.map(r => r.MonthName || '');
+        monthLabels = chartRows.map(r => r.MonthName || '');
 
-        currentFY = filteredRows.map(r => {
+        currentFY = chartRows.map(r => {
             const v = r.CurrentFYQty;
             return (v === null || v === undefined || v === '') ? 0 : Number(v);
         });
-        prevFY = filteredRows.map(r => {
+        prevFY = chartRows.map(r => {
             const v = r.PrevFYQty;
             return (v === null || v === undefined || v === '') ? 0 : Number(v);
         });
@@ -826,24 +768,6 @@ function renderBarChart() {
     }
 
     // Create bar chart comparing current and previous financial year month-wise
-    // Use stunning multi-stop gradients for professional appearance
-    
-    // Current FY - Vibrant Red to Orange gradient with shine effect
-    const currentFYGradient = ctx.createLinearGradient(0, 0, 0, 400);
-    currentFYGradient.addColorStop(0, 'rgba(255, 107, 107, 1)');      // Bright coral red (top shine)
-    currentFYGradient.addColorStop(0.15, 'rgba(255, 118, 117, 0.98)'); // Light coral
-    currentFYGradient.addColorStop(0.5, 'rgba(239, 87, 119, 0.95)');   // Vibrant pink-red (middle)
-    currentFYGradient.addColorStop(0.85, 'rgba(192, 57, 43, 0.92)');   // Deep red
-    currentFYGradient.addColorStop(1, 'rgba(165, 42, 42, 0.9)');       // Dark red (bottom depth)
-
-    // Previous FY - Rich Blue to Cyan gradient with glass effect
-    const prevFYGradient = ctx.createLinearGradient(0, 0, 0, 400);
-    prevFYGradient.addColorStop(0, 'rgba(116, 185, 255, 1)');          // Sky blue (top shine)
-    prevFYGradient.addColorStop(0.15, 'rgba(99, 179, 237, 0.98)');     // Light blue
-    prevFYGradient.addColorStop(0.5, 'rgba(52, 152, 219, 0.95)');      // Azure blue (middle)
-    prevFYGradient.addColorStop(0.85, 'rgba(41, 128, 185, 0.92)');     // Deep blue
-    prevFYGradient.addColorStop(1, 'rgba(30, 95, 145, 0.9)');          // Navy blue (bottom depth)
-
     window.barChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -852,59 +776,25 @@ function renderBarChart() {
                 {
                     label: 'Current FY Sales',
                     data: currentFY,
-                    backgroundColor: currentFYGradient,
-                    borderColor: 'rgba(255, 107, 107, 1)',
-                    borderWidth: 3,
-                    borderRadius: 12,
-                    borderSkipped: false,
-                    barPercentage: 0.75,
-                    categoryPercentage: 0.85
+                    backgroundColor: 'rgba(192,57,43,0.85)',
+                    borderColor: 'rgba(192,57,43,1)',
+                    borderWidth: 1
                 },
                 {
                     label: 'Previous FY Sales',
                     data: prevFY,
-                    backgroundColor: prevFYGradient,
-                    borderColor: 'rgba(116, 185, 255, 1)',
-                    borderWidth: 3,
-                    borderRadius: 12,
-                    borderSkipped: false,
-                    barPercentage: 0.75,
-                    categoryPercentage: 0.85
+                    backgroundColor: 'rgba(24,67,135,0.95)',
+                    borderColor: 'rgba(24,67,135,1)',
+                    borderWidth: 1
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
             plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 15,
-                        font: {
-                            size: 13,
-                            weight: '600'
-                        }
-                    }
-                },
+                legend: { position: 'top' },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
-                    titleFont: {
-                        size: 14,
-                        weight: 'bold'
-                    },
-                    bodyFont: {
-                        size: 13
-                    },
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                    borderWidth: 1,
-                    cornerRadius: 8,
                     callbacks: {
                         label: function (ctx) {
                             const val = ctx.raw;
@@ -1016,106 +906,20 @@ function renderBarChart() {
                 }
             },
             scales: {
-                x: {
-                    grid: {
-                        display: false,
-                        drawBorder: true,
-                        borderColor: '#e0e0e0',
-                        borderWidth: 2
-                    },
-                    ticks: {
-                        font: {
-                            size: window.innerWidth < 768 ? 11 : 12,
-                            weight: '600'
-                        },
-                        color: '#495057',
-                        padding: 8
-                    }
-                },
+                x: { grid: { display: false } },
                 y: {
                     beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)',
-                        drawBorder: true,
-                        borderColor: '#e0e0e0',
-                        borderWidth: 2
-                    },
                     ticks: {
                         callback: function (value) {
                             if (value === null || value === undefined) return '';
-                            const num = Number(value);
-                            
-                            // Use compact format (K/M) for better space usage on mobile
-                            if (num >= 1000000) {
-                                return (num / 1000000).toFixed(1) + 'M';
-                            } else if (num >= 1000) {
-                                return (num / 1000).toFixed(1) + 'K';
-                            }
-                            
-                            return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
-                        },
-                        font: {
-                            size: window.innerWidth < 768 ? 10 : 12,
-                            weight: '500'
-                        },
-                        color: '#6c757d',
-                        padding: 8
+                            return Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        }
                     },
-                    title: {
-                        display: true,
-                        text: 'Sales',
-                        font: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        color: '#495057'
-                    }
+                    title: { display: true, text: 'Sales' }
                 }
             }
         },
-        plugins: [
-            // Custom plugin for bar shadows and 3D effect
-            {
-                id: 'barShadowPlugin',
-                beforeDatasetsDraw: function(chart) {
-                    const ctx = chart.ctx;
-                    ctx.save();
-                    
-                    chart.data.datasets.forEach((dataset, datasetIndex) => {
-                        const meta = chart.getDatasetMeta(datasetIndex);
-                        if (!meta.hidden) {
-                            meta.data.forEach((element) => {
-                                // Draw shadow
-                                ctx.shadowColor = datasetIndex === 0 ? 'rgba(192, 57, 43, 0.4)' : 'rgba(41, 128, 185, 0.4)';
-                                ctx.shadowBlur = 15;
-                                ctx.shadowOffsetX = 0;
-                                ctx.shadowOffsetY = 4;
-                                
-                                // Create path for rounded rectangle shadow
-                                const {x, y, base, width, height} = element;
-                                const radius = 12;
-                                
-                                ctx.beginPath();
-                                ctx.moveTo(x - width/2 + radius, base);
-                                ctx.lineTo(x - width/2 + radius, y + radius);
-                                ctx.quadraticCurveTo(x - width/2, y, x - width/2 + radius, y);
-                                ctx.lineTo(x + width/2 - radius, y);
-                                ctx.quadraticCurveTo(x + width/2, y, x + width/2, y + radius);
-                                ctx.lineTo(x + width/2, base);
-                                ctx.closePath();
-                                
-                                ctx.fillStyle = datasetIndex === 0 ? 
-                                    'rgba(192, 57, 43, 0.1)' : 'rgba(41, 128, 185, 0.1)';
-                                ctx.fill();
-                            });
-                        }
-                    });
-                    
-                    ctx.restore();
-                }
-            },
-            ...(typeof ChartDataLabels !== 'undefined' ? [window.ChartDataLabels] : [])
-        ]
+        plugins: (typeof ChartDataLabels !== 'undefined') ? [window.ChartDataLabels] : []
     });
 
     // Ensure the chart is sized correctly after insertion
@@ -1132,39 +936,9 @@ function processRawDataForSalesTab(rawData) {
         'Oct': 7, 'Nov': 8, 'Dec': 9, 'Jan': 10, 'Feb': 11, 'Mar': 12
     };
 
-    // Month name mapping to ensure 3-letter abbreviations
-    const monthAbbreviations = {
-        'January': 'Jan', 'February': 'Feb', 'March': 'Mar', 'April': 'Apr',
-        'May': 'May', 'June': 'Jun', 'July': 'Jul', 'August': 'Aug',
-        'September': 'Sep', 'October': 'Oct', 'November': 'Nov', 'December': 'Dec',
-        // Also handle already abbreviated months
-        'Jan': 'Jan', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Apr',
-        'Jun': 'Jun', 'Jul': 'Jul', 'Aug': 'Aug',
-        'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Dec'
-    };
-
-    // Handle numeric month numbers (1-12) - FY starts in April
-    const monthNumberToName = {
-        1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
-        7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
-    };
-
-    // Get the actual user-selected date range from filters
-    const filters = GetAllFilters();
-    const userFromDate = filters.fromDate && filters.fromDate !== '0' ? new Date(filters.fromDate) : null;
-    const userToDate = filters.toDate && filters.toDate !== '0' ? new Date(filters.toDate) : null;
-
     rawData.forEach(row => {
-        let month = row.InvoiceMonth;
-        if (!month && month !== 0) return;
-
-        // Convert numeric month to name
-        if (typeof month === 'number' || !isNaN(month)) {
-            month = monthNumberToName[parseInt(month)] || month;
-        }
-
-        // Convert to 3-letter abbreviation if needed
-        month = monthAbbreviations[month] || month;
+        const month = row.InvoiceMonth;
+        if (!month) return;
 
         if (!monthMap.has(month)) {
             monthMap.set(month, {
@@ -1183,15 +957,8 @@ function processRawDataForSalesTab(rawData) {
         const currentFYStart = new Date(row.CurrentFY_FromDate);
         const currentFYEnd = new Date(row.CurrentFY_ToDate);
 
-        // Check if invoice is within user-selected date range
-        const isInUserDateRange = (!userFromDate || invoiceDate >= userFromDate) && 
-                                  (!userToDate || invoiceDate <= userToDate);
-
-        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd && isInUserDateRange) {
+        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd) {
             monthData.CurrentFYQty += qty;
-        } else if (!isInUserDateRange) {
-            // If not in user date range, treat as previous year for comparison
-            monthData.PrevFYQty += qty;
         } else {
             monthData.PrevFYQty += qty;
         }
@@ -1221,18 +988,11 @@ function setBestSaleDetils() {
 
 // Process raw data for best sale details
 function processBestSaleDetails(rawData) {
-    // Get the actual user-selected date range from filters
-    const filters = GetAllFilters();
-    const userFromDate = filters.fromDate && filters.fromDate !== '0' ? new Date(filters.fromDate) : null;
-    const userToDate = filters.toDate && filters.toDate !== '0' ? new Date(filters.toDate) : null;
-
     const currentFYData = rawData.filter(row => {
         const invoiceDate = new Date(row.InvoiceDate);
         const currentFYStart = new Date(row.CurrentFY_FromDate);
         const currentFYEnd = new Date(row.CurrentFY_ToDate);
-        const isInUserDateRange = (!userFromDate || invoiceDate >= userFromDate) && 
-                                  (!userToDate || invoiceDate <= userToDate);
-        return invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd && isInUserDateRange;
+        return invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd;
     });
 
     // Total current year sales
@@ -1344,82 +1104,139 @@ async function renderRegionalSection() {
     if (stateEl) stateEl.textContent = stateMax;
     if (cityEl) cityEl.textContent = cityMax;
 
-    // Render attractive regional cards (top regions)
-    renderRegionalCards(regionalData);
+    // Build region sales chart data from all rows
+    const regionLabels = [];
+    const regionSalesData = [];
+    regionalData.forEach(function (item) {
+        const cityName = item.ConsigneeCityName || '';
+        const sales = Number(item.CurrentYearSales || 0);
+        if (cityName) {
+            regionLabels.push(cityName);
+            regionSalesData.push(sales);
+        }
+    });
+
+    // Region sales horizontal bar
+    try {
+        const regionCanvas = document.getElementById('regionSalesChart');
+        if (regionCanvas) {
+            regionCanvas.style.minWidth = regionCanvas.style.minWidth || '600px';
+
+            const ctx2 = regionCanvas.getContext('2d');
+            if (window.regionSalesChartInstance) {
+                try { window.regionSalesChartInstance.destroy(); } catch (e) { }
+            }
+
+            // Ensure datalabels plugin is registered globally so labels render
+            if (typeof ChartDataLabels !== 'undefined') {
+                try { Chart.register(ChartDataLabels); } catch (e) { /* already registered */ }
+            }
+
+            window.regionSalesChartInstance = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: regionLabels.length > 0 ? regionLabels : ['-'],
+                    datasets: [{
+                        label: 'Sales',
+                        data: regionSalesData.length > 0 ? regionSalesData : [0],
+                        backgroundColor: 'rgba(24,67,135,0.95)',
+                        borderColor: 'rgba(24,67,135,1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        // Configure datalabels here (works if plugin registered)
+                        datalabels: {
+                            display: true,
+                            anchor: function (context) {
+                                const value = context.dataset.data[context.dataIndex];
+                                const maxValue = Math.max(...context.dataset.data);
+                                // For small bars, position outside
+                                if (value < maxValue * 0.2) {
+                                    return 'end';
+                                }
+                                return 'center';
+                            },
+                            align: function (context) {
+                                const value = context.dataset.data[context.dataIndex];
+                                const maxValue = Math.max(...context.dataset.data);
+                                // For small bars, position labels outside to the right
+                                if (value < maxValue * 0.2) {
+                                    return 'end';
+                                }
+                                return 'center';
+                            },
+                            offset: function (context) {
+                                const value = context.dataset.data[context.dataIndex];
+                                const maxValue = Math.max(...context.dataset.data);
+                                // Push labels outside for small bars
+                                if (value < maxValue * 0.2) {
+                                    return 5;
+                                }
+                                return 0;
+                            },
+                            color: function (context) {
+                                const value = context.dataset.data[context.dataIndex];
+                                const maxValue = Math.max(...context.dataset.data);
+                                // Dark text for outside labels, white for inside
+                                if (value < maxValue * 0.2) {
+                                    return '#333';
+                                }
+                                return '#fff';
+                            },
+                            formatter: function (value, context) {
+                                if (value === null || value === undefined) return '';
+
+                                const num = Number(value);
+                                const isMobile = window.innerWidth < 768;
+
+                                // Use compact format for large numbers or mobile
+                                if (num >= 10000 || isMobile) {
+                                    if (num >= 1000000) {
+                                        return (num / 1000000).toFixed(1) + 'M';
+                                    }
+                                    return (num / 1000).toFixed(1) + 'k';
+                                }
+
+                                return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                            },
+                            font: function (context) {
+                                const isMobile = window.innerWidth < 768;
+                                return {
+                                    weight: 'bold',
+                                    size: isMobile ? 9 : 11
+                                };
+                            },
+                            clip: true,
+                            clamp: true
+                        },
+                        tooltip: { enabled: true }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Sales' }
+                        },
+                        y: { grid: { display: false } }
+                    }
+                },
+                // If plugin variable exists, also add to chart plugins array to be safe
+                plugins: (typeof ChartDataLabels !== 'undefined') ? [ChartDataLabels] : []
+            });
+
+            try { window.regionSalesChartInstance.resize(); window.regionSalesChartInstance.update(); } catch (e) { }
+        }
+    } catch (e) {
+        console.warn('region sales chart failed', e);
+    }
 
     // Render map with marker clustering for better performance
     await renderOptimizedMap(regionalData);
-}
-
-// Render attractive regional cards for top regions
-function renderRegionalCards(regionalData) {
-    const container = document.getElementById('regionalCardsContainer');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    if (!regionalData || regionalData.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">No regional data available</div>';
-        return;
-    }
-
-    // Take top 10 regions for display
-    const topRegions = regionalData.slice(0, 10);
-    const maxSales = topRegions.length > 0 ? topRegions[0].CurrentYearSales : 1;
-
-    // Medal icons for top 3
-    const rankIcons = {
-        1: '🥇',
-        2: '🥈',
-        3: '🥉'
-    };
-
-    topRegions.forEach((region, index) => {
-        const rank = index + 1;
-        const cityName = region.ConsigneeCityName || 'Unknown';
-        const stateName = region.ConsigneeStateName || '';
-        const sales = Number(region.CurrentYearSales || 0);
-        const percentage = maxSales > 0 ? (sales / maxSales) * 100 : 0;
-
-        // Format sales value
-        const salesFormatted = formatNumber(sales);
-
-        // Create card element
-        const card = document.createElement('div');
-        card.className = `regional-card rank-${Math.min(rank, 5)}`;
-        card.style.animationDelay = `${index * 0.1}s`;
-
-        card.innerHTML = `
-            <div class="regional-card-header">
-                <div class="regional-card-city">
-                    ${escapeHtml(cityName)}
-                </div>
-                <div class="regional-card-rank">
-                    ${rank <= 3 ? rankIcons[rank] : '#' + rank}
-                </div>
-            </div>
-            <div class="regional-card-sales">
-                ${salesFormatted}
-            </div>
-            <div class="regional-card-state">
-                <i class="fas fa-map-marker-alt me-1"></i>${escapeHtml(stateName)}
-            </div>
-            <div class="regional-card-bar">
-                <div class="regional-card-bar-fill" style="width: 0%" data-width="${percentage.toFixed(1)}%"></div>
-            </div>
-        `;
-
-        container.appendChild(card);
-    });
-
-    // Animate progress bars after a short delay
-    setTimeout(() => {
-        const bars = container.querySelectorAll('.regional-card-bar-fill');
-        bars.forEach(bar => {
-            const targetWidth = bar.getAttribute('data-width');
-            bar.style.width = targetWidth;
-        });
-    }, 100);
 }
 
 // NEW: Optimized map rendering with marker clustering and progressive loading
@@ -1599,8 +1416,6 @@ async function renderOptimizedMap(regionalData) {
         // IMPORTANT: Hide skeleton after all cities are processed
         if (mapSkeleton) {
             mapSkeleton.classList.add('hidden');
-            // Force display:none as extra safety measure for mobile black screen prevention
-            mapSkeleton.style.display = 'none';
         }
 
         console.log(`Loaded ${markers.length} markers from ${totalCities} cities`);
@@ -1764,19 +1579,12 @@ async function getCityCenter(cityName, stateName = '') {
 function processRawDataForRegionalTab(rawData) {
     const cityMap = new Map();
 
-    // Get the actual user-selected date range from filters
-    const filters = GetAllFilters();
-    const userFromDate = filters.fromDate && filters.fromDate !== '0' ? new Date(filters.fromDate) : null;
-    const userToDate = filters.toDate && filters.toDate !== '0' ? new Date(filters.toDate) : null;
-
-    // Filter for current FY data within user-selected date range
+    // Filter for current FY data only
     const currentFYData = rawData.filter(row => {
         const invoiceDate = new Date(row.InvoiceDate);
         const currentFYStart = new Date(row.CurrentFY_FromDate);
         const currentFYEnd = new Date(row.CurrentFY_ToDate);
-        const isInUserDateRange = (!userFromDate || invoiceDate >= userFromDate) && 
-                                  (!userToDate || invoiceDate <= userToDate);
-        return invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd && isInUserDateRange;
+        return invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd;
     });
 
     currentFYData.forEach(row => {
@@ -1852,11 +1660,6 @@ function renderClientSection() {
 function processRawDataForClientTab(rawData) {
     const clientMap = new Map();
 
-    // Get the actual user-selected date range from filters
-    const filters = GetAllFilters();
-    const userFromDate = filters.fromDate && filters.fromDate !== '0' ? new Date(filters.fromDate) : null;
-    const userToDate = filters.toDate && filters.toDate !== '0' ? new Date(filters.toDate) : null;
-
     rawData.forEach(row => {
         const clientCode = row.ConsigneeMaster_Code;
         const clientName = row.ConsigneeName;
@@ -1870,10 +1673,6 @@ function processRawDataForClientTab(rawData) {
         const prevFYStart = new Date(row.PrevFY_FromDate);
         const prevFYEnd = new Date(row.PrevFY_ToDate);
 
-        // Check if invoice is within user-selected date range
-        const isInUserDateRange = (!userFromDate || invoiceDate >= userFromDate) && 
-                                  (!userToDate || invoiceDate <= userToDate);
-
         if (!clientMap.has(clientCode)) {
             clientMap.set(clientCode, {
                 "Client Name": clientName,
@@ -1885,10 +1684,9 @@ function processRawDataForClientTab(rawData) {
 
         const clientData = clientMap.get(clientCode);
 
-        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd && isInUserDateRange) {
+        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd) {
             clientData["Current Year Sales"] += sales;
         } else if (invoiceDate >= prevFYStart && invoiceDate <= prevFYEnd) {
-            // Previous year sales for growth comparison (not filtered)
             clientData["Last Year Sales"] += sales;
         }
     });
@@ -2248,11 +2046,6 @@ function renderProductSpecificationSection() {
 function processRawDataForProductSpecificationTab(rawData) {
     const specMap = new Map();
 
-    // Get the actual user-selected date range from filters
-    const filters = GetAllFilters();
-    const userFromDate = filters.fromDate && filters.fromDate !== '0' ? new Date(filters.fromDate) : null;
-    const userToDate = filters.toDate && filters.toDate !== '0' ? new Date(filters.toDate) : null;
-
     rawData.forEach(row => {
         const thickness = row.ItemThickness || '';
         const size = row.ItemSize || '';
@@ -2267,10 +2060,6 @@ function processRawDataForProductSpecificationTab(rawData) {
         const prevFYStart = new Date(row.PrevFY_FromDate);
         const prevFYEnd = new Date(row.PrevFY_ToDate);
 
-        // Check if invoice is within user-selected date range
-        const isInUserDateRange = (!userFromDate || invoiceDate >= userFromDate) && 
-                                  (!userToDate || invoiceDate <= userToDate);
-
         if (!specMap.has(key)) {
             specMap.set(key, {
                 "Thickness": thickness,
@@ -2283,10 +2072,9 @@ function processRawDataForProductSpecificationTab(rawData) {
 
         const specData = specMap.get(key);
 
-        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd && isInUserDateRange) {
+        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd) {
             specData["Current Year Sales"] += sales;
         } else if (invoiceDate >= prevFYStart && invoiceDate <= prevFYEnd) {
-            // Previous year sales for growth comparison (not filtered)
             specData["Last Year Sales"] += sales;
         }
     });
@@ -2506,11 +2294,6 @@ function renderProductSection() {
 function processRawDataForProductTab(rawData) {
     const productMap = new Map();
 
-    // Get the actual user-selected date range from filters
-    const filters = GetAllFilters();
-    const userFromDate = filters.fromDate && filters.fromDate !== '0' ? new Date(filters.fromDate) : null;
-    const userToDate = filters.toDate && filters.toDate !== '0' ? new Date(filters.toDate) : null;
-
     rawData.forEach(row => {
         const productCode = row.ItemMaster_Code;
         const productName = row.ItemName || row.MasterItemName;
@@ -2525,10 +2308,6 @@ function processRawDataForProductTab(rawData) {
         const prevFYStart = new Date(row.PrevFY_FromDate);
         const prevFYEnd = new Date(row.PrevFY_ToDate);
 
-        // Check if invoice is within user-selected date range
-        const isInUserDateRange = (!userFromDate || invoiceDate >= userFromDate) && 
-                                  (!userToDate || invoiceDate <= userToDate);
-
         if (!productMap.has(productCode)) {
             productMap.set(productCode, {
                 "Products Name": productName,
@@ -2541,10 +2320,9 @@ function processRawDataForProductTab(rawData) {
 
         const productData = productMap.get(productCode);
 
-        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd && isInUserDateRange) {
+        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd) {
             productData["Current Year Sales"] += sales;
         } else if (invoiceDate >= prevFYStart && invoiceDate <= prevFYEnd) {
-            // Previous year sales for growth comparison (not filtered)
             productData["Last Year Sales"] += sales;
         }
     });
@@ -2581,7 +2359,7 @@ function renderTargetGrowthSection() {
 
     // Process raw data for target growth analysis
     const response = processRawDataForTargetGrowthTab(G_RawDashboardData);
-    
+
     if (!response || response.length === 0) {
         console.warn('No target growth data after processing');
         return;
@@ -2605,11 +2383,10 @@ function renderTargetGrowthSection() {
     if (bestEl) bestEl.textContent = best.name;
     if (bestAmtEl) bestAmtEl.textContent = formatNumber(best.amt);
 
-    // OPTION 3: Bullet Chart (Professional Target Comparison)
-    // Specialized chart designed for comparing actual vs target with performance zones
+    // Gauge chart: Use first record or aggregate data for gauge visualization
     const gaugeCanvas = document.getElementById('targetGaugeChart');
     if (gaugeCanvas && response.length > 0) {
-        // Aggregate totals
+        // Aggregate totals for gauge
         let totalCurrent = 0;
         let totalTarget = 0;
         response.forEach(function (r) {
@@ -2617,7 +2394,8 @@ function renderTargetGrowthSection() {
             totalTarget += Number(r['Target'] || 0);
         });
 
-        const achievedPct = totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0;
+        const achievedPct = totalTarget > 0 ? Math.min((totalCurrent / totalTarget) * 100, 100) : 0;
+        const remainingPct = Math.max(100 - achievedPct, 0);
 
         if (window.targetGaugeChartInstance) {
             try { window.targetGaugeChartInstance.destroy(); } catch (e) { }
@@ -2635,296 +2413,81 @@ function renderTargetGrowthSection() {
             return formatNumber(val);
         }
 
-        // Define performance zones based on target
-        const maxScale = Math.max(totalTarget * 1.2, totalCurrent * 1.1); // Show 120% of target or 110% of current, whichever is higher
-        const zone1 = totalTarget * 0.5;   // 0-50% Poor (red)
-        const zone2 = totalTarget * 0.75;  // 50-75% Fair (orange)
-        const zone3 = totalTarget;         // 75-100% Good (yellow)
-        const zone4 = maxScale;            // 100%+ Excellent (green background)
-
-        // Create performance gradient
-        const performanceGradient = ctx.createLinearGradient(0, 0, 600, 0);
-        performanceGradient.addColorStop(0, 'rgba(52, 152, 219, 1)');      // Blue
-        performanceGradient.addColorStop(0.5, 'rgba(46, 204, 113, 0.95)'); // Green
-        performanceGradient.addColorStop(1, 'rgba(26, 188, 156, 0.9)');    // Teal
-
-        // Responsive padding based on screen size
-        const isMobileChart = window.innerWidth < 768;
-        const isTabletChart = window.innerWidth >= 768 && window.innerWidth < 1024;
-        
-        // Adjust bar thickness and padding for mobile
-        const barThickness = isMobileChart ? 40 : (isTabletChart ? 60 : 80);
-        const performanceBarThickness = isMobileChart ? 30 : (isTabletChart ? 40 : 50);
-        
         window.targetGaugeChartInstance = new Chart(ctx, {
-            type: 'bar',
+            type: 'doughnut',
             data: {
-                labels: ['Performance'],
-                datasets: [
-                    // Background zones (qualitative ranges)
-                    {
-                        label: 'Poor (0-50%)',
-                        data: [zone1],
-                        backgroundColor: 'rgba(231, 76, 60, 0.15)',
-                        borderColor: 'transparent',
-                        borderWidth: 0,
-                        barThickness: barThickness,
-                        order: 4
-                    },
-                    {
-                        label: 'Fair (50-75%)',
-                        data: [zone2],
-                        backgroundColor: 'rgba(230, 126, 34, 0.15)',
-                        borderColor: 'transparent',
-                        borderWidth: 0,
-                        barThickness: barThickness,
-                        order: 3
-                    },
-                    {
-                        label: 'Good (75-100%)',
-                        data: [zone3],
-                        backgroundColor: 'rgba(241, 196, 15, 0.15)',
-                        borderColor: 'transparent',
-                        borderWidth: 0,
-                        barThickness: barThickness,
-                        order: 2
-                    },
-                    {
-                        label: 'Excellent (100%+)',
-                        data: [zone4],
-                        backgroundColor: 'rgba(46, 204, 113, 0.08)',
-                        borderColor: 'transparent',
-                        borderWidth: 0,
-                        barThickness: barThickness,
-                        order: 1
-                    },
-                    // Actual performance bar (featured measure)
-                    {
-                        label: 'Quantity Sold',
-                        data: [totalCurrent],
-                        backgroundColor: performanceGradient,
-                        borderColor: 'rgba(52, 152, 219, 1)',
-                        borderWidth: 3,
-                        borderRadius: 8,
-                        barThickness: performanceBarThickness,
-                        order: 0
-                    }
-                ]
+                labels: ['Achieved', 'Remaining'],
+                datasets: [{
+                    data: [achievedPct, remainingPct],
+                    backgroundColor: ['rgba(231, 76, 60, 0.8)', 'rgba(220, 220, 220, 0.4)'],
+                    borderWidth: 0,
+                    borderRadius: 0
+                }]
             },
             options: {
-                indexAxis: 'y',
+                rotation: -Math.PI,
+                circumference: Math.PI,
+                cutout: '78%',
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: {
-                    padding: {
-                        top: 10,
-                        bottom: 10,
-                        left: isMobileChart ? 80 : (isTabletChart ? 90 : 10),
-                        right: isMobileChart ? 10 : (isTabletChart ? 100 : 120)
-                    }
-                },
                 plugins: {
-                    legend: {
-                        display: true,
-                        position: 'bottom',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 15,
-                            font: {
-                                size: 11,
-                                weight: '500'
-                            },
-                            filter: function(item, chart) {
-                                // Show all legends
-                                return true;
-                            }
-                        }
-                    },
+                    legend: { display: false },
                     tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-                        padding: 15,
-                        titleFont: {
-                            size: 15,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 14
-                        },
                         callbacks: {
                             label: function (ctx) {
-                                const val = ctx.raw;
-                                const datasetLabel = ctx.dataset.label;
-                                
-                                if (datasetLabel === 'Quantity Sold') {
-                                    const pct = totalTarget > 0 ? achievedPct.toFixed(1) + '% of target' : '';
-                                    return datasetLabel + ': ' + formatNumber(val) + (pct ? ' (' + pct + ')' : '');
+                                const idx = ctx.dataIndex;
+                                if (idx === 0) {
+                                    return ctx.label + ': ' + formatNumber(totalCurrent) + ' (' + achievedPct.toFixed(2) + '%)';
                                 }
-                                
-                                return datasetLabel + ': Up to ' + formatCompactNumber(val);
-                            },
-                            afterBody: function(tooltipItems) {
-                                const item = tooltipItems[0];
-                                if (item.dataset.label === 'Quantity Sold') {
-                                    return '\nTarget: ' + formatNumber(totalTarget);
-                                }
-                                return '';
+                                return ctx.label + ': ' + remainingPct.toFixed(2) + '%';
                             }
-                        }
-                    },
-                    datalabels: {
-                        display: function(context) {
-                            // Only show label for the actual performance bar
-                            return context.dataset.label === 'Quantity Sold';
-                        },
-                        anchor: 'end',
-                        align: 'end',
-                        offset: isMobileChart ? 4 : 8,
-                        color: '#2c3e50',
-                        font: {
-                            weight: 'bold',
-                            size: isMobileChart ? 10 : (isTabletChart ? 12 : 15)
-                        },
-                        formatter: function (value, context) {
-                            if (!value) return '';
-                            // Show only the value without percentage for cleaner display
-                            return formatCompactNumber(value);
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        stacked: false,
-                        beginAtZero: true,
-                        max: maxScale,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.06)',
-                            drawBorder: true,
-                            borderColor: '#dee2e6',
-                            borderWidth: 2
-                        },
-                        ticks: {
-                            callback: function (value) {
-                                return formatCompactNumber(value);
-                            },
-                            font: {
-                                size: isMobileChart ? 9 : (isTabletChart ? 10 : 11),
-                                weight: '500'
-                            },
-                            color: '#6c757d',
-                            maxTicksLimit: isMobileChart ? 5 : 8,
-                            padding: isMobileChart ? 2 : 4
-                        },
-                        title: {
-                            display: !isMobileChart,
-                            text: 'Quantity (MT)',
-                            font: {
-                                size: 13,
-                                weight: 'bold'
-                            },
-                            color: '#495057'
-                        }
-                    },
-                    y: {
-                        stacked: false,
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            font: {
-                                size: isMobileChart ? 9 : (isTabletChart ? 11 : 14),
-                                weight: '600'
-                            },
-                            color: '#2c3e50',
-                            padding: isMobileChart ? 4 : 8,
-                            autoSkip: false,
-                            maxRotation: 0,
-                            minRotation: 0
                         }
                     }
                 }
             },
-            plugins: [
-                // Custom plugin to draw target marker line
-                {
-                    id: 'targetMarker',
-                    afterDatasetsDraw: function(chart) {
-                        const ctx = chart.ctx;
-                        const chartArea = chart.chartArea;
-                        const xScale = chart.scales.x;
-                        const isMobileMarker = window.innerWidth < 768;
-                        
-                        // Calculate x position for target
-                        const targetX = xScale.getPixelForValue(totalTarget);
-                        
-                        if (targetX >= chartArea.left && targetX <= chartArea.right) {
-                            ctx.save();
-                            
-                            // Draw vertical target line
-                            ctx.beginPath();
-                            ctx.strokeStyle = '#c0392b';
-                            ctx.lineWidth = isMobileMarker ? 3 : 4;
-                            ctx.moveTo(targetX, chartArea.top + 5);
-                            ctx.lineTo(targetX, chartArea.bottom - 5);
-                            ctx.stroke();
-                            
-                            // Draw target marker (triangles on left and right)
-                            const markerSize = isMobileMarker ? 7 : 10;
-                            const markerY = (chartArea.top + chartArea.bottom) / 2;
-                            
-                            // Left triangle pointing right
-                            ctx.beginPath();
-                            ctx.fillStyle = '#c0392b';
-                            ctx.moveTo(targetX - 2, markerY);
-                            ctx.lineTo(targetX - markerSize - 2, markerY - markerSize);
-                            ctx.lineTo(targetX - markerSize - 2, markerY + markerSize);
-                            ctx.closePath();
-                            ctx.fill();
-                            
-                            // Right triangle pointing left
-                            ctx.beginPath();
-                            ctx.moveTo(targetX + 2, markerY);
-                            ctx.lineTo(targetX + markerSize + 2, markerY - markerSize);
-                            ctx.lineTo(targetX + markerSize + 2, markerY + markerSize);
-                            ctx.closePath();
-                            ctx.fill();
-                            
-                            // Target label positioning based on screen size
-                            if (isMobileMarker) {
-                                // For mobile, place label inside chart area if possible
-                                const labelX = targetX + 5;
-                                ctx.font = 'bold 9px Arial';
-                                ctx.fillStyle = '#c0392b';
-                                ctx.textAlign = 'left';
-                                ctx.fillText('TARGET', labelX, markerY - 6);
-                                ctx.fillText(formatCompactNumber(totalTarget), labelX, markerY + 8);
-                            } else {
-                                // For desktop, place label outside chart area on right
-                                ctx.font = 'bold 11px Arial';
-                                ctx.fillStyle = '#c0392b';
-                                ctx.textAlign = 'left';
-                                ctx.fillText('TARGET', chartArea.right + 8, markerY - 8);
-                                ctx.fillText(formatCompactNumber(totalTarget), chartArea.right + 8, markerY + 8);
-                            }
-                            
-                            ctx.restore();
-                        }
-                    }
-                },
-                window.ChartDataLabels
-            ]
-        });
+            plugins: [{
+                id: 'gaugeLabels',
+                afterDatasetsDraw: function (chart) {
+                    const ctx = chart.ctx;
+                    const chartArea = chart.chartArea;
+                    const centerX = (chartArea.left + chartArea.right) / 2;
+                    const centerY = chartArea.bottom;
 
-        // Ensure the chart is sized correctly after insertion
-        setTimeout(() => {
-            if (window.targetGaugeChartInstance) {
-                try {
-                    window.targetGaugeChartInstance.resize();
-                    window.targetGaugeChartInstance.update();
-                } catch (e) {
-                    console.warn('Error resizing target chart:', e);
+                    const meta = chart._metasets[0];
+                    if (!meta || !meta.data || meta.data.length === 0) return;
+
+                    const arc = meta.data[0];
+                    const radius = arc.outerRadius;
+
+                    const leftX = centerX - radius - 10;
+                    const rightX = centerX + radius + 10;
+                    const bottomLabelY = centerY + 25;
+
+                    ctx.save();
+
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = '#666';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('0', leftX, bottomLabelY);
+
+                    ctx.textAlign = 'center';
+                    ctx.font = 'bold 20px Arial';
+                    ctx.fillStyle = '#000';
+                    ctx.fillText(formatCompactNumber(totalCurrent), centerX, centerY - 15);
+
+                    ctx.textAlign = 'right';
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = '#666';
+                    ctx.fillText(formatNumber(totalTarget), rightX, bottomLabelY);
+
+                    ctx.font = '12px Arial';
+                    ctx.fillStyle = '#999';
+                    ctx.fillText('Target', rightX, bottomLabelY + 18);
+
+                    ctx.restore();
                 }
-            }
-        }, 100);
+            }]
+        });
 
         const centerLabel = document.getElementById('gauge-center-label');
         if (centerLabel) centerLabel.textContent = formatNumber(totalCurrent);
@@ -3008,11 +2571,6 @@ function renderTargetGrowthSection() {
 function processRawDataForTargetGrowthTab(rawData) {
     const marketingManMap = new Map();
 
-    // Get the actual user-selected date range from filters
-    const filters = GetAllFilters();
-    const userFromDate = filters.fromDate && filters.fromDate !== '0' ? new Date(filters.fromDate) : null;
-    const userToDate = filters.toDate && filters.toDate !== '0' ? new Date(filters.toDate) : null;
-
     rawData.forEach(row => {
         const marketingManCode = row.MarketingManMaster_Code || row.TargetMarketingManCode;
         const marketingMan = row.MarketingMan || row.TargetMarketingManName;
@@ -3027,10 +2585,6 @@ function processRawDataForTargetGrowthTab(rawData) {
         const prevFYStart = new Date(row.PrevFY_FromDate);
         const prevFYEnd = new Date(row.PrevFY_ToDate);
 
-        // Determine if this row falls within the user-selected date range
-        const isInUserDateRange = (!userFromDate || invoiceDate >= userFromDate) && 
-                                  (!userToDate || invoiceDate <= userToDate);
-
         if (!marketingManMap.has(marketingManCode)) {
             marketingManMap.set(marketingManCode, {
                 "Marketing Man": marketingMan,
@@ -3044,16 +2598,15 @@ function processRawDataForTargetGrowthTab(rawData) {
 
         const manData = marketingManMap.get(marketingManCode);
 
-        // Only include sales that fall within the user-selected date range
-        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd && isInUserDateRange) {
+        if (invoiceDate >= currentFYStart && invoiceDate <= currentFYEnd) {
             manData["Current Year Sales"] += sales;
-            
-            // Sum all targets for records within the selected date range
-            // This ensures total target is relevant to the filtered period
-            manData["Target"] += targetAmount;
         } else if (invoiceDate >= prevFYStart && invoiceDate <= prevFYEnd) {
-            // Previous year sales for growth calculation (not filtered by user date range)
             manData["Last Year Sales"] += sales;
+        }
+
+        // Set target (use max if multiple records)
+        if (targetAmount > manData["Target"]) {
+            manData["Target"] = targetAmount;
         }
     });
 
