@@ -11,8 +11,8 @@ const PurchaseQualityCheckService = {
             }
         );
     },
-    GetMRNMasterDataForMRNNo: function GetMRNMasterDataForMRNNo(PartyMaster_Code, FinYear) {
-        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetMRNMasterDataForMRNNo?PartyMaster_Code=${PartyMaster_Code}&FinYear=${FinYear}`;
+    GetMRNMasterDataForMRNNo: function GetMRNMasterDataForMRNNo(PartyMaster_Code, FinYear, G_MRNType) {
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetMRNMasterDataForMRNNo?PartyMaster_Code=${PartyMaster_Code}&FinYear=${FinYear}&MRNType=${G_MRNType}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -27,8 +27,24 @@ const PurchaseQualityCheckService = {
             }
         );
     },
+    GetMRNQCPropertyList: function GetMRNQCPropertyList(G_MRNType) {
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetMRNQCPropertyList?MRNType=${G_MRNType}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetFinYear: function GetFinYear() {
         var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetFinYear`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetGodownNameList: function GetGodownNameList() {
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetGodownNameList`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -45,6 +61,32 @@ const PurchaseQualityCheckService = {
                 return value;
             }
         );
+    },
+    VerifyMRNQCPropertyResult: function VerifyMRNQCPropertyResult(Code) {
+        const authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+        const userMasterCode = authKeyData.UserMaster_Code || 0;
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + "/VerifyMRNQCPropertyResult?Code=" + Code + "&UserMaster_Code=" + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    PrintMRNQCPropertyResult: function PrintMRNQCPropertyResult(Code) {
+        var URL = `${UrlService.API_ENDPOINT_CRYSTAL}/WebPurchaseQualityCheck?Code=${Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    DeletePurchaseQuality: function DeletePurchaseQuality(Code, Remark) {
+        const authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+        const userMasterCode = authKeyData.UserMaster_Code || 0;
+        const url = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/DeletePurchaseQuality?Code=${encodeURIComponent(Code)}&UserMaster_Code=${userMasterCode}&ReasonForDelete=${Remark}&IPAddress=1&Location=1`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
+            return value;
+        });
     },
 }
 

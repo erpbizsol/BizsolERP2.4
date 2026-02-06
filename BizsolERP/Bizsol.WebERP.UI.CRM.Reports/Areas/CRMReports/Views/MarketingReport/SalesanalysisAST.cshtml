@@ -246,6 +246,107 @@
             width: 90% !important;
         }
     } */
+
+    /* Mobile-friendly tabs styling */
+    #salesAnalysisTabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        border-bottom: 2px solid #dee2e6;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Add padding to tab content on mobile to prevent filter button overlap */
+    @@media (max-width: 768px) {
+        .tab-content {
+            padding-bottom: 80px !important;
+        }
+    }
+    
+    @@media (max-width: 576px) {
+        .tab-content {
+            padding-bottom: 70px !important;
+        }
+    }
+
+        #salesAnalysisTabs::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        #salesAnalysisTabs::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+
+        #salesAnalysisTabs .nav-item {
+            flex-shrink: 0;
+        }
+
+        #salesAnalysisTabs .nav-link {
+            white-space: nowrap;
+            border-radius: 8px 8px 0 0;
+            padding: 12px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            margin-right: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            #salesAnalysisTabs .nav-link i {
+                font-size: 16px;
+            }
+
+            #salesAnalysisTabs .nav-link:not(.active) {
+                background-color: #f8f9fa;
+                color: #495057;
+            }
+
+                #salesAnalysisTabs .nav-link:not(.active):hover {
+                    background-color: #e9ecef;
+                    color: #212529;
+                }
+
+            #salesAnalysisTabs .nav-link.active {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+            }
+
+    /* Mobile specific styles */
+    @@media (max-width: 768px) {
+        #salesAnalysisTabs .nav-link {
+            font-size: 13px;
+            padding: 10px 16px;
+            gap: 6px;
+        }
+
+            #salesAnalysisTabs .nav-link i {
+                font-size: 14px;
+            }
+    }
+
+    @@media (max-width: 576px) {
+        #salesAnalysisTabs {
+            border-bottom: 1px solid #dee2e6;
+        }
+
+            #salesAnalysisTabs .nav-link {
+                font-size: 11px;
+                padding: 8px 12px;
+                margin-right: 2px;
+                gap: 4px;
+            }
+
+                #salesAnalysisTabs .nav-link i {
+                    font-size: 13px;
+                }
+    }
 </style>
 
 <!-- FilterSidePanelControl Web Component -->
@@ -255,38 +356,38 @@
 <ul class="nav nav-tabs" id="salesAnalysisTabs" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active" id="summaryReport-tab" data-bs-toggle="tab" data-bs-target="#summaryReport" type="button" role="tab" aria-controls="summaryReport" aria-selected="true">
-            Summary Report
+            <i class="fas fa-file-alt"></i>Summary Report
         </button>
     </li>
 
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="partyScoring-tab" data-bs-toggle="tab" data-bs-target="#partyScoring" type="button" role="tab" aria-controls="partyScoring" aria-selected="false">
-            Party Scoring
+            <i class="fas fa-star"></i>Party Scoring
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="goldenCircle-tab" data-bs-toggle="tab" data-bs-target="#goldenCircle" type="button" role="tab" aria-controls="goldenCircle" aria-selected="false">
-            Golden Circle Client
+            <i class="fas fa-crown"></i>Golden Circle Client
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="manifestation-tab" data-bs-toggle="tab" data-bs-target="#manifestation" type="button" role="tab" aria-controls="manifestation" aria-selected="false">
-            Manifestation
+            <i class="fas fa-clipboard-check"></i>Manifestation
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="nbdCrr-tab" data-bs-toggle="tab" data-bs-target="#nbdCrr" type="button" role="tab" aria-controls="nbdCrr" aria-selected="false">
-            NBD CRR
+            <i class="fas fa-user-plus"></i>NBD CRR
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="segmentWise-tab" data-bs-toggle="tab" data-bs-target="#segmentWise" type="button" role="tab" aria-controls="segmentWise" aria-selected="false">
-            Segment Wise
+            <i class="fas fa-chart-pie"></i>Segment Wise
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="gpWiseSummary-tab" data-bs-toggle="tab" data-bs-target="#gpWiseSummary" type="button" role="tab" aria-controls="gpWiseSummary" aria-selected="false">
-            GP Wise Summary
+            <i class="fas fa-chart-bar"></i>GP Wise Summary
         </button>
     </li>
 </ul>
