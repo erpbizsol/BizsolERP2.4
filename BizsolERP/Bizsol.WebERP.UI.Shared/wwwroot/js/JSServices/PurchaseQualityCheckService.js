@@ -72,6 +72,22 @@ const PurchaseQualityCheckService = {
             }
         );
     },
+    PrintMRNQCPropertyResult: function PrintMRNQCPropertyResult(Code) {
+        var URL = `${UrlService.API_ENDPOINT_CRYSTAL}/WebPurchaseQualityCheck?Code=${Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    DeletePurchaseQuality: function DeletePurchaseQuality(Code, Remark) {
+        const authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+        const userMasterCode = authKeyData.UserMaster_Code || 0;
+        const url = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/DeletePurchaseQuality?Code=${encodeURIComponent(Code)}&UserMaster_Code=${userMasterCode}&ReasonForDelete=${Remark}&IPAddress=1&Location=1`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
+            return value;
+        });
+    },
 }
 
 export { PurchaseQualityCheckService }
