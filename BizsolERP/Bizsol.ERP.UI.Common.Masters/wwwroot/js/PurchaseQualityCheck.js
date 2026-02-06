@@ -5,6 +5,7 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 
 let G_PropertyColumns = [];
 let G_PurchaseQualityCheckData = [];
+let G_PurchaseQualityCheckDataList = [];
 let G_SelectedTestTypeCodes = [];
 let G_SelectedTestTypes = [];
 let G_HeaderTestTypeSelections = [];
@@ -12,6 +13,7 @@ let G_ChangedInputs = [];
 let G_MRNNoList = [];
 let G_MRNType = '';
 let G_IsViewMode = false;
+let menuValue = '';
 
 $(document).ready(function () {
     const urlParams = BizSolHelperFunction.getUrlVars
@@ -26,7 +28,7 @@ $(document).ready(function () {
             $('#labelNameChange').text("GRN No");
         }
     }
-    const menuValue = decodeURI(urlParams['ModuleDesp'] || '');
+    menuValue = decodeURI(urlParams['ModuleDesp'] || '');
     if (menuValue && menuValue !== 'undefined') {
         $('#ERPHeading').text(menuValue);
     } else {
@@ -58,6 +60,86 @@ $(document).ready(function () {
         $('#txtBillNo').val('');
     });
 });
+function toggleMRNField(isView) {
+    const $select = $('#txtMRNNo');
+    const $input = $('#ViewMRNNo');
+    if (!$select.length || !$input.length) return;
+
+    try {
+        if (isView) {
+            // Hide select OR its select2 container and show plain input
+            if ($select.data('select2')) {
+                try { $select.select2('close'); } catch (e) {}
+                const sel2 = $select.data('select2');
+                if (sel2 && sel2.$container) sel2.$container.hide();
+                // keep original select hidden (select2 hides original), but ensure it's disabled
+                $select.prop('disabled', true);
+            } else {
+                $select.hide().prop('disabled', true);
+            }
+            $input.show().prop('disabled', true);
+        } else {
+            if ($select.data('select2')) {
+                const sel2 = $select.data('select2');
+                if (sel2 && sel2.$container) sel2.$container.show();
+                $select.prop('disabled', false);
+            } else {
+                $select.show().prop('disabled', false);
+            }
+            $input.hide().prop('disabled', false);
+        }
+    } catch (ex) {
+        console.error('Error toggling MRN field:', ex);
+        if (isView) {
+            $select.hide().prop('disabled', true);
+            $input.show().prop('disabled', true);
+        } else {
+            $select.show().prop('disabled', false);
+            $input.hide().prop('disabled', false);
+        }
+    }
+}
+
+// Added: toggle Party Name field between select/select2 and plain input for view mode
+function togglePartyField(isView) {
+    const $select = $('#ddlPartyName');
+    const $input = $('#ViewPartyName');
+    if (!$select.length || !$input.length) return;
+
+    try {
+        if (isView) {
+            if ($select.data('select2')) {
+                try { $select.select2('close'); } catch (e) {}
+                const sel2 = $select.data('select2');
+                if (sel2 && sel2.$container) sel2.$container.hide();
+                $select.prop('disabled', true);
+            } else {
+                $select.hide().prop('disabled', true);
+            }
+            // show plain input and set its value from selected option text
+            const selectedText = $select.find('option:selected').text() || '';
+            $input.val(selectedText).show().prop('disabled', true);
+        } else {
+            if ($select.data('select2')) {
+                const sel2 = $select.data('select2');
+                if (sel2 && sel2.$container) sel2.$container.show();
+                $select.prop('disabled', false);
+            } else {
+                $select.show().prop('disabled', false);
+            }
+            $input.hide().prop('disabled', false).val('');
+        }
+    } catch (ex) {
+        console.error('Error toggling Party field:', ex);
+        if (isView) {
+            $select.hide().prop('disabled', true);
+            $input.show().prop('disabled', true);
+        } else {
+            $select.show().prop('disabled', false);
+            $input.hide().prop('disabled', false);
+        }
+    }
+}
 function handleBackButton() {
     try {
         clearTable();
@@ -83,48 +165,69 @@ function handleBackButton() {
         GetMRNQCPropertyList();
 
         G_IsViewMode = false;
+
+        // Ensure MRN and Party fields are in select mode
+        toggleMRNField(false);
+        togglePartyField(false);
     } catch (ex) {
         console.error('Error handling back button:', ex);
         toastr.error('Error while clearing form. Please refresh the page.');
     }
 }
+
 function CreateNew() {
-    $('#dvGrid').hide();
-    $('#locatePurchaseQualityCheck').show();
-    clearTable();
-    G_ChangedInputs = [];
-    G_PurchaseQualityCheckData = [];
-    G_PropertyColumns = [];
+    var ModuleName = `${menuValue}`,
+        OptionName = "New",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            $('#dvGrid').hide();
+            $('#locatePurchaseQualityCheck').show();
+            clearTable();
+            G_ChangedInputs = [];
+            G_PurchaseQualityCheckData = [];
+            G_PropertyColumns = [];
 
-    $('#hfMRNMasterCode').val('0');
-    const $container = $('#locatePurchaseQualityCheck');
+            $('#hfMRNMasterCode').val('0');
+            const $container = $('#locatePurchaseQualityCheck');
 
-    $container.find(' select, textarea').prop('disabled', false);
+            $container.find('select, textarea').prop('disabled', false);
 
-    $container.find('input[type="text"], input[type="number"], textarea').val('');
+            $container.find('input[type="text"], input[type="number"], textarea').val('');
 
-    $container.find('select').each(function () {
-        const $sel = $(this);
-        const defaultVal = $sel.data('default') !== undefined ? $sel.data('default') : '';
-        $sel.val(defaultVal);
+            $container.find('select').each(function () {
+                const $sel = $(this);
+                const defaultVal = $sel.data('default') !== undefined ? $sel.data('default') : '';
+                $sel.val(defaultVal);
+            });
+            $('#ddlFinYear').val('');
+            $('#ddlPartyName').val('0').trigger('change');
+	        $('#txtMRNNo').val('').trigger('change');
+            $('#txtBillNo').val('');
+
+            $('.changed-input').removeClass('changed-input');
+            $('.is-invalid').removeClass('is-invalid');
+            $('#btnSaveQualityCheck').hide();
+            $('#btnReset').hide();
+
+            G_IsViewMode = false;
+
+            // Ensure MRN and Party fields are in select mode
+            toggleMRNField(false);
+            togglePartyField(false);
+        }
     });
-    $('#ddlFinYear').val('');
-    $('#ddlPartyName').val('0').trigger('change');
-	$('#txtMRNNo').val('').trigger('change');
-    $('#txtBillNo').val('');
-
-    $('.changed-input').removeClass('changed-input');
-    $('.is-invalid').removeClass('is-invalid');
-    $('#btnSaveQualityCheck').hide();
-    $('#btnReset').hide();
-
-    G_IsViewMode = false;
 }
 function GetMRNQCPropertyList() {
     Showloader();
     PurchaseQualityCheckService.GetMRNQCPropertyList(G_MRNType).then(function (response) {
         HideLoader();
         if (response.length > 0) {
+            G_PurchaseQualityCheckDataList = response;
             const StringFilterColumn = ["Party Name","Bill No"];
             const NumericFilterColumn = ["MRN No"];
             const DateFilterColumn = ["MRN Date","Bill Date"];
@@ -137,7 +240,7 @@ function GetMRNQCPropertyList() {
             const updatedResponse = response.map((item) => {
                 const mrnNo = (item['MRN No'] || item.MRNNo || item.MRN_NO || '').toString().replace(/'/g, "\\'");
                 const finYear = (item.FinYear || '').toString().replace(/'/g, "\\'");
-                const code = item.Code || item.MrnMaster_Code || 0;
+                const code = item.MrnMaster_Code || item.MrnMaster_Code || 0;
 
                 let InputHTML = '';
 
@@ -146,7 +249,7 @@ function GetMRNQCPropertyList() {
                         <button class="btn btn-primary icon-height mb-1" title="Edit" disabled>
                             <i class="fa-solid fa-pencil"></i>
                         </button>&nbsp;
-                        <button class="btn btn-primary icon-height mb-1" title="View" onclick="PurchaseQualityCheck_ViewData('${mrnNo}','${finYear}')">
+                        <button class="btn btn-primary icon-height mb-1" title="View" onclick="PurchaseQualityCheck_ViewData('${mrnNo}','${finYear}',${item.PartyMaster_Code},'${item?.['MRN Date']}','${item?.['Bill No']}','${item?.['Bill Date']}')">
                             <i class="fa-regular fa-eye"></i>
                         </button>&nbsp;
                         <button class="btn btn-success icon-height mb-1" title="Verify" disabled>
@@ -154,12 +257,15 @@ function GetMRNQCPropertyList() {
                         </button>&nbsp;
                         <button type="button" title="Print" class="btn btn-info btn-height" onclick="Print_PurchaseQualityCheck(${code})">
                             <i class="fa-solid fa-print"></i>
+                        </button>&nbsp;
+                        <button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${code}')">
+                            <i class="fa-regular fa-circle-xmark"></i>
                         </button>`
                     : `
                         <button class="btn btn-primary icon-height mb-1" title="Edit" onclick="PurchaseQualityCheck_EditData('${mrnNo}','${finYear}')">
                             <i class="fa-solid fa-pencil"></i>
                         </button>&nbsp;
-                        <button class="btn btn-primary icon-height mb-1" title="View" onclick="PurchaseQualityCheck_ViewData('${mrnNo}','${finYear}')">
+                        <button class="btn btn-primary icon-height mb-1" title="View" onclick="PurchaseQualityCheck_ViewData('${mrnNo}','${finYear}',${item.PartyMaster_Code},'${item?.['MRN Date']}','${item?.['Bill No']}','${item?.['Bill Date']}')">
                             <i class="fa-regular fa-eye"></i>
                         </button>&nbsp;
                         <button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify_PurchaseQualityCheck(${code})">
@@ -167,6 +273,9 @@ function GetMRNQCPropertyList() {
                         </button>&nbsp;
                         <button type="button" title="Print" class="btn btn-info btn-height" onclick="Print_PurchaseQualityCheck(${code})">
                             <i class="fa-solid fa-print"></i>
+                        </button>&nbsp;
+                        <button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${code}')">
+                            <i class="fa-regular fa-circle-xmark"></i>
                         </button>`;
 
                 return {
@@ -1025,7 +1134,7 @@ function clearTable() {
     G_PropertyColumns = [];
 }
 function saveQualityCheckData() {
-    var ModuleName = "Purchase Quality Check",
+    var ModuleName = `${menuValue}`,
         OptionName = "New",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
@@ -1328,106 +1437,212 @@ function bindVendorDropdown(list) {
         toastr.error('Error initializing select2 for Party Name:', e);
     }
 }
-function PurchaseQualityCheck_EditData(MRNNo, FinYear) {
-    if (!MRNNo || MRNNo === 0) {
-        toastr.error('Invalid MRN No');
-        return;
-    }
+function PurchaseQualityCheck_EditData(MRNNo, finYear) {
+    var ModuleName = `${menuValue}`,
+        OptionName = "Edit",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            if (!MRNNo || MRNNo === 0) {
+                toastr.error('Invalid MRN No');
+                return;
+            }
 
-    $('#dvGrid').hide();
-    $('#locatePurchaseQualityCheck').show();
+            $('#dvGrid').hide();
+            $('#locatePurchaseQualityCheck').show();
+            $('#btnSaveQualityCheck').show();
+            $('#btnReset').show();
 
-    $('#locatePurchaseQualityCheck input, #locatePurchaseQualityCheck select, #locatePurchaseQualityCheck textarea').prop('disabled', true);
-    $('#btnSaveQualityCheck').show();
-    $('#btnReset').show();
+            if (finYear) {
+                const $ddlFinYear = $('#ddlFinYear');
+                $ddlFinYear.val(finYear);
+            }
 
-    if (FinYear) {
-        const $ddlFinYear = $('#ddlFinYear');
-        $ddlFinYear.val(FinYear);
-    }
+            G_IsViewMode = false;
 
-    // Ensure edit mode is set BEFORE loading data so table shows Save/Reset
-    G_IsViewMode = false;
+            toggleMRNField(false);
+            togglePartyField(false);
 
-    if (MRNNo) {
-        const $txtMRNNo = $('#txtMRNNo');
-        $txtMRNNo.val(MRNNo);
-        if (MRNNo) {
-            $('#txtMRNNo').val(MRNNo).trigger('change');
+            if (MRNNo) {
+                const $txtMRNNo = $('#txtMRNNo');
+                $txtMRNNo.val(MRNNo);
+                if (MRNNo) {
+                    $('#txtMRNNo').val(MRNNo).trigger('change');
+                }
+            }
+            $('#locatePurchaseQualityCheck').find('input, select, textarea').prop('disabled', true);
         }
-    }
+    });
 }
-function PurchaseQualityCheck_ViewData(MRNNo, FinYear) {
-    if (!MRNNo || MRNNo === 0) {
-        toastr.error('Invalid MRN No');
-        return;
-    }
+function PurchaseQualityCheck_ViewData(MRNNo, finYear, PartyMaster_Code, MRNDate, BillNo, BillDate) {
+    var ModuleName = `${menuValue}`,
+        OptionName = "View",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            if (!MRNNo || MRNNo === 0) {
+                toastr.error('Invalid MRN No');
+                return;
+            }
 
-    $('#dvGrid').hide();
-    $('#locatePurchaseQualityCheck').show();
-    $('#locatePurchaseQualityCheck').find('input, select, textarea').prop('disabled', true);
-    $('#btnBack').prop('disabled', false);
+            $('#dvGrid').hide();
+            $('#locatePurchaseQualityCheck').show();
+            toggleMRNField(true);
+            togglePartyField(true);
+            $('#locatePurchaseQualityCheck').find('input, select, textarea').prop('disabled', true);
+            $('#btnBack').prop('disabled', false);
 
-    if (FinYear) {
-        const $ddlFinYear = $('#ddlFinYear');
-        $ddlFinYear.val(FinYear);
-    }
+            if (finYear) {
+                const $ddlFinYear = $('#ddlFinYear');
+                $ddlFinYear.val(finYear);
+            }
 
-    // Set view mode BEFORE loading data so save/reset stay hidden
-    G_IsViewMode = true;
+            G_IsViewMode = true;
 
-    if (MRNNo) {
-        const $txtMRNNo = $('#txtMRNNo');
-        $txtMRNNo.val(MRNNo);
-        if (MRNNo) {
-            $('#txtMRNNo').val(MRNNo).trigger('change');
+            if (PartyMaster_Code) {
+                const $ddlParty = $('#ddlPartyName');
+                if ($ddlParty.length) {
+                    $ddlParty.val(PartyMaster_Code);
+                    const selectedText = $ddlParty.find('option:selected').text() || '';
+                    $('#ViewPartyName').val(selectedText);
+                }
+            }
+
+            if (MRNNo) {
+                const $viewInput = $('#ViewMRNNo');
+                if ($viewInput.length) {
+                    $viewInput.val(MRNNo);
+                }
+            }
+            $('#txtMRNDate').val(MRNDate);
+            $('#txtBillNo').val(BillNo);
+            $('#txtBillDate').val(BillDate);
+
+            let mrnMasterCode = MRNNo;
+            if (mrnMasterCode && mrnMasterCode !== 0) {
+                $('#hfMRNMasterCode').val(mrnMasterCode);
+                loadPurchaseQualityCheckData(mrnMasterCode);
+            }
+
+            $('#btnSaveQualityCheck').hide();
+            $('#btnReset').hide();
         }
-    }
-
-    $('#btnSaveQualityCheck').hide();
-    $('#btnReset').hide();
+    });
 }
 function Verify_PurchaseQualityCheck(Code) {
-    try {
-        if (!Code) {
-            toastr.error('Invalid MRN Master Code');
-            return;
-        }
-
-        // Confirmation before verifying
-        if (!confirm('Are you sure you want to verify this record?')) {
-            return;
-        }
-
-        Showloader();
-        PurchaseQualityCheckService.VerifyMRNQCPropertyResult(Code).then(function (response) {
-                HideLoader();
-                if (response && response.Status === 'Y') {
-                    toastr.success(response.Msg || 'Verified successfully.');
-                    GetMRNQCPropertyList();
-                } else if (response && response.Status === 'N') {
-                    toastr.warning(response.Msg || 'Verification failed.');
-                } else {
-                    toastr.warning('Unexpected response during verification.');
+    var ModuleName = `${menuValue}`,
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            try {
+                if (!Code) {
+                    toastr.error('Invalid MRN Master Code');
+                    return;
                 }
-            }).catch(function (error) {
+
+                if (!confirm('Are you sure you want to verify this record?')) {
+                    return;
+                }
+
+                Showloader();
+                PurchaseQualityCheckService.VerifyMRNQCPropertyResult(Code).then(function (response) {
+                        HideLoader();
+                        if (response && response.Status === 'Y') {
+                            toastr.success(response.Msg || 'Verified successfully.');
+                            GetMRNQCPropertyList();
+                        } else if (response && response.Status === 'N') {
+                            toastr.warning(response.Msg || 'Verification failed.');
+                        } else {
+                            toastr.warning('Unexpected response during verification.');
+                        }
+                    }).catch(function (error) {
+                        HideLoader();
+                        toastr.error((error && error.Msg) || 'Error during verification.');
+                });
+            } catch (ex) {
                 HideLoader();
-                toastr.error((error && error.Msg) || 'Error during verification.');
-        });
-    } catch (ex) {
-        HideLoader();
-        console.error('Error in Verify_PurchaseQualityCheck:', ex);
-        toastr.error('An error occurred while verifying.');
-    }
+                console.error('Error in Verify_PurchaseQualityCheck:', ex);
+                toastr.error('An error occurred while verifying.');
+            }
+        }
+    });
 }
 function Print_PurchaseQualityCheck(Code) {
-    if (!Code || Code === 0) {
-        toastr.error('Invalid MRN Master Code');
+    PurchaseQualityCheckService.PrintMRNQCPropertyResult(Code).then(function (response) {
+        let url = response.Url;
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.target = '_blank';
+        a.href = url;
+        document.body.appendChild(a);
+        a.click();
+    }).catch(function (error) {
+        console.error("Error in printing report:", error);
+    });
+}
+function Delete(Code) {
+    var ModuleName = `${menuValue}`,
+        OptionName = "Delete",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            OpenModal(Code);
+        }
+    });
+}
+function OpenModal(Code) {
+    $('#hfCode').val(Code);
+    $('#PurchaseQualityRemark').modal({ backdrop: 'static' });
+    $('#PurchaseQualityRemark').modal('show');
+    $("#txtRemark").val("");
+}
+function CloseModal() {
+    $('#PurchaseQualityRemark').modal('hide');
+    $("#txtRemark").val("");
+}
+function DeletePurchaseQualityCheck() {
+    var code = $("#hfCode").val();
+    var Remark = $("#txtRemark").val();
+    if (Remark == '') {
+        toastr.warning("Please enter the Reason for delete.");
         return;
     }
-
-    console.log('Print called for MRN:', Code);
-    toastr.info('Print functionality to be implemented');
+    PurchaseQualityCheckService.DeletePurchaseQuality(code, Remark)
+        .then(function (response) {
+            if (response.Status === 'Y') {
+                toastr.success(response.Msg);
+                CloseModal();
+                GetMRNQCPropertyList();
+            } else {
+                toastr.error(response.Msg);
+            }
+        })
+        .catch(function (error) {
+            toastr.error('Error loading data. Please try again.');
+        });
+}
+function Download() {
+    const hiddenFields = [
+        "MrnMaster_Code", "FinYear", "PartyMaster_Code", "Code", "Verify"
+    ];
+    ExportToExcelControl.ExportToExcel(G_PurchaseQualityCheckDataList, hiddenFields, "PurchaseQualityCheck");
 }
 
 window.PurchaseQualityCheck_EditData = PurchaseQualityCheck_EditData;
@@ -1437,3 +1652,7 @@ window.Print_PurchaseQualityCheck = Print_PurchaseQualityCheck;
 window.SavePurchaseQualityCheck = SavePurchaseQualityCheck;
 window.bindYearDropdown = bindYearDropdown;
 window.CreateNew = CreateNew;
+window.Delete = Delete;
+window.DeletePurchaseQualityCheck = DeletePurchaseQualityCheck;
+window.CloseModal = CloseModal;
+window.Download = Download;

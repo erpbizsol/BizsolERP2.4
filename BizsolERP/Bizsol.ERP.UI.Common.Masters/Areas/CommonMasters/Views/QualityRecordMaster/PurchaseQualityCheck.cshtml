@@ -136,13 +136,15 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="ddlPartyName" class="col-form-label-sm fw-bold">Party Name :<span class="text-danger">*</span></label>
-                        <select id="ddlPartyName" name="ddlPartyName" class="box_border form-control form-control-sm" autocomplete="off"></select>
+                        <select id="ddlPartyName" name="ddlPartyName" class="box_border form-control form-control-sm" autocomplete="off" style="display:block"></select>
+                        <input type="text" id="ViewPartyName" name="ViewPartyName" class="box_border form-control form-control-sm" autocomplete="off" disabled style="display:none" />
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="txtMRNNo" class="col-form-label-sm fw-bold"><span id="labelNameChange">MRN No </span> : <span class="text-danger">*</span></label>
-                        <select id="txtMRNNo" name="txtMRNNo" class="box_border form-control form-control-sm" autocomplete="off"></select>
+                        <select id="txtMRNNo" name="txtMRNNo" class="box_border form-control form-control-sm" autocomplete="off" style="display:block"></select>
+                        <input type="text" id="ViewMRNNo" name="ViewMRNNo" class="box_border form-control form-control-sm" autocomplete="off" disabled style="display:none"/>
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -197,5 +199,25 @@
         </div>
     </div>
 </div>
-
+<div class="modal fade rps-detail-modal" id="PurchaseQualityRemark" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Remark</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="txtRemark" class="form-label filter-label">Remark </label> <span class="text-danger">*</span>
+                    <input type="text" id="txtRemark" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" />
+                    <input type="hidden" id="hfCode" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-12 text-end">
+                    <button type="button" class="btn btn-success icon-height" onclick="DeletePurchaseQualityCheck()">Ok</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
