@@ -2,9 +2,9 @@
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const StockAgeingReportService = {
-    GetStockAgeingReportList: function GetStockAgeingReportList(Category, ItemType, Warehouse, ItemMaster_Code, AsOnDate) {
-        var URL = UrlService.API_DOCUMENT_StockAgeingReport + "/GetStockAgeingReportList?Category=" + Category + "&ItemType=" + ItemType + "&Warehouse=" + Warehouse + "&ItemMaster_Code=" + ItemMaster_Code + "&AsOnDate=" + AsOnDate;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+    GetStockAgeingReportList: function GetStockAgeingReportList(Payload) {
+        var URL = UrlService.API_DOCUMENT_StockAgeingReport + "/GetStockAgeingReportList";
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(Payload)).then(
             function (value) {
                 return value;
             }

@@ -120,5 +120,20 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             return PartialView("_SelectMachineToGetWeightControl");
 
         }
+
+        public ActionResult SizeFilterControl(int ItemMaster_Code, int ItemSizeMaster_Code, string CallBackFunctionName_btnDone, string EditParameterList, string CallBackFunctionName_btnClose, int RowNo, int ProcessMaster_Code = 0)
+        {
+
+            ViewBag.ItemMaster_Code = ItemMaster_Code;
+            ViewBag.ItemSizeMaster_Code = ItemSizeMaster_Code;
+            ViewBag.CallBackFunctionName_btnDone = CallBackFunctionName_btnDone;
+            ViewBag.CallBackFunctionName_btnClose = CallBackFunctionName_btnClose;
+            ViewBag.EditParameterList = EditParameterList;
+            ViewBag.SizeControlRowNo = RowNo;
+            ViewBag.ProcessMaster_Code = ProcessMaster_Code;
+            return PartialView("_SizeFilterControl");
+
+        }
+
     }
 }

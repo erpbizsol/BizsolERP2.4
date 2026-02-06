@@ -85,11 +85,11 @@ function GetRMIndentListTable(Status, DateType, FromDate, ToDate) {
             const showButtons = [];
             let hiddenColumns = [];
             if (Status == 'U' || Status == '0') {
-                hiddenColumns = ["Code", "Purchased Date", "Qty PC", "Qty MTRS", "SizeDesp", "ClientName", "Vendor Name", "Rate", "Verification","ItemMaster_Code","ItemSizeMaster_Code"];
-                stringFilterColumn = ["Item Name", "THICKNESS", "GRADE", "MAKE", "WIDTH", "Status","Order No","Order Item","Order Size"];
+                hiddenColumns = ["Code", "Purchased Date", "Qty PC", "MAKE", "WIDTH", "Qty MTRS", "SizeDesp", "ClientName", "Vendor Name", "Rate", "Verification","ItemMaster_Code","ItemSizeMaster_Code"];
+                stringFilterColumn = ["Item Name", "THICKNESS", "GRADE", "Status","Order No","Order Item","Order Size"];
             } else {
-                hiddenColumns = ["Code", "Purchased Date", "Qty PC", "Qty MTRS", "SizeDesp", "Action", "ClientName", "ItemMaster_Code", "ItemSizeMaster_Code"];
-                stringFilterColumn = ["Item Name", "THICKNESS", "GRADE", "MAKE", "WIDTH", "Status", "Vendor Name", "Rate", "Order No", "Order Item", "Order Size"];
+                hiddenColumns = ["Code", "Purchased Date", "Qty PC", "MAKE", "WIDTH", "Qty MTRS", "SizeDesp", "Action", "ClientName", "ItemMaster_Code", "ItemSizeMaster_Code"];
+                stringFilterColumn = ["Item Name", "THICKNESS", "GRADE",  "Status", "Vendor Name", "Rate", "Order No", "Order Item", "Order Size"];
             }
             const columnAlignment = {
                 'Indent Date': 'center',
