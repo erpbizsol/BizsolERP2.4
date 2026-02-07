@@ -5,7 +5,6 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/StockAgeingReport.js"></script>
-
 <style>
     #StockAgeingReport tfoot th,
     #StockAgeingReport tfoot td {
@@ -43,7 +42,9 @@
                 <label for="ddlReportOption" class="form-label filter-label">Report Option <span class="text-danger">*</span></label>
                 <select id="ddlReportOption" name="ddlReportOption" class="form-control form-control-sm box_border" placeholder="Select.." autocomplete="off" required></select>
             </div>
-
+            <div class="col-md-3" style="margin-top: 27px;">
+                <button id="btnSizeControl" class="btn btn-primary btn-height" onclick="ShowSizeControlModal();">Size Parameter Filter</button>
+            </div>
             <div class="col-md-12" style="text-align:right">
                 <button type="button" id="btnStockAgeingReportShow" class="btn btn-primary btn-height">Show</button>
                 <button type="button" id="btn" class="btn btn-primary btn-height" onclick="ExportExcel();">Download</button>
