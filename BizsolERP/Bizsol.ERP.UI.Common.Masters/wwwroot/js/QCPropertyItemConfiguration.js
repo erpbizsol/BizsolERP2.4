@@ -1956,6 +1956,10 @@ function CloseModal() {
 function DeleteItemConfiguration() {
     var code = $("#hfCode").val();
     var Remark = $("#txtRemark").val();
+    if (Remark == '') {
+        toastr.warning("Please enter the Reason for delete.");
+        return;
+    }
     QCPropertyItemConfigurationService.DeleteQCPropertyItemConfiguration(code, Remark)
         .then(function (response) {
             if (response.Status === 'Y') {

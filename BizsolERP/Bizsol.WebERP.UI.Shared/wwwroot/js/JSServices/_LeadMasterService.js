@@ -227,14 +227,12 @@ const LeadMasterService = {
             return value;
         });
     },
-
     GetItemMasterDropDown: function GetItemMasterDropDown() {
         var url = UrlService.API_ENDPOINT_ITEM + '/GetItemMasterDropDown';
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
             return value;
         });
     },
-
     GetItemSizeMasterList: function GetItemSizeMasterList(ItemName) {
         var url = UrlService.API_ENDPOINT_ItemSize + '/GetItemSizeMasterList?ItemName=' + encodeURIComponent(ItemName);
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
@@ -410,6 +408,14 @@ const LeadMasterService = {
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(function (value) {
             return value;
         });
+    },
+    GetLeadStatuslist: function GetLeadStatuslist() {
+        var URL = UrlService.API_ENDPOINT_ENQUIRY + `/GetLeadStatuslist`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
     },
 }
 export { LeadMasterService }

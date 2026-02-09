@@ -1,0 +1,534 @@
+﻿<div class="modal fade bs-example-modal-center" id="SizeControlmodal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Size Filter Control:</h5>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-9">
+                        <input type ="hidden" id="ddlItemSizeMaster" class="form-control form-control-sm" />
+                    </div>
+                </div>
+
+                <table class="table mt-1" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Parameter</th>
+                            <th rowspan="2" style="width:40%">Value</th>
+                            <th colspan="2" style="width:40%; text-align:center;">Range</th>
+                        </tr>
+                        <tr>
+                            <th>From</th>
+                            <th>To</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbSizeParameter">
+
+                    </tbody>
+                </table>
+
+                <div class="text-end mt-1">
+                    <a class="btn btn-primary" onclick="onSizeControl_ClearFilter();">
+                        Clear Filter
+                    </a>&nbsp;
+                    <a class="btn btn-primary" onclick="onSizeControl_ApplyFilter();">
+                        Filter
+                    </a>
+                    &nbsp;
+                    <a class="btn btn-danger" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                    <input type="hidden" value="@ViewBag.ItemMaster_Code" id="hfItemMaster_Code" />
+                    <input type="hidden" value="@ViewBag.ItemSizeMaster_Code" id="hfItemSizeMaster_Code" />
+                    <input type="hidden" value="@ViewBag.CallBackFunctionName_btnDone" id="hfCallBackFunctionName_btnDone" />
+                    <input type="hidden" value="@ViewBag.SizeControlRowNo" id="hfRow_Id" />
+                    <input type="hidden" value="@ViewBag.ProcessMaster_Code" id="hfProcessMaster_Code" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@* <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/pages/customcontrol/_SizeControlpage.js"></script> *@
+<script type="module">
+    import { SizeFilterControlService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/_SizeFilterControlService.js'
+
+    let arraySizeControlDllID = [];
+
+    let SizeControl_NewSizeMaster_Code = 0;
+    let SizeControl_NewSizeDesp = '';
+
+    function getItemParameterList() {
+        // Clear all previous selections when loading parameters
+        clearAllCheckboxes();
+        
+        SizeFilterControlService.GetParameterMasterFilter($('#hfItemMaster_Code').val()).then(function (response) {
+            arraySizeControlDllID = response.map((item) => ({
+                ItemParameterMaster_Code: item.ItemParameterMaster_Code,
+                ParameterDesp: item.ParameterDesp,
+                ISNUMERIC: item.ISNUMERIC,
+                SortOrder: item.SortOrder,
+                SizeControlDllID: item.ParameterDesp.replace(/[^a-zA-Z0-9]/g, '_')
+            }));
+
+            let tbRow = '';
+            $.each(response, function (key, val) {
+                let selectId = val.ParameterDesp.replace(/[^a-zA-Z0-9]/g, '_');
+                let fromId = selectId + '_From';
+                let toId = selectId + '_To';
+                let isNumeric = val.ISNUMERIC === 'Y';
+                let rangeDisabled = isNumeric ? '' : 'disabled';
+                let rangeStyle = isNumeric ? '' : 'background-color:#e9ecef; cursor:not-allowed;';
+
+                tbRow += '<tr>' +
+                    '<td style="vertical-align:middle;">' + val.ParameterDesp + '</td>' +
+                    '<td><select id="' + selectId + '" class="form-control form-control-sm size-param-select" style="width:100%;"></select></td>' +
+                    '<td><input type="text" id="' + fromId + '" autocomplete="off" class="form-control form-control-sm size-range-from" placeholder="Min Value" ' + rangeDisabled + ' style="' + rangeStyle + '" inputmode="decimal" pattern="[0-9]*(\.[0-9]{1,2})?" /></td>' +
+                    '<td><input type="text" id="' + toId + '" autocomplete="off" class="form-control form-control-sm size-range-to" placeholder="Max Value" ' + rangeDisabled + ' style="' + rangeStyle + '" inputmode="decimal" pattern="[0-9]*(\.[0-9]{1,2})?" /></td>' +
+                    '</tr>';
+
+                GetSizeDll(selectId, val.ItemParameterMaster_Code);
+            });
+
+            $('#tbSizeParameter').html(tbRow);
+            
+            attachNumericValidation();
+        }).catch(function (error) {
+            alert('Error loading parameters: ' + (error.Msg || 'Unknown error'));
+        });
+    }
+
+    function clearAllCheckboxes() {
+        // Clear all checkbox selections before loading new parameters
+        arraySizeControlDllID.forEach((paramItem) => {
+            var paramId = paramItem.SizeControlDllID;
+            var fromId = paramId + '_From';
+            var toId = paramId + '_To';
+            var dropdownId = paramId + '_dropdown';
+            
+            // Uncheck all checkboxes in this dropdown
+            $('#' + dropdownId).find('.dropdown-checkbox').prop('checked', false);
+            
+            // Clear range inputs
+            $('#' + fromId).val('');
+            $('#' + toId).val('');
+            
+            // Reset dropdown display
+            updateDropdownDisplay(paramId, dropdownId);
+        });
+    }
+
+    function attachNumericValidation() {
+        $(document).on('input', '.size-range-from, .size-range-to', function () {
+            let value = $(this).val();
+            
+            let sanitized = value.replace(/[^0-9.]/g, '');
+            
+            let parts = sanitized.split('.');
+            if (parts.length > 2) {
+                sanitized = parts[0] + '.' + parts[1];
+            }
+            if (parts.length === 2 && parts[1].length > 2) {
+                sanitized = parts[0] + '.' + parts[1].substring(0, 2);
+            }
+            
+            if (sanitized.includes('.')) {
+                let [integer, decimal] = sanitized.split('.');
+                integer = integer.replace(/^0+(?=.)/, '') || '0';
+                sanitized = integer + '.' + decimal;
+            } else if (sanitized.length > 1 && sanitized[0] === '0') {
+                sanitized = sanitized.replace(/^0+(?=.)/, '') || '0';
+            }
+            
+            $(this).val(sanitized);
+        });
+    }
+    function GetSizeDll(ddlElementId, itemParameterMasterId) {
+        SizeFilterControlService.GetItemParameterValueMasterFilter(itemParameterMasterId).then(function (response) {
+            var dropdownId = ddlElementId + '_dropdown';
+            var $dropdown = $('<div class="custom-dropdown"></div>');
+            $dropdown.attr('id', dropdownId);
+            var $header = $('<div class="dropdown-header">' +
+                '<span class="dropdown-text">-- Select Multiple --</span>' +
+                '<span class="dropdown-toggle">▼</span>' +
+                '</div>');
+            var $menu = $('<div class="dropdown-menu" style="display:none;"></div>');
+            var $searchContainer = $('<div class="dropdown-search-container"></div>');
+            var $searchInput = $('<input type="text" class="dropdown-search-input" placeholder="Search..." />');
+            $searchContainer.append($searchInput);
+            $menu.append($searchContainer);
+            var $optionsContainer = $('<div class="dropdown-options-container"></div>');
+            
+            // Add regular options directly (without "Select All")
+            response.forEach(function (item) {
+                var $option = $('<label class="dropdown-option">' +
+                    '<input type="checkbox" class="dropdown-checkbox" value="' + item.Code + '" data-text="' + item.Desp + '" /> ' +
+                    '<span>' + item.Desp + '</span>' +
+                    '</label>');
+                $optionsContainer.append($option);
+            });
+            
+            $menu.append($optionsContainer);
+            
+            // Clear existing select and add custom dropdown
+            $('#' + ddlElementId).hide();
+            
+            // Remove old dropdown if it exists
+            $('#' + dropdownId).remove();
+            
+            $('#' + ddlElementId).after($dropdown.append($header).append($menu));
+            
+            // Handle dropdown toggle
+            $dropdown.on('click', '.dropdown-header', function (e) {
+                e.stopPropagation();
+                $menu.slideToggle(150);
+                // Focus search input when dropdown opens
+                if ($menu.is(':visible')) {
+                    $searchInput.focus();
+                }
+            });
+            
+            // Handle search input
+            $dropdown.on('keyup', '.dropdown-search-input', function () {
+                var searchTerm = $(this).val().toLowerCase();
+                $optionsContainer.find('.dropdown-option').each(function () {
+                    var optionText = $(this).find('span').text().toLowerCase();
+                    if (optionText.includes(searchTerm)) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+            
+            // Handle checkbox change
+            $dropdown.on('change', '.dropdown-checkbox', function () {
+                updateDropdownDisplay(ddlElementId, dropdownId);
+                updateHiddenSelectValues(ddlElementId, dropdownId);
+            });
+            
+            // Close dropdown when clicking outside
+            $(document).on('click', function (e) {
+                if (!$(e.target).closest('#' + dropdownId).length) {
+                    $menu.slideUp(150);
+                    $searchInput.val(''); // Clear search when closing
+                    $optionsContainer.find('.dropdown-option').show(); // Show all options
+                }
+            });
+            
+        }).catch(function (error) {
+            console.error('Error loading dropdown for parameter ' + itemParameterMasterId + ':', error);
+        });
+    }
+
+    function updateHiddenSelectValues(selectId, dropdownId) {
+        var $dropdown = $('#' + dropdownId);
+        var selectedValues = [];
+        // Get all checked checkboxes
+        $dropdown.find('.dropdown-checkbox:checked').each(function () {
+            selectedValues.push($(this).val());
+        });
+        $('#' + selectId).val(selectedValues);
+    }
+    function updateDropdownDisplay(selectId, dropdownId) {
+        var $dropdown = $('#' + dropdownId);
+        var checkedCount = $dropdown.find('.dropdown-checkbox:checked').length;
+        var $headerText = $dropdown.find('.dropdown-text');
+        
+        if (checkedCount === 0) {
+            $headerText.text('-- Select Multiple --');
+        } else if (checkedCount === 1) {
+            var selectedText = $dropdown.find('.dropdown-checkbox:checked').data('text');
+            $headerText.text(selectedText);
+        } else {
+            $headerText.text(checkedCount + ' selected');
+        }
+    }
+    function BindSelectList(element,list) {
+        let option = '<option value="0"></option>';
+        $.each(list, function (key, val) {
+            option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+        });
+        element.innerHTML = option;
+    }
+    function onSizeControl_ddlItemSizeMasterChange(){
+        $('#hfItemSizeMaster_Code').val($('#ddlItemSizeMaster').val());
+        getItemParameterList();
+    }
+    
+    function buildFilterPayload() {
+        var filterPayload = [];
+
+        arraySizeControlDllID.forEach((paramItem) => {
+            var paramId = paramItem.SizeControlDllID;
+            var fromId = paramId + '_From';
+            var toId = paramId + '_To';
+            var dropdownId = paramId + '_dropdown';
+            
+            // Get selected values from checkboxes directly
+            var selectedValues = [];
+            $('#' + dropdownId).find('.dropdown-checkbox:checked').each(function () {
+                selectedValues.push($(this).val());
+            });
+            
+            // Convert array to comma-separated string (e.g., "1,3,4")
+            var selectedValuesString = selectedValues.length > 0 ? selectedValues.join(',') : '';
+            
+            var fromValue = $('#' + fromId).val();
+            var toValue = $('#' + toId).val();
+            
+            var paramObject = {
+                ItemParameterMaster_Code: paramItem.ItemParameterMaster_Code,
+                ParameterDesp: paramItem.ParameterDesp,
+                SelectedValues: selectedValuesString,
+                RangeFrom: fromValue || 0,
+                RangeTo: toValue || 0,
+                IsNumeric: paramItem.ISNUMERIC === 'Y' ? 'Y' : 'N'
+            };
+            
+            var hasSelectedValues = selectedValuesString !== '';
+            var hasRangeFrom = fromValue && parseFloat(fromValue) > 0;
+            var hasRangeTo = toValue && parseFloat(toValue) > 0;
+            
+            if (hasSelectedValues || hasRangeFrom || hasRangeTo) {
+                filterPayload.push(paramObject);
+            }
+        });
+
+        return filterPayload;
+    }
+    
+    function onSizeControl_ApplyFilter() {
+        try {
+            var filterPayload = buildFilterPayload();
+            
+            console.log('Filter Payload:', filterPayload);
+           
+            window.SizeControl_FilterPayload = filterPayload;
+            
+            SizeFilterControlService.GetItemSizeMasterCodes(filterPayload).then(function (response) {
+                console.log('Filter response received:', response);
+                
+                // Store response in window for access
+                window.SizeControl_FilterResponse = response;
+                SizeControl_NewSizeMaster_Code = response;
+                
+                // Get callback function name from hidden field
+                var callbackFunctionName = $('#hfCallBackFunctionName_btnDone').val();
+                
+                // Call the callback function if it exists, passing both payload and response
+                if (callbackFunctionName && typeof window[callbackFunctionName] === 'function') {
+                    window[callbackFunctionName](filterPayload, response);
+                }
+                
+                // Close the modal
+                $("#SizeControlmodal").modal('hide');
+            }).catch(function (error) {
+                console.error('Error applying filter:', error);
+                SizeControl_NewSizeMaster_Code = '';
+                alert('Error applying filter: ' + (error.Msg || error.message || 'Unknown error'));
+            });
+        } catch (error) {
+            console.error('Error in filter function:', error);
+            alert('Error: ' + error.message);
+        }
+    }
+    
+    function onSizeControl_ClearFilter() {
+        try {
+            arraySizeControlDllID.forEach((paramItem) => {
+                var paramId = paramItem.SizeControlDllID;
+                var fromId = paramId + '_From';
+                var toId = paramId + '_To';
+                $('#' + paramId).val([]);
+                $('#' + fromId).val('');
+                $('#' + toId).val('');
+                var dropdownId = paramId + '_dropdown';
+                updateDropdownDisplay(paramId, dropdownId);
+                $('#' + dropdownId).find('.dropdown-checkbox').prop('checked', false);
+            });
+            
+            console.log('Filter cleared successfully');
+            alert('Filter has been cleared');
+        } catch (error) {
+            console.error('Error clearing filter:', error);
+            alert('Error clearing filter: ' + error.message);
+        }
+    }
+    
+
+    window.onSizeControl_ApplyFilter = onSizeControl_ApplyFilter;
+    window.onSizeControl_ClearFilter = onSizeControl_ClearFilter;
+    window.onSizeControl_ddlItemSizeMasterChange = onSizeControl_ddlItemSizeMasterChange;
+    getItemParameterList();
+</script>
+<script>
+    $(document).ready(function () {
+        $("#SizeControlmodal").modal({
+            backdrop: 'static',
+        });
+        $("#SizeControlmodal").modal('show');
+    });
+</script>
+<style>
+    .custom-dropdown {
+        position: relative;
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .dropdown-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s ease;
+    }
+
+    .dropdown-header:hover {
+        border-color: #aaa;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .dropdown-header.active {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+
+    .dropdown-toggle {
+        font-size: 12px;
+        transition: transform 0.2s ease;
+    }
+
+    .dropdown-header.active .dropdown-toggle {
+        transform: rotate(180deg);
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-top: none;
+        border-radius: 0 0 4px 4px;
+        max-height: 350px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Search input styling */
+    .dropdown-search-container {
+        padding: 8px;
+        border-bottom: 1px solid #e0e0e0;
+        position: sticky;
+        top: 0;
+        background-color: #fff;
+        z-index: 1001;
+    }
+
+    .dropdown-search-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .dropdown-search-input:focus {
+        outline: none;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+
+    .dropdown-search-input::placeholder {
+        color: #999;
+    }
+
+    .dropdown-options-container {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+    .dropdown-option {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.2s ease;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .dropdown-option:hover {
+        background-color: #f5f5f5;
+    }
+
+    .dropdown-option:last-child {
+        border-bottom: none;
+    }
+
+    .dropdown-checkbox {
+        margin-right: 8px;
+        cursor: pointer;
+        width: 16px;
+        height: 16px;
+        accent-color: #0d6efd;
+    }
+
+    .dropdown-option span {
+        flex: 1;
+    }
+
+    .dropdown-option input:checked + span {
+        font-weight: 600;
+        color: #0d6efd;
+    }
+
+    .dropdown-option input:checked {
+        accent-color: #0d6efd;
+    }
+    
+    /* Scrollbar styling for dropdown menu */
+    .dropdown-menu::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .dropdown-menu::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .dropdown-menu::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .dropdown-menu::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Scrollbar for options container */
+    .dropdown-options-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .dropdown-options-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .dropdown-options-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .dropdown-options-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
