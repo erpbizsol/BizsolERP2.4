@@ -51,9 +51,9 @@ const RollingPlanSheetService = {
             }
         );
     },
-    GetPendingPlansReportList: function GetPendingPlansReportList(FromDate, ToDate,Status,ItemMaster_Code) {
-        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetPendingPlansReportList?FromDate=" + FromDate + "&ToDate=" + ToDate + "&Status=" + Status + "&ItemMaster_Code=" + ItemMaster_Code;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+    GetPendingPlansReportList: function GetPendingPlansReportList(Payload) {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetPendingPlansReportList";
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(Payload)).then(
             function (value) {
                 return value;
             }
