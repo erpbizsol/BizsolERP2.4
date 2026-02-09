@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -7,6 +7,27 @@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/RMStock.js"></script>
 <script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 <style>
+    .table {
+        --bs-table-color-type: initial;
+        --bs-table-bg-type: initial;
+        --bs-table-color-state: initial;
+        --bs-table-bg-state: initial;
+        --bs-table-color: var(--bs-body-color);
+        --bs-table-bg: var(--bs-secondary-bg);
+        --bs-table-border-color: var(--bs-border-color);
+        --bs-table-accent-bg: transparent;
+        --bs-table-striped-color: var(--bs-body-color);
+        --bs-table-striped-bg: rgba(0, 0, 0, 0.05);
+        --bs-table-active-color: var(--bs-body-color);
+        --bs-table-active-bg: rgba(0, 0, 0, 0.1);
+        --bs-table-hover-color: var(--bs-body-color);
+        --bs-table-hover-bg: rgba(0, 0, 0, 0.075);
+        width: 100%;
+        margin-bottom: 1rem;
+        vertical-align: top;
+        border-color: var(--bs-table-border-color);
+    }
+
     .fixed-width-table th, .fixed-width-table td {
         white-space: nowrap;
         min-width: auto;
@@ -394,7 +415,7 @@
                         <div class="table-responsive">
                             <div id="tblUnApproved_Planned">
                                 <div class="table-wrapper">
-                                    <table id="UnApproved_Planned" class="fixed-width-table table ">
+                                    <table id="UnApproved_Planned" class="fixed-width-table table">
                                         <thead id="table-header-UnApproved_Planned">
                                         </thead>
                                         <tbody id="table-body-UnApproved_Planned">
