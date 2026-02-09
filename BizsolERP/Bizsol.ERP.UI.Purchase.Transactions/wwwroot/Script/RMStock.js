@@ -1378,7 +1378,7 @@ function GetUnApprovedPlannedList() {
             const showButtons = [];
             let hiddenColumns = ["Code"];
             const columnAlignment = {
-               'Actual Weight': 'right',
+                'Actual Weight': 'right', 'Yield %': 'right', 'Total Width': 'right','Width':'right'
             };
             const updatedResponse = response.map(item => {
                 const Action = `<button class="btn btn-success icon-height mb-1" ${item["Action"]=='Verified'?'disabled':''}  title="${item["Action"]}" onclick="Verify(${item["Code"]},'${item["Action"]}')">${item["Action"]}</button>`;
@@ -2059,6 +2059,48 @@ function getActiveTabFooterContext() {
         '#stock-summary': { tableId: 'SummaryData', calculator: calculateTotalFooterStockSummary }
     };
     return tabContexts[targetTab] || null;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    setInterval(ChangecolorTr, 1000); 
+});
+function ChangecolorTr() {
+    const tbody = document.getElementById("table-body-UnApproved_Planned");
+    if (!tbody) return;
+    const statusColIndex = 12;
+
+    const rows = tbody.querySelectorAll("tr");
+    rows.forEach((row) => {
+        const tds = row.querySelectorAll("td");
+        if (tds.length <= statusColIndex) {
+            return;
+        }
+        tds[statusColIndex].style.backgroundColor = "";
+
+        const rawText = tds[statusColIndex].textContent.trim();
+        const yieldValue = parseFloat(rawText);
+
+        if (isNaN(yieldValue)) {
+            return;
+        }
+
+        let color = "";
+        switch (true) {
+            case (yieldValue < 98):
+                color = "#f87171"; 
+                break;
+            case (yieldValue >= 98 && yieldValue <= 99):
+                color = "#ebb861"; 
+                break;
+            case (yieldValue > 99):
+                color = "#07bb72"; 
+                break;
+            default:
+                color = "";
+                break;
+        }
+        tds[statusColIndex].style.backgroundColor = color || "";
+    });
 }
 
 window.initializeTabs = initializeTabs;

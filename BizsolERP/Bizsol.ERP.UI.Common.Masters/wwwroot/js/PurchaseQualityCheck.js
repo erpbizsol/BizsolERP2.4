@@ -1,7 +1,8 @@
-﻿import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { PurchaseQualityCheckService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseQualityCheckService.js';
 import { QCPropertyTestTypeMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/QCPropertyTestTypeMasterService.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 
 let G_PropertyColumns = [];
 let G_PurchaseQualityCheckData = [];
@@ -14,6 +15,7 @@ let G_MRNNoList = [];
 let G_MRNType = '';
 let G_IsViewMode = false;
 let menuValue = '';
+let G_GodownList = [];
 
 $(document).ready(function () {
     const urlParams = BizSolHelperFunction.getUrlVars
@@ -761,21 +763,26 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
         }, 10);
     });
     
-    // Populate all godown selects using the service
+    // Populate all godown selects using the service (filtered by status: Accepted = no "Store Rejected", Rejected = only "Store Rejected")
     bindGodownNameDropdown().then(function(godownList) {
         try {
-            const $godownSelects = $tbody.find('.godown-select');
             if (!Array.isArray(godownList)) {
                 godownList = [];
             }
 
-            $godownSelects.each(function() {
-                const $sel = $(this);
-                const currentName = $sel.data('current-name') || '';
-                const currentCode = $sel.data('current-code') || '';
+            $tbody.find('tr').each(function() {
+                const $row = $(this);
+                const $statusSelect = $row.find('.status-select');
+                const $godownSelect = $row.find('.godown-select');
+                if (!$godownSelect.length) return;
+
+                const status = $statusSelect.length ? $statusSelect.val() : '';
+                const filteredGodowns = getGodownListByStatus(godownList, status);
+                const currentName = $godownSelect.data('current-name') || '';
+                const currentCode = $godownSelect.data('current-code') || '';
 
                 let options = '<option value="">Please select...</option>';
-                godownList.forEach(function(g) {
+                filteredGodowns.forEach(function(g) {
                     const code = g.Code || g.code || g.WarehouseMaster_Code || g.GodownId || 0;
                     const name = g.GodownName || g.godownName || g.Name || g.Description || '';
                     if (!name) return;
@@ -783,31 +790,55 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
                     options += `<option value="${code}" data-name="${name}" ${selected}>${name}</option>`;
                 });
 
-                $sel.html(options);
+                $godownSelect.html(options);
 
-                // If view mode, ensure select remains disabled
                 if (isView) {
-                    $sel.prop('disabled', true);
+                    $godownSelect.prop('disabled', true);
                 }
             });
 
             // Handle change event to mark changed inputs - use event delegation to prevent conflicts
             $tbody.off('change', '.godown-select').on('change', '.godown-select', function(e) {
-                e.stopPropagation(); // Prevent event bubbling
+                e.stopPropagation();
                 const $s = $(this);
-                // ignore if view mode
                 if (G_IsViewMode) return;
                 $s.addClass('changed-input');
                 console.log('Godown changed for MRNDetail', $s.data('mrn-detail-code'), 'value', $s.val());
             });
 
-            // Mark status selects as changed when user changes them - use event delegation
+            // On status change: refresh warehouse options for this row and mark changed
             $tbody.off('change', '.status-select').on('change', '.status-select', function(e) {
-                e.stopPropagation(); // Prevent event bubbling
-                const $s = $(this);
+                e.stopPropagation();
+                const $statusSelect = $(this);
                 if (G_IsViewMode) return;
-                $s.addClass('changed-input');
-                console.log('Status changed for MRNDetail', $s.data('mrn-detail-code'), 'value', $s.val());
+                $statusSelect.addClass('changed-input');
+                console.log('Status changed for MRNDetail', $statusSelect.data('mrn-detail-code'), 'value', $statusSelect.val());
+
+                const $row = $statusSelect.closest('tr');
+                const $godownSelect = $row.find('.godown-select');
+                if (!$godownSelect.length || !G_GodownList.length) return;
+
+                const status = $statusSelect.val();
+                const filteredGodowns = getGodownListByStatus(G_GodownList, status);
+                const currentVal = $godownSelect.val();
+                const currentOpt = $godownSelect.find('option:selected');
+                const currentName = currentOpt.length ? currentOpt.data('name') || currentOpt.text() : '';
+
+                let options = '<option value="">Please select...</option>';
+                let currentValStillValid = false;
+                filteredGodowns.forEach(function(g) {
+                    const code = g.Code || g.code || g.WarehouseMaster_Code || g.GodownId || 0;
+                    const name = g.GodownName || g.godownName || g.Name || g.Description || '';
+                    if (!name) return;
+                    const selected = (String(code) === String(currentVal) || name === currentName) ? 'selected' : '';
+                    if (String(code) === String(currentVal) || name === currentName) currentValStillValid = true;
+                    options += `<option value="${code}" data-name="${name}" ${selected}>${name}</option>`;
+                });
+
+                $godownSelect.html(options);
+                if (!currentValStillValid && currentVal) {
+                    $godownSelect.addClass('changed-input');
+                }
             });
         } catch (ex) {
             console.error('Error populating godown selects', ex);
@@ -1340,15 +1371,31 @@ function bindYearDropdown() {
             $dropdown.html('<option value="">Please select...</option>');
         });
 }
+/** Returns godown list filtered by QC status: Accepted = exclude "Store Rejected", Rejected = only "Store Rejected". */
+function getGodownListByStatus(godownList, status) {
+    if (!Array.isArray(godownList)) return [];
+    const statusVal = (status || '').toString().trim().toUpperCase();
+    return godownList.filter(function(g) {
+        const name = (g.GodownName || g.godownName || g.Name || g.Description || '').toString().trim();
+        const isStoreRejected = name.toLowerCase() === 'store rejected';
+        if (statusVal === 'A') return !isStoreRejected;  // Accepted: exclude Store Rejected
+        if (statusVal === 'R') return isStoreRejected;   // Rejected: only Store Rejected
+        return true;  // No status: show all
+    });
+}
+
 function bindGodownNameDropdown() {
     // Return a promise that resolves with the godown list array so callers can populate selects.
     return PurchaseQualityCheckService.GetGodownNameList().then(function(response) {
         if (response && Array.isArray(response)) {
+            G_GodownList = response;
             return response;
         }
+        G_GodownList = [];
         return [];
     }).catch(function(err) {
         console.error('Error in GetGodownNameList', err);
+        G_GodownList = [];
         return [];
     });
 }
