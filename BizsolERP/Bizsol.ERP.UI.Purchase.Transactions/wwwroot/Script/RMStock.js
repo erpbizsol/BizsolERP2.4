@@ -1388,8 +1388,12 @@ function GetUnApprovedPlannedList() {
                 }
                 return formattedItem;
             });
+
+            let FixedDecimalvalue = { "Actual Weight": 3,"Yield %":2}
+
             calculateTotalFooterUnApproved_Planned(response)
-            BizsolCustomFilterGrid.CreateDataTable("table-header-UnApproved_Planned", "table-body-UnApproved_Planned", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+
+            BizsolCustomFilterGrid.CreateDataTable("table-header-UnApproved_Planned", "table-body-UnApproved_Planned", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, null, FixedDecimalvalue);
             PopulateTableForPrint(response);
         } else {
             HideLoader();
