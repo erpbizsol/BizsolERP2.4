@@ -4,13 +4,14 @@ window.escapeId = function escapeId(id) {
 }
 
 const BizsolCustomFilterGrid = {
-    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null) {
+    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null, FixedDecimalvalue = null) {
         const columns = Object.keys(data[0]);
         const tableId = $('#' + bodyId).closest('table').attr('id');
         renderTableHeader(HiddenColumns, headerId, bodyId, columns, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
         window[`hiddenColumns_${bodyId}`] = HiddenColumns;
         window[`columnAlignment_${bodyId}`] = ColumnAlignment;
         window[`totalColumns_${bodyId}`] = TotalColumns;
+        window[`fixedDecimalvalue_${bodyId}`] = FixedDecimalvalue;
         renderTable(data, bodyId);
         window[`button_${tableId}`] = Button;
         window[`ShowButtons_${bodyId}`] = ShowButtons;
@@ -723,11 +724,22 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
                 ? 'display:none'
                 : `text-align:${alignment}`;
 
-            // Format numeric values to 2 decimal places
+            // Format numeric values based on FixedDecimalvalue parameter
             let cellValue = item[key];
-            //if (alignment === 'right' && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
+            const fixedDecimalConfig = window[`fixedDecimalvalue_${bodyId}`];
+
             if (cellValue !== null && cellValue !== undefined && cellValue.toString().includes('.')==true && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
-                cellValue = parseFloat(cellValue).toFixed(3);
+                // Check if FixedDecimalvalue is configured and if current column is in the config
+                if (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && fixedDecimalConfig.hasOwnProperty(key)) {
+                    const decimalPlaces = fixedDecimalConfig[key];
+                    cellValue = parseFloat(cellValue).toFixed(decimalPlaces);
+                } else if (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') {
+                    // If FixedDecimalvalue is a number, apply to all numeric columns
+                    cellValue = parseFloat(cellValue).toFixed(fixedDecimalConfig);
+                } else {
+                    // Default behavior: show 3 decimal places
+                    cellValue = parseFloat(cellValue).toFixed(3);
+                }
             }
 
             return `<td style="${style}">${cellValue}</td>`;
@@ -765,6 +777,8 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
     // Add total row if totalColumns is specified and not skipping
     if (totalColumns && Array.isArray(totalColumns) && totalColumns.length > 0 && items.length > 0 && !skipTotalRow) {
         const firstItem = items[0];
+        const fixedDecimalConfig = window[`fixedDecimalvalue_${bodyId}`];
+
         const totalRow = Object.keys(firstItem).map((key, colIndex) => {
             const alignment = window[`columnAlignment_${bodyId}`][key] || 'left';
             const style = window[`hiddenColumns_${bodyId}`].includes(key)
@@ -772,13 +786,19 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
                 : `text-align:${alignment}`;
 
             let cellContent = '';
-            
+
             if (colIndex === 0) {
                 // First column shows "Total" label
                 cellContent = '<strong>Total</strong>';
             } else if (totalColumns.includes(key)) {
-                // Show total for specified columns
-                const totalValue = columnTotals[key].toFixed(3);
+                // Show total for specified columns with appropriate decimal places
+                let decimalPlaces = 3; // default
+                if (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && fixedDecimalConfig.hasOwnProperty(key)) {
+                    decimalPlaces = fixedDecimalConfig[key];
+                } else if (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') {
+                    decimalPlaces = fixedDecimalConfig;
+                }
+                const totalValue = columnTotals[key].toFixed(decimalPlaces);
                 cellContent = `<strong>${totalValue}</strong>`;
             }
 
@@ -830,6 +850,8 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
 
     // Build grand total row
     const firstItem = filteredData[0];
+    const fixedDecimalConfig = window[`fixedDecimalvalue_${bodyId}`];
+
     const grandTotalRow = Object.keys(firstItem).map((key, colIndex) => {
         const alignment = window[`columnAlignment_${bodyId}`][key] || 'left';
         const style = window[`hiddenColumns_${bodyId}`].includes(key)
@@ -837,13 +859,19 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
             : `text-align:${alignment}`;
 
         let cellContent = '';
-        
+
         if (colIndex === 0) {
             // First column shows "Grand Total" label
             cellContent = '<strong>Grand Total</strong>';
         } else if (totalColumns.includes(key)) {
-            // Show grand total for specified columns
-            const totalValue = grandTotals[key].toFixed(2);
+            // Show grand total for specified columns with appropriate decimal places
+            let decimalPlaces = 2; // default for grand total
+            if (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && fixedDecimalConfig.hasOwnProperty(key)) {
+                decimalPlaces = fixedDecimalConfig[key];
+            } else if (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') {
+                decimalPlaces = fixedDecimalConfig;
+            }
+            const totalValue = grandTotals[key].toFixed(decimalPlaces);
             cellContent = `<strong>${totalValue}</strong>`;
         }
 
