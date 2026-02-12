@@ -1388,8 +1388,12 @@ function GetUnApprovedPlannedList() {
                 }
                 return formattedItem;
             });
+
+            let FixedDecimalvalue = { "Actual Weight": 3,"Yield %":2}
+
             calculateTotalFooterUnApproved_Planned(response)
-            BizsolCustomFilterGrid.CreateDataTable("table-header-UnApproved_Planned", "table-body-UnApproved_Planned", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+
+            BizsolCustomFilterGrid.CreateDataTable("table-header-UnApproved_Planned", "table-body-UnApproved_Planned", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, null, FixedDecimalvalue);
             PopulateTableForPrint(response);
         } else {
             HideLoader();
@@ -2089,10 +2093,10 @@ function ChangecolorTr() {
             case (yieldValue < 98):
                 color = "#f87171"; 
                 break;
-            case (yieldValue >= 98 && yieldValue <= 99):
+            case (yieldValue >= 98 && yieldValue < 99):
                 color = "#ebb861"; 
                 break;
-            case (yieldValue > 99):
+            case (yieldValue >= 99):
                 color = "#07bb72"; 
                 break;
             default:
