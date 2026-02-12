@@ -264,7 +264,7 @@ function renderDateAndMillWiseReportTable(response, reportDate) {
                     `<td style="text-align:right">${total}</td>` +
                     `<td style="text-align:center">${escapeHtml(pending)}</td>`;
             } else {
-                bodyHtml += '<td></td><td></td><td></td><td></td>';
+                bodyHtml += '<td></td><td></td><td></td><td></td><td></td>';
             }
         });
         bodyHtml += '</tr>';
@@ -1746,18 +1746,24 @@ function GetAgeingReportList(A_FromDate, A_ToDate) {
     Showloader();
     RollingPlanSheetService.GetRollingPlanAgeingReportList(A_FromDate, A_ToDate).then(function (response) {
         if (response && response.length > 0) {
-            const stringFilterColumn = ["Marketing Man", "Item Name","Size"];
-            const numericFilterColumn = ["Bal Qty", "Ord Dispatch Qty", "Prod Qty", "Ord Qty", "Ord No","Plan No"];
+            const stringFilterColumn = ["Marketing Man", "Ord No", "Plan No"];
+            const numericFilterColumn = ["Bal Qty", "Dispatch Qty", "Prod Qty", "Ord Qty", "Plan Qty","Stock"];
             const dateFilterColumn = ["Production Date"];
             const button = false;
-            const stringDoubleFilterColumn = ["Plan No"];
+            const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = ["ItemMaster_Code"];
             const columnAlignment = {
                 "Size": ";width:15px;",
-                "Prod Qty": 'right', "Ord Dispatch Qty": 'right', "Aging": 'right', "Bal Qty": 'right', "Ord Qty": 'right'
+                "Prod Qty": 'right',
+                "Dispatch Qty": 'right',
+                "Aging": 'right',
+                "Bal Qty": 'right',
+                "Ord Qty": 'right',
+                "Plan Qty": 'right',
+                "Stock":"right"
             };
-            const TotalColums = ["Bal Qty", "Ord Dispatch Qty", "Prod Qty", "Ord Qty"];
+            const TotalColums = ["Bal Qty", "Dispatch Qty", "Prod Qty", "Ord Qty", "Plan Qty", "Stock"];
             BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, TotalColums);
             $('.totals-row').remove();
             HideLoader();

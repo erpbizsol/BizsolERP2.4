@@ -1,4 +1,4 @@
-﻿const BizSolHelperFunction = {
+const BizSolHelperFunction = {
     ToWithSpace: function ToWithSpace(str) {
         return str.replace(/([a-z])([A-Z])/g, '$1 $2');
     },
@@ -17,7 +17,7 @@
         this.attachSelect2ScrollPrevention($element);
     },
     /**
-     * Prevents page scrolling when select2 dropdown is opened
+     * Prevents horizontal scrolling when select2 dropdown is opened (keeps vertical scroll enabled)
      * @param {jQuery} $element - jQuery element with select2 initialized
      */
     attachSelect2ScrollPrevention: function attachSelect2ScrollPrevention($element) {
@@ -25,27 +25,31 @@
             return;
         }
         
-        function preventScroll() {
-            const scrollY = window.scrollY || window.pageYOffset;
-            document.documentElement.style.overflow = 'hidden';
-            document.body.style.position = 'fixed';
-            document.body.style.top = '-' + scrollY + 'px';
-            document.body.style.width = '100%';
-            document.body.setAttribute('data-scroll-y', scrollY);
-        }
+        $element.on('select2:opening', function(e) {
+            $('select').not($element).each(function() {
+                if ($(this).data('select2') && $(this).data('select2').isOpen()) {
+                    $(this).select2('close');
+                }
+            });
+        });
         
-        function restoreScroll() {
-            const scrollY = document.body.getAttribute('data-scroll-y') || '0';
-            document.documentElement.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.width = '';
-            window.scrollTo(0, parseInt(scrollY));
-            document.body.removeAttribute('data-scroll-y');
-        }
+        $element.on('select2:open', function() {
+            // Hide only horizontal scroll, keep vertical scroll
+            $('body').css('overflow-x', 'hidden');
+            
+            // Set z-index for Select2 dropdown container
+            $('.select2-container--open').css('z-index', '0009');
+            $('.select2-dropdown').css('z-index', '0009');
+        });
         
-        $element.on('select2:open', preventScroll);
-        $element.on('select2:close', restoreScroll);
+        $element.on('select2:close', function() {
+            // Restore horizontal scroll
+            $('body').css('overflow-x', '');
+            
+            // Reset z-index
+            $('.select2-container--open').css('z-index', '0009');
+            $('.select2-dropdown').css('z-index', '0009');
+        });
     },
     HideOrShowConfigurationSettingBtn: function HideOrShowConfigurationSettingBtn(Id) {
         let userDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
