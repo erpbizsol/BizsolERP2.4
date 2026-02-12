@@ -1185,6 +1185,32 @@ function saveQualityCheckData() {
                 return;
             }
 
+            // Mandatory: Status and Warehouse must be selected for every detail row
+            let mandatoryError = '';
+            $('#table-body tr').each(function () {
+                const $tr = $(this);
+                const mrnDetailCode = $tr.data('mrn-detail-code') || 0;
+                if (!mrnDetailCode) return;
+
+                const $status = $tr.find('.status-select');
+                const $godown = $tr.find('.godown-select');
+                const statusVal = $status.length ? ($status.val() || '').trim() : '';
+                const godownVal = $godown.length ? ($godown.val() || '').trim() : '';
+
+                if (!statusVal) {
+                    mandatoryError = 'Please select Status for all rows (Accepted or Rejected).';
+                    return false; // break
+                }
+                if (!godownVal) {
+                    mandatoryError = 'Please select Warehouse for all rows.';
+                    return false;
+                }
+            });
+            if (mandatoryError) {
+                toastr.error(mandatoryError);
+                return;
+            }
+
             const dataToSave = [];
             
             // Group by MRNDetail to collect status and godown per row
