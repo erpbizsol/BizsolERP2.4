@@ -1,0 +1,215 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/InvoiceGST.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
+<div class="card p-2" id="LocatePDI">
+    <div style="display:block;">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="ddlConsignee" class="col-form-label-sm fw-bold">Consignee:<span class="text-danger">*</span></label>
+                <select id="ddlConsignee" type="text" class="box_border form-control form-control-sm"></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlIndentorBuyer" class="col-form-label-sm fw-bold">Indentor/Buyer:<span class="text-danger">*</span></label>
+                <select id="ddlIndentorBuyer" type="text" class="box_border form-control form-control-sm"></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlAccount" class="col-form-label-sm fw-bold">Account:<span class="text-danger">*</span></label>
+                <select id="ddlAccount" type="text" class="box_border form-control form-control-sm"></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlSaleType" class="col-form-label-sm fw-bold">Sale Type:<span class="text-danger">*</span></label>
+                <select id="ddlSaleType" type="text" class="box_border form-control form-control-sm"></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlSubSaleType" class="col-form-label-sm fw-bold">Sub Sale Type:<span class="text-danger">*</span></label>
+                <select id="ddlSubSaleType" type="text" class="box_border form-control form-control-sm"></select>
+            </div>
+            <div class="col-md-3">
+                <label for="txtPreparationDate" class="col-form-label-sm fw-bold">Preparation Date/Time:</label>
+                <div class="d-flex gap-1">
+                    <input type="date" id="txtPreparationDate" name="txtPreparationDate" class="box_border form-control form-control-sm" value="@DateTime.Now.ToString("dd/MM/yyyy")" />
+                    <input type="time" id="txtPreparationTime" name="txtPreparationTime" class="box_border form-control form-control-sm" value="@DateTime.Now.ToString("HH:mm")" />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label for="txtRemovalDate" class="col-form-label-sm fw-bold">Removal Date/Time:</label>
+                <div class="d-flex gap-1">
+                    <input type="date" id="txtRemovalDate" name="txtRemovalDate" class="box_border form-control form-control-sm" value="@DateTime.Now.ToString("dd/MM/yyyy")" />
+                    <input type="time" id="txtRemovalTime" name="txtRemovalTime" class="box_border form-control form-control-sm" value="@DateTime.Now.ToString("HH:mm")" />
+                </div>
+            </div>
+            <div class="col-md-12 text-end mt-4">
+                <button type="button" id="btnPDIShow" class="btn btn-primary btn-height mb-1">Show</button>
+                <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table id="tblInvoiceGST" class="table table-striped table-bordered">
+                <thead id="InvoiceTableheader"></thead>
+                <tbody id="InvoiceTablebody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div class="container-fluid" id="createPDI" style="display:none;">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="ddlDespatchNo" class="col-form-label-sm fw-bold">
+                                Despatch Advice No <span class="text-danger">*</span>
+                            </label>
+                            <select id="ddlDespatchNo" type="text" class="box_border form-control form-control-sm"></select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="ddlOrderNo" class="col-form-label-sm fw-bold">
+                                Order No <span class="text-danger">*</span>
+                            </label>
+                            <select id="ddlOrderNo" name="ddlOrderNo" class="box_border form-control form-control-sm" required></select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="ddlTruckNo" class="col-form-label-sm fw-bold">
+                                Truck No <span class="text-danger">*</span>
+                            </label>
+                            <select id="ddlTruckNo" name="ddlTruckNo" class="box_border form-control form-control-sm" required></select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="ddlQty" class="col-form-label-sm fw-bold">
+                                Quantity in MT <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="ddlQty" name="ddlQty" class="box_border form-control form-control-sm" autocomplete="off" required oninput="validateNumericInput(this)" />
+                        </div>
+
+                        <div class="col-12">
+                           <label for="attachment" class="form-label">Attachment <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text" onclick="triggerFileInputClick()" style="cursor: pointer; height:28px">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input type="file" accept=".jpg, .png, .jpeg" capture="camera" onchange="FileUploadChange(event)" class="form-control form-control-sm box_border" id="fileInput" />
+                                
+                            </div>
+                            <a href="javascript:void(0);" id="txtImageCheck" onclick="ShowPDIImage()" class="text-decoration-underline" style="cursor: pointer; display:none;">
+                                Click to view
+                            </a>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtRemark" class="col-form-label-sm fw-bold">Remark</label>
+                            <textarea id="txtRemark" class="box_border form-control form-control-sm" rows="2" maxlength="250"></textarea>
+                        </div>
+
+
+                        <div class="col-12 text-end mt-3">
+                            <button id="btnSave" type="button" class="btn btn-primary icon-height">
+                                Submit
+                            </button>
+                            <button class="btn btn-danger icon-height" title="Back" id="btnBack" onclick="Back()">
+                                Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid" id="EditPDI" style="display:none;">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="txtDespatchNo" class="col-form-label-sm fw-bold">
+                                Despatch Advice No <span class="text-danger">*</span>
+                            </label>
+                            <input id="txtDespatchNo" type="text" class="box_border form-control form-control-sm" readonly />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtOrderNo" class="col-form-label-sm fw-bold">
+                                Order No <span class="text-danger">*</span>
+                            </label>
+                            <input id="txtOrderNo" name="txtOrderNo" class="box_border form-control form-control-sm" required readonly />
+                            <input type="hidden" id="txtOrderNo_Code" name="txtOrderNo_Code" class="box_border form-control form-control-sm" />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtTruckNo" class="col-form-label-sm fw-bold">
+                                Truck No <span class="text-danger">*</span>
+                            </label>
+                            <input id="txtTruckNo" name="txtTruckNo" class="box_border form-control form-control-sm" required readonly />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtQty" class="col-form-label-sm fw-bold">
+                                Quantity in MT <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="txtQty" name="txtQty" class="box_border form-control form-control-sm" autocomplete="off" required oninput="validateNumericInput(this)" />
+                        </div>
+
+                        <div class="col-12">
+                           <label for="attachment" class="form-label">Attachment <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text" onclick="triggerFileInputClick()" style="cursor: pointer; height:28px">
+                                    <i class="fa fa-camera"></i>
+                                </span>
+                                <input type="file" accept=".jpg, .png, .jpeg" capture="camera" onchange="FileUploadChange(event)" class="form-control form-control-sm box_border" id="fileInputEdit" />
+                                
+                            </div>
+                            <a href="javascript:void(0);" id="txtImageCheckEdit" onclick="ShowPDIImage()" class="text-decoration-underline" style="cursor: pointer; display:none;">
+                                Click to view
+                            </a>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtEditRemark" class="col-form-label-sm fw-bold">Remark</label>
+                            <textarea id="txtEditRemark" class="box_border form-control form-control-sm" rows="2" maxlength="250"></textarea>
+                        </div>
+
+
+                        <div class="col-12 text-end mt-3">
+                            <button id="btnUpdate" type="button" class="btn btn-primary icon-height">
+                                Update
+                            </button>
+                            <button class="btn btn-danger icon-height" title="Back" onclick="Back()">
+                                Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="myModalImageShow" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Display Image</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <img id="myModalImageTag" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="DeleteModal()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="PDI_AttachmentControlmodal"></div>
