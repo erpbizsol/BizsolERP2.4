@@ -172,8 +172,12 @@ i:hover {
     width: 100%;
     overflow-x: auto;
     overflow-y: auto;
-    border: 1px solid #ddd;
-    min-height:400px;
+    /*border: 1px solid #ddd;*/
+}
+
+/* Applied when grid has active filters */
+.table-wrapper.filtered {
+    min-height: 400px;
 }
 
 .fixed-width-table {

@@ -671,6 +671,9 @@ function renderBarChart() {
 
     console.log('Rendering bar chart from raw data...');
 
+    // Update date range display for this tab
+    updateReportDateRangeDisplay();
+
     // Process raw data to create monthly sales summary
     const chartRows = processRawDataForSalesTab(G_RawDashboardData);
 
@@ -1199,11 +1202,38 @@ function processBestSaleDetails(rawData) {
     const totalCurrentSales = currentFYData.reduce((sum, row) => sum + (Number(row.SalesQtyMT) || 0), 0);
 
     // Best month
+    // Handle numeric month numbers (1-12) - convert to names
+    const monthNumberToName = {
+        1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+        7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+    };
+
+    // Month name mapping to ensure 3-letter abbreviations
+    const monthAbbreviations = {
+        'January': 'Jan', 'February': 'Feb', 'March': 'Mar', 'April': 'Apr',
+        'May': 'May', 'June': 'Jun', 'July': 'Jul', 'August': 'Aug',
+        'September': 'Sep', 'October': 'Oct', 'November': 'Nov', 'December': 'Dec',
+        // Also handle already abbreviated months
+        'Jan': 'Jan', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Apr',
+        'Jun': 'Jun', 'Jul': 'Jul', 'Aug': 'Aug',
+        'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Dec'
+    };
+
     const monthSales = new Map();
     currentFYData.forEach(row => {
-        const month = row.InvoiceMonth;
-        if (month) {
-            monthSales.set(month, (monthSales.get(month) || 0) + (Number(row.SalesQtyMT) || 0));
+        let month = row.InvoiceMonth;
+        if (month || month === 0) {
+            // Convert numeric month to name
+            if (typeof month === 'number' || !isNaN(month)) {
+                month = monthNumberToName[parseInt(month)] || month;
+            }
+
+            // Convert to 3-letter abbreviation if needed
+            month = monthAbbreviations[month] || month;
+
+            if (month) {
+                monthSales.set(month, (monthSales.get(month) || 0) + (Number(row.SalesQtyMT) || 0));
+            }
         }
     });
 
@@ -1286,6 +1316,9 @@ async function renderRegionalSection() {
     }
 
     console.log('Rendering regional section from raw data...');
+
+    // Update date range display for this tab
+    updateReportDateRangeDisplay();
 
     // Process raw data for regional analysis
     const regionalData = processRawDataForRegionalTab(G_RawDashboardData);
@@ -1775,6 +1808,32 @@ function formatNumber(v) {
     return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Helper function to format date for display
+function formatDateForDisplay(dateStr) {
+    if (!dateStr || dateStr === '0') return '';
+    try {
+        const date = new Date(dateStr);
+        const day = date.getDate();
+        const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
+            'july', 'august', 'september', 'october', 'november', 'december'];
+        const month = monthNames[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+    } catch (e) {
+        return dateStr;
+    }
+}
+
+// Helper function to update report date range display
+function updateReportDateRangeDisplay() {
+    const fromDateDisplay = fromDate !== '0' ? formatDateForDisplay(fromDate) : 'N/A';
+    const toDateDisplay = toDate !== '0' ? formatDateForDisplay(toDate) : 'Today';
+    const dateRangeEl = document.getElementById('report-date-range');
+    if (dateRangeEl) {
+        dateRangeEl.textContent = `Report Showing From : ${fromDateDisplay} to ${toDateDisplay}`;
+    }
+}
+
 function renderClientSection() {
     if (!G_IsDataLoaded || G_RawDashboardData.length === 0) {
         console.warn('No raw data available for client section');
@@ -1782,6 +1841,9 @@ function renderClientSection() {
     }
 
     console.log('Rendering client section from raw data...');
+
+    // Update date range display for this tab
+    updateReportDateRangeDisplay();
 
     // Process raw data for client analysis
     const response = processRawDataForClientTab(G_RawDashboardData);
@@ -1940,6 +2002,9 @@ function renderProductSpecificationSection() {
     }
 
     console.log('Rendering product specification section from raw data...');
+
+    // Update date range display for this tab
+    updateReportDateRangeDisplay();
 
     // Process raw data for product specification
     const response = processRawDataForProductSpecificationTab(G_RawDashboardData);
@@ -2280,6 +2345,9 @@ function renderProductSection() {
 
     console.log('Rendering product section from raw data...');
 
+    // Update date range display for this tab
+    updateReportDateRangeDisplay();
+
     // Process raw data for product analysis
     const response = processRawDataForProductTab(G_RawDashboardData);
 
@@ -2538,6 +2606,9 @@ function renderTargetGrowthSection() {
     }
 
     console.log('Rendering target growth section from raw data...');
+
+    // Update date range display for this tab
+    updateReportDateRangeDisplay();
 
     // Process raw data for target growth analysis
     const response = processRawDataForTargetGrowthTab(G_RawDashboardData);

@@ -53,6 +53,11 @@
         border: 1px solid #e6e6e6;
     }
 
+    .client-table-containerHeight {
+        max-height: 300px !important;
+        
+    }
+
     .top-client {
         font-size: 34px;
         letter-spacing: 1px;
@@ -588,8 +593,15 @@
 </ul>
 
 
-
-<div class="tab-content pt-3" id="customerDashboardTabsContent">
+<!-- Report Date Range Display - MOVED HERE TO BE VISIBLE FOR ALL TABS -->
+<div class="row mt-2 mb-2">
+    <div class="col-lg-12">
+        <div class="alert-warning text-center" role="alert" style="background-color:#ffeb3b; color:#fff; border:none;">
+            <h5 id="report-date-range" class="mb-0" style="font-weight:bold;">Report Showing From : </h5>
+        </div>
+    </div>
+</div>
+<div class="tab-content" id="customerDashboardTabsContent">
     <div class="tab-pane fade show active" id="Sales" role="tabpanel" aria-labelledby="Sales-tab">
         <div class="row">
             <!-- Left column: KPI Cards -->
@@ -692,7 +704,7 @@
         <div class="card">
             <div class="card-body">
                 <small class="text-muted">Client Wise Sales</small>
-                <div class="client-table-container mt-2">
+                <div class="client-table-container client-table-containerHeight mt-2">
                     <table id="clientSalesTable" class="table table-sm table-striped mb-0 fixed-width-table">
                         <thead class="table-secondary" id="clientSalesTableHeader">
                             @* <tr>
