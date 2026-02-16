@@ -2612,6 +2612,135 @@ async function GetEnquiryDetailsForViewByCode(Code) {
         // Build HTML for view-only modal
         let modalHtml = '';
 
+        
+        if (resObj.ContactPersonsList?.length > 0) {
+            modalHtml += `
+                <div class="card mb-3">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">Contact Persons</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Department</th>
+                                        <th>Designation</th>
+                                        <th>Email</th>
+                                        <th>Contact No</th>
+                                        <th>Default</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+
+            $.each(resObj.ContactPersonsList, function (i, person) {
+                let isDefaultValue = person.isDefault || person.IsDefault || person["Is Default"] || person["Default"] || "";
+                const isDefault = isDefaultValue === 'Y' || isDefaultValue === 'y';
+
+                modalHtml += `
+                    <tr>
+                        <td>${person.Name || '-'}</td>
+                        <td>${person.Department || '-'}</td>
+                        <td>${person.Designation || '-'}</td>
+                        <td>${person["Email Id"] || '-'}</td>
+                        <td>${person["Contact No"] || '-'}</td>
+                        <td class="text-center">${isDefault ? '<i class="fa fa-check text-success"></i>' : '-'}</td>
+                    </tr>`;
+            });
+
+            modalHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        // ---------------- Enquiry Details (Products) ----------------
+        if (resObj.EnquiryDetails?.length > 0) {
+            modalHtml += `
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">Product Details</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th>Specification</th>
+                                        <th>UOM</th>
+                                        <th>Quantity</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+
+            $.each(resObj.EnquiryDetails, function (i, product) {
+                modalHtml += `
+                    <tr>
+                        <td>${product["Product Name"] || '-'}</td>
+                        <td>${product["Specification"] || '-'}</td>
+                        <td>${product["UOM"] || '-'}</td>
+                        <td>${product["Quantity"] || '-'}</td>
+                        <td>${product["Remarks"] || '-'}</td>
+                    </tr>`;
+            });
+
+            modalHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        // ---------------- Enquiry Details (Products) ----------------
+        if (resObj.EnquiryFollupDetails?.length > 0) {
+            modalHtml += `
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0" style="color: white;">Follow Up Details</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Follow Up Date</th>
+                                        <th>Follow Up Mode</th>
+                                        <th>Next Follow Up Date	</th>
+                                        <th>Next Follow Up Mode</th>
+                                        <th>Our Remarks</th>
+                                        <th>Customer Remarks</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+
+            $.each(resObj.EnquiryFollupDetails, function (i, product) {
+                modalHtml += `
+                    <tr>
+                        <td>${product["FollowupDate"] || '-'}</td>
+                        <td>${product["FollowupMode"] || '-'}</td>
+                        <td>${product["NextFollowupDate"] || '-'}</td>
+                        <td>${product["NextFollowupMode"] || '-'}</td>
+                        <td>${product["Remark"] || '-'}</td>
+                        <td>${product["CustomerRemark"] || '-'}</td>
+                        <td>${product["Status"] || '-'}</td>
+                    </tr>`;
+            });
+
+            modalHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
         // ---------------- Enquiry Master ----------------
         if (resObj.EnquiryMaster?.length > 0) {
             const data = resObj.EnquiryMaster[0];
@@ -2713,92 +2842,7 @@ async function GetEnquiryDetailsForViewByCode(Code) {
             `;
         }
 
-        // ---------------- Enquiry Details (Products) ----------------
-        if (resObj.EnquiryDetails?.length > 0) {
-            modalHtml += `
-                <div class="card mb-3">
-                    <div class="card-header bg-success text-white">
-                        <h6 class="mb-0">Product Details</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Product Name</th>
-                                        <th>Specification</th>
-                                        <th>UOM</th>
-                                        <th>Quantity</th>
-                                        <th>Remarks</th>
-                                    </tr>
-                                </thead>
-                                <tbody>`;
-            
-            $.each(resObj.EnquiryDetails, function (i, product) {
-                modalHtml += `
-                    <tr>
-                        <td>${product["Product Name"] || '-'}</td>
-                        <td>${product["Specification"] || '-'}</td>
-                        <td>${product["UOM"] || '-'}</td>
-                        <td>${product["Quantity"] || '-'}</td>
-                        <td>${product["Remarks"] || '-'}</td>
-                    </tr>`;
-            });
-            
-            modalHtml += `
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ---------------- Contact Persons ----------------
-        if (resObj.ContactPersonsList?.length > 0) {
-            modalHtml += `
-                <div class="card mb-3">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0">Contact Persons</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Department</th>
-                                        <th>Designation</th>
-                                        <th>Email</th>
-                                        <th>Contact No</th>
-                                        <th>Default</th>
-                                    </tr>
-                                </thead>
-                                <tbody>`;
-            
-            $.each(resObj.ContactPersonsList, function (i, person) {
-                let isDefaultValue = person.isDefault || person.IsDefault || person["Is Default"] || person["Default"] || "";
-                const isDefault = isDefaultValue === 'Y' || isDefaultValue === 'y';
-                
-                modalHtml += `
-                    <tr>
-                        <td>${person.Name || '-'}</td>
-                        <td>${person.Department || '-'}</td>
-                        <td>${person.Designation || '-'}</td>
-                        <td>${person["Email Id"] || '-'}</td>
-                        <td>${person["Contact No"] || '-'}</td>
-                        <td class="text-center">${isDefault ? '<i class="fa fa-check text-success"></i>' : '-'}</td>
-                    </tr>`;
-            });
-            
-            modalHtml += `
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+       
 
         // Display in modal
         $("#EnquiryDetailsModaldv").html(modalHtml);
