@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
+using System.Text;
 
 
 
@@ -19,8 +20,15 @@ namespace BizsolERPMain.Controllers
             _configuration = configuration;
         }
 
-        public IActionResult Index(string AuthKey)
+        [HttpGet]
+        [HttpPost]
+        public IActionResult Index(string AuthKey, [FromForm] string bizsolERPConnectionDetailsJson)
         {
+            // If POST request with bizsolERPConnectionDetailsJson, use it as AuthKey
+            if (!string.IsNullOrEmpty(bizsolERPConnectionDetailsJson))
+            {
+                AuthKey = bizsolERPConnectionDetailsJson;
+            }
             //AuthKey = "{\"ERPDBConStr\":\"Data Source=45.248.120.221;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBSalPapers_TempShekhar;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 45.248.120.221; initial catalog = BizSolERPMainDB_SalPapers; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 45.248.120.221; initial catalog = BizSolERPDMSDB_SalPapers; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBSalPapers_TempShekhar\",\"ERPMainDB_Name\":\"BizSolERPMainDB_SalPapers\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_SalPapers\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"54\",\"CompanyCode\":\"102\",\"CrystalReportBaseUrl\":\"https://salpapers.bizsol.in/CRReports/Reports/Report.aspx?\"}";
             //AuthKey = "{\"ERPDBConStr\":\"Data Source=122.186.154.46,14332;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBINFRAMAT_Test1;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 122.186.154.46,14332; initial catalog = BizSolERPMainDB_INFRAMAT; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 122.186.154.46,14332; initial catalog = BizSolERPDMSDB_INFRAMAT; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBINFRAMAT_Test1\",\"ERPMainDB_Name\":\"BizSolERPMainDB_INFRAMAT\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_INFRAMAT\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"180\",\"CompanyCode\":\"104\",\"CrystalReportBaseUrl\":\"https://web.bizsol.in/CRReports/Reports/Report.aspx?\"}";
             //AuthKey = "{\"ERPDBConStr\":\"Data Source=137.97.228.170,14332;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBINFRAMAT_Test1;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 137.97.228.170,14332; initial catalog = BizSolERPMainDB_INFRAMAT_Test1; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 137.97.228.170,14332; initial catalog = BizSolERPDMSDB_INFRAMAT; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBINFRAMAT_Test1\",\"ERPMainDB_Name\":\"BizSolERPMainDB_INFRAMAT_Test1\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_INFRAMAT;\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"138\",\"CompanyCode\":\"104\",\"CrystalReportBaseUrl\":\"https://web.bizsol.in/CRReports/Reports/Report.aspx?\"}";
@@ -50,17 +58,17 @@ namespace BizsolERPMain.Controllers
             //AuthKey = "{\"ERPDBConStr\":\"Data Source=220.158.165.98,65446;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBINFRAMAT_Temp;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 220.158.165.98,65446; initial catalog = BizSolERPMainDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 220.158.165.98,65446; initial catalog = BizSolERPDMSDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBINFRAMAT_Temp\",\"ERPMainDB_Name\":\"BizSolERPMainDB_BizDev\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_BizDev\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"145\",\"CompanyCode\":\"102\",\"CrystalReportBaseUrl\":\"https://web.bizsol.in/CRReports/Reports/Report.aspx?\"}";
             // AuthKey = "{\"ERPDBConStr\":\"Data Source=220.158.165.225,65446;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBLoafIndiaUI_Temp;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 220.158.165.225,65446; initial catalog = BizsolERPMainDB_LoafIndia; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 220.158.165.225,65446; initial catalog = BizsolERPDMSDB_LoafIndia; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBLoafIndiaUI_Temp\",\"ERPMainDB_Name\":\"BizsolERPMainDB_LoafIndia\",\"ERPDMSDB_Name\":\"BizsolERPDMSDB_LoafIndia\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"79\",\"CompanyCode\":\"102\",\"CrystalReportBaseUrl\":\"https://web.bizsol.in/CRReports/Reports/Report.aspx?\"}";
             // AuthKey = "{\"ERPDBConStr\":\"Data Source=122.186.154.46,14332;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBInframat_Test1;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 122.186.154.46,14332; initial catalog = BizsolERPMainDB_Inframat_Test1; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 122.186.154.46,14332; initial catalog = BizsolERPDMSDB_Inframat; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBInframat_Test1\",\"ERPMainDB_Name\":\"BizsolERPMainDB_Inframat_Test1\",\"ERPDMSDB_Name\":\"BizsolERPDMSDB_Inframat\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"180\",\"CompanyCode\":\"104\",\"CrystalReportBaseUrl\":\"https://web.bizsol.in/CRReports/Reports/Report.aspx?\"}";
-            
-            
-           //AuthKey = "{\"ERPDBConStr\":\"Data Source=137.97.228.170,14332;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBINFRAMAT_Manoj_temp;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 137.97.228.170,14332; initial catalog = BizSolERPMainDB_INFRAMAT; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 137.97.228.170,14332; initial catalog = BizSolERPDMSDB_INFRAMAT; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBINFRAMAT_Manoj_temp\",\"ERPMainDB_Name\":\"BizSolERPMainDB_INFRAMAT\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_INFRAMAT\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"180\",\"CompanyCode\":\"103\",\"CrystalReportBaseUrl\":\"https://web.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"0\",\"WebERPLoginGodownName\":\"\"}";
-           //AuthKey = "{\"ERPDBConStr\":\"Data Source=137.97.228.170,14332;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBINFRAMAT_Test;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 137.97.228.170,14332; initial catalog = BizSolERPMainDB_INFRAMAT; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 137.97.228.170,14332; initial catalog = BizSolERPDMSDB_INFRAMAT; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBINFRAMAT_Test\",\"ERPMainDB_Name\":\"BizSolERPMainDB_INFRAMAT\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_INFRAMAT\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"180\",\"CompanyCode\":\"104\",\"CrystalReportBaseUrl\":\"https://web.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"0\",\"WebERPLoginGodownName\":\"\"}";
-           
-           //  AuthKey = "{\"ERPDBConStr\":\"Data Source=26.163.223.173;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBVimla_Temp;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 26.163.223.173; initial catalog = BizSolERPMainDB_VIMLA; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 26.163.223.173; initial catalog = BizSolERPDMSDB_VIMLA; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBVimla_Temp\",\"ERPMainDB_Name\":\"BizSolERPMainDB_VIMLA\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_VIMLA\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"204\",\"CompanyCode\":\"21\",\"CrystalReportBaseUrl\":\"https://web.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"0\",\"WebERPLoginGodownName\":\"\"}";
+
+
+            //AuthKey = "{\"ERPDBConStr\":\"Data Source=137.97.228.170,14332;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBINFRAMAT_Manoj_temp;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 137.97.228.170,14332; initial catalog = BizSolERPMainDB_INFRAMAT; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 137.97.228.170,14332; initial catalog = BizSolERPDMSDB_INFRAMAT; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBINFRAMAT_Manoj_temp\",\"ERPMainDB_Name\":\"BizSolERPMainDB_INFRAMAT\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_INFRAMAT\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"180\",\"CompanyCode\":\"103\",\"CrystalReportBaseUrl\":\"https://web.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"0\",\"WebERPLoginGodownName\":\"\"}";
+            //AuthKey = "{\"ERPDBConStr\":\"Data Source=137.97.228.170,14332;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBINFRAMAT_Test;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 137.97.228.170,14332; initial catalog = BizSolERPMainDB_INFRAMAT; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 137.97.228.170,14332; initial catalog = BizSolERPDMSDB_INFRAMAT; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBINFRAMAT_Test\",\"ERPMainDB_Name\":\"BizSolERPMainDB_INFRAMAT\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_INFRAMAT\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"180\",\"CompanyCode\":\"104\",\"CrystalReportBaseUrl\":\"https://web.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"0\",\"WebERPLoginGodownName\":\"\"}";
+
+            //  AuthKey = "{\"ERPDBConStr\":\"Data Source=26.163.223.173;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBVimla_Temp;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 26.163.223.173; initial catalog = BizSolERPMainDB_VIMLA; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 26.163.223.173; initial catalog = BizSolERPDMSDB_VIMLA; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBVimla_Temp\",\"ERPMainDB_Name\":\"BizSolERPMainDB_VIMLA\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_VIMLA\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"204\",\"CompanyCode\":\"21\",\"CrystalReportBaseUrl\":\"https://web.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"0\",\"WebERPLoginGodownName\":\"\"}";
 
             //  AuthKey = "{\"ERPDBConStr\":\"Data Source=26.246.196.247;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBLoafIndiaUI_TempVijay;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 26.246.196.247; initial catalog = BizsolERPMainDB_LoafIndia; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 26.246.196.247; initial catalog = BizSolERPDMSDB_LoafIndia; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBLoafIndiaUI_TempVijay\",\"ERPMainDB_Name\":\"BizsolERPMainDB_LoafIndia\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_LoafIndia\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"79\",\"CompanyCode\":\"100\",\"CrystalReportBaseUrl\":\"https://salpapers.bizsol.in/CRReports/Reports/Report.aspx?\"}";
             //AuthKey = "{\"ERPDBConStr\":\"Data Source=26.127.52.5;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBGlobus_UI_TempShekhar;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 26.127.52.5; initial catalog = BizSolERPMainDB_Globus; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 26.127.52.5; initial catalog = BizSolERPDMSDB_Globus; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBGlobus_UI_TempShekhar\",\"ERPMainDB_Name\":\"BizSolERPMainDB_Globus\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_Globus\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"98\",\"CompanyCode\":\"3\",\"CrystalReportBaseUrl\":\"https://globus.bizsol.in/CRReports/Reports/Report.aspx?\"}";
-           
-           // AuthKey = "{\"ERPDBConStr\":\"Data Source=26.228.46.4;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBASTPipes2022;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 26.228.46.4; initial catalog = BizSolERPMainDB_ASTPipes; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 26.228.46.4; initial catalog = BizSolERPDMSDB_ASTPIPES; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBASTPipes2022\",\"ERPMainDB_Name\":\"BizSolERPMainDB_ASTPipes\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_ASTPIPES\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"98\",\"CompanyCode\":\"3\",\"CrystalReportBaseUrl\":\"https://globus.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"0\",\"WebERPLoginGodownName\":\"\"}";
+
+            // AuthKey = "{\"ERPDBConStr\":\"Data Source=26.228.46.4;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBASTPipes2022;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 26.228.46.4; initial catalog = BizSolERPMainDB_ASTPipes; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 26.228.46.4; initial catalog = BizSolERPDMSDB_ASTPIPES; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBASTPipes2022\",\"ERPMainDB_Name\":\"BizSolERPMainDB_ASTPipes\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_ASTPIPES\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"98\",\"CompanyCode\":\"3\",\"CrystalReportBaseUrl\":\"https://globus.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"0\",\"WebERPLoginGodownName\":\"\"}";
             //AuthKey = "{\"ERPDBConStr\":\"Data Source=26.52.187.217;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBASTPipes2022;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 26.52.187.217; initial catalog = BizSolERPMainDB_ASTPipes; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 26.52.187.217; initial catalog = BizSolERPDMSDB_ASTPIPES; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBASTPipes2022\",\"ERPMainDB_Name\":\"BizSolERPMainDB_ASTPipes\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_ASTPIPES\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"98\",\"CompanyCode\":\"3\",\"CrystalReportBaseUrl\":\"https://globus.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"0\",\"WebERPLoginGodownName\":\"\"}";
             // AuthKey = "{\"ERPDBConStr\":\"Data Source=26.52.187.217;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBASTPipes2022;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 26.52.187.217; initial catalog = BizSolERPMainDB_ASTPipes; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 26.52.187.217; initial catalog = BizSolERPDMSDB_ASTPIPES; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBASTPipes2022\",\"ERPMainDB_Name\":\"BizSolERPMainDB_ASTPipes\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_ASTPIPES\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"126\",\"CompanyCode\":\"3\",\"CrystalReportBaseUrl\":\"https://globus.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"0\",\"WebERPLoginGodownName\":\"\"}";
             //AuthKey = "{\"ERPDBConStr\":\"Data Source=26.52.187.217;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBASTPipes2022_temp;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 26.52.187.217; initial catalog = BizSolERPMainDB_ASTPipes; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 26.52.187.217; initial catalog = BizSolERPDMSDB_ASTPIPES; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBASTPipes2022_temp\",\"ERPMainDB_Name\":\"BizSolERPMainDB_ASTPipes\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_ASTPIPES\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"98\",\"CompanyCode\":\"4\",\"CrystalReportBaseUrl\":\"https://globus.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"0\",\"WebERPLoginGodownName\":\"\"}";
@@ -80,6 +88,8 @@ namespace BizsolERPMain.Controllers
             //AuthKey = "{\"ERPDBConStr\":\"Data Source=26.227.118.67\\\\\\\\NEW;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBSNSINFRASonipatTesting;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 26.227.118.67\\\\\\\\NEW; initial catalog = BizSolERPMainDB_SNSINFRATesting; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 26.227.118.67\\\\\\\\NEW; initial catalog = BizSolERPDMSDB_SNSINFRATesting; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBSNSINFRASonipatTesting\",\"ERPMainDB_Name\":\"BizSolERPMainDB_SNSINFRATesting\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_SNSINFRATesting\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"116\",\"CompanyCode\":\"2\",\"CrystalReportBaseUrl\":\"https://globus.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"52\",\"WebERPLoginGodownName\":\"PPPL-2 (AHM)\"}";
             //AuthKey = "{\"ERPDBConStr\":\"Data Source=26.228.46.4;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBEnquiry;User ID=sa;pwd=biz1981;Packet Size=32000\",\"ERPMainDBConStr\":\"data source = 26.228.46.4; initial catalog = BizSolERPMainDB_Enquiry; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDMSDBConStr\":\"data source = 26.228.46.4; initial catalog = BizSolERPDMSDB_Enquiry; uid = sa; PWD = biz1981; Max Pool Size = 5000\",\"ERPDB_Name\":\"BizSolERPDBEnquiry\",\"ERPMainDB_Name\":\"BizSolERPMainDB_Enquiry\",\"ERPDMSDB_Name\":\"BizSolERPDMSDB_Enquiry\",\"AuthToken\":\"xyz\",\"UserMaster_Code\":\"98\",\"CompanyCode\":\"3\",\"CrystalReportBaseUrl\":\"https://globus.bizsol.in/CRReports/Reports/Report.aspx?\",\"WebERPLoginGodownMaster_Code\":\"0\",\"WebERPLoginGodownName\":\"\"}";
 
+            
+            AuthKey = EncryptAuthKeyProperties(AuthKey, "ERPDBConStr", "ERPMainDBConStr", "ERPDMSDBConStr");
             var req = HttpContext.Request;
             var derivedBaseUrl = $"{req.Scheme}://{req.Host}{req.PathBase}";
             ViewBag.AppBaseURL = derivedBaseUrl;
@@ -99,6 +109,56 @@ namespace BizsolERPMain.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        public string EncryptPasswordAsync(string password)
+        {
+            StringBuilder encryptedPassword = new StringBuilder();
+            foreach (char c in password)
+            {
+                encryptedPassword.Append(Convert.ToChar(Convert.ToInt32(c) + 10));
+            }
+            return encryptedPassword.ToString();
+        }
+
+        
+        public string EncryptForJson(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return value;
+
+            string encrypted = EncryptPasswordAsync(value);
+            byte[] bytes = Encoding.UTF8.GetBytes(encrypted);
+            return Convert.ToBase64String(bytes);
+        }
+
+       
+        
+        public string EncryptAuthKeyProperties(string authKeyJson, params string[] propertiesToEncrypt)
+        {
+            if (string.IsNullOrEmpty(authKeyJson))
+                return authKeyJson;
+
+            try
+            {
+                JObject authKeyObj = JObject.Parse(authKeyJson);
+
+                foreach (string propertyName in propertiesToEncrypt)
+                {
+                    if (authKeyObj.TryGetValue(propertyName, out JToken token) && token.Type == JTokenType.String)
+                    {
+                        string originalValue = token.ToString();
+                        string encryptedValue = EncryptForJson(originalValue);
+                        authKeyObj[propertyName] = encryptedValue;
+                    }
+                }
+
+                return authKeyObj.ToString(Newtonsoft.Json.Formatting.None);
+            }
+            catch
+            {
+                return authKeyJson;
+            }
         }
 
     }
