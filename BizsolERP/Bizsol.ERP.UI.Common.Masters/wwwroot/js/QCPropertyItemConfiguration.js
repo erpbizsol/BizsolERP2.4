@@ -1163,7 +1163,7 @@ function validateEditableTableRow($row) {
         
         const minNum = parseFloat(minValue);
         const maxNum = parseFloat(maxValue);
-        if (!isNaN(minNum) && !isNaN(maxNum) && minNum >= maxNum) {
+        if (!isNaN(minNum) && !isNaN(maxNum) && minNum > maxNum) {
             return { isValid: false, message: 'Min Value must be less than Max Value', $field: $minValue };
         }
     } else if (valueTypeValue === 'Text') {

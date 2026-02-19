@@ -21,6 +21,17 @@ const BizsolCustomFilterGrid = {
         window[`currentPage_${tableId}`] = 1;
         window[`itemsPerPage_${tableId}`] = 10;
         window[`Paginator_${tableId}`] = Paginator;
+
+        // Add filtered class if any filter columns are defined
+        const hasFilterColumns = (StringFilterColumn && StringFilterColumn.length > 0) ||
+                                (NumericFilterColumn && NumericFilterColumn.length > 0) ||
+                                (DateFilterColumn && DateFilterColumn.length > 0) ||
+                                (StringdoubleFilterColumn && StringdoubleFilterColumn.length > 0);
+
+        if (hasFilterColumns) {
+            $('#' + bodyId).closest('.table-wrapper').addClass('filtered');
+        }
+
         if (Paginator) {
             createPaginator(tableId, bodyId);
             renderTableWithPagination(tableId, bodyId);
@@ -131,6 +142,20 @@ $(document).click(function (event) {
 });
 
 var columnFilters = {};
+
+// Helper function to check if any filters are active and manage the filtered class
+window.updateFilteredClass = function(bodyId) {
+    const tableId = $('#' + bodyId).closest('table').attr('id');
+    const hasActiveFilters = Object.keys(columnFilters).length > 0 || 
+                            $('.fa-filter[style*="color: white"]').length > 0;
+
+    if (hasActiveFilters) {
+        $('#' + bodyId).closest('.table-wrapper').addClass('filtered');
+    } else {
+        $('#' + bodyId).closest('.table-wrapper').removeClass('filtered');
+    }
+}
+
 window.populateDateFilter = function (columnName, bodyId) {
 closeAllFilters();
 closeAllFiltersDouble();
@@ -260,12 +285,14 @@ window.applyFilters = function applyFilters(bodyId) {
             return selectedValues.includes(cellValue);
         });
     });
+
     window[`filteredData_${tableId}`] = filteredArray;
     renderTable(filteredArray, bodyId);
     if (window[`Paginator_${tableId}`]) {
         createPaginator(tableId, bodyId);
         renderTableWithPagination(tableId, bodyId);
     }
+
     const uniqueId = tableId + '-' + column1.replace(/\s+/g, '');
     const escapedId = escapeId(uniqueId);
     const th = $('#filterDropdown-' + escapedId).closest('th');
@@ -313,7 +340,6 @@ const minValue = parseFloat($('#min-value-' + escapedId).val());
 const maxValue = parseFloat($('#max-value-' + escapedId).val());
 
     if (!isNaN(filterValue) || (!isNaN(minValue) && !isNaN(maxValue))) {
-
         const tableId = $('#' + bodyId).closest('table').attr('id');
         var filteredArray = window[`filteredData_${tableId}`].filter(item => {
             const cellValue = parseFloat(item[columnName]);
@@ -343,6 +369,7 @@ const maxValue = parseFloat($('#max-value-' + escapedId).val());
             createPaginator(tableId, bodyId);
             renderTableWithPagination(tableId, bodyId);
         }
+
         const th = $('#filterDropdown-' + escapedId).closest('th');
         const span = th.find('span.filter-table-heading');
         span.find('.fa-filter').remove();
@@ -359,6 +386,8 @@ window.ClearFilter = function ClearFilter(bodyId) {
     // Clear stored column filters (used by date filters)
     columnFilters = {};
     const tableId = $('#' + bodyId).closest('table').attr('id');
+    // Remove filtered class from table-wrapper
+    //$('#' + bodyId).closest('.table-wrapper').removeClass('filtered');
     window[`filteredData_${tableId}`] = window[`filteredDataTemp_${tableId}`];
     renderTable(window[`filteredData_${tableId}`], bodyId);
     if (window[`Paginator_${tableId}`]) {
@@ -380,12 +409,10 @@ window.applyStringFilters = function applyStringFilters(columnName, bodyId) {
     });
 
     if (selectedValues.length > 0) {
-        
 
         var filteredArray = window[`filteredData_${tableId}`].filter(item =>
             selectedValues.includes(item[column]) || selectedValues.includes("All")
         );
-
 
         window[`filteredData_${tableId}`] = filteredArray;
         renderTable(filteredArray, bodyId);
@@ -393,6 +420,7 @@ window.applyStringFilters = function applyStringFilters(columnName, bodyId) {
             createPaginator(tableId, bodyId);
             renderTableWithPagination(tableId, bodyId);
         }
+
         const uniqueId = tableId + '-' + column.replace(/\s+/g, '');
         const escapedId = escapeId(uniqueId);
         const th = $('#filterDropdown-' + escapedId).closest('th');
@@ -441,7 +469,7 @@ const tableId = $('#' + bodyId).closest('table').attr('id');
 const colId = column.replace(/\s+/g, '');
 const uniqueId = `${tableId}-${colId}`;
 const escapedId = escapeId(uniqueId);
-    
+
 var filterType = $('#filter-type-' + escapedId).val();
 var searchValue = $('.filter-input-double[data-column="' + column + '"]').val().trim().toLowerCase();
 var selectedValues = [];
@@ -479,6 +507,7 @@ if (useCheckboxFilter || useTextFilter) {
         createPaginator(tableId, bodyId);
             renderTableWithPagination(tableId, bodyId);
         }
+
         const th = $('#filterDropdown-' + escapedId).closest('th');
         const span = th.find('span.filter-table-heading');
         span.find('.fa-filter').remove();
