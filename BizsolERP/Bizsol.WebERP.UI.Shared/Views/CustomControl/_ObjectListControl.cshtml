@@ -1,0 +1,60 @@
+<div class="modal fade bs-example-modal-center" id="ObjectListControlModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">List of Values (LOV)</h5>
+            </div>
+            <div class="modal-body p-0 d-flex flex-column" style="min-height: 300px;">
+                <div class="lov-toolbar px-3 py-2 bg-light border-bottom d-flex flex-wrap align-items-center gap-2">
+                    <label class="col-form-label-sm mb-0">Field:</label>
+                    <select id="cmbFieldList" class="form-control form-control-sm" style="min-width: 120px;">
+                        <option value="&lt;All&gt;">&lt;All&gt;</option>
+                    </select>
+                    <select id="cmbOperatorListString" class="form-control form-control-sm" style="min-width: 110px;">
+                        <option value="Start With">Start With</option>
+                        <option value="End With">End With</option>
+                        <option value="In Between">In Between</option>
+                    </select>
+                    <select id="cmbOperatorsListNumeric" class="form-control form-control-sm" style="min-width: 110px; display: none;">
+                        <option value="=">=</option>
+                        <option value=">">&gt;</option>
+                        <option value=">=">&gt;=</option>
+                        <option value="<">&lt;</option>
+                        <option value="<=">&lt;=</option>
+                        <option value="In Between">In Between</option>
+                    </select>
+                    <div class="d-flex align-items-center gap-1 flex-grow-1" style="min-width: 180px;">
+                        <input type="text" id="txtSearch" class="form-control form-control-sm" placeholder="Search..." autocomplete="off" />
+                        <input type="text" id="txtSearchTo" class="form-control form-control-sm" placeholder="To" style="display: none;" autocomplete="off" />
+                    </div>
+                </div>
+                <div id="fraTotal" class="fra-total px-3 py-2 small fw-bold border-bottom" style="display: none;"></div>
+                <div class="lov-list-wrap flex-grow-1 overflow-auto border-bottom" style="min-height: 200px;">
+                    <table class="table table-sm table-hover lov-table mb-0" id="lvwResult">
+                        <thead id="lvwResultHead"></thead>
+                        <tbody id="lvwResultBody"></tbody>
+                    </table>
+                </div>
+                <div class="lov-status px-3 py-2 small text-muted border-top" id="lovStatus"></div>
+                <div class="modal-footer py-2">
+                    <a class="btn btn-primary btn-sm" id="btnObjectListDone">Done</a>
+                    <a class="btn btn-danger btn-sm" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                    <input type="hidden" value="@(ViewBag.CallBackFunctionName_btnDone ?? "")" id="hfCallBackFunctionName_btnDone" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="module">
+    // Import ObjectListControl module - path resolves relative to current page URL
+    import { initObjectListControl } from '/_content/Bizsol.WebERP.UI.Shared/js/Pages/CustomControl/_ObjectListControlPage.js';
+    initObjectListControl();
+</script>
+<script>
+    $(document).ready(function () {
+        $("#ObjectListControlModal").modal({
+            backdrop: 'static'
+        });
+        // Modal is shown when parent calls FrmLOV.initialize1() or FrmLOV.initialize()
+    });
+</script>

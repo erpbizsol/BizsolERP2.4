@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -80,6 +80,32 @@
         bottom: 15px;
         background-color: #fff;
         z-index: 5;
+    }
+
+    /* Disabled state styling for verified records */
+    .opacity-50 {
+        opacity: 0.5;
+    }
+
+    .cursor-not-allowed {
+        cursor: not-allowed !important;
+    }
+
+    input:disabled {
+        background-color: #e9ecef !important;
+        cursor: not-allowed !important;
+        color: #6c757d;
+    }
+
+    button:disabled {
+        cursor: not-allowed !important;
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    button:disabled:hover {
+        background-color: inherit !important;
+        border-color: inherit !important;
     }
 
     /* Ensure JS row background color is visible on editable table */
@@ -209,5 +235,5 @@
         </div>
     </div>
 </div>
-
+<div id="DivObjectListControlModal"></div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

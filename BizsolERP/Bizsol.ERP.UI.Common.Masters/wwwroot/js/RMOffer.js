@@ -2,6 +2,10 @@ import { RawMaterialOfferService } from '../../Bizsol.WebERP.UI.Shared/js/JSServ
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
+import { initObjectListControl } from '../../Bizsol.WebERP.UI.Shared/js/Pages/CustomControl/_ObjectListControlPage.js';
+import { ObjectListControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_ObjectListControlService.js';
+
+var baseUrl = sessionStorage.getItem('AppBaseURL');
 
 let G_RawMaterialDropDown = [];
 let G_ClientOrderProjectData = [];
@@ -866,6 +870,7 @@ function GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo, ddlProjectNo) {
                     const balanceToInspect = parseFloat(item["Balance to Inspect (Wt.)"]) || 0;
                     item.Action = '<button class="btn btn-primary icon-height mb-1" title="Coil Details" onclick="UpdateCoilDetail('
                         + item.Grade_Code + ',' + item.Code + ',' + balanceToInspect + ')"><i class="fa fa-pencil"></i></button>';
+                    //item.Action = '<button class="btn btn-primary icon-height mb-1" title="Coil Details" onclick="ShowObjectListControlModal()"><i class="fa fa-pencil"></i></button>';
                     return item;
                 });
 
@@ -2215,6 +2220,135 @@ document.addEventListener("DOMContentLoaded", function () {
     setInterval(ChangecolorTr, 1000);
 });
 
+function ensureObjectListControlLoaded() {
+    return new Promise(function (resolve, reject) {
+        if (window.FrmLOV) {
+            resolve();
+            return;
+        }
+
+        var url = baseUrl + '/CustomControl/ObjectListControl';
+        $('#DivObjectListControlModal').load(url, function (response, status, xhr) {
+            if (status === 'error') {
+                console.error('Error loading ObjectListControl partial:', xhr && xhr.statusText);
+                toastr.error('Failed to load List of Values layout.');
+                reject(xhr);
+                return;
+            }
+
+            try {
+                initObjectListControl();
+                if (!window.FrmLOV) {
+                    throw new Error('FrmLOV was not initialized by initObjectListControl.');
+                }
+                resolve();
+            } catch (e) {
+                console.error('Error initializing ObjectListControl:', e);
+                toastr.error('Failed to initialize List of Values.');
+                reject(e);
+            }
+        });
+    });
+}
+
+// Base query for GetItemMultipleSelectLOV (adjust per your backend API contract if needed)
+var G_ItemMultipleSelectLOV_BaseQuery = 'Item';
+
+// Build options for ObjectListControlService.GetItemMultipleSelectLOV (same payload as _ObjectListControlService.js)
+function getItemMultipleSelectLOVServiceOptions(opts) {
+    opts = opts || {};
+    return {
+        filterCondition: opts.filterCondition || null,
+        filterValue: opts.filterValue != null ? String(opts.filterValue) : null,
+        filterValueDataType: (opts.filterValueDataType === 'N' ? 'N' : 'S'),
+        filterCondition1: opts.filterCondition1 || null,
+        useLikeSearchInBothSide: (opts.useLikeSearchInBothSide === 'Y' ? 'Y' : 'N')
+    };
+}
+
+function ShowObjectListControlModal(data, options) {
+    // When called from "MultiPle Select" button with no args, use GetItemMultipleSelectLOV
+    var useItemLOV = (typeof data === 'undefined' && (!options || Object.keys(options || {}).length === 0));
+
+    var defaultOptions = {
+        multiSelect: false,
+        filterValue: '',
+        filterCondition: '',
+        filterCondition1: '',
+        filterValueDataType: 'S',
+        useLikeSearchInBothSide: 'N',
+        noOfColumnToHide: 0,
+        showTotalColumnNameByCommaSeparated: '',
+        selectAllItems: false,
+        query: G_ItemMultipleSelectLOV_BaseQuery,
+        columnNameToIncreaseWidth: '',
+        loadData: null
+    };
+
+    var mergedOptions = $.extend({}, defaultOptions, options || {});
+
+    if (useItemLOV) {
+        mergedOptions.multiSelect = true;
+        mergedOptions.query = G_ItemMultipleSelectLOV_BaseQuery;
+        mergedOptions.loadData = function (query) {
+            var baseQuery = (query && String(query).trim()) ? String(query).trim() : G_ItemMultipleSelectLOV_BaseQuery;
+            var serviceOpts = getItemMultipleSelectLOVServiceOptions(mergedOptions);
+            return ObjectListControlService.GetItemMultipleSelectLOV(baseQuery, serviceOpts);
+        };
+    }
+
+    // Only set data when explicitly provided so loadData (if any) still works
+    if (typeof data !== 'undefined') {
+        mergedOptions.data = data;
+    }
+
+    return ensureObjectListControlLoaded()
+        .then(function () {
+            return window.FrmLOV.initialize1(mergedOptions);
+        })
+        .then(function (result) {
+            if (!result.escapePress) {
+                ObjectListControlCallback(result);
+            }
+            return result;
+        })
+        .catch(function (error) {
+            console.error('Error showing ObjectListControl:', error);
+            if (!error.__handledToastr) {
+                toastr.error('Error opening List of Values');
+            }
+            throw error;
+        });
+}
+
+// Holds last selection from GetItemMultipleSelectLOV (codes, display values, and rows)
+var G_ObjectListControlLastSelection = { codes: [], values: [], dataView: null };
+
+function ObjectListControlCallback(result) {
+    if (result.escapePress) {
+        return;
+    }
+    var url = baseUrl + '/CustomControl/ObjectListControl';
+    $('#DivObjectListControlModal').load(url);
+    if (result.values) {
+        // Parse comma-separated codes/values from LOV (e.g. from MultiPle Select)
+        var codeStr = (result.values || '').replace(/'/g, '');
+        var valueStr = (result.get_value || '').replace(/'/g, '');
+        G_ObjectListControlLastSelection.codes = codeStr ? codeStr.split(',') : [];
+        G_ObjectListControlLastSelection.values = valueStr ? valueStr.split(',') : [];
+        G_ObjectListControlLastSelection.dataView = result.dataView || null;
+        if (G_ObjectListControlLastSelection.codes.length > 0) {
+            toastr.success('Selected ' + G_ObjectListControlLastSelection.codes.length + ' item(s).');
+            console.log('Selected Codes:', G_ObjectListControlLastSelection.codes);
+            console.log('Selected Data:', G_ObjectListControlLastSelection.dataView);
+        } else {
+            toastr.warning('No item selected');
+        }
+    } else {
+        toastr.warning('No item selected');
+    }
+}
+
 window.CreateNew = CreateNew;
 window.UpdateCoilDetail = UpdateCoilDetail;
 window.OpenModal = OpenModal;
@@ -2224,3 +2358,5 @@ window.EditRMInspectionRequest = EditRMInspectionRequest;
 window.Back = Back;
 window.DeleteRawMaterialOfferClick = DeleteRawMaterialOfferClick;
 window.DeleteRMOffer = DeleteRMOffer;
+window.ShowObjectListControlModal = ShowObjectListControlModal;
+window.ObjectListControlCallback = ObjectListControlCallback;
