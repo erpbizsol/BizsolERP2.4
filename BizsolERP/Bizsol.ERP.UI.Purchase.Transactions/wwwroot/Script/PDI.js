@@ -232,7 +232,6 @@ function validateNumericInput(input) {
 function validatePDIInputs() {
     if (!$('#ddlDespatchNo').val() || $('#ddlDespatchNo').val() === '0') { toastr.error('Despatch Advice No is required'); return false; }
     if (!$('#ddlOrderNo').val() || $('#ddlOrderNo').val() === '0') { toastr.error('Order No is required'); return false; }
-    if (!$('#ddlTruckNo').val() || $('#ddlTruckNo').val() === '0') { toastr.error('Truck No is required'); return false; }
     var qtyValue = $('#ddlQty').val();
     if (!qtyValue || qtyValue.trim() === '' || parseFloat(qtyValue) <= 0) { toastr.error('Quantity is required and must be greater than 0'); return false; }
     if (!/^\d+(\.\d{1,3})?$/.test(qtyValue)) { toastr.error('Quantity must be a valid number with maximum 3 decimal places'); return false; }
@@ -243,7 +242,6 @@ function validatePDIInputs() {
 function validatePDIInputsEdit() {
     if (!$('#txtDespatchNo').val() || $('#txtDespatchNo').val() === '0') { toastr.error('Despatch Advice No is required'); return false; }
     if (!$('#txtOrderNo').val() || $('#txtOrderNo').val() === '0') { toastr.error('Order No is required'); return false; }
-    if (!$('#txtTruckNo').val() || $('#txtTruckNo').val() === '0') { toastr.error('Truck No is required'); return false; }
     var qtyValue = $('#txtQty').val();
     if (!qtyValue || qtyValue.trim() === '' || parseFloat(qtyValue) <= 0) { toastr.error('Quantity is required and must be greater than 0'); return false; }
     if (!/^\d+(\.\d{1,3})?$/.test(qtyValue)) { toastr.error('Quantity must be a valid number with maximum 3 decimal places'); return false; }
