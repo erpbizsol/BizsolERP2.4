@@ -9,7 +9,7 @@ const ObjectListControlService = {
                 return value;
             }
         );
-    }
+    },
 };
 
 export { ObjectListControlService };

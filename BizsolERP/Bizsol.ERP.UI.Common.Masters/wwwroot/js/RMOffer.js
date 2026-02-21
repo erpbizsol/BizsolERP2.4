@@ -30,6 +30,21 @@ $(document).ready(function () {
     $("#btnRMOfferShow").click(function () {
         GetBOMMasterDataOrderWiselist();
     });
+
+    // Initialize ObjectListControl from _ObjectListControlPage.js (creates modal in container or appends to body)
+    initObjectListControl();
+
+    // Focusout on txtTicketNo1: call LOV/check value only when value is ".."
+    //$(document).on('oninput', '#txtTicketNo1', function () {
+    //    var val = $(this).val();
+    //    if (typeof val !== 'string') val = '';
+    //    val = val.trim();
+    //    if (val !== '..') {
+    //        return;
+    //    }
+    //    G_CurrentLovTarget = this;
+    //    ShowObjectListControlModal();
+    //});
 });
 function GetBOMMasterDataOrderWiselist() {
     var ddlClientName = $("#ddlClientName").val();
@@ -1117,7 +1132,7 @@ function addNewEditableRow() {
                 </select>
             </td>
             <td>
-                <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" />
+                <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" disabled />
             </td>
             <td>
                 <select class="form-control form-control-sm coil-location" disabled>
@@ -2226,28 +2241,17 @@ function ensureObjectListControlLoaded() {
             resolve();
             return;
         }
-
-        var url = baseUrl + '/CustomControl/ObjectListControl';
-        $('#DivObjectListControlModal').load(url, function (response, status, xhr) {
-            if (status === 'error') {
-                console.error('Error loading ObjectListControl partial:', xhr && xhr.statusText);
-                toastr.error('Failed to load List of Values layout.');
-                reject(xhr);
-                return;
+        try {
+            initObjectListControl();
+            if (!window.FrmLOV) {
+                throw new Error('FrmLOV was not initialized by initObjectListControl.');
             }
-
-            try {
-                initObjectListControl();
-                if (!window.FrmLOV) {
-                    throw new Error('FrmLOV was not initialized by initObjectListControl.');
-                }
-                resolve();
-            } catch (e) {
-                console.error('Error initializing ObjectListControl:', e);
-                toastr.error('Failed to initialize List of Values.');
-                reject(e);
-            }
-        });
+            resolve();
+        } catch (e) {
+            console.error('Error initializing ObjectListControl:', e);
+            toastr.error('Failed to initialize List of Values.');
+            reject(e);
+        }
     });
 }
 
@@ -2271,6 +2275,7 @@ function ShowObjectListControlModal(data, options) {
     var useItemLOV = (typeof data === 'undefined' && (!options || Object.keys(options || {}).length === 0));
 
     var defaultOptions = {
+        CallBackFunctionName_btnDone: 'ObjectListControlCallback',
         multiSelect: false,
         filterValue: '',
         filterCondition: '',
@@ -2324,19 +2329,31 @@ function ShowObjectListControlModal(data, options) {
 // Holds last selection from GetItemMultipleSelectLOV (codes, display values, and rows)
 var G_ObjectListControlLastSelection = { codes: [], values: [], dataView: null };
 
+// Track which input field opened the LOV (for right-click functionality)
+var G_CurrentLovTarget = null;
+
 function ObjectListControlCallback(result) {
-    if (result.escapePress) {
+    if (result && result.escapePress) {
+        G_CurrentLovTarget = null; // Clear target on escape
         return;
     }
-    var url = baseUrl + '/CustomControl/ObjectListControl';
-    $('#DivObjectListControlModal').load(url);
-    if (result.values) {
+    if (result && result.values) {
         // Parse comma-separated codes/values from LOV (e.g. from MultiPle Select)
         var codeStr = (result.values || '').replace(/'/g, '');
         var valueStr = (result.get_value || '').replace(/'/g, '');
         G_ObjectListControlLastSelection.codes = codeStr ? codeStr.split(',') : [];
         G_ObjectListControlLastSelection.values = valueStr ? valueStr.split(',') : [];
         G_ObjectListControlLastSelection.dataView = result.dataView || null;
+        
+        // If LOV was opened via right-click on an input, populate that input with first selected value
+        if (G_CurrentLovTarget && G_ObjectListControlLastSelection.values.length > 0) {
+            var $target = $(G_CurrentLovTarget);
+            var selectedValue = G_ObjectListControlLastSelection.values[0];
+            $target.val(selectedValue);
+            $target.trigger('change'); // Trigger change event in case other code listens to it
+            G_CurrentLovTarget = null; // Clear target after populating
+        }
+        
         if (G_ObjectListControlLastSelection.codes.length > 0) {
             toastr.success('Selected ' + G_ObjectListControlLastSelection.codes.length + ' item(s).');
             console.log('Selected Codes:', G_ObjectListControlLastSelection.codes);
@@ -2346,6 +2363,7 @@ function ObjectListControlCallback(result) {
         }
     } else {
         toastr.warning('No item selected');
+        G_CurrentLovTarget = null; // Clear target if no selection
     }
 }
 

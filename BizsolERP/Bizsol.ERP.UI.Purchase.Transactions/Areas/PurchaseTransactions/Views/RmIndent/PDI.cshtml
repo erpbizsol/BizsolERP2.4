@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -79,8 +79,9 @@
                                 <span class="input-group-text" onclick="triggerFileInputClick()" style="cursor: pointer; height:28px">
                                     <i class="fa fa-camera"></i>
                                 </span>
-                                <input type="file" accept=".jpg, .png, .jpeg" capture="camera" onchange="FileUploadChange(event)" class="form-control form-control-sm box_border" id="fileInput" />
-                                
+                                @* <input type="file" accept=".jpg, .png, .jpeg" capture="camera" onchange="FileUploadChange(event)" class="form-control form-control-sm box_border" id="fileInput" /> *@
+                                <input type="file" accept="image/*" onchange="FileUploadChange(event)" class="form-control form-control-sm box_border" id="fileInput" />
+
                             </div>
                             <a href="javascript:void(0);" id="txtImageCheck" onclick="ShowPDIImage()" class="text-decoration-underline" style="cursor: pointer; display:none;">
                                 Click to view
