@@ -700,6 +700,27 @@ function BackMaster() {
     $("#ContactPersonGridBody").empty();
     ClearFollowUpData();
 }
+function BackFolloupMaster() {
+    $("#dvLoad").show();
+    $("#dvEnquiry").hide();
+    $('input[name="customerType"]').eq(0).prop('disabled', false);
+    $('input[name="customerType"]').eq(0).prop('checked', true);
+    $("#txtCompanyName").hide("");
+    $('#ddlCompanyName').next('.select2-container').show();
+    $("#tblContactPerson").hide();
+    $("#tblProductDetails").hide();
+    $("#dvFollowup").hide();
+    $("#tblFollowUp").hide();
+    $("#dvFollowTab1").show();
+    $("#dvFollowTab2").hide();
+    $("#hfFollowUpEnquiryMaster_Code").val('0')
+    ClearContactPersonField();
+    ClearEnquiryProductField();
+    ClearData();
+    $("#ProductDetailsGridBody").empty();
+    $("#ContactPersonGridBody").empty();
+    ClearFollowUpData();
+}
 function CreateNew() {
     var ModuleName = "Enquiry",
         OptionName = "New",
@@ -2908,3 +2929,4 @@ window.BackEnquiry = BackEnquiry;
 window.WhatsApp = WhatsApp;
 window.GetEnquiryDetailsForViewByCode = GetEnquiryDetailsForViewByCode;
 window.CloseEnquiryDetails = CloseEnquiryDetails;
+window.BackFolloupMaster = BackFolloupMaster;

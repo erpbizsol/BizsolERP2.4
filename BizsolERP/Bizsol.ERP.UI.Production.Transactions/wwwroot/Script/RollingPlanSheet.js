@@ -104,7 +104,7 @@ $(document).ready(function () {
         }
     });
 
-    $(document).on('change', '#txtfromDate,txttoDate', function () {
+    $(document).on('change', '#txtfromDate,#txttoDate', function () {
         A_FromDate = $('#txtfromDate').val();
         A_ToDate = $('#txttoDate').val();
         GetAgeingReportList(A_FromDate, A_ToDate);
@@ -1746,11 +1746,11 @@ function GetAgeingReportList(A_FromDate, A_ToDate) {
     Showloader();
     RollingPlanSheetService.GetRollingPlanAgeingReportList(A_FromDate, A_ToDate).then(function (response) {
         if (response && response.length > 0) {
-            const stringFilterColumn = ["Marketing Man", "Ord No", "Plan No"];
+            const stringFilterColumn = ["Marketing Man", "Ord No", "Plan No","Item Name"];
             const numericFilterColumn = ["Bal Qty", "Dispatch Qty", "Prod Qty", "Ord Qty", "Plan Qty","Stock"];
             const dateFilterColumn = ["Production Date"];
             const button = false;
-            const stringDoubleFilterColumn = [];
+            const stringDoubleFilterColumn = ["Size"];
             const showButtons = [];
             const hiddenColumns = ["ItemMaster_Code"];
             const columnAlignment = {
