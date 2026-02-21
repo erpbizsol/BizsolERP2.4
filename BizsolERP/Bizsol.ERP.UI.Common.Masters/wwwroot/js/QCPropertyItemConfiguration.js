@@ -1250,7 +1250,7 @@ function addNewEditableRow(itemMasterCode, $tbody) {
             return parseInt(itemCode) === parseInt(itemMasterCode) || String(itemCode) === String(itemMasterCode);
         });
         if (selectedItem) {
-            itemCodeValue = selectedItem.ItemCode || selectedItem['Item Code'] || selectedItem.Code || '';
+            itemCodeValue = selectedItem.ItemCode || selectedItem['Item Code'] || '';
             itemNameValue = selectedItem.ItemName || selectedItem['Item Name'] || '';
         }
     }
