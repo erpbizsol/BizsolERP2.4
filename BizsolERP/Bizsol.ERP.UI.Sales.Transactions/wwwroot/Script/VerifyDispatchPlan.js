@@ -10,8 +10,6 @@ let G_DispatchAdviceNo = 0;
 let G_DispatchMaster_Code = 0;
 let G_AccountMaster_Code = 0;
 
-// --- Grid height fix (avoid footer overlap) ---
-// Same approach as MillWiseProductionReport.js (viewport + footer overlap aware).
 let _vdpHeightRaf = 0;
 let _vdpHeightHandlersBound = false;
 function getViewportHeight() {
@@ -107,7 +105,8 @@ function GetDispatchAdvicePlanList(Status) {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
+            const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"
+            ,"Remarks","Marketing Remark","PPC Remark"];
             const columnAlignment = {
                 "Ord Qty Pc": "right;max-width:30px;",
                 "Ord Qty MT": "right",
@@ -129,11 +128,13 @@ function GetDispatchAdvicePlanList(Status) {
             };
             const updatedResponse = response.map(item => {
                 const Action = Status == 'C' ? `<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>` : `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["Code"]})"><i class="fa fa-check"></i></button>&nbsp;<button class="btn btn-info icon-height mb-1" title="Update Qty" onclick="EditQty(${item["Code"]})"><i class="fa fa-pencil"></i></button>`;
+                const Remark = `<button class="btn btn-info icon-height mb-1" title="Remarks" onclick="OpenShowRemarksModal(${item["Code"]})">Remark</button>`;
                 const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Verify/Send Mail" onclick="SendMail(${item["Code"]})">Verify/Send Mail</button>&nbsp;<button class="btn btn-info icon-height mb-1" title="Update Qty" onclick="EditQty(${item["Code"]})"><i class="fa fa-pencil"></i></button>` : '';
                 let formattedItem;
                 if (Status == 'D') {
                     formattedItem = {
                         ...item,
+                        Remark: Remark,
                         //Action: Action,
                         Other: Other
                     };
@@ -152,6 +153,7 @@ function GetDispatchAdvicePlanList(Status) {
                 } else {
                     formattedItem = {
                         ...item,
+                        Remark: Remark,
                         Action: Action
                     };
                 }
@@ -1677,6 +1679,39 @@ function UpdateQty() {
         toastr.error(error.Msg || 'Error During Approved Quotation ');
     });
 }
+function OpenShowRemarksModal(Code) {
+    $('#dvShowRemarks').modal({ backdrop: 'static' });
+    $('#dvShowRemarks').modal('show');
+    VerifyDispatchPlanService.GetDespatchAdeviceRemarks(Code).then(function (response) {
+    if (response && response.length > 0) {
+        const stringFilterColumn = [];
+        const numericFilterColumn = [];
+        const dateFilterColumn = [];
+        const button = false;
+        const showButtons = [];
+        const stringDoubleFilterColumn = [];
+        let hiddenColumns = [];
+        if ($("#ddlStatus").val() == "M") {
+             hiddenColumns = ["Marketing Remark", "PPC Remark"];
+        } else if($("#ddlStatus").val() == "P"){
+            hiddenColumns = ["Remarks","PPC Remark"];
+        }else {
+            hiddenColumns = ["Remarks"];
+        }
+       const columnAlignment = {};
+
+        BizsolCustomFilterGrid.CreateDataTable("table-headRemarks", "table-bodyRemarks", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+    } else {
+        toastr.error('No Data Found');
+        }
+    }).catch(function (error) {
+        toastr.error(error);
+        HideLoader();
+    });
+}
+function CloseShowRemarksModal() {
+    $('#dvShowRemarks').modal('hide');
+}
 
 window.ViewAll = ViewAll;
 window.EditQty = EditQty;
@@ -1698,6 +1733,8 @@ window.SendMailToTransporter = SendMailToTransporter;
 window.ApprovedQuotstion = ApprovedQuotstion;
 window.ApprovedTransporter = ApprovedTransporter;
 window.UpdateQty = UpdateQty;
+window.OpenShowRemarksModal = OpenShowRemarksModal;
+window.CloseShowRemarksModal = CloseShowRemarksModal;
 
 
 

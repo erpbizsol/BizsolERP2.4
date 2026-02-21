@@ -487,8 +487,13 @@ function loadPurchaseQualityCheckData(mrnMasterCode) {
         .then(function (response) {
             HideLoader();
             if (response && Array.isArray(response) && response.length > 0) {
-                G_PurchaseQualityCheckData = response;
-                buildQualityCheckTable(response);
+                if (response[0].Status == 'Y') {
+                    G_PurchaseQualityCheckData = response;
+                    buildQualityCheckTable(response);
+                } else {
+                    toastr.warning(response[0].Msg);
+                    clearTable();
+                }
         } else {
                 toastr.warning('No data found for the selected MRN.');
                 clearTable();

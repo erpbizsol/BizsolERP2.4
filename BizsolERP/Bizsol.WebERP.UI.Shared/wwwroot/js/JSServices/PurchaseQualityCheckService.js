@@ -88,6 +88,14 @@ const PurchaseQualityCheckService = {
             return value;
         });
     },
+    RawMaterialReportOfMaize: function RawMaterialReportOfMaize(Fromdate, Todate) {
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetRawMaterialReportOfMaize?Fromdate=${Fromdate}&Todate=${Todate}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { PurchaseQualityCheckService }
