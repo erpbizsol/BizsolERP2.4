@@ -16,6 +16,12 @@ $(document).ready(function () {
         GetRawMaterialClearanceList();
     });
     $('#chkCompleted').on("change", function () {
+        var IsChecked = $(this).is(':checked');
+        if (IsChecked) {
+            $('#btnVerifyall').hide();
+        } else {
+            $('#btnVerifyall').show();
+        }
         GetRawMaterialClearanceList();
     });
     setDefaultDateRange();
@@ -518,7 +524,7 @@ function GetRawMaterialClearanceList() {
                         InputHTML = `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item.Code})">Verify</button>&nbsp;&nbsp;<button class="btn btn-danger icon-height mb-1" title="Reject" onclick="OpenModalReject(${item.Code})">Reject</button>`;
                         IsInspectedHTML = `<input type="checkbox" class="form-check-input" checked disabled />`;
                     } else {
-                        IsInspectedHTML = `<input type="checkbox" class="form-check-input" onclick="OpenModalInspectedRemark(${item.Code})" />`;
+                        IsInspectedHTML = `<input type="checkbox" class="form-check-input" onclick="OpenModalInspectedRemark(${item.Code},this)" />`;
                     }
                     return {
                         ...item,
@@ -622,7 +628,7 @@ function CloseVerifyModal() {
     $('#dvVerifyRemark').modal('hide');
     $("#txtVerifyRemark").val("");
 }
-function OpenModalInspectedRemark(Code) {
+function OpenModalInspectedRemark(Code,element) {
     var ModuleName = "RM Clearance Entry",
         OptionName = "Verify",
         ShowMsg = "Y",
@@ -632,19 +638,24 @@ function OpenModalInspectedRemark(Code) {
             toastr.error(response.Msg);
             return false;
         } else {
-            SaveInspectedRemark(Code);
+            SaveInspectedRemark(Code, element);
         }
     });
 }
-function SaveInspectedRemark(Code) {
-    RawMaterialOfferService.SaveInspectedRemark(Code).then(function (response) {
-        if (response.Status == 'Y') {
-            toastr.success(response.Msg);
-            GetRawMaterialClearanceList();
-        } else {
-            toastr.error(response.Msg);
-        }
-    });
+function SaveInspectedRemark(Code, element) {
+    if (confirm("Are you sure you want to inspect this?")) {
+        RawMaterialOfferService.SaveInspectedRemark(Code).then(function (response) {
+            if (response.Status == 'Y') {
+                toastr.success(response.Msg);
+                GetRawMaterialClearanceList();
+            } else {
+                toastr.error(response.Msg);
+                $(element).prop("checked", false);
+            }
+        });
+    } else {
+        $(element).prop("checked", false);
+    }
 }
 function Download() {
     let hiddenFields = [];
@@ -656,13 +667,64 @@ function Download() {
     }
     ExportToExcelControl.ExportToExcel(G_RMClearanceDataList, hiddenFields, "RawMaterialClearance");
 }
+function VerifyAll(){
+    var ModuleName = "RM Clearance Entry",
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+        MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            $('#dvVerifyAll').modal({ backdrop: 'static', keyboard: false });
+            $('#dvVerifyAll').modal('show');
+            $('#hfAllCode').val(0);
+        }
+    });
+}
+function VerifyAllRMClearance() {
+    let reason = $("#txtRemarkAll").val();
+    let Codes = G_RMClearanceDataList
+        .filter(item => item["IsInspected"] === 'Y')
+        .map(item => item.Code)
+        .join(',');
+
+    if (!Codes) {
+        toastr.error('Please inspect at least one record.');
+        return;
+    }
+    if (reason == "") {
+        toastr.error('Please enter a reason before proceeding.');
+        return;
+    }
+    if (confirm("Are you sure you want to verify all ?")) {
+        RawMaterialOfferService.GetAllRawMaterialClearanceVerify(Codes, reason).then(function (response) { 
+            if (response.Status === 'Y') {
+                toastr.success(response.Msg);
+                CloseAllVerifyModal();
+                GetRawMaterialClearanceList();
+                $("#txtRemarkAll").val('')
+            } else if (response.Status === 'N') {
+                toastr.error(response.Msg);
+            }
+        });
+    }
+}
+function CloseAllVerifyModal() {
+    $('#dvVerifyAll').modal('hide');
+    $("#txtRemarkAll").val("");
+}
 
 window.Verify = Verify;
+window.VerifyAll = VerifyAll;
+window.VerifyAllRMClearance = VerifyAllRMClearance;
 window.CloseModal = CloseModal;
 window.OpenModalReject = OpenModalReject;
 window.Download = Download;
 window.RejectRMClearance = RejectRMClearance;
 window.VerifyRMClearance = VerifyRMClearance;
 window.CloseVerifyModal = CloseVerifyModal;
+window.CloseAllVerifyModal = CloseAllVerifyModal;
 window.OpenModalInspectedRemark = OpenModalInspectedRemark;
 window.SaveInspectedRemark = SaveInspectedRemark;

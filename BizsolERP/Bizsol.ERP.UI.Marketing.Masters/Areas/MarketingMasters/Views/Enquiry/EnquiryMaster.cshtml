@@ -371,10 +371,15 @@
                     <select id="ddlNextFollowUpModeFollowUp" class="form-control form-control-sm box_border">
                     </select>
                 </div>
+                <div class="col-md-4" id="dvddlLeadStatus" style="display:block">
+                    <label for="ddlLeadStatus" class="form-label">Status<span class="text-danger">*</span></label>
+                    <select id="ddlLeadStatus" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
                 <div class="col-md-4" style="margin-top: 26px;">
                     <button type="button" id="btnFollowUpSave" class="btn btn-success icon-height" onclick="SaveEnquiryFollowUp()">Save</button>
                     <button type="button" id="btnFollowUpReset" class="btn btn-info icon-height" onclick="ResetEnquiryFollowUp()">Reset</button>
-                    <button type="button" class="btn btn-danger icon-height" onclick="BackMaster()">Back To List</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="BackFolloupMaster()">Back To List</button>
                 </div>
             </div>
         </div>
@@ -565,6 +570,24 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary icon-height" onclick="SaveModalContactPersonDetails()">Save</button>
                 <button type="button" class="btn btn-danger icon-height" onclick="CloseContactPersonModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="EnquiryDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Enquiry Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">×</span></button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div class="col-md-12">
+                    <div id="EnquiryDetailsModaldv"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseEnquiryDetails()">Close</button>
             </div>
         </div>
     </div>

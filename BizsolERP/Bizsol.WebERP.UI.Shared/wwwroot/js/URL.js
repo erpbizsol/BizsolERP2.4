@@ -1,4 +1,4 @@
-﻿import { environment } from './environment.js';
+import { environment } from './environment.js';
 
 let UrlService = {
     BASE_URL: environment.BASE_URL,
@@ -119,6 +119,8 @@ let UrlService = {
     API_ENDPOINT_RawMaterialOffer: `${environment.BASE_URL}/RawMaterialOffer`,
     //MachineMaintenanceRequest
     API_ENDPOINT_MachineMaintenance: `${environment.BASE_URL}/MachineMaintenance`,
+    API_ENDPOINT_FGInspectedOffer: `${environment.BASE_URL}/FGInspectedEntry`,
+    API_ENDPOINT_InvoiceGST: `${environment.BASE_URL}/InvoiceGST`,
 }
 
 export { UrlService  }

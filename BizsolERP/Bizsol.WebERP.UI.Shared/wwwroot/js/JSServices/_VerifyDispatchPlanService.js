@@ -77,6 +77,14 @@ const VerifyDispatchPlanService = {
             }
         );
     },
+    GetDespatchAdeviceRemarks: function GetDespatchAdeviceRemarks(Code) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetDespatchAdeviceRemarks?Code=" + encodeURIComponent(Code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VerifyDispatchPlanService }

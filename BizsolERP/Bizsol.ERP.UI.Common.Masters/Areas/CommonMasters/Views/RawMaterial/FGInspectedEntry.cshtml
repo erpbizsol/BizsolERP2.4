@@ -1,0 +1,201 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/FGInspectedEntry.js"></script>
+<style>
+    .select2-container--open .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+
+    .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+
+    .card {
+        overflow: visible !important;
+    }
+
+    .card-body {
+        overflow: visible !important;
+    }
+
+    #dvFrom {
+        overflow: visible !important;
+    }
+
+    .row {
+        overflow: visible !important;
+    }
+
+    .select2-results {
+        max-height: 200px !important;
+        overflow-y: auto !important;
+    }
+
+    .select2-dropdown {
+        position: absolute !important;
+    }
+
+    .form-control-sm {
+        position: relative;
+    }
+
+    .main-content {
+        overflow: visible !important;
+    }
+
+    .col-md-3, .col-md-2 {
+        overflow: visible !important;
+    }
+
+    /* Responsive table height based on screen height (excluding header, paginator and footer) */
+    #dvGrid .table-wrapper {
+        max-height: calc(100vh - 320px);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+    #dvFrom .table-wrapper {
+        max-height: calc(100vh - 390px);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+        /* Sticky table header */
+        #dvGrid .table-wrapper thead,
+        #dvFrom .table-wrapper thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #fff;
+        }
+
+    .paginator {
+        position: sticky;
+        bottom: 15px;
+        background-color: #fff;
+        z-index: 5;
+    }
+
+    .form-check-input[type=checkbox] {
+        border-radius: .25em;
+        border: 1px solid black !important;
+    }
+</style>
+<div class="row">
+    <div class="col-md-3">
+        <input type="checkbox" id="chkCompleted" autocomplete="off" tabindex="1" />
+        <label for="chkCompleted" class="form-label fw-semibold">Completed </label>
+    </div>
+</div>
+<div class="row mb-1">
+    <div class="col-md-3">
+        <label for="txtClientName" class="form-label fw-semibold">Client Name <span class="text-danger">*</span></label>
+        <select id="txtClientName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+    </div>
+    <div class="col-md-3">
+        <label for="txtOrderNo" class="form-label fw-semibold">Order No. <span class="text-danger">*</span></label>
+        <select id="txtOrderNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+    </div>
+    <div class="col-md-3">
+        <label for="txtProjectNo" class="form-label fw-semibold">Project No. <span class="text-danger">*</span></label>
+        <select id="txtProjectNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+    </div>
+    <div class="col-md-3">
+        <label for="txtFromDate" class="form-label fw-semibold">From Date <span class="text-danger">*</span></label>
+        <input id="txtFromDate" type="date" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" />
+    </div>
+    <div class="col-md-3">
+        <label for="txtToDate" class="form-label fw-semibold">To Date <span class="text-danger">*</span></label>
+        <input id="txtToDate" type="date" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" />
+    </div>
+    <div class="col-md-3" style="margin-top:26px;">
+        <button type="button" id="btnRMClearanceShow" class="btn btn-primary btn-height mb-1">Show</button>
+        <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
+    </div>
+</div>
+<div class ="card p-2 mt-2" id="dvGrid" style="display:block;">
+    <div class="col-md-12 text-end" id="btnVerifyall" style="display:block;">
+        <button class="btn btn-success icon-height mb-1" title="Verify All" onclick="VerifyAll()">Verify All</button>
+    </div>
+    <div class="table-wrapper ">
+        <table id="tblRMClearance" class="fixed-width-table table">
+            <thead id="table-header">
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-tblRMClearance">
+    </div>
+</div>
+<div class="modal fade rps-detail-modal" id="dvRemark" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Reject Remark</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="txtRemark" class="form-label filter-label">Remark </label> <span class="text-danger">*</span>
+                    <input type="text" id="txtRemark" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" />
+                    <input type="hidden" id="hfCode" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-12 text-end">
+                    <button type="button" class="btn btn-success icon-height" onclick="RejectRMClearance()">Ok</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade rps-detail-modal" id="dvVerifyRemark" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Verify Remark</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="txtVerifyRemark" class="form-label filter-label">Remark </label> <span class="text-danger">*</span>
+                    <input type="text" id="txtVerifyRemark" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" />
+                    <input type="hidden" id="hfVerifyCode" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-12 text-end">
+                    <button type="button" class="btn btn-success icon-height" onclick="VerifyRMClearance()">Ok</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="CloseVerifyModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade rps-detail-modal" id="dvVerifyAll" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Verify Remark</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="txtRemarkAll" class="form-label filter-label">Remark </label> <span class="text-danger">*</span>
+                    <input type="text" id="txtRemarkAll" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" />
+                    <input type="hidden" id="hfAllCode" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-12 text-end">
+                    <button type="button" class="btn btn-success icon-height" onclick="VerifyAllRMClearance()">Ok</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="CloseAllVerifyModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

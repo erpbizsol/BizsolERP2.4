@@ -610,5 +610,28 @@
         </div>
     </div>
 </div>
+<div class="modal fade rps-detail-modal" id="dvShowRemarks" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content ">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Remarks</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div id="dvtableShowRemarks" class="table-responsive">
+                    <table id="tableShowRemarks" class="table table-bordered table-striped table-sm mb-0">
+                        <thead id="table-headRemarks">
+                        </thead>
+                        <tbody id="table-bodyRemarks"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseShowRemarksModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>

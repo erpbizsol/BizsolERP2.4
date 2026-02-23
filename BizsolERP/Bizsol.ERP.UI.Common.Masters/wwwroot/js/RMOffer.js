@@ -2,7 +2,10 @@ import { RawMaterialOfferService } from '../../Bizsol.WebERP.UI.Shared/js/JSServ
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
-import { QCPropertyItemConfigurationService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/QCPropertyItemConfigurationService.js';
+import { initObjectListControl } from '../../Bizsol.WebERP.UI.Shared/js/Pages/CustomControl/_ObjectListControlPage.js';
+import { ObjectListControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_ObjectListControlService.js';
+
+var baseUrl = sessionStorage.getItem('AppBaseURL');
 
 let G_RawMaterialDropDown = [];
 let G_ClientOrderProjectData = [];
@@ -27,6 +30,21 @@ $(document).ready(function () {
     $("#btnRMOfferShow").click(function () {
         GetBOMMasterDataOrderWiselist();
     });
+
+    // Initialize ObjectListControl from _ObjectListControlPage.js (creates modal in container or appends to body)
+    initObjectListControl();
+
+    // Focusout on txtTicketNo1: call LOV/check value only when value is ".."
+    //$(document).on('oninput', '#txtTicketNo1', function () {
+    //    var val = $(this).val();
+    //    if (typeof val !== 'string') val = '';
+    //    val = val.trim();
+    //    if (val !== '..') {
+    //        return;
+    //    }
+    //    G_CurrentLovTarget = this;
+    //    ShowObjectListControlModal();
+    //});
 });
 function GetBOMMasterDataOrderWiselist() {
     var ddlClientName = $("#ddlClientName").val();
@@ -859,13 +877,15 @@ function GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo, ddlProjectNo) {
                 const hiddenColumns = ["Code", "SortPriority","BuyerPODetail_Code", "Thickness_Code", "Grade_Code", "BuyerPOMaster_Code", "EntryNo", "GodownMaster_Code", "AccountMaster_Code", "EntryDate","InspectionDate"];
                     const columnAlignment = {
                         "P.O. Qty(Wt.)": "right;",
-                        "Balance to Inspect (Wt.)" : "right;"
+                        "Balance to Inspect (Wt.)" : "right;",
+                        "Offer Qty": "right;"
                 };
                 const updatedResponse = (response).map(function (item) {
                     // Get Balance to Inspect (Wt.) from API row (property name has spaces)
                     const balanceToInspect = parseFloat(item["Balance to Inspect (Wt.)"]) || 0;
                     item.Action = '<button class="btn btn-primary icon-height mb-1" title="Coil Details" onclick="UpdateCoilDetail('
                         + item.Grade_Code + ',' + item.Code + ',' + balanceToInspect + ')"><i class="fa fa-pencil"></i></button>';
+                    //item.Action = '<button class="btn btn-primary icon-height mb-1" title="Coil Details" onclick="ShowObjectListControlModal()"><i class="fa fa-pencil"></i></button>';
                     return item;
                 });
 
@@ -905,12 +925,16 @@ function GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo, ddlProjectNo) {
 function clearDetailTable() {
     const $thead = $('#DetailTable-head');
     const $tbody = $('#DetailTable-body');
+    const $tfoot = $('#DetailTable-foot');
 
     if ($thead && $thead.length) {
         $thead.empty();
     }
     if ($tbody && $tbody.length) {
         $tbody.empty();
+    }
+    if ($tfoot && $tfoot.length) {
+        $tfoot.empty();
     }
 }
 function buildDetailTableHeader() {
@@ -930,68 +954,47 @@ function buildDetailTableHeader() {
 
     $thead.html(headerHtml);
 }
-function bindEmptyEditableRow() {
-    const $tbody = $('#DetailTable-body');
-    if (!$tbody || !$tbody.length) {
-        return;
-    }
 
-    // Get godown options from G_IdentificationList (unique GodownCode/GodownName)
-    let godownOptionsHtml = '<option value="0">Please select..</option>';
-    const uniqueGodowns = [];
-    const godownMap = new Map();
-    
-    (G_IdentificationList || []).forEach(function (item) {
-        const godownCode = item.GodownCode || item.Code || item.GodownMaster_Code || '';
-        const godownName = item.GodownName || '';
+// New function: update footer with sum of Coil Wt.
+function updateDetailTableFooterSum() {
+    try {
+        const $table = $('#DetailTable');
+        if (!$table || !$table.length) {
+            return;
+        }
+
+        // Ensure tfoot exists, create if not
+        let $tfoot = $table.find('tfoot');
+        if (!$tfoot || !$tfoot.length) {
+            $tfoot = $('<tfoot id="DetailTable-foot"></tfoot>');
+            $table.append($tfoot);
+        }
+
+        const $tbody = $('#DetailTable-body');
+        let total = 0;
         
-        if (godownCode && !godownMap.has(godownCode)) {
-            godownMap.set(godownCode, godownName);
-            uniqueGodowns.push({
-                Code: godownCode,
-                Name: godownName
+        if ($tbody && $tbody.length) {
+            $tbody.find('tr.editable-row').each(function () {
+                const val = parseFloat($(this).find('.coil-wt').val()) || 0;
+                total += val;
             });
         }
-    });
-    
-    uniqueGodowns.forEach(function (godown) {
-        godownOptionsHtml += `<option value="${godown.Code}">${godown.Name}</option>`;
-    });
-    
-    const rowHtml = `
-        <tr class="editable-row">
-            <td class="row-sno">1
-                <input type="hidden" class="Code" value="0" />
-            </td>
-            <td>
-                <select class="form-control form-control-sm identification-no">
-                    <option value="">Please select..</option>
-                </select>
-            </td>
-            <td>
-                <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" />
-            </td>
-            <td>
-                <select class="form-control form-control-sm coil-location" disabled>
-                    ${godownOptionsHtml}
-                </select>
-            </td>
-            <td>
-                <button type="button" class="btn btn-sm btn-success add-row-btn" title="Add Row" disabled style="margin-right: 5px;">
-                    <i class="fa fa-plus"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-danger delete-row-btn" title="Delete Row" style="display: none;">
-                    <i class="fa fa-trash"></i>
-                </button>
-            </td>
-        </tr>`;
 
-    $tbody.html(rowHtml);
+        // Build footer row (5 columns: SNo, Identification No, Coil Wt., Location of Coil, Action)
+        const footerHtml = `
+            <tr style="background-color: #f8f9fa; font-weight: bold;">
+                <td></td>
+                <td>Total</td>
+                <td style="text-align:right;">${total.toFixed(3)}</td>
+                <td></td>
+                <td></td>
+            </tr>`;
 
-    initializeEditableRow($tbody.find('tr.editable-row').last(), null);
-    updateButtonVisibility();
+        $tfoot.html(footerHtml);
+    } catch (e) {
+        console.error('Error updating detail table footer sum:', e);
+    }
 }
-// Helper function to get all selected Identification Nos from all rows except the current row
 function getSelectedIdentificationNos(excludeRow) {
     const selectedIds = [];
     const $tbody = $('#DetailTable-body');
@@ -1013,8 +1016,6 @@ function getSelectedIdentificationNos(excludeRow) {
     }
     return selectedIds;
 }
-
-// Helper function to update Identification dropdown options to disable already selected ones
 function updateIdentificationDropdownOptions($identificationNo, excludeRow) {
     if (!$identificationNo || !$identificationNo.length) {
         return;
@@ -1047,8 +1048,6 @@ function updateIdentificationDropdownOptions($identificationNo, excludeRow) {
         }, 0);
     }
 }
-
-// Function to update all Identification dropdowns to prevent duplicates
 function updateAllIdentificationDropdowns(excludeRow) {
     const $tbody = $('#DetailTable-body');
     if ($tbody && $tbody.length) {
@@ -1061,7 +1060,262 @@ function updateAllIdentificationDropdowns(excludeRow) {
         });
     }
 }
+function updateButtonVisibility() {
+    const $tbody = $('#DetailTable-body');
+    if (!$tbody || !$tbody.length) {
+        return;
+    }
 
+    const totalRows = $tbody.find('tr.editable-row').length;
+
+    $tbody.find('tr.editable-row').each(function(index) {
+        const $row = $(this);
+        const $addBtn = $row.find('.add-row-btn');
+        const $deleteBtn = $row.find('.delete-row-btn');
+        const isLastRow = (index === totalRows - 1);
+
+        // Show Add button only on last row, and only if row is complete
+        if (isLastRow) {
+            $addBtn.show();
+        } else {
+            $addBtn.hide();
+        }
+
+        // Show Delete button on all rows except last (or if more than one row)
+        if (totalRows > 1) {
+            $deleteBtn.show();
+        } else {
+            $deleteBtn.hide();
+        }
+    });
+}
+function addNewEditableRow() {
+    const $tbody = $('#DetailTable-body');
+    if (!$tbody || !$tbody.length) {
+        return;
+    }
+
+    // Get godown options from G_IdentificationList (unique GodownCode/GodownName)
+    let godownOptionsHtml = '<option value="0">Please select..</option>';
+    const uniqueGodowns = [];
+    const godownMap = new Map();
+    
+    (G_IdentificationList || []).forEach(function (item) {
+        const godownCode = item.GodownCode || item.Code || item.GodownMaster_Code || '';
+        const godownName = item.GodownName || '';
+        
+        if (godownCode && !godownMap.has(godownCode)) {
+            godownMap.set(godownCode, godownName);
+            uniqueGodowns.push({
+                Code: godownCode,
+                Name: godownName
+            });
+        }
+    });
+    
+    uniqueGodowns.forEach(function (godown) {
+        godownOptionsHtml += `<option value="${godown.Code}">${godown.Name}</option>`;
+    });
+
+    // Get current row count for SNo
+    const currentRowCount = $tbody.find('tr.editable-row').length;
+    const newSNo = currentRowCount + 1;
+
+    const rowHtml = `
+        <tr class="editable-row">
+            <td class="row-sno">${newSNo}
+                <input type="hidden" class="Code" value="0" />
+            </td>
+            <td>
+                <select class="form-control form-control-sm identification-no">
+                    <option value="">Please select..</option>
+                </select>
+            </td>
+            <td>
+                <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" disabled />
+            </td>
+            <td>
+                <select class="form-control form-control-sm coil-location" disabled>
+                    ${godownOptionsHtml}
+                </select>
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-success add-row-btn" title="Add Row" disabled style="margin-right: 5px;">
+                    <i class="fa fa-plus"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-danger delete-row-btn" title="Delete Row" style="display: none;">
+                    <i class="fa fa-trash"></i>
+                </button>
+            </td>
+        </tr>`;
+
+    $tbody.append(rowHtml);
+
+    // Initialize the new row
+    const $newRow = $tbody.find('tr.editable-row').last();
+    initializeEditableRow($newRow, null);
+
+    // Update all row numbers
+    updateRowNumbers();
+    // Update button visibility after adding new row
+    updateButtonVisibility();
+    // Update all Identification dropdowns to disable already selected options
+    updateAllIdentificationDropdowns();
+    updateDetailTableFooterSum();
+}
+function updateRowNumbers() {
+    const $tbody = $('#DetailTable-body');
+    if (!$tbody || !$tbody.length) {
+        return;
+    }
+
+    $tbody.find('tr.editable-row').each(function(index) {
+        const $rowSno = $(this).find('.row-sno');
+        const $codeInput = $rowSno.find('.Code');
+        const codeValue = $codeInput.length ? $codeInput.val() : '0';
+        
+        // Update the text content while preserving the hidden input
+        // Remove only text nodes, keep the hidden input
+        $rowSno.contents().filter(function() {
+            return this.nodeType === 3; // Text node
+        }).remove();
+        
+        // Add the new row number as text
+        $rowSno.prepend(document.createTextNode(index + 1));
+        
+        // Ensure the Code input exists and has the correct value
+        if ($codeInput.length === 0) {
+            $rowSno.append($('<input>').attr('type', 'hidden').addClass('Code').val(codeValue));
+        }
+    });
+    updateDetailTableFooterSum();
+}
+function deleteEditableRow($row) {
+    // Check if row is locked (Verify !== "N")
+    if ($row && $row.length) {
+        const verifyStatus = $row.find('.Verify').val() || 'N';
+        if (verifyStatus !== 'N') {
+            toastr.warning('This row is verified and cannot be deleted.');
+            return;
+        }
+    }
+
+    const ModuleName = "RM Offer";
+    const OptionName = "Delete";
+    const ShowMsg = "Y";
+    const FinYear = getFinancialYear();
+
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (respCheck) {
+        if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+            toastr.error(respCheck.Msg || 'You do not have permission to delete.');
+            return;
+        }
+
+        if (!$row || !$row.length) {
+            return;
+        }
+
+        const $tbody = $('#DetailTable-body');
+        if (!$tbody || !$tbody.length) {
+            return;
+        }
+
+        const totalRows = $tbody.find('tr.editable-row').length;
+        if (totalRows <= 1) {
+            toastr.warning('At least one row must remain');
+            return;
+        }
+
+        const rowCodeVal = $row.find('.Code').val() || '0';
+        const rowCode = parseInt(rowCodeVal, 10) || 0;
+
+        if (!rowCode || rowCode === 0) {
+            const $identificationNo = $row.find('.identification-no');
+            const $coilLocation = $row.find('.coil-location');
+            
+            if ($.fn.select2) {
+                if ($identificationNo.hasClass('select2-hidden-accessible')) {
+                    try {
+                        $identificationNo.select2('destroy');
+                    } catch (e) {
+                        console.error('Error destroying select2 for identification-no:', e);
+                    }
+                }
+                if ($coilLocation.hasClass('select2-hidden-accessible')) {
+                    try {
+                        $coilLocation.select2('destroy');
+                    } catch (e) {
+                        console.error('Error destroying select2 for coil-location:', e);
+                    }
+                }
+            }
+
+            $row.remove();
+            updateRowNumbers();
+            updateButtonVisibility();
+            // Update all Identification dropdowns to enable previously disabled options
+            updateAllIdentificationDropdowns();
+            updateDetailTableFooterSum();
+            return;
+        }
+
+        if (!confirm('Are you sure you want to delete this detail row?')) {
+            return;
+        }
+
+        const mode = 'DetailDelete'; 
+        const ipAddress = '';
+        const location = '';
+        const reasonForDelete = 'Test';
+
+        RawMaterialOfferService.DeleteRawMaterialOffer(
+            rowCode,
+            encodeURIComponent(reasonForDelete),
+            mode,
+            ipAddress,
+            location
+        ).then(function (response) {
+            if (response && response.Status === 'Y') {
+                toastr.success(response.Msg || 'Detail row deleted successfully');
+                GetBOMMasterDataOrderWiselist();
+                const $identificationNo = $row.find('.identification-no');
+                const $coilLocation = $row.find('.coil-location');
+                
+                if ($.fn.select2) {
+                    if ($identificationNo.hasClass('select2-hidden-accessible')) {
+                        try {
+                            $identificationNo.select2('destroy');
+                        } catch (e) {
+                            console.error('Error destroying select2 for identification-no:', e);
+                        }
+                    }
+                    if ($coilLocation.hasClass('select2-hidden-accessible')) {
+                        try {
+                            $coilLocation.select2('destroy');
+                        } catch (e) {
+                            console.error('Error destroying select2 for coil-location:', e);
+                        }
+                    }
+                }
+
+                $row.remove();
+                updateRowNumbers();
+                updateButtonVisibility();
+                // Update all Identification dropdowns to enable previously disabled options
+                updateAllIdentificationDropdowns();
+                updateDetailTableFooterSum();
+            } else {
+                toastr.error((response && response.Msg) || 'Failed to delete detail row');
+            }
+        }).catch(function (error) {
+            toastr.error((error && error.Msg) || 'Error occurred while deleting detail row');
+            console.error('Delete detail row error:', error);
+        });
+    }).catch(function (error) {
+        toastr.error((error && error.Msg) || 'Error checking delete rights');
+        console.error('CheckModuleOptionRight error:', error);
+    });
+}
 function initializeEditableRow($row, detail) {
     if (!$row || !$row.length) {
         return;
@@ -1257,6 +1511,7 @@ function initializeEditableRow($row, detail) {
             }
             
             checkRowComplete();
+            updateDetailTableFooterSum();
         })
         // Limit to max 3 decimal places as user types
         .off('input.decimalLimit')
@@ -1372,7 +1627,7 @@ function initializeEditableRow($row, detail) {
         checkRowComplete();
     }
 }
-function addNewEditableRow() {
+function bindEmptyEditableRow() {
     const $tbody = $('#DetailTable-body');
     if (!$tbody || !$tbody.length) {
         return;
@@ -1399,14 +1654,10 @@ function addNewEditableRow() {
     uniqueGodowns.forEach(function (godown) {
         godownOptionsHtml += `<option value="${godown.Code}">${godown.Name}</option>`;
     });
-
-    // Get current row count for SNo
-    const currentRowCount = $tbody.find('tr.editable-row').length;
-    const newSNo = currentRowCount + 1;
-
+    
     const rowHtml = `
         <tr class="editable-row">
-            <td class="row-sno">${newSNo}
+            <td class="row-sno">1
                 <input type="hidden" class="Code" value="0" />
             </td>
             <td>
@@ -1432,202 +1683,11 @@ function addNewEditableRow() {
             </td>
         </tr>`;
 
-    $tbody.append(rowHtml);
+    $tbody.html(rowHtml);
 
-    // Initialize the new row
-    const $newRow = $tbody.find('tr.editable-row').last();
-    initializeEditableRow($newRow, null);
-
-    // Update all row numbers
-    updateRowNumbers();
-    // Update button visibility after adding new row
+    initializeEditableRow($tbody.find('tr.editable-row').last(), null);
     updateButtonVisibility();
-    // Update all Identification dropdowns to disable already selected options
-    updateAllIdentificationDropdowns();
-}
-function updateRowNumbers() {
-    const $tbody = $('#DetailTable-body');
-    if (!$tbody || !$tbody.length) {
-        return;
-    }
-
-    $tbody.find('tr.editable-row').each(function(index) {
-        const $rowSno = $(this).find('.row-sno');
-        const $codeInput = $rowSno.find('.Code');
-        const codeValue = $codeInput.length ? $codeInput.val() : '0';
-        
-        // Update the text content while preserving the hidden input
-        // Remove only text nodes, keep the hidden input
-        $rowSno.contents().filter(function() {
-            return this.nodeType === 3; // Text node
-        }).remove();
-        
-        // Add the new row number as text
-        $rowSno.prepend(document.createTextNode(index + 1));
-        
-        // Ensure the Code input exists and has the correct value
-        if ($codeInput.length === 0) {
-            $rowSno.append($('<input>').attr('type', 'hidden').addClass('Code').val(codeValue));
-        }
-    });
-}
-function updateButtonVisibility() {
-    const $tbody = $('#DetailTable-body');
-    if (!$tbody || !$tbody.length) {
-        return;
-    }
-
-    const $rows = $tbody.find('tr.editable-row');
-    const totalRows = $rows.length;
-
-    $rows.each(function(index) {
-        const $row = $(this);
-        const $addBtn = $row.find('.add-row-btn');
-        const $deleteBtn = $row.find('.delete-row-btn');
-        const isLastRow = (index === totalRows - 1);
-        
-        // Check if row is locked (Verify !== "N")
-        const verifyStatus = $row.find('.Verify').val() || 'N';
-        const isLocked = verifyStatus !== 'N';
-
-        // Show add button only on last row
-        if (isLastRow) {
-            $addBtn.show();
-        } else {
-            $addBtn.hide();
-        }
-
-        // Show delete button on all rows except when there's only one row, but hide for locked rows
-        if (totalRows > 1 && !isLocked) {
-            $deleteBtn.show().prop('disabled', false);
-        } else {
-            $deleteBtn.hide().prop('disabled', true);
-        }
-    });
-}
-function deleteEditableRow($row) {
-    // Check if row is locked (Verify !== "N")
-    if ($row && $row.length) {
-        const verifyStatus = $row.find('.Verify').val() || 'N';
-        if (verifyStatus !== 'N') {
-            toastr.warning('This row is verified and cannot be deleted.');
-            return;
-        }
-    }
-
-    const ModuleName = "RM Offer";
-    const OptionName = "Delete";
-    const ShowMsg = "Y";
-    const FinYear = getFinancialYear();
-
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (respCheck) {
-        if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
-            toastr.error(respCheck.Msg || 'You do not have permission to delete.');
-            return;
-        }
-
-        if (!$row || !$row.length) {
-            return;
-        }
-
-        const $tbody = $('#DetailTable-body');
-        if (!$tbody || !$tbody.length) {
-            return;
-        }
-
-        const totalRows = $tbody.find('tr.editable-row').length;
-        if (totalRows <= 1) {
-            toastr.warning('At least one row must remain');
-            return;
-        }
-
-        const rowCodeVal = $row.find('.Code').val() || '0';
-        const rowCode = parseInt(rowCodeVal, 10) || 0;
-
-        if (!rowCode || rowCode === 0) {
-            const $identificationNo = $row.find('.identification-no');
-            const $coilLocation = $row.find('.coil-location');
-            
-            if ($.fn.select2) {
-                if ($identificationNo.hasClass('select2-hidden-accessible')) {
-                    try {
-                        $identificationNo.select2('destroy');
-                    } catch (e) {
-                        console.error('Error destroying select2 for identification-no:', e);
-                    }
-                }
-                if ($coilLocation.hasClass('select2-hidden-accessible')) {
-                    try {
-                        $coilLocation.select2('destroy');
-                    } catch (e) {
-                        console.error('Error destroying select2 for coil-location:', e);
-                    }
-                }
-            }
-
-            $row.remove();
-            updateRowNumbers();
-            updateButtonVisibility();
-            // Update all Identification dropdowns to enable previously disabled options
-            updateAllIdentificationDropdowns();
-            return;
-        }
-
-        if (!confirm('Are you sure you want to delete this detail row?')) {
-            return;
-        }
-
-        const mode = 'DetailDelete'; 
-        const ipAddress = '';
-        const location = '';
-        const reasonForDelete = 'Test';
-
-        RawMaterialOfferService.DeleteRawMaterialOffer(
-            rowCode,
-            encodeURIComponent(reasonForDelete),
-            mode,
-            ipAddress,
-            location
-        ).then(function (response) {
-            if (response && response.Status === 'Y') {
-                toastr.success(response.Msg || 'Detail row deleted successfully');
-                GetBOMMasterDataOrderWiselist();
-                const $identificationNo = $row.find('.identification-no');
-                const $coilLocation = $row.find('.coil-location');
-                
-                if ($.fn.select2) {
-                    if ($identificationNo.hasClass('select2-hidden-accessible')) {
-                        try {
-                            $identificationNo.select2('destroy');
-                        } catch (e) {
-                            console.error('Error destroying select2 for identification-no:', e);
-                        }
-                    }
-                    if ($coilLocation.hasClass('select2-hidden-accessible')) {
-                        try {
-                            $coilLocation.select2('destroy');
-                        } catch (e) {
-                            console.error('Error destroying select2 for coil-location:', e);
-                        }
-                    }
-                }
-
-                $row.remove();
-                updateRowNumbers();
-                updateButtonVisibility();
-                // Update all Identification dropdowns to enable previously disabled options
-                updateAllIdentificationDropdowns();
-            } else {
-                toastr.error((response && response.Msg) || 'Failed to delete detail row');
-            }
-        }).catch(function (error) {
-            toastr.error((error && error.Msg) || 'Error occurred while deleting detail row');
-            console.error('Delete detail row error:', error);
-        });
-    }).catch(function (error) {
-        toastr.error((error && error.Msg) || 'Error checking delete rights');
-        console.error('CheckModuleOptionRight error:', error);
-    });
+    updateDetailTableFooterSum();
 }
 function bindExistingEditableRows(detailResponse) {
     const $tbody = $('#DetailTable-body');
@@ -2126,6 +2186,186 @@ function DeleteRMOffer() {
         console.error('DeleteRMOffer error:', error);
     });
 }
+function ChangecolorTr() {
+    const tbody = document.getElementById("table-bodyEditable");
+    const thead = document.getElementById("table-headerEditable");
+
+    if (!tbody) {
+        return;
+    }
+
+    // FORCE: default Offer Qty column index (0-based).
+    // Change this value if your Offer Qty column index is different.
+    const forcedOfferQtyColIndex = 22;
+    let offerQtyColIndex = forcedOfferQtyColIndex;
+
+    // Try to detect "Offer Qty" column dynamically if header exists,
+    // but ALWAYS fall back to forced index when detection fails.
+    if (thead) {
+        const headerRow = thead.querySelector("tr");
+        if (headerRow) {
+            const ths = headerRow.querySelectorAll("th");
+            ths.forEach((th, index) => {
+                const headerText = (th.textContent || "").trim().toUpperCase();
+                const normalized = headerText.replace(/\s+/g, " ");
+                if (normalized.indexOf("OFFER QTY") !== -1) {
+                    offerQtyColIndex = index;
+                }
+            });
+        }
+    }
+
+    const rows = tbody.querySelectorAll("tr");
+    rows.forEach((row) => {
+        const tds = row.querySelectorAll("td");
+        row.style.backgroundColor = "";
+
+        if (tds.length > offerQtyColIndex) {
+            const rawText = (tds[offerQtyColIndex].textContent || "").trim().replace(/,/g, "");
+            const qty = parseFloat(rawText) || 0;
+
+            if (qty > 0) {
+                row.style.backgroundColor = "#d1fae5"; // light green
+            }
+        }
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    setInterval(ChangecolorTr, 1000);
+});
+
+function ensureObjectListControlLoaded() {
+    return new Promise(function (resolve, reject) {
+        if (window.FrmLOV) {
+            resolve();
+            return;
+        }
+        try {
+            initObjectListControl();
+            if (!window.FrmLOV) {
+                throw new Error('FrmLOV was not initialized by initObjectListControl.');
+            }
+            resolve();
+        } catch (e) {
+            console.error('Error initializing ObjectListControl:', e);
+            toastr.error('Failed to initialize List of Values.');
+            reject(e);
+        }
+    });
+}
+
+// Base query for GetItemMultipleSelectLOV (adjust per your backend API contract if needed)
+var G_ItemMultipleSelectLOV_BaseQuery = 'Item';
+
+// Build options for ObjectListControlService.GetItemMultipleSelectLOV (same payload as _ObjectListControlService.js)
+function getItemMultipleSelectLOVServiceOptions(opts) {
+    opts = opts || {};
+    return {
+        filterCondition: opts.filterCondition || null,
+        filterValue: opts.filterValue != null ? String(opts.filterValue) : null,
+        filterValueDataType: (opts.filterValueDataType === 'N' ? 'N' : 'S'),
+        filterCondition1: opts.filterCondition1 || null,
+        useLikeSearchInBothSide: (opts.useLikeSearchInBothSide === 'Y' ? 'Y' : 'N')
+    };
+}
+
+function ShowObjectListControlModal(data, options) {
+    // When called from "MultiPle Select" button with no args, use GetItemMultipleSelectLOV
+    var useItemLOV = (typeof data === 'undefined' && (!options || Object.keys(options || {}).length === 0));
+
+    var defaultOptions = {
+        CallBackFunctionName_btnDone: 'ObjectListControlCallback',
+        multiSelect: false,
+        filterValue: '',
+        filterCondition: '',
+        filterCondition1: '',
+        filterValueDataType: 'S',
+        useLikeSearchInBothSide: 'N',
+        noOfColumnToHide: 0,
+        showTotalColumnNameByCommaSeparated: '',
+        selectAllItems: false,
+        query: G_ItemMultipleSelectLOV_BaseQuery,
+        columnNameToIncreaseWidth: '',
+        loadData: null
+    };
+
+    var mergedOptions = $.extend({}, defaultOptions, options || {});
+
+    if (useItemLOV) {
+        mergedOptions.multiSelect = true;
+        mergedOptions.query = G_ItemMultipleSelectLOV_BaseQuery;
+        mergedOptions.loadData = function (query) {
+            var baseQuery = (query && String(query).trim()) ? String(query).trim() : G_ItemMultipleSelectLOV_BaseQuery;
+            var serviceOpts = getItemMultipleSelectLOVServiceOptions(mergedOptions);
+            return ObjectListControlService.GetItemMultipleSelectLOV(baseQuery, serviceOpts);
+        };
+    }
+
+    // Only set data when explicitly provided so loadData (if any) still works
+    if (typeof data !== 'undefined') {
+        mergedOptions.data = data;
+    }
+
+    return ensureObjectListControlLoaded()
+        .then(function () {
+            return window.FrmLOV.initialize1(mergedOptions);
+        })
+        .then(function (result) {
+            if (!result.escapePress) {
+                ObjectListControlCallback(result);
+            }
+            return result;
+        })
+        .catch(function (error) {
+            console.error('Error showing ObjectListControl:', error);
+            if (!error.__handledToastr) {
+                toastr.error('Error opening List of Values');
+            }
+            throw error;
+        });
+}
+
+// Holds last selection from GetItemMultipleSelectLOV (codes, display values, and rows)
+var G_ObjectListControlLastSelection = { codes: [], values: [], dataView: null };
+
+// Track which input field opened the LOV (for right-click functionality)
+var G_CurrentLovTarget = null;
+
+function ObjectListControlCallback(result) {
+    if (result && result.escapePress) {
+        G_CurrentLovTarget = null; // Clear target on escape
+        return;
+    }
+    if (result && result.values) {
+        // Parse comma-separated codes/values from LOV (e.g. from MultiPle Select)
+        var codeStr = (result.values || '').replace(/'/g, '');
+        var valueStr = (result.get_value || '').replace(/'/g, '');
+        G_ObjectListControlLastSelection.codes = codeStr ? codeStr.split(',') : [];
+        G_ObjectListControlLastSelection.values = valueStr ? valueStr.split(',') : [];
+        G_ObjectListControlLastSelection.dataView = result.dataView || null;
+        
+        // If LOV was opened via right-click on an input, populate that input with first selected value
+        if (G_CurrentLovTarget && G_ObjectListControlLastSelection.values.length > 0) {
+            var $target = $(G_CurrentLovTarget);
+            var selectedValue = G_ObjectListControlLastSelection.values[0];
+            $target.val(selectedValue);
+            $target.trigger('change'); // Trigger change event in case other code listens to it
+            G_CurrentLovTarget = null; // Clear target after populating
+        }
+        
+        if (G_ObjectListControlLastSelection.codes.length > 0) {
+            toastr.success('Selected ' + G_ObjectListControlLastSelection.codes.length + ' item(s).');
+            console.log('Selected Codes:', G_ObjectListControlLastSelection.codes);
+            console.log('Selected Data:', G_ObjectListControlLastSelection.dataView);
+        } else {
+            toastr.warning('No item selected');
+        }
+    } else {
+        toastr.warning('No item selected');
+        G_CurrentLovTarget = null; // Clear target if no selection
+    }
+}
 
 window.CreateNew = CreateNew;
 window.UpdateCoilDetail = UpdateCoilDetail;
@@ -2136,3 +2376,5 @@ window.EditRMInspectionRequest = EditRMInspectionRequest;
 window.Back = Back;
 window.DeleteRawMaterialOfferClick = DeleteRawMaterialOfferClick;
 window.DeleteRMOffer = DeleteRMOffer;
+window.ShowObjectListControlModal = ShowObjectListControlModal;
+window.ObjectListControlCallback = ObjectListControlCallback;

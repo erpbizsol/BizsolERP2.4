@@ -1,0 +1,42 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Reports/Script/RMMaizeReport.js"></script>
+<style>
+    .fixed-width-table th, .fixed-width-table td {
+        white-space: nowrap;
+        min-width: auto;
+    }
+</style>
+<div class ="card p-1">
+    <div class="row">
+        <div class="col-sm-3">
+            <label for="txtFromDate" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+            <input type="date" id="txtFromDate" name="txtFromDate" class="box_border form-control form-control-sm" required />
+        </div>
+        <div class="col-sm-3">
+            <label for="txtToDate" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+            <input type="date" id="txtToDate" name="txtToDate" class="box_border form-control form-control-sm" required />
+        </div>
+        <div class="col-auto" style="margin-top:2.1rem">
+            <div><button type="button" onclick="ShowData()" title="Show" class="btn btn-success btn-height btn-sm">Show</button></div>
+        </div>
+        <div class="col-auto" style="margin-top:2.1rem">
+            <div><button type="button" onclick="Download()" title="Show" class="btn btn-primary btn-height btn-sm">Download</button></div>
+        </div>
+    </div>
+    <div class="table-wrapper ">
+        <table id="tblReport" class="fixed-width-table table">
+            <thead id="table-header">
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-tblReport">
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

@@ -1,28 +1,43 @@
-﻿import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { PurchaseQualityCheckService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseQualityCheckService.js';
 import { QCPropertyTestTypeMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/QCPropertyTestTypeMasterService.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 
 let G_PropertyColumns = [];
 let G_PurchaseQualityCheckData = [];
+let G_PurchaseQualityCheckDataList = [];
 let G_SelectedTestTypeCodes = [];
 let G_SelectedTestTypes = [];
 let G_HeaderTestTypeSelections = [];
 let G_ChangedInputs = [];
 let G_MRNNoList = [];
+let G_MRNType = '';
+let G_IsViewMode = false;
+let menuValue = '';
+let G_GodownList = [];
 
 $(document).ready(function () {
     const urlParams = BizSolHelperFunction.getUrlVars
         ? BizSolHelperFunction.getUrlVars()
         : {};
 
-    const menuValue = decodeURI(urlParams['ModuleDesp'] || '');
+    G_MRNType = decodeURI(urlParams['MRNType'] || '');
+    if (G_MRNType && G_MRNType !== 'undefined') {
+        if (G_MRNType == 'R') {
+            $('#labelNameChange').text("MRN No");
+        } else {
+            $('#labelNameChange').text("GRN No");
+        }
+    }
+    menuValue = decodeURI(urlParams['ModuleDesp'] || '');
     if (menuValue && menuValue !== 'undefined') {
         $('#ERPHeading').text(menuValue);
     } else {
         $('#ERPHeading').text('Purchase Quality Check');
     }
-    
+    $('#locatePurchaseQualityCheck').hide();
+    GetMRNQCPropertyList();
     GetQCPropertyTestTypeMaster();
     bindYearDropdown();
     GetMRNVendor();
@@ -34,6 +49,11 @@ $(document).ready(function () {
     $('#btnReset').on('click', function() {
         resetGrid();
     });
+    $('#btnPrint').on('click', function() {
+        printGrid();
+    });
+    // Back button clears entire form, selects, table and returns to grid
+    $('#btnBack').on('click', handleBackButton);
     $("#ddlFinYear").change(function () {
         loadMRNMasterList();
         clearTable();
@@ -42,27 +62,271 @@ $(document).ready(function () {
         $('#txtBillNo').val('');
     });
 });
+function toggleMRNField(isView) {
+    const $select = $('#txtMRNNo');
+    const $input = $('#ViewMRNNo');
+    if (!$select.length || !$input.length) return;
+
+    try {
+        if (isView) {
+            // Hide select OR its select2 container and show plain input
+            if ($select.data('select2')) {
+                try { $select.select2('close'); } catch (e) {}
+                const sel2 = $select.data('select2');
+                if (sel2 && sel2.$container) sel2.$container.hide();
+                // keep original select hidden (select2 hides original), but ensure it's disabled
+                $select.prop('disabled', true);
+            } else {
+                $select.hide().prop('disabled', true);
+            }
+            $input.show().prop('disabled', true);
+        } else {
+            if ($select.data('select2')) {
+                const sel2 = $select.data('select2');
+                if (sel2 && sel2.$container) sel2.$container.show();
+                $select.prop('disabled', false);
+            } else {
+                $select.show().prop('disabled', false);
+            }
+            $input.hide().prop('disabled', false);
+        }
+    } catch (ex) {
+        console.error('Error toggling MRN field:', ex);
+        if (isView) {
+            $select.hide().prop('disabled', true);
+            $input.show().prop('disabled', true);
+        } else {
+            $select.show().prop('disabled', false);
+            $input.hide().prop('disabled', false);
+        }
+    }
+}
+
+// Added: toggle Party Name field between select/select2 and plain input for view mode
+function togglePartyField(isView) {
+    const $select = $('#ddlPartyName');
+    const $input = $('#ViewPartyName');
+    if (!$select.length || !$input.length) return;
+
+    try {
+        if (isView) {
+            if ($select.data('select2')) {
+                try { $select.select2('close'); } catch (e) {}
+                const sel2 = $select.data('select2');
+                if (sel2 && sel2.$container) sel2.$container.hide();
+                $select.prop('disabled', true);
+            } else {
+                $select.hide().prop('disabled', true);
+            }
+            // show plain input and set its value from selected option text
+            const selectedText = $select.find('option:selected').text() || '';
+            $input.val(selectedText).show().prop('disabled', true);
+        } else {
+            if ($select.data('select2')) {
+                const sel2 = $select.data('select2');
+                if (sel2 && sel2.$container) sel2.$container.show();
+                $select.prop('disabled', false);
+            } else {
+                $select.show().prop('disabled', false);
+            }
+            $input.hide().prop('disabled', false).val('');
+        }
+    } catch (ex) {
+        console.error('Error toggling Party field:', ex);
+        if (isView) {
+            $select.hide().prop('disabled', true);
+            $input.show().prop('disabled', true);
+        } else {
+            $select.show().prop('disabled', false);
+            $input.hide().prop('disabled', false);
+        }
+    }
+}
+function handleBackButton() {
+    try {
+        clearTable();
+        G_ChangedInputs = [];
+        G_PurchaseQualityCheckData = [];
+        G_PropertyColumns = [];
+
+        $('#hfMRNMasterCode').val('0');
+
+        const $container = $('#locatePurchaseQualityCheck');
+        $container.find('input[type="text"], input[type="number"], input[type="hidden"], textarea').val('');
+
+        $('#ddlFinYear').val('');
+        $('#ddlPartyName').val(0);
+        $('#txtMRNNo').val('');
+
+        $('.changed-input').removeClass('changed-input');
+        $('.is-invalid').removeClass('is-invalid');
+        $('#locatePurchaseQualityCheck').hide();
+        $('#dvGrid').show();
+        $('#btnSaveQualityCheck').hide();
+        $('#btnReset').hide();
+        GetMRNQCPropertyList();
+
+        G_IsViewMode = false;
+
+        // Ensure MRN and Party fields are in select mode
+        toggleMRNField(false);
+        togglePartyField(false);
+    } catch (ex) {
+        console.error('Error handling back button:', ex);
+        toastr.error('Error while clearing form. Please refresh the page.');
+    }
+}
+
+function CreateNew() {
+    var ModuleName = `${menuValue}`,
+        OptionName = "New",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            $('#dvGrid').hide();
+            $('#locatePurchaseQualityCheck').show();
+            clearTable();
+            G_ChangedInputs = [];
+            G_PurchaseQualityCheckData = [];
+            G_PropertyColumns = [];
+
+            $('#hfMRNMasterCode').val('0');
+            const $container = $('#locatePurchaseQualityCheck');
+
+            $container.find('select, textarea').prop('disabled', false);
+
+            $container.find('input[type="text"], input[type="number"], textarea').val('');
+
+            $container.find('select').each(function () {
+                const $sel = $(this);
+                const defaultVal = $sel.data('default') !== undefined ? $sel.data('default') : '';
+                $sel.val(defaultVal);
+            });
+            $('#ddlFinYear').val('');
+            $('#ddlPartyName').val('0').trigger('change');
+	        $('#txtMRNNo').val('').trigger('change');
+            $('#txtBillNo').val('');
+
+            $('.changed-input').removeClass('changed-input');
+            $('.is-invalid').removeClass('is-invalid');
+            $('#btnSaveQualityCheck').hide();
+            $('#btnReset').hide();
+
+            G_IsViewMode = false;
+
+            // Ensure MRN and Party fields are in select mode
+            toggleMRNField(false);
+            togglePartyField(false);
+        }
+    });
+}
+function GetMRNQCPropertyList() {
+    Showloader();
+    PurchaseQualityCheckService.GetMRNQCPropertyList(G_MRNType).then(function (response) {
+        HideLoader();
+        if (response.length > 0) {
+            G_PurchaseQualityCheckDataList = response;
+            const StringFilterColumn = ["Party Name","Bill No"];
+            const NumericFilterColumn = ["MRN No"];
+            const DateFilterColumn = ["MRN Date","Bill Date"];
+            const Button = false;
+            const showButtons = [];
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = ["MrnMaster_Code", "FinYear", "PartyMaster_Code", "Code","Verify"];
+            const ColumnAlignment = { 'S.No.': 'center;width:10px', 'MRN Date': 'center','Bill Date':'center','MRN No':'center' };
+
+            const updatedResponse = response.map((item) => {
+                const mrnNo = (item['MRN No'] || item.MRNNo || item.MRN_NO || '').toString().replace(/'/g, "\\'");
+                const finYear = (item.FinYear || '').toString().replace(/'/g, "\\'");
+                const code = item.MrnMaster_Code || item.MrnMaster_Code || 0;
+
+                let InputHTML = '';
+
+                InputHTML = (item?.Verify || '').toString().toUpperCase() === 'Y'
+                    ? `
+                        <button class="btn btn-primary icon-height mb-1" title="Edit" disabled>
+                            <i class="fa-solid fa-pencil"></i>
+                        </button>&nbsp;
+                        <button class="btn btn-primary icon-height mb-1" title="View" onclick="PurchaseQualityCheck_ViewData('${mrnNo}','${finYear}',${item.PartyMaster_Code},'${item?.['MRN Date']}','${item?.['Bill No']}','${item?.['Bill Date']}')">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>&nbsp;
+                        <button class="btn btn-success icon-height mb-1" title="Verify" disabled>
+                            <i class="fa-solid fa-check"></i>
+                        </button>&nbsp;
+                        <button type="button" title="Print" class="btn btn-info btn-height" onclick="Print_PurchaseQualityCheck(${code})">
+                            <i class="fa-solid fa-print"></i>
+                        </button>&nbsp;
+                        <button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${code}')">
+                            <i class="fa-regular fa-circle-xmark"></i>
+                        </button>`
+                    : `
+                        <button class="btn btn-primary icon-height mb-1" title="Edit" onclick="PurchaseQualityCheck_EditData('${mrnNo}','${finYear}')">
+                            <i class="fa-solid fa-pencil"></i>
+                        </button>&nbsp;
+                        <button class="btn btn-primary icon-height mb-1" title="View" onclick="PurchaseQualityCheck_ViewData('${mrnNo}','${finYear}',${item.PartyMaster_Code},'${item?.['MRN Date']}','${item?.['Bill No']}','${item?.['Bill Date']}')">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>&nbsp;
+                        <button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify_PurchaseQualityCheck(${code})">
+                            <i class="fa-solid fa-check"></i>
+                        </button>&nbsp;
+                        <button type="button" title="Print" class="btn btn-info btn-height" onclick="Print_PurchaseQualityCheck(${code})">
+                            <i class="fa-solid fa-print"></i>
+                        </button>&nbsp;
+                        <button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${code}')">
+                            <i class="fa-regular fa-circle-xmark"></i>
+                        </button>`;
+
+                return {
+                    ...item,
+                    'Action': InputHTML,
+                };
+            });
+            
+            BizsolCustomFilterGrid.CreateDataTable("table-header-locatePurchaseQualityCheckList", "table-body-locatePurchaseQualityCheckList", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment,false);
+            
+            $("#tbllocatePurchaseQualityCheckList").show();
+        }
+        else {
+            toastr.error('No Data Found');
+            $("#tbllocatePurchaseQualityCheckList").hide();
+        }
+    }).catch(function (error) {
+        HideLoader();
+        console.error('Error loading list:', error);
+        toastr.error('Error loading list. Please try again.');
+        $("#tbllocatePurchaseQualityCheckList").hide();
+    });
+}
 function loadMRNMasterList() {
     const $mrnNo = $('#txtMRNNo');
     if (!$mrnNo.length) {
         return;
+        //return Promise.resolve();
     }
     
     var PartyMaster_Code = $("#ddlPartyName").val() == null ? 0 : $("#ddlPartyName").val();
     var FinYear = $("#ddlFinYear").val() == null ? '' : $("#ddlFinYear").val();
 
     Showloader();
-    PurchaseQualityCheckService.GetMRNMasterDataForMRNNo(PartyMaster_Code, FinYear)
+    return PurchaseQualityCheckService.GetMRNMasterDataForMRNNo(PartyMaster_Code, FinYear, G_MRNType)
         .then(function (response) {
             HideLoader();
             if (response && Array.isArray(response) && response.length > 0) {
                 G_MRNNoList = response;
                 bindMRNDropdown(response);
+                return ;
+                //return Promise.resolve(response);
             } else {
                 G_MRNNoList = [];
                 $mrnNo.html('<option value="0">No MRN available</option>');
                 clearMRNData();
                 clearTable();
+                return;
+                //return Promise.resolve([]);
             }
         })
         .catch(function (error) {
@@ -71,6 +335,8 @@ function loadMRNMasterList() {
             $mrnNo.html('<option value="0">Please select..</option>');
             clearMRNData();
             clearTable();
+            return ;
+            //return Promise.resolve([]);
         });
 }
 function bindMRNDropdown(list) {
@@ -152,6 +418,34 @@ function bindMRNDropdown(list) {
                         if (selectedMRNData.BillNo) {
                             $('#txtBillNo').val(selectedMRNData.BillNo);
                         }
+                        if (selectedMRNData.PartyMaster_Code !== undefined && selectedMRNData.PartyMaster_Code !== null) {
+                            const partyVal = String(selectedMRNData.PartyMaster_Code);
+                            const $ddlParty = $('#ddlPartyName');
+
+                            // If an option with this value exists, select by value
+                            if ($ddlParty.find(`option[value="${partyVal}"]`).length > 0) {
+                                $ddlParty.val(partyVal);
+                                if ($ddlParty.data('select2')) {
+                                    $ddlParty.trigger('change.select2');
+                                } else {
+                                    $ddlParty.trigger('change');
+                                }
+                            } else {
+                                // Fallback: try selecting by visible text using likely fields
+                                const candidateText = (selectedMRNData.PartyName || selectedMRNData.PartyDesp || selectedMRNData.AccountDesp || selectedMRNData.Party || selectedMRNData.PartyMaster_Desp || '').toString().trim();
+                                if (candidateText) {
+                                    BizSolHelperFunction.SelectOptionByText('ddlPartyName', candidateText);
+                                    if ($ddlParty.data('select2')) {
+                                        $ddlParty.trigger('change.select2');
+                                    } else {
+                                        $ddlParty.trigger('change');
+                                    }
+                                } else {
+                                    // If no display name available, leave dropdown unchanged
+                                    console.warn('Party display name not available for MRN data, cannot select by text.');
+                                }
+                            }
+                        }
                     }
                     
                     let mrnMasterCode = mrnNo;
@@ -193,8 +487,13 @@ function loadPurchaseQualityCheckData(mrnMasterCode) {
         .then(function (response) {
             HideLoader();
             if (response && Array.isArray(response) && response.length > 0) {
-                G_PurchaseQualityCheckData = response;
-                buildQualityCheckTable(response);
+                if (response[0].Status == 'Y') {
+                    G_PurchaseQualityCheckData = response;
+                    buildQualityCheckTable(response);
+                } else {
+                    toastr.warning(response[0].Msg);
+                    clearTable();
+                }
         } else {
                 toastr.warning('No data found for the selected MRN.');
                 clearTable();
@@ -243,8 +542,16 @@ function buildQualityCheckTable(data) {
     
     // Show table wrapper and buttons
     $('.table-wrapper').show();
+    $('#btnPrint').show();
+
+    // Show or hide Save/Reset depending on view mode flag
+    if (G_IsViewMode) {
+        $('#btnSaveQualityCheck').hide();
+        $('#btnReset').hide();
+    } else {
     $('#btnSaveQualityCheck').show();
     $('#btnReset').show();
+    }
     
     G_ChangedInputs = [];
     
@@ -262,7 +569,10 @@ function buildDynamicTableHeader(propertyMap, propertyNames) {
     let row1 = '<tr>' +
                '<th rowspan="2" class="qc-item-cell align-middle text-center" style="min-width: 40px;">SNo</th>' +
                '<th rowspan="2" class="qc-item-cell align-middle" style="min-width: 80px;">Item Code</th>' +
-               '<th rowspan="2" class="qc-item-cell align-middle" style="min-width: 200px;">Item Name</th>';
+               '<th rowspan="2" class="qc-item-cell align-middle" style="min-width: 200px;">Item Name</th>'+
+               '<th rowspan="2" class="qc-item-cell align-middle" style="min-width: 200px;">Specification</th>'+
+               '<th rowspan="2" class="qc-item-cell align-middle" style="min-width: 80px;">Status</th>'+
+               '<th rowspan="2" class="qc-item-cell align-middle" style="min-width: 120px;">Warehouse</th>';
     
     propertyNames.forEach(function(propertyName) {
         const testTypeCodes = Object.keys(propertyMap[propertyName]);
@@ -301,6 +611,9 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
 
     $tbody.empty();
 
+    // Determine view mode
+    const isView = G_IsViewMode === true;
+
     data.forEach(function (item, itemIndex) {
         let row = `<tr data-mrn-master-code="${item.MRNMaster_Code || ''}" 
                        data-mrn-detail-code="${item.MRNDetail_Code || ''}" 
@@ -311,9 +624,47 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
         
         const itemCode = item.ItemCode || '';
         row += `<td class="qc-item-cell">${itemCode}</td>`;
-        
+
         const itemName = item.ItemName || '';
         row += `<td class="qc-item-cell">${itemName}</td>`;
+
+        const specification = item.Specification || '';
+        row += `<td class="qc-item-cell">${specification}</td>`;
+        
+        const status = item.Status || '';
+        // Fixed status select - ensure only the correct option is selected
+        const isAccepted = status === 'A' || status === 'a';
+        const isRejected = status === 'R' || status === 'r';
+        
+        // Use unique ID with MRNDetail_Code to avoid conflicts
+        const statusSelectId = `status_${item.MRNDetail_Code}_${item.ItemMaster_Code}`;
+        row += `<td class="qc-item-cell">
+                    <select class="form-control form-control-sm status-select" 
+                            id="${statusSelectId}" 
+                            data-mrn-detail-code="${item.MRNDetail_Code || ''}" 
+                            data-item-code="${item.ItemMaster_Code || ''}" ${isView ? 'disabled' : ''}>
+                        <option value="">Select...</option>
+                        <option value="A" ${isAccepted ? 'selected' : ''}>Accepted</option>
+                        <option value="R" ${isRejected ? 'selected' : ''}>Rejected</option>
+                    </select>
+                </td>`;
+
+        // Render a dropdown for Godown/Warehouse. We'll populate options after table body is created.
+        const currentGodownName = item.GodownName || '';
+        const currentGodownCode = item.Godown_Code || item.WarehouseMaster_Code || item.GodownId || '';
+        
+        // Use unique ID with MRNDetail_Code to avoid conflicts
+        const godownSelectId = `godown_${item.MRNDetail_Code}_${item.ItemMaster_Code}`;
+        row += `<td class="qc-item-cell">
+                    <select class="form-control form-control-sm godown-select" 
+                            id="${godownSelectId}" 
+                            data-item-code="${item.ItemMaster_Code || ''}"
+                            data-mrn-detail-code="${item.MRNDetail_Code || ''}"
+                            data-current-name="${currentGodownName}"
+                            data-current-code="${currentGodownCode}" ${isView ? 'disabled' : ''}>
+                        <option value="">Please select...</option>
+                    </select>
+                </td>`;
         
         propertyNames.forEach(function (propertyName) {
             const testTypeCodes = Object.keys(propertyMap[propertyName]).sort();
@@ -332,23 +683,12 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
                 const valueType = item[valueTypeColName] || '';
                 const qcPropertyMasterCode = item[qcPropertyMasterCodeColName] || '';
                 
-                // Debug: Log first item's property code
-                if (itemIndex === 0 && propertyName === Object.keys(propertyMap)[0]) {
-                    console.log('First property debug:', {
-                        propertyName: propertyName,
-                        testTypeCode: testTypeCode,
-                        qcPropertyMasterCodeColName: qcPropertyMasterCodeColName,
-                        qcPropertyMasterCode: qcPropertyMasterCode,
-                        columnNames: columns
-                    });
-                }
-                
                 // Check if disabled
                 const isDisabled = fieldValue === '[DISABLED]';
                 const cellClass = isDisabled ? 'qc-disabled' : 'qc-property-cell';
                 
-                // Create unique input ID
-                const inputId = `qc_${propertyName.replace(/\s+/g, '_')}_${testTypeCode}_${item.ItemMaster_Code}`;
+                // Create unique input ID with MRNDetail_Code
+                const inputId = `qc_${propertyName.replace(/\s+/g, '_')}_${testTypeCode}_${item.MRNDetail_Code}_${item.ItemMaster_Code}`;
                 
                 if (isDisabled) {
                     // Disabled cell
@@ -367,7 +707,7 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
                                               data-valuetype="${valueType}"
                                               data-item-code="${item.ItemMaster_Code}"
                                               data-mrn-master-code="${item.MRNMaster_Code}"
-                                              data-mrn-detail-code="${item.MRNDetail_Code}">
+                                              data-mrn-detail-code="${item.MRNDetail_Code}" ${isView ? 'disabled' : ''}>
                         <option value="">Select...</option>`;
                     
                     lovOptions.forEach(function(option) {
@@ -401,7 +741,7 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
                                data-mrn-detail-code="${item.MRNDetail_Code}"
                                value="${fieldValue}"
                                placeholder="${placeholder}"
-                               title="${validateValue ? 'Allowed: ' + validateValue : ''}">
+                               title="${validateValue ? 'Allowed: ' + validateValue : ''}" ${isView ? 'disabled' : ''}>
                     </td>`;
                 }
             });
@@ -412,9 +752,11 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
     });
     
     $tbody.find('.property-input').on('change', function() {
+        // ignore changes if view mode
+        if (G_IsViewMode) return;
         handlePropertyInputChange($(this));
     });
-    
+
     $tbody.find('.numeric-input').on('input', function(e) {
         restrictNumericInput($(this), e);
     });
@@ -424,6 +766,90 @@ function buildDynamicTableBody(data, propertyMap, propertyNames) {
         setTimeout(function() {
             restrictNumericInput($input, null);
         }, 10);
+    });
+    
+    // Populate all godown selects using the service (filtered by status: Accepted = no "Store Rejected", Rejected = only "Store Rejected")
+    bindGodownNameDropdown().then(function(godownList) {
+        try {
+            if (!Array.isArray(godownList)) {
+                godownList = [];
+            }
+
+            $tbody.find('tr').each(function() {
+                const $row = $(this);
+                const $statusSelect = $row.find('.status-select');
+                const $godownSelect = $row.find('.godown-select');
+                if (!$godownSelect.length) return;
+
+                const status = $statusSelect.length ? $statusSelect.val() : '';
+                const filteredGodowns = getGodownListByStatus(godownList, status);
+                const currentName = $godownSelect.data('current-name') || '';
+                const currentCode = $godownSelect.data('current-code') || '';
+
+                let options = '<option value="">Please select...</option>';
+                filteredGodowns.forEach(function(g) {
+                    const code = g.Code || g.code || g.WarehouseMaster_Code || g.GodownId || 0;
+                    const name = g.GodownName || g.godownName || g.Name || g.Description || '';
+                    if (!name) return;
+                    const selected = (String(code) === String(currentCode) || String(name) === String(currentName)) ? 'selected' : '';
+                    options += `<option value="${code}" data-name="${name}" ${selected}>${name}</option>`;
+                });
+
+                $godownSelect.html(options);
+
+                if (isView) {
+                    $godownSelect.prop('disabled', true);
+                }
+            });
+
+            // Handle change event to mark changed inputs - use event delegation to prevent conflicts
+            $tbody.off('change', '.godown-select').on('change', '.godown-select', function(e) {
+                e.stopPropagation();
+                const $s = $(this);
+                if (G_IsViewMode) return;
+                $s.addClass('changed-input');
+                console.log('Godown changed for MRNDetail', $s.data('mrn-detail-code'), 'value', $s.val());
+            });
+
+            // On status change: refresh warehouse options for this row and mark changed
+            $tbody.off('change', '.status-select').on('change', '.status-select', function(e) {
+                e.stopPropagation();
+                const $statusSelect = $(this);
+                if (G_IsViewMode) return;
+                $statusSelect.addClass('changed-input');
+                console.log('Status changed for MRNDetail', $statusSelect.data('mrn-detail-code'), 'value', $statusSelect.val());
+
+                const $row = $statusSelect.closest('tr');
+                const $godownSelect = $row.find('.godown-select');
+                if (!$godownSelect.length || !G_GodownList.length) return;
+
+                const status = $statusSelect.val();
+                const filteredGodowns = getGodownListByStatus(G_GodownList, status);
+                const currentVal = $godownSelect.val();
+                const currentOpt = $godownSelect.find('option:selected');
+                const currentName = currentOpt.length ? currentOpt.data('name') || currentOpt.text() : '';
+
+                let options = '<option value="">Please select...</option>';
+                let currentValStillValid = false;
+                filteredGodowns.forEach(function(g) {
+                    const code = g.Code || g.code || g.WarehouseMaster_Code || g.GodownId || 0;
+                    const name = g.GodownName || g.godownName || g.Name || g.Description || '';
+                    if (!name) return;
+                    const selected = (String(code) === String(currentVal) || name === currentName) ? 'selected' : '';
+                    if (String(code) === String(currentVal) || name === currentName) currentValStillValid = true;
+                    options += `<option value="${code}" data-name="${name}" ${selected}>${name}</option>`;
+                });
+
+                $godownSelect.html(options);
+                if (!currentValStillValid && currentVal) {
+                    $godownSelect.addClass('changed-input');
+                }
+            });
+        } catch (ex) {
+            console.error('Error populating godown selects', ex);
+        }
+    }).catch(function(err) {
+        console.error('Error fetching godown list', err);
     });
 }
 function restrictNumericInput($input, e) {
@@ -567,6 +993,9 @@ function handlePropertyInputChange($input) {
     $input.addClass('changed-input');
     
     console.log('Tracked changes:', G_ChangedInputs.length);
+    
+    // DO NOT auto-update status - let user control it manually
+    // Removed all auto-status update logic to prevent interference with dropdown selections
 }
 function GetQCPropertyTestTypeMaster() {
     const $container = $('#chkTestType');
@@ -736,11 +1165,12 @@ function clearTable() {
     $('.table-wrapper').hide();
     $('#btnSaveQualityCheck').hide();
     $('#btnReset').hide();
+    $('#btnPrint').hide();
     G_PurchaseQualityCheckData = [];
     G_PropertyColumns = [];
 }
 function saveQualityCheckData() {
-    var ModuleName = "Purchase Quality Check",
+    var ModuleName = `${menuValue}`,
         OptionName = "New",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
@@ -760,7 +1190,56 @@ function saveQualityCheckData() {
                 return;
             }
 
+            // Mandatory: Status and Warehouse must be selected for every detail row
+            let mandatoryError = '';
+            $('#table-body tr').each(function () {
+                const $tr = $(this);
+                const mrnDetailCode = $tr.data('mrn-detail-code') || 0;
+                if (!mrnDetailCode) return;
+
+                const $status = $tr.find('.status-select');
+                const $godown = $tr.find('.godown-select');
+                const statusVal = $status.length ? ($status.val() || '').trim() : '';
+                const godownVal = $godown.length ? ($godown.val() || '').trim() : '';
+
+                if (!statusVal) {
+                    mandatoryError = 'Please select Status for all rows (Accepted or Rejected).';
+                    return false; // break
+                }
+                if (!godownVal) {
+                    mandatoryError = 'Please select Warehouse for all rows.';
+                    return false;
+                }
+            });
+            if (mandatoryError) {
+                toastr.error(mandatoryError);
+                return;
+            }
+
             const dataToSave = [];
+            
+            // Group by MRNDetail to collect status and godown per row
+            const detailMap = new Map();
+            
+            // First collect status and godown per detail
+            $('#table-body tr').each(function () {
+                const $tr = $(this);
+                const mrnDetailCode = $tr.data('mrn-detail-code') || 0;
+                if (!mrnDetailCode) return;
+                
+                const $status = $tr.find('.status-select');
+                const $godown = $tr.find('.godown-select');
+                
+                const statusVal = $status.length ? $status.val() : '';
+                const godownVal = $godown.length ? $godown.val() : '';
+                
+                detailMap.set(mrnDetailCode, {
+                    status: statusVal || null,
+                    WarehouseMaster_Code: godownVal ? parseInt(godownVal) : null
+                });
+            });
+            
+            // Now collect property inputs and merge with detail info
             $('.property-input').each(function () {
                 const $input = $(this);
                 const value = $input.val();
@@ -782,14 +1261,28 @@ function saveQualityCheckData() {
 
                 // Only add if we have all required data
                 if (propertyCode && testType && mrnMasterCode && mrnDetailCode) {
-                    dataToSave.push({
+                    const detailInfo = detailMap.get(mrnDetailCode) || {};
+                    
+                    const record = {
                         code: 0,
                         mrnMaster_Code: parseInt(mrnMasterCode) || 0,
                         mrnDetail_Code: parseInt(mrnDetailCode) || 0,
                         qcPropertyMaster_Code: parseInt(propertyCode) || 0,
                         testTypeMaster_Code: parseInt(testType) || 0,
                         result: value.trim()
-                    });
+                    };
+                    
+                    // Add status only if it has a value (backend expects char, so send single char or null)
+                    if (detailInfo.status && detailInfo.status !== '') {
+                        record.status = detailInfo.status.charAt(0); // Take first character only
+                    }
+                    
+                    // Add WarehouseMaster_Code only if it has a value
+                    if (detailInfo.WarehouseMaster_Code !== null && detailInfo.WarehouseMaster_Code !== undefined) {
+                        record.WarehouseMaster_Code = detailInfo.WarehouseMaster_Code;
+                    }
+                    
+                    dataToSave.push(record);
                 }
             });
 
@@ -810,6 +1303,7 @@ function saveQualityCheckData() {
                 return;
             }
 
+            // Send the array directly, NOT wrapped in an object
             Showloader();
 
             PurchaseQualityCheckService.SaveMRNQCPropertyResult(dataToSave)
@@ -818,6 +1312,9 @@ function saveQualityCheckData() {
                         toastr.success(response.Msg || 'Data saved successfully.');
                         G_ChangedInputs = [];
                         $('.property-input').removeClass('changed-input');
+                        // Remove changed class from status and godown selects
+                        $('.status-select').removeClass('changed-input');
+                        $('.godown-select').removeClass('changed-input');
                     } else {
                         toastr.error(response.Msg || 'Error saving data.');
                     }
@@ -856,6 +1353,19 @@ function resetGrid() {
         }
     }
 }
+function printGrid() {
+    if (!confirm('Are you sure you want to Print the grid')) {
+        return;
+    }
+    G_ChangedInputs = [];
+    const mrnNo = $('#txtMRNNo').val();
+    ////if (mrnNo && mrnNo !== '0' && mrnNo !== '') {
+    ////    const mrnMasterCode = mrnNo;
+    ////    if (mrnMasterCode && mrnMasterCode !== 0) {
+    ////        loadPurchaseQualityCheckData(mrnMasterCode);
+    ////    }
+    //}
+}
 function SavePurchaseQualityCheck() {
     saveQualityCheckData();
 }
@@ -891,6 +1401,34 @@ function bindYearDropdown() {
             toastr.error('Error loading Financial Year list. Please try again.');
             $dropdown.html('<option value="">Please select...</option>');
         });
+}
+/** Returns godown list filtered by QC status: Accepted = exclude "Store Rejected", Rejected = only "Store Rejected". */
+function getGodownListByStatus(godownList, status) {
+    if (!Array.isArray(godownList)) return [];
+    const statusVal = (status || '').toString().trim().toUpperCase();
+    return godownList.filter(function(g) {
+        const name = (g.GodownName || g.godownName || g.Name || g.Description || '').toString().trim();
+        const isStoreRejected = name.toLowerCase() === 'store rejected';
+        if (statusVal === 'A') return !isStoreRejected;  // Accepted: exclude Store Rejected
+        if (statusVal === 'R') return isStoreRejected;   // Rejected: only Store Rejected
+        return true;  // No status: show all
+    });
+}
+
+function bindGodownNameDropdown() {
+    // Return a promise that resolves with the godown list array so callers can populate selects.
+    return PurchaseQualityCheckService.GetGodownNameList().then(function(response) {
+        if (response && Array.isArray(response)) {
+            G_GodownList = response;
+            return response;
+        }
+        G_GodownList = [];
+        return [];
+    }).catch(function(err) {
+        console.error('Error in GetGodownNameList', err);
+        G_GodownList = [];
+        return [];
+    });
 }
 function GetMRNVendor() {
     const $PartyName = $('#ddlPartyName');
@@ -977,6 +1515,222 @@ function bindVendorDropdown(list) {
         toastr.error('Error initializing select2 for Party Name:', e);
     }
 }
+function PurchaseQualityCheck_EditData(MRNNo, finYear) {
+    var ModuleName = `${menuValue}`,
+        OptionName = "Edit",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            if (!MRNNo || MRNNo === 0) {
+                toastr.error('Invalid MRN No');
+                return;
+            }
 
+            $('#dvGrid').hide();
+            $('#locatePurchaseQualityCheck').show();
+            $('#btnSaveQualityCheck').show();
+            $('#btnReset').show();
+
+            if (finYear) {
+                const $ddlFinYear = $('#ddlFinYear');
+                $ddlFinYear.val(finYear);
+            }
+
+            G_IsViewMode = false;
+
+            toggleMRNField(false);
+            togglePartyField(false);
+
+            if (MRNNo) {
+                const $txtMRNNo = $('#txtMRNNo');
+                $txtMRNNo.val(MRNNo);
+                if (MRNNo) {
+                    $('#txtMRNNo').val(MRNNo).trigger('change');
+                }
+            }
+            $('#locatePurchaseQualityCheck').find('input, select, textarea').prop('disabled', true);
+        }
+    });
+}
+function PurchaseQualityCheck_ViewData(MRNNo, finYear, PartyMaster_Code, MRNDate, BillNo, BillDate) {
+    var ModuleName = `${menuValue}`,
+        OptionName = "View",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            if (!MRNNo || MRNNo === 0) {
+                toastr.error('Invalid MRN No');
+                return;
+            }
+
+            $('#dvGrid').hide();
+            $('#locatePurchaseQualityCheck').show();
+            toggleMRNField(true);
+            togglePartyField(true);
+            $('#locatePurchaseQualityCheck').find('input, select, textarea').prop('disabled', true);
+            $('#btnBack').prop('disabled', false);
+
+            if (finYear) {
+                const $ddlFinYear = $('#ddlFinYear');
+                $ddlFinYear.val(finYear);
+            }
+
+            G_IsViewMode = true;
+
+            if (PartyMaster_Code) {
+                const $ddlParty = $('#ddlPartyName');
+                if ($ddlParty.length) {
+                    $ddlParty.val(PartyMaster_Code);
+                    const selectedText = $ddlParty.find('option:selected').text() || '';
+                    $('#ViewPartyName').val(selectedText);
+                }
+            }
+
+            if (MRNNo) {
+                const $viewInput = $('#ViewMRNNo');
+                if ($viewInput.length) {
+                    $viewInput.val(MRNNo);
+                }
+            }
+            $('#txtMRNDate').val(MRNDate);
+            $('#txtBillNo').val(BillNo);
+            $('#txtBillDate').val(BillDate);
+
+            let mrnMasterCode = MRNNo;
+            if (mrnMasterCode && mrnMasterCode !== 0) {
+                $('#hfMRNMasterCode').val(mrnMasterCode);
+                loadPurchaseQualityCheckData(mrnMasterCode);
+            }
+
+            $('#btnSaveQualityCheck').hide();
+            $('#btnReset').hide();
+        }
+    });
+}
+function Verify_PurchaseQualityCheck(Code) {
+    var ModuleName = `${menuValue}`,
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            try {
+                if (!Code) {
+                    toastr.error('Invalid MRN Master Code');
+                    return;
+                }
+
+                if (!confirm('Are you sure you want to verify this record?')) {
+                    return;
+                }
+
+                Showloader();
+                PurchaseQualityCheckService.VerifyMRNQCPropertyResult(Code).then(function (response) {
+                        HideLoader();
+                        if (response && response.Status === 'Y') {
+                            toastr.success(response.Msg || 'Verified successfully.');
+                            GetMRNQCPropertyList();
+                        } else if (response && response.Status === 'N') {
+                            toastr.warning(response.Msg || 'Verification failed.');
+                        } else {
+                            toastr.warning('Unexpected response during verification.');
+                        }
+                    }).catch(function (error) {
+                        HideLoader();
+                        toastr.error((error && error.Msg) || 'Error during verification.');
+                });
+            } catch (ex) {
+                HideLoader();
+                console.error('Error in Verify_PurchaseQualityCheck:', ex);
+                toastr.error('An error occurred while verifying.');
+            }
+        }
+    });
+}
+function Print_PurchaseQualityCheck(Code) {
+    PurchaseQualityCheckService.PrintMRNQCPropertyResult(Code).then(function (response) {
+        let url = response.Url;
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.target = '_blank';
+        a.href = url;
+        document.body.appendChild(a);
+        a.click();
+    }).catch(function (error) {
+        console.error("Error in printing report:", error);
+    });
+}
+function Delete(Code) {
+    var ModuleName = `${menuValue}`,
+        OptionName = "Delete",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            OpenModal(Code);
+        }
+    });
+}
+function OpenModal(Code) {
+    $('#hfCode').val(Code);
+    $('#PurchaseQualityRemark').modal({ backdrop: 'static' });
+    $('#PurchaseQualityRemark').modal('show');
+    $("#txtRemark").val("");
+}
+function CloseModal() {
+    $('#PurchaseQualityRemark').modal('hide');
+    $("#txtRemark").val("");
+}
+function DeletePurchaseQualityCheck() {
+    var code = $("#hfCode").val();
+    var Remark = $("#txtRemark").val();
+    if (Remark == '') {
+        toastr.warning("Please enter the Reason for delete.");
+        return;
+    }
+    PurchaseQualityCheckService.DeletePurchaseQuality(code, Remark)
+        .then(function (response) {
+            if (response.Status === 'Y') {
+                toastr.success(response.Msg);
+                CloseModal();
+                GetMRNQCPropertyList();
+            } else {
+                toastr.error(response.Msg);
+            }
+        })
+        .catch(function (error) {
+            toastr.error('Error loading data. Please try again.');
+        });
+}
+function Download() {
+    const hiddenFields = [
+        "MrnMaster_Code", "FinYear", "PartyMaster_Code", "Code", "Verify"
+    ];
+    ExportToExcelControl.ExportToExcel(G_PurchaseQualityCheckDataList, hiddenFields, "PurchaseQualityCheck");
+}
+
+window.PurchaseQualityCheck_EditData = PurchaseQualityCheck_EditData;
+window.PurchaseQualityCheck_ViewData = PurchaseQualityCheck_ViewData;
+window.Verify_PurchaseQualityCheck = Verify_PurchaseQualityCheck;
+window.Print_PurchaseQualityCheck = Print_PurchaseQualityCheck;
 window.SavePurchaseQualityCheck = SavePurchaseQualityCheck;
 window.bindYearDropdown = bindYearDropdown;
+window.CreateNew = CreateNew;
+window.Delete = Delete;
+window.DeletePurchaseQualityCheck = DeletePurchaseQualityCheck;
+window.CloseModal = CloseModal;
+window.Download = Download;

@@ -1,11 +1,13 @@
 ﻿import { RollingPlanSheetService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RollingPlanSheetService.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { createSizeFilterControlModal, initializeSizeFilterControl } from '../../Bizsol.WebERP.UI.Shared/js/Pages/CommonSizeFilterControl.js';
 
 let G_FromDate = '';
 let G_ToDate = '';
 let A_FromDate = '';
 let A_ToDate = '';
+let G_ItemSizeMaster_Codes = '';
 $(document).ready(function () {
     GetRollingPlanSheetList();
     var urlParams = BizSolHelperFunction.getUrlVars();
@@ -102,7 +104,7 @@ $(document).ready(function () {
         }
     });
 
-    $(document).on('change', '#txtfromDate,txttoDate', function () {
+    $(document).on('change', '#txtfromDate,#txttoDate', function () {
         A_FromDate = $('#txtfromDate').val();
         A_ToDate = $('#txttoDate').val();
         GetAgeingReportList(A_FromDate, A_ToDate);
@@ -262,7 +264,7 @@ function renderDateAndMillWiseReportTable(response, reportDate) {
                     `<td style="text-align:right">${total}</td>` +
                     `<td style="text-align:center">${escapeHtml(pending)}</td>`;
             } else {
-                bodyHtml += '<td></td><td></td><td></td><td></td>';
+                bodyHtml += '<td></td><td></td><td></td><td></td><td></td>';
             }
         });
         bodyHtml += '</tr>';
@@ -953,7 +955,14 @@ function ExportExcel() {
         }
         
         const hiddenFields = [];
-        RollingPlanSheetService.GetPendingPlansReportList(fromDate, toDate, Status, ItemMaster_Code).then(function (response) {
+        const Payload = {
+            fromDate : fromDate,
+            toDate : toDate,
+            status : Status,
+            itemMaster_Code : ItemMaster_Code,
+            itemSizeMaster_Codes : G_ItemSizeMaster_Codes
+        }
+        RollingPlanSheetService.GetPendingPlansReportList(Payload).then(function (response) {
             if (response && response.length > 0) {
                 ExportToExcelControl.ExportToExcel(response, hiddenFields, "PendingPlansRollingPlan");
             } else {
@@ -1184,7 +1193,14 @@ function setCurrentDatePendingPlans() {
 }
 function GetPendingPlansReportList(G_FromDate, G_ToDate,Status,ItemMaster_Code) {
     Showloader();
-    RollingPlanSheetService.GetPendingPlansReportList(G_FromDate, G_ToDate, Status, ItemMaster_Code).then(function (response) {
+    const Payload = {
+        fromDate: G_FromDate,
+        toDate: G_ToDate,
+        status: Status,
+        itemMaster_Code: ItemMaster_Code,
+        itemSizeMaster_Codes: G_ItemSizeMaster_Codes
+    }
+    RollingPlanSheetService.GetPendingPlansReportList(Payload).then(function (response) {
         if (response && response.length > 0) {
             const stringFilterColumn = ["Plan No", "Order No", "Item Name", "Size Desp", "Order PC", "Status"];
             const numericFilterColumn = ["Order MT", "Planned PC", "Planned MT", "Rolled PC", "Rolled MT", "Balance PC", "Balance MT"];
@@ -1730,18 +1746,24 @@ function GetAgeingReportList(A_FromDate, A_ToDate) {
     Showloader();
     RollingPlanSheetService.GetRollingPlanAgeingReportList(A_FromDate, A_ToDate).then(function (response) {
         if (response && response.length > 0) {
-            const stringFilterColumn = ["Marketing Man", "Item Name","Size"];
-            const numericFilterColumn = ["Bal Qty", "Ord Dispatch Qty", "Prod Qty", "Ord Qty", "Ord No","Plan No"];
+            const stringFilterColumn = ["Marketing Man", "Ord No", "Plan No","Item Name"];
+            const numericFilterColumn = ["Bal Qty", "Dispatch Qty", "Prod Qty", "Ord Qty", "Plan Qty","Stock"];
             const dateFilterColumn = ["Production Date"];
             const button = false;
-            const stringDoubleFilterColumn = ["Plan No"];
+            const stringDoubleFilterColumn = ["Size"];
             const showButtons = [];
             const hiddenColumns = ["ItemMaster_Code"];
             const columnAlignment = {
                 "Size": ";width:15px;",
-                "Prod Qty": 'right', "Ord Dispatch Qty": 'right', "Aging": 'right', "Bal Qty": 'right', "Ord Qty": 'right'
+                "Prod Qty": 'right',
+                "Dispatch Qty": 'right',
+                "Aging": 'right',
+                "Bal Qty": 'right',
+                "Ord Qty": 'right',
+                "Plan Qty": 'right',
+                "Stock":"right"
             };
-            const TotalColums = ["Bal Qty", "Ord Dispatch Qty", "Prod Qty", "Ord Qty"];
+            const TotalColums = ["Bal Qty", "Dispatch Qty", "Prod Qty", "Ord Qty", "Plan Qty", "Stock"];
             BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, TotalColums);
             $('.totals-row').remove();
             HideLoader();
@@ -1756,6 +1778,29 @@ function GetAgeingReportList(A_FromDate, A_ToDate) {
         toastr.error(error.Msg || 'Error During Get Pending Plan Sheet');
     });
 }
+function ShowSizeControlModal() {
+    var itemMasterCode = $("#ddlItemName").val();
+
+    if (!itemMasterCode || itemMasterCode === 'All' || itemMasterCode === '0') {
+        itemMasterCode = "0";
+    }
+
+    const options = {
+        ModalId: 'DivSizeControlmodal',
+        ItemMaster_Code: itemMasterCode,
+        CallBackFunctionName_btnDone: 'onSizeFilterApplied'
+    };
+
+    initializeSizeFilterControl(options);
+}
+
+window.onSizeFilterApplied = function (response) {
+    if (response && response.length > 0) {
+        G_ItemSizeMaster_Codes = response.map(x => x.Code).join(',');
+    } else {
+        G_ItemSizeMaster_Codes = '';
+    }
+};
 
 window.ExportExcel = ExportExcel;
 window.OpenModal = OpenModal;
@@ -1767,3 +1812,4 @@ window.bindItemDropdown = bindItemDropdown;
 window.GetRollingPlanProductionDetails = GetRollingPlanProductionDetails;
 window.ProductionDetailsCloseModal = ProductionDetailsCloseModal;
 window.GetAgeingReportList = GetAgeingReportList;
+window.ShowSizeControlModal = ShowSizeControlModal;

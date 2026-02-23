@@ -40,8 +40,8 @@ const QCPropertyItemConfigurationService = {
             return value;
         });
     },
-    GetItemMasterList: function GetItemMasterList() {
-        const url = UrlService.API_ENDPOINT_ITEM + `/GetItemMasterList`;
+    GetItemMasterList: function GetItemMasterList(Category) {
+        const url = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetQCPropertyItemName?Category=${Category}`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
             return value;
         });
@@ -54,6 +54,12 @@ const QCPropertyItemConfigurationService = {
     },
     GetQCPropertyMasterForDropdown: function GetQCPropertyMasterForDropdown(QCPropertyGroupMaster_Code) {
         const url = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetQCPropertyMasterForDropdown?QCPropertyGroupMaster_Code=${QCPropertyGroupMaster_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
+            return value;
+        });
+    },
+    GetQCPropertyItemCategory: function GetQCPropertyItemCategory() {
+        const url = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetQCPropertyItemCategory`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
             return value;
         });
