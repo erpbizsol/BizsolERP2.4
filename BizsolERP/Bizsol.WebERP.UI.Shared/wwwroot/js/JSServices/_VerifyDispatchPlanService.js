@@ -85,6 +85,15 @@ const VerifyDispatchPlanService = {
             }
         );
     },
+
+    GetDespatchActivityReportList: function GetDespatchActivityReportList(FromDate, ToDate) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetDespatchActivityReportList?FromDate=" + FromDate + "&ToDate=" + ToDate;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetTimeBasedVerifyNotAllowInDispatch: function GetTimeBasedVerifyNotAllowInDispatch() {
         var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetTimeBasedVerifyNotAllowInDispatch";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
