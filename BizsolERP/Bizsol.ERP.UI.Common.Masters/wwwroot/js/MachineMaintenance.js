@@ -16,6 +16,9 @@ var G_UserName = UserDetails[0].UserName;
 var G_Status = 'SAVE';
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+    $(".Number").keyup(function (e) {
+        if (/\D/g.test(this.value)) this.value = this.value.replace(/[^0-9]/g, '')
+    });
     $("#txtPreparedBy").val(G_UserName);
     GetMachineMaintenanceList();
     GetReasonMaster();
@@ -141,6 +144,7 @@ function ClearData() {
     $('#txtMCFailedDate').val(getTodayDateForInput()).prop('readonly', false);
     $('#txtMCFailedTime').val('').prop('readonly', false);
     $('#txtJobAssignedTo').val('').prop('readonly', false);
+    $('#txtAssignedMobileNo').val('').prop('readonly', false);
 
     $('#txtddlMachineNo').prop('disabled', false);
     $('#txtddlComplaintDepartment').prop('disabled', false);
@@ -212,6 +216,7 @@ function SaveMachineMaintenance() {
                 MachineFailedDate: $("#txtMCFailedDate").val() || "",
                 MachineFailedTime: $("#txtMCFailedTime").val() || "",
                 JobAssignedTo: $("#txtJobAssignedTo").val() || "",
+                MobileNo: $("#txtAssignedMobileNo").val() || "",
                 ReasonMaster_Code: $("#txtddlComplaintReason").val() || "",
                 FailedRemark: $("#txtRemark").val() || "",
                 WorkStartDate: workStartDate,
@@ -301,7 +306,6 @@ function SaveMachineMaintenance() {
         }
     });
 }
-
 function Edit(Code) {
  
     var ModuleName = "Machine Maintenance Request",
@@ -342,6 +346,7 @@ function Edit(Code) {
                     $('#txtMCFailedDate').val(formatDateForInput(data.MachineFailedDate));
                     $('#txtMCFailedTime').val(data.MachineFailedTime);
                     $('#txtJobAssignedTo').val(data.JobAssignedTo);
+                    $('#txtAssignedMobileNo').val(data.MobileNo);
                     SelectOptionByText('txtddlComplaintReason', data.ReasonName);
                     $('#txtRemark').val(data.FailedRemark);
                     $("#txtPreparedBy").val(data.CreatedByName);
@@ -401,7 +406,7 @@ function Done(Code) {
                     $('#txtMCFailedDate').val(formatDateForInput(data.MachineFailedDate)).prop('readonly', true);
                     $('#txtMCFailedTime').val(data.MachineFailedTime).prop('readonly', true);
                     $('#txtJobAssignedTo').val(data.JobAssignedTo).prop('readonly', true);
-                    $('#txtJobAssignedTo').val(data.JobAssignedTo).prop('readonly', true);
+                    $('#txtAssignedMobileNo').val(data.MachineNo).prop('readonly', true);
                     $('#txtddlMachineNo').prop('disabled', true);
                     $('#txtddlComplaintDepartment').prop('disabled', true);
                     $('#txtddlComplaintReason').prop('disabled', true);
