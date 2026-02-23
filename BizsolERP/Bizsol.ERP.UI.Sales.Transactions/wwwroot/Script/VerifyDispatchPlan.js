@@ -84,11 +84,36 @@ $(document).ready(function () {
 
     bindVerifyDispatchPlanTableHeightHandlers();
     scheduleVerifyDispatchPlanTableHeightAdjust();
+    setCurrentDateDespatchActivity();
 
-    GetDispatchAdvicePlanList($("#ddlStatus").val());
-    $("#ddlStatus").change(function(){
-        GetDispatchAdvicePlanList($(this).val());
-    })
+    // GetDispatchAdvicePlanList($("#ddlStatus").val());
+    // $("#ddlStatus").change(function(){
+    //     GetDispatchAdvicePlanList($(this).val());
+    // })
+    var initialStatus = $("#ddlStatus").val();
+    if (initialStatus === 'R') {
+        $(".despatch-activity-filter").removeClass('d-none');
+        $("#dvTableDispatch").hide();
+    } else {
+        $(".despatch-activity-filter").addClass('d-none');
+        GetDispatchAdvicePlanList(initialStatus);
+    }
+    $("#ddlStatus").change(function () {
+        var status = $(this).val();
+        if (status === 'R') {
+            $(".despatch-activity-filter").removeClass('d-none');
+            $("#dvTableDispatch").hide();
+        } else {
+            $(".despatch-activity-filter").addClass('d-none');
+            GetDispatchAdvicePlanList(status);
+        }
+    });
+    $("#txtFromDate").change(function () {
+        ShowDespatchActivityList();
+    });
+    $("#txtToDate").change(function () {
+        ShowDespatchActivityList();
+    });
 });
 function GetDispatchAdvicePlanList(Status) {
     Showloader();
@@ -527,9 +552,9 @@ function calculateTotals(data) {
     return totals;
 }
 function addTotalsRow(totals, hiddenColumns = []) {
-    // Check if status is 'T' and hide totals row if so
+    // Check if status is 'T' or 'R' and hide/remove totals row
     const status = $('#ddlStatus').val();
-    if (status === 'T') {
+    if (status === 'T' || status === 'R') {
         const tableHead = document.getElementById('table-head');
         if (tableHead) {
             const existingTotalsRow = tableHead.querySelector('.totals-row');
@@ -935,11 +960,44 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
     }, 300);
 });
 function ExportExcel() {
+    var status = $("#ddlStatus").val();
+    if (status === 'R') {
+        var fromDate = $('#txtFromDate').val();
+        var toDate = $('#txtToDate').val();
+        if (!fromDate || !toDate) {
+            toastr.warning('Please select From Date and To Date before export.');
+            return;
+        }
+        if (new Date(toDate) < new Date(fromDate)) {
+            toastr.warning('To Date must be greater than or equal to From Date.');
+            return;
+        }
+        Showloader();
+        VerifyDispatchPlanService.GetDespatchActivityReportList(fromDate, toDate).then(function (response) {
+            HideLoader();
+            if (response && response.length > 0) {
+                ExportToExcelControl.ExportToExcel(response, [], "DespatchActivityReport");
+                toastr.success('Export completed successfully.');
+            } else {
+                toastr.info('No data to export for the selected date range.');
+            }
+        }).catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || error.message || 'Error during export.');
+        });
+        return;
+    }
     const hiddenFields = ["Code","AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
-    VerifyDispatchPlanService.GetDispatchAdvicePlanList($("#ddlStatus").val()).then(function (response) {
-        ExportToExcelControl.ExportToExcel(response, hiddenFields, "DispatchAdvicePlan");
+    VerifyDispatchPlanService.GetDispatchAdvicePlanList(status).then(function (response) {
+        if (response && response.length > 0) {
+            ExportToExcelControl.ExportToExcel(response, hiddenFields, "DispatchAdvicePlan");
+            toastr.success('Export completed successfully.');
+        } else {
+            toastr.info('No data to export.');
+        }
+    }).catch(function (error) {
+        toastr.error(error.Msg || error.message || 'Error during export.');
     });
-
 }
 function Verify(Code) {
     var ModuleName = "Delivery Order/Despatch Advice (GST)",
@@ -1712,6 +1770,65 @@ function OpenShowRemarksModal(Code) {
 function CloseShowRemarksModal() {
     $('#dvShowRemarks').modal('hide');
 }
+function setCurrentDateDespatchActivity() {
+    let today = new Date();
+    let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    function formatDate(date) {
+        let day = String(date.getDate()).padStart(2, '0');
+        let month = String(date.getMonth() + 1).padStart(2, '0');
+        let year = date.getFullYear();
+        return `${year}-${month}-${day}`;
+    }
+
+    $('#txtFromDate').val(formatDate(firstOfMonth));
+    $('#txtToDate').val(formatDate(today));
+}
+
+function ShowDespatchActivityList() {
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate) {
+        toastr.warning('Please select From Date and To Date.');
+        return;
+    }
+    if (new Date(toDate) < new Date(fromDate)) {
+        toastr.warning('To Date must be greater than or equal to From Date.');
+        return;
+    }
+    Showloader();
+    VerifyDispatchPlanService.GetDespatchActivityReportList(fromDate, toDate).then(function (response) {
+        HideLoader();
+        if (response && response.length > 0) {
+            G_DispatchPlanlist = response;
+            const stringFilterColumn = ["Created By", "Verify Marketing Parson", "Verify PPC Person", "Final Verify","Quotation Approved Name"];
+            const numericFilterColumn = ["DO No","Invoice No"];
+            const dateFilterColumn = ["DO Date","Invoice Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = ["Rows"];
+            const columnAlignment = {};
+            BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            $("#dvTableDispatch").show();
+            const tableHead = document.getElementById('table-head');
+            if (tableHead) {
+                const totalsRow = tableHead.querySelector('.totals-row');
+                if (totalsRow) totalsRow.remove();
+            }
+            scheduleVerifyDispatchPlanTableHeightAdjust();
+        } else {
+            $("#dvTableDispatch").hide();
+            $(".totals-row").hide();
+            toastr.info('No data found for the selected date range.');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        $("#dvTableDispatch").hide();
+        $(".totals-row").hide();
+        toastr.error(error.Msg || error.message || 'Error loading Despatch Activity Report.');
+    });
+}
 
 window.ViewAll = ViewAll;
 window.EditQty = EditQty;
@@ -1735,6 +1852,4 @@ window.ApprovedTransporter = ApprovedTransporter;
 window.UpdateQty = UpdateQty;
 window.OpenShowRemarksModal = OpenShowRemarksModal;
 window.CloseShowRemarksModal = CloseShowRemarksModal;
-
-
-
+window.ShowDespatchActivityList = ShowDespatchActivityList;
