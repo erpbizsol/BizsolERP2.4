@@ -3,7 +3,9 @@ import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToE
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+var UserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
 var userMaster = authKeyData.UserMaster_Code;
+var UserType = UserDetails[0].UserType;
 
 let G_DispatchPlanlist = [];
 let G_DispatchAdviceNo = 0;
@@ -1014,12 +1016,29 @@ function Verify(Code) {
         OptionName = "Verify";
     }
 
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
-        if (response.CheckModuleOptionRight == 'N') {
-            toastr.error(response.Msg);
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response1) {
+        if (response1.CheckModuleOptionRight == 'N') {
+            toastr.error(response1.Msg);
             return false;
         } else {
-            OpenVerifyModal(Code);
+            if (status == "P" && UserType != "A" ) {
+                VerifyDispatchPlanService.GetTimeBasedVerifyNotAllowInDispatch().then(function (response2) {
+                    if (response2[0].Msg == '') {
+                        OpenVerifyModal(Code);
+                    } else {
+                        MenuService.CheckModuleOptionRight(ModuleName, "Verify Within Time Limit", ShowMsg, FinYear).then(function (response3) {
+                            if (response3.CheckModuleOptionRight == 'N') {
+                                toastr.warning(response2[0].Msg);
+                                return false;
+                            } else {
+                                OpenVerifyModal(Code);
+                            }
+                        });
+                    }
+                });
+            } else {
+                OpenVerifyModal(Code);
+            }
         }
     });
 }
