@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -78,6 +78,7 @@
     /* Prevent filter bars and buttons from growing */
     #date-filter-bar,
     #from-date-to-date-filter-bar,
+    #from-date-to-date-filter-bar-Ageing,
     #btnDownload,
     .paginator {
         flex-shrink: 0;
@@ -389,12 +390,19 @@
                 </div>
                 
             </div>
-            <div id="from-date-to-date-filter-bar-Ageing" class="row mb-1" style="display:none">
-                <div class="col-md-3">
+            <div id="from-date-to-date-filter-bar-Ageing" class="row mb-1">
+                <div class="col-md-2" id="divReportType">
+                    <label for="ddlReportType" class="form-label">Report Type</label>
+                    <select id="ddlReportType" class="form-control form-control-sm box_border">
+                        <option value="Consolidated" selected>Consolidated</option>
+                        <option value="Detail">Detail</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label for="txtfromDate" class="form-label">From Date</label>
                     <input type="date" id="txtfromDate" class="form-control form-control-sm box_border" />
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label for="txttoDate" class="form-label">To Date</label>
                     <input type="date" id="txttoDate" class="form-control form-control-sm box_border" />
                 </div>

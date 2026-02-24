@@ -817,7 +817,7 @@ function ChangecolorTr() {
     const groupColors = [
         "#fde2e2", // red-ish
         "#e6f7e6", // green-ish
-        "#e6f0ff", // blue-ish
+        "#97AAC6", // blue-ish
         "#fff7e0", // yellow-ish
         "#f3e6ff"  // purple-ish
     ];
