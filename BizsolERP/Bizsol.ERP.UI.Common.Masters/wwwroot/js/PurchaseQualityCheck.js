@@ -487,7 +487,7 @@ function loadPurchaseQualityCheckData(mrnMasterCode) {
         .then(function (response) {
             HideLoader();
             if (response && Array.isArray(response) && response.length > 0) {
-                if (response[0].Status == 'Y') {
+                if (response[0].Status2 == 'Y') {
                     G_PurchaseQualityCheckData = response;
                     buildQualityCheckTable(response);
                 } else {
