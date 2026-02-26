@@ -3,15 +3,15 @@ import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToE
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+var UserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
 var userMaster = authKeyData.UserMaster_Code;
+var UserType = UserDetails[0].UserType;
 
 let G_DispatchPlanlist = [];
 let G_DispatchAdviceNo = 0;
 let G_DispatchMaster_Code = 0;
 let G_AccountMaster_Code = 0;
 
-// --- Grid height fix (avoid footer overlap) ---
-// Same approach as MillWiseProductionReport.js (viewport + footer overlap aware).
 let _vdpHeightRaf = 0;
 let _vdpHeightHandlersBound = false;
 function getViewportHeight() {
@@ -86,11 +86,36 @@ $(document).ready(function () {
 
     bindVerifyDispatchPlanTableHeightHandlers();
     scheduleVerifyDispatchPlanTableHeightAdjust();
+    setCurrentDateDespatchActivity();
 
-    GetDispatchAdvicePlanList($("#ddlStatus").val());
-    $("#ddlStatus").change(function(){
-        GetDispatchAdvicePlanList($(this).val());
-    })
+    // GetDispatchAdvicePlanList($("#ddlStatus").val());
+    // $("#ddlStatus").change(function(){
+    //     GetDispatchAdvicePlanList($(this).val());
+    // })
+    var initialStatus = $("#ddlStatus").val();
+    if (initialStatus === 'R') {
+        $(".despatch-activity-filter").removeClass('d-none');
+        $("#dvTableDispatch").hide();
+    } else {
+        $(".despatch-activity-filter").addClass('d-none');
+        GetDispatchAdvicePlanList(initialStatus);
+    }
+    $("#ddlStatus").change(function () {
+        var status = $(this).val();
+        if (status === 'R') {
+            $(".despatch-activity-filter").removeClass('d-none');
+            $("#dvTableDispatch").hide();
+        } else {
+            $(".despatch-activity-filter").addClass('d-none');
+            GetDispatchAdvicePlanList(status);
+        }
+    });
+    $("#txtFromDate").change(function () {
+        ShowDespatchActivityList();
+    });
+    $("#txtToDate").change(function () {
+        ShowDespatchActivityList();
+    });
 });
 function GetDispatchAdvicePlanList(Status) {
     Showloader();
@@ -107,7 +132,8 @@ function GetDispatchAdvicePlanList(Status) {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
+            const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"
+            ,"Remarks","Marketing Remark","PPC Remark"];
             const columnAlignment = {
                 "Ord Qty Pc": "right;max-width:30px;",
                 "Ord Qty MT": "right",
@@ -129,11 +155,13 @@ function GetDispatchAdvicePlanList(Status) {
             };
             const updatedResponse = response.map(item => {
                 const Action = Status == 'C' ? `<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>` : `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["Code"]})"><i class="fa fa-check"></i></button>&nbsp;<button class="btn btn-info icon-height mb-1" title="Update Qty" onclick="EditQty(${item["Code"]})"><i class="fa fa-pencil"></i></button>`;
+                const Remark = `<button class="btn btn-info icon-height mb-1" title="Remarks" onclick="OpenShowRemarksModal(${item["Code"]})">Remark</button>`;
                 const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Verify/Send Mail" onclick="SendMail(${item["Code"]})">Verify/Send Mail</button>&nbsp;<button class="btn btn-info icon-height mb-1" title="Update Qty" onclick="EditQty(${item["Code"]})"><i class="fa fa-pencil"></i></button>` : '';
                 let formattedItem;
                 if (Status == 'D') {
                     formattedItem = {
                         ...item,
+                        Remark: Remark,
                         //Action: Action,
                         Other: Other
                     };
@@ -152,6 +180,7 @@ function GetDispatchAdvicePlanList(Status) {
                 } else {
                     formattedItem = {
                         ...item,
+                        Remark: Remark,
                         Action: Action
                     };
                 }
@@ -525,9 +554,9 @@ function calculateTotals(data) {
     return totals;
 }
 function addTotalsRow(totals, hiddenColumns = []) {
-    // Check if status is 'T' and hide totals row if so
+    // Check if status is 'T' or 'R' and hide/remove totals row
     const status = $('#ddlStatus').val();
-    if (status === 'T') {
+    if (status === 'T' || status === 'R') {
         const tableHead = document.getElementById('table-head');
         if (tableHead) {
             const existingTotalsRow = tableHead.querySelector('.totals-row');
@@ -790,7 +819,7 @@ function ChangecolorTr() {
     const groupColors = [
         "#fde2e2", // red-ish
         "#e6f7e6", // green-ish
-        "#e6f0ff", // blue-ish
+        "#97AAC6", // blue-ish
         "#fff7e0", // yellow-ish
         "#f3e6ff"  // purple-ish
     ];
@@ -933,11 +962,44 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
     }, 300);
 });
 function ExportExcel() {
+    var status = $("#ddlStatus").val();
+    if (status === 'R') {
+        var fromDate = $('#txtFromDate').val();
+        var toDate = $('#txtToDate').val();
+        if (!fromDate || !toDate) {
+            toastr.warning('Please select From Date and To Date before export.');
+            return;
+        }
+        if (new Date(toDate) < new Date(fromDate)) {
+            toastr.warning('To Date must be greater than or equal to From Date.');
+            return;
+        }
+        Showloader();
+        VerifyDispatchPlanService.GetDespatchActivityReportList(fromDate, toDate).then(function (response) {
+            HideLoader();
+            if (response && response.length > 0) {
+                ExportToExcelControl.ExportToExcel(response, [], "DespatchActivityReport");
+                toastr.success('Export completed successfully.');
+            } else {
+                toastr.info('No data to export for the selected date range.');
+            }
+        }).catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || error.message || 'Error during export.');
+        });
+        return;
+    }
     const hiddenFields = ["Code","AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
-    VerifyDispatchPlanService.GetDispatchAdvicePlanList($("#ddlStatus").val()).then(function (response) {
-        ExportToExcelControl.ExportToExcel(response, hiddenFields, "DispatchAdvicePlan");
+    VerifyDispatchPlanService.GetDispatchAdvicePlanList(status).then(function (response) {
+        if (response && response.length > 0) {
+            ExportToExcelControl.ExportToExcel(response, hiddenFields, "DispatchAdvicePlan");
+            toastr.success('Export completed successfully.');
+        } else {
+            toastr.info('No data to export.');
+        }
+    }).catch(function (error) {
+        toastr.error(error.Msg || error.message || 'Error during export.');
     });
-
 }
 function Verify(Code) {
     var ModuleName = "Delivery Order/Despatch Advice (GST)",
@@ -954,12 +1016,29 @@ function Verify(Code) {
         OptionName = "Verify";
     }
 
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
-        if (response.CheckModuleOptionRight == 'N') {
-            toastr.error(response.Msg);
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response1) {
+        if (response1.CheckModuleOptionRight == 'N') {
+            toastr.error(response1.Msg);
             return false;
         } else {
-            OpenVerifyModal(Code);
+            if (status == "P" && UserType != "A" ) {
+                VerifyDispatchPlanService.GetTimeBasedVerifyNotAllowInDispatch().then(function (response2) {
+                    if (response2[0].Msg == '') {
+                        OpenVerifyModal(Code);
+                    } else {
+                        MenuService.CheckModuleOptionRight(ModuleName, "Verify Within Time Limit", ShowMsg, FinYear).then(function (response3) {
+                            if (response3.CheckModuleOptionRight == 'N') {
+                                toastr.warning(response2[0].Msg);
+                                return false;
+                            } else {
+                                OpenVerifyModal(Code);
+                            }
+                        });
+                    }
+                });
+            } else {
+                OpenVerifyModal(Code);
+            }
         }
     });
 }
@@ -1677,6 +1756,98 @@ function UpdateQty() {
         toastr.error(error.Msg || 'Error During Approved Quotation ');
     });
 }
+function OpenShowRemarksModal(Code) {
+    $('#dvShowRemarks').modal({ backdrop: 'static' });
+    $('#dvShowRemarks').modal('show');
+    VerifyDispatchPlanService.GetDespatchAdeviceRemarks(Code).then(function (response) {
+    if (response && response.length > 0) {
+        const stringFilterColumn = [];
+        const numericFilterColumn = [];
+        const dateFilterColumn = [];
+        const button = false;
+        const showButtons = [];
+        const stringDoubleFilterColumn = [];
+        let hiddenColumns = [];
+        if ($("#ddlStatus").val() == "M") {
+             hiddenColumns = ["Marketing Remark", "PPC Remark"];
+        } else if($("#ddlStatus").val() == "P"){
+            hiddenColumns = ["Remarks","PPC Remark"];
+        }else {
+            hiddenColumns = ["Remarks"];
+        }
+       const columnAlignment = {};
+
+        BizsolCustomFilterGrid.CreateDataTable("table-headRemarks", "table-bodyRemarks", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+    } else {
+        toastr.error('No Data Found');
+        }
+    }).catch(function (error) {
+        toastr.error(error);
+        HideLoader();
+    });
+}
+function CloseShowRemarksModal() {
+    $('#dvShowRemarks').modal('hide');
+}
+function setCurrentDateDespatchActivity() {
+    let today = new Date();
+    let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    function formatDate(date) {
+        let day = String(date.getDate()).padStart(2, '0');
+        let month = String(date.getMonth() + 1).padStart(2, '0');
+        let year = date.getFullYear();
+        return `${year}-${month}-${day}`;
+    }
+
+    $('#txtFromDate').val(formatDate(firstOfMonth));
+    $('#txtToDate').val(formatDate(today));
+}
+
+function ShowDespatchActivityList() {
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate) {
+        toastr.warning('Please select From Date and To Date.');
+        return;
+    }
+    if (new Date(toDate) < new Date(fromDate)) {
+        toastr.warning('To Date must be greater than or equal to From Date.');
+        return;
+    }
+    Showloader();
+    VerifyDispatchPlanService.GetDespatchActivityReportList(fromDate, toDate).then(function (response) {
+        HideLoader();
+        if (response && response.length > 0) {
+            G_DispatchPlanlist = response;
+            const stringFilterColumn = ["Created By", "Verify Marketing Parson", "Verify PPC Person", "Final Verify","Quotation Approved Name"];
+            const numericFilterColumn = ["DO No","Invoice No"];
+            const dateFilterColumn = ["DO Date","Invoice Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = ["Rows"];
+            const columnAlignment = {};
+            BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            $("#dvTableDispatch").show();
+            const tableHead = document.getElementById('table-head');
+            if (tableHead) {
+                const totalsRow = tableHead.querySelector('.totals-row');
+                if (totalsRow) totalsRow.remove();
+            }
+            scheduleVerifyDispatchPlanTableHeightAdjust();
+        } else {
+            $("#dvTableDispatch").hide();
+            $(".totals-row").hide();
+            toastr.info('No data found for the selected date range.');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        $("#dvTableDispatch").hide();
+        $(".totals-row").hide();
+        toastr.error(error.Msg || error.message || 'Error loading Despatch Activity Report.');
+    });
+}
 
 window.ViewAll = ViewAll;
 window.EditQty = EditQty;
@@ -1698,6 +1869,6 @@ window.SendMailToTransporter = SendMailToTransporter;
 window.ApprovedQuotstion = ApprovedQuotstion;
 window.ApprovedTransporter = ApprovedTransporter;
 window.UpdateQty = UpdateQty;
-
-
-
+window.OpenShowRemarksModal = OpenShowRemarksModal;
+window.CloseShowRemarksModal = CloseShowRemarksModal;
+window.ShowDespatchActivityList = ShowDespatchActivityList;

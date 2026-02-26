@@ -442,7 +442,7 @@
             @* <div class="filter-title">
                 <i class="fas fa-filter"></i> Dispatch Plan Filter
             </div> *@
-            <div class="row">
+            <div class="row align-items-end">
                 <div class="col-md-3">
                     <label for="ddlStatus" class="form-label filter-label">Status</label><span class="text-danger">*</span>
                     <select id="ddlStatus" class="form-control form-control-sm box_border">
@@ -451,9 +451,21 @@
                         <option value="D">Pending For Approval (Dispatch)</option>
                         <option value="C">Approved Dispatch Plan</option>
                         <option value="T">Approved Quotation</option>
+                        <option value="R">Dispatch Activity Report</option>
                     </select>
                 </div>
-                <div class="col-md-9" style="text-align:right">
+                <div class="col-auto despatch-activity-filter d-none">
+                    <label for="txtFromDate" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+                    <input type="date" id="txtFromDate" name="txtFromDate" class="box_border form-control form-control-sm" />
+                </div>
+                <div class="col-auto despatch-activity-filter d-none">
+                    <label for="txtToDate" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+                    <input type="date" id="txtToDate" name="txtToDate" class="box_border form-control form-control-sm" />
+                </div>
+                <div class="col-auto despatch-activity-filter d-none mb-2">
+                    <button type="button" onclick="ShowDespatchActivityList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button>
+                </div>
+                <div class="col text-md-end mb-2">
                     <button type="button" id="btnExportExcel" class="btn btn-primary btn-height" onclick="ExportExcel();">
                         <i class="fas fa-download"></i> Download
                     </button>
@@ -610,5 +622,28 @@
         </div>
     </div>
 </div>
+<div class="modal fade rps-detail-modal" id="dvShowRemarks" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content ">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Remarks</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div id="dvtableShowRemarks" class="table-responsive">
+                    <table id="tableShowRemarks" class="table table-bordered table-striped table-sm mb-0">
+                        <thead id="table-headRemarks">
+                        </thead>
+                        <tbody id="table-bodyRemarks"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseShowRemarksModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>

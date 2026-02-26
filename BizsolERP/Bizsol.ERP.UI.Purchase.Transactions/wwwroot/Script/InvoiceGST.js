@@ -1,325 +1,160 @@
-import { PDIService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PDIService.js';
+import { InvoiceGSTService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/InvoiceGSTService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
-import { UrlService } from '../../Bizsol.WebERP.UI.Shared/js/URL.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
-let files = [];
-let fileName = '';
-let imageBase64Data = [];
-let G_PDIOrderData = []; // Store the complete order data
-let G_IsUpdating = false; // Flag to prevent infinite loop
-let G_PDIImageData = null; // Store the fetched PDI image data
-let G_PDIImageSrc = '';
-let G_PDIDataList = [];
+let G_InvoiceGSTDataList = [];
+let G_InvoiceItemMasterList = [];
+let G_InvoiceGSTTableInitialized = false;
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
-    GetPDIOrderList();
-    setCurrentDate();
-    GetPDICurrentList();
-    $('#ddlOrderNo').on('change', onOrderNoChange);
-    $('#ddlDespatchNo').on('change', onAdviceNoChange);
-    $('#ddlTruckNo').on('change', onTruckNoChange);
-    
-    $('#btnSave').on('click', savePDI);
-    $('#btnClear').on('click', clearPDIForm);
-    $('#btnPDIShow').on('click', GetPDICurrentList);
-    $('#btnUpdate').on('click', UpdatePDI);
+    GetInvoiceGSTConsigneeList();
+    bindSaleTypeDropdown();
+    bindSubSaleTypeDropdown();
+    GetInvoiceGSTCurrentList();
+
+    if ($('#btnSave').length) $('#btnSave').on('click', saveInvoiceGST);
+    if ($('#btnClear').length) $('#btnClear').on('click', clearInvoiceGSTForm);
+    $('#btnInvoiceGSTShow').on('click', GetInvoiceGSTCurrentList);
+    if ($('#btnUpdate').length) $('#btnUpdate').on('click', UpdateInvoiceGST);
 });
-function setCurrentDate() {
-    let today = new Date();
-    let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-   
-    function formatDate(date) {
-        let day = String(date.getDate()).padStart(2, '0');
-        let month = String(date.getMonth() + 1).padStart(2, '0');
-        let year = date.getFullYear();
-        return `${year}-${month}-${day}`;
-    }
-        $('#txtFromDatePDI').val(formatDate(firstOfMonth));
-        $('#txtToDatePDI').val(formatDate(today));
-}
-function GetPDIOrderList() {
+function GetInvoiceGSTConsigneeList() {
     Showloader();
-    PDIService.GetPDIOrderList().then(function (response) {
+    InvoiceGSTService.GetInvoiceGSTConsigneeList().then(function (response) {
         HideLoader();
         if (response && response.length > 0) {
-            G_PDIOrderData = response;
-            
-            BindSelectList($('#ddlOrderNo')[0], response.map((item) => ({ 
-                Code: item.Code, 
-                Desp: item.OrderNo 
-            })));
+            const consigneeList = response.map((item) => ({
+                Code: item.ConsigneeCode ?? item.Code ?? 0,
+                Desp: item.AccountDesp ?? ''
+            }));
 
-            BindSelectList($('#ddlDespatchNo')[0], response.map((item) => ({ 
-                Code: item.Code, 
-                Desp: item.DespatchAdviceNo 
-            })));
+            const indentorBuyerList = response.map((item) => ({
+                Code: item.IndentorBuyerCode ?? item.Code ?? 0,
+                Desp: item.AccountDesp ?? ''
+            }));
 
-            BindSelectList($('#ddlTruckNo')[0], response.map((item) => ({ 
-                Code: item.Code, 
-                Desp: item["Vehical No"] || item.VehicalNo || item.TruckNo || '' 
-            })));
+            const accountList = response.map((item) => ({
+                Code: item.AccountCode ?? item.Code ?? 0,
+                Desp: item.AccountDesp ?? ''
+            }));
 
-            $('#ddlOrderNo').select2({
-                placeholder: 'Select Order No',
-                allowClear: false,
-                width: '100%'
-            });
+            bindSelectList($('#ddlConsignee')[0], consigneeList);
+            bindSelectList($('#ddlIndentorBuyer')[0], indentorBuyerList);
+            bindSelectList($('#ddlAccount')[0], accountList);
 
-            $('#ddlDespatchNo').select2({
-                placeholder: 'Select Advice No',
-                allowClear: false,
-                width: '100%'
-            });
-            
-            $('#ddlTruckNo').select2({
-                placeholder: 'Select Truck No',
-                allowClear: false,
-                width: '100%'
-            });
-
-        } else {
-            toastr.error('No PDI orders available');
-        }
-    }).catch(function (error) {
-        HideLoader();
-        toastr.error('Error fetching PDI order list: ' + error);
-    });
-}
-function onOrderNoChange() {
-    if (G_IsUpdating) {
-        return;
-    }
-    
-    var selectedCode = $('#ddlOrderNo').val();
-    
-    if (!selectedCode || selectedCode === '0') {
-        hideImageCheck();
-        return;
-    }
-    
-    var selectedRecord = G_PDIOrderData.find(item => item.Code == selectedCode);
-    
-    if (selectedRecord) {
-        G_IsUpdating = true;
-        
-        $('#ddlDespatchNo').val(selectedRecord.Code).trigger('change.select2');
-        $('#ddlTruckNo').val(selectedRecord.Code).trigger('change.select2');
-        $('#ddlQty').val(selectedRecord?.["Qty MT"]);
-        
-        checkPDIUploadStatus(selectedRecord);
-        
-        setTimeout(function() {
-            G_IsUpdating = false;
-        }, 100);
-    }
-}
-function onAdviceNoChange() {
-    if (G_IsUpdating) {
-        return;
-    }
-    
-    var selectedCode = $('#ddlDespatchNo').val();
-    
-    if (!selectedCode || selectedCode === '0') {
-        hideImageCheck();
-        return;
-    }
-    
-    var selectedRecord = G_PDIOrderData.find(item => item.Code == selectedCode);
-    
-    if (selectedRecord) {
-        G_IsUpdating = true;
-        
-        $('#ddlOrderNo').val(selectedRecord.Code).trigger('change.select2');
-        $('#ddlTruckNo').val(selectedRecord.Code).trigger('change.select2');
-        $('#ddlQty').val(selectedRecord?.["Qty MT"]);
-        
-        checkPDIUploadStatus(selectedRecord);
-        
-        setTimeout(function() {
-            G_IsUpdating = false;
-        }, 100);
-    }
-}
-function onTruckNoChange() {
-    if (G_IsUpdating) {
-        return;
-    }
-    
-    var selectedCode = $('#ddlTruckNo').val();
-    
-    if (!selectedCode || selectedCode === '0') {
-        hideImageCheck();
-        return;
-    }
-    
-    var selectedRecord = G_PDIOrderData.find(item => item.Code == selectedCode);
-    
-    if (selectedRecord) {
-        G_IsUpdating = true;
-        
-        $('#ddlOrderNo').val(selectedRecord.Code).trigger('change.select2');
-        $('#ddlDespatchNo').val(selectedRecord.Code).trigger('change.select2');
-        $('#ddlQty').val(selectedRecord?.["Qty MT"]);
-        
-        checkPDIUploadStatus(selectedRecord);
-        
-        setTimeout(function() {
-            G_IsUpdating = false;
-        }, 100);
-    }
-}
-function triggerFileInputClick() {
-    document.getElementById('fileInput').click();
-}
-function FileUploadChange(event) {
-    const target = event.target;
-    files = target.files;
-    var originalFileName = files?.[0]?.name || '';
-    if (files && files.length > 0) {
-        var fileExtension = '';
-        var lastDotIndex = originalFileName.lastIndexOf('.');
-        if (lastDotIndex > 0 && lastDotIndex < originalFileName.length - 1) {
-            fileExtension = originalFileName.substring(lastDotIndex);
-        }
-        fileName = 'PDI' + fileExtension;
-        OptimizeImage.reduceFileSize(files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
-            ConvertFileToByteArry(blob).then(function (ByteArray) {
-                imageBase64Data = ByteArray;
-            }).catch(function(error) {
-                toastr.error('Error processing image file');
-            });
-        });
-    }
-}
-function ConvertFileToByteArry(File) {
-    return new Promise(function (resolve, reject) {
-        var fileByteArray = [];
-        var reader = new FileReader();
-
-        reader.readAsArrayBuffer(File);
-        reader.onloadend = function (evt) {
-            if (evt.target.readyState == FileReader.DONE) {
-                var arrayBuffer = evt.target.result,
-                    array = new Uint8Array(arrayBuffer);
-                for (var i = 0; i < array.length; i++) {
-                    fileByteArray.push(array[i]);
-                }
-                resolve(fileByteArray);
+            if ($.fn.select2) {
+                $('#ddlConsignee, #ddlIndentorBuyer, #ddlAccount').select2({
+                    placeholder: 'Please select...',
+                    allowClear: true,
+                    width: '100%'
+                });
             }
-        }
-    });
-}
-function validateNumericInput(input) {
-    var value = input.value;
-    value = value.replace(/[^0-9.]/g, '');
-    
-    var parts = value.split('.');
-    if (parts.length > 2) {
-        value = parts[0] + '.' + parts.slice(1).join('');
-    }
-    
-    if (parts.length === 2 && parts[1].length > 3) {
-        value = parts[0] + '.' + parts[1].substring(0, 3);
-    }
-    
-    input.value = value;
-}
-function validatePDIInputs() {
-    if (!$('#ddlDespatchNo').val() || $('#ddlDespatchNo').val() === '0') { toastr.error('Despatch Advice No is required'); return false; }
-    if (!$('#ddlOrderNo').val() || $('#ddlOrderNo').val() === '0') { toastr.error('Order No is required'); return false; }
-    if (!$('#ddlTruckNo').val() || $('#ddlTruckNo').val() === '0') { toastr.error('Truck No is required'); return false; }
-    var qtyValue = $('#ddlQty').val();
-    if (!qtyValue || qtyValue.trim() === '' || parseFloat(qtyValue) <= 0) { toastr.error('Quantity is required and must be greater than 0'); return false; }
-    if (!/^\d+(\.\d{1,3})?$/.test(qtyValue)) { toastr.error('Quantity must be a valid number with maximum 3 decimal places'); return false; }
-    if (!imageBase64Data || imageBase64Data.length === 0) { toastr.error('Please select an image file'); return false; }
-    if (!fileName || fileName === '') { toastr.error('File name is missing'); return false; }
-    return true;
-}
-function validatePDIInputsEdit() {
-    if (!$('#txtDespatchNo').val() || $('#txtDespatchNo').val() === '0') { toastr.error('Despatch Advice No is required'); return false; }
-    if (!$('#txtOrderNo').val() || $('#txtOrderNo').val() === '0') { toastr.error('Order No is required'); return false; }
-    if (!$('#txtTruckNo').val() || $('#txtTruckNo').val() === '0') { toastr.error('Truck No is required'); return false; }
-    var qtyValue = $('#txtQty').val();
-    if (!qtyValue || qtyValue.trim() === '' || parseFloat(qtyValue) <= 0) { toastr.error('Quantity is required and must be greater than 0'); return false; }
-    if (!/^\d+(\.\d{1,3})?$/.test(qtyValue)) { toastr.error('Quantity must be a valid number with maximum 3 decimal places'); return false; }
-    return true;
-}
-function savePDI() {
-    if (!validatePDIInputs()) { return; }
-
-    var PayloadPDIData = {
-        Code: $('#ddlOrderNo').val(), 
-        PDIWeight: $('#ddlQty').val(), 
-        PDIRemark: $('#txtRemark').val() || '',
-        attachFileName: fileName,
-        attachData: imageBase64Data,
-    };
-
-    Showloader();
-    PDIService.SavePDIData(PayloadPDIData).then(function (response) {
-        HideLoader();
-        if (response.Status === 'Y') {
-            toastr.success(response.Message || 'PDI saved successfully');
-            clearPDIForm();
-            GetPDICurrentList();
         } else {
-            toastr.error(response.Message || 'Save failed');
+            toastr.error('No InvoiceGST consignee data available');
         }
     }).catch(function (error) {
         HideLoader();
-        toastr.error((error && error.Message) || 'Error saving data');
+        toastr.error('Error fetching InvoiceGST consignee data: ' + error);
     });
 }
-function UpdatePDI() {
-    if (!validatePDIInputsEdit()) { return; }
+function bindSaleTypeDropdown() {
+    InvoiceGSTService.GETDropdownSaleType().then(function (response) {
+        if (response && response.length > 0) {
+            const saleTypeList = response.map((item) => ({
+                Code: item.SaleTypeCode ?? item.Code ?? 0,
+                Desp: item.InvoiceType ?? ''
+            }));
 
-    var PayloadPDIData = {
-        Code: $('#txtOrderNo_Code').val(), 
-        PDIWeight: $('#txtQty').val(), 
-        PDIRemark: $('#txtEditRemark').val() || '',
-        attachFileName: fileName,
-        attachData: imageBase64Data,
-    };
+            bindSelectList($('#ddlSaleType')[0], saleTypeList);
 
-    Showloader();
-    PDIService.SavePDIData(PayloadPDIData).then(function (response) {
-        HideLoader();
-        if (response.Status === 'Y') {
-            toastr.success(response.Message || 'PDI Update successfully');
-            clearPDIForm();
-            $('#LocatePDI').show();
-            $('#createPDI').hide();
-            $('#EditPDI').hide();
-            GetPDICurrentList();
+            if ($.fn.select2) {
+                $('#ddlSaleType').select2({
+                    placeholder: 'Please select sale type...',
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
         } else {
-            toastr.error(response.Message || 'Update failed');
+            // No data is not an error here; just leave dropdown empty
         }
     }).catch(function (error) {
-        HideLoader();
-        toastr.error((error && error.Message) || 'Error Update data');
+        toastr.error('Error fetching Sale Type: ' + error);
     });
 }
-//function ViewAttachment() {
-//    var DespatchAdviceMaster_Code = $("#ddlOrderNo").val();
-    
-//    // Check if an Order No is selected
-//    if (DespatchAdviceMaster_Code && DespatchAdviceMaster_Code !== '0' && parseFloat(DespatchAdviceMaster_Code) > 0) {
-//        InitAttachmentControl('DespatchAdviceMaster', 0, 'DespatchAdviceMaster', DespatchAdviceMaster_Code, 0, '', "all");
-//    } else {
-//        toastr.warning('Please select an Order No first');
-//    }
-//}
-//function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode) {
-//    var url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
-//    $('#DespatchAdviceMaster_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode });
-//}
+function bindSubSaleTypeDropdown() {
+    InvoiceGSTService.GETDropdownSubSaleType().then(function (response) {
+        if (response && response.length > 0) {
+            const subSaleTypeList = response.map((item) => ({
+                Code: item.SubSaleTypeCode ?? item.Code ?? 0,
+                Desp: item.SubSaleTypeName ?? item.SubSaleType ?? item.Desp ?? item.Name ?? item.DESCRIPTION ?? ''
+            }));
 
-function clearPDIForm() {
+            bindSelectList($('#ddlSubSaleType')[0], subSaleTypeList);
+
+            if ($.fn.select2) {
+                $('#ddlSubSaleType').select2({
+                    placeholder: 'Please select sub sale type...',
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
+        } else {
+            // No data is not an error here; just leave dropdown empty
+        }
+    }).catch(function (error) {
+        toastr.error('Error fetching Sub Sale Type: ' + error);
+    });
+}
+//function saveInvoiceGST() {
+//    var PayloadInvoiceGSTData = {
+//        Code: $('#ddlOrderNo').val(), 
+//        InvoiceGSTWeight: $('#ddlQty').val(), 
+//        InvoiceGSTRemark: $('#txtRemark').val() || '',
+//    };
+
+//    Showloader();
+//    InvoiceGSTService.SaveInvoiceGSTData(PayloadInvoiceGSTData).then(function (response) {
+//        HideLoader();
+//        if (response.Status === 'Y') {
+//            toastr.success(response.Message || 'InvoiceGST saved successfully');
+//            clearInvoiceGSTForm();
+//            GetInvoiceGSTCurrentList();
+//        } else {
+//            toastr.error(response.Message || 'Save failed');
+//        }
+//    }).catch(function (error) {
+//        HideLoader();
+//        toastr.error((error && error.Message) || 'Error saving data');
+//    });
+//}
+//function UpdateInvoiceGST() {
+//    var PayloadInvoiceGSTData = {
+//        Code: $('#txtOrderNo_Code').val(), 
+//        InvoiceGSTWeight: $('#txtQty').val(), 
+//        InvoiceGSTRemark: $('#txtEditRemark').val() || '',
+//    };
+
+//    Showloader();
+//    InvoiceGSTService.SaveInvoiceGSTData(PayloadInvoiceGSTData).then(function (response) {
+//        HideLoader();
+//        if (response.Status === 'Y') {
+//            toastr.success(response.Message || 'InvoiceGST Update successfully');
+//            clearInvoiceGSTForm();
+//            $('#LocateInvoiceGST').show();
+//            $('#createInvoiceGST').hide();
+//            $('#EditInvoiceGST').hide();
+//            GetInvoiceGSTCurrentList();
+//        } else {
+//            toastr.error(response.Message || 'Update failed');
+//        }
+//    }).catch(function (error) {
+//        HideLoader();
+//        toastr.error((error && error.Message) || 'Error Update data');
+//    });
+//}
+function clearInvoiceGSTForm() {
     $('#ddlOrderNo').val('0').trigger('change');
     $('#ddlDespatchNo').val('0').trigger('change');
     $('#ddlTruckNo').val('0').trigger('change');
@@ -331,144 +166,9 @@ function clearPDIForm() {
     $('#txtTruckNo').val('0').trigger('change');
     $('#txtQty').val('');
     $('#txtEditRemark').val('');
-    
-    imageBase64Data = [];
-    fileName = '';
-    files = [];
-    
-    $('#fileInput').val('');
-    $('#fileInputEdit').val('');
-    
-    hideImageCheck();
-}
-function checkPDIUploadStatus(selectedRecord) {
-    if (selectedRecord.PDIUploaded === 'Y') {
-        showImageCheck();
-        fetchPDIImage(selectedRecord.Code);
-    } else {
-        hideImageCheck();
-    }
-}
-function showImageCheck() {
-    $('#txtImageCheck').show();
-}
-function hideImageCheck() {
-    G_PDIImageData = null;
-    G_PDIImageSrc = '';
-    $('#txtImageCheck').hide();
-}
-function fetchPDIImage(despatchAdviceCode) {
-    $('#txtImageCheck').hide();
-    G_PDIImageSrc = '';
-    PDIService.GetPDIImage(despatchAdviceCode).then(function(data) {
-        
-        var base64FromApi = null;
-
-        if (data && data.Status === 'Y' && typeof data.ImageDataBase64 === 'string' && data.ImageDataBase64.length > 0) {
-            base64FromApi = data.ImageDataBase64;
-        }
-
-        if (!base64FromApi && data && data.Status === 'Y' && data.ImageData && Array.isArray(data.ImageData)) {
-            try {
-                var byteArray = data.ImageData;
-                var binaryString = String.fromCharCode.apply(null, byteArray);
-                base64FromApi = btoa(binaryString);
-            } catch (e1) {
-            }
-        }
-
-        if (!base64FromApi && Array.isArray(data) && data.length > 0 && typeof data[0].DocumentContent === 'string') {
-            base64FromApi = data[0].DocumentContent;
-        }
-        if (!base64FromApi && Array.isArray(data) && data.length > 0 && Array.isArray(data[0].DocumentContent)) {
-            try {
-                var bytes = data[0].DocumentContent;
-                var bin = String.fromCharCode.apply(null, bytes);
-                base64FromApi = btoa(bin);
-            } catch (e2) {
-            }
-        }
-
-        if (base64FromApi && base64FromApi.length > 0) {
-            G_PDIImageSrc = 'data:image/jpeg;base64,' + base64FromApi;
-            $('#txtImageCheck').show();
-        } else {
-            $('#txtImageCheck').hide();
-        }
-    }).catch(function(error) {
-        G_PDIImageData = null;
-        G_PDIImageSrc = '';
-        $('#txtImageCheck').hide();
-    });
-}
-function ShowPDIImage() {
-    if (!G_PDIImageSrc || G_PDIImageSrc === '') {
-        toastr.warning('No image to display');
-        return;
-    }
-    var $img = $('#myModalImageTag');
-    var $dialog = $('#myModalImageShow .modal-dialog');
-    var $body = $('#myModalImageShow .modal-body');
-
-    $dialog.css({ maxWidth: '', width: '' });
-    $body.css({ maxHeight: '', overflowY: '' });
-    $img.css({ maxWidth: '100%', height: 'auto' });
-
-    $img.off('load').on('load', function () {
-        var naturalW = this.naturalWidth || 0;
-        var naturalH = this.naturalHeight || 0;
-
-        var vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-        var vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
-
-        var maxW = Math.floor(vw * 0.9); // 90% viewport width
-        var maxH = Math.floor(vh * 0.85); // 85% viewport height
-
-        var modalW = naturalW > 0 ? Math.min(naturalW, maxW) : maxW;
-        var modalH = naturalH > 0 ? Math.min(naturalH, maxH) : maxH;
-
-        $dialog.css({ maxWidth: modalW + 'px' });
-        $body.css({ maxHeight: modalH + 'px', overflowY: naturalH > modalH ? 'auto' : 'visible' });
-    });
-
-    $img.attr('src', G_PDIImageSrc);
-    try {
-        var modalElement = document.getElementById('myModalImageShow');
-        var modal = window.bootstrap && window.bootstrap.Modal ? new bootstrap.Modal(modalElement) : null;
-        if (modal) {
-            modal.show();
-        } else {
-            $('#myModalImageShow').modal('show');
-        }
-    } catch (e) {
-        $('#myModalImageShow').modal('show');
-    }
-}
-function CloseModal() {
-    try {
-        var modalElement = document.getElementById('myModalImageShow');
-        var instance = window.bootstrap && window.bootstrap.Modal ? bootstrap.Modal.getInstance(modalElement) : null;
-        if (instance) {
-            instance.hide();
-        } else {
-            $('#myModalImageShow').modal('hide');
-        }
-    } catch (e) {
-        $('#myModalImageShow').modal('hide');
-    }
-}
-function DeleteModal() {
-    CloseModal();
-}
-function BindSelectList(element, list) {
-    let option = '<option value="0">Please select...</option>';
-    $.each(list, function (key, val) {
-        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
-    });
-    element.innerHTML = option;
 }
 function CreateNew() {
-    var ModuleName = "PDI",
+    var ModuleName = "Invoice GST",
         OptionName = "New",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
@@ -478,9 +178,9 @@ function CreateNew() {
             toastr.error(response.Msg);
             return false;
         } else {
-            $('#LocatePDI').hide();
-            $('#EditPDI').hide();
-            $('#createPDI').show();
+            $('#LocateInvoiceGST').hide();
+            $('#EditInvoiceGST').hide();
+            $('#createInvoiceGST').show();
         }
     });
 }
@@ -492,76 +192,243 @@ function getFinancialYear() {
         startYear = startYear - 1;
     }
     return startYear + "-" + (startYear + 1);
-}
+}   
 function Back() {
-    clearPDIForm();
-    $('#LocatePDI').show();
-    $('#createPDI').hide();
-    $('#EditPDI').hide();
+    clearInvoiceGSTForm();
+    $('#LocateInvoiceGST').show();
+    $('#createInvoiceGST').hide();
+    $('#EditInvoiceGST').hide();
 }
-function GetPDICurrentList() {
-    let Fromdate = $('#txtFromDatePDI').val();
-    let Todate = $('#txtToDatePDI').val();
+function GetInvoiceGSTCurrentList() {
     Showloader();
-    PDIService.GetPDICurrentList(Fromdate, Todate).then(function (response) {
-        if (response && response.length > 0) {
-            $('#tblPDI').show();
-            $('#paginator-tblPDI').show();
-            G_PDIDataList = response;
-            HideLoader();
-            const stringFilterColumn = ["Order No","Vehical No"];
-            const numericFilterColumn = [];
-            const dateFilterColumn = ["Date"];
-            const button = false;
-            const stringDoubleFilterColumn = [];
-            const showButtons = [];
-            const hiddenColumns = ["Code"];
-            const columnAlignment = {
-                'S.No.': "center", 'Date': "center",'Qty MT':"right"
-            };
-            const updatedResponse = (response).map(function (item) {
-                let imageURLHtml = '<a href="javascript:void(0);" class="text-decoration-underline icon-height" title="Image PDI" onclick="ViewAttachment_PDI(' + item.Code + ')">View Image</a>';
-                let actionHtml = '<button class="btn btn-primary icon-height mb-1" title="Edit PDI" onclick="EditPDI(' + item.Code + ')"><i class="fa fa-pencil"></i></button>';
-
-                return {
-                    ...item,
-                    'PDI Uploaded': imageURLHtml,
-                    'Action': actionHtml,
-                };
-            });
-            const TotalColumns = ["Qty MT"];
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, TotalColumns);
-        } else {
-            $('#tblPDI').hide();
-            $('#paginator-tblPDI').hide();
-            toastr.error('No Data Found');
-            HideLoader();
-        }
-
-    }).catch(function (error) {
-        $('#tblPDI').hide();
-        $('#paginator-tblPDI').hide();
-        toastr.error(error);
+    InvoiceGSTService.GetInvoiceGSTCurrentList().then(function (response) {
         HideLoader();
+        $('#tblInvoiceGST').show();
+        var tableList = [];
+        var itemMasterList = [];
+        if (response && Array.isArray(response)) {
+            tableList = response;
+            itemMasterList = response;
+        } else if (response && typeof response === 'object') {
+            tableList = response.TableData || response.data || response.list || response.Data || response.List || [];
+            itemMasterList = response.ItemMaster || response.ItemMasterList || tableList;
+            if (!Array.isArray(tableList)) tableList = [];
+            if (!Array.isArray(itemMasterList)) itemMasterList = tableList;
+        }
+        G_InvoiceGSTDataList = tableList;
+        G_InvoiceItemMasterList = itemMasterList;
+        fillInvoiceGSTTableWithData(G_InvoiceGSTDataList);
+    }).catch(function (error) {
+        HideLoader();
+        $('#tblInvoiceGST').show();
+        G_InvoiceGSTDataList = [];
+        G_InvoiceItemMasterList = [];
+        fillInvoiceGSTTableWithData([]);
+        toastr.error(error && (error.message || error.Message) || 'Error loading list');
     });
+}
+function getInvoiceGSTItemOptions() {
+    var list = G_InvoiceItemMasterList;
+    if (!list || !Array.isArray(list) || list.length === 0) {
+        return { itemName: [], itemCode: [], displayName: [] };
+    }
+    var seenName = {}, seenCode = {}, seenDisp = {};
+    var itemName = [], itemCode = [], displayName = [];
+    for (var i = 0; i < list.length; i++) {
+        var item = list[i];
+        if (!item) continue;
+        var n = (item.ItemName != null ? item.ItemName : item.itemName);
+        var c = (item.ItemCode != null ? item.ItemCode : item.itemCode);
+        var d = (item.DisplayName != null ? item.DisplayName : (item.ItemDisplayName != null ? item.ItemDisplayName : item.displayName));
+        if (n != null && n !== '' && !seenName[n]) {
+            seenName[n] = true;
+            itemName.push({ Code: String(n), Desp: String(n) });
+        }
+        if (c != null && c !== '' && !seenCode[c]) {
+            seenCode[c] = true;
+            itemCode.push({ Code: String(c), Desp: String(c) });
+        }
+        if (d != null && d !== '' && !seenDisp[d]) {
+            seenDisp[d] = true;
+            displayName.push({ Code: String(d), Desp: String(d) });
+        }
+    }
+    return { itemName: itemName, itemCode: itemCode, displayName: displayName };
+}
+function ensureInvoiceGSTTableStructure() {
+    if (G_InvoiceGSTTableInitialized) return;
+    var cols = G_InvoiceGSTTableColumns;
+    if (!cols || !cols.length) return;
+    var $table = $('#tblInvoiceGST');
+    if (!$table.length) return;
+    var theadHtml = '<tr class="table-primary">';
+    for (var i = 0; i < cols.length; i++) {
+        theadHtml += '<th style="min-width:100px">' + (cols[i].label || cols[i].key) + '</th>';
+    }
+    theadHtml += '</tr>';
+    var $thead = $table.find('#InvoiceTableheader');
+    if ($thead.length) $thead.html(theadHtml);
+    G_InvoiceGSTTableInitialized = true;
+}
+function bindSelectList(element, list) {
+    let option = '<option value="0">Please select...</option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
+function fillInvoiceGSTTableWithData(data) {
+    ensureInvoiceGSTTableStructure();
+    var tbody = $('#InvoiceTablebody');
+    if (!tbody.length) return;
+    tbody.empty();
+
+    var opts = getInvoiceGSTItemOptions();
+
+    if (data && data.length > 0) {
+        data.forEach(function (item, index) {
+            var rowId = 'row' + (index + 1);
+            var itemNameVal = (item.ItemName != null ? item.ItemName : item.itemName) || '';
+            var itemCodeVal = (item.ItemCode != null ? item.ItemCode : item.itemCode) || '';
+            var displayNameVal = (item.DisplayName != null ? item.DisplayName : (item.ItemDisplayName != null ? item.ItemDisplayName : item.displayName)) || '';
+
+            var rowHtml = '<tr id="' + rowId + '" data-detail-code="' + (item.SNo || item.Code || '') + '" data-master-code="' + (item.Code || 0) + '">' +
+                '<td><select id="ddlItemName_' + rowId + '" class="box_border form-control form-control-sm ddlItemNameRow" required></select></td>' +
+                '<td><select id="ddlItemCode_' + rowId + '" class="box_border form-control form-control-sm ddlItemCodeRow" required></select></td>' +
+                '<td><select id="ddlDisplayName_' + rowId + '" class="box_border form-control form-control-sm ddlDisplayNameRow" required></select></td>' +
+                '<td>' +
+                '<button type="button" class="btn btn-success btn-height me-1" title="Edit" onclick="SaveInvoiceGSTRow(\'' + rowId + '\', this)"><i class="fas fa-pencil"></i></button>' +
+                '<button type="button" class="btn btn-danger btn-height" title="Delete" onclick="DeleteInvoiceGSTRow(\'' + rowId + '\', this)"><i class="fas fa-trash"></i></button>' +
+                '</td></tr>';
+            tbody.append(rowHtml);
+
+            var $row = $('#' + rowId);
+            bindSelectList($row.find('select.ddlItemNameRow')[0], opts.itemName || []);
+            bindSelectList($row.find('select.ddlItemCodeRow')[0], opts.itemCode || []);
+            bindSelectList($row.find('select.ddlDisplayNameRow')[0], opts.displayName || []);
+            try {
+                BizSolHelperFunction.SelectOptionByText('ddlItemName_' + rowId, String(itemNameVal || ''));
+                BizSolHelperFunction.SelectOptionByText('ddlItemCode_' + rowId, String(itemCodeVal || ''));
+                BizSolHelperFunction.SelectOptionByText('ddlDisplayName_' + rowId, String(displayNameVal || ''));
+            } catch (e) { }
+        });
+    }
+
+    enableInvoiceGSTNewRowAddition();
+    initInvoiceGSTSelect2();
+}
+function enableInvoiceGSTNewRowAddition() {
+    var tbody = $('#InvoiceTablebody');
+    if (!tbody.length) return;
+    tbody.find('tr#0, tr[data-new-row="1"]').remove();
+    var rowId = '0';
+
+    var newRowHtml = '<tr id="' + rowId + '" data-new-row="1" data-detail-code="0" data-master-code="0">' +
+        '<td><select id="ddlItemName_0" class="box_border form-control form-control-sm ddlItemNameRow" required></select></td>' +
+        '<td><select id="ddlItemCode_0" class="box_border form-control form-control-sm ddlItemCodeRow" required></select></td>' +
+        '<td><select id="ddlDisplayName_0" class="box_border form-control form-control-sm ddlDisplayNameRow" required></select></td>' +
+        '<td><button type="button" class="btn btn-success btn-height" title="Save" onclick="SaveInvoiceGSTRow(\'0\', this)"><i class="fas fa-save"></i></button></td>' +
+        '</tr>';
+    tbody.append(newRowHtml);
+
+    var opts = getInvoiceGSTItemOptions();
+    var $row = $('#' + rowId);
+    var elItemName = $row.find('select.ddlItemNameRow')[0];
+    var elItemCode = $row.find('select.ddlItemCodeRow')[0];
+    var elDisplayName = $row.find('select.ddlDisplayNameRow')[0];
+    if (elItemName) bindSelectList(elItemName, opts.itemName || []);
+    if (elItemCode) bindSelectList(elItemCode, opts.itemCode || []);
+    if (elDisplayName) bindSelectList(elDisplayName, opts.displayName || []);
+    initInvoiceGSTSelect2($row);
+}
+function initInvoiceGSTSelect2($container) {
+    if (!$.fn.select2) return;
+    var $scope = $container && $container.length ? $container : $(document);
+    $scope.find('.ddlItemNameRow').each(function () {
+        var $el = $(this);
+        if (!$el.data('select2')) $el.select2({ width: '100%', placeholder: 'Select Item Name' });
+    });
+    $scope.find('.ddlItemCodeRow').each(function () {
+        var $el = $(this);
+        if (!$el.data('select2')) $el.select2({ width: '100%', placeholder: 'Select Item Code' });
+    });
+    $scope.find('.ddlDisplayNameRow').each(function () {
+        var $el = $(this);
+        if (!$el.data('select2')) $el.select2({ width: '100%', placeholder: 'Select Display Name' });
+    });
+}
+function SaveInvoiceGSTRow(rowId, btn) {
+    var $row = $(btn).closest('tr');
+    var itemName = $row.find('.ddlItemNameRow').val();
+    var itemCode = $row.find('.ddlItemCodeRow').val();
+    var displayName = $row.find('.ddlDisplayNameRow').val();
+
+    if (!itemName || itemName === '0') {
+        toastr.error('Please select Item Name.');
+        return;
+    }
+    if (!itemCode || itemCode === '0') {
+        toastr.error('Please select Item Code.');
+        return;
+    }
+
+    if (rowId === '0' || rowId === 0) {
+        var itemNameText = (itemName != null && itemName !== '') ? itemName : '';
+        var itemCodeText = (itemCode != null && itemCode !== '') ? itemCode : '';
+        var displayText = (displayName != null && displayName !== '') ? displayName : '';
+        if ($.fn.select2) {
+            try {
+                var d1 = $row.find('.ddlItemNameRow').select2('data');
+                if (Array.isArray(d1) && d1[0] && typeof d1[0].text === 'string') itemNameText = d1[0].text;
+            } catch (e1) { }
+            try {
+                var d2 = $row.find('.ddlItemCodeRow').select2('data');
+                if (Array.isArray(d2) && d2[0] && typeof d2[0].text === 'string') itemCodeText = d2[0].text;
+            } catch (e2) { }
+            try {
+                var d3 = $row.find('.ddlDisplayNameRow').select2('data');
+                if (Array.isArray(d3) && d3[0] && typeof d3[0].text === 'string') displayText = d3[0].text;
+            } catch (e3) { }
+        }
+        $row.remove();
+        var newId = 'row' + Date.now();
+        var opts = getInvoiceGSTItemOptions();
+
+        var newRowHtml = '<tr id="' + newId + '" data-detail-code="0" data-master-code="0">' +
+            '<td><select id="ddlItemName_' + newId + '" class="box_border form-control form-control-sm ddlItemNameRow" required></select></td>' +
+            '<td><select id="ddlItemCode_' + newId + '" class="box_border form-control form-control-sm ddlItemCodeRow" required></select></td>' +
+            '<td><select id="ddlDisplayName_' + newId + '" class="box_border form-control form-control-sm ddlDisplayNameRow" required></select></td>' +
+            '<td><button type="button" class="btn btn-success btn-height me-1" title="Edit" onclick="SaveInvoiceGSTRow(\'' + newId + '\', this)"><i class="fas fa-pencil"></i></button>' +
+            '<button type="button" class="btn btn-danger btn-height" title="Delete" onclick="DeleteInvoiceGSTRow(\'' + newId + '\', this)"><i class="fas fa-trash"></i></button></td></tr>';
+        $('#InvoiceTablebody').append(newRowHtml);
+        var $newRow = $('#' + newId);
+        bindSelectList($newRow.find('select.ddlItemNameRow')[0], opts.itemName || []);
+        bindSelectList($newRow.find('select.ddlItemCodeRow')[0], opts.itemCode || []);
+        bindSelectList($newRow.find('select.ddlDisplayNameRow')[0], opts.displayName || []);
+        $newRow.find('.ddlItemNameRow').val(itemName || '');
+        $newRow.find('.ddlItemCodeRow').val(itemCode || '');
+        $newRow.find('.ddlDisplayNameRow').val(displayName || '');
+        initInvoiceGSTSelect2($newRow);
+        enableInvoiceGSTNewRowAddition();
+        toastr.success('Row saved.');
+    } else {
+        toastr.success('Row updated.');
+    }
+}
+
+function DeleteInvoiceGSTRow(rowId, btn) {
+    $(btn).closest('tr').remove();
+    toastr.success('Row removed.');
 }
 function Download() {
     const hiddenFields = [
-        "Code","PDI Uploaded"
+        "Code"
     ];
-    ExportToExcelControl.ExportToExcel(G_PDIDataList, hiddenFields, "PDIReport");
+    ExportToExcelControl.ExportToExcel(G_InvoiceGSTDataList, hiddenFields, "InvoiceGSTReport");
 }
-function ViewAttachment_PDI(Code, sourceDownloadFileName) {
-    InitAttachmentControl('DespatchAdviceMaster', Code, '', 0, 0, '', "View", sourceDownloadFileName);
-
-}
-function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode, sourceDownloadFileName) {
-    var url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
-    $('#PDI_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode, SourceDownloadFileName: sourceDownloadFileName });
-}
-function EditPDI(Code) {
-    var ModuleName = "PDI",
-        OptionName = "New",
+function EditInvoiceGST(Code) {
+    var ModuleName = "Invoice GST",
+        OptionName = "Edit",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
 
@@ -570,34 +437,29 @@ function EditPDI(Code) {
             toastr.error(response.Msg);
             return false;
         } else {
-            $('#LocatePDI').hide();
-            $('#createPDI').hide();
-            $('#EditPDI').show();
-            GetPDIEditList(Code);
+            $('#LocateInvoiceGST').hide();
+            $('#createInvoiceGST').hide();
+            $('#EditInvoiceGST').show();
+            GetInvoiceGSTEditList(Code);
         }
     });
 }
-function GetPDIEditList(Code) {
-    PDIService.GetPDIEditList(Code).then(function (response) {
+function GetInvoiceGSTEditList(Code) {
+    InvoiceGSTService.GetInvoiceGSTEditList(Code).then(function (response) {
         if (response.length > 0) {
             $('#txtOrderNo_Code').val(response[0].Code);
             $('#txtOrderNo').val(response[0].OrderNo);
             $('#txtDespatchNo').val(response[0].DespatchAdviceNo);
             $('#txtTruckNo').val(response[0].TruckNo);
             $('#txtQty').val(response[0]?.['Qty MT']);
-            $('#txtEditRemark').val(response[0].PDIRemark);
+            $('#txtEditRemark').val(response[0].InvoiceGSTRemark);
         }
     });
 }
 
-window.ViewAttachment_PDI = ViewAttachment_PDI;
-window.FileUploadChange = FileUploadChange;
-window.triggerFileInputClick = triggerFileInputClick;
-window.ShowPDIImage = ShowPDIImage;
-window.CloseModal = CloseModal;
-window.DeleteModal = DeleteModal;
 window.CreateNew = CreateNew;
 window.Back = Back;
 window.Download = Download;
-window.validateNumericInput = validateNumericInput;
-window.EditPDI = EditPDI;
+window.EditInvoiceGST = EditInvoiceGST;
+window.SaveInvoiceGSTRow = SaveInvoiceGSTRow;
+window.DeleteInvoiceGSTRow = DeleteInvoiceGSTRow;

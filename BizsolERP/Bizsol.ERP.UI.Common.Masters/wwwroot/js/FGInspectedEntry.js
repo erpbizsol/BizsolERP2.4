@@ -1,4 +1,4 @@
-﻿import { RawMaterialOfferService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RawMaterialOfferService.js';
+import { RawMaterialOfferService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RawMaterialOfferService.js';
 import { FGInspectedOfferService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_FGInspectedEntryService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
@@ -531,7 +531,9 @@ function GetFGInspectedOfferList() {
                 let IsInspectedHTML = '';
                 if (IsCompleted == 'N') {
                     if (item.IsInspected === 'Y') {
-                        InputHTML = `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item.Code})">Verify</button>&nbsp;&nbsp;<button class="btn btn-danger icon-height mb-1" title="Reject" onclick="OpenModalReject(${item.Code})">Reject</button>`;
+                        InputHTML = `<button class="btn btn-secondary icon-height mb-1" title="Hold" onclick="Hold(${item.Code})">Hold</button>&nbsp;&nbsp;
+                        <button class="btn btn-success icon-height mb-1" title="Pass" onclick="Verify(${item.Code})">Pass</button>&nbsp;&nbsp;
+                        <button class="btn btn-danger icon-height mb-1" title="Reject" onclick="OpenModalReject(${item.Code})">Reject</button>`;
                         IsInspectedHTML = `<input type="checkbox" class="form-check-input" checked disabled />`;
                     } else {
                         IsInspectedHTML = `<input type="checkbox" class="form-check-input" onclick="OpenModalInspectedRemark(${item.Code},this)" />`;
@@ -725,6 +727,35 @@ function CloseAllVerifyModal() {
     $('#dvVerifyAll').modal('hide');
     $("#txtRemarkAll").val("");
 }
+function Hold(Code) {
+    $('#hfHold').val(Code);
+    $('#txtHold').val('');
+    $('#dvHold').modal({ backdrop: 'static', keyboard: false });
+    $('#dvHold').modal('show');
+}
+function HoldFGInspectedClearance() {
+    var remark = $('#txtHold').val().trim();
+    var Code = $('#hfHold').val();
+    if (remark === "") {
+        toastr.error('Please enter remark.');
+        return;
+    }
+    FGInspectedOfferService.GetFGInspectedClearanceHold(Code, remark).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+            HoldVerifyModal();
+            GetFGInspectedOfferList();
+            $('#txtHold').val('');
+            $('#hfHold').val(0);
+        } else {
+            toastr.error(response.Msg);
+        }
+    });
+}
+function HoldVerifyModal() {
+    $('#dvHold').modal('hide');
+    $('#txtHold').val('');
+}
 
 window.Verify = Verify;
 window.VerifyAll = VerifyAll;
@@ -738,3 +769,6 @@ window.CloseVerifyModal = CloseVerifyModal;
 window.CloseAllVerifyModal = CloseAllVerifyModal;
 window.OpenModalInspectedRemark = OpenModalInspectedRemark;
 window.SaveInspectedRemark = SaveInspectedRemark;
+window.Hold = Hold;
+window.HoldFGInspectedClearance = HoldFGInspectedClearance;
+window.HoldVerifyModal = HoldVerifyModal;

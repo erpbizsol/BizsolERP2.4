@@ -1,4 +1,4 @@
-﻿import { RawMaterialOfferService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RawMaterialOfferService.js';
+import { RawMaterialOfferService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RawMaterialOfferService.js';
 import { FGInspectedOfferService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_FGInspectedEntryService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
@@ -838,7 +838,7 @@ function GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo, ddlProjectNo) {
     FGInspectedOfferService.GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo, ddlProjectNo, G_RMInspectionRequestMaster_Code).then(function (response) {
         if (response && response.length > 0) {
             HideLoader();
-            const stringFilterColumn = ["Order No", "Project No", "Mark No", "Thickness", "Grade", "Client Name"];
+            const stringFilterColumn = ["Order No", "Project No", "Item Name", "Particular", "Mark No", "Thickness", "Grade", "Client Name"];
             const numericFilterColumn = ["P.O(PCS)","Already Cleared Qty","Bal Qty for Inspection"];
             const dateFilterColumn = ["Order Date", "Dispatch Date"];
             const button = false;

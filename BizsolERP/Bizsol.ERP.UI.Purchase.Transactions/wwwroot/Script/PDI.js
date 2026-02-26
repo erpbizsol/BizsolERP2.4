@@ -173,27 +173,61 @@ function onTruckNoChange() {
         }, 100);
     }
 }
-function triggerFileInputClick() {
-    document.getElementById('fileInput').click();
+function triggerFileInputClick(event) {
+    // If the actual file input was clicked, let the browser handle it once
+    if (event && event.target && (event.target.id === 'fileInput' || event.target.id === 'fileInputEdit')) {
+        return;
+    }
+
+    // Decide which file input to click based on which section is visible
+    const createSection = document.getElementById('createPDI');
+    const editSection = document.getElementById('EditPDI');
+
+    if (createSection && createSection.style.display !== 'none') {
+        const inputCreate = document.getElementById('fileInput');
+        if (inputCreate) {
+            inputCreate.click();
+        }
+    } else if (editSection && editSection.style.display !== 'none') {
+        const inputEdit = document.getElementById('fileInputEdit');
+        if (inputEdit) {
+            inputEdit.click();
+        }
+    }
 }
 function FileUploadChange(event) {
     const target = event.target;
-    files = target.files;
-    var originalFileName = files?.[0]?.name || '';
-    if (files && files.length > 0) {
-        var fileExtension = '';
-        var lastDotIndex = originalFileName.lastIndexOf('.');
+    const selectedFiles = Array.from(target.files || []);
+    files = selectedFiles;
+
+    // Show selected file names in UI
+    const namesText = selectedFiles.map(f => f.name).join(', ');
+    if (target.id === 'fileInput') {
+        $('#fileNamesCreate').text(namesText);
+    } else if (target.id === 'fileInputEdit') {
+        $('#fileNamesEdit').text(namesText);
+    }
+
+    const firstFile = selectedFiles[0];
+    const originalFileName = firstFile ? firstFile.name : '';
+
+    if (firstFile && originalFileName) {
+        let fileExtension = '';
+        const lastDotIndex = originalFileName.lastIndexOf('.');
         if (lastDotIndex > 0 && lastDotIndex < originalFileName.length - 1) {
             fileExtension = originalFileName.substring(lastDotIndex);
         }
         fileName = 'PDI' + fileExtension;
-        OptimizeImage.reduceFileSize(files[0], 500 * 1024, 1000, Infinity, 0.9, blob => {
+        OptimizeImage.reduceFileSize(firstFile, 500 * 1024, 1000, Infinity, 0.9, blob => {
             ConvertFileToByteArry(blob).then(function (ByteArray) {
                 imageBase64Data = ByteArray;
             }).catch(function(error) {
                 toastr.error('Error processing image file');
             });
         });
+    } else {
+        imageBase64Data = [];
+        fileName = '';
     }
 }
 function ConvertFileToByteArry(File) {
@@ -232,7 +266,6 @@ function validateNumericInput(input) {
 function validatePDIInputs() {
     if (!$('#ddlDespatchNo').val() || $('#ddlDespatchNo').val() === '0') { toastr.error('Despatch Advice No is required'); return false; }
     if (!$('#ddlOrderNo').val() || $('#ddlOrderNo').val() === '0') { toastr.error('Order No is required'); return false; }
-    if (!$('#ddlTruckNo').val() || $('#ddlTruckNo').val() === '0') { toastr.error('Truck No is required'); return false; }
     var qtyValue = $('#ddlQty').val();
     if (!qtyValue || qtyValue.trim() === '' || parseFloat(qtyValue) <= 0) { toastr.error('Quantity is required and must be greater than 0'); return false; }
     if (!/^\d+(\.\d{1,3})?$/.test(qtyValue)) { toastr.error('Quantity must be a valid number with maximum 3 decimal places'); return false; }
@@ -243,7 +276,6 @@ function validatePDIInputs() {
 function validatePDIInputsEdit() {
     if (!$('#txtDespatchNo').val() || $('#txtDespatchNo').val() === '0') { toastr.error('Despatch Advice No is required'); return false; }
     if (!$('#txtOrderNo').val() || $('#txtOrderNo').val() === '0') { toastr.error('Order No is required'); return false; }
-    if (!$('#txtTruckNo').val() || $('#txtTruckNo').val() === '0') { toastr.error('Truck No is required'); return false; }
     var qtyValue = $('#txtQty').val();
     if (!qtyValue || qtyValue.trim() === '' || parseFloat(qtyValue) <= 0) { toastr.error('Quantity is required and must be greater than 0'); return false; }
     if (!/^\d+(\.\d{1,3})?$/.test(qtyValue)) { toastr.error('Quantity must be a valid number with maximum 3 decimal places'); return false; }
@@ -338,6 +370,8 @@ function clearPDIForm() {
     
     $('#fileInput').val('');
     $('#fileInputEdit').val('');
+    $('#fileNamesCreate').text('');
+    $('#fileNamesEdit').text('');
     
     hideImageCheck();
 }
