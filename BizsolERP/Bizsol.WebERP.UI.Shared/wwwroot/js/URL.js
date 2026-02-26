@@ -120,6 +120,8 @@ let UrlService = {
     //MachineMaintenanceRequest
     API_ENDPOINT_MachineMaintenance: `${environment.BASE_URL}/MachineMaintenance`,
     API_ENDPOINT_FGInspectedOffer: `${environment.BASE_URL}/FGInspectedEntry`,
+    //Ledger
+    API_ENDPOINT_Ledger: `${environment.BASE_URL}/Ledger`,
     API_ENDPOINT_InvoiceGST: `${environment.BASE_URL}/InvoiceGST`,
     API_ENDPOINT_Reports: `${environment.BASE_URL}/Reports`,
 }
