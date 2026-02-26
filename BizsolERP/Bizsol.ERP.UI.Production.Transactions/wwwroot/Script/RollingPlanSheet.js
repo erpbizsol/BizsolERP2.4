@@ -1,4 +1,4 @@
-﻿import { RollingPlanSheetService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RollingPlanSheetService.js';
+import { RollingPlanSheetService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_RollingPlanSheetService.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { createSizeFilterControlModal, initializeSizeFilterControl } from '../../Bizsol.WebERP.UI.Shared/js/Pages/CommonSizeFilterControl.js';
@@ -9,6 +9,9 @@ let A_FromDate = '';
 let A_ToDate = '';
 let G_ItemSizeMaster_Codes = '';
 $(document).ready(function () {
+    $('#from-date-to-date-filter-bar-Ageing').show();
+    $('#divReportType').show(); 
+    setO2DSheetDates(); 
     GetRollingPlanSheetList();
     var urlParams = BizSolHelperFunction.getUrlVars();
     var menuValue = decodeURI(urlParams['ModuleDesp']);
@@ -23,6 +26,7 @@ $(document).ready(function () {
         $('#btnDownload').hide();
         $('#from-date-to-date-filter-bar').hide();
         $('#from-date-to-date-filter-bar-Ageing').hide();
+        $('#divReportType').hide();
         const today = new Date();
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -37,8 +41,10 @@ $(document).ready(function () {
         clearTable();
         $('#date-filter-bar').hide();
         $('#from-date-to-date-filter-bar').hide();
-        $('#from-date-to-date-filter-bar-Ageing').hide();
+        $('#from-date-to-date-filter-bar-Ageing').show();
+        $('#divReportType').show();
         $('#btnDownload').show();
+        setO2DSheetDates(); // O2D: From = 2 months before, To = today
         GetRollingPlanSheetList();
         const $wrapper = $('.table-wrapper');
         $wrapper.css({ width: '100%' });
@@ -49,6 +55,7 @@ $(document).ready(function () {
         $('#date-filter-bar').hide();
         $('#from-date-to-date-filter-bar').hide();
         $('#from-date-to-date-filter-bar-Ageing').hide();
+        $('#divReportType').hide();
         $('#btnDownload').show();
         GetPipeStockRollingPlanList();
         const $wrapper = $('.table-wrapper');
@@ -61,6 +68,7 @@ $(document).ready(function () {
         $('#btnDownload').show();
         $('#from-date-to-date-filter-bar').show();
         $('#from-date-to-date-filter-bar-Ageing').hide();
+        $('#divReportType').hide();
         setCurrentDatePendingPlans()
         var Status = $("#ddlStatus").val() == null ? 'Pending' : $("#ddlStatus").val();
         var ItemMaster_Code = $("#ddlItemName").val() == null ? "0" : $("#ddlItemName").val();
@@ -74,12 +82,28 @@ $(document).ready(function () {
         $('#date-filter-bar').hide();
         $('#from-date-to-date-filter-bar').hide();
         $('#from-date-to-date-filter-bar-Ageing').show();
+        $('#divReportType').hide();
         $('#btnDownload').show();
         setCurrentDatePendingPlans()
         GetAgeingReportList(A_FromDate, A_ToDate);
         const $wrapper = $('.table-wrapper');
         $wrapper.css({ width: '100%' });
 
+    });
+
+    // Keep filter bar in sync when O2D sheet or Ageing Report tab is shown (e.g. Bootstrap tab switch)
+    $(document).on('shown.bs.tab', '[data-bs-toggle="tab"]', function (e) {
+        var targetId = $(e.target).attr('id');
+        if (targetId === 'current-stock-tab') {
+            $('#from-date-to-date-filter-bar-Ageing').show();
+            $('#divReportType').show();
+        } else if (targetId === 'ageing-report-tab') {
+            $('#from-date-to-date-filter-bar-Ageing').show();
+            $('#divReportType').hide();
+        } else {
+            $('#from-date-to-date-filter-bar-Ageing').hide();
+            $('#divReportType').hide();
+        }
     });
   
     $(document).on('click', '#btnShowDateMillReport', function () {
@@ -107,26 +131,50 @@ $(document).ready(function () {
     $(document).on('change', '#txtfromDate,#txttoDate', function () {
         A_FromDate = $('#txtfromDate').val();
         A_ToDate = $('#txttoDate').val();
-        GetAgeingReportList(A_FromDate, A_ToDate);
+        if ($('#ageing-report-tab').hasClass('active')) {
+            GetAgeingReportList(A_FromDate, A_ToDate);
+        }
+    });
+    $(document).on('change', '#txtfromDate,#txttoDate', function () {
+        A_FromDate = $('#txtfromDate').val();
+        A_ToDate = $('#txttoDate').val();
+        if ($('#current-stock-tab').hasClass('active')) {
+            clearTable();
+            GetRollingPlanSheetList();
+        }
+    });
+
+    // Handle consolidated / detail toggle for O2D sheet by reloading grid
+    $(document).on('change', '#ddlReportType', function () {
+        if ($('#current-stock-tab').hasClass('active')) {
+            clearTable();
+            GetRollingPlanSheetList();
+        }
     });
 });
 function GetRollingPlanSheetList() {
     Showloader();
-    RollingPlanSheetService.GetRollingPlanSheetList().then(function (response) {
+    const fromDate = $('#txtfromDate').val() || '';
+    const toDate = $('#txttoDate').val() || '';
+    let reportType = $('#ddlReportType').val();
+    RollingPlanSheetService.GetRollingPlanSheetList(fromDate, toDate).then(function (response) {
         if (response && response.length > 0) {
             HideLoader();
 
             const stringFilterColumn = ["Order No", "Item Name", "Size", "Thk", "Mkt_Man", "Status","Against Stock"];
-            const numericFilterColumn = [
-                "Ord Qty", "Rld Qty", "Pld Qty", "Pld Bal Qty", "Rld Bal Qty",
-                "Dispatch Qty", "Avl stock for dispatch", "Bal Dispatch Qty","Bal Production"
-            ];
-
-            const dateFilterColumn = ["Order Date", "Dispatch Date"];
+            const dateFilterColumn = ["Order Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
+            let numericFilterColumn = []
+            let hiddenColumns = []
+            if (reportType === 'Consolidated') {
+                hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty", "Dispatch Qty", "Pld Qty", "Pld Bal Qty", "Rld Qty", "Rld Bal Qty", "Avl stock for dispatch", "Dispatch Date"];
+                numericFilterColumn = ["Ord Qty", "Bal Dispatch Qty", "Bal Production"];
+            } else {
+                hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
+                numericFilterColumn = ["Ord Qty", "Rld Qty", "Pld Qty", "Pld Bal Qty", "Rld Bal Qty","Dispatch Qty", "Avl stock for dispatch", "Bal Dispatch Qty", "Bal Production"];
+            }
 
             // Calculate distinct Order No count
             const distinctOrderNos = new Set();
@@ -414,10 +462,13 @@ function addTotalsRow(totals, hiddenColumns = []) {
         cell.style.verticalAlign = 'middle';
         cell.style.whiteSpace = 'nowrap';
 
-        const headerText = firstHeaderRow.children[i].textContent.trim();
+        const headerCell = firstHeaderRow.children[i];
+        const headerText = headerCell.textContent.trim();
 
+        // Use actual header column visibility so totals row stays in sync when columns are hidden/shown
+        const isHeaderHidden = headerCell.style.display === 'none' || window.getComputedStyle(headerCell).display === 'none';
 
-        const isHidden = hiddenColumns.some(hiddenCol =>
+        const isHiddenByList = hiddenColumns.some(hiddenCol =>
             headerText.includes(hiddenCol) ||
             hiddenCol.includes(headerText) ||
             headerText.toLowerCase().includes(hiddenCol.toLowerCase()) ||
@@ -426,8 +477,12 @@ function addTotalsRow(totals, hiddenColumns = []) {
 
         // Special case: Show Status column in totals row even if it's hidden
         const isStatusColumn = headerText.includes('Status') || headerText.includes('Plan Status');
+        // Columns that show a numeric total - always show total cell even if header is hidden
+        const isTotalValueColumn = headerText.includes('Ord Qty') || headerText.includes('Bal Dispatch Qty') ||
+             headerText.includes('Bal Production');
+        const isHidden = isHeaderHidden || (isHiddenByList && !isStatusColumn);
 
-        if (isHidden && !isStatusColumn) {
+        if (isHidden && !isStatusColumn && !isTotalValueColumn) {
             cell.textContent = '';
             cell.style.backgroundColor = '#e8f4fd';
             cell.style.display = 'none';
@@ -519,6 +574,11 @@ function addTotalsRow(totals, hiddenColumns = []) {
             }
         }
 
+        // Sync visibility with header only for non-total columns (total value columns always show their total)
+        if (isHeaderHidden && !isTotalValueColumn) {
+            cell.style.display = 'none';
+        }
+
         totalsRow.appendChild(cell);
     }
 
@@ -560,13 +620,25 @@ function ChangecolorTr() {
             const statusValue = tds[statusColIndex].textContent.trim().toUpperCase();
             switch (statusValue) {
                 case "PLANNED":
-                    tds[statusColIndex].style.backgroundColor = "#07bb72";
+                    tds[statusColIndex].style.backgroundColor = "#A52A2A";
                     break;
                 case "PARTIAL":
                     tds[statusColIndex].style.backgroundColor = "#ebb861";
                     break;
                 case "PENDING":
                     tds[statusColIndex].style.backgroundColor = "#f87171";
+                    break;
+                case "PARTIAL PLANNED":
+                    tds[statusColIndex].style.backgroundColor = "#FFFF00";
+                    break;
+                case "ROLLED":
+                    tds[statusColIndex].style.backgroundColor = "#008000";
+                    break;
+                case "PARTIAL ROLLED":
+                    tds[statusColIndex].style.backgroundColor = "#90EE90";
+                    break;
+                case "UNPLANED":
+                    tds[statusColIndex].style.backgroundColor = "#FF0000";
                     break;
                 default:
                     tds[statusColIndex].style.backgroundColor = "";
@@ -992,7 +1064,9 @@ function ExportExcel() {
         });
     }else {
         const hiddenFields = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
-        RollingPlanSheetService.GetRollingPlanSheetList().then(function (response) {
+        const fromDate = $('#txtfromDate').val() || '';
+        const toDate = $('#txttoDate').val() || '';
+        RollingPlanSheetService.GetRollingPlanSheetList(fromDate, toDate).then(function (response) {
             if (response && response.length > 0) {
                 ExportToExcelControl.ExportToExcel(response, hiddenFields, "RollingPlanSheet");
             } else {
@@ -1190,6 +1264,24 @@ function setCurrentDatePendingPlans() {
     A_ToDate = $('#txttoDate').val();
     
    
+}
+
+// O2D sheet (current-stock-tab): From Date = 2 months before today, To Date = today
+function setO2DSheetDates() {
+    let today = new Date();
+    let twoMonthsBefore = new Date(today.getFullYear(), today.getMonth() - 2, today.getDate());
+
+    function formatDate(date) {
+        let day = String(date.getDate()).padStart(2, '0');
+        let month = String(date.getMonth() + 1).padStart(2, '0');
+        let year = date.getFullYear();
+        return `${year}-${month}-${day}`;
+    }
+
+    $('#txtfromDate').val(formatDate(twoMonthsBefore));
+    $('#txttoDate').val(formatDate(today));
+    A_FromDate = $('#txtfromDate').val();
+    A_ToDate = $('#txttoDate').val();
 }
 function GetPendingPlansReportList(G_FromDate, G_ToDate,Status,ItemMaster_Code) {
     Showloader();

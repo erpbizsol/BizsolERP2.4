@@ -2,8 +2,8 @@
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const RollingPlanSheetService = {
-    GetRollingPlanSheetList: function GetRollingPlanSheetList() {
-        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetRollingPlanSheetList";
+    GetRollingPlanSheetList: function GetRollingPlanSheetList(FromDate, ToDate) {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetRollingPlanSheetList?FromDate=" + FromDate + "&ToDate=" + ToDate;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
