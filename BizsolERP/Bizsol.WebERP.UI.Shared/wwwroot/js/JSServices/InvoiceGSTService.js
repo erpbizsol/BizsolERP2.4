@@ -10,8 +10,24 @@ const InvoiceGSTService = {
             }
         );
     },
-    GetInvoiceGSTOrderList: function GetInvoiceGSTOrderList() {
-        var URL = UrlService.API_ENDPOINT_InvoiceGST + "/GetInvoiceGSTOrderList";
+    GetInvoiceGSTConsigneeList: function GetInvoiceGSTConsigneeList() {
+        var URL = UrlService.API_ENDPOINT_InvoiceGST + "/GetInvoiceGSTConsigneeList";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GETDropdownSaleType: function GETDropdownSaleType() {
+        var URL = UrlService.API_ENDPOINT_InvoiceGST + "/GETDropdownSaleType";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GETDropdownSubSaleType: function GETDropdownSubSaleType() {
+        var URL = UrlService.API_ENDPOINT_InvoiceGST + "/GETDropdownSubSaleType";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -29,14 +45,6 @@ const InvoiceGSTService = {
     SaveInvoiceGSTData: function SaveInvoiceGSTData(data) {
         var URL = UrlService.API_ENDPOINT_InvoiceGST + "/SaveInvoiceGSTData";
         return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(data)).then(
-            function (value) {
-                return value;
-            }
-        );
-    },
-    GetInvoiceGSTImage: function GetInvoiceGSTImage(code) {
-        var URL = UrlService.API_ENDPOINT_InvoiceGST + "/GetInvoiceGSTImage?code=" + code;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
             }

@@ -79,6 +79,10 @@ namespace BizsolERPMain
                 name: "ProductionMasters",
                 pattern: "{area:exists}/{controller=Slitting}/{action=SlittingProductionEntry}/{id?}");
 
+            app.MapControllerRoute(
+               name: "PurchaseReports",
+               pattern: "{area:exists}/{controller=Reports}/{action=MaizeReport}/{id?}");
+
             app.Run();
         }
 

@@ -260,7 +260,7 @@ function GetMRNQCPropertyList() {
                         <button type="button" title="Print" class="btn btn-info btn-height" onclick="Print_PurchaseQualityCheck(${code})">
                             <i class="fa-solid fa-print"></i>
                         </button>&nbsp;
-                        <button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${code}')">
+                        <button class="btn btn-danger icon-height mb-1" title="Delete" disabled>
                             <i class="fa-regular fa-circle-xmark"></i>
                         </button>`
                     : `
@@ -487,8 +487,13 @@ function loadPurchaseQualityCheckData(mrnMasterCode) {
         .then(function (response) {
             HideLoader();
             if (response && Array.isArray(response) && response.length > 0) {
-                G_PurchaseQualityCheckData = response;
-                buildQualityCheckTable(response);
+                if (response[0].Status2 == 'Y') {
+                    G_PurchaseQualityCheckData = response;
+                    buildQualityCheckTable(response);
+                } else {
+                    toastr.warning(response[0].Msg);
+                    clearTable();
+                }
         } else {
                 toastr.warning('No data found for the selected MRN.');
                 clearTable();
