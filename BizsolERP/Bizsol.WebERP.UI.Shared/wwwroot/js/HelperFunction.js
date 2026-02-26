@@ -99,7 +99,7 @@ const BizSolHelperFunction = {
         let urlParams = this.getUrlVars();
         let value = decodeURI(urlParams[paramName] || '');
         if (value && value !== "undefined" && value !== "") {
-            $(headingSelector).text(value);
+            $(headingSelector).text(this.ToWithSpace(value));
         }
     },
     getCurrentDate: function getCurrentDate() {
