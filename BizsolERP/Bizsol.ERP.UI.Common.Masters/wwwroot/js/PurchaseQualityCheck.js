@@ -260,7 +260,7 @@ function GetMRNQCPropertyList() {
                         <button type="button" title="Print" class="btn btn-info btn-height" onclick="Print_PurchaseQualityCheck(${code})">
                             <i class="fa-solid fa-print"></i>
                         </button>&nbsp;
-                        <button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete('${code}')">
+                        <button class="btn btn-danger icon-height mb-1" title="Delete" disabled>
                             <i class="fa-regular fa-circle-xmark"></i>
                         </button>`
                     : `

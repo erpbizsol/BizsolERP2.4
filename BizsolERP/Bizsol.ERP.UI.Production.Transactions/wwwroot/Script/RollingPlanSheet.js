@@ -135,6 +135,14 @@ $(document).ready(function () {
             GetAgeingReportList(A_FromDate, A_ToDate);
         }
     });
+    $(document).on('change', '#txtfromDate,#txttoDate', function () {
+        A_FromDate = $('#txtfromDate').val();
+        A_ToDate = $('#txttoDate').val();
+        if ($('#current-stock-tab').hasClass('active')) {
+            clearTable();
+            GetRollingPlanSheetList();
+        }
+    });
 
     // Handle consolidated / detail toggle for O2D sheet by reloading grid
     $(document).on('change', '#ddlReportType', function () {
@@ -154,14 +162,14 @@ function GetRollingPlanSheetList() {
             HideLoader();
 
             const stringFilterColumn = ["Order No", "Item Name", "Size", "Thk", "Mkt_Man", "Status","Against Stock"];
-            const dateFilterColumn = ["Order Date", "Dispatch Date"];
+            const dateFilterColumn = ["Order Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             let numericFilterColumn = []
             let hiddenColumns = []
             if (reportType === 'Consolidated') {
-                hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty", "Dispatch Qty", "Pld Qty", "Pld Bal Qty", "Rld Qty", "Rld Bal Qty", "Avl stock for dispatch"];
+                hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty", "Dispatch Qty", "Pld Qty", "Pld Bal Qty", "Rld Qty", "Rld Bal Qty", "Avl stock for dispatch", "Dispatch Date"];
                 numericFilterColumn = ["Ord Qty", "Bal Dispatch Qty", "Bal Production"];
             } else {
                 hiddenColumns = ["BuyerPoMaster_Code", "BuyerPoDetail_Code", "Qty MR", "Bal Qty Pc", "SizeDesp", "Dispatch Qty_raw", "Pld Qty_raw", "Rld Qty_raw", "PartyName", "Ord Bal Qty"];
@@ -469,9 +477,12 @@ function addTotalsRow(totals, hiddenColumns = []) {
 
         // Special case: Show Status column in totals row even if it's hidden
         const isStatusColumn = headerText.includes('Status') || headerText.includes('Plan Status');
+        // Columns that show a numeric total - always show total cell even if header is hidden
+        const isTotalValueColumn = headerText.includes('Ord Qty') || headerText.includes('Bal Dispatch Qty') ||
+             headerText.includes('Bal Production');
         const isHidden = isHeaderHidden || (isHiddenByList && !isStatusColumn);
 
-        if (isHidden && !isStatusColumn) {
+        if (isHidden && !isStatusColumn && !isTotalValueColumn) {
             cell.textContent = '';
             cell.style.backgroundColor = '#e8f4fd';
             cell.style.display = 'none';
@@ -563,8 +574,8 @@ function addTotalsRow(totals, hiddenColumns = []) {
             }
         }
 
-        // Always sync visibility with header: when column is hidden, totals cell must not show value
-        if (isHeaderHidden) {
+        // Sync visibility with header only for non-total columns (total value columns always show their total)
+        if (isHeaderHidden && !isTotalValueColumn) {
             cell.style.display = 'none';
         }
 

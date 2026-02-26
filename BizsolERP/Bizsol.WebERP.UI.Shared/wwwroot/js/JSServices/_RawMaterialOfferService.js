@@ -119,6 +119,15 @@ const RawMaterialOfferService = {
             }
         );
     },
+    GetRMClearanceHold: function GetRMClearanceHold(Code, HoldRemark) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_RawMaterialOffer + "/GetRMClearanceHold?Code=" + Code + "&HoldRemark=" + HoldRemark + "&UserMaster_Code=" + userCode;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { RawMaterialOfferService }
