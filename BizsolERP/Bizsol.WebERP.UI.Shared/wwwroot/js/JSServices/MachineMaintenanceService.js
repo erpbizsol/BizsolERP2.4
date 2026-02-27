@@ -36,17 +36,6 @@ const MachineMaintenanceService = {
         );
 
     },
-    //GetMachineMaintenanceList: function GetMachineMaintenanceList() {
-    //    var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-    //    var userMasterCode = authKeyData.UserMaster_Code;
-    //    var URL = UrlService.API_ENDPOINT_MachineMaintenance + `/GetMachineMaintenanceList`;
-    //    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
-    //        function (value) {
-    //            return value;
-    //        }
-    //    );
-
-    //},
 
     GetMachineMaintenanceList: function GetMachineMaintenanceList(accessRights) {
         var URL = UrlService.API_ENDPOINT_MachineMaintenance + `/GetMachineMaintenanceList?accessRights=${encodeURIComponent(accessRights)}`;
