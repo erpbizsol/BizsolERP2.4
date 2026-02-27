@@ -2,40 +2,243 @@ import { MachineMaintenanceService } from '../../Bizsol.WebERP.UI.Shared/js/JSSe
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 let files = [];
-
 let fileName = '';
 let imageBase64Data = [];
-let existingImageData = []; // Store existing image data during edit
-let existingFileName = ''; // Store existing file name during edit
-
+let existingImageData = []; 
+let existingFileName = ''; 
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
 var G_UserMasterCode = authKeyData.UserMaster_Code;
 var UserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
 var G_UserName = UserDetails[0].UserName;
 var G_Status = 'SAVE';
-$(document).ready(function () {
+var G_AemployeeMasterList = [];
+var G_CemployeeMasterList = [];
+var ScreenMode = '';
+var G_AccessRights = [];
+var G_ShowButton = [];
+
+$(document).ready(async function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+    $(".Number").keyup(function (e) {
+        if (/\D/g.test(this.value)) this.value = this.value.replace(/[^0-9]/g, '')
+    });
     $("#txtPreparedBy").val(G_UserName);
-    GetMachineMaintenanceList();
+    GetEmployeeMasterList();
+    GetEmployeeMasterListBrackDown();
     GetReasonMaster();
     GetDepartmentMasterList();
     GetMachineMasterList();
     GetStatusMasterList();
-    
-});
+    await ApplyButtonPermissions(); 
+    GetMachineMaintenanceList();
+    $('#ddlPriority').on('change', function () {
+        const priority = $(this).val();
+        const $reqTime = $('#txtRequestTime');
+
+        if (priority === 'High') {
+            setCurrentRequestTime();
+            $reqTime.prop('readonly', true);
+        } else {
+            $reqTime.val('').prop('readonly', false);
+
+        }
+    });
+}); 
+function GetMachineMaintenanceList() {
+    var statusFilter = [...new Set(G_AccessRights)].join(',');
+    MachineMaintenanceService.GetMachineMaintenanceList(statusFilter).then(function (response) {
+        $("#tblMachineMaintenance").show();
+        if (response.length > 0) {
+            const StringFilterColumn = ["Status", "Reason", "Department", "Machine No"];
+            const NumericFilterColumn = ["Entry No"];
+            const DateFilterColumn = ["Entry Date"];
+            const Button = false;
+            const showButtons = [];
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = ["CurrentStatus", "MaintenanceType", "Priority", "NatureofBreakdown", "DescriptionofBreakdown", "SpareConsumed", "JobAssignedTo", "MobileNo", "RequestTime", "ConcernedPerson", "ConcenedPersonMobileNo", "Code", "Job Assigned", "Request Date", "Work Start Date", "Machine Failed Date", "Failed Remark", "Start Remark", "Description"];
+            const ColumnAlignment = {
+                "Entry No": "right;;width:15px;",
+                "Action": ";width:50px;",
+            };
+            const updatedResponse = response.map(item => {
+                const Closed = (item["Request Status"] || '').toLowerCase() === 'closed';
+                const status = (item.CurrentStatus || item["CurrentStatus"] || '').toUpperCase().trim();
+                const rights = new Set(G_ShowButton || []);
+
+                let editButton = `<button class="btn btn-primary icon-height mb-2 me-1" id="txtEdit" title="Edit" onclick="Edit(${item.Code})" ${Closed ? 'disabled="disabled"' : ''}><i class="fa fa-pencil"></i></button>`;
+                let deleteButton = `<button class="btn btn-danger icon-height mb-2 me-1" title="Delete" id="txtDelete" onclick="Delete(${item.Code})"><i class="fa fa-times"></i></button>`;
+                let assignButton = `<button class="btn btn-success icon-height mb-2 me-1" title="Request Assign" id="txtAssign" onclick="Assign(${item.Code})">Request Assign</button>`;
+                let updateStatusButton = `<button class="btn btn-info icon-height mb-2 me-1" title="Update Status" id="txtDone" onclick="Done(${item.Code})">Update Status</button>`;
+                let closeButton = `<button class="btn btn-info icon-height mb-2" title="Ticket Close" id="txtClose" onclick="Close(${item.Code})">Ticket Close</button>`;
+
+                let buttonsHTML = '';
+
+                // New/Edit/Delete/Assign rights (N)
+                if (rights.has('N')) {
+                    buttonsHTML += `${editButton}${deleteButton}`;   
+                   
+                }
+                if (status === 'N' && rights.has('A')) {
+                    buttonsHTML += assignButton;
+                }
+                // Update Status rights (A for status A, U for status U/C)
+                if (status === 'A' && rights.has('U')) {
+                    buttonsHTML += updateStatusButton;
+                }
+                // Close rights (C for status U/C)
+                if ((status === 'U' || status === 'C') && rights.has('C')) {
+                    buttonsHTML += closeButton;
+                }
+
+                return {
+                    ...item,
+                    Action: buttonsHTML,
+                };
+            });
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+        }
+        else {
+            toastr.error('No Data Found');
+            $("#tblMachineMaintenance").hide();
+        }
+
+    });
+}
+function CheckPermission(OptionName, Id) {
+    var ModuleName = "Machine Maintenance Request",
+        OptionName = OptionName,
+        ShowMsg = "N",
+        FinYear = getFinancialYear();
+    return MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            return false;
+           
+        }
+        else {
+           
+            if (OptionName == "New") {
+                G_AccessRights.push('N');
+                G_ShowButton.push('N');
+                $("#txtCreateNewbutton").show();
+            }
+            if (OptionName == "Edit") {
+                G_AccessRights.push('N');
+                G_ShowButton.push('N');
+               
+            }
+            if (OptionName == "Delete") {
+                G_AccessRights.push('N');
+                G_ShowButton.push('N');
+               
+            }
+            if (OptionName == "Assign") {
+                G_AccessRights.push('N');
+                G_ShowButton.push('A');
+             
+            }
+            if (OptionName == "Update Status") {
+                G_AccessRights.push('A');
+                G_ShowButton.push('U');
+                
+            }
+            if (OptionName == "Close") {
+                G_AccessRights.push('U', 'C');
+                G_ShowButton.push('N');
+                G_ShowButton.push('C');
+                
+            }
+        }
+    });
+}
+
+async function ApplyButtonPermissions() {
+    G_AccessRights = [];
+    G_ShowButton = [];
+    $("#txtCreateNewbutton").hide();
+    await Promise.all([
+        CheckPermission("New", "txtCreateNewbutton"),
+        CheckPermission("Edit", "txtEdit"),
+        CheckPermission("Delete", "txtDelete"),
+        CheckPermission("Assign", "txtAssign"),
+        CheckPermission("Update Status", "txtDone"),
+        CheckPermission("Close", "txtClose")
+    ]);
+}
+
 document.addEventListener('dblclick', function () {
     if (document.activeElement?.type === 'time') {
         document.activeElement.blur();
     }
 });
 function CreateNew() {
+    ScreenMode = 'NEW';
     $("#txtPreparedBy").val(G_UserName);
     $("#dvGrid").hide();
     $("#dvFromNEW").show();
+    $("#hideConcernedPerson").show();
+    $("#hideConcenedPersonMobileNo").show();
+    $("#txthideRequestTime").show();
+    $("#hidetxtPreparedBy").show();
+    $("#hideviewImageBtn").show();
+    $("#hideUpdateStatus").hide();
+    $("#hideRequestStatus").hide();
+    $("#hideSpareConsumed").hide();
+    $("#hideMaintenanceType").show();
+    $("#hidePriority").show();
+    $("#hideNatureofBreakdown").show();
+    $("#hideDescriptionofBreakdown").show();
     ClearData();
+    setCurrentRequestTime();
 }
+function ClearData() {
+    $('#hftxtCode').val('0');
+    $('#txtEntryNo').val('').prop('readonly', true);
+    $('#txtEntryDate').val(getTodayDateForInput()).prop('readonly', true);
+    $('#txtRequestDate').val(getTodayDateForInput()).prop('readonly', false);
+    $('#ddlStatus').prop('disabled', false);
+    $('#txtMCFailedDate').val(getTodayDateForInput()).prop('readonly', false);
+    $('#txtMCFailedTime').val('').prop('readonly', false);
+    SelectOptionByText("txtJobAssignedTo", "select");
+    $('#txtAssignedMobileNo').val('').prop('readonly', false);
+    $('#txtddlMachineNo').prop('disabled', false);
+    $('#txtddlComplaintDepartment').prop('disabled', false);
+    $('#txtddlComplaintReason').prop('disabled', false);
+    SelectOptionByText('txtddlMachineNo', "select");
+    SelectOptionByText('txtddlComplaintDepartment', "select");
+    SelectOptionByText('txtddlComplaintReason', "select");
+    SelectOptionByText('ddlStatus', "select");
+    $("#txtRemark").val("").prop('disabled', false);
+    $("#txtDescriptionWorkDone").val("").prop('disabled', false);
+    $("#txtERemark").val("").prop('disabled', false);
+    $('#txtMachineStartDate').val(getTodayDateForInput()).prop('readonly', false);
+    $('#txtMachineStartTime').val('').prop('readonly', false);
+    $("#txthideMachineStartDate").hide();
+    $("#txthideMachineStartTime").hide();
+    $("#txthideRemark").hide();
+    $("#txthideDescriptionWorkDone").hide();
+    $("#txtdRemark").show();
+    $("#txtSectionInchargeSignature").val('');
+    SelectOptionByText("txtConcernedPerson", "select");
+    $("#ddlNatureofBreakdown").val("");
+    $("#ddlPriority").val("");
+    $("#ddlMaintenanceType").val("");
+    $("#ddlRequestStatus").val("");
+    $("#txtDescriptionofBreakdown").val('');
+    $("#ddlUpdateStatus").val("").prop('disabled', false);
+    $("#txtSpareConsumed").val("").prop('disabled', false);
+    $("#txtConcenedPersonMobileNo").val("").prop('readonly', false);
+   
+    files = [];
+    fileName = '';
+    imageBase64Data = [];
+    existingImageData = [];
+    existingFileName = '';
+    $('#imgPreview').attr('src', '');
+    $('#imgPreviewContainer').hide();
+    $('#viewImageBtn').attr('style', 'cursor: pointer; height: 28px; display: none !important;').hide();
 
+}
 function GetDepartmentMasterList() {
 
     MachineMaintenanceService.GetDepartmentMasterList().then(function (resObj) {
@@ -70,6 +273,49 @@ function GetStatusMasterList() {
         });
     });
 }
+function GetEmployeeMasterList() {
+
+    MachineMaintenanceService.GetEmployeeMasterList().then(function (resObj) {
+        G_CemployeeMasterList = resObj || [];  
+        BindSelectList($('#txtConcernedPerson')[0], resObj.map((item) => ({ Code: item.Code, Desp: item.EmployeeName })));
+        $('#txtConcernedPerson').select2({
+            width: '-webkit-fill-available'
+        });
+    });
+} 
+
+$('#txtConcernedPerson').on('change', function () {
+    var selectedCode = $(this).val();
+    if (!selectedCode) {
+        $('#txtConcenedPersonMobileNo').val('');
+        return;
+    }
+    var employee = G_CemployeeMasterList.find(function (item) { return item.Code == selectedCode; });
+    var mobileNo = employee ? (employee.MobileNo || employee.MobileNo || '') : '';
+   
+    $('#txtConcenedPersonMobileNo').val(mobileNo);
+});
+function GetEmployeeMasterListBrackDown() {
+
+    MachineMaintenanceService.GetEmployeeMasterListBrackDown().then(function (resObj) {
+        G_AemployeeMasterList = resObj || [];
+        BindSelectList($('#txtJobAssignedTo')[0], resObj.map((item) => ({ Code: item.Code, Desp: item.EmployeeName })));
+        $('#txtJobAssignedTo').select2({
+            width: '-webkit-fill-available'
+        });
+    });
+}
+
+$('#txtJobAssignedTo').on('change', function () {
+    var selectedCode = $(this).val();
+    if (!selectedCode) {
+        $('#txtAssignedMobileNo').val('');
+        return;
+    }
+    var employee = G_AemployeeMasterList.find(function (item) { return item.Code == selectedCode; });
+    var mobileNo1 = employee ? (employee.MobileNo || employee.MobileNo || '') : '';
+    $('#txtAssignedMobileNo').val(mobileNo1);
+});
 function BindSelectList(element, list) {
     let option = '<option value="">select</option>';
     $.each(list, function (key, val) {
@@ -95,87 +341,25 @@ function formatDateForInput(dateStr) {
     var parts = dateStr.split('-'); // dd-mm-yyyy
     return parts[2] + '-' + parts[1] + '-' + parts[0]; // yyyy-mm-dd
 }
-function GetMachineMaintenanceList() {
-
-    MachineMaintenanceService.GetMachineMaintenanceList().then(function (response) {
-        $("#tblMachineMaintenance").show();
-        if (response.length > 0) {
-            const StringFilterColumn = ["Status", "Reason", "Department", "Machine No"];
-            const NumericFilterColumn = ["Entry No"];
-            const DateFilterColumn = ["Entry Date"];
-            const Button = false;
-            const showButtons = [];
-            const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Code", "Job Assigned", "Request Date", "Work Start Date", "Machine Failed Date", "Failed Remark", "Start Remark", "Description"];
-            const ColumnAlignment = {
-                "Entry No": "right;;width:15px;",
-                "Action": ";width:50px;",
-            };
-            const updatedResponse = response.map(item => {
-                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="Edit(${item.Code})"><i class="fa fa-pencil"></i></button>
-                <button class="btn btn-danger icon-height mb-1" title="Delete" onclick="Delete(${item.Code})" ><i class="fa fa-times"></i></button>
-                <button class="btn btn-info icon-height mb-1" title="Update Status"  onclick="Done(${item.Code})">Update Status</button>
-                `;
-                return {
-                    ...item,
-                    Action: buttonsHTML,
-                };
-
-            });
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
-        }
-        else {
-            toastr.error('No Data Found');
-            $("#tblMachineMaintenance").hide();
-        }
-
-    });
-}
 function BackMaster() {
     $("#dvGrid").show();
     $("#dvFromNEW").hide();
     $("#dvFromEDIT").hide();
+    $("#hideJobAssignedTo").hide();
+    $("#hideAssignedToMobileNo").hide();
+    $("#txthideRequestTime").show();
+    $("#hidetxtPreparedBy").show();
+    $("#hideviewImageBtn").show();
+    $("#hideUpdateStatus").hide();
+    $("#hideUpdateStatus").hide();
+    $("#hideSpareConsumed").hide();
+    $("#hideMaintenanceType").show();
+    $("#hidePriority").show();
+    $("#hideNatureofBreakdown").show();
+    $("#hideDescriptionofBreakdown").show();
+
     ClearData();
     GetMachineMaintenanceList();
-}
-function ClearData() {
-    $('#hftxtCode').val('0');
-    $('#txtEntryNo').val('').prop('readonly', true);
-    $('#txtEntryDate').val(getTodayDateForInput()).prop('readonly', true);
-    $('#txtRequestDate').val(getTodayDateForInput()).prop('readonly', false);
-    $('#ddlStatus').prop('readonly', false);
-    $('#txtMCFailedDate').val(getTodayDateForInput()).prop('readonly', false);
-    $('#txtMCFailedTime').val('').prop('readonly', false);
-    $('#txtJobAssignedTo').val('').prop('readonly', false);
-
-    $('#txtddlMachineNo').prop('disabled', false);
-    $('#txtddlComplaintDepartment').prop('disabled', false);
-    $('#txtddlComplaintReason').prop('disabled', false);
-    SelectOptionByText('txtddlMachineNo', "select");
-    SelectOptionByText('txtddlComplaintDepartment', "select");
-    SelectOptionByText('txtddlComplaintReason', "select");
-    SelectOptionByText('ddlStatus', "select");
-    $("#txtRemark").val("");
-    $("#txtDescriptionWorkDone").val("");
-    $("#txtERemark").val("");
-    $('#txtMachineStartDate').val(getTodayDateForInput());
-    $('#txtMachineStartTime').val('');
-
-    $("#txthideMachineStartDate").hide();
-    $("#txthideMachineStartTime").hide();
-    $("#txthideRemark").hide();
-    $("#txthideDescriptionWorkDone").hide();
-    $("#txtdRemark").show();
-    $("#txtSectionInchargeSignature").val('');
-
-    files = [];
-    fileName = '';
-    imageBase64Data = [];
-    existingImageData = [];
-    existingFileName = '';
-    $('#imgPreview').attr('src', '');
-    $('#imgPreviewContainer').hide();
-    $('#viewImageBtn').attr('style', 'cursor: pointer; height: 28px; display: none !important;').hide();
 }
 function getTodayDateForInput() {
     var today = new Date();
@@ -184,132 +368,264 @@ function getTodayDateForInput() {
     return today.getFullYear() + '-' + month + '-' + day;
 }
 function SaveMachineMaintenance() {
+    G_Status = 'SAVE';
     var ModuleName = "Machine Maintenance Request",
         OptionName = "New",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
         if (response.CheckModuleOptionRight == 'N') {
             toastr.error(response.Msg);
             return false;
         }
         else {
-            var workStartDate = $("#txtMachineStartDate").val().trim();
-            if (workStartDate === "") {
-                workStartDate = null;
-            }
-
-            var workStartTime = $("#txtMachineStartTime").val().trim();
-            if (workStartTime === "") {
-                workStartTime = null;
-            }
-
+            var code = $("#hftxtCode").val() || 0;
             var finalFileName = fileName || existingFileName;
             var finalImageData = (imageBase64Data && imageBase64Data.length > 0) ? imageBase64Data : existingImageData;
 
-            let payload = [{
-                Code: $("#hftxtCode").val() || 0,
-                EntryNo: $("#txtEntryNo").val() || 0,
-                EntryDate: $("#txtEntryDate").val().trim(),
-                RequestDate: $("#txtRequestDate").val().trim(),
-                MachineMaster_Code: $("#txtddlMachineNo").val().trim(),
-                DepartmentMaster_Code: $("#txtddlComplaintDepartment").val().trim(),
-                Status: $("#ddlStatus").val().trim() || "",
-                MachineFailedDate: $("#txtMCFailedDate").val() || "",
-                MachineFailedTime: $("#txtMCFailedTime").val() || "",
-                JobAssignedTo: $("#txtJobAssignedTo").val() || "",
-                ReasonMaster_Code: $("#txtddlComplaintReason").val() || "",
-                FailedRemark: $("#txtRemark").val() || "",
-                WorkStartDate: workStartDate,
-                WorkStartTime: workStartTime,
-                DescriptionofWorkDone: $("#txtDescriptionWorkDone").val() || "",
-                StartRemark: $("#txtERemark").val() || "",
-                attachFileName: finalFileName,
-                attachData: finalImageData,
-                companyCode: JSON.parse(sessionStorage.getItem('authKey')).CompanyCode,
-                UserMaster_Code: JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code,
-
-            }];
-
-            var isDoneModeForSave = $('#txtEntryNo').prop('readonly') === true && $("#txthideMachineStartDate").is(':visible');
-            if (isDoneModeForSave) {
-                var startRemarkVal = $("#txtERemark").val().trim();
-                var startDateVal = $("#txtMachineStartDate").val().trim();
-                var startTimeVal = $("#txtMachineStartTime").val().trim();
-
-                if (!startDateVal) {
-                    toastr.error("Please select machine start date.");
-                    $("#txtMachineStartDate").focus();
+            if (ScreenMode === 'ASSIGN') {
+                let JobAssignedTo = $("#txtJobAssignedTo").val();
+                if (JobAssignedTo === "0" || JobAssignedTo === "" || JobAssignedTo == null) {
+                    JobAssignedTo = 0;
+                }
+                var AssignedMobileNo = $("#txtAssignedMobileNo").val().trim();
+                if (AssignedMobileNo === "") {
+                    AssignedMobileNo = "";
+                }
+                if (!JobAssignedTo) {
+                    toastr.error("Please select job assigned to.");
+                    $("#txtJobAssignedTo").focus();
                     return;
                 }
-                if (!startTimeVal) {
-                    toastr.error("Please select machine start time.");
-                    $("#txtMachineStartTime").focus();
+                if (!AssignedMobileNo) {
+                    toastr.error("Please enter assigned to mobile no.");
+                    $("#txtAssignedMobileNo").focus();
                     return;
                 }
-                if (!startRemarkVal) {
-                    toastr.error("Please enter start remark.");
-                    $("#txtERemark").focus();
-                    return;
-                }
+
+                let assignPayload = [{
+                    Code: code,
+                    JobAssignedTo: JobAssignedTo,
+                    MobileNo: AssignedMobileNo,
+                    attachFileName: "",
+                    attachData: [],
+                }];
+
+                MachineMaintenanceService.GetJobAssignedTo(assignPayload).then(function (response) {
+                    if (response.Status === 'Y') {
+                        toastr.success(response.Msg);
+                        BackMaster();
+                    } else {
+                        toastr.error(response.Msg);
+                    }
+                }).catch(function (error) {
+                    toastr.error(error.Msg || "An error occurred while assigning job.");
+                });
+
+                return;
             }
 
-            if (!payload[0].EntryDate) {
-                toastr.error("Please select entry date.");
-                $("#txtEntryDate").focus();
-                return;
-            }
-            if (!payload[0].RequestDate) {
-                toastr.error("Please select request date.");
-                $("#txtRequestDate").focus();
-                return;
-            }
-            if (!payload[0].MachineMaster_Code) {
-                toastr.error("Please select machine no.");
-                $("#txtddlMachineNo").focus();
-                return;
-            }
-            if (!payload[0].DepartmentMaster_Code) {
-                toastr.error("Please select department.");
-                $("#txtddlComplaintDepartment").focus();
-                return;
-            }
-            if (!payload[0].Status) {
-                toastr.error("Please select designation.");
-                $("#ddlStatus").focus();
-                return;
-            }
-            if (!payload[0].MachineFailedDate) {
-                toastr.error("Please select Machin failed date.");
-                $("#txtMCFailedDate").focus();
-                return;
-            }
-            if (!payload[0].MachineFailedTime) {
-                toastr.error("Please select machine failed time.");
-                $("#txtMCFailedTime").focus();
-                return;
-            }
-            if (!payload[0].ReasonMaster_Code) {
-                toastr.error("Please select reason.");
-                $("#txtddlComplaintReason").focus();
-                return;
-            }
-            MachineMaintenanceService.SaveMachineMaintenance(payload).then(function (response) {
-                if (response.Status === 'Y') {
-                    toastr.success(response.Msg || "Contact person details saved successfully.");
-                    BackMaster();
-                } else {
-                    toastr.error(response.Msg || "Save failed for contact person details.");
+            if (ScreenMode === 'DONE') {
+                var workStartDate = $("#txtMachineStartDate").val().trim();
+                if (workStartDate === "") {
+                    workStartDate = null;
                 }
-            }).catch(function (error) {
-                toastr.error(error.Msg || "An error occurred while saving contact person details.");
-            });
+                var workStartTime = $("#txtMachineStartTime").val().trim();
+                if (workStartTime === "") {
+                    workStartTime = null;
+                }
+                let Donepayload = [{
+                    Code: code,
+                    WorkStartDate: workStartDate,
+                    WorkStartTime: workStartTime,
+                    DescriptionofWorkDone: $("#txtDescriptionWorkDone").val() || "",
+                    StartRemark: $("#txtERemark").val() || "",
+                    MachineStatus: $("#ddlUpdateStatus").val() || "",
+                    SpareConsumed: $("#txtSpareConsumed").val() || "",
+                    attachFileName: finalFileName,
+                    attachData: finalImageData,
+                   
+                }];
+                var isDoneModeForSave = $('#txtEntryNo').prop('readonly') === true && $("#txthideMachineStartDate").is(':visible');
+                if (isDoneModeForSave) {
+                    var startRemarkVal = $("#txtERemark").val().trim();
+                    var startDateVal = $("#txtMachineStartDate").val().trim();
+                    var startTimeVal = $("#txtMachineStartTime").val().trim();
+                    var UpdateStatus = $("#ddlUpdateStatus").val().trim();
+                    if (!UpdateStatus) {
+                        toastr.error("Please select update status.");
+                        $("#ddlUpdateStatus").focus();
+                        return;
+                    } 
+                    if (!startDateVal) {
+                        toastr.error("Please select machine start date.");
+                        $("#txtMachineStartDate").focus();
+                        return;
+                    }
+                    if (!startTimeVal) {
+                        toastr.error("Please select machine start time.");
+                        $("#txtMachineStartTime").focus();
+                        return;
+                    }
+                    if (!startRemarkVal) {
+                        toastr.error("Please enter start remark.");
+                        $("#txtERemark").focus();
+                        return;
+                    }
+                    
+                }
+                MachineMaintenanceService.GetUpdateStatus(Donepayload).then(function (response) {
+                    if (response.Status === 'Y') {
+                        toastr.success(response.Msg);
+                        BackMaster();
+                    } else {
+                        toastr.error(response.Msg);
+                    }
+                }).catch(function (error) {
+                    toastr.error(error.Msg);
+                });
+            }
+
+            if (ScreenMode === 'CLOSE') {
+                let Closepayload = [{
+                    Code: code,
+                    RequestStatus: $("#ddlRequestStatus").val(),
+                    attachFileName: finalFileName,
+                    attachData: finalImageData,
+
+                }];
+                if (!Closepayload[0].RequestStatus) {
+                    toastr.error("Please select request status.");
+                    $("#ddlRequestStatus").focus();
+                    return;
+                }
+                MachineMaintenanceService.GetCloseStatus(Closepayload).then(function (response) {
+                    if (response.Status === 'Y') {
+                        toastr.success(response.Msg);
+                        BackMaster();
+                    } else {
+                        toastr.error(response.Msg);
+                    }
+                }).catch(function (error) {
+                    toastr.error(error.Msg);
+                });
+            }
+
+            if (ScreenMode === 'NEW' || ScreenMode==='EDIT') {
+
+                let payload = [{
+                    Code: code,
+                    EntryNo: $("#txtEntryNo").val() || 0,
+                    EntryDate: $("#txtEntryDate").val().trim(),
+                    RequestDate: $("#txtRequestDate").val().trim(),
+                    MachineMaster_Code: $("#txtddlMachineNo").val().trim(),
+                    DepartmentMaster_Code: $("#txtddlComplaintDepartment").val().trim(),
+                    Status: $("#ddlStatus").val().trim() || "",
+                    MachineFailedDate: $("#txtMCFailedDate").val() || "",
+                    MachineFailedTime: $("#txtMCFailedTime").val() || "",
+                    ReasonMaster_Code: $("#txtddlComplaintReason").val() || "",
+                    FailedRemark: $("#txtRemark").val() || "",
+                    DescriptionofWorkDone: $("#txtDescriptionWorkDone").val() || "",
+                    StartRemark: $("#txtERemark").val() || "",
+                    attachFileName: finalFileName,
+                    attachData: finalImageData,
+                    companyCode: JSON.parse(sessionStorage.getItem('authKey')).CompanyCode,
+                    UserMaster_Code: JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code,
+                    ConcernedPerson: $("#txtConcernedPerson").val() || 0,
+                    ConcernedPersonMobileNo: $("#txtConcenedPersonMobileNo").val() || "",
+                    RequestTime: $("#txtRequestTime").val(),
+                    MaintenanceType: $("#ddlMaintenanceType").val(),
+                    Priority: $("#ddlPriority").val(),
+                    NatureofBreakDown: $("#ddlNatureofBreakdown").val(),
+                    DescriptionofBreakDown: $("#txtDescriptionofBreakdown").val().trim(),
+
+                }];
+                if (!payload[0].EntryDate) {
+                    toastr.error("Please select entry date.");
+                    $("#txtEntryDate").focus();
+                    return;
+                }
+                if (!payload[0].RequestDate) {
+                    toastr.error("Please select request date.");
+                    $("#txtRequestDate").focus();
+                    return;
+                }
+                if (!payload[0].MachineMaster_Code) {
+                    toastr.error("Please select machine no.");
+                    $("#txtddlMachineNo").focus();
+                    return;
+                }
+                if (!payload[0].DepartmentMaster_Code) {
+                    toastr.error("Please select department.");
+                    $("#txtddlComplaintDepartment").focus();
+                    return;
+                }
+                if (!payload[0].Status) {
+                    toastr.error("Please select designation.");
+                    $("#ddlStatus").focus();
+                    return;
+                }
+                if (!payload[0].MachineFailedDate) {
+                    toastr.error("Please select Machin failed date.");
+                    $("#txtMCFailedDate").focus();
+                    return;
+                }
+                var failedDate = payload[0].MachineFailedDate;
+                var todayStr = getTodayDateForInput();
+                var d = new Date();
+                d.setDate(d.getDate() - 1);
+                var mm = String(d.getMonth() + 1).padStart(2, '0');
+                var dd = String(d.getDate()).padStart(2, '0');
+                var yesterdayStr = d.getFullYear() + '-' + mm + '-' + dd;
+                if (failedDate < yesterdayStr || failedDate > todayStr) {
+                    toastr.error("Machine failed date can be selected one working day before the raise date or the same date.");
+                    $("#txtMCFailedDate").focus();
+                    return;
+                }
+                if (!payload[0].MachineFailedTime) {
+                    toastr.error("Please select machine failed time.");
+                    $("#txtMCFailedTime").focus();
+                    return;
+                }
+                if (!payload[0].ReasonMaster_Code) {
+                    toastr.error("Please select reason.");
+                    $("#txtddlComplaintReason").focus();
+                    return;
+                } 
+                if (!payload[0].DescriptionofBreakDown) {
+                    toastr.error("Please enter description of breakdown.");
+                    $("#txtDescriptionofBreakdown").focus();
+                    return;
+                }
+                if (!payload[0].ConcernedPerson) {
+                    toastr.error("Please select concerned person.");
+                    $("#txtConcernedPerson").focus();
+                    return;
+                }
+                if (!payload[0].ConcernedPersonMobileNo) {
+                    toastr.error("Please select concened person mobile no.");
+                    $("#txtConcenedPersonMobileNo").focus();
+                    return;
+                }
+                MachineMaintenanceService.SaveMachineMaintenance(payload).then(function (response) {
+                    if (response.Status === 'Y') {
+                        toastr.success(response.Msg || "Contact person details saved successfully.");
+                        BackMaster();
+                    } else {
+                        toastr.error(response.Msg || "Save failed for contact person details.");
+                    }
+                }).catch(function (error) {
+                    toastr.error(error.Msg || "An error occurred while saving contact person details.");
+                });
+            }
+           
+            
         }
+           
     });
 }
-
 function Edit(Code) {
- 
+    ScreenMode = 'EDIT';
     var ModuleName = "Machine Maintenance Request",
         OptionName = "Edit",
         ShowMsg = "Y",
@@ -319,9 +635,20 @@ function Edit(Code) {
             toastr.error(response.Msg);
             return false;
         } else {
-           
+            $("#txthideRequestTime").show();
             $("#dvGrid").hide();
             $("#dvFromNEW").show();
+            $("#hideConcernedPerson").show();
+            $("#hideConcenedPersonMobileNo").show();
+            $("#hidetxtPreparedBy").show();
+            $("#hideviewImageBtn").show();
+            $("#hideUpdateStatus").hide();
+            $("#hideRequestStatus").hide();
+            $("#hideSpareConsumed").hide();
+            $("#hideMaintenanceType").show();
+            $("#hidePriority").show();
+            $("#hideNatureofBreakdown").show();
+            $("#hideDescriptionofBreakdown").show();
             G_Status = 'SAVE';
             setTimeout(function () {
                 var eyeIcon = $('#viewImageBtn');
@@ -347,10 +674,16 @@ function Edit(Code) {
                     SelectOptionByText('ddlStatus',data.Status);
                     $('#txtMCFailedDate').val(formatDateForInput(data.MachineFailedDate));
                     $('#txtMCFailedTime').val(data.MachineFailedTime);
-                    $('#txtJobAssignedTo').val(data.JobAssignedTo);
                     SelectOptionByText('txtddlComplaintReason', data.ReasonName);
+                    SelectOptionByText('txtConcernedPerson', data.ConcernedPerson);
                     $('#txtRemark').val(data.FailedRemark);
                     $("#txtPreparedBy").val(data.CreatedByName);
+                    $("#txtConcenedPersonMobileNo").val(data.ConcenedPersonMobileNo);
+                    $("#txtRequestTime").val(data.RequestTime);
+                    $("#ddlMaintenanceType").val(data.MaintenanceType);
+                    $("#ddlPriority").val(data.Priority);
+                    $("#ddlNatureofBreakdown").val(data.NatureofBreakdown);
+                    $("#txtDescriptionofBreakdown").val(data.DescriptionofBreakdown);
                    
                     setTimeout(function () {
                         var eyeIcon = $('#viewImageBtn');
@@ -378,9 +711,94 @@ function Edit(Code) {
         }
     });
 }
-function Done(Code) {
+function Assign(Code) {
+    ScreenMode = 'ASSIGN';
     var ModuleName = "Machine Maintenance Request",
-        OptionName = "Edit",
+        OptionName = "Assign",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            $("#txthideRequestTime").show();
+            $("#dvGrid").hide();
+            $("#dvFromNEW").show();
+            $("#hideConcernedPerson").hide();
+            $("#hideConcenedPersonMobileNo").hide();
+            $("#hidetxtPreparedBy").show();
+            $("#hideviewImageBtn").show();
+            $('#hideJobAssignedTo').show();
+            $('#hideAssignedToMobileNo').show();
+            $("#hideUpdateStatus").hide();
+            $("#hideRequestStatus").hide();
+            $("#hideSpareConsumed").hide();
+            $("#hideMaintenanceType").hide();
+            $("#hidePriority").hide();
+            $("#hideNatureofBreakdown").hide();
+            $("#hideDescriptionofBreakdown").hide();
+            G_Status = 'SAVE';
+            setTimeout(function () {
+                var eyeIcon = $('#viewImageBtn');
+                if (eyeIcon.length) {
+                    eyeIcon.removeAttr('style');
+                    eyeIcon.css({
+                        'cursor': 'pointer',
+                        'height': '28px',
+                        'display': 'flex !important'
+                    }).show();
+                }
+            }, 50);
+            MachineMaintenanceService.GetMachineMaintenanceByCode(Code).then(function (response) {
+                var data = response[0];
+                if (data) {
+                    $('#hftxtCode').val(data.Code);
+                    $('#txtEntryNo').val(data.EntryNo).prop('readonly', true);
+                    $('#txtEntryDate').val(formatDateForInput(data.EntryDate)).prop('readonly', true);
+                    $('#txtRequestDate').val(formatDateForInput(data.RequestDate)).prop('readonly', true);
+                    $('#txtddlMachineNo').val(data.MachineNo).prop('disabled', true);
+                    $('#txtddlComplaintDepartment').val(data.DepartmentName).prop('disabled', true);
+                    $('#ddlStatus').val(data.Status).prop('disabled', true);
+                    $('#txtMCFailedDate').val(formatDateForInput(data.MachineFailedDate)).prop('readonly', true);
+                    $('#txtMCFailedTime').val(data.MachineFailedTime).prop('readonly', true);
+                    $("#txtRequestTime").val(data.RequestTime).prop('readonly', true);
+                    $("#txtddlComplaintReason").val(data.ReasonName).prop('disabled', true);
+                    $('#txtRemark').val(data.FailedRemark).prop('disabled', true);
+                    SelectOptionByText('txtddlMachineNo', data.MachineNo);
+                    SelectOptionByText('txtddlComplaintDepartment', data.DepartmentName);
+                    SelectOptionByText('ddlStatus', data.Status);
+                    SelectOptionByText('txtddlComplaintReason', data.ReasonName);
+                    SelectOptionByText('txtJobAssignedTo', data.JobAssignedTo);
+                    $('#txtAssignedMobileNo').val(data.MobileNo);
+                    setTimeout(function () {
+                        var eyeIcon = $('#viewImageBtn');
+                        if (eyeIcon.length) {
+                            eyeIcon.css({
+                                'cursor': 'pointer',
+                                'height': '28px',
+                                'display': 'flex !important'
+                            }).show();
+
+                        }
+                    }, 100);
+                    LoadExistingImage(data);
+                    GetMachineMaintenanceList();
+                
+                } else {
+                    toastr.error("Save failed for contact person details.");
+                }
+            }).catch(function (error) {
+                toastr.error(error.Msg || "An error occurred while saving contact person details.");
+            });
+        }
+    });
+
+}
+function Done(Code) {
+    ScreenMode = 'DONE';
+    var ModuleName = "Machine Maintenance Request",
+        OptionName = "Update Status",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
     MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
@@ -397,6 +815,20 @@ function Done(Code) {
             $("#txthideMachineStartTime").show();
             $("#txthideRemark").show();
             $("#txthideDescriptionWorkDone").show();
+            $("#hideJobAssignedTo").hide();
+            $("#hideAssignedToMobileNo").hide();
+            $("#hideConcernedPerson").hide();
+            $("#hideConcenedPersonMobileNo").hide();
+            $("#txthideRequestTime").hide();
+            $("#hideviewImageBtn").show();
+            $("#hideUpdateStatus").show();
+            $("#hideRequestStatus").hide();
+            $("#hideSpareConsumed").show();
+            $("#hidetxtPreparedBy").show();
+            $("#hideMaintenanceType").hide();
+            $("#hidePriority").hide();
+            $("#hideNatureofBreakdown").hide();
+            $("#hideDescriptionofBreakdown").hide();
             MachineMaintenanceService.GetMachineMaintenanceByCode(Code).then(function (response) {
                 var data = response[0];
                 if (data) {
@@ -406,8 +838,6 @@ function Done(Code) {
                     $('#txtRequestDate').val(formatDateForInput(data.RequestDate)).prop('readonly', true);
                     $('#txtMCFailedDate').val(formatDateForInput(data.MachineFailedDate)).prop('readonly', true);
                     $('#txtMCFailedTime').val(data.MachineFailedTime).prop('readonly', true);
-                    $('#txtJobAssignedTo').val(data.JobAssignedTo).prop('readonly', true);
-                    $('#txtJobAssignedTo').val(data.JobAssignedTo).prop('readonly', true);
                     $('#txtddlMachineNo').prop('disabled', true);
                     $('#txtddlComplaintDepartment').prop('disabled', true);
                     $('#txtddlComplaintReason').prop('disabled', true);
@@ -416,13 +846,8 @@ function Done(Code) {
                     SelectOptionByText('txtddlComplaintReason', data.ReasonName);
                     $('#txtRemark').val(data.FailedRemark);
                     $("#txtPreparedBy").val(data.CreatedByName);
-                    SelectOptionByText('ddlStatus',data.Status);
-                    $('#txtERemark').val('');
-                    $("#txtMachineStartDate").val('');
-                    $("#txtMachineStartTime").val('');
-                    $('#txtDescriptionWorkDone').val(data.DescriptionofWorkDone || '');
-
-                    LoadExistingImage(data);
+                    SelectOptionByText('ddlStatus', data.Status);
+                    $('#ddlStatus').prop('disabled', true);
                     
                     setTimeout(function () {
                         var eyeIcon = $('#viewImageBtn');
@@ -435,9 +860,94 @@ function Done(Code) {
                             }).show();
                         }
                     }, 150);
-
+                    LoadExistingImage(data);
                     GetMachineMaintenanceList();
                    
+                } else {
+                    toastr.error("Save failed for contact person details.");
+                }
+            }).catch(function (error) {
+                toastr.error(error.Msg || "An error occurred while saving contact person details.");
+            });
+        }
+    });
+}
+function Close(Code) {
+    ScreenMode = 'CLOSE';
+    var ModuleName = "Machine Maintenance Request",
+        OptionName = "Close",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        }
+        else {
+            G_Status = 'UPDATESTATUS';
+            $("#dvGrid").hide();
+            $("#txtdRemark").hide();
+            $("#dvFromNEW").show();
+            $("#txthideMachineStartDate").show();
+            $("#txthideMachineStartTime").show();
+            $("#txthideRemark").show();
+            $("#txthideDescriptionWorkDone").show();
+            $("#hideJobAssignedTo").hide();
+            $("#hideAssignedToMobileNo").hide();
+            $("#hideConcernedPerson").hide();
+            $("#hideConcenedPersonMobileNo").hide();
+            $("#txthideRequestTime").hide();
+            $("#hideviewImageBtn").show();
+            $("#hideRequestStatus").show();
+            $("#hideUpdateStatus").show();
+            $("#hideSpareConsumed").show();
+            $("#hidetxtPreparedBy").show();
+            $("#hideMaintenanceType").hide();
+            $("#hidePriority").hide();
+            $("#hideNatureofBreakdown").hide();
+            $("#hideDescriptionofBreakdown").hide();
+            MachineMaintenanceService.GetMachineMaintenanceByCode(Code).then(function (response) {
+                var data = response[0];
+                if (data) {
+                    $('#hftxtCode').val(data.Code);
+                    $('#txtEntryNo').val(data.EntryNo).prop('readonly', true);
+                    $('#txtEntryDate').val(formatDateForInput(data.EntryDate)).prop('readonly', true);
+                    $('#txtRequestDate').val(formatDateForInput(data.RequestDate)).prop('readonly', true);
+                    $('#txtMCFailedDate').val(formatDateForInput(data.MachineFailedDate)).prop('readonly', true);
+                    $('#txtMCFailedTime').val(data.MachineFailedTime).prop('readonly', true);
+                    $('#txtddlMachineNo').prop('disabled', true);
+                    $('#txtddlComplaintDepartment').prop('disabled', true);
+                    $('#txtddlComplaintReason').prop('disabled', true);
+                    SelectOptionByText('txtddlMachineNo', data.MachineNo);
+                    SelectOptionByText('txtddlComplaintDepartment', data.DepartmentName);
+                    SelectOptionByText('txtddlComplaintReason', data.ReasonName);
+                    $('#txtRemark').val(data.FailedRemark).prop('disabled', true);
+                    $("#txtPreparedBy").val(data.CreatedByName);
+                    SelectOptionByText('ddlStatus', data.Status);
+                    $('#ddlStatus').prop('disabled', true);
+                    $('#txtERemark').val(data.StartRemark).prop('disabled', true);
+                    $("#txtMachineStartDate").val(formatDateForInput(data.WorkStartDate)).prop('readonly', true);
+                    $("#txtMachineStartTime").val(data.WorkStartTime).prop('readonly', true);
+                    $('#txtDescriptionWorkDone').val(data.DescriptionofWorkDone || '').prop('disabled', true);
+                    $("#ddlUpdateStatus").val(data.MachineStatus || '').prop('disabled', true);
+                    $("#txtSpareConsumed").val(data.SpareConsumed || '').prop('disabled', true);
+                    $("#ddlRequestStatus").val();
+
+                    setTimeout(function () {
+                        var eyeIcon = $('#viewImageBtn');
+                        if (eyeIcon.length) {
+                            eyeIcon.removeAttr('style');
+                            eyeIcon.css({
+                                'cursor': 'pointer',
+                                'height': '28px',
+                                'display': 'flex !important'
+                            }).show();
+                        }
+                    }, 150);
+                    LoadExistingImage(data);
+
+                    GetMachineMaintenanceList();
+
                 } else {
                     toastr.error("Save failed for contact person details.");
                 }
@@ -559,7 +1069,6 @@ function ConvertFileToByteArry(File) {
         }
     });
 }
-
 function LoadExistingImage(data) {
     existingImageData = [];
     existingFileName = '';
@@ -606,7 +1115,6 @@ function LoadExistingImage(data) {
         $('#viewImageBtn').attr('style', 'cursor: pointer; height: 28px; display: none !important;').hide();
     }
 }
-
 function DisplayImageFromByteArray(byteArray) {
     try {
         if (!byteArray || byteArray.length === 0) {
@@ -652,7 +1160,6 @@ function DisplayImageFromByteArray(byteArray) {
         $('#viewImageBtn').css('display', 'none !important').hide();
     }
 }
-
 function ConvertByteArrayToImageSrc(byteArray, imageType) {
     try {
         if (!byteArray || byteArray.length === 0) {
@@ -676,7 +1183,6 @@ function ConvertByteArrayToImageSrc(byteArray, imageType) {
         return null;
     }
 }
-
 function GetImageTypeFromFileName(fileName) {
     if (!fileName) {
         return 'image/jpeg';
@@ -702,13 +1208,11 @@ function GetImageTypeFromFileName(fileName) {
             return 'image/jpeg'; // Default fallback
     }
 }
-
 function CloseImageModal() {
     $('#imgModal').modal('hide');
     $('#imgModalImage').attr('src', '').hide();
     $('#imgModalLoading').show();
 }
-
 function ViewAttachedImage() {
     var code = $('#hftxtCode').val();
     var imgTitle = 'Attached Image';
@@ -933,6 +1437,23 @@ function ViewAttachedImage() {
         });
     }
 }
+function setCurrentRequestTime() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const timeString = hours + ':' + minutes;
+
+    const input = document.getElementById('txtRequestTime');
+    const container = document.getElementById('txthideRequestTime');
+    if (container) {
+        container.style.display = '';
+    }
+    if (input) {
+        input.value = timeString;
+    }
+}
+
+
 
 window.CreateNew = CreateNew;
 window.BackMaster = BackMaster;
@@ -948,3 +1469,12 @@ window.FileUploadChange = FileUploadChange;
 window.CloseImageModal = CloseImageModal;
 window.ViewAttachedImage = ViewAttachedImage;
 window.GetStatusMasterList = GetStatusMasterList;
+window.Assign = Assign;
+window.Close = Close;
+window.CheckPermission = CheckPermission;
+window.setCurrentRequestTime = setCurrentRequestTime;
+window.GetEmployeeMasterList = GetEmployeeMasterList;
+window.GetEmployeeMasterListBrackDown = GetEmployeeMasterListBrackDown;
+
+
+
