@@ -145,7 +145,7 @@
     <div id="dvGrid" style="display:block;">
         <div class="row text-end">
             <div class="col-md-12">
-                <button class="btn btn-success icon-height mb-1" title="Create New" onclick="CreateNew()">Create New</button>
+                <button class="btn btn-success icon-height mb-1" id="txtCreateNewbutton" title="Create New" onclick="CreateNew()">Create New</button>
             </div>
         </div>
         <div class="table-wrapper ">
@@ -165,69 +165,128 @@
         <fieldset class="rounded-1">
             <legend class="float-none w-auto px-2">Entry Details</legend>
             <div class="row">
-                <div class="col-md-3">
+                <div class="col-sm-3">
                     <label for="txtEntryNo" class="col-form-label-sm fw-bold">Entry No <span class="text-danger">*</span></label>
                     <input type="text" id="txtEntryNo" readonly class="form-control form-control-sm" maxlength="10">
                     <input type="hidden" id="hftxtCode" class="form-control form-control-sm" value="0">
                 </div>
-                <div class="col-md-3">
+                <div class="col-sm-3">
                     <label for="txtEntryDate" class="col-form-label-sm fw-bold">Entry Date <span class="text-danger">*</span></label>
                     <input type="date" readonly id="txtEntryDate" class="form-control form-control-sm" autocomplete="off" maxlength="10">
                 </div>
-                <div class="col-md-3">
+                <div class="col-sm-3">
                     <label for="txtRequestDate" class="col-form-label-sm fw-bold">Request Date <span class="text-danger">*</span></label>
                     <input type="date" id="txtRequestDate" class="form-control form-control-sm" autocomplete="off" maxlength="10">
                 </div>
-                <div class="col-md-3">
+                <div class="col-sm-3">
                     <label for="txtddlMachineNo" class="col-form-label-sm fw-bold">Machine No <span class="text-danger">*</span></label>
                     <select id="txtddlMachineNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
 
                 </div>
-                <div class="col-md-3">
+                <div class="col-sm-3">
                     <label for="txtddlComplaintDepartment" class="col-form-label-sm fw-bold">Complaint Department <span class="text-danger">*</span></label>
                     <select id="txtddlComplaintDepartment" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-sm-3">
                     <label for="ddlStatus" class="col-form-label-sm fw-bold">Status <span class="text-danger">*</span></label>
                     <select id="ddlStatus" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="50"> </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-sm-3" id="hideUpdateStatus" style="display:none">
+                    <label for="ddlUpdateStatus" class="col-form-label-sm fw-bold">Machine Status  <span class="text-danger">*</span></label>
+                    <select id="ddlUpdateStatus" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="100">
+                        <option value="">Select</option>
+                        <option value="OK">OK</option>
+                        <option value="OK,But Under Observation">OK,But Under Observation</option>
+                        <option value="Waiting for Spares">Waiting for Spares</option>
+                        <option value="Upder Repair">Upder Repair</option>
+                    </select>
+                </div>
+                <div class="col-sm-3" id="hideSpareConsumed" style="display:none">
+                    <label for="txtSpareConsumed" class="col-form-label-sm fw-bold">Spare Consumed </label>
+                    <input type="text" id="txtSpareConsumed" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="100">
+                </div>
+                <div class="col-sm-3" id="hideRequestStatus" style="display:none">
+                    <label for="ddlRequestStatus" class="col-form-label-sm fw-bold">Request Status  <span class="text-danger">*</span></label>
+                    <select id="ddlRequestStatus" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="100">
+                        <option value="">Select</option>
+                        <option value="Closed">Closed</option>
+                        <option value="Open">Open</option>
+                    </select>
+                </div>
+                <div class="col-sm-2">
                     <label for="txtMCFailedDate" class="col-form-label-sm fw-bold">Machine Failed Date <span class="text-danger">*</span></label>
                     <input type="date" id="txtMCFailedDate" class="form-control form-control-sm" autocomplete="off" maxlength="10">
                 </div>
-                <div class="col-md-1">
+                <div class="col-sm-1">
                     <label for="txtMCFailedTime" class="col-form-label-sm fw-bold">Time <span class="text-danger">*</span></label>
                     <input type="time" id="txtMCFailedTime" class="form-control form-control-sm" autocomplete="off" maxlength="5">
                 </div>
-                <div class="col-md-2" style="display:none" id="txthideMachineStartDate">
+                <div class="col-sm-3" id="txthideRequestTime" style="display:none">
+                    <label for="txtRequestTime" class="col-form-label-sm fw-bold"> Request Time <span class="text-danger">*</span></label>
+                    <input type="time" id="txtRequestTime" class="form-control form-control-sm" autocomplete="off" maxlength="5">
+                </div>
+                <div class="col-sm-2" style="display:none" id="txthideMachineStartDate">
                     <label for="txtMachineStartDate" class="col-form-label-sm fw-bold">Machine Start Date <span class="text-danger">*</span></label>
                     <input type="date" id="txtMachineStartDate" class="form-control form-control-sm" autocomplete="off" maxlength="10">
                 </div>
-                <div class="col-md-1" style="display:none" id="txthideMachineStartTime">
+                <div class="col-sm-1" style="display:none" id="txthideMachineStartTime">
                     <label for="txtMachineStartTime" class="col-form-label-sm fw-bold">Time <span class="text-danger">*</span></label>
                     <input type="time" id="txtMachineStartTime" class="form-control form-control-sm" autocomplete="off" maxlength="5">
                 </div>
-                <div class="col-md-3" style="display:none" id="txthideRemark">
+            
+                <div class="col-sm-3" style="display:none" id="txthideRemark">
                     <label for="txtERemark" class="col-form-label-sm fw-bold">Remark <span class="text-danger">*</span></label>
                     <textarea id="txtERemark" class="form-control form-control-sm" rows="1" autocomplete="off" maxlength="1000"></textarea>
                 </div>
-                <div class="col-md-3" style="display:none" id="txthideDescriptionWorkDone">
+                <div class="col-sm-3" style="display:none" id="txthideDescriptionWorkDone">
                     <label for="txtDescriptionWorkDone" class="col-form-label-sm fw-bold">Description of Work Done</label>
                     <textarea id="txtDescriptionWorkDone" class="form-control form-control-sm" rows="1" autocomplete="off" maxlength="1000"></textarea>
                 </div>
                
-                <div class="col-md-3 col-sm-6 col-6">
+                <div class="col-sm-3">
                     <label for="txtddlComplaintReason" class="col-form-label-sm fw-bold">Complaint Reason <span class="text-danger">*</span></label>
                     <select id="txtddlComplaintReason" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
                 </div>
-                <div class="col-md-3" id="txtdRemark">
+                <div class="col-sm-3" id="txtdRemark">
                     <label for="txtRemark" class="col-form-label-sm fw-bold">Remark</label>
                     <textarea id="txtRemark" class="form-control form-control-sm" rows="1" autocomplete="off" maxlength="1000"></textarea>
                 </div>
+                <div class="col-sm-3" id="hideMaintenanceType" style="display:none">
+                    <label for="ddlMaintenanceType" class="col-form-label-sm fw-bold">Maintenance Type</label>
+                    <select id="ddlMaintenanceType" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="100">
+                        <option value="">Select</option>
+                        <option value="Breakdown">Breakdown</option>
+                        <option value="Schedule">Schedule</option>
+                        <option value="Preventive">Preventive</option>
+                    </select>
+                </div>
+                <div class="col-sm-3" id="hidePriority" style="display:none">
+                    <label for="ddlPriority" class="col-form-label-sm fw-bold">Action/Priority</label>
+                    <select id="ddlPriority" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="100">
+                        <option value="">Select</option>
+                        <option value="High">High</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </div>
+                <div class="col-sm-3" id="hideNatureofBreakdown" style="display:none">
+                    <label for="ddlNatureofBreakdown" class="col-form-label-sm fw-bold">Nature of Break down</label>
+                    <select id="ddlNatureofBreakdown" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="100">
+                        <option value="">Select</option>
+                        <option value="Mechanical">Mechanical</option>
+                        <option value="Electrical">Electrical</option>
+                        <option value="Tooling">Tooling</option>
+                        <option value="Unidentified">Unidentified</option>
+                    </select>
+                </div>
+                <div class="col-sm-3" id="hideDescriptionofBreakdown">
+                    <label for="txtDescriptionofBreakdown" class="col-form-label-sm fw-bold">Description of Breakdown <span class="text-danger">*</span></label>
+                    <textarea id="txtDescriptionofBreakdown" class="form-control form-control-sm" rows="1" autocomplete="off" maxlength="500"></textarea>
+                </div>
+                
                 <!-- Attachment Field -->
-                <div class="col-md-6 col-sm-6 col-6 form-group">
+                <div class="col-sm-3 form-group" id="hideviewImageBtn" style="display:none;">
                     <label for="attachment" class="form-label col-form-label-sm fw-bold">Section Incharge Signature</label>
-                    <div class="input-group">
+                    <div class="input-group" id="txthidecamera">
                         <span class="input-group-text" onclick="triggerFileInputClick()" style="cursor: pointer; height:28px" title="Select Image">
                             <i class="fa fa-camera"></i>
                         </span>
@@ -240,19 +299,27 @@
                         <img id="imgPreview" style="width:120px; height:120px; object-fit: contain; border: 1px solid #ddd; border-radius: 4px; padding: 5px; background-color: #f8f9fa;" />
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6 col-6">
+                <div class="col-sm-3" id="hidetxtPreparedBy" style="display:none;">
                     <label for="txtPreparedBy" class="col-form-label-sm fw-bold">Complaint Raised By</label>
                     <input type="text" id="txtPreparedBy" class="form-control form-control-sm" readonly value="Login User Name">
                 </div>
-                <div class="col-md-3 col-sm-6 col-6">
+                <div class="col-sm-3" id="hideConcernedPerson" style="display:none;">
+                    <label for="txtConcernedPerson" class="col-form-label-sm fw-bold">Concerned Person <span class="text-danger">*</span></label>
+                    <select id="txtConcernedPerson" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
+                </div>
+                <div class="col-sm-3" id="hideConcenedPersonMobileNo" style="display:none;">
+                    <label for="txtConcenedPersonMobileNo" class="col-form-label-sm fw-bold">Mobile No <span class="text-danger">*</span></label>
+                    <input type="text" id="txtConcenedPersonMobileNo" class="form-control form-control-sm Number" autocomplete="off" maxlength="10">
+                </div>
+                <div class="col-sm-3" id="hideJobAssignedTo" style="display:none;">
                     <label for="txtJobAssignedTo" class="col-form-label-sm fw-bold">Job Assigned To</label>
-                    <input type="text" id="txtJobAssignedTo" class="form-control form-control-sm" autocomplete="off" maxlength="50">
+                    <select id="txtJobAssignedTo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
                 </div>
-                <div class="col-md-3 col-sm-6 col-6">
+                <div class="col-sm-3" id="hideAssignedToMobileNo" style="display:none;">
                     <label for="txtAssignedMobileNo" class="col-form-label-sm fw-bold">Assigned To Mobile No</label>
-                    <input type="text" id="txtAssignedMobileNo" class="form-control form-control-sm Number" autocomplete="off" maxlength="15">
+                    <input type="text" id="txtAssignedMobileNo" class="form-control form-control-sm Number" autocomplete="off" maxlength="10">
                 </div>
-                <div class="col-md-12 text-end mt-1">
+                <div class="col-sm-12 text-end mt-1">
                     <button type="button" class="btn btn-primary icon-height" onclick="SaveMachineMaintenance()">Save</button>
                     <button type="button" class="btn btn-danger icon-height" onclick="BackMaster()">Back</button>
                 </div>

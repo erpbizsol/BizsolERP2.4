@@ -36,16 +36,23 @@ const MachineMaintenanceService = {
         );
 
     },
-    GetMachineMaintenanceList: function GetMachineMaintenanceList() {
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_MachineMaintenance + `/GetMachineMaintenanceList`;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
-            function (value) {
-                return value;
-            }
-        );
+    //GetMachineMaintenanceList: function GetMachineMaintenanceList() {
+    //    var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+    //    var userMasterCode = authKeyData.UserMaster_Code;
+    //    var URL = UrlService.API_ENDPOINT_MachineMaintenance + `/GetMachineMaintenanceList`;
+    //    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+    //        function (value) {
+    //            return value;
+    //        }
+    //    );
 
+    //},
+
+    GetMachineMaintenanceList: function GetMachineMaintenanceList(accessRights) {
+        var URL = UrlService.API_ENDPOINT_MachineMaintenance + `/GetMachineMaintenanceList?accessRights=${encodeURIComponent(accessRights)}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) { return value; }
+        );
     },
     GetMachineMaintenanceByCode: function GetMachineMaintenanceByCode (Code) {
 
@@ -97,6 +104,54 @@ const MachineMaintenanceService = {
         );
 
     },
+    GetEmployeeMasterList: function GetEmployeeMasterList() {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_MachineMaintenance + `/GetEmployeeMasterList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+
+    },
+    GetEmployeeMasterListBrackDown: function GetEmployeeMasterListBrackDown() {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_MachineMaintenance + `/GetEmployeeMasterListBrackDown`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+
+    },
+    GetJobAssignedTo: function GetJobAssignedTo(MachineMaintenanceRequestData) {
+        var json_data = JSON.stringify(MachineMaintenanceRequestData, null, 2);
+        var URL = UrlService.API_ENDPOINT_MachineMaintenance + "/GetJobAssignedTo";
+        return promiseAjaxCallApi.CallAPI('POST', URL, json_data)
+            .then(function (value) {
+                return value;
+            });
+    },
+    GetUpdateStatus: function GetUpdateStatus(MachineMaintenanceRequestData) {
+        var json_data = JSON.stringify(MachineMaintenanceRequestData, null, 2);
+        var URL = UrlService.API_ENDPOINT_MachineMaintenance + "/GetUpdateStatus";
+        return promiseAjaxCallApi.CallAPI('POST', URL, json_data)
+            .then(function (value) {
+                return value;
+            });
+    },
+    GetCloseStatus: function GetCloseStatus(MachineMaintenanceRequestData) {
+        var json_data = JSON.stringify(MachineMaintenanceRequestData, null, 2);
+        var URL = UrlService.API_ENDPOINT_MachineMaintenance + "/GetCloseStatus";
+        return promiseAjaxCallApi.CallAPI('POST', URL, json_data)
+            .then(function (value) {
+                return value;
+            });
+    },
+    
+    
    
 }
 export { MachineMaintenanceService }
