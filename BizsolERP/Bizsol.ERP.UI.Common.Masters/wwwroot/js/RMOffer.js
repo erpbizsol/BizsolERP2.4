@@ -52,7 +52,7 @@ function GetRawMaterialOfferList() {
             HideLoader();
             const stringFilterColumn = ["Order No", "Project No", "Client Name", "Godown Name","Status"];
             const numericFilterColumn = [];
-            const dateFilterColumn = ["Entry Date", "Inspection Date"];
+            const dateFilterColumn = ["Ticket Date", "Inspection Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
