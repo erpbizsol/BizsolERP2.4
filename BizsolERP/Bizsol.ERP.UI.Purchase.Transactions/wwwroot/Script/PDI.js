@@ -7,6 +7,7 @@ var baseUrl = sessionStorage.getItem('AppBaseURL');
 let files = [];
 let fileName = '';
 let imageBase64Data = [];
+let G_PDIAttachments = []; // Store multiple selected images for PDI
 let G_PDIOrderData = []; // Store the complete order data
 let G_IsUpdating = false; // Flag to prevent infinite loop
 let G_PDIImageData = null; // Store the fetched PDI image data
@@ -200,6 +201,9 @@ function FileUploadChange(event) {
     const selectedFiles = Array.from(target.files || []);
     files = selectedFiles;
 
+    // Reset attachment list on every change
+    G_PDIAttachments = [];
+
     // Show selected file names in UI
     const namesText = selectedFiles.map(f => f.name).join(', ');
     if (target.id === 'fileInput') {
@@ -208,27 +212,47 @@ function FileUploadChange(event) {
         $('#fileNamesEdit').text(namesText);
     }
 
-    const firstFile = selectedFiles[0];
-    const originalFileName = firstFile ? firstFile.name : '';
+    // If no files selected, clear state and exit
+    if (!selectedFiles.length) {
+        imageBase64Data = [];
+        fileName = '';
+        return;
+    }
 
-    if (firstFile && originalFileName) {
-        let fileExtension = '';
-        const lastDotIndex = originalFileName.lastIndexOf('.');
-        if (lastDotIndex > 0 && lastDotIndex < originalFileName.length - 1) {
-            fileExtension = originalFileName.substring(lastDotIndex);
+    selectedFiles.forEach((file, index) => {
+        if (!file || !file.name) {
+            return;
         }
-        fileName = 'PDI' + fileExtension;
-        OptimizeImage.reduceFileSize(firstFile, 500 * 1024, 1000, Infinity, 0.9, blob => {
-            ConvertFileToByteArry(blob).then(function (ByteArray) {
-                imageBase64Data = ByteArray;
-            }).catch(function(error) {
+
+        let fileExtension = '';
+        const lastDotIndex = file.name.lastIndexOf('.');
+        if (lastDotIndex > 0 && lastDotIndex < file.name.length - 1) {
+            fileExtension = file.name.substring(lastDotIndex);
+        }
+
+        // Keep backward compatibility: first image keeps old naming pattern "PDI.ext"
+        const currentFileName = (index === 0)
+            ? 'PDI' + fileExtension
+            : 'PDI_' + (index + 1) + fileExtension;
+
+        OptimizeImage.reduceFileSize(file, 500 * 1024, 1000, Infinity, 0.9, blob => {
+            ConvertFileToByteArry(blob).then(function (byteArray) {
+                // Push every processed image into attachment list
+                G_PDIAttachments.push({
+                    FileName: currentFileName,
+                    FileData: byteArray
+                });
+
+                // For the first image, also keep existing single-image fields
+                if (index === 0) {
+                    imageBase64Data = byteArray;
+                    fileName = currentFileName;
+                }
+            }).catch(function (error) {
                 toastr.error('Error processing image file');
             });
         });
-    } else {
-        imageBase64Data = [];
-        fileName = '';
-    }
+    });
 }
 function ConvertFileToByteArry(File) {
     return new Promise(function (resolve, reject) {
@@ -290,6 +314,8 @@ function savePDI() {
         PDIRemark: $('#txtRemark').val() || '',
         attachFileName: fileName,
         attachData: imageBase64Data,
+        // New: send all selected images as a list as well
+        PDIAttachments: G_PDIAttachments,
     };
 
     Showloader();
@@ -316,6 +342,8 @@ function UpdatePDI() {
         PDIRemark: $('#txtEditRemark').val() || '',
         attachFileName: fileName,
         attachData: imageBase64Data,
+        // New: send all selected images as a list as well
+        PDIAttachments: G_PDIAttachments,
     };
 
     Showloader();
@@ -365,6 +393,7 @@ function clearPDIForm() {
     $('#txtEditRemark').val('');
     
     imageBase64Data = [];
+    G_PDIAttachments = [];
     fileName = '';
     files = [];
     
