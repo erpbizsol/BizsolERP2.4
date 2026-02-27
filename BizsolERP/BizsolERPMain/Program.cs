@@ -64,6 +64,10 @@ namespace BizsolERPMain
                 pattern: "{area:exists}/{controller=DemoCustom}/{action=DemoCustomControl}/{id?}"
                 );
             app.MapControllerRoute(
+                name: "SalesTestArea",
+                pattern: "{area:exists}/{controller=TestTheme}/{action=Index}/{id?}"
+                );
+            app.MapControllerRoute(
               name: "PurchaseTransactions",
               pattern: "{area:exists}/{controller=ApproveVerify}/{action=POApproval}/{id?}");
 
