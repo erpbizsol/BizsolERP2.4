@@ -28,6 +28,15 @@ const FGInspectedOfferService = {
             }
         );
     },
+    GetFGInspectedClearanceHold: function GetFGInspectedClearanceHold(Code,HoldRemark) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_FGInspectedOffer + "/GetFGInspectedClearanceHold?Code=" + Code + "&HoldRemark=" + HoldRemark + "&UserMaster_Code=" + userCode;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetBOMMasterDataOrderWise: function GetBOMMasterDataOrderWise(AccountMaster_Code, OrderNo, ProjectNo, Code) {
         var URL = UrlService.API_ENDPOINT_FGInspectedOffer + `/GetBOMMasterDataOrderWise?AccountMaster_Code=${AccountMaster_Code}&OrderNo=${encodeURIComponent(OrderNo)}&ProjectNo=${encodeURIComponent(ProjectNo)}&Code=${encodeURIComponent(Code)}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
