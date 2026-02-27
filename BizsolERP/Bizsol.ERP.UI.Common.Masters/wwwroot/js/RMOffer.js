@@ -2,14 +2,15 @@ import { RawMaterialOfferService } from '../../Bizsol.WebERP.UI.Shared/js/JSServ
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
-import { initObjectListControl } from '../../Bizsol.WebERP.UI.Shared/js/Pages/CustomControl/_ObjectListControlPage.js';
-import { ObjectListControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_ObjectListControlService.js';
-
+import { createObjectlistControlModal, initializeObjectlistControl } from '../../Bizsol.WebERP.UI.Shared/js/Pages/CustomControl/_ObjectListControlPage.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
+
 let G_RawMaterialDropDown = [];
+let G_GetBOMMasterDataOrderWise = [];
 let G_ClientOrderProjectData = [];
-let G_IdentificationList = []; 
+let G_IdentificationList = [];
+let G_CurrentIdentificationRow = null;
 let G_BomTransactionOrderWise_Code = 0;
 let G_RMInspectionRequestMaster_Code = 0;
 
@@ -30,21 +31,13 @@ $(document).ready(function () {
     $("#btnRMOfferShow").click(function () {
         GetBOMMasterDataOrderWiselist();
     });
+    $("#txtTicketNo1").on("keydown", function (event) {
+        if (event.keyCode === 13) {
+            var value = $("#txtTicketNo1").val();
+            ShowObjectlistControlModal(value);
+        }
+    });
 
-    // Initialize ObjectListControl from _ObjectListControlPage.js (creates modal in container or appends to body)
-    initObjectListControl();
-
-    // Focusout on txtTicketNo1: call LOV/check value only when value is ".."
-    //$(document).on('oninput', '#txtTicketNo1', function () {
-    //    var val = $(this).val();
-    //    if (typeof val !== 'string') val = '';
-    //    val = val.trim();
-    //    if (val !== '..') {
-    //        return;
-    //    }
-    //    G_CurrentLovTarget = this;
-    //    ShowObjectListControlModal();
-    //});
 });
 function GetBOMMasterDataOrderWiselist() {
     var ddlClientName = $("#ddlClientName").val();
@@ -59,7 +52,7 @@ function GetRawMaterialOfferList() {
             HideLoader();
             const stringFilterColumn = ["Order No", "Project No", "Client Name", "Godown Name","Status"];
             const numericFilterColumn = [];
-            const dateFilterColumn = ["Entry Date", "Inspection Date"];
+            const dateFilterColumn = ["Ticket Date", "Inspection Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
@@ -866,7 +859,8 @@ function GetRawMaterialGoDownNameDropdown(list) {
 function GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo, ddlProjectNo) {
     Showloader();
     RawMaterialOfferService.GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo, ddlProjectNo, G_RMInspectionRequestMaster_Code).then(function (response) {
-            if (response && response.length > 0) {
+        if (response && response.length > 0) {
+            G_GetBOMMasterDataOrderWise = response;
                     HideLoader();
                 const stringFilterColumn = ["Order No", "Project No", "Mark No", "Thickness", "Grade", "Client Name"];
                     const numericFilterColumn = [];
@@ -874,11 +868,13 @@ function GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo, ddlProjectNo) {
                     const button = false;
                     const stringDoubleFilterColumn = [];
                     const showButtons = [];
-                const hiddenColumns = ["Code", "SortPriority","BuyerPODetail_Code", "Thickness_Code", "Grade_Code", "BuyerPOMaster_Code", "EntryNo", "GodownMaster_Code", "AccountMaster_Code", "EntryDate","InspectionDate"];
+                    const hiddenColumns = ["BomTransactionOrderWise_Codes","Code", "SortPriority","BuyerPODetail_Code", "Thickness_Code", "Grade_Code", "BuyerPOMaster_Code", "EntryNo", "GodownMaster_Code", "AccountMaster_Code", "EntryDate","InspectionDate"];
                     const columnAlignment = {
                         "P.O. Qty(Wt.)": "right;",
                         "Balance to Inspect (Wt.)" : "right;",
-                        "Offer Qty": "right;"
+                        "Offer Qty": "right;",
+                        "Cleared Qty": "right;",
+                        "Inspected Qty": "right;"
                 };
                 const updatedResponse = (response).map(function (item) {
                     // Get Balance to Inspect (Wt.) from API row (property name has spaces)
@@ -890,6 +886,26 @@ function GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo, ddlProjectNo) {
                 });
 
                 BizsolCustomFilterGrid.CreateDataTable("table-headerEditable", "table-bodyEditable", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+
+                // Fix "Project No" column: cap at 200px with ellipsis and show full value in tooltip
+                (function applyProjectNoColumnStyle() {
+                    const $headers = $('#table-headerEditable tr:first th');
+                    let projectNoColIndex = -1;
+                    $headers.each(function (i) {
+                        if ($(this).text().trim() === 'Project Code') {
+                            projectNoColIndex = i;
+                            return false;
+                        }
+                    });
+                    if (projectNoColIndex < 0) return;
+                    const truncStyle = 'max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block;';
+                    $('#table-bodyEditable tr').each(function () {
+                        const $cell = $(this).find('td').eq(projectNoColIndex);
+                        const fullText = $cell.text().trim();
+                        $cell.css({ 'max-width': '200px', 'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap' })
+                             .attr('title', fullText);
+                    });
+                })();
                 if (G_RMInspectionRequestMaster_Code > 0 && Array.isArray(response) && response.length > 0) {
                     const masterData = response[0];
                     
@@ -954,8 +970,6 @@ function buildDetailTableHeader() {
 
     $thead.html(headerHtml);
 }
-
-// New function: update footer with sum of Coil Wt.
 function updateDetailTableFooterSum() {
     try {
         const $table = $('#DetailTable');
@@ -1017,36 +1031,8 @@ function getSelectedIdentificationNos(excludeRow) {
     return selectedIds;
 }
 function updateIdentificationDropdownOptions($identificationNo, excludeRow) {
-    if (!$identificationNo || !$identificationNo.length) {
-        return;
-    }
-    
-    const selectedIds = getSelectedIdentificationNos(excludeRow);
-    const currentValue = $identificationNo.val() || '';
-    
-    // Update each option to disable if already selected in another row
-    $identificationNo.find('option').each(function() {
-        const $option = $(this);
-        const optionValue = $option.val() || '';
-        
-        // Don't disable empty option or the currently selected option in this row
-        if (optionValue === '' || optionValue === currentValue) {
-            $option.prop('disabled', false);
-        } else {
-            // Disable if this Identification No is selected in another row
-            $option.prop('disabled', selectedIds.indexOf(optionValue) >= 0);
-        }
-    });
-    
-    // Refresh Select2 if initialized to update disabled state
-    if ($.fn.select2 && $identificationNo.hasClass('select2-hidden-accessible')) {
-        // Force Select2 to re-read the options
-        $identificationNo.trigger('change.select2');
-        // Also trigger a select2:update event to refresh the dropdown
-        setTimeout(function() {
-            $identificationNo.trigger('select2:update');
-        }, 0);
-    }
+    // Identification No is now a text input — no option disabling needed.
+    // Duplicate detection is handled in handleIdentificationChange via getSelectedIdentificationNos.
 }
 function updateAllIdentificationDropdowns(excludeRow) {
     const $tbody = $('#DetailTable-body');
@@ -1127,9 +1113,8 @@ function addNewEditableRow() {
                 <input type="hidden" class="Code" value="0" />
             </td>
             <td>
-                <select class="form-control form-control-sm identification-no">
-                    <option value="">Please select..</option>
-                </select>
+                <input type="text" class="form-control form-control-sm identification-no"
+                    placeholder="Select..." autocomplete="off" />
             </td>
             <td>
                 <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" disabled />
@@ -1374,40 +1359,16 @@ function initializeEditableRow($row, detail) {
         $coilLocation.prop('disabled', true);
     }
 
-    // Populate Identification dropdown from global list
+    // Identification No — text input that opens the selection modal
     const $identificationNo = $row.find('.identification-no');
     if ($identificationNo && $identificationNo.length) {
-        let identificationOptions = '<option value="">Please select..</option>';
-        (G_IdentificationList || []).forEach(function (item) {
-            const identificationNo = item.IdentificationNo || item.IdentificationNos || '';
-            // Use GodownCode from G_IdentificationList structure
-            const godownCode = item.GodownCode || item.Code || item.GodownMaster_Code || '';
-            const godownName = item.GodownName || '';
-            const balQtyMT = parseFloat(item.BalQtyMT) || 0;
-
-            if (identificationNo) {
-                identificationOptions += `<option value="${identificationNo}" data-godown-code="${godownCode}" data-godown-name="${godownName}" data-bal-qty-mt="${balQtyMT}">${identificationNo}</option>`;
-            }
-        });
-        $identificationNo.html(identificationOptions);
-
-        // Apply select2 to Identification No dropdown inside modal
-        if ($.fn.select2) {
-            try {
-                if ($identificationNo.hasClass('select2-hidden-accessible')) {
-                    $identificationNo.select2('destroy');
-                }
-                $identificationNo.select2({
-                    width: '100%',
-                    dropdownParent: $('#DetailModal')
-                });
-            } catch (e) {
-                console.error('Error initializing select2 for identification-no:', e);
-            }
+        function openIdentificationModal() {
+            G_CurrentIdentificationRow = $row;
+            ShowIdentificationModal($identificationNo.val());
         }
-        
-        // Update options to disable already selected Identification Nos
-        updateIdentificationDropdownOptions($identificationNo, $row);
+        $identificationNo.off('keydown.idModal').on('keydown.idModal', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); openIdentificationModal(); }
+        });
     }
 
     // Get references to fields
@@ -1443,9 +1404,6 @@ function initializeEditableRow($row, detail) {
         if (selectedId && selectedIds.indexOf(selectedId) >= 0) {
             toastr.warning('This Identification No is already selected in another row. Please select a different one.');
             $identificationNo.val('');
-            if ($.fn.select2 && $identificationNo.hasClass('select2-hidden-accessible')) {
-                $identificationNo.trigger('change.select2');
-            }
             return;
         }
         
@@ -1497,7 +1455,7 @@ function initializeEditableRow($row, detail) {
     }
 
     // Attach event handlers to check row completion
-    $identificationNo.off('change.checkComplete handleIdentification').on('change.checkComplete handleIdentification', handleIdentificationChange);
+    $identificationNo.off('change.identification').on('change.identification', handleIdentificationChange);
     $coilWt
         .off('input.checkComplete change.checkComplete')
         .on('input.checkComplete change.checkComplete', function() {
@@ -1582,17 +1540,11 @@ function initializeEditableRow($row, detail) {
         // Prefer mapping via Identification change (will set Godown from master list and max BalQtyMT)
         if ($identificationNo.val()) {
             handleIdentificationChange();
-            // Also ensure max value is set for validation
-            const match = (G_IdentificationList || []).find(function (item) {
-                const idVal = item.IdentificationNo || item.IdentificationNos || '';
-                return idVal === $identificationNo.val();
-            });
-            if (match) {
-                const balQtyMT = parseFloat(match.BalQtyMT) || 0;
-                if (balQtyMT > 0) {
-                    $coilWt.attr('max', balQtyMT);
-                    $coilWt.data('max-bal-qty', balQtyMT);
-                }
+            // Also ensure max value is set for validation — read from value already stored on the input
+            const balQtyMT = parseFloat($coilWt.data('max-bal-qty')) || parseFloat($coilWt.attr('max')) || 0;
+            if (balQtyMT > 0) {
+                $coilWt.attr('max', balQtyMT);
+                $coilWt.data('max-bal-qty', balQtyMT);
             }
         } else if (existingGodownCode || existingGodownName) {
             // Fallback: set Godown directly if we have code or name
@@ -1661,12 +1613,11 @@ function bindEmptyEditableRow() {
                 <input type="hidden" class="Code" value="0" />
             </td>
             <td>
-                <select class="form-control form-control-sm identification-no">
-                    <option value="">Please select..</option>
-                </select>
+                <input type="text" class="form-control form-control-sm identification-no"
+                    placeholder="Select..." autocomplete="off" />
             </td>
             <td>
-                <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" />
+                <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" readonly />
             </td>
             <td>
                 <select class="form-control form-control-sm coil-location" disabled>
@@ -1715,12 +1666,11 @@ function bindExistingEditableRows(detailResponse) {
                     <input type="hidden" class="Verify" value="${verifyStatus}" />
                 </td>
                 <td>
-                    <select class="form-control form-control-sm identification-no" ${isLocked ? 'disabled' : ''}>
-                        <option value="">Please select..</option>
-                    </select>
+                    <input type="text" class="form-control form-control-sm identification-no"
+                        placeholder="Select..." autocomplete="off" ${isLocked ? 'disabled' : ''} />
                 </td>
                 <td>
-                    <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" ${isLocked ? 'readonly' : ''} />
+                    <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" readonly />
                 </td>
                 <td>
                     <select class="form-control form-control-sm coil-location" disabled>
@@ -1800,7 +1750,6 @@ function UpdateCoilDetail(Grade_Code, Code, balanceToInspectWt) {
                 toastr.error('Please select Inspection Location');
                 return;
             }
-            // Store Balance to Inspect (Wt.) for validation while saving
             G_BalanceToInspectWt = parseFloat(balanceToInspectWt) || 0;
 
             Showloader();
@@ -1899,6 +1848,12 @@ function SaveRMInspectionRequest() {
         return;
     }
 
+    // Get BomTransaction_Codes from the grid row that matches the current BomTransactionOrderWise_Code
+    const currentGridRow = Array.isArray(G_GetBOMMasterDataOrderWise)
+        ? G_GetBOMMasterDataOrderWise.find(function (r) { return String(r.Code) === String(G_BomTransactionOrderWise_Code); })
+        : null;
+    const BomTransaction_Codes = currentGridRow ? (currentGridRow.BomTransactionOrderWise_Codes || 0) : 0;
+
     const $tbody = $('#DetailTable-body');
     const detailRows = [];
     let validationError = false;
@@ -1922,19 +1877,11 @@ function SaveRMInspectionRequest() {
                 locationCode !== '' &&
                 locationCode !== '0'
             ) {
-                // Validate Coil Wt. against BalQtyMT for this Identification
-                const match = (G_IdentificationList || []).find(function (item) {
-                    const idVal = item.IdentificationNo || item.IdentificationNos || '';
-                    return idVal === identificationNo;
-                });
-                
-                if (match) {
-                    const balQtyMT = parseFloat(match.BalQtyMT) || 0;
-                    if (balQtyMT > 0 && coilWt > balQtyMT) {
-                        toastr.error('Coil Wt. (' + coilWt + ') for Identification ' + identificationNo + ' cannot be greater than Balance Qty (' + balQtyMT.toFixed(3) + ').');
-                        validationError = true;
-                        return false; // Stop processing
-                    }
+                // Validate Coil Wt. against Balance to Inspect (Wt.)
+                if (G_BalanceToInspectWt > 0 && coilWt > G_BalanceToInspectWt) {
+                    toastr.error('Coil Wt. (' + coilWt + ') for Identification ' + identificationNo + ' cannot be greater than Balance to Inspect (' + G_BalanceToInspectWt.toFixed(3) + ').');
+                    validationError = true;
+                    return false;
                 }
                 
                 detailRows.push({
@@ -1943,7 +1890,8 @@ function SaveRMInspectionRequest() {
                     bomTransactionOrderWise_Code: G_BomTransactionOrderWise_Code,
                     godownMaster_Code: locationCode,
                     identificationNo: identificationNo,
-                    qtyMTOffer: coilWt
+                    qtyMTOffer: coilWt,
+                    BomTransaction_Codes: BomTransaction_Codes
                 });
             }
         });
@@ -2234,138 +2182,85 @@ function ChangecolorTr() {
 document.addEventListener("DOMContentLoaded", function () {
     setInterval(ChangecolorTr, 1000);
 });
-
-function ensureObjectListControlLoaded() {
-    return new Promise(function (resolve, reject) {
-        if (window.FrmLOV) {
-            resolve();
-            return;
-        }
-        try {
-            initObjectListControl();
-            if (!window.FrmLOV) {
-                throw new Error('FrmLOV was not initialized by initObjectListControl.');
-            }
-            resolve();
-        } catch (e) {
-            console.error('Error initializing ObjectListControl:', e);
-            toastr.error('Failed to initialize List of Values.');
-            reject(e);
-        }
-    });
-}
-
-// Base query for GetItemMultipleSelectLOV (adjust per your backend API contract if needed)
-var G_ItemMultipleSelectLOV_BaseQuery = 'Item';
-
-// Build options for ObjectListControlService.GetItemMultipleSelectLOV (same payload as _ObjectListControlService.js)
-function getItemMultipleSelectLOVServiceOptions(opts) {
-    opts = opts || {};
-    return {
-        filterCondition: opts.filterCondition || null,
-        filterValue: opts.filterValue != null ? String(opts.filterValue) : null,
-        filterValueDataType: (opts.filterValueDataType === 'N' ? 'N' : 'S'),
-        filterCondition1: opts.filterCondition1 || null,
-        useLikeSearchInBothSide: (opts.useLikeSearchInBothSide === 'Y' ? 'Y' : 'N')
-    };
-}
-
-function ShowObjectListControlModal(data, options) {
-    // When called from "MultiPle Select" button with no args, use GetItemMultipleSelectLOV
-    var useItemLOV = (typeof data === 'undefined' && (!options || Object.keys(options || {}).length === 0));
-
-    var defaultOptions = {
-        CallBackFunctionName_btnDone: 'ObjectListControlCallback',
-        multiSelect: false,
-        filterValue: '',
-        filterCondition: '',
-        filterCondition1: '',
-        filterValueDataType: 'S',
-        useLikeSearchInBothSide: 'N',
-        noOfColumnToHide: 0,
-        showTotalColumnNameByCommaSeparated: '',
-        selectAllItems: false,
-        query: G_ItemMultipleSelectLOV_BaseQuery,
-        columnNameToIncreaseWidth: '',
-        loadData: null
-    };
-
-    var mergedOptions = $.extend({}, defaultOptions, options || {});
-
-    if (useItemLOV) {
-        mergedOptions.multiSelect = true;
-        mergedOptions.query = G_ItemMultipleSelectLOV_BaseQuery;
-        mergedOptions.loadData = function (query) {
-            var baseQuery = (query && String(query).trim()) ? String(query).trim() : G_ItemMultipleSelectLOV_BaseQuery;
-            var serviceOpts = getItemMultipleSelectLOVServiceOptions(mergedOptions);
-            return ObjectListControlService.GetItemMultipleSelectLOV(baseQuery, serviceOpts);
-        };
-    }
-
-    // Only set data when explicitly provided so loadData (if any) still works
-    if (typeof data !== 'undefined') {
-        mergedOptions.data = data;
-    }
-
-    return ensureObjectListControlLoaded()
-        .then(function () {
-            return window.FrmLOV.initialize1(mergedOptions);
-        })
-        .then(function (result) {
-            if (!result.escapePress) {
-                ObjectListControlCallback(result);
-            }
-            return result;
-        })
-        .catch(function (error) {
-            console.error('Error showing ObjectListControl:', error);
-            if (!error.__handledToastr) {
-                toastr.error('Error opening List of Values');
-            }
-            throw error;
-        });
-}
-
-// Holds last selection from GetItemMultipleSelectLOV (codes, display values, and rows)
-var G_ObjectListControlLastSelection = { codes: [], values: [], dataView: null };
-
-// Track which input field opened the LOV (for right-click functionality)
-var G_CurrentLovTarget = null;
-
-function ObjectListControlCallback(result) {
-    if (result && result.escapePress) {
-        G_CurrentLovTarget = null; // Clear target on escape
-        return;
-    }
-    if (result && result.values) {
-        // Parse comma-separated codes/values from LOV (e.g. from MultiPle Select)
-        var codeStr = (result.values || '').replace(/'/g, '');
-        var valueStr = (result.get_value || '').replace(/'/g, '');
-        G_ObjectListControlLastSelection.codes = codeStr ? codeStr.split(',') : [];
-        G_ObjectListControlLastSelection.values = valueStr ? valueStr.split(',') : [];
-        G_ObjectListControlLastSelection.dataView = result.dataView || null;
-        
-        // If LOV was opened via right-click on an input, populate that input with first selected value
-        if (G_CurrentLovTarget && G_ObjectListControlLastSelection.values.length > 0) {
-            var $target = $(G_CurrentLovTarget);
-            var selectedValue = G_ObjectListControlLastSelection.values[0];
-            $target.val(selectedValue);
-            $target.trigger('change'); // Trigger change event in case other code listens to it
-            G_CurrentLovTarget = null; // Clear target after populating
-        }
-        
-        if (G_ObjectListControlLastSelection.codes.length > 0) {
-            toastr.success('Selected ' + G_ObjectListControlLastSelection.codes.length + ' item(s).');
-            console.log('Selected Codes:', G_ObjectListControlLastSelection.codes);
-            console.log('Selected Data:', G_ObjectListControlLastSelection.dataView);
+function ShowIdentificationModal(value) {
+    if (value !== '') {
+        if (G_IdentificationList.length > 0) {
+            const options = {
+                ModalId: 'IdentificationControlmodal',
+                searchvalue: value,
+                MultiSelect: true,
+                ClientOrderProjectData: G_IdentificationList,
+                CallBackFunctionName_btnDone: 'onIdentificationSelected',
+                DefaultColumnfilter: 'IdentificationNo',
+                NumericColumns: ['BalQtyMT'],
+                Columns: [
+                    { field: 'GodownCode', visible: false },
+                    { field: 'GodownMaster_Code', visible: false }
+                ]
+            };
+            initializeObjectlistControl(options);
         } else {
-            toastr.warning('No item selected');
+            toastr.warning('No Identification data available');
         }
-    } else {
-        toastr.warning('No item selected');
-        G_CurrentLovTarget = null; // Clear target if no selection
     }
 }
+function ShowObjectlistControlModal(value) {
+    if (G_GetBOMMasterDataOrderWise.length > 0) {
+        const options = {
+            ModalId: 'DivControlmodal',
+            searchvalue: value,
+            MultiSelect: true,
+            NoOfHideColumn: 1,
+            ClientOrderProjectData: G_GetBOMMasterDataOrderWise,
+            CallBackFunctionName_btnDone: 'onSelectedRowApplied',
+            DefaultColumnfilter: 'Order No',
+            NumericColumns: ["Offer Qty","P.O. Qty(Wt.)"],
+            Columns: [
+                { field: 'Code', visible: false }
+            ]
+        };
+        initializeObjectlistControl(options);
+    }
+}
+
+window.onIdentificationSelected = function (response) {
+    if (!G_CurrentIdentificationRow || !response || response.length === 0) return;
+
+    const $startRow = G_CurrentIdentificationRow;
+    G_CurrentIdentificationRow = null;
+
+    response.forEach(function (item, index) {
+        const identNo = item.IdentificationNo || item.IdentificationNos || '';
+        if (!identNo) return;
+
+        let $targetRow;
+
+        if (index === 0) {
+            // Fill the row that triggered the modal
+            $targetRow = $startRow;
+        } else {
+            // For each extra selection: reuse empty last row or add a new one
+            const $tbody = $('#DetailTable-body');
+            const $lastRow = $tbody.find('tr.editable-row').last();
+            const lastVal = $lastRow.find('.identification-no').val() || '';
+
+            if (lastVal === '') {
+                $targetRow = $lastRow;
+            } else {
+                addNewEditableRow();
+                $targetRow = $tbody.find('tr.editable-row').last();
+            }
+        }
+
+        $targetRow.find('.identification-no').val(identNo).trigger('change.identification');
+    });
+};
+
+window.onSelectedRowApplied = function (response) {
+    if (response && response.length > 0) {
+    } else {
+    }
+};
 
 window.CreateNew = CreateNew;
 window.UpdateCoilDetail = UpdateCoilDetail;
@@ -2376,5 +2271,5 @@ window.EditRMInspectionRequest = EditRMInspectionRequest;
 window.Back = Back;
 window.DeleteRawMaterialOfferClick = DeleteRawMaterialOfferClick;
 window.DeleteRMOffer = DeleteRMOffer;
-window.ShowObjectListControlModal = ShowObjectListControlModal;
-window.ObjectListControlCallback = ObjectListControlCallback;
+window.ShowObjectlistControlModal = ShowObjectlistControlModal;
+window.ShowIdentificationModal = ShowIdentificationModal;
