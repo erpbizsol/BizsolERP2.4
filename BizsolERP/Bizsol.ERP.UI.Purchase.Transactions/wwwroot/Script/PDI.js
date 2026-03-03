@@ -293,8 +293,6 @@ function validatePDIInputs() {
     var qtyValue = $('#ddlQty').val();
     if (!qtyValue || qtyValue.trim() === '' || parseFloat(qtyValue) <= 0) { toastr.error('Quantity is required and must be greater than 0'); return false; }
     if (!/^\d+(\.\d{1,3})?$/.test(qtyValue)) { toastr.error('Quantity must be a valid number with maximum 3 decimal places'); return false; }
-    if (!imageBase64Data || imageBase64Data.length === 0) { toastr.error('Please select an image file'); return false; }
-    if (!fileName || fileName === '') { toastr.error('File name is missing'); return false; }
     return true;
 }
 function validatePDIInputsEdit() {
@@ -616,11 +614,28 @@ function Download() {
 }
 function ViewAttachment_PDI(Code, sourceDownloadFileName) {
     InitAttachmentControl('DespatchAdviceMaster', Code, '', 0, 0, '', "View", sourceDownloadFileName);
-
 }
-function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode, sourceDownloadFileName) {
+function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode, sourceDownloadFileName, targetSelector) {
     var url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
-    $('#PDI_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode, SourceDownloadFileName: sourceDownloadFileName });
+    var $container = (targetSelector && $(targetSelector).length) ? $(targetSelector) : $('#PDI_AttachmentControlmodal');
+    $container.load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode, SourceDownloadFileName: sourceDownloadFileName || '' });
+}
+function OpenPDIAttachmentControl(context) {
+    var code = 0;
+    if (context === 'create') {
+        code = $('#ddlOrderNo').val() || $('#ddlDespatchNo').val() || '0';
+        if (!code || code === '0') {
+            toastr.warning('Please select Order No first');
+            return;
+        }
+    } else if (context === 'edit') {
+        code = $('#txtOrderNo_Code').val() || '0';
+        if (!code || code === '0') {
+            toastr.warning('Order not loaded.');
+            return;
+        }
+    }
+    InitAttachmentControl('DespatchAdviceMaster', code, '', 0, 0, '', 'all', '');
 }
 function EditPDI(Code) {
     var ModuleName = "PDI",
@@ -654,6 +669,7 @@ function GetPDIEditList(Code) {
 }
 
 window.ViewAttachment_PDI = ViewAttachment_PDI;
+window.OpenPDIAttachmentControl = OpenPDIAttachmentControl;
 window.FileUploadChange = FileUploadChange;
 window.triggerFileInputClick = triggerFileInputClick;
 window.ShowPDIImage = ShowPDIImage;
