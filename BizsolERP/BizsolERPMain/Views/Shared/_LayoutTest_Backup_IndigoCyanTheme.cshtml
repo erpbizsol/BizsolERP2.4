@@ -27,43 +27,50 @@
     <script src="~/assets/js/jquery-3.6.0.min.js"></script>
     <style>
         :root {
-            /* BizSol Brand Colors - Professional ERP Theme */
-            --primary-gradient: linear-gradient(135deg, #ff8c42 0%, #ff6b35 50%, #f4511e 100%);
-            --secondary-gradient: linear-gradient(135deg, #4caf50 0%, #66bb6a 50%, #81c784 100%);
-            --success-gradient: linear-gradient(135deg, #26de81 0%, #20bf6b 100%);
-            --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
-            --info-gradient: linear-gradient(135deg, #00bcd4 0%, #26c6da 100%);
-            --accent-gradient: linear-gradient(135deg, #ff8c42 0%, #4caf50 100%);
+            /* BizSol Brand Colors - Deep Indigo & Cyan Modern Theme */
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #0dcaf0 0%, #0ea5e9 100%);
+            --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            --info-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            --accent-gradient: linear-gradient(135deg, #667eea 0%, #0dcaf0 100%);
 
             /* Professional Light Theme */
-            --light-bg: #f5f7fa;
+            --light-bg: #f0f4f8;
             --white-bg: #ffffff;
             --card-bg: #ffffff;
-            --card-hover: #fafbfc;
-            --text-dark: #2c3e50;
-            --text-primary: #34495e;
-            --text-muted: #7f8c8d;
-            --border-color: #e1e8ed;
-            --border-light: #f1f3f5;
+            --card-hover: #f8fafc;
+            --text-dark: #1e293b;
+            --text-primary: #334155;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --border-light: #f1f5f9;
 
-            /* BizSol Brand Accent Colors */
-            --accent-orange: #ff8c42;
-            --accent-orange-dark: #f4511e;
-            --accent-green: #4caf50;
-            --accent-green-dark: #388e3c;
-            --accent-gray: #607d8b;
-            --accent-success: #26de81;
-            --accent-warning: #ffc107;
-            --accent-info: #00bcd4;
+            /* Brand Accent Colors */
+            --accent-primary: #667eea;
+            --accent-primary-dark: #4f46e5;
+            --accent-secondary: #0dcaf0;
+            --accent-secondary-dark: #0891b2;
+            --accent-gray: #64748b;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-info: #06b6d4;
+
+            /* Sidebar Dark Theme */
+            --sidebar-bg: linear-gradient(180deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+            --sidebar-item-hover: rgba(102, 126, 234, 0.15);
+            --sidebar-item-active: rgba(102, 126, 234, 0.25);
+            --sidebar-text: #c7d2fe;
+            --sidebar-icon: #818cf8;
 
             /* Professional Shadow Effects */
-            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
-            --shadow-xl: 0 12px 36px rgba(0, 0, 0, 0.12);
-            --shadow-orange: 0 8px 24px rgba(255, 140, 66, 0.3);
-            --shadow-green: 0 8px 24px rgba(76, 175, 80, 0.3);
-            --shadow-success: 0 8px 24px rgba(38, 222, 129, 0.25);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.12);
+            --shadow-primary: 0 8px 24px rgba(102, 126, 234, 0.3);
+            --shadow-secondary: 0 8px 24px rgba(13, 202, 240, 0.25);
+            --shadow-success: 0 8px 24px rgba(16, 185, 129, 0.25);
         }
 
         body {
@@ -73,41 +80,149 @@
         }
 
         .modern-header {
-            background: linear-gradient(90deg, #ffffff 0%, #fff8f5 50%, #ffffff 100%);
-            box-shadow: var(--shadow-md);
+            background: #ffffff;
+            box-shadow: 0 1px 12px rgba(102, 126, 234, 0.08);
             padding: 0.75rem 1.5rem;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             z-index: 1000;
-            border-bottom: 3px solid;
-            border-image: linear-gradient(90deg, var(--accent-orange) 0%, var(--accent-green) 100%) 1;
+            border-bottom: 2px solid;
+            border-image: linear-gradient(90deg, #667eea 0%, #0dcaf0 100%) 1;
         }
 
         .modern-sidebar {
-            background: var(--white-bg);
+            background: var(--sidebar-bg);
             width: 280px;
             position: fixed;
             left: 0;
             top: 70px;
             bottom: 0;
-            box-shadow: var(--shadow-lg);
+            box-shadow: 4px 0 20px rgba(30, 27, 75, 0.15);
             overflow-y: auto;
             transition: all 0.3s ease;
             z-index: 999;
-            border-right: 1px solid var(--border-color);
+            border-right: none;
         }
 
         .modern-sidebar.collapsed {
             width: 70px;
         }
 
+        .modern-sidebar.collapsed .sidebar-menu-item span {
+            display: none;
+        }
+
+        .modern-sidebar.collapsed .sidebar-menu-item::after {
+            display: none;
+        }
+
+        .modern-sidebar.collapsed .sub-menu {
+            display: none !important;
+        }
+
+        .modern-sidebar.collapsed .sidebar-menu-item {
+            justify-content: center;
+            padding: 0.875rem 0.5rem;
+            margin: 0.35rem 0.25rem;
+        }
+
+        .modern-sidebar.collapsed h6 {
+            display: none;
+        }
+
+        /* Popup menu for collapsed sidebar */
+        .sidebar-popup-menu {
+            position: fixed;
+            left: 70px;
+            background: #1e1b4b;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(30, 27, 75, 0.4);
+            min-width: 220px;
+            display: none;
+            z-index: 1100;
+            padding: 0.5rem 0;
+            animation: slideInRight 0.3s ease;
+        }
+
+        @@keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .sidebar-popup-menu .popup-menu-title {
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            color: #e0e7ff;
+            border-bottom: 2px solid;
+            border-image: linear-gradient(90deg, #667eea 0%, #0dcaf0 100%) 1;
+            margin-bottom: 0.5rem;
+            background: rgba(102, 126, 234, 0.1);
+            font-size: 0.95rem;
+        }
+
+        .sidebar-popup-menu .popup-menu-item {
+            padding: 0.75rem 1rem;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-popup-menu .popup-menu-item:hover {
+            background: rgba(102, 126, 234, 0.15);
+            color: #e0e7ff;
+            border-left-color: var(--accent-secondary);
+            padding-left: 1.25rem;
+        }
+
+        .sidebar-popup-menu .popup-menu-item i {
+            margin-right: 0.75rem;
+            min-width: 20px;
+            color: var(--sidebar-icon);
+            font-size: 0.9rem;
+        }
+
+        .sidebar-popup-menu .popup-menu-item.has-arrow {
+            position: relative;
+        }
+
+        .sidebar-popup-menu .popup-menu-item.has-arrow::after {
+            content: '\203A';
+            margin-left: auto;
+            font-size: 1.3rem;
+            color: var(--text-muted);
+        }
+
+        .sidebar-popup-menu .popup-submenu {
+            display: none;
+            padding-left: 1rem;
+        }
+
+        .sidebar-popup-menu .popup-submenu .popup-menu-item {
+            padding: 0.6rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .modern-sidebar.collapsed .sidebar-menu-item {
+            position: relative;
+        }
+
         .sidebar-menu-item {
             padding: 0.875rem 1.25rem;
             display: flex;
             align-items: center;
-            color: var(--text-dark);
+            color: var(--sidebar-text);
             text-decoration: none;
             transition: all 0.3s ease;
             border-left: 3px solid transparent;
@@ -118,33 +233,33 @@
         }
 
         .sidebar-menu-item:hover {
-            background: rgba(255, 140, 66, 0.06);
+            background: var(--sidebar-item-hover);
             border-left-color: transparent;
-            color: var(--accent-orange-dark);
+            color: #e0e7ff;
             transform: translateX(3px);
         }
 
         .sidebar-menu-item.active {
-            background: rgba(255, 245, 230, 0.6);
-            border-left-color: var(--accent-orange);
-            color: var(--accent-orange-dark);
+            background: var(--sidebar-item-active);
+            border-left-color: var(--accent-secondary);
+            color: #e0e7ff;
             font-weight: 600;
         }
 
         .sidebar-menu-item i {
             font-size: 1.2rem;
             min-width: 36px;
-            color: var(--accent-orange);
+            color: var(--sidebar-icon);
             transition: all 0.3s ease;
         }
 
         .sidebar-menu-item:hover i {
-            color: var(--accent-orange-dark);
+            color: var(--accent-secondary);
             transform: scale(1.1);
         }
 
         .sidebar-menu-item.active i {
-            color: var(--accent-orange-dark);
+            color: var(--accent-secondary);
         }
 
         .sidebar-menu-item span {
@@ -163,7 +278,7 @@
 
         .sidebar-menu-item.has-arrow.active::after {
             transform: rotate(90deg);
-            color: var(--accent-orange);
+            color: var(--accent-secondary);
         }
 
         .sub-menu {
@@ -208,7 +323,7 @@
             transition: margin-left 0.3s ease;
         }
 
-        .modern-sidebar.collapsed + .modern-content {
+        .modern-sidebar.collapsed ~ .modern-content {
             margin-left: 70px;
         }
 
@@ -238,8 +353,8 @@
 
         .dashboard-card:hover {
             transform: translateY(-8px);
-            box-shadow: var(--shadow-orange);
-            border-color: var(--accent-orange);
+            box-shadow: var(--shadow-primary);
+            border-color: var(--accent-primary);
         }
 
         .dashboard-card:hover::before {
@@ -269,7 +384,7 @@
 
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--shadow-orange);
+            box-shadow: var(--shadow-primary);
         }
 
         .stat-card.success::before {
@@ -281,7 +396,7 @@
         }
 
         .stat-card.info::before {
-            background: var(--secondary-gradient);
+            background: var(--info-gradient);
         }
 
         .stat-icon {
@@ -294,7 +409,7 @@
             font-size: 1.75rem;
             background: var(--primary-gradient);
             color: white;
-            box-shadow: var(--shadow-orange);
+            box-shadow: var(--shadow-primary);
             transition: all 0.3s ease;
         }
 
@@ -303,57 +418,57 @@
         }
 
         .stat-icon.success {
-            background: var(--secondary-gradient);
-            box-shadow: var(--shadow-green);
+            background: var(--success-gradient);
+            box-shadow: var(--shadow-success);
         }
 
         .stat-icon.warning {
             background: var(--warning-gradient);
-            box-shadow: 0 8px 24px rgba(255, 193, 7, 0.35);
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);
         }
 
         .stat-icon.info {
             background: var(--info-gradient);
-            box-shadow: 0 8px 24px rgba(0, 188, 212, 0.35);
+            box-shadow: 0 8px 24px rgba(6, 182, 212, 0.35);
         }
 
         .notification-badge {
-            background: var(--primary-gradient);
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
             border-radius: 20px;
             padding: 0.25rem 0.6rem;
             font-size: 0.75rem;
             font-weight: 600;
-            box-shadow: var(--shadow-orange);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
             animation: pulse-badge 2s infinite;
         }
 
         @@keyframes pulse-badge {
             0%, 100% {
                 transform: scale(1);
-                box-shadow: var(--shadow-orange);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
             }
             50% {
                 transform: scale(1.05);
-                box-shadow: 0 8px 20px rgba(255, 140, 66, 0.4);
+                box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
             }
         }
 
         .alert-card {
-            background: linear-gradient(135deg, rgba(255, 140, 66, 0.06) 0%, rgba(76, 175, 80, 0.06) 100%);
-            border-left: 4px solid var(--accent-orange);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.04) 0%, rgba(13, 202, 240, 0.04) 100%);
+            border-left: 4px solid var(--accent-primary);
             border-radius: 16px;
             padding: 1rem 1.5rem;
             margin-bottom: 1rem;
-            border: 1px solid rgba(255, 140, 66, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.15);
             box-shadow: var(--shadow-sm);
             transition: all 0.3s ease;
         }
 
         .alert-card:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-orange);
-            border-color: var(--accent-orange);
+            box-shadow: var(--shadow-primary);
+            border-color: var(--accent-primary);
         }
 
         .modern-button {
@@ -364,7 +479,7 @@
             color: white;
             font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: var(--shadow-orange);
+            box-shadow: var(--shadow-primary);
             position: relative;
             overflow: hidden;
         }
@@ -382,7 +497,7 @@
 
         .modern-button:hover {
             transform: translateY(-3px);
-            box-shadow: 0 12px 32px rgba(255, 140, 66, 0.4);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
             color: white;
         }
 
@@ -398,8 +513,8 @@
             width: 45px;
             height: 45px;
             border-radius: 12px;
-            border: 2px solid var(--accent-orange);
-            box-shadow: var(--shadow-orange);
+            border: 2px solid var(--accent-primary);
+            box-shadow: var(--shadow-primary);
         }
 
         .app-logo {
@@ -427,15 +542,15 @@
         }
 
         .header-icon-btn {
-            background: rgba(255, 140, 66, 0.08);
-            border: 1px solid rgba(255, 140, 66, 0.15);
+            background: rgba(102, 126, 234, 0.08);
+            border: 1px solid rgba(102, 126, 234, 0.12);
             width: 45px;
             height: 45px;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--accent-orange);
+            color: var(--accent-primary);
             transition: all 0.3s ease;
             position: relative;
         }
@@ -444,7 +559,7 @@
             background: var(--primary-gradient);
             color: white;
             transform: translateY(-2px);
-            box-shadow: var(--shadow-orange);
+            box-shadow: var(--shadow-primary);
             border-color: transparent;
         }
 
@@ -501,14 +616,14 @@
         }
 
         .welcome-card {
-            background: linear-gradient(135deg, #ff8c42, #ff6b35, #4caf50, #66bb6a);
+            background: linear-gradient(135deg, #667eea, #764ba2, #0dcaf0, #667eea);
             background-size: 400% 400%;
             animation: gradientFlow 15s ease infinite;
             border-radius: 20px;
             padding: 2rem;
             color: white;
             margin-bottom: 2rem;
-            box-shadow: var(--shadow-orange);
+            box-shadow: var(--shadow-primary);
             position: relative;
             overflow: hidden;
         }
@@ -648,7 +763,7 @@
             right: 0;
             background: var(--white-bg);
             border-top: 2px solid;
-            border-image: linear-gradient(90deg, var(--accent-orange) 0%, var(--accent-green) 100%) 1;
+            border-image: linear-gradient(90deg, #667eea 0%, #0dcaf0 100%) 1;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
             z-index: 1000;
             padding: 0.5rem 0;
@@ -693,12 +808,12 @@
 
         .mobile-nav-item:hover,
         .mobile-nav-item.active {
-            color: var(--accent-orange);
+            color: var(--accent-primary);
         }
 
         .mobile-nav-item:hover i,
         .mobile-nav-item.active i {
-            color: var(--accent-orange);
+            color: var(--accent-primary);
             transform: scale(1.1);
         }
 
@@ -934,7 +1049,7 @@
 
         .dropdown-item:hover {
             background: var(--light-bg);
-            color: var(--accent-orange);
+            color: var(--accent-primary);
         }
 
         /* Scrollbar Styling for Light Theme */
@@ -948,12 +1063,12 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--accent-orange);
+            background: var(--accent-primary);
             border-radius: 10px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--accent-green);
+            background: var(--accent-secondary);
         }
     </style>
 </head>
@@ -985,7 +1100,7 @@
                     <div class="dropdown-menu dropdown-menu-end notification-dropdown" id="notificationDropdown"></div>
 
                     <div class="d-flex align-items-center">
-                        <div id="time" class="me-3 d-none d-md-block fw-bold" style="color: var(--accent-orange);">1:00</div>
+                        <div id="time" class="me-3 d-none d-md-block fw-bold" style="color: var(--accent-primary);">1:00</div>
                         <button id="resetBtn" type="button" class="header-icon-btn me-2">
                             <i class="fas fa-undo"></i>
                         </button>
@@ -1014,7 +1129,7 @@
         <div class="modern-sidebar" id="modern-sidebar">
             <div class="p-3">
                 <div class="mb-4 mt-2">
-                    <h6 class="text-uppercase text-muted mb-0" style="font-size: 0.75rem; letter-spacing: 1px;">Main Menu</h6>
+                    <h6 class="text-uppercase mb-0" style="font-size: 0.7rem; letter-spacing: 1.5px; color: rgba(199, 210, 254, 0.5);">Main Menu</h6>
                 </div>
                 <div id="sidebar-menu">
                     <!-- Dynamic menu will be loaded here -->
@@ -1033,7 +1148,7 @@
         <footer class="modern-footer">
             <div class="d-flex justify-content-between align-items-center flex-wrap desktop-footer" style="gap: 0.5rem;">
                 <div class="d-flex align-items-center" style="white-space: nowrap;">
-                    <span class="fw-bold" id="ERPUserName" style="color: var(--accent-orange);">PINKI BIZSOL</span>
+                    <span class="fw-bold" id="ERPUserName" style="color: var(--accent-primary);">PINKI BIZSOL</span>
                     <span class="text-muted ms-2" id="ERPCompanyCode">(ERP2.4 DEV)</span>
                 </div>
                 <div style="white-space: nowrap;">
@@ -1043,9 +1158,9 @@
             <div class="mobile-footer-compact" style="display: none;">
                 <div style="text-align: center; line-height: 1.4;">
                     <div style="font-size: 0.65rem;">
-                        <span class="fw-bold" style="color: var(--accent-orange);">BIZARCHIT</span>
+                        <span class="fw-bold" style="color: var(--accent-primary);">BIZARCHIT</span>
                         <span class="text-muted" style="margin: 0 0.25rem;">(AST Temp)</span>
-                        <span class="text-muted" style="margin-left: 0.25rem;">© 2025 <a href="https://bizsol.in" target="_blank" style="color: var(--accent-orange); text-decoration: none; font-weight: 600;">BizSol</a></span>
+                        <span class="text-muted" style="margin-left: 0.25rem;">© 2025 <a href="https://bizsol.in" target="_blank" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">BizSol</a></span>
                     </div>
                 </div>
             </div>
@@ -1146,6 +1261,13 @@
             const overlay = document.getElementById('sidebar-overlay');
             sidebar.classList.remove('show');
             overlay.classList.remove('show');
+        });
+
+        // Close popup menu when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.sidebar-popup-menu, .sidebar-menu-item').length) {
+                $('.sidebar-popup-menu').remove();
+            }
         });
 
         // Mobile sidebar toggle

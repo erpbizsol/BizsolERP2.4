@@ -27,43 +27,73 @@
     <script src="~/assets/js/jquery-3.6.0.min.js"></script>
     <style>
         :root {
-            /* BizSol Brand Colors - Professional ERP Theme */
-            --primary-gradient: linear-gradient(135deg, #ff8c42 0%, #ff6b35 50%, #f4511e 100%);
-            --secondary-gradient: linear-gradient(135deg, #4caf50 0%, #66bb6a 50%, #81c784 100%);
-            --success-gradient: linear-gradient(135deg, #26de81 0%, #20bf6b 100%);
-            --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
-            --info-gradient: linear-gradient(135deg, #00bcd4 0%, #26c6da 100%);
-            --accent-gradient: linear-gradient(135deg, #ff8c42 0%, #4caf50 100%);
+            /* BizSol ERP - Royal Blue Corporate Theme */
+            --primary-gradient: linear-gradient(135deg, #1251b5 0%, #1565c0 100%);
+            --secondary-gradient: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            --success-gradient: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            --warning-gradient: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+            --info-gradient: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+            --accent-gradient: linear-gradient(135deg, #1251b5 0%, #0891b2 100%);
 
-            /* Professional Light Theme */
-            --light-bg: #f5f7fa;
+            /* Content Area - Cool Light */
+            --light-bg: #eef3fa;
             --white-bg: #ffffff;
             --card-bg: #ffffff;
-            --card-hover: #fafbfc;
-            --text-dark: #2c3e50;
-            --text-primary: #34495e;
-            --text-muted: #7f8c8d;
-            --border-color: #e1e8ed;
-            --border-light: #f1f3f5;
+            --card-hover: #f6f9ff;
+            --text-dark: #0c1932;
+            --text-primary: #1a2d52;
+            --text-muted: #64748b;
+            --border-color: #d8e3f0;
+            --border-light: #eef3fa;
 
-            /* BizSol Brand Accent Colors */
-            --accent-orange: #ff8c42;
-            --accent-orange-dark: #f4511e;
-            --accent-green: #4caf50;
-            --accent-green-dark: #388e3c;
-            --accent-gray: #607d8b;
-            --accent-success: #26de81;
-            --accent-warning: #ffc107;
-            --accent-info: #00bcd4;
+            /* Brand Accent Colors */
+            --accent-primary: #1251b5;
+            --accent-primary-dark: #0d3d8a;
+            --accent-secondary: #f97316;
+            --accent-secondary-dark: #ea580c;
+            --accent-gray: #64748b;
+            --accent-success: #16a34a;
+            --accent-warning: #eab308;
+            --accent-info: #0891b2;
 
-            /* Professional Shadow Effects */
-            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
-            --shadow-xl: 0 12px 36px rgba(0, 0, 0, 0.12);
-            --shadow-orange: 0 8px 24px rgba(255, 140, 66, 0.3);
-            --shadow-green: 0 8px 24px rgba(76, 175, 80, 0.3);
-            --shadow-success: 0 8px 24px rgba(38, 222, 129, 0.25);
+            /* Colored Corporate Header */
+            --header-bg: linear-gradient(135deg, #0a2760 0%, #0e3585 45%, #1045a8 100%);
+
+            /* Sidebar - CLEAN WHITE (like SAP Fiori, Oracle, Salesforce) */
+            --sidebar-bg: #ffffff;
+            --sidebar-item-hover: rgba(18, 81, 181, 0.07);
+            --sidebar-item-active: rgba(18, 81, 181, 0.12);
+            --sidebar-text: #334155;
+            --sidebar-icon: #1251b5;
+
+            /* Professional Shadows */
+            --shadow-sm: 0 1px 3px rgba(12, 25, 50, 0.06);
+            --shadow-md: 0 4px 16px rgba(12, 25, 50, 0.08);
+            --shadow-lg: 0 10px 30px rgba(12, 25, 50, 0.10);
+            --shadow-xl: 0 20px 50px rgba(12, 25, 50, 0.12);
+            --shadow-primary: 0 8px 24px rgba(18, 81, 181, 0.22);
+            --shadow-secondary: 0 8px 24px rgba(249, 115, 22, 0.20);
+            --shadow-success: 0 8px 24px rgba(22, 163, 74, 0.20);
+
+            /* ── Live Theme-Switch Variables ── */
+            --header-border-img: linear-gradient(90deg, #38bdf8 0%, #818cf8 35%, #f97316 70%, #fbbf24 100%) 1;
+            --header-icon-bg: rgba(255, 255, 255, 0.10);
+            --header-icon-border: rgba(255, 255, 255, 0.15);
+            --header-icon-color: rgba(255, 255, 255, 0.85);
+            --header-icon-hover-bg: rgba(255, 255, 255, 0.22);
+            --logo-gradient: linear-gradient(135deg, #ffffff 0%, #bfdbfe 50%, #fde68a 100%);
+            --popup-bg: #ffffff;
+            --popup-border: var(--border-color);
+            --popup-title-bg: rgba(18, 81, 181, 0.05);
+            --popup-hover-bg: rgba(18, 81, 181, 0.07);
+            --popup-icon-color: var(--accent-primary);
+            --welcome-bg: linear-gradient(135deg, #0a2760, #1251b5, #0891b2, #f97316, #1251b5);
+            --footer-border-img: linear-gradient(90deg, #1251b5 0%, #f97316 100%) 1;
+            --mobile-border-img: linear-gradient(90deg, #1251b5 0%, #0891b2 50%, #f97316 100%) 1;
+            --time-color: rgba(255, 255, 255, 0.90);
+            --menu-label-color: rgba(18, 81, 181, 0.45);
+            --sidebar-hover-text: var(--accent-primary);
+            --sidebar-border-right: 1px solid var(--border-color);
         }
 
         body {
@@ -73,8 +103,8 @@
         }
 
         .modern-header {
-            background: linear-gradient(90deg, #ffffff 0%, #fff8f5 50%, #ffffff 100%);
-            box-shadow: var(--shadow-md);
+            background: var(--header-bg);
+            box-shadow: 0 2px 16px rgba(10, 39, 96, 0.35);
             padding: 0.75rem 1.5rem;
             position: fixed;
             top: 0;
@@ -82,32 +112,158 @@
             right: 0;
             z-index: 1000;
             border-bottom: 3px solid;
-            border-image: linear-gradient(90deg, var(--accent-orange) 0%, var(--accent-green) 100%) 1;
+            border-image: var(--header-border-img);
+        }
+
+        .modern-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+            animation: headerShimmer 10s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @@keyframes headerShimmer {
+            0%   { left: -150%; }
+            100% { left: 180%; }
         }
 
         .modern-sidebar {
-            background: var(--white-bg);
-            width: 280px;
+            background: var(--sidebar-bg);
+            width: 270px;
             position: fixed;
             left: 0;
             top: 70px;
             bottom: 0;
-            box-shadow: var(--shadow-lg);
+            box-shadow: 2px 0 12px rgba(12, 25, 50, 0.08);
             overflow-y: auto;
             transition: all 0.3s ease;
             z-index: 999;
-            border-right: 1px solid var(--border-color);
+            border-right: var(--sidebar-border-right);
         }
 
         .modern-sidebar.collapsed {
             width: 70px;
         }
 
+        .modern-sidebar.collapsed .sidebar-menu-item span {
+            display: none;
+        }
+
+        .modern-sidebar.collapsed .sidebar-menu-item::after {
+            display: none;
+        }
+
+        .modern-sidebar.collapsed .sub-menu {
+            display: none !important;
+        }
+
+        .modern-sidebar.collapsed .sidebar-menu-item {
+            justify-content: center;
+            padding: 0.875rem 0.5rem;
+            margin: 0.35rem 0.25rem;
+        }
+
+        .modern-sidebar.collapsed h6 {
+            display: none;
+        }
+
+        /* Popup menu for collapsed sidebar */
+        .sidebar-popup-menu {
+            position: fixed;
+            left: 70px;
+            background: var(--popup-bg);
+            border: 1px solid var(--popup-border);
+            border-radius: 14px;
+            box-shadow: 0 16px 50px rgba(12, 25, 50, 0.14), 0 4px 12px rgba(18, 81, 181, 0.08);
+            min-width: 230px;
+            display: none;
+            z-index: 1100;
+            padding: 0.5rem 0;
+            animation: slideInRight 0.25s ease;
+        }
+
+        @@keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .sidebar-popup-menu .popup-menu-title {
+            padding: 0.75rem 1.1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            border-bottom: 2px solid;
+            border-image: linear-gradient(90deg, #1251b5 0%, #f97316 100%) 1;
+            margin-bottom: 0.4rem;
+            background: var(--popup-title-bg);
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+        }
+
+        .sidebar-popup-menu .popup-menu-item {
+            padding: 0.75rem 1rem;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-popup-menu .popup-menu-item:hover {
+            background: var(--popup-hover-bg);
+            color: var(--sidebar-hover-text);
+            border-left-color: var(--accent-primary);
+            padding-left: 1.25rem;
+        }
+
+        .sidebar-popup-menu .popup-menu-item i {
+            margin-right: 0.75rem;
+            min-width: 20px;
+            color: var(--popup-icon-color);
+            font-size: 0.9rem;
+        }
+
+        .sidebar-popup-menu .popup-menu-item.has-arrow {
+            position: relative;
+        }
+
+        .sidebar-popup-menu .popup-menu-item.has-arrow::after {
+            content: '\203A';
+            margin-left: auto;
+            font-size: 1.3rem;
+            color: var(--text-muted);
+        }
+
+        .sidebar-popup-menu .popup-submenu {
+            display: none;
+            padding-left: 1rem;
+        }
+
+        .sidebar-popup-menu .popup-submenu .popup-menu-item {
+            padding: 0.6rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .modern-sidebar.collapsed .sidebar-menu-item {
+            position: relative;
+        }
+
         .sidebar-menu-item {
             padding: 0.875rem 1.25rem;
             display: flex;
             align-items: center;
-            color: var(--text-dark);
+            color: var(--sidebar-text);
             text-decoration: none;
             transition: all 0.3s ease;
             border-left: 3px solid transparent;
@@ -118,33 +274,33 @@
         }
 
         .sidebar-menu-item:hover {
-            background: rgba(255, 140, 66, 0.06);
-            border-left-color: transparent;
-            color: var(--accent-orange-dark);
+            background: var(--sidebar-item-hover);
+            border-left-color: var(--accent-primary);
+            color: var(--sidebar-hover-text);
             transform: translateX(3px);
         }
 
         .sidebar-menu-item.active {
-            background: rgba(255, 245, 230, 0.6);
-            border-left-color: var(--accent-orange);
-            color: var(--accent-orange-dark);
+            background: var(--sidebar-item-active);
+            border-left-color: var(--accent-primary);
+            color: var(--sidebar-hover-text);
             font-weight: 600;
         }
 
         .sidebar-menu-item i {
             font-size: 1.2rem;
             min-width: 36px;
-            color: var(--accent-orange);
+            color: var(--sidebar-icon);
             transition: all 0.3s ease;
         }
 
         .sidebar-menu-item:hover i {
-            color: var(--accent-orange-dark);
+            color: var(--sidebar-hover-text);
             transform: scale(1.1);
         }
 
         .sidebar-menu-item.active i {
-            color: var(--accent-orange-dark);
+            color: var(--sidebar-hover-text);
         }
 
         .sidebar-menu-item span {
@@ -163,7 +319,7 @@
 
         .sidebar-menu-item.has-arrow.active::after {
             transform: rotate(90deg);
-            color: var(--accent-orange);
+            color: var(--accent-primary);
         }
 
         .sub-menu {
@@ -201,14 +357,14 @@
         }
 
         .modern-content {
-            margin-left: 280px;
+            margin-left: 270px;
             margin-top: 70px;
             padding: 2rem;
             min-height: calc(100vh - 70px);
             transition: margin-left 0.3s ease;
         }
 
-        .modern-sidebar.collapsed + .modern-content {
+        .modern-sidebar.collapsed ~ .modern-content {
             margin-left: 70px;
         }
 
@@ -238,8 +394,8 @@
 
         .dashboard-card:hover {
             transform: translateY(-8px);
-            box-shadow: var(--shadow-orange);
-            border-color: var(--accent-orange);
+            box-shadow: var(--shadow-primary);
+            border-color: var(--accent-primary);
         }
 
         .dashboard-card:hover::before {
@@ -269,7 +425,7 @@
 
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--shadow-orange);
+            box-shadow: var(--shadow-primary);
         }
 
         .stat-card.success::before {
@@ -281,7 +437,7 @@
         }
 
         .stat-card.info::before {
-            background: var(--secondary-gradient);
+            background: var(--info-gradient);
         }
 
         .stat-icon {
@@ -294,7 +450,7 @@
             font-size: 1.75rem;
             background: var(--primary-gradient);
             color: white;
-            box-shadow: var(--shadow-orange);
+            box-shadow: var(--shadow-primary);
             transition: all 0.3s ease;
         }
 
@@ -303,57 +459,57 @@
         }
 
         .stat-icon.success {
-            background: var(--secondary-gradient);
-            box-shadow: var(--shadow-green);
+            background: var(--success-gradient);
+            box-shadow: var(--shadow-success);
         }
 
         .stat-icon.warning {
             background: var(--warning-gradient);
-            box-shadow: 0 8px 24px rgba(255, 193, 7, 0.35);
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.28);
         }
 
         .stat-icon.info {
             background: var(--info-gradient);
-            box-shadow: 0 8px 24px rgba(0, 188, 212, 0.35);
+            box-shadow: 0 8px 24px rgba(6, 182, 212, 0.28);
         }
 
         .notification-badge {
-            background: var(--primary-gradient);
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
             border-radius: 20px;
             padding: 0.25rem 0.6rem;
             font-size: 0.75rem;
             font-weight: 600;
-            box-shadow: var(--shadow-orange);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
             animation: pulse-badge 2s infinite;
         }
 
         @@keyframes pulse-badge {
             0%, 100% {
                 transform: scale(1);
-                box-shadow: var(--shadow-orange);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
             }
             50% {
                 transform: scale(1.05);
-                box-shadow: 0 8px 20px rgba(255, 140, 66, 0.4);
+                box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
             }
         }
 
         .alert-card {
-            background: linear-gradient(135deg, rgba(255, 140, 66, 0.06) 0%, rgba(76, 175, 80, 0.06) 100%);
-            border-left: 4px solid var(--accent-orange);
+            background: linear-gradient(135deg, rgba(18, 81, 181, 0.04) 0%, rgba(249, 115, 22, 0.03) 100%);
+            border-left: 4px solid var(--accent-primary);
             border-radius: 16px;
             padding: 1rem 1.5rem;
             margin-bottom: 1rem;
-            border: 1px solid rgba(255, 140, 66, 0.2);
+            border: 1px solid rgba(18, 81, 181, 0.10);
             box-shadow: var(--shadow-sm);
             transition: all 0.3s ease;
         }
 
         .alert-card:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-orange);
-            border-color: var(--accent-orange);
+            box-shadow: var(--shadow-primary);
+            border-color: var(--accent-primary);
         }
 
         .modern-button {
@@ -364,7 +520,7 @@
             color: white;
             font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: var(--shadow-orange);
+            box-shadow: var(--shadow-primary);
             position: relative;
             overflow: hidden;
         }
@@ -382,7 +538,7 @@
 
         .modern-button:hover {
             transform: translateY(-3px);
-            box-shadow: 0 12px 32px rgba(255, 140, 66, 0.4);
+            box-shadow: 0 12px 32px rgba(18, 81, 181, 0.32);
             color: white;
         }
 
@@ -395,23 +551,24 @@
         }
 
         .profile-avatar {
-            width: 45px;
-            height: 45px;
-            border-radius: 12px;
-            border: 2px solid var(--accent-orange);
-            box-shadow: var(--shadow-orange);
+            width: 40px;
+            height: 40px;
+            border-radius: 11px;
+            border: 2px solid rgba(255, 255, 255, 0.45);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
         }
 
         .app-logo {
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            background: var(--accent-gradient);
+            background: var(--logo-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            font-weight: 700;
+            font-weight: 800;
             font-size: 1.5rem;
+            letter-spacing: -0.3px;
         }
 
         .app-logo img {
@@ -427,24 +584,24 @@
         }
 
         .header-icon-btn {
-            background: rgba(255, 140, 66, 0.08);
-            border: 1px solid rgba(255, 140, 66, 0.15);
-            width: 45px;
-            height: 45px;
-            border-radius: 12px;
+            background: var(--header-icon-bg);
+            border: 1px solid var(--header-icon-border);
+            width: 42px;
+            height: 42px;
+            border-radius: 11px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--accent-orange);
+            color: var(--header-icon-color);
             transition: all 0.3s ease;
             position: relative;
         }
 
         .header-icon-btn:hover {
-            background: var(--primary-gradient);
-            color: white;
+            background: var(--header-icon-hover-bg);
+            color: #ffffff;
             transform: translateY(-2px);
-            box-shadow: var(--shadow-orange);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
             border-color: transparent;
         }
 
@@ -473,10 +630,11 @@
         .modern-footer {
             background: var(--white-bg);
             padding: 0.75rem 1.5rem;
-            margin-left: 280px;
-            border-top: 1px solid var(--border-color);
+            margin-left: 270px;
+            border-top: 2px solid;
+            border-image: var(--footer-border-img);
             transition: margin-left 0.3s ease;
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 -2px 12px rgba(12, 25, 50, 0.06);
             position: fixed;
             bottom: 0;
             left: 0;
@@ -489,7 +647,7 @@
         }
 
         .modern-content {
-            margin-left: 280px;
+            margin-left: 270px;
             margin-top: 70px;
             padding: 1.5rem;
             transition: margin-left 0.3s ease;
@@ -501,14 +659,14 @@
         }
 
         .welcome-card {
-            background: linear-gradient(135deg, #ff8c42, #ff6b35, #4caf50, #66bb6a);
+            background: var(--welcome-bg);
             background-size: 400% 400%;
             animation: gradientFlow 15s ease infinite;
             border-radius: 20px;
             padding: 2rem;
             color: white;
             margin-bottom: 2rem;
-            box-shadow: var(--shadow-orange);
+            box-shadow: var(--shadow-primary);
             position: relative;
             overflow: hidden;
         }
@@ -648,8 +806,8 @@
             right: 0;
             background: var(--white-bg);
             border-top: 2px solid;
-            border-image: linear-gradient(90deg, var(--accent-orange) 0%, var(--accent-green) 100%) 1;
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+            border-image: var(--mobile-border-img);
+            box-shadow: 0 -4px 20px rgba(12, 25, 50, 0.06);
             z-index: 1000;
             padding: 0.5rem 0;
         }
@@ -693,12 +851,12 @@
 
         .mobile-nav-item:hover,
         .mobile-nav-item.active {
-            color: var(--accent-orange);
+            color: var(--accent-primary);
         }
 
         .mobile-nav-item:hover i,
         .mobile-nav-item.active i {
-            color: var(--accent-orange);
+            color: var(--accent-primary);
             transform: scale(1.1);
         }
 
@@ -902,6 +1060,19 @@
             }
         }
 
+        #time {
+            color: var(--time-color);
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-section-label {
+            font-size: 0.68rem;
+            letter-spacing: 2px;
+            color: var(--menu-label-color);
+            text-transform: uppercase;
+        }
+
         .Highlighted {
             background-color: #FFD700 !important;
             color: black !important;
@@ -934,13 +1105,13 @@
 
         .dropdown-item:hover {
             background: var(--light-bg);
-            color: var(--accent-orange);
+            color: var(--accent-primary);
         }
 
-        /* Scrollbar Styling for Light Theme */
+        /* Scrollbar Styling */
         ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+            width: 5px;
+            height: 5px;
         }
 
         ::-webkit-scrollbar-track {
@@ -948,12 +1119,25 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--accent-orange);
+            background: rgba(18, 81, 181, 0.25);
             border-radius: 10px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--accent-green);
+            background: var(--accent-primary);
+        }
+
+        /* Light scrollbar for white sidebar */
+        .modern-sidebar::-webkit-scrollbar-track {
+            background: #f8fafc;
+        }
+
+        .modern-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(18, 81, 181, 0.18);
+        }
+
+        .modern-sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(18, 81, 181, 0.40);
         }
     </style>
 </head>
@@ -985,7 +1169,7 @@
                     <div class="dropdown-menu dropdown-menu-end notification-dropdown" id="notificationDropdown"></div>
 
                     <div class="d-flex align-items-center">
-                        <div id="time" class="me-3 d-none d-md-block fw-bold" style="color: var(--accent-orange);">1:00</div>
+                        <div id="time" class="me-3 d-none d-md-block fw-bold">1:00</div>
                         <button id="resetBtn" type="button" class="header-icon-btn me-2">
                             <i class="fas fa-undo"></i>
                         </button>
@@ -1006,6 +1190,21 @@
                             </a>
                         </div>
                     </div>
+
+                    <!-- Theme Gallery Button -->
+                    <a href="@Url.Action("ThemeGallery", "TestTheme", new { area = "SalesTest" })" title="Theme Gallery" class="header-icon-btn text-decoration-none" style="font-size:1.1rem;">
+                        🎨
+                    </a>
+
+                    <!-- Back to Classic Layout -->
+                    <a href="@Url.Action("Index", "Home")"
+                       title="Switch to Classic Layout"
+                       class="header-icon-btn text-decoration-none d-none d-md-flex"
+                       style="font-size:0.65rem;font-weight:700;letter-spacing:0.3px;
+                              width:auto;padding:0 10px;color:rgba(255,255,255,0.7);
+                              white-space:nowrap;">
+                        ← Classic
+                    </a>
                 </div>
             </div>
         </header>
@@ -1014,7 +1213,7 @@
         <div class="modern-sidebar" id="modern-sidebar">
             <div class="p-3">
                 <div class="mb-4 mt-2">
-                    <h6 class="text-uppercase text-muted mb-0" style="font-size: 0.75rem; letter-spacing: 1px;">Main Menu</h6>
+                    <h6 class="sidebar-section-label mb-0">Main Menu</h6>
                 </div>
                 <div id="sidebar-menu">
                     <!-- Dynamic menu will be loaded here -->
@@ -1033,19 +1232,19 @@
         <footer class="modern-footer">
             <div class="d-flex justify-content-between align-items-center flex-wrap desktop-footer" style="gap: 0.5rem;">
                 <div class="d-flex align-items-center" style="white-space: nowrap;">
-                    <span class="fw-bold" id="ERPUserName" style="color: var(--accent-orange);">PINKI BIZSOL</span>
+                    <span class="fw-bold" id="ERPUserName" style="color: var(--accent-primary); letter-spacing: 0.3px;">PINKI BIZSOL</span>
                     <span class="text-muted ms-2" id="ERPCompanyCode">(ERP2.4 DEV)</span>
                 </div>
                 <div style="white-space: nowrap;">
-                    <span class="text-muted" style="font-size: 0.875rem;">Copyright © 2025 <a href="https://bizsol.in" target="_blank" style="background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none; font-weight: 600;">BizSol Technologies Pvt. Ltd.</a> All rights reserved.</span>
+                    <span class="text-muted" style="font-size: 0.875rem;">Copyright © 2025 <a href="https://bizsol.in" target="_blank" style="background: linear-gradient(90deg, #1251b5, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none; font-weight: 600;">BizSol Technologies Pvt. Ltd.</a> All rights reserved.</span>
                 </div>
             </div>
             <div class="mobile-footer-compact" style="display: none;">
                 <div style="text-align: center; line-height: 1.4;">
                     <div style="font-size: 0.65rem;">
-                        <span class="fw-bold" style="color: var(--accent-orange);">BIZARCHIT</span>
-                        <span class="text-muted" style="margin: 0 0.25rem;">(AST Temp)</span>
-                        <span class="text-muted" style="margin-left: 0.25rem;">© 2025 <a href="https://bizsol.in" target="_blank" style="color: var(--accent-orange); text-decoration: none; font-weight: 600;">BizSol</a></span>
+                        <span class="fw-bold" style="color: var(--accent-primary);">BIZARCHIT</span>
+                            <span class="text-muted" style="margin: 0 0.25rem;">(AST Temp)</span>
+                            <span class="text-muted" style="margin-left: 0.25rem;">© 2025 <a href="https://bizsol.in" target="_blank" style="background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none; font-weight: 600;">BizSol</a></span>
                     </div>
                 </div>
             </div>
@@ -1148,6 +1347,13 @@
             overlay.classList.remove('show');
         });
 
+        // Close popup menu when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.sidebar-popup-menu, .sidebar-menu-item').length) {
+                $('.sidebar-popup-menu').remove();
+            }
+        });
+
         // Mobile sidebar toggle
         if (window.innerWidth <= 768) {
             // Close sidebar when clicking a menu item without submenu (only on mobile)
@@ -1193,6 +1399,186 @@
     <script type="module" src="~/assets/script/menutest.js"></script>
     <script type="module" src="~/assets/script/webnotification.js"></script>
     <script src="~/assets/script/Logout.js"></script>
+
+    <script>
+    /* ═══════════════════════════════════════════
+       BizSol ERP – Live Theme Engine
+       Reads from localStorage('bizsolTheme') and
+       applies CSS custom-property overrides.
+    ═══════════════════════════════════════════ */
+    (function () {
+        const THEMES = {
+            'orange': {
+                label: 'Orange Classic',
+                '--primary-gradient': 'linear-gradient(135deg,#ff8c42 0%,#ff6b35 50%,#f4511e 100%)',
+                '--secondary-gradient': 'linear-gradient(135deg,#4caf50 0%,#66bb6a 100%)',
+                '--success-gradient': 'linear-gradient(135deg,#26de81 0%,#20bf6b 100%)',
+                '--warning-gradient': 'linear-gradient(135deg,#ffc107 0%,#ffb300 100%)',
+                '--info-gradient': 'linear-gradient(135deg,#00bcd4 0%,#26c6da 100%)',
+                '--accent-gradient': 'linear-gradient(135deg,#ff8c42 0%,#4caf50 100%)',
+                '--light-bg': '#f5f7fa', '--border-color': '#e1e8ed',
+                '--text-dark': '#2c3e50', '--text-primary': '#34495e', '--text-muted': '#7f8c8d',
+                '--accent-primary': '#ff8c42', '--accent-primary-dark': '#f4511e',
+                '--accent-secondary': '#4caf50', '--accent-secondary-dark': '#388e3c',
+                '--shadow-primary': '0 8px 24px rgba(255,140,66,0.3)',
+                '--header-bg': 'linear-gradient(90deg,#ffffff 0%,#fff8f5 50%,#ffffff 100%)',
+                '--header-border-img': 'linear-gradient(90deg,#ff8c42 0%,#4caf50 100%) 1',
+                '--header-icon-bg': 'rgba(255,140,66,0.08)', '--header-icon-border': 'rgba(255,140,66,0.15)',
+                '--header-icon-color': '#ff8c42', '--header-icon-hover-bg': 'linear-gradient(135deg,#ff8c42,#f4511e)',
+                '--logo-gradient': 'linear-gradient(135deg,#ff8c42 0%,#4caf50 100%)',
+                '--sidebar-bg': '#ffffff', '--sidebar-item-hover': 'rgba(255,140,66,0.07)',
+                '--sidebar-item-active': 'rgba(255,245,230,0.8)', '--sidebar-text': '#2c3e50',
+                '--sidebar-icon': '#ff8c42', '--sidebar-hover-text': '#f4511e',
+                '--sidebar-border-right': '1px solid #e1e8ed',
+                '--popup-bg': '#ffffff', '--popup-border': '#e1e8ed',
+                '--popup-title-bg': 'rgba(255,140,66,0.05)', '--popup-hover-bg': 'rgba(255,140,66,0.08)',
+                '--popup-icon-color': '#ff8c42', '--menu-label-color': 'rgba(44,62,80,0.4)',
+                '--welcome-bg': 'linear-gradient(135deg,#ff8c42,#ff6b35,#4caf50,#66bb6a,#ff8c42)',
+                '--footer-border-img': 'linear-gradient(90deg,#ff8c42 0%,#4caf50 100%) 1',
+                '--mobile-border-img': 'linear-gradient(90deg,#ff8c42 0%,#4caf50 100%) 1',
+                '--time-color': '#ff8c42'
+            },
+            'indigo': {
+                label: 'Indigo Cyan',
+                '--primary-gradient': 'linear-gradient(135deg,#667eea 0%,#764ba2 100%)',
+                '--secondary-gradient': 'linear-gradient(135deg,#0dcaf0 0%,#0ea5e9 100%)',
+                '--success-gradient': 'linear-gradient(135deg,#10b981 0%,#059669 100%)',
+                '--warning-gradient': 'linear-gradient(135deg,#f59e0b 0%,#d97706 100%)',
+                '--info-gradient': 'linear-gradient(135deg,#06b6d4 0%,#0891b2 100%)',
+                '--accent-gradient': 'linear-gradient(135deg,#667eea 0%,#0dcaf0 100%)',
+                '--light-bg': '#f0f4f8', '--border-color': '#e2e8f0',
+                '--text-dark': '#1e293b', '--text-primary': '#334155', '--text-muted': '#94a3b8',
+                '--accent-primary': '#667eea', '--accent-primary-dark': '#4f46e5',
+                '--accent-secondary': '#0dcaf0', '--accent-secondary-dark': '#0891b2',
+                '--shadow-primary': '0 8px 24px rgba(102,126,234,0.3)',
+                '--header-bg': 'linear-gradient(90deg,#ffffff 0%,#f5f3ff 50%,#ffffff 100%)',
+                '--header-border-img': 'linear-gradient(90deg,#667eea 0%,#0dcaf0 100%) 1',
+                '--header-icon-bg': 'rgba(102,126,234,0.08)', '--header-icon-border': 'rgba(102,126,234,0.12)',
+                '--header-icon-color': '#667eea', '--header-icon-hover-bg': 'linear-gradient(135deg,#667eea,#764ba2)',
+                '--logo-gradient': 'linear-gradient(135deg,#667eea 0%,#0dcaf0 100%)',
+                '--sidebar-bg': 'linear-gradient(180deg,#1e1b4b 0%,#312e81 50%,#1e1b4b 100%)',
+                '--sidebar-item-hover': 'rgba(102,126,234,0.15)', '--sidebar-item-active': 'rgba(102,126,234,0.25)',
+                '--sidebar-text': '#c7d2fe', '--sidebar-icon': '#818cf8', '--sidebar-hover-text': '#e0e7ff',
+                '--sidebar-border-right': 'none',
+                '--popup-bg': '#1e1b4b', '--popup-border': 'rgba(102,126,234,0.2)',
+                '--popup-title-bg': 'rgba(102,126,234,0.1)', '--popup-hover-bg': 'rgba(102,126,234,0.15)',
+                '--popup-icon-color': '#818cf8', '--menu-label-color': 'rgba(199,210,254,0.5)',
+                '--welcome-bg': 'linear-gradient(135deg,#667eea,#764ba2,#0dcaf0,#667eea)',
+                '--footer-border-img': 'linear-gradient(90deg,#667eea 0%,#0dcaf0 100%) 1',
+                '--mobile-border-img': 'linear-gradient(90deg,#667eea 0%,#0dcaf0 100%) 1',
+                '--time-color': '#667eea'
+            },
+            'emerald': {
+                label: 'Emerald Pulse',
+                '--primary-gradient': 'linear-gradient(135deg,#059669 0%,#10b981 100%)',
+                '--secondary-gradient': 'linear-gradient(135deg,#3b82f6 0%,#2563eb 100%)',
+                '--success-gradient': 'linear-gradient(135deg,#10b981 0%,#059669 100%)',
+                '--warning-gradient': 'linear-gradient(135deg,#f59e0b 0%,#d97706 100%)',
+                '--info-gradient': 'linear-gradient(135deg,#3b82f6 0%,#2563eb 100%)',
+                '--accent-gradient': 'linear-gradient(135deg,#059669 0%,#0d9488 50%,#0891b2 100%)',
+                '--light-bg': '#f1f5f9', '--border-color': '#e2e8f0',
+                '--text-dark': '#0f172a', '--text-primary': '#1e293b', '--text-muted': '#94a3b8',
+                '--accent-primary': '#059669', '--accent-primary-dark': '#047857',
+                '--accent-secondary': '#f59e0b', '--accent-secondary-dark': '#d97706',
+                '--shadow-primary': '0 8px 24px rgba(5,150,105,0.25)',
+                '--header-bg': 'linear-gradient(90deg,#ffffff 0%,#f0fdf4 50%,#ffffff 100%)',
+                '--header-border-img': 'linear-gradient(90deg,#059669 0%,#0d9488 50%,#f59e0b 100%) 1',
+                '--header-icon-bg': 'rgba(5,150,105,0.06)', '--header-icon-border': 'rgba(5,150,105,0.12)',
+                '--header-icon-color': '#059669', '--header-icon-hover-bg': 'linear-gradient(135deg,#059669,#10b981)',
+                '--logo-gradient': 'linear-gradient(135deg,#059669 0%,#0d9488 50%,#0891b2 100%)',
+                '--sidebar-bg': 'linear-gradient(180deg,#0f172a 0%,#1e293b 50%,#0f172a 100%)',
+                '--sidebar-item-hover': 'rgba(16,185,129,0.12)', '--sidebar-item-active': 'rgba(16,185,129,0.2)',
+                '--sidebar-text': '#cbd5e1', '--sidebar-icon': '#34d399', '--sidebar-hover-text': '#e2e8f0',
+                '--sidebar-border-right': 'none',
+                '--popup-bg': '#0f172a', '--popup-border': 'rgba(16,185,129,0.15)',
+                '--popup-title-bg': 'rgba(16,185,129,0.08)', '--popup-hover-bg': 'rgba(16,185,129,0.12)',
+                '--popup-icon-color': '#34d399', '--menu-label-color': 'rgba(52,211,153,0.4)',
+                '--welcome-bg': 'linear-gradient(135deg,#059669,#0d9488,#0891b2,#059669)',
+                '--footer-border-img': 'linear-gradient(90deg,#059669 0%,#f59e0b 100%) 1',
+                '--mobile-border-img': 'linear-gradient(90deg,#059669 0%,#f59e0b 100%) 1',
+                '--time-color': '#059669'
+            },
+            'darksteel': {
+                label: 'Dark Steel Spectrum',
+                '--primary-gradient': 'linear-gradient(135deg,#2563eb 0%,#4f46e5 100%)',
+                '--secondary-gradient': 'linear-gradient(135deg,#8b5cf6 0%,#ec4899 100%)',
+                '--success-gradient': 'linear-gradient(135deg,#10b981 0%,#059669 100%)',
+                '--warning-gradient': 'linear-gradient(135deg,#f59e0b 0%,#d97706 100%)',
+                '--info-gradient': 'linear-gradient(135deg,#06b6d4 0%,#0891b2 100%)',
+                '--accent-gradient': 'linear-gradient(135deg,#fbbf24 0%,#f43f5e 50%,#2563eb 100%)',
+                '--light-bg': '#f4f7fb', '--border-color': '#e2e8f0',
+                '--text-dark': '#0f172a', '--text-primary': '#1e293b', '--text-muted': '#94a3b8',
+                '--accent-primary': '#2563eb', '--accent-primary-dark': '#1d4ed8',
+                '--accent-secondary': '#8b5cf6', '--accent-secondary-dark': '#7c3aed',
+                '--shadow-primary': '0 8px 24px rgba(37,99,235,0.25)',
+                '--header-bg': 'linear-gradient(135deg,#060c18 0%,#0d1b2a 50%,#0a1628 100%)',
+                '--header-border-img': 'linear-gradient(90deg,#3b82f6 0%,#8b5cf6 25%,#ec4899 55%,#fbbf24 80%,#3b82f6 100%) 1',
+                '--header-icon-bg': 'rgba(255,255,255,0.06)', '--header-icon-border': 'rgba(255,255,255,0.10)',
+                '--header-icon-color': '#94a3b8', '--header-icon-hover-bg': 'rgba(99,102,241,0.35)',
+                '--logo-gradient': 'linear-gradient(135deg,#fbbf24 0%,#f9a8d4 40%,#93c5fd 100%)',
+                '--sidebar-bg': 'linear-gradient(180deg,#060c18 0%,#0d1422 55%,#060c18 100%)',
+                '--sidebar-item-hover': 'rgba(59,130,246,0.12)', '--sidebar-item-active': 'rgba(99,102,241,0.22)',
+                '--sidebar-text': '#94a3b8', '--sidebar-icon': '#60a5fa', '--sidebar-hover-text': '#e0e7ff',
+                '--sidebar-border-right': 'none',
+                '--popup-bg': '#080e1c', '--popup-border': 'rgba(59,130,246,0.18)',
+                '--popup-title-bg': 'rgba(59,130,246,0.07)', '--popup-hover-bg': 'rgba(99,102,241,0.13)',
+                '--popup-icon-color': '#60a5fa', '--menu-label-color': 'rgba(96,165,250,0.35)',
+                '--welcome-bg': 'linear-gradient(135deg,#1d4ed8,#4f46e5,#7c3aed,#a855f7,#ec4899,#1d4ed8)',
+                '--footer-border-img': 'linear-gradient(90deg,#2563eb 0%,#8b5cf6 100%) 1',
+                '--mobile-border-img': 'linear-gradient(90deg,#2563eb 0%,#8b5cf6 50%,#fbbf24 100%) 1',
+                '--time-color': '#fbbf24'
+            },
+            'royalblue': {
+                label: 'Royal Blue Corporate',
+                '--primary-gradient': 'linear-gradient(135deg,#1251b5 0%,#1565c0 100%)',
+                '--secondary-gradient': 'linear-gradient(135deg,#f97316 0%,#ea580c 100%)',
+                '--success-gradient': 'linear-gradient(135deg,#16a34a 0%,#15803d 100%)',
+                '--warning-gradient': 'linear-gradient(135deg,#eab308 0%,#ca8a04 100%)',
+                '--info-gradient': 'linear-gradient(135deg,#0891b2 0%,#0e7490 100%)',
+                '--accent-gradient': 'linear-gradient(135deg,#1251b5 0%,#0891b2 100%)',
+                '--light-bg': '#eef3fa', '--border-color': '#d8e3f0',
+                '--text-dark': '#0c1932', '--text-primary': '#1a2d52', '--text-muted': '#64748b',
+                '--accent-primary': '#1251b5', '--accent-primary-dark': '#0d3d8a',
+                '--accent-secondary': '#f97316', '--accent-secondary-dark': '#ea580c',
+                '--shadow-primary': '0 8px 24px rgba(18,81,181,0.22)',
+                '--header-bg': 'linear-gradient(135deg,#0a2760 0%,#0e3585 45%,#1045a8 100%)',
+                '--header-border-img': 'linear-gradient(90deg,#38bdf8 0%,#818cf8 35%,#f97316 70%,#fbbf24 100%) 1',
+                '--header-icon-bg': 'rgba(255,255,255,0.10)', '--header-icon-border': 'rgba(255,255,255,0.15)',
+                '--header-icon-color': 'rgba(255,255,255,0.85)', '--header-icon-hover-bg': 'rgba(255,255,255,0.22)',
+                '--logo-gradient': 'linear-gradient(135deg,#ffffff 0%,#bfdbfe 50%,#fde68a 100%)',
+                '--sidebar-bg': '#ffffff', '--sidebar-item-hover': 'rgba(18,81,181,0.07)',
+                '--sidebar-item-active': 'rgba(18,81,181,0.12)', '--sidebar-text': '#334155',
+                '--sidebar-icon': '#1251b5', '--sidebar-hover-text': '#1251b5',
+                '--sidebar-border-right': '1px solid #d8e3f0',
+                '--popup-bg': '#ffffff', '--popup-border': '#d8e3f0',
+                '--popup-title-bg': 'rgba(18,81,181,0.05)', '--popup-hover-bg': 'rgba(18,81,181,0.07)',
+                '--popup-icon-color': '#1251b5', '--menu-label-color': 'rgba(18,81,181,0.45)',
+                '--welcome-bg': 'linear-gradient(135deg,#0a2760,#1251b5,#0891b2,#f97316,#1251b5)',
+                '--footer-border-img': 'linear-gradient(90deg,#1251b5 0%,#f97316 100%) 1',
+                '--mobile-border-img': 'linear-gradient(90deg,#1251b5 0%,#0891b2 50%,#f97316 100%) 1',
+                '--time-color': 'rgba(255,255,255,0.90)'
+            }
+        };
+
+        window.BIZSOL_THEMES = THEMES;
+
+        function applyTheme(key) {
+            const theme = THEMES[key];
+            if (!theme) return;
+            const root = document.documentElement;
+            Object.entries(theme).forEach(([k, v]) => {
+                if (k.startsWith('--')) root.style.setProperty(k, v);
+            });
+            localStorage.setItem('bizsolTheme', key);
+        }
+
+        window.applyBizsolTheme = applyTheme;
+
+        // Apply saved theme on page load
+        const saved = localStorage.getItem('bizsolTheme');
+        if (saved && THEMES[saved]) applyTheme(saved);
+    })();
+    </script>
 
     @RenderSection("Scripts", required: false)
 </body>

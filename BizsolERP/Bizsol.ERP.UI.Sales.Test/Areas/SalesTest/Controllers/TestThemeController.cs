@@ -19,5 +19,10 @@ namespace Bizsol.ERP.UI.Sales.Test.Areas.SalesTest.Controllers
         {
             return View();
         }
+
+        public IActionResult ThemeGallery()
+        {
+            return View();
+        }
     }
 }

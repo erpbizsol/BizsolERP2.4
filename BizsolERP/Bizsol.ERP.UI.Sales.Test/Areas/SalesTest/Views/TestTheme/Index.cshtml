@@ -216,6 +216,14 @@
     <div class="col-md-6">
         <div class="dashboard-card">
             <h5 class="mb-3"><i class="fas fa-clock me-2" style="color: var(--accent-orange);"></i>Recent Purchase Orders</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="text-muted small">Last 3 transactions</span>
+                <button type="button"
+                        class="modern-button"
+                        style="padding:0.45rem 1rem;font-size:0.8rem;border-radius:10px;"
+                        onclick="window.location.href='@Url.Action("AddNewPo","TestTheme",new{area="SalesTest"})'">                    <i class="fas fa-plus me-1"></i> New PO
+                </button>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover" style="color: var(--text-light);">
                     <thead style="color: var(--text-muted);">
@@ -269,7 +277,9 @@
     <h5 class="mb-3"><i class="fas fa-bolt me-2" style="color: var(--accent-orange);"></i>Quick Actions</h5>
     <div class="row g-3">
         <div class="col-md-3 col-sm-6">
-            <button class="modern-button w-100">
+            <button type="button"
+                    class="modern-button w-100"
+                    onclick="window.location.href='@Url.Action("AddNewPo","TestTheme",new{area="SalesTest"})'">
                 <i class="fas fa-plus me-2"></i>New PO
             </button>
         </div>
