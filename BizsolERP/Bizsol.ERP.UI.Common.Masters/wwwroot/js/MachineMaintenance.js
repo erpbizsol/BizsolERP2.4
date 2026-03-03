@@ -228,6 +228,11 @@ function ClearData() {
     $("#ddlUpdateStatus").val("").prop('disabled', false);
     $("#txtSpareConsumed").val("").prop('disabled', false);
     $("#txtConcenedPersonMobileNo").val("").prop('readonly', false);
+    $("#txtRequestTime").val("").prop('readonly', false);
+    $("#ddlMaintenanceType").val("").prop('disabled', false);
+    $("#ddlPriority").val("").prop('disabled', false);
+    $("#ddlNatureofBreakdown").val("").prop('disabled', false);
+    $("#txtDescriptionofBreakdown").val("").prop('disabled', false);
    
     files = [];
     fileName = '';
@@ -734,10 +739,10 @@ function Assign(Code) {
             $("#hideUpdateStatus").hide();
             $("#hideRequestStatus").hide();
             $("#hideSpareConsumed").hide();
-            $("#hideMaintenanceType").hide();
-            $("#hidePriority").hide();
-            $("#hideNatureofBreakdown").hide();
-            $("#hideDescriptionofBreakdown").hide();
+            $("#hideMaintenanceType").show();
+            $("#hidePriority").show();
+            $("#hideNatureofBreakdown").show();
+            $("#hideDescriptionofBreakdown").show();
             G_Status = 'SAVE';
             setTimeout(function () {
                 var eyeIcon = $('#viewImageBtn');
@@ -765,6 +770,11 @@ function Assign(Code) {
                     $("#txtRequestTime").val(data.RequestTime).prop('readonly', true);
                     $("#txtddlComplaintReason").val(data.ReasonName).prop('disabled', true);
                     $('#txtRemark').val(data.FailedRemark).prop('disabled', true);
+                    $("#txtRequestTime").val(data.RequestTime).prop('readonly', true);
+                    $("#ddlMaintenanceType").val(data.MaintenanceType).prop('disabled', true);
+                    $("#ddlPriority").val(data.Priority).prop('disabled', true);
+                    $("#ddlNatureofBreakdown").val(data.NatureofBreakdown).prop('disabled', true);
+                    $("#txtDescriptionofBreakdown").val(data.DescriptionofBreakdown).prop('disabled', true);
                     SelectOptionByText('txtddlMachineNo', data.MachineNo);
                     SelectOptionByText('txtddlComplaintDepartment', data.DepartmentName);
                     SelectOptionByText('ddlStatus', data.Status);
@@ -819,16 +829,17 @@ function Done(Code) {
             $("#hideAssignedToMobileNo").hide();
             $("#hideConcernedPerson").hide();
             $("#hideConcenedPersonMobileNo").hide();
-            $("#txthideRequestTime").hide();
+            $("#txthideRequestTime").show();
             $("#hideviewImageBtn").show();
             $("#hideUpdateStatus").show();
+            $("#hideMaintenanceType").show();
+            $("#hidePriority").show();
+            $("#hideNatureofBreakdown").show();
+            $("#hideDescriptionofBreakdown").show();
             $("#hideRequestStatus").hide();
             $("#hideSpareConsumed").show();
             $("#hidetxtPreparedBy").show();
-            $("#hideMaintenanceType").hide();
-            $("#hidePriority").hide();
-            $("#hideNatureofBreakdown").hide();
-            $("#hideDescriptionofBreakdown").hide();
+           
             MachineMaintenanceService.GetMachineMaintenanceByCode(Code).then(function (response) {
                 var data = response[0];
                 if (data) {
@@ -848,7 +859,13 @@ function Done(Code) {
                     $("#txtPreparedBy").val(data.CreatedByName);
                     SelectOptionByText('ddlStatus', data.Status);
                     $('#ddlStatus').prop('disabled', true);
-                    
+                    //
+                    $("#txtRequestTime").val(data.RequestTime).prop('readonly', true);
+                    $("#ddlMaintenanceType").val(data.MaintenanceType).prop('disabled', true);
+                    $("#ddlPriority").val(data.Priority).prop('disabled', true);
+                    $("#ddlNatureofBreakdown").val(data.NatureofBreakdown).prop('disabled', true);
+                    $("#txtDescriptionofBreakdown").val(data.DescriptionofBreakdown).prop('disabled', true);
+
                     setTimeout(function () {
                         var eyeIcon = $('#viewImageBtn');
                         if (eyeIcon.length) {
@@ -902,10 +919,10 @@ function Close(Code) {
             $("#hideUpdateStatus").show();
             $("#hideSpareConsumed").show();
             $("#hidetxtPreparedBy").show();
-            $("#hideMaintenanceType").hide();
-            $("#hidePriority").hide();
-            $("#hideNatureofBreakdown").hide();
-            $("#hideDescriptionofBreakdown").hide();
+            $("#hideMaintenanceType").show();
+            $("#hidePriority").show();
+            $("#hideNatureofBreakdown").show();
+            $("#hideDescriptionofBreakdown").show();
             MachineMaintenanceService.GetMachineMaintenanceByCode(Code).then(function (response) {
                 var data = response[0];
                 if (data) {
@@ -932,7 +949,11 @@ function Close(Code) {
                     $("#ddlUpdateStatus").val(data.MachineStatus || '').prop('disabled', true);
                     $("#txtSpareConsumed").val(data.SpareConsumed || '').prop('disabled', true);
                     $("#ddlRequestStatus").val();
-
+                    $("#txtRequestTime").val(data.RequestTime).prop('readonly', true);
+                    $("#ddlMaintenanceType").val(data.MaintenanceType).prop('disabled', true);
+                    $("#ddlPriority").val(data.Priority).prop('disabled', true);
+                    $("#ddlNatureofBreakdown").val(data.NatureofBreakdown).prop('disabled', true);
+                    $("#txtDescriptionofBreakdown").val(data.DescriptionofBreakdown).prop('disabled', true);
                     setTimeout(function () {
                         var eyeIcon = $('#viewImageBtn');
                         if (eyeIcon.length) {
