@@ -507,11 +507,11 @@ function GetRawMaterialClearanceList() {
             const StringdoubleFilterColumn = [];
             let hiddenColumns = [];
             if (IsCompleted == 'N') {
-                hiddenColumns = ["Code", "Thickness_Code", "Grade_Code", "RMInspectionRequestMaster_Code", "IsInspected", "Status","Verify/Rejected By","Verify/Rejected On","Remark"];
+                hiddenColumns = ["Code", "Thickness_Code", "Grade_Code", "RMInspectionRequestMaster_Code", "IsInspected", "Status", "Verify/Rejected By", "Verify/Rejected On", "Remark","Verify"];
                 StringFilterColumn = ["Inspection Location", "Client Name", "Order No", "Project No", "Mark No", "Thickness", "Grade", "IdentificationNo", "Location of Coil"];
 
             } else {
-                hiddenColumns = ["Code", "Thickness_Code", "Grade_Code","RMInspectionRequestMaster_Code", "IsInspected",];
+                hiddenColumns = ["Code", "Thickness_Code", "Grade_Code", "RMInspectionRequestMaster_Code", "IsInspected","Verify"];
                 StringFilterColumn = ["Inspection Location", "Client Name", "Order No", "Project No", "Mark No", "Thickness", "Grade", "IdentificationNo", "Location of Coil","Status"];
 
             }
@@ -521,7 +521,10 @@ function GetRawMaterialClearanceList() {
                 let IsInspectedHTML = '';
                 if (IsCompleted == 'N') {
                     if (item.IsInspected === 'Y') {
-                        InputHTML = `<button class="btn btn-secondary icon-height mb-1" title="Hold" onclick="Hold(${item.Code})">Hold</button>&nbsp;&nbsp;<button class="btn btn-success icon-height mb-1" title="Cleared" onclick="Verify(${item.Code})">Cleared</button>&nbsp;&nbsp;<button class="btn btn-danger icon-height mb-1" title="Reject" onclick="OpenModalReject(${item.Code})">Reject</button>`;
+                        const isHold = (item.Verify || item['Verify'] || '').toString().toUpperCase() === 'H';
+                        const holdBtnText = isHold ? 'UnHold' : 'Hold';
+                        const holdBtnTitle = isHold ? 'UnHold' : 'Hold';
+                        InputHTML = `<button class="btn btn-secondary icon-height mb-1" title="${holdBtnTitle}" onclick="Hold(${item.Code})">${holdBtnText}</button>&nbsp;&nbsp;<button class="btn btn-success icon-height mb-1" title="Cleared" onclick="Verify(${item.Code})">Cleared</button>&nbsp;&nbsp;<button class="btn btn-danger icon-height mb-1" title="Reject" onclick="OpenModalReject(${item.Code})">Reject</button>`;
                         IsInspectedHTML = `<input type="checkbox" class="form-check-input" checked disabled />`;
                     } else {
                         IsInspectedHTML = `<input type="checkbox" class="form-check-input" onclick="OpenModalInspectedRemark(${item.Code},this)" />`;
