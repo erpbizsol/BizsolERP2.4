@@ -111,7 +111,7 @@
                 }
 
                 .modern-sidebar.collapsed .sidebar-menu-item::after {
-                    display: none;
+                    display: none !important;
                 }
 
                 .modern-sidebar.collapsed .sub-menu {
@@ -120,8 +120,8 @@
 
                 .modern-sidebar.collapsed .sidebar-menu-item {
                     justify-content: center;
-                    padding: 0.875rem 0.5rem;
-                    margin: 0.35rem 0.25rem;
+                    padding: 0.55rem 0.5rem;
+                    margin: 0.15rem 0.25rem;
                 }
 
                 .modern-sidebar.collapsed h6 {
@@ -216,15 +216,15 @@
         }
 
         .sidebar-menu-item {
-            padding: 0.875rem 1.25rem;
+            padding: 0.45rem 0.9rem;
             display: flex;
             align-items: center;
             color: var(--sidebar-text);
             text-decoration: none;
             transition: all 0.3s ease;
             border-left: 3px solid transparent;
-            margin: 0.35rem 0.75rem;
-            border-radius: 10px;
+            margin: 0.1rem 0.4rem;
+            border-radius: 7px;
             background: transparent;
             cursor: pointer;
         }
@@ -244,8 +244,8 @@
             }
 
             .sidebar-menu-item i {
-                font-size: 1.2rem;
-                min-width: 36px;
+                font-size: 0.95rem;
+                min-width: 26px;
                 color: var(--sidebar-icon);
                 transition: all 0.3s ease;
             }
@@ -261,13 +261,13 @@
 
             .sidebar-menu-item span {
                 flex: 1;
-                font-size: 0.95rem;
+                font-size: 0.85rem;
             }
 
             /* Parent menu items with arrows */
             .sidebar-menu-item.has-arrow::after {
                 content: '\203A';
-                font-size: 1.5rem;
+                font-size: 1.1rem;
                 margin-left: auto;
                 transition: transform 0.3s ease;
                 color: var(--text-muted);
@@ -279,22 +279,22 @@
             }
 
         .sub-menu {
-            padding-left: 1.5rem;
+            padding-left: 0.9rem;
             margin-top: 0;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.15rem;
             background: transparent;
         }
 
             .sub-menu .sidebar-menu-item {
-                padding: 0.7rem 1rem;
-                margin: 0.25rem 0.5rem;
-                font-size: 0.9rem;
-                border-radius: 8px;
+                padding: 0.35rem 0.7rem;
+                margin: 0.08rem 0.3rem;
+                font-size: 0.82rem;
+                border-radius: 6px;
             }
 
                 .sub-menu .sidebar-menu-item i {
-                    font-size: 1rem;
-                    min-width: 30px;
+                    font-size: 0.82rem;
+                    min-width: 22px;
                 }
 
             .sub-menu .sub-menu {
@@ -302,14 +302,14 @@
             }
 
                 .sub-menu .sub-menu .sidebar-menu-item {
-                    padding: 0.6rem 0.85rem;
-                    font-size: 0.85rem;
-                    border-radius: 6px;
+                    padding: 0.3rem 0.6rem;
+                    font-size: 0.78rem;
+                    border-radius: 5px;
                 }
 
                     .sub-menu .sub-menu .sidebar-menu-item i {
-                        font-size: 0.9rem;
-                        min-width: 26px;
+                        font-size: 0.78rem;
+                        min-width: 20px;
                     }
 
         .modern-content {
@@ -929,6 +929,12 @@
                 font-size: 1.2rem;
             }
 
+            .erpHedTextSize {
+                font-size: 0.82rem;
+                letter-spacing: 0;
+                border-bottom: none;
+            }
+
             .header-icon-btn {
                 width: 40px;
                 height: 40px;
@@ -995,6 +1001,10 @@
                 font-size: 1.1rem;
             }
 
+            .erpHedTextSize {
+                font-size: 0.72rem;
+            }
+
             .welcome-card {
                 padding: 1rem;
             }
@@ -1029,6 +1039,34 @@
                 height: 50px;
                 font-size: 1.5rem;
             }
+        }
+
+        /* ERP Heading */
+        .erp-heading-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 0.75rem;
+            min-width: 0;
+        }
+
+        .erpHedTextSize {
+            background: linear-gradient(135deg, #667eea 0%, #0dcaf0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            margin: 0;
+            padding-bottom: 2px;
+            border-bottom: 2px solid transparent;
+            border-image: linear-gradient(90deg, #667eea 0%, #0dcaf0 100%) 1;
         }
 
         .Highlighted {
@@ -1105,7 +1143,9 @@
                         <span class="d-none d-md-inline">BizSol ERP</span>
                     </div>
                 </div>
-
+                <div class="erp-heading-wrapper">
+                    <h4 class="mb-0 erpHedTextSize" id="ERPHeading">Dashboard</h4>
+                </div>
                 <div class="header-actions">
                     <button type="button" class="header-icon-btn position-relative" id="bell-icon" data-bs-toggle="dropdown">
                         <i class="fa fa-bell"></i>
@@ -1141,9 +1181,9 @@
 
         <!-- Modern Sidebar -->
         <div class="modern-sidebar" id="modern-sidebar">
-            <div class="p-3">
-                <div class="mb-4 mt-2">
-                    <h6 class="text-uppercase mb-0" style="font-size: 0.7rem; letter-spacing: 1.5px; color: rgba(199, 210, 254, 0.5);">Main Menu</h6>
+            <div class="p-2">
+                <div class="mb-2 mt-1">
+                    <h6 class="text-uppercase mb-0" style="font-size: 0.65rem; letter-spacing: 1.5px; color: rgba(199, 210, 254, 0.5);">Main Menu</h6>
                 </div>
                 <div id="sidebar-menu">
                     <!-- Dynamic menu will be loaded here -->
@@ -1172,8 +1212,8 @@
             <div class="mobile-footer-compact" style="display: none;">
                 <div style="text-align: center; line-height: 1.4;">
                     <div style="font-size: 0.65rem;">
-                        <span class="fw-bold" style="color: var(--accent-primary);">BIZARCHIT</span>
-                        <span class="text-muted" style="margin: 0 0.25rem;">(AST Temp)</span>
+                        <span class="fw-bold" id="mobileERPUserName" style="color: var(--accent-primary);"></span>
+                        <span class="text-muted" id="mobileERPCompanyCode" style="margin: 0 0.25rem;"></span>
                         <span class="text-muted" style="margin-left: 0.25rem;">© 2025 <a href="https://bizsol.in" target="_blank" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">BizSol</a></span>
                     </div>
                 </div>
