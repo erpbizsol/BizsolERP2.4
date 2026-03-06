@@ -18,6 +18,8 @@ function bindMenu() {
             GetWebNotificationList();
             $('#ERPUserName')[0].innerHTML = UserDetailsobj[0].UserID;
             $('#ERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})${LoginGodownName}`;
+            $('#mobileERPUserName')[0].innerHTML = UserDetailsobj[0].UserID;
+            $('#mobileERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})${LoginGodownName}`;
 
             MenuService.GetMenuList(UserDetailsobj[0].UserID).then(function (value) {
                 var menuHtml = '';
@@ -337,14 +339,28 @@ function initCollapsedSidebarHover() {
         });
 
         // Handle popup menu item hover to show nested submenus
-        popupMenu.find('.popup-menu-item.has-arrow').hover(
-            function() {
-                $(this).next('.popup-submenu').slideDown(200);
-            },
-            function() {
-                $(this).next('.popup-submenu').slideUp(200);
-            }
-        );
+        var subMenuHideTimeout = null;
+
+        popupMenu.find('.popup-menu-item.has-arrow').on('mouseenter', function() {
+            clearTimeout(subMenuHideTimeout);
+            var $subMenu = $(this).next('.popup-submenu');
+            popupMenu.find('.popup-submenu').not($subMenu).slideUp(200);
+            $subMenu.slideDown(200);
+        }).on('mouseleave', function() {
+            var $subMenu = $(this).next('.popup-submenu');
+            subMenuHideTimeout = setTimeout(function() {
+                $subMenu.slideUp(200);
+            }, 300);
+        });
+
+        popupMenu.find('.popup-submenu').on('mouseenter', function() {
+            clearTimeout(subMenuHideTimeout);
+        }).on('mouseleave', function() {
+            var $subMenu = $(this);
+            subMenuHideTimeout = setTimeout(function() {
+                $subMenu.slideUp(200);
+            }, 300);
+        });
 
         // Keep popup visible when hovering over it
         popupMenu.hover(
