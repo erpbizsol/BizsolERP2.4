@@ -1,0 +1,357 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/PurchaseOrderStore.js"></script>
+
+<style>
+    .po-section-title {
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--accent-primary, #667eea);
+        border-bottom: 2px solid var(--accent-primary, #667eea);
+        padding-bottom: 4px;
+        margin-bottom: 10px;
+    }
+    .po-summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 8px;
+        border-bottom: 1px solid var(--border-light, #f1f5f9);
+        font-size: 0.82rem;
+    }
+    .po-summary-row.total {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        margin-top: 4px;
+    }
+    .po-summary-label { font-weight: 600; color: #495057; }
+    .po-summary-value { font-weight: 700; min-width: 100px; text-align: right; }
+    .items-table th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        padding: 6px 4px;
+        white-space: nowrap;
+    }
+    .items-table td {
+        padding: 3px 4px;
+        vertical-align: middle;
+        font-size: 0.8rem;
+    }
+    .items-table .form-control, .items-table .form-select {
+        font-size: 0.8rem;
+        padding: 2px 6px;
+        height: 26px;
+    }
+    .items-table input[type="number"] { text-align: right; }
+    .form-section-card {
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: 10px;
+        background: var(--card-bg, #fff);
+        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+        padding: 12px 16px;
+        margin-bottom: 12px;
+    }
+    .col-form-label-sm { font-size: 0.8rem; }
+    .po-form-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 2px;
+    }
+    .btn-height { height: 28px; padding-top: 2px; padding-bottom: 2px; }
+    .icon-height { height: 28px; padding-top: 2px; padding-bottom: 2px; }
+    #divPOForm { display: none; }
+    .table-wrapper.fixed-height-table { max-height: 400px; overflow-y: auto; }
+    .against-project-badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: #f0f4f8; border-radius: 20px; padding: 4px 12px;
+        border: 1px solid #e2e8f0;
+    }
+    .po-heading-bar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border-radius: 8px 8px 0 0;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0;
+    }
+    .po-heading-bar h6 { margin: 0; font-weight: 700; font-size: 0.95rem; }
+    .delete-row-btn {
+        background: none; border: none; color: #dc3545; cursor: pointer;
+        font-size: 0.9rem; padding: 2px 6px;
+    }
+    .delete-row-btn:hover { color: #a71d2a; }
+</style>
+
+<!-- ===== PO LIST SECTION ===== -->
+<div id="divPOList">
+    <div class="card col-md-12">
+        <div class="card-body pb-2">
+            <div class="row align-items-end g-2">
+                <div class="col-md-2">
+                    <label class="col-form-label-sm fw-bold">Status</label>
+                    <select id="lstDdlStatus" class="form-control form-control-sm"></select>
+                </div>
+                <div class="col-md-2">
+                    <label class="col-form-label-sm fw-bold">From Date <span class="text-danger">*</span></label>
+                    <input type="date" id="lstTxtFromDate" class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-2">
+                    <label class="col-form-label-sm fw-bold">To Date <span class="text-danger">*</span></label>
+                    <input type="date" id="lstTxtToDate" class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-3 d-flex gap-2" style="margin-top:1.5rem">
+                    <button type="button" class="btn btn-primary btn-height" onclick="ShowPOListGrid()">
+                        <i class="fa fa-search me-1"></i>Show
+                    </button>
+                    <button type="button" class="btn btn-success btn-height" onclick="OpenPOForm('New', null)">
+                        <i class="fa fa-plus me-1"></i>Create New
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-2">
+        <div class="col-md-12">
+            <div class="table-wrapper fixed-height-table">
+                <table id="tblPOList" class="table table-sm table-bordered table-hover">
+                    <thead id="table-header-POList"></thead>
+                    <tbody id="table-body-POList"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-POList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== PO ENTRY FORM SECTION ===== -->
+<div id="divPOForm">
+    <!-- Form Header Bar -->
+    <div class="po-heading-bar">
+        <h6><i class="fa fa-file-alt me-2"></i>Purchase Order Entry</h6>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-light btn-height btn-sm" onclick="SavePO()">
+                <i class="fa fa-save me-1"></i>Save
+            </button>
+            <button type="button" class="btn btn-outline-light btn-height btn-sm" onclick="ClosePOForm()">
+                <i class="fa fa-times me-1"></i>Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- Section: PO Header Info -->
+    <div class="form-section-card" style="border-radius:0 0 10px 10px; border-top: none;">
+        <div class="row g-2">
+            <!-- Left Column -->
+            <div class="col-md-6">
+                <div class="po-section-title">PO Information</div>
+                <div class="row g-1 mb-1">
+                    <div class="col-5"><label class="po-form-label">PO Number</label></div>
+                    <div class="col-7">
+                        <input type="text" id="frmTxtPONo" class="form-control form-control-sm" readonly placeholder="Auto Generate" />
+                        <input type="hidden" id="frmHfCode" />
+                    </div>
+                </div>
+                <div class="row g-1 mb-1">
+                    <div class="col-5"><label class="po-form-label">PO Date <span class="text-danger">*</span></label></div>
+                    <div class="col-7">
+                        <input type="date" id="frmTxtPODate" class="form-control form-control-sm" />
+                    </div>
+                </div>
+                <div class="row g-1 mb-1">
+                    <div class="col-5"><label class="po-form-label">Vendor Name <span class="text-danger">*</span></label></div>
+                    <div class="col-7">
+                        <select id="frmDdlVendor" class="form-control form-control-sm"></select>
+                    </div>
+                </div>
+                <div class="row g-1 mb-1">
+                    <div class="col-5"><label class="po-form-label">Ref No</label></div>
+                    <div class="col-7">
+                        <input type="text" id="frmTxtRefNo" class="form-control form-control-sm" maxlength="50" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="row g-1 mb-1">
+                    <div class="col-5"><label class="po-form-label">Ref Date</label></div>
+                    <div class="col-7">
+                        <input type="date" id="frmTxtRefDate" class="form-control form-control-sm" />
+                    </div>
+                </div>
+                <div class="row g-1 mb-1">
+                    <div class="col-5"><label class="po-form-label">Payment Terms</label></div>
+                    <div class="col-7">
+                        <select id="frmDdlPaymentTerms" class="form-control form-control-sm"></select>
+                    </div>
+                </div>
+                <div class="row g-1 mb-1">
+                    <div class="col-5"><label class="po-form-label">Remarks</label></div>
+                    <div class="col-7">
+                        <textarea id="frmTxtRemarks" class="form-control form-control-sm" rows="2" maxlength="500"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-md-6">
+                <div class="po-section-title">Project Details</div>
+                <div class="row g-1 mb-1">
+                    <div class="col-5"><label class="po-form-label">Against Project</label></div>
+                    <div class="col-7">
+                        <div class="against-project-badge">
+                            <span class="po-form-label mb-0">No</span>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="frmChkAgainstProject" onchange="ToggleProjectFields()" />
+                            </div>
+                            <span class="po-form-label mb-0">Yes</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="divProjectFields" style="display:none;">
+                    <div class="row g-1 mb-1">
+                        <div class="col-5"><label class="po-form-label">Project Name</label></div>
+                        <div class="col-7">
+                            <select id="frmDdlProject" class="form-control form-control-sm" onchange="LoadSubProjects()"></select>
+                        </div>
+                    </div>
+                    <div class="row g-1 mb-1">
+                        <div class="col-5"><label class="po-form-label">Sub Project Name</label></div>
+                        <div class="col-7">
+                            <select id="frmDdlSubProject" class="form-control form-control-sm"></select>
+                        </div>
+                    </div>
+                    <div class="row g-1 mb-1">
+                        <div class="col-5"><label class="po-form-label">Work Type</label></div>
+                        <div class="col-7">
+                            <input type="text" id="frmTxtWorkType" class="form-control form-control-sm" maxlength="100" autocomplete="off" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Panel -->
+                <div class="mt-3">
+                    <div class="po-section-title">PO Summary</div>
+                    <div class="po-summary-row">
+                        <span class="po-summary-label">Taxable Amount</span>
+                        <span class="po-summary-value" id="sumTaxableAmount">0.00</span>
+                    </div>
+                    <div class="po-summary-row">
+                        <span class="po-summary-label">
+                            Other Charges 1
+                            <input type="text" id="frmTxtOtherChargesLbl1" class="form-control form-control-sm d-inline-block ms-1" style="width:90px;font-size:0.75rem;" placeholder="Label" value="Other Charges" />
+                        </span>
+                        <input type="number" id="frmTxtOtherCharges1" class="form-control form-control-sm po-summary-value" style="width:100px;text-align:right;" value="0" min="0" onchange="CalcTotals()" />
+                    </div>
+                    <div class="po-summary-row">
+                        <span class="po-summary-label">
+                            Other Charges 2
+                            <input type="text" id="frmTxtOtherChargesLbl2" class="form-control form-control-sm d-inline-block ms-1" style="width:90px;font-size:0.75rem;" placeholder="Label" value="Freight" />
+                        </span>
+                        <input type="number" id="frmTxtOtherCharges2" class="form-control form-control-sm po-summary-value" style="width:100px;text-align:right;" value="0" min="0" onchange="CalcTotals()" />
+                    </div>
+                    <div class="po-summary-row">
+                        <span class="po-summary-label">Total GST</span>
+                        <span class="po-summary-value" id="sumTotalGST">0.00</span>
+                    </div>
+                    <div class="po-summary-row">
+                        <span class="po-summary-label d-flex align-items-center gap-2">
+                            Round Off
+                            <input type="checkbox" id="frmChkRoundOff" onchange="CalcTotals()" />
+                        </span>
+                        <span class="po-summary-value" id="sumRoundOff">0.00</span>
+                    </div>
+                    <div class="po-summary-row total">
+                        <span>Total PO Amount</span>
+                        <span id="sumTotalPOAmount">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section: Line Items -->
+    <div class="form-section-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="po-section-title mb-0">Item Details</div>
+            <button type="button" class="btn btn-outline-primary btn-height btn-sm" onclick="AddItemRow()">
+                <i class="fa fa-plus me-1"></i>Add Item
+            </button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="table table-sm table-bordered items-table w-100" id="tblPOItems">
+                <thead>
+                    <tr>
+                        <th style="width:35px;">#</th>
+                        <th style="min-width:180px;">Item Name <span class="text-warning">*</span></th>
+                        <th style="min-width:90px;">UOM</th>
+                        <th style="min-width:80px;">GST Rate (%)</th>
+                        <th style="min-width:80px;">Qty <span class="text-warning">*</span></th>
+                        <th style="min-width:90px;">Rate <span class="text-warning">*</span></th>
+                        <th style="min-width:90px;">Value</th>
+                        <th style="width:40px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="tblPOItemsBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="modalDeletePO" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#dc3545,#c82333);color:#fff;">
+                <h5 class="modal-title"><i class="fa fa-trash me-2"></i>Delete Purchase Order</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete PO <strong id="modalDeletePONo"></strong>?</p>
+                <div class="mb-2">
+                    <label class="col-form-label-sm fw-bold">Reason for Delete <span class="text-danger">*</span></label>
+                    <textarea id="modalTxtDeleteReason" class="form-control form-control-sm" rows="2" maxlength="200"></textarea>
+                </div>
+                <input type="hidden" id="modalHfDeleteCode" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger btn-height" onclick="ConfirmDeletePO()"><i class="fa fa-trash me-1"></i>Delete</button>
+                <button type="button" class="btn btn-secondary btn-height" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View PO Modal -->
+<div class="modal fade" id="modalViewPO" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
+                <h5 class="modal-title"><i class="fa fa-eye me-2"></i>View Purchase Order</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalViewPOBody">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-height" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
