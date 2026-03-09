@@ -13,7 +13,6 @@ const MachineMaintenanceService = {
         );
 
     },
-
     GetDepartmentMasterList: function GetDepartmentMasterList() {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
@@ -36,7 +35,6 @@ const MachineMaintenanceService = {
         );
 
     },
-
     GetMachineMaintenanceList: function GetMachineMaintenanceList(accessRights) {
         var URL = UrlService.API_ENDPOINT_MachineMaintenance + `/GetMachineMaintenanceList?accessRights=${encodeURIComponent(accessRights)}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
