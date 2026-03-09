@@ -1,0 +1,928 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/ProjectMaster.js"></script>
+
+<style>
+    /* ── Page wrapper ──────────────────────────────────────── */
+    .pm-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        padding: 4px 0 32px;
+    }
+
+    /* ── Page hero header ──────────────────────────────────── */
+    .pm-hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .pm-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .pm-hero-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        background: var(--primary-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 22px;
+        box-shadow: var(--shadow-primary);
+        flex-shrink: 0;
+    }
+
+    .pm-hero-title {
+        font-size: 21px;
+        font-weight: 800;
+        color: var(--text-dark);
+        letter-spacing: -.025em;
+        line-height: 1.2;
+    }
+
+    .pm-hero-sub {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    /* ── Stats strip ───────────────────────────────────────── */
+    .pm-stats {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .pm-stat-chip {
+        flex: 1;
+        min-width: 150px;
+        background: var(--white-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 16px 20px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: transform .2s ease, box-shadow .2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .pm-stat-chip::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: var(--primary-gradient);
+    }
+
+    .pm-stat-chip:nth-child(2)::before { background: var(--warning-gradient); }
+    .pm-stat-chip:nth-child(3)::before { background: var(--info-gradient); }
+
+    .pm-stat-chip:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-primary);
+    }
+
+    .pm-stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+        background: var(--primary-gradient);
+        color: #fff;
+        box-shadow: var(--shadow-primary);
+    }
+
+    .pm-stat-chip:nth-child(2) .pm-stat-icon { background: var(--warning-gradient); box-shadow: 0 8px 24px rgba(245,158,11,.3); }
+    .pm-stat-chip:nth-child(3) .pm-stat-icon { background: var(--info-gradient);    box-shadow: 0 8px 24px rgba(6,182,212,.3); }
+
+    .pm-stat-val {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--text-dark);
+        line-height: 1.1;
+        background: var(--accent-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .pm-stat-lbl {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        font-weight: 600;
+        margin-top: 2px;
+    }
+
+    /* ── Main card ─────────────────────────────────────────── */
+    .pm-card {
+        background: var(--white-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .pm-card::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: var(--primary-gradient);
+        border-radius: 20px 20px 0 0;
+    }
+
+    .pm-card-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 18px 22px 16px;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    /* Search */
+    .pm-search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+        max-width: 340px;
+    }
+
+    .pm-search-wrap i {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 13px;
+        pointer-events: none;
+    }
+
+    #pmSearch {
+        width: 100%;
+        padding: 9px 14px 9px 38px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        outline: none;
+        background: var(--light-bg);
+        color: var(--text-dark);
+        transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+
+    #pmSearch:focus {
+        border-color: var(--accent-primary);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+    }
+
+    /* New Project button */
+    .pm-btn-new {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        outline: none;
+        padding: 10px 22px;
+        border-radius: 12px;
+        background: var(--primary-gradient);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: var(--shadow-primary);
+        transition: transform .15s, box-shadow .15s;
+        white-space: nowrap;
+    }
+
+    .pm-btn-new:hover  { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(102,126,234,.45); }
+    .pm-btn-new:active { transform: translateY(0); }
+
+    .pm-btn-new .pm-plus {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: rgba(255,255,255,.22);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    /* ── Table ─────────────────────────────────────────────── */
+    .pm-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: calc(100vh - 360px);
+        overflow-y: auto;
+    }
+
+    .pm-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+        min-width: 680px;
+    }
+
+    .pm-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+        --bs-table-bg: transparent;
+        --bs-table-striped-bg: transparent;
+        --bs-table-hover-bg: transparent;
+    }
+
+    .pm-table thead th {
+        color: #fff !important;
+        background: transparent !important;
+        font-weight: 700;
+        padding: 13px 16px;
+        text-align: left;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 12px;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .pm-table thead th.center { text-align: center; }
+    .pm-table thead th.right  { text-align: right; }
+
+    .pm-table tbody tr { transition: background .12s; --bs-table-bg: transparent; }
+    .pm-table tbody tr:nth-child(even) { background: var(--light-bg) !important; }
+    .pm-table tbody tr:nth-child(odd)  { background: #fff !important; }
+    .pm-table tbody tr:hover           { background: rgba(102,126,234,.07) !important; }
+
+    .pm-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-light) !important;
+        color: var(--text-dark) !important;
+        background: transparent !important;
+        vertical-align: middle;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .pm-table td.center { text-align: center; }
+    .pm-table td.right  { text-align: right; }
+    .pm-table tbody tr:last-child td { border-bottom: none !important; }
+
+    /* S.No badge */
+    .pm-sno {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--primary-gradient);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Project code pill */
+    .pm-code-badge {
+        display: inline-block;
+        padding: 3px 11px;
+        border-radius: 20px;
+        background: rgba(102,126,234,.1);
+        color: var(--accent-primary);
+        font-size: 12px;
+        font-weight: 700;
+        border: 1px solid rgba(102,126,234,.2);
+        letter-spacing: .03em;
+    }
+
+    /* Budget */
+    .pm-budget {
+        font-weight: 700;
+        color: var(--accent-primary-dark);
+    }
+
+    /* Days chip */
+    .pm-days-chip {
+        display: inline-block;
+        padding: 3px 11px;
+        border-radius: 20px;
+        background: rgba(6,182,212,.1);
+        color: var(--accent-info);
+        font-size: 12px;
+        font-weight: 700;
+        border: 1px solid rgba(6,182,212,.2);
+    }
+
+    /* Empty state */
+    .pm-empty {
+        text-align: center;
+        padding: 56px 20px;
+    }
+
+    .pm-empty-icon {
+        width: 68px;
+        height: 68px;
+        border-radius: 20px;
+        background: var(--primary-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 28px;
+        color: #fff;
+        box-shadow: var(--shadow-primary);
+        opacity: .7;
+    }
+
+    .pm-empty-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 6px;
+    }
+
+    .pm-empty-sub {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    /* ── Action buttons ────────────────────────────────────── */
+    .pm-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pm-icon-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: transform .14s, box-shadow .14s;
+        outline: none;
+    }
+
+    .pm-icon-btn:hover  { transform: translateY(-2px); }
+    .pm-icon-btn:active { transform: translateY(0); }
+
+    .pm-icon-btn.view {
+        background: rgba(6,182,212,.12);
+        color: var(--accent-info);
+        border: 1px solid rgba(6,182,212,.25);
+    }
+    .pm-icon-btn.view:hover { background: rgba(6,182,212,.22); box-shadow: 0 4px 12px rgba(6,182,212,.25); }
+
+    .pm-icon-btn.edit {
+        background: rgba(102,126,234,.12);
+        color: var(--accent-primary);
+        border: 1px solid rgba(102,126,234,.25);
+    }
+    .pm-icon-btn.edit:hover { background: rgba(102,126,234,.22); box-shadow: var(--shadow-primary); }
+
+    .pm-icon-btn.del {
+        background: rgba(239,68,68,.1);
+        color: #ef4444;
+        border: 1px solid rgba(239,68,68,.2);
+    }
+    .pm-icon-btn.del:hover { background: rgba(239,68,68,.2); box-shadow: 0 4px 12px rgba(239,68,68,.22); }
+
+    /* ── Modal ─────────────────────────────────────────────── */
+    .pm-modal .modal-dialog {
+        margin: auto;
+    }
+
+    .pm-modal .modal-content {
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+    }
+
+    .pm-modal .modal-header {
+        background: var(--primary-gradient);
+        color: #fff;
+        border-bottom: none;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .pm-modal-hdr-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255,255,255,.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+
+    .pm-modal .modal-title {
+        color: #fff;
+        font-weight: 700;
+        font-size: 17px;
+        flex: 1;
+        margin: 0;
+    }
+
+    .pm-close-btn {
+        background: rgba(255,255,255,.15);
+        border: none;
+        color: #fff;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background .15s;
+        outline: none;
+        flex-shrink: 0;
+    }
+
+    .pm-close-btn:hover { background: rgba(255,255,255,.28); }
+
+    .pm-modal .modal-body {
+        padding: 22px 24px 14px;
+        background: var(--light-bg);
+        overflow-y: auto;
+    }
+
+    .pm-modal .modal-footer {
+        border-top: 1px solid var(--border-color);
+        padding: 14px 24px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        background: var(--white-bg);
+    }
+
+    /* ── Form ──────────────────────────────────────────────── */
+    .pm-form-section {
+        background: var(--white-bg);
+        border-radius: 14px;
+        border: 1px solid var(--border-color);
+        padding: 20px 20px 6px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .pm-form-section-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--accent-primary);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .pm-form-section-title::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border-color);
+    }
+
+    .pm-form-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px 18px;
+        margin-bottom: 16px;
+    }
+
+    .pm-fg { display: flex; flex-direction: column; gap: 6px; }
+    .pm-fg.span2 { grid-column: span 2; }
+    .pm-fg.span3 { grid-column: span 3; }
+
+    .pm-fg label {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .pm-fg input {
+        padding: 10px 13px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        outline: none;
+        background: var(--white-bg);
+        color: var(--text-dark);
+        transition: border-color .2s, box-shadow .2s;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .pm-fg input:focus {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+    }
+
+    /* ── Form buttons ──────────────────────────────────────── */
+    .pm-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: none;
+        outline: none;
+        padding: 10px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform .14s, box-shadow .14s;
+        min-height: 40px;
+    }
+
+    .pm-btn:hover  { transform: translateY(-1px); }
+    .pm-btn:active { transform: translateY(0); }
+
+    .pm-btn.primary {
+        background: var(--primary-gradient);
+        color: #fff;
+        box-shadow: var(--shadow-primary);
+    }
+    .pm-btn.primary:hover { box-shadow: 0 12px 28px rgba(102,126,234,.45); }
+
+    .pm-btn.secondary {
+        background: var(--light-bg);
+        color: var(--text-muted);
+        border: 1.5px solid var(--border-color);
+    }
+    .pm-btn.secondary:hover { background: var(--border-color); }
+
+    .pm-btn.danger {
+        background: linear-gradient(135deg, #ef4444, #f87171);
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(239,68,68,.32);
+    }
+    .pm-btn.danger:hover { box-shadow: 0 8px 24px rgba(239,68,68,.4); }
+
+    /* ── View details rows ─────────────────────────────────── */
+    .pm-view-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+        align-items: flex-start;
+    }
+
+    .pm-view-lbl {
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        min-width: 145px;
+        flex-shrink: 0;
+    }
+
+    .pm-view-val {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-dark);
+        word-break: break-word;
+    }
+
+    .pm-view-divider { height: 1px; background: var(--border-light); margin: 10px 0; }
+
+    /* ── Delete confirm ────────────────────────────────────── */
+    .pm-del-icon-wrap {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        background: rgba(239,68,68,.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 30px;
+        color: #ef4444;
+        border: 3px solid rgba(239,68,68,.25);
+    }
+
+    /* ── Responsive ────────────────────────────────────────── */
+    @@media (max-width: 880px) {
+        .pm-stats { gap: 10px; }
+        .pm-stat-chip { min-width: 120px; padding: 13px 16px; }
+        .pm-form-grid { grid-template-columns: repeat(2, 1fr); }
+        .pm-fg.span2 { grid-column: span 1; }
+        .pm-fg.span3 { grid-column: span 2; }
+    }
+
+    @@media (max-width: 580px) {
+        .pm-hero-title { font-size: 17px; }
+        .pm-stats { flex-wrap: wrap; }
+        .pm-stat-chip { min-width: calc(50% - 7px); }
+        .pm-form-grid { grid-template-columns: 1fr; }
+        .pm-fg.span2, .pm-fg.span3 { grid-column: span 1; }
+        .pm-modal .modal-body { padding: 14px 14px 10px; }
+        .pm-modal .modal-footer { flex-direction: column-reverse; align-items: stretch; }
+        .pm-btn { width: 100%; justify-content: center; }
+        .pm-card-toolbar { flex-direction: column; align-items: stretch; }
+        .pm-search-wrap { max-width: 100%; }
+        .pm-btn-new { width: 100%; justify-content: center; }
+    }
+</style>
+
+<div class="pm-page">
+
+    <!-- ── Hero ────────────────────────────────────────────── -->
+    <div class="pm-hero">
+        <div class="pm-hero-left">
+            <div class="pm-hero-icon">
+                <i class="fas fa-project-diagram"></i>
+            </div>
+            <div>
+                <div class="pm-hero-title">Project Master</div>
+                @* <div class="pm-hero-sub">Create and manage project codes, budgets &amp; timelines</div> *@
+            </div>
+        </div>
+        <button class="pm-btn-new" id="btnCreateProject" type="button">
+            <span class="pm-plus">+</span>
+            <span>New Project</span>
+        </button>
+    </div>
+
+    <!-- ── Stats ───────────────────────────────────────────── -->
+    <div class="pm-stats">
+        <div class="pm-stat-chip">
+            <div class="pm-stat-icon"><i class="fas fa-layer-group"></i></div>
+            <div>
+                <div class="pm-stat-val" id="statTotal">0</div>
+                <div class="pm-stat-lbl">Total Projects</div>
+            </div>
+        </div>
+        <div class="pm-stat-chip">
+            <div class="pm-stat-icon"><i class="fas fa-coins"></i></div>
+            <div>
+                <div class="pm-stat-val" id="statBudget">0</div>
+                <div class="pm-stat-lbl">Running Total</div>
+            </div>
+        </div>
+        <div class="pm-stat-chip">
+            <div class="pm-stat-icon"><i class="fas fa-clock"></i></div>
+            <div>
+                <div  id="statAvgDays">0</div>
+                <div class="pm-stat-lbl">Pending Total</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Grid card ───────────────────────────────────────── -->
+    <div class="pm-card" id="dvProjectGrid">
+        <div class="pm-card-toolbar">
+            <div class="pm-search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" id="pmSearch" placeholder="Search by code or name…" autocomplete="off" />
+            </div>
+        </div>
+
+        <div class="pm-table-wrap">
+            <table class="pm-table" id="tblProject">
+                <thead>
+                    <tr>
+                        <th class="center" style="width:60px;">#</th>
+                        <th style="min-width:130px;">Project Code</th>
+                        <th style="min-width:220px;">Project Name</th>
+                        <th class="right"  style="min-width:130px;">Budget</th>
+                        <th class="center" style="min-width:120px;">Start Date</th>
+                        <th class="center" style="min-width:110px;">Est. Date</th>
+                        <th class="center" style="min-width:110px;">Est. Days</th>
+                        <th class="center" style="width:115px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     CREATE / EDIT MODAL
+════════════════════════════════════════════════════════ -->
+<div class="modal fade pm-modal" id="dvProjectModal" tabindex="-1" role="dialog"
+     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width:620px;">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <div class="pm-modal-hdr-icon">
+                    <i class="fas fa-project-diagram"></i>
+                </div>
+                <h5 class="modal-title" id="project-modal-title">New Project</h5>
+                <button type="button" class="pm-close-btn" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="pm-form-section">
+                    <div class="pm-form-section-title">
+                        <i class="fas fa-info-circle"></i> Project Information
+                    </div>
+                    <div class="pm-form-grid">
+                        <div class="pm-fg">
+                            <label for="txtProjectCode">Project Code <span class="text-danger">*</span></label>
+                            <input type="text" id="txtProjectCode" autocomplete="off" maxlength="20" placeholder="e.g. PROJ-001" />
+                        </div>
+                        <div class="pm-fg span2">
+                            <label for="txtProjectName">Project Name <span class="text-danger">*</span></label>
+                            <input type="text" id="txtProjectName" autocomplete="off" maxlength="100" placeholder="Enter full project name" />
+                        </div>
+                        <div class="pm-fg">
+                            <label for="txtBudget">Budget (&#8377;)</label>
+                            <input type="text" id="txtBudget" autocomplete="off" placeholder="0.00" style="text-align:right;" />
+                        </div>
+                        <div class="pm-fg">
+                            <label for="txtStartDate">Start Date</label>
+                            <input type="date" id="txtStartDate" autocomplete="off" />
+                        </div>
+                        <div class="pm-fg">
+                            <label for="txtEstimatedDate">Est. Date</label>
+                            <input type="date" id="txtEstimatedDate" autocomplete="off" />
+                        </div>
+                        <div class="pm-fg">
+                            <label for="txtEstimatedDays">Est. Days <span class="text-danger">*</span></label>
+                            <input type="number" id="txtEstimatedDays" autocomplete="off" min="0" placeholder="30" style="text-align:right;" />
+                        </div>
+                    </div>
+                    <input type="hidden" id="hfProjectCode" value="0" />
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="pm-btn secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="pm-btn primary" id="btnSaveProject">
+                    <i class="fas fa-save"></i> Save Project
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     VIEW MODAL
+════════════════════════════════════════════════════════ -->
+<div class="modal fade pm-modal" id="dvProjectViewModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+        <div class="modal-content">
+
+            <div class="modal-header" style="background: var(--info-gradient);">
+                <div class="pm-modal-hdr-icon">
+                    <i class="fas fa-eye"></i>
+                </div>
+                <h5 class="modal-title">Project Details</h5>
+                <button type="button" class="pm-close-btn" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="pm-form-section">
+                    <div class="pm-form-section-title">
+                        <i class="fas fa-info-circle"></i> Project Information
+                    </div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">Project Code</span>
+                        <span class="pm-view-val" id="viewProjectCode">—</span>
+                    </div>
+                    <div class="pm-view-divider"></div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">Project Name</span>
+                        <span class="pm-view-val" id="viewProjectName">—</span>
+                    </div>
+                    <div class="pm-view-divider"></div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">Budget (&#8377;)</span>
+                        <span class="pm-view-val" id="viewBudget">—</span>
+                    </div>
+                    <div class="pm-view-divider"></div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">Start Date</span>
+                        <span class="pm-view-val" id="viewStartDate">—</span>
+                    </div>
+                    <div class="pm-view-divider"></div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">Estimated Date</span>
+                        <span class="pm-view-val" id="viewEstimatedDate">—</span>
+                    </div>
+                    <div class="pm-view-divider"></div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">Estimated Days</span>
+                        <span class="pm-view-val" id="viewEstDays">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="pm-btn secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     DELETE CONFIRM MODAL
+════════════════════════════════════════════════════════ -->
+<div class="modal fade pm-modal" id="dvDeleteConfirmModal" tabindex="-1" role="dialog"
+     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+        <div class="modal-content">
+
+            <div class="modal-header" style="background: linear-gradient(135deg,#dc2626,#ef4444);">
+                <div class="pm-modal-hdr-icon">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="pm-close-btn" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body" style="background:#fff; text-align:center; padding:28px 24px 20px;">
+                <div class="pm-del-icon-wrap">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div style="font-size:15px; font-weight:700; color:var(--text-dark); margin-bottom:8px;">
+                    Delete Project?
+                </div>
+                @* <div style="font-size:13.5px; color:var(--text-muted); line-height:1.65; margin-bottom:20px;">
+                    You are about to delete
+                    <strong id="delProjectName" style="color:var(--accent-primary-dark);"></strong>.
+                    <br>This action <strong style="color:#ef4444;">cannot be undone</strong>.
+                </div> *@
+                <div style="text-align:left;">
+                    <label for="reasonForDeleteInput" style="font-size:12.5px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;">
+                        Reason for Deletion <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="reasonForDeleteInput" autocomplete="off"
+                           placeholder="Enter reason for deletion"
+                           style="width:100%; padding:10px 13px; border-radius:10px; border:1.5px solid var(--border-color);
+                                  font-size:13.5px; outline:none; background:#fff; color:var(--text-dark);
+                                  transition:border-color .2s, box-shadow .2s; box-sizing:border-box;"
+                           onfocus="this.style.borderColor='var(--accent-primary)'; this.style.boxShadow='0 0 0 3px rgba(102,126,234,.15)';"
+                           onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none';" />
+                </div>
+                <input type="hidden" id="hfDeleteCode" value="0" />
+            </div>
+
+            <div class="modal-footer" style="justify-content:center; gap:12px; background:#fff; border-top:1px solid #fee2e2;">
+                <button type="button" class="pm-btn secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-ban"></i> Cancel
+                </button>
+                <button type="button" class="pm-btn danger" id="btnConfirmDelete">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
