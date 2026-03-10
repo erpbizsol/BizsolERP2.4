@@ -14,8 +14,21 @@ let G_PaymentTermsList = [];
 let G_ProjectList = [];
 let G_SubProjectList = [];
 let G_ItemRowCount = 0;
+let G_MobileItemEditRowId = null;
 
 BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+
+// ─── FLOAT BAR MARGIN — tracks sidebar collapsed state ───────────────────────
+function SyncFloatBarMargin() {
+    const bar = document.getElementById('poFloatBar');
+    if (!bar) return;
+    if (window.innerWidth <= 768) {
+        bar.style.marginLeft = '0';
+        return;
+    }
+    const sidebar = document.getElementById('modern-sidebar');
+    bar.style.marginLeft = (sidebar && sidebar.classList.contains('collapsed')) ? '70px' : '280px';
+}
 
 $(document).ready(function () {
     const today = new Date();
@@ -23,6 +36,14 @@ $(document).ready(function () {
     $('#lstTxtFromDate').val(FormatDateInput(firstDay));
     $('#lstTxtToDate').val(FormatDateInput(today));
     InitDropdowns();
+
+    // Watch sidebar class changes (collapse/expand) and sync float bar
+    const sidebarEl = document.getElementById('modern-sidebar');
+    if (sidebarEl) {
+        new MutationObserver(SyncFloatBarMargin)
+            .observe(sidebarEl, { attributes: true, attributeFilter: ['class'] });
+    }
+    window.addEventListener('resize', SyncFloatBarMargin);
 });
 
 function FormatDateInput(d) {
@@ -42,6 +63,10 @@ function FormatDateDisplay(d) {
     return `${dy}/${mo}/${yr}`;
 }
 
+function IsMobile() {
+    return window.innerWidth <= 768;
+}
+
 function GetUserCode() {
     try {
         const authKey = JSON.parse(sessionStorage.getItem('authKey'));
@@ -54,6 +79,7 @@ function GetUserCode() {
 function InitDropdowns() {
     LoadStatusDropdown();
     LoadVendorDropdown();
+    LoadWorkTypeDropdown();
     LoadItemDropdown();
     LoadUOMDropdown();
     LoadPaymentTermsDropdown();
@@ -76,6 +102,16 @@ function LoadVendorDropdown() {
         G_VendorList.forEach(v => { html += `<option value="${v.Code}">${v.Name}</option>`; });
         $('#frmDdlVendor').html(html);
     }).catch(() => { $('#frmDdlVendor').html('<option value="">-- Select Vendor --</option>'); });
+}
+
+function LoadWorkTypeDropdown() {
+    PurchaseOrderStoreService.GetWorkTypeList().then(function (data) {
+        let html = '<option value="">-- Select Work Type --</option>';
+        if (data && data.length > 0) {
+            data.forEach(w => { html += `<option value="${w.Code}">${w.Name}</option>`; });
+        }
+        $('#frmDdlWorkType').html(html);
+    }).catch(() => { $('#frmDdlWorkType').html('<option value="">-- Select Work Type --</option>'); });
 }
 
 function LoadItemDropdown() {
@@ -128,24 +164,44 @@ function BuildUOMSelect(rowId, selectedCode) {
 window.ToggleProjectFields = function () {
     const checked = $('#frmChkAgainstProject').is(':checked');
     if (checked) {
-        $('#divProjectFields').slideDown(200);
+        $('#divProjectFields').slideDown(220);
         if (G_ProjectList.length === 0) LoadProjectDropdown();
     } else {
-        $('#divProjectFields').slideUp(200);
-        $('#frmDdlProject, #frmDdlSubProject').html('');
-        $('#frmTxtWorkType').val('');
+        $('#divProjectFields').slideUp(220);
+        G_ProjectList = [];
+        G_SubProjectList = [];
+        $('#frmDdlProject').html('<option value="">-- Select Project --</option>');
+        $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>');
     }
 };
 
-function LoadProjectDropdown() {
-    let html = '<option value="">-- Select Project --</option>';
-    $('#frmDdlProject').html(html);
-    // Projects loaded via dropdown API if available
-    // Placeholder: extend when project API service is connected
+function LoadProjectDropdown(selectedCode) {
+    PurchaseOrderStoreService.GetProjectList().then(function (data) {
+        G_ProjectList = data || [];
+        let html = '<option value="">-- Select Project --</option>';
+        G_ProjectList.forEach(p => {
+            const sel = selectedCode && p.Code == selectedCode ? 'selected' : '';
+            html += `<option value="${p.Code}" ${sel}>${p.Name}</option>`;
+        });
+        $('#frmDdlProject').html(html);
+    }).catch(() => { $('#frmDdlProject').html('<option value="">-- Select Project --</option>'); });
 }
 
-window.LoadSubProjects = function () {
-    $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>');
+window.LoadSubProjects = function (selectedCode) {
+    const projectCode = $('#frmDdlProject').val();
+    if (!projectCode) {
+        $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>');
+        return;
+    }
+    PurchaseOrderStoreService.GetSubProjectList(projectCode).then(function (data) {
+        G_SubProjectList = data || [];
+        let html = '<option value="">-- Select Sub Project --</option>';
+        G_SubProjectList.forEach(s => {
+            const sel = selectedCode && s.Code == selectedCode ? 'selected' : '';
+            html += `<option value="${s.Code}" ${sel}>${s.Name}</option>`;
+        });
+        $('#frmDdlSubProject').html(html);
+    }).catch(() => { $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>'); });
 };
 
 // ─── PO LIST GRID ────────────────────────────────────────────────────────────
@@ -166,10 +222,11 @@ window.ShowPOListGrid = function () {
 
     PurchaseOrderStoreService.GetPurchaseOrderStoreList(status, fromDate, toDate).then(function (data) {
         G_POStoreList = data || [];
+        $('#statTotalPO').text(G_POStoreList.length);
         if (G_POStoreList.length === 0) {
-            $('#table-header-POList').html('');
-            $('#table-body-POList').html('<tr><td colspan="10" class="text-center text-muted">No records found.</td></tr>');
-            $('#paginator-POList').html('');
+            $('#tblPOListHeader').html('');
+            $('#tblPOListBody').html('<tr><td colspan="10" class="text-center text-muted py-4"><i class="fa fa-inbox fa-2x d-block mb-2 text-muted"></i>No records found for the selected period.</td></tr>');
+            $('#paginator-tblPOList').html('');
             return;
         }
         const stringFilterColumn = ['PO No', 'Vendor', 'Status'];
@@ -186,13 +243,13 @@ window.ShowPOListGrid = function () {
             'PO Date': FormatDateDisplay(item.PODate || item.PO_Date),
             'Vendor': item.VendorName || item.Vendor || '',
             'Ref No': item.RefNo || '',
-            'Total Amount': parseFloat(item.TotalAmount || item.Total_Amount || 0).toFixed(2),
+            'Total Amount': parseFloat(item.TotalPOAmount || item.Total_Amount || 0).toFixed(2),
             'Status': item.Status || '',
             'Action': `<button class="btn btn-info icon-height mb-1" title="View" onclick="ViewPO('${item.Code}')"><i class="fa fa-eye"></i></button>
                        <button class="btn btn-warning icon-height mb-1 ms-1" title="Edit" onclick="OpenPOForm('Edit','${item.Code}')"><i class="fa fa-edit"></i></button>
                        <button class="btn btn-danger icon-height mb-1 ms-1" title="Delete" onclick="InitDeletePO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-trash"></i></button>`
         }));
-        BizsolCustomFilterGrid.CreateDataTable('table-header-POList', 'table-body-POList', displayData, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, [], hiddenColumns, columnAlignment);
+        BizsolCustomFilterGrid.CreateDataTable('tblPOListHeader', 'tblPOListBody', displayData, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, [], hiddenColumns, columnAlignment);
     }).catch(err => {
         toastr.error('Error loading PO list.');
         console.error(err);
@@ -202,22 +259,48 @@ window.ShowPOListGrid = function () {
 // ─── OPEN / CLOSE FORM ───────────────────────────────────────────────────────
 
 window.OpenPOForm = function (mode, code) {
-    G_POStoreEditMode = mode;
-    ResetPOForm();
-    $('#divPOList').hide();
-    $('#divPOForm').show();
+    const ModuleName = $('#ERPHeading').text().trim();
+    const OptionName = mode;
+    const ShowMsg = 'Y';
+    const FinYear = BizSolHelperFunction.getFinancialYear();
 
-    if (mode === 'Edit' && code) {
-        LoadPOForEdit(code);
-    } else {
-        $('#frmTxtPODate').val(FormatDateInput(new Date()));
-        G_ItemRowCount = 0;
-        AddItemRow();
-    }
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (respCheck) {
+        if (respCheck.CheckModuleOptionRight == 'N') {
+            toastr.error(respCheck.Msg);
+            return;
+        }
+
+        G_POStoreEditMode = mode;
+        ResetPOForm();
+        $('#divPOList').hide();
+        $('#divPOForm').show();
+        // Show floating save bar
+        $('#poFloatBar').css('display', 'flex');
+        SyncFloatBarMargin();
+        // Update floating bar labels
+        $('#floatPONo').text(mode === 'New' ? 'New PO' : 'Loading…');
+        if (mode === 'Edit') {
+            $('#floatModeBadge').text('EDIT').removeClass('bg-success').addClass('bg-warning text-dark');
+        } else {
+            $('#floatModeBadge').text('NEW').removeClass('bg-warning text-dark').addClass('bg-success');
+        }
+        if (mode === 'Edit' && code) {
+            LoadPOForEdit(code);
+        } else {
+            $('#frmTxtPODate').val(FormatDateInput(new Date()));
+            G_ItemRowCount = 0;
+            if (IsMobile()) {
+                RenderMobileItemCards();
+            } else {
+                AddItemRow();
+            }
+        }
+    });
 };
 
 window.ClosePOForm = function () {
     $('#divPOForm').hide();
+    $('#poFloatBar').hide();
     $('#divPOList').show();
 };
 
@@ -232,9 +315,11 @@ function ResetPOForm() {
     $('#frmTxtRemarks').val('');
     $('#frmChkAgainstProject').prop('checked', false);
     $('#divProjectFields').hide();
+    G_ProjectList = [];
+    G_SubProjectList = [];
     $('#frmDdlProject').html('<option value="">-- Select Project --</option>');
     $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>');
-    $('#frmTxtWorkType').val('');
+    $('#frmDdlWorkType').val('');
     $('#frmTxtOtherCharges1').val(0);
     $('#frmTxtOtherCharges2').val(0);
     $('#frmChkRoundOff').prop('checked', false);
@@ -245,7 +330,11 @@ function ResetPOForm() {
 
 // ─── ADD / DELETE ITEM ROWS ──────────────────────────────────────────────────
 
-window.AddItemRow = function () {
+window.AddItemRow = function (silent) {
+    if (IsMobile() && !silent) {
+        OpenMobileItemModal(null);
+        return;
+    }
     G_ItemRowCount++;
     const rowId = G_ItemRowCount;
     const itemSelect = BuildItemSelect(rowId, null);
@@ -258,7 +347,10 @@ window.AddItemRow = function () {
         <td><input type="number" id="frmTxtQty_${rowId}" class="form-control form-control-sm" value="0" min="0" step="0.001" onchange="CalcRowValue(${rowId})" /></td>
         <td><input type="number" id="frmTxtRate_${rowId}" class="form-control form-control-sm" value="0" min="0" step="0.01" onchange="CalcRowValue(${rowId})" /></td>
         <td><input type="number" id="frmTxtValue_${rowId}" class="form-control form-control-sm" value="0" readonly /></td>
-        <td class="text-center"><button type="button" class="delete-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button></td>
+        <td class="text-center">
+            <input type="hidden" id="frmHfDetailCode_${rowId}" value="0" />
+            <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
+        </td>
     </tr>`;
     $('#tblPOItemsBody').append(row);
     RenumberRows();
@@ -272,6 +364,7 @@ window.DeleteItemRow = function (rowId) {
     $(`#itemRow_${rowId}`).remove();
     RenumberRows();
     CalcTotals();
+    if (IsMobile()) RenderMobileItemCards();
 };
 
 function RenumberRows() {
@@ -344,65 +437,92 @@ window.SavePO = function () {
     if (!poDate) { toastr.warning('Please select PO Date.'); return; }
     if (!vendorCode) { toastr.warning('Please select Vendor.'); return; }
 
-    const itemRows = [];
+    const masterCode = parseInt($('#frmHfCode').val()) || 0;
+    const agaistProject = $('#frmChkAgainstProject').is(':checked') ? 'Y' : 'N';
+    const projectCode = agaistProject === 'Y' ? (parseInt($('#frmDdlProject').val()) || 0) : 0;
+    const taxable = parseFloat($('#sumTaxableAmount').text()) || 0;
+    const totalGST = parseFloat($('#sumTotalGST').text()) || 0;
+    const totalPO = parseFloat($('#sumTotalPOAmount').text()) || 0;
+    const freightAmt = parseFloat($('#frmTxtOtherCharges2').val()) || 0;
+    const otherChargesAmt = parseFloat($('#frmTxtOtherCharges1').val()) || 0;
+
+    const transactions = [];
     let itemValid = true;
 
     $('#tblPOItemsBody tr').each(function () {
         const rowId = $(this).attr('id').replace('itemRow_', '');
-        const itemCode = $(`#frmDdlItem_${rowId}`).val();
+        const detailCode = parseInt($(`#frmHfDetailCode_${rowId}`).val()) || 0;
+        const itemCode = parseInt($(`#frmDdlItem_${rowId}`).val()) || 0;
         const qty = parseFloat($(`#frmTxtQty_${rowId}`).val()) || 0;
         const rate = parseFloat($(`#frmTxtRate_${rowId}`).val()) || 0;
+        const gstRate = parseFloat($(`#frmTxtGSTRate_${rowId}`).val()) || 0;
+        const amount = parseFloat($(`#frmTxtValue_${rowId}`).val()) || 0;
 
         if (!itemCode) { toastr.warning('Please select item in all rows.'); itemValid = false; return false; }
         if (qty <= 0) { toastr.warning('Qty must be greater than 0 for all items.'); itemValid = false; return false; }
 
-        itemRows.push({
-            ItemMaster_Code: itemCode,
-            UOM_Code: $(`#frmDdlUOM_${rowId}`).val(),
-            GSTRate: parseFloat($(`#frmTxtGSTRate_${rowId}`).val()) || 0,
-            Qty: qty,
-            Rate: rate,
-            Value: parseFloat($(`#frmTxtValue_${rowId}`).val()) || 0
+        transactions.push({
+            code: detailCode,
+            purchaseOrderMaster_Code: masterCode,
+            itemMaster_Code: itemCode,
+            itemSizeMaster_Code: 0,
+            uomMaster_Code: parseInt($(`#frmDdlUOM_${rowId}`).val()) || 0,
+            qtyMT: qty,
+            qtyPC: 0,
+            qtyMTRS: 0,
+            rateUnit: '',
+            rate: rate,
+            amount: amount,
+            status: '',
+            gstRate: gstRate,
+            gstAmount: parseFloat((amount * gstRate / 100).toFixed(2)),
+            remark: '',
+            projectMaster_Code: projectCode
         });
     });
 
-    if (!itemValid || itemRows.length === 0) {
-        if (itemRows.length === 0) toastr.warning('Please add at least one item.');
+    if (!itemValid || transactions.length === 0) {
+        if (transactions.length === 0) toastr.warning('Please add at least one item.');
         return;
     }
 
-    const agaistProject = $('#frmChkAgainstProject').is(':checked') ? 'Y' : 'N';
-    const taxable = parseFloat($('#sumTaxableAmount').text()) || 0;
-    const totalGST = parseFloat($('#sumTotalGST').text()) || 0;
-    const roundOff = parseFloat($('#sumRoundOff').text()) || 0;
-    const totalPO = parseFloat($('#sumTotalPOAmount').text()) || 0;
-
     const payload = {
-        Code: $('#frmHfCode').val() || 0,
-        PODate: poDate,
-        VendorMaster_Code: vendorCode,
-        RefNo: $('#frmTxtRefNo').val(),
-        RefDate: $('#frmTxtRefDate').val() || null,
-        AgainstProject: agaistProject,
-        Project_Code: agaistProject === 'Y' ? ($('#frmDdlProject').val() || null) : null,
-        SubProject_Code: agaistProject === 'Y' ? ($('#frmDdlSubProject').val() || null) : null,
-        WorkType: agaistProject === 'Y' ? $('#frmTxtWorkType').val() : '',
-        PaymentTerms_Code: $('#frmDdlPaymentTerms').val() || null,
-        Remarks: $('#frmTxtRemarks').val(),
-        OtherChargesLabel1: $('#frmTxtOtherChargesLbl1').val(),
-        OtherCharges1: parseFloat($('#frmTxtOtherCharges1').val()) || 0,
-        OtherChargesLabel2: $('#frmTxtOtherChargesLbl2').val(),
-        OtherCharges2: parseFloat($('#frmTxtOtherCharges2').val()) || 0,
-        IsRoundOff: $('#frmChkRoundOff').is(':checked') ? 'Y' : 'N',
-        RoundOff: roundOff,
-        TaxableAmount: taxable,
-        TotalGST: totalGST,
-        TotalAmount: totalPO,
-        UserMaster_Code: GetUserCode(),
-        PODetail: itemRows
+        code: masterCode,
+        master: [{
+            code: masterCode,
+            poNo: 0,
+            poDate: poDate,
+            vendorMaster_Code: parseInt(vendorCode) || 0,
+            refNo: $('#frmTxtRefNo').val(),
+            refDate: $('#frmTxtRefDate').val() || null,
+            paymentTermsMaster_Code: parseInt($('#frmDdlPaymentTerms').val()) || 0,
+            totalAssValue: taxable,
+            dutyRate: 0,
+            dutyAmount: 0,
+            cessRate: 0,
+            cessAmount: 0,
+            shCessRate: 0,
+            shCessAmount: 0,
+            taxRate: 0,
+            taxAmount: totalGST,
+            entryTaxRate: 0,
+            entryTaxAmount: 0,
+            freightAmount: freightAmt,
+            otherChargesDesp: $('#frmTxtOtherChargesLbl1').val(),
+            otherChargesAmount: otherChargesAmt,
+            totalPOAmount: totalPO,
+            remarks: $('#frmTxtRemarks').val(),
+            poType: 'S',
+            finYear: '',
+            remarks1: '',
+            isPOAgainstProject: agaistProject,
+            projectMaster_Code: projectCode,
+            subProjectMaster_Code: agaistProject === 'Y' ? (parseInt($('#frmDdlSubProject').val()) || 0) : 0
+        }],
+        transactions: transactions
     };
 
-    PurchaseOrderStoreService.SavePurchaseOrderStore(payload, G_POStoreEditMode).then(function (res) {
+    PurchaseOrderStoreService.SavePurchaseOrderStore(JSON.stringify(payload)).then(function (res) {
         if (res && res.Status === 'Y') {
             toastr.success(res.Msg || 'PO saved successfully.');
             ClosePOForm();
@@ -422,31 +542,46 @@ function LoadPOForEdit(code) {
     PurchaseOrderStoreService.GetPurchaseOrderStoreById(code).then(function (res) {
         if (!res) { toastr.error('PO not found.'); ClosePOForm(); return; }
 
-        const header = res.Header || res;
-        const details = res.Detail || res.PODetail || [];
+        const header = res[0][0];
+        const details = res[1] || [];
 
         $('#frmHfCode').val(header.Code);
-        $('#frmTxtPONo').val(header.PONo || header.PO_No || '');
-        $('#frmTxtPODate').val(FormatDateInput(new Date(header.PODate || header.PO_Date)));
+        $('#frmTxtPONo').val(header.PONo || '');
+        $('#frmTxtPODate').val(FormatDateInput(new Date(header.PODate)));
         $('#frmDdlVendor').val(header.VendorMaster_Code);
         $('#frmTxtRefNo').val(header.RefNo || '');
         if (header.RefDate) $('#frmTxtRefDate').val(FormatDateInput(new Date(header.RefDate)));
-        $('#frmDdlPaymentTerms').val(header.PaymentTerms_Code || '');
+        $('#frmDdlPaymentTerms').val(header.PaymentTermsMaster_Code || '');
         $('#frmTxtRemarks').val(header.Remarks || '');
 
-        const agaistProject = (header.AgainstProject === 'Y');
-        $('#frmChkAgainstProject').prop('checked', agaistProject);
-        if (agaistProject) {
+        const againstProject = (header.IsPOAgainstProject === 'Y');
+        $('#frmChkAgainstProject').prop('checked', againstProject);
+        $('#frmDdlWorkType').val(header.WorkTypeMaster_Code || '');
+        if (againstProject) {
             $('#divProjectFields').show();
-            $('#frmDdlProject').html(`<option value="${header.Project_Code}">${header.ProjectName || ''}</option>`).val(header.Project_Code);
-            $('#frmDdlSubProject').html(`<option value="${header.SubProject_Code}">${header.SubProjectName || ''}</option>`).val(header.SubProject_Code);
-            $('#frmTxtWorkType').val(header.WorkType || '');
+            LoadProjectDropdown(header.ProjectMaster_Code);
+            PurchaseOrderStoreService.GetSubProjectList(header.ProjectMaster_Code).then(function (data) {
+                G_SubProjectList = data || [];
+                let html = '<option value="">-- Select Sub Project --</option>';
+                G_SubProjectList.forEach(s => {
+                    const sel = s.Code == header.SubProjectMaster_Code ? 'selected' : '';
+                    html += `<option value="${s.Code}" ${sel}>${s.Name}</option>`;
+                });
+                $('#frmDdlSubProject').html(html);
+            }).catch(() => {
+                $('#frmDdlSubProject').html(`<option value="${header.SubProjectMaster_Code}" selected></option>`);
+            });
+        } else {
+            $('#divProjectFields').hide();
         }
+        // Update floating PO number
+        $('#floatPONo').text(header.PONo || 'PO');
+        $('#floatModeBadge').text('EDIT').removeClass('bg-success').addClass('bg-warning text-dark');
 
-        $('#frmTxtOtherChargesLbl1').val(header.OtherChargesLabel1 || 'Other Charges');
-        $('#frmTxtOtherCharges1').val(header.OtherCharges1 || 0);
-        $('#frmTxtOtherChargesLbl2').val(header.OtherChargesLabel2 || 'Freight');
-        $('#frmTxtOtherCharges2').val(header.OtherCharges2 || 0);
+        $('#frmTxtOtherChargesLbl1').val(header.OtherChargesDesp || 'Other Charges');
+        $('#frmTxtOtherCharges1').val(header.OtherChargesAmount || 0);
+        $('#frmTxtOtherChargesLbl2').val('Freight');
+        $('#frmTxtOtherCharges2').val(header.FreightAmount || 0);
         $('#frmChkRoundOff').prop('checked', header.IsRoundOff === 'Y');
 
         $('#tblPOItemsBody').html('');
@@ -456,21 +591,25 @@ function LoadPOForEdit(code) {
             G_ItemRowCount++;
             const rowId = G_ItemRowCount;
             const itemSelect = BuildItemSelect(rowId, det.ItemMaster_Code);
-            const uomSelect = BuildUOMSelect(rowId, det.UOM_Code);
+            const uomSelect = BuildUOMSelect(rowId, det.UOMMaster_Code);
             const row = `<tr id="itemRow_${rowId}">
                 <td class="text-center fw-bold">${rowId}</td>
                 <td>${itemSelect}</td>
                 <td>${uomSelect}</td>
                 <td><input type="number" id="frmTxtGSTRate_${rowId}" class="form-control form-control-sm" value="${det.GSTRate || 0}" min="0" max="100" step="0.01" onchange="CalcRowValue(${rowId})" /></td>
-                <td><input type="number" id="frmTxtQty_${rowId}" class="form-control form-control-sm" value="${det.Qty || 0}" min="0" step="0.001" onchange="CalcRowValue(${rowId})" /></td>
+                <td><input type="number" id="frmTxtQty_${rowId}" class="form-control form-control-sm" value="${det.QtyMT || 0}" min="0" step="0.001" onchange="CalcRowValue(${rowId})" /></td>
                 <td><input type="number" id="frmTxtRate_${rowId}" class="form-control form-control-sm" value="${det.Rate || 0}" min="0" step="0.01" onchange="CalcRowValue(${rowId})" /></td>
-                <td><input type="number" id="frmTxtValue_${rowId}" class="form-control form-control-sm" value="${det.Value || 0}" readonly /></td>
-                <td class="text-center"><button type="button" class="delete-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button></td>
+                <td><input type="number" id="frmTxtValue_${rowId}" class="form-control form-control-sm" value="${det.Amount || 0}" readonly /></td>
+                <td class="text-center">
+                    <input type="hidden" id="frmHfDetailCode_${rowId}" value="${det.Code || 0}" />
+                    <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
+                </td>
             </tr>`;
             $('#tblPOItemsBody').append(row);
         });
 
-        if (details.length === 0) AddItemRow();
+        if (details.length === 0) AddItemRow(true);
+        if (IsMobile()) RenderMobileItemCards();
         CalcTotals();
     }).catch(err => {
         toastr.error('Error loading PO details.');
@@ -481,50 +620,64 @@ function LoadPOForEdit(code) {
 // ─── VIEW PO ──────────────────────────────────────────────────────────────────
 
 window.ViewPO = function (code) {
-    PurchaseOrderStoreService.GetPurchaseOrderStoreById(code).then(function (res) {
-        if (!res) { toastr.error('PO not found.'); return; }
-        const header = res.Header || res;
-        const details = res.Detail || res.PODetail || [];
+    const ModuleName = $('#ERPHeading').text().trim();
+    const ShowMsg = 'Y';
+    const FinYear = BizSolHelperFunction.getFinancialYear();
+
+    MenuService.CheckModuleOptionRight(ModuleName, 'View', ShowMsg, FinYear).then(function (respCheck) {
+        if (respCheck.CheckModuleOptionRight == 'N') {
+            toastr.error(respCheck.Msg);
+            return;
+        }
+
+        PurchaseOrderStoreService.GetPurchaseOrderStoreById(code).then(function (res) {
+            if (!res) { toastr.error('PO not found.'); return; }
+        const header = res[0][0];
+        const details = res[1] || [];
+
+        const vendorName = (G_VendorList.find(v => v.Code == header.VendorMaster_Code) || {}).Name || '';
+        const paymentTermsName = (G_PaymentTermsList.find(p => p.Code == header.PaymentTermsMaster_Code) || {}).Name || '';
+        const againstProject = header.IsPOAgainstProject === 'Y';
 
         let detailRows = '';
         details.forEach((det, idx) => {
+            const itemName = (G_ItemMasterList.find(i => i.Code == det.ItemMaster_Code) || {}).Name || '';
+            const uomName = (G_UOMMasterList.find(u => u.Code == det.UOMMaster_Code) || {}).Name || '';
             detailRows += `<tr>
                 <td class="text-center">${idx + 1}</td>
-                <td>${det.ItemName || ''}</td>
-                <td class="text-center">${det.UOMName || ''}</td>
+                <td>${itemName}</td>
+                <td class="text-center">${uomName}</td>
                 <td class="text-center">${det.GSTRate || 0}%</td>
-                <td class="text-end">${det.Qty || 0}</td>
+                <td class="text-end">${det.QtyMT || 0}</td>
                 <td class="text-end">${parseFloat(det.Rate || 0).toFixed(2)}</td>
-                <td class="text-end">${parseFloat(det.Value || 0).toFixed(2)}</td>
+                <td class="text-end">${parseFloat(det.Amount || 0).toFixed(2)}</td>
             </tr>`;
         });
 
-        const agaistProject = header.AgainstProject === 'Y';
         $('#modalViewPOBody').html(`
             <div class="row g-2 mb-3">
                 <div class="col-md-6">
                     <table class="table table-sm table-borderless">
-                        <tr><td class="fw-bold" style="width:45%">PO Number</td><td>${header.PONo || header.PO_No || ''}</td></tr>
-                        <tr><td class="fw-bold">PO Date</td><td>${FormatDateDisplay(header.PODate || header.PO_Date)}</td></tr>
-                        <tr><td class="fw-bold">Vendor</td><td>${header.VendorName || ''}</td></tr>
+                        <tr><td class="fw-bold" style="width:45%">PO Number</td><td>${header.PONo || ''}</td></tr>
+                        <tr><td class="fw-bold">PO Date</td><td>${FormatDateDisplay(header.PODate)}</td></tr>
+                        <tr><td class="fw-bold">Vendor</td><td>${vendorName}</td></tr>
                         <tr><td class="fw-bold">Ref No</td><td>${header.RefNo || '-'}</td></tr>
                         <tr><td class="fw-bold">Ref Date</td><td>${header.RefDate ? FormatDateDisplay(header.RefDate) : '-'}</td></tr>
-                        <tr><td class="fw-bold">Payment Terms</td><td>${header.PaymentTermsName || '-'}</td></tr>
+                        <tr><td class="fw-bold">Payment Terms</td><td>${paymentTermsName || '-'}</td></tr>
                         <tr><td class="fw-bold">Remarks</td><td>${header.Remarks || '-'}</td></tr>
                     </table>
                 </div>
                 <div class="col-md-6">
                     <table class="table table-sm table-borderless">
-                        <tr><td class="fw-bold" style="width:45%">Against Project</td><td>${agaistProject ? 'Yes' : 'No'}</td></tr>
-                        ${agaistProject ? `<tr><td class="fw-bold">Project</td><td>${header.ProjectName || '-'}</td></tr>
-                        <tr><td class="fw-bold">Sub Project</td><td>${header.SubProjectName || '-'}</td></tr>
-                        <tr><td class="fw-bold">Work Type</td><td>${header.WorkType || '-'}</td></tr>` : ''}
-                        <tr><td class="fw-bold">Taxable Amount</td><td class="text-end">${parseFloat(header.TaxableAmount || 0).toFixed(2)}</td></tr>
-                        <tr><td class="fw-bold">${header.OtherChargesLabel1 || 'Other Charges 1'}</td><td class="text-end">${parseFloat(header.OtherCharges1 || 0).toFixed(2)}</td></tr>
-                        <tr><td class="fw-bold">${header.OtherChargesLabel2 || 'Other Charges 2'}</td><td class="text-end">${parseFloat(header.OtherCharges2 || 0).toFixed(2)}</td></tr>
-                        <tr><td class="fw-bold">Total GST</td><td class="text-end">${parseFloat(header.TotalGST || 0).toFixed(2)}</td></tr>
+                        <tr><td class="fw-bold" style="width:45%">Against Project</td><td>${againstProject ? 'Yes' : 'No'}</td></tr>
+                        ${againstProject ? `<tr><td class="fw-bold">Project</td><td>${header.ProjectMaster_Code || '-'}</td></tr>
+                        <tr><td class="fw-bold">Sub Project</td><td>${header.SubProjectMaster_Code || '-'}</td></tr>` : ''}
+                        <tr><td class="fw-bold">Taxable Amount</td><td class="text-end">${parseFloat(header.TotalAssValue || 0).toFixed(2)}</td></tr>
+                        <tr><td class="fw-bold">${header.OtherChargesDesp || 'Other Charges'}</td><td class="text-end">${parseFloat(header.OtherChargesAmount || 0).toFixed(2)}</td></tr>
+                        <tr><td class="fw-bold">Freight</td><td class="text-end">${parseFloat(header.FreightAmount || 0).toFixed(2)}</td></tr>
+                        <tr><td class="fw-bold">Total GST</td><td class="text-end">${parseFloat(header.TaxAmount || 0).toFixed(2)}</td></tr>
                         <tr><td class="fw-bold">Round Off</td><td class="text-end">${parseFloat(header.RoundOff || 0).toFixed(2)}</td></tr>
-                        <tr style="background:#667eea;color:#fff;border-radius:6px;"><td class="fw-bold">Total PO Amount</td><td class="text-end fw-bold">${parseFloat(header.TotalAmount || 0).toFixed(2)}</td></tr>
+                        <tr style="background:#667eea;color:#fff;border-radius:6px;"><td class="fw-bold">Total PO Amount</td><td class="text-end fw-bold">${parseFloat(header.TotalPOAmount || 0).toFixed(2)}</td></tr>
                     </table>
                 </div>
             </div>
@@ -546,9 +699,10 @@ window.ViewPO = function (code) {
             </div>
         `);
         $('#modalViewPO').modal('show');
-    }).catch(err => {
-        toastr.error('Error loading PO details.');
-        console.error(err);
+        }).catch(err => {
+            toastr.error('Error loading PO details.');
+            console.error(err);
+        });
     });
 };
 
@@ -566,19 +720,174 @@ window.ConfirmDeletePO = function () {
     const reason = $('#modalTxtDeleteReason').val().trim();
     if (!reason) { toastr.warning('Please enter reason for delete.'); return; }
 
-    PurchaseOrderStoreService.DeletePurchaseOrderStore(code, GetUserCode(), reason).then(function (res) {
-        if (res && res.Status === 'Y') {
-            toastr.success(res.Msg || 'PO deleted successfully.');
-            $('#modalDeletePO').modal('hide');
-            ShowPOListGrid();
-        } else {
-            toastr.error(res ? res.Msg : 'Failed to delete PO.');
+    const ModuleName = $('#ERPHeading').text().trim();
+    const ShowMsg = 'Y';
+    const FinYear = BizSolHelperFunction.getFinancialYear();
+
+    MenuService.CheckModuleOptionRight(ModuleName, 'Delete', ShowMsg, FinYear).then(function (respCheck) {
+        if (respCheck.CheckModuleOptionRight == 'N') {
+            toastr.error(respCheck.Msg);
+            return;
         }
-    }).catch(err => {
-        toastr.error('Error deleting PO.');
-        console.error(err);
+
+        PurchaseOrderStoreService.DeletePurchaseOrderStore(code, GetUserCode(), reason).then(function (res) {
+            if (res && res.Status === 'Y') {
+                toastr.success(res.Msg || 'PO deleted successfully.');
+                $('#modalDeletePO').modal('hide');
+                ShowPOListGrid();
+            } else {
+                toastr.error(res ? res.Msg : 'Failed to delete PO.');
+            }
+        }).catch(err => {
+            toastr.error('Error deleting PO.');
+            console.error(err);
+        });
     });
 };
+
+// ─── MOBILE ITEM ENTRY MODAL ─────────────────────────────────────────────────
+
+function OpenMobileItemModal(rowId) {
+    G_MobileItemEditRowId = rowId;
+
+    // Populate item dropdown
+    let itemHtml = '<option value="">-- Select Item --</option>';
+    G_ItemMasterList.forEach(i => { itemHtml += `<option value="${i.Code}">${i.Name}</option>`; });
+    $('#mobileItemDdlItem').html(itemHtml);
+
+    // Populate UOM dropdown
+    let uomHtml = '<option value="">UOM</option>';
+    G_UOMMasterList.forEach(u => { uomHtml += `<option value="${u.Code}">${u.Name}</option>`; });
+    $('#mobileItemDdlUOM').html(uomHtml);
+
+    // Auto-fill UOM and GST when item changes
+    $('#mobileItemDdlItem').off('change').on('change', function () {
+        const code = $(this).val();
+        const item = G_ItemMasterList.find(i => String(i.Code) === String(code));
+        if (item && item.UOM_Code) $('#mobileItemDdlUOM').val(item.UOM_Code);
+        if (item && item.GSTRate !== undefined) $('#mobileItemTxtGST').val(item.GSTRate || 0);
+        MobileCalcValue();
+    });
+
+    if (rowId === null) {
+        // New item
+        $('#mobileItemModalTitle').text('Add Item');
+        $('#mobileItemModalBtnTxt').text('Add Item');
+        $('#mobileItemDdlItem').val('');
+        $('#mobileItemDdlUOM').val('');
+        $('#mobileItemTxtGST').val(0);
+        $('#mobileItemTxtQty').val(0);
+        $('#mobileItemTxtRate').val(0);
+        $('#mobileItemCalcValue').text('0.00');
+    } else {
+        // Edit existing row
+        $('#mobileItemModalTitle').text('Edit Item');
+        $('#mobileItemModalBtnTxt').text('Update Item');
+        $('#mobileItemDdlItem').val($(`#frmDdlItem_${rowId}`).val());
+        $('#mobileItemDdlUOM').val($(`#frmDdlUOM_${rowId}`).val());
+        $('#mobileItemTxtGST').val($(`#frmTxtGSTRate_${rowId}`).val());
+        $('#mobileItemTxtQty').val($(`#frmTxtQty_${rowId}`).val());
+        $('#mobileItemTxtRate').val($(`#frmTxtRate_${rowId}`).val());
+        MobileCalcValue();
+    }
+
+    $('#modalMobileItemEntry').modal('show');
+}
+
+function MobileCalcValue() {
+    const qty = parseFloat($('#mobileItemTxtQty').val()) || 0;
+    const rate = parseFloat($('#mobileItemTxtRate').val()) || 0;
+    $('#mobileItemCalcValue').text((qty * rate).toFixed(2));
+}
+
+function MobileItemModalConfirm() {
+    const itemCode = $('#mobileItemDdlItem').val();
+    const qty = parseFloat($('#mobileItemTxtQty').val()) || 0;
+
+    if (!itemCode) { toastr.warning('Please select an item.'); return; }
+    if (qty <= 0) { toastr.warning('Qty must be greater than 0.'); return; }
+
+    const uomCode = $('#mobileItemDdlUOM').val();
+    const gst = parseFloat($('#mobileItemTxtGST').val()) || 0;
+    const rate = parseFloat($('#mobileItemTxtRate').val()) || 0;
+    const value = (qty * rate).toFixed(2);
+
+    if (G_MobileItemEditRowId === null) {
+        // Add new row to the hidden table
+        G_ItemRowCount++;
+        const rowId = G_ItemRowCount;
+        const itemSelect = BuildItemSelect(rowId, itemCode);
+        const uomSelect = BuildUOMSelect(rowId, uomCode);
+        const row = `<tr id="itemRow_${rowId}">
+            <td class="text-center fw-bold">${rowId}</td>
+            <td>${itemSelect}</td>
+            <td>${uomSelect}</td>
+            <td><input type="number" id="frmTxtGSTRate_${rowId}" class="form-control form-control-sm" value="${gst}" min="0" max="100" step="0.01" onchange="CalcRowValue(${rowId})" /></td>
+            <td><input type="number" id="frmTxtQty_${rowId}" class="form-control form-control-sm" value="${qty}" min="0" step="0.001" onchange="CalcRowValue(${rowId})" /></td>
+            <td><input type="number" id="frmTxtRate_${rowId}" class="form-control form-control-sm" value="${rate}" min="0" step="0.01" onchange="CalcRowValue(${rowId})" /></td>
+            <td><input type="number" id="frmTxtValue_${rowId}" class="form-control form-control-sm" value="${value}" readonly /></td>
+            <td class="text-center">
+                <input type="hidden" id="frmHfDetailCode_${rowId}" value="0" />
+                <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
+            </td>
+        </tr>`;
+        $('#tblPOItemsBody').append(row);
+        RenumberRows();
+    } else {
+        // Update existing row in the hidden table
+        const rowId = G_MobileItemEditRowId;
+        $(`#frmDdlItem_${rowId}`).val(itemCode);
+        $(`#frmDdlUOM_${rowId}`).val(uomCode);
+        $(`#frmTxtGSTRate_${rowId}`).val(gst);
+        $(`#frmTxtQty_${rowId}`).val(qty);
+        $(`#frmTxtRate_${rowId}`).val(rate);
+        $(`#frmTxtValue_${rowId}`).val(value);
+    }
+
+    CalcTotals();
+    RenderMobileItemCards();
+    $('#modalMobileItemEntry').modal('hide');
+}
+
+function RenderMobileItemCards() {
+    const container = $('#mobileItemCards');
+    container.empty();
+
+    const rows = $('#tblPOItemsBody tr');
+    if (rows.length === 0) {
+        container.html('<div class="mobile-item-empty"><i class="fa fa-box-open fa-2x d-block mb-2"></i>No items added yet.<br>Tap "+ Add Item" to start.</div>');
+        return;
+    }
+
+    rows.each(function (index) {
+        const rowId = $(this).attr('id').replace('itemRow_', '');
+        const itemName = $(`#frmDdlItem_${rowId} option:selected`).text();
+        const uomName = $(`#frmDdlUOM_${rowId} option:selected`).text();
+        const gst = $(`#frmTxtGSTRate_${rowId}`).val();
+        const qty = $(`#frmTxtQty_${rowId}`).val();
+        const rate = parseFloat($(`#frmTxtRate_${rowId}`).val() || 0).toFixed(2);
+        const value = parseFloat($(`#frmTxtValue_${rowId}`).val() || 0).toFixed(2);
+
+        container.append(`
+            <div class="mobile-item-card">
+                <div class="item-card-header">
+                    <span class="item-card-num">${index + 1}</span>
+                    <span class="item-card-name">${itemName}</span>
+                    <div class="item-card-actions">
+                        <button type="button" class="item-card-edit-btn" onclick="OpenMobileItemModal(${rowId})" title="Edit"><i class="fa fa-pencil-alt"></i></button>
+                        <button type="button" class="item-card-del-btn" onclick="DeleteItemRow(${rowId})" title="Delete"><i class="fa fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="item-card-details">
+                    <span class="item-card-detail"><i class="fa fa-ruler me-1"></i>${uomName}</span>
+                    <span class="item-card-detail"><i class="fa fa-percent me-1"></i>GST: ${gst}%</span>
+                    <span class="item-card-detail"><i class="fa fa-sort-amount-up me-1"></i>Qty: ${qty}</span>
+                    <span class="item-card-detail"><i class="fa fa-tag me-1"></i>Rate: ${rate}</span>
+                    <span class="item-card-detail item-card-value"><i class="fa fa-coins me-1"></i>Value: ${value}</span>
+                </div>
+            </div>`);
+    });
+}
 
 // ─── EXPOSE GLOBALS ───────────────────────────────────────────────────────────
 
@@ -596,4 +905,7 @@ window.InitDeletePO = InitDeletePO;
 window.ConfirmDeletePO = ConfirmDeletePO;
 window.LoadSubProjects = LoadSubProjects;
 window.ToggleProjectFields = ToggleProjectFields;
+window.OpenMobileItemModal = OpenMobileItemModal;
+window.MobileCalcValue = MobileCalcValue;
+window.MobileItemModalConfirm = MobileItemModalConfirm;
 

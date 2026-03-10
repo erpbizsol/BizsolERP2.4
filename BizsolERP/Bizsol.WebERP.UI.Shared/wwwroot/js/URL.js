@@ -124,7 +124,8 @@ let UrlService = {
     API_ENDPOINT_Ledger: `${environment.BASE_URL}/Ledger`,
     API_ENDPOINT_InvoiceGST: `${environment.BASE_URL}/InvoiceGST`,
     API_ENDPOINT_Reports: `${environment.BASE_URL}/Reports`,
-    API_ENDPOINT_PurchaseOrderStore: `${environment.BASE_URL}/PurchaseOrderStore`,
+   
+    API_ENDPOINT_PurchaseOrderMaster: `${environment.BASE_URL}/PurchaseOrderMaster`,
 }
 
 export { UrlService  }
