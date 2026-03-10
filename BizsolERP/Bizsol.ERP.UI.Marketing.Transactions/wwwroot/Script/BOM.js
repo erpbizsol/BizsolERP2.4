@@ -213,6 +213,10 @@ function openBOMFromList(id, mode) {
 
     openNewBOM();
 
+    // set current BOM code
+    const bomCode = header.BOMCode || header.Code || header.BOMId || 0;
+    $('#hfBOMCode').val(bomCode || 0);
+
     // preselect project & sub project from header, if codes exist
     const projectCode = header.ProjectCode || header.ProjectMaster_Code || header.ProjectId || 0;
     const subProjectCode = header.SubProjectCode || header.SubProjectId || 0;
@@ -505,7 +509,11 @@ function addNewBomRow() {
             <td>
                 <input type="text" class="bom-input bom-amount right" readonly />
             </td>
-            
+            <td class="center">
+                <button type="button" class="bom-btn icon del js-bom-row-delete" title="Remove">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            </td>
         </tr>
     `);
 
@@ -529,6 +537,8 @@ function initRowCategoryDropdown($tr) {
 
 function resetBomForm() {
     G_BOMRows = [];
+
+    $('#hfBOMCode').val(0);
 
     $('#ddlProject').val('');
     const $sub = $('#ddlSubProject');
@@ -620,7 +630,26 @@ function initRowEvents($tr) {
     $tol.on('input', function () { enforceNumeric(this, 3); });
     $rateTol.on('input', function () { enforceNumeric(this, 3); });
 
-    // per-row save/verify buttons removed – rows are handled in bulk
+    $tr.find('.js-bom-row-delete').on('click', function () {
+        deleteBomRow($tr);
+    });
+}
+
+function deleteBomRow($tr) {
+    const $tbody = $('#tblBOM tbody');
+    if ($tbody.children('tr').length <= 1) {
+        // keep at least one empty row
+        $tr.find('input.bom-input').val('');
+        $tr.find('select.bom-select').val('');
+        $tr.find('.bom-uom').val('');
+        return;
+    }
+    $tr.remove();
+
+    // re-number S.No
+    $tbody.children('tr').each(function (idx) {
+        $(this).find('td').first().text(idx + 1);
+    });
 }
 
 function enforceNumeric(input, maxDecimals) {
@@ -751,34 +780,66 @@ function saveAllRows() {
         return;
     }
 
+    const bomCode = parseInt($('#hfBOMCode').val() || '0', 10) || 0;
+    const projectVal = $('#ddlProject').val() || '';
+    const subProjectVal = $('#ddlSubProject').val() || '';
+
+    const headerProjectCode = projectVal === 'ALL' ? 0 : parseInt(projectVal || '0', 10) || 0;
+    const headerSubProjectCode = subProjectVal === 'ALL' ? 0 : parseInt(subProjectVal || '0', 10) || 0;
+
+    // store locally for verify-all
     G_BOMRows = payloads.map(function (p, idx) {
         return Object.assign({ RowId: 'row_' + (idx + 1), Verified: 'N' }, p);
     });
 
+    const transactions = payloads.map(function (p, idx) {
+        return {
+            srNo: idx + 1,
+            projectCode: p.ProjectCode,
+            subProjectCode: p.SubProjectCode,
+            projectCategory: p.ProjectCategory,
+            workTypeCode: p.WorkTypeCode,
+            itemCode: p.ItemCode,
+            uom: p.UOM,
+            tolerance: p.Tolerance,
+            qtyRequired: p.QtyRequired,
+            rateTolerancePerc: p.RateTolerancePerc,
+            estRate: p.EstRate,
+            amount: p.Amount
+        };
+    });
+
+    const payload = {
+        code: bomCode,
+        master: [{
+            code: bomCode,
+            projectCode: headerProjectCode,
+            subProjectCode: headerSubProjectCode
+        }],
+        transactions: transactions
+    };
+
     if (BOMService && typeof BOMService.SaveBOMRow === 'function') {
         Showloader && Showloader();
-        Promise.all(payloads.map(function (p) { return BOMService.SaveBOMRow(p); }))
-            .then(function (responses) {
+        BOMService.SaveBOMRow(payload)
+            .then(function (resp) {
                 HideLoader && HideLoader();
-
-                const hasFailure = responses.some(function (resp) {
-                    return !resp || resp.Status !== 'Y';
-                });
-
-                if (hasFailure) {
-                    toastr.warning('Some BOM lines could not be saved. Please check and try again.');
-                    return;
+                if (resp && resp.Status === 'Y') {
+                    lockAllRowsAfterSave();
+                    $('#btnVerifyAllBomRows').show();
+                    $('#btnSaveAllBomRows').prop('disabled', true);
+                    toastr.success(resp.Msg || 'BOM saved successfully.');
+                    // update current BOM code if returned
+                    if (resp.BOMCode || resp.Code) {
+                        $('#hfBOMCode').val(resp.BOMCode || resp.Code);
+                    }
+                } else {
+                    toastr.warning((resp && resp.Msg) || 'Failed to save BOM.');
                 }
-
-                lockAllRowsAfterSave();
-                $('#btnVerifyAllBomRows').show();
-                $('#btnSaveAllBomRows').prop('disabled', true);
-
-                toastr.success('All BOM lines saved successfully.');
             })
             .catch(function () {
                 HideLoader && HideLoader();
-                toastr.error('Error while saving BOM lines.');
+                toastr.error('Error while saving BOM.');
             });
     } else {
         // local-only fallback
