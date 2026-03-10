@@ -59,6 +59,7 @@ $(document).ready(function () {
         clearTable();
         $('#txtMRNDate').val('');
         $('#txtBillDate').val('');
+        $('#txtVehicleNo').val('');
         $('#txtBillNo').val('');
     });
 });
@@ -251,7 +252,7 @@ function GetMRNQCPropertyList() {
                         <button class="btn btn-primary icon-height mb-1" title="Edit" disabled>
                             <i class="fa-solid fa-pencil"></i>
                         </button>&nbsp;
-                        <button class="btn btn-primary icon-height mb-1" title="View" onclick="PurchaseQualityCheck_ViewData('${mrnNo}','${finYear}',${item.PartyMaster_Code},'${item?.['MRN Date']}','${item?.['Bill No']}','${item?.['Bill Date']}')">
+                        <button class="btn btn-primary icon-height mb-1" title="View" onclick="PurchaseQualityCheck_ViewData('${mrnNo}','${finYear}',${item.PartyMaster_Code},'${item?.['MRN Date']}','${item?.['Bill No']}','${item?.['Bill Date']}','${item?.['Vehicle No']}')">
                             <i class="fa-regular fa-eye"></i>
                         </button>&nbsp;
                         <button class="btn btn-success icon-height mb-1" title="Verify" disabled>
@@ -267,7 +268,7 @@ function GetMRNQCPropertyList() {
                         <button class="btn btn-primary icon-height mb-1" title="Edit" onclick="PurchaseQualityCheck_EditData('${mrnNo}','${finYear}')">
                             <i class="fa-solid fa-pencil"></i>
                         </button>&nbsp;
-                        <button class="btn btn-primary icon-height mb-1" title="View" onclick="PurchaseQualityCheck_ViewData('${mrnNo}','${finYear}',${item.PartyMaster_Code},'${item?.['MRN Date']}','${item?.['Bill No']}','${item?.['Bill Date']}')">
+                        <button class="btn btn-primary icon-height mb-1" title="View" onclick="PurchaseQualityCheck_ViewData('${mrnNo}','${finYear}',${item.PartyMaster_Code},'${item?.['MRN Date']}','${item?.['Bill No']}','${item?.['Bill Date']}','${item?.['Vehicle No']}')">
                             <i class="fa-regular fa-eye"></i>
                         </button>&nbsp;
                         <button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify_PurchaseQualityCheck(${code})">
@@ -414,7 +415,9 @@ function bindMRNDropdown(list) {
                         if (selectedMRNData.BillDate) {
                             $('#txtBillDate').val(selectedMRNData.BillDate);
                         }
-                        
+                        if (selectedMRNData.VehicleNo) {
+                            $('#txtVehicleNo').val(selectedMRNData.VehicleNo);
+                        }
                         if (selectedMRNData.BillNo) {
                             $('#txtBillNo').val(selectedMRNData.BillNo);
                         }
@@ -458,6 +461,7 @@ function bindMRNDropdown(list) {
                 } else {
                     $('#txtMRNDate').val('');
                     $('#txtBillDate').val('');
+                    $('#txtVehicleNo').val('');
                     $('#txtBillNo').val('');
                     clearMRNData();
                     clearTable();
@@ -1508,6 +1512,7 @@ function bindVendorDropdown(list) {
                 clearTable();
                 $('#txtMRNDate').val('');
                 $('#txtBillDate').val('');
+                $('#txtVehicleNo').val('');
                 $('#txtBillNo').val('');
             });
         }
@@ -1556,7 +1561,7 @@ function PurchaseQualityCheck_EditData(MRNNo, finYear) {
         }
     });
 }
-function PurchaseQualityCheck_ViewData(MRNNo, finYear, PartyMaster_Code, MRNDate, BillNo, BillDate) {
+function PurchaseQualityCheck_ViewData(MRNNo, finYear, PartyMaster_Code, MRNDate, BillNo, BillDate,VehicleNo) {
     var ModuleName = `${menuValue}`,
         OptionName = "View",
         ShowMsg = "Y",
@@ -1603,6 +1608,7 @@ function PurchaseQualityCheck_ViewData(MRNNo, finYear, PartyMaster_Code, MRNDate
             $('#txtMRNDate').val(MRNDate);
             $('#txtBillNo').val(BillNo);
             $('#txtBillDate').val(BillDate);
+            $('#txtVehicleNo').val(VehicleNo);
 
             let mrnMasterCode = MRNNo;
             if (mrnMasterCode && mrnMasterCode !== 0) {

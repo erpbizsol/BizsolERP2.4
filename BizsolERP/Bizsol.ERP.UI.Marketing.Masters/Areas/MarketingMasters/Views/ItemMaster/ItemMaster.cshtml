@@ -33,7 +33,7 @@
 /* ── Card Header ── */
 .im-card-header {
     background: linear-gradient(130deg, #5b5ef4 0%, #8b5cf6 55%, #a855f7 100%);
-    padding: 20px 24px;
+    padding: 5px 26px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -96,48 +96,91 @@
 /* ── Card Body ── */
 .im-card-body { padding: 18px 20px 26px; }
 
+/* ── Grid Wrapper ── */
 .im-table-wrapper {
-    border-radius: 11px; overflow: hidden;
-    border: 1px solid #e8eaf2;
-    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+    border: 1px solid #e4e7f0;
+    overflow-x: hidden;
+    height: 300px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: 0 2px 12px rgba(91,94,244,0.06);
+    background: #fff;
+    position: relative;
+}
+.im-table-wrapper thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-/* ── Table ── */
+/* Filter dropdown — fixed positioning via JS */
+.im-filter-fixed {
+    position: fixed !important;
+    z-index: 99999 !important;
+}
+
+/* ── Table base ── */
+.im-table-wrapper table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+
+/* ── Header ── */
 th {
-    background: linear-gradient(135deg, #5b5ef4, #a855f7) !important;
+    background: linear-gradient(90deg, #6f5bf5 0%, #7c6ef7 100%) !important;
     color: #fff !important;
-    font-size: 12px !important; font-weight: 600 !important;
-    padding: 11px 14px !important;
-    white-space: nowrap; position: relative;
-    min-width: 99px !important;
-    letter-spacing: 0.02em;
-    transition: background 0.18s, color 0.18s !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    padding: 7px 14px !important;
+    white-space: nowrap;
+    position: relative;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-right: 1px solid rgba(255,255,255,0.12) !important;
     cursor: default;
 }
 
-th:hover {
-    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-    color: #fff !important;
+th:first-child { border-radius: 12px 0 0 0 !important; }
+th:last-child  { border-radius: 0 12px 0 0 !important; border-right: none !important; }
+
+        th:hover {
+            background: linear-gradient(90deg, #e6091f 0%, #6b5ee6 100%) !important;
+        }
+/* ── Data Rows ── */
+td {
+    padding: 5px 10px !important;
+    font-size: 13px;
+    color: #374151;
+    border-bottom: 1px solid #f0f2f9;
+    vertical-align: middle;
+    border-right: 1px solid #f5f6fb;
+    white-space: nowrap;
 }
 
-td {
-   
-    font-size: 13px; color: #374151;
-    border-bottom: 1px solid #f3f4f6;
-    vertical-align: middle;
-}
+td:last-child { border-right: none; }
 
 tbody tr:last-child td { border-bottom: none; }
-tbody tr:nth-child(even) { background: #fafbff; }
+tbody tr:nth-child(even) { background: #f8f9ff; }
 tbody tr:nth-child(odd)  { background: #ffffff; }
-tbody tr:hover { background: #eef2ff !important; transition: background 0.12s; }
+
+tbody tr:hover {
+    background: linear-gradient(90deg, #eef0ff, #f3f4ff) !important;
+    transition: background 0.15s;
+}
+
+tbody tr:hover td { color: #1e1b4b; }
+
+
 
 /* ── Action Buttons ── */
 .im-btn-view, .im-btn-edit, .im-btn-delete {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 30px; height: 30px; border-radius: 8px;
+    width: 26px; height: 26px; border-radius: 6px;
     border: none; cursor: pointer;
-    transition: all 0.13s; margin-right: 3px;
+    transition: all 0.13s; margin-right: 2px;
+    font-size: 11px;
 }
 
 .im-btn-view   { background: #ecfeff; color: #0891b2; }
@@ -1007,3 +1050,4 @@ select.im-input {
 
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Masters/js/ItemMaster.js"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+
