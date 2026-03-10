@@ -335,16 +335,12 @@ function loadSubProjects() {
 
 function updateStats(list) {
     const total = list.length;
-    const runningTotal = list
-        .filter(function (x) { return String(x.Verify || '').toUpperCase() === 'Y'; })
-        .reduce(function (sum, x) { return sum + (Number(x.Budget) || Number(x.SubProjectBudget) || 0); }, 0);
-    const pendingTotal = list
-        .filter(function (x) { return String(x.Verify || '').toUpperCase() !== 'Y'; })
-        .reduce(function (sum, x) { return sum + (Number(x.Budget) || Number(x.SubProjectBudget) || 0); }, 0);
+    const runningTotal = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'Y'; }).length;
+    const pendingTotal = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'N'; }).length;
 
     $('#statTotal').text(total);
-    $('#statBudget').text(formatLakhsCrores(runningTotal));
-    $('#statAvgDays').text(formatLakhsCrores(pendingTotal));
+    $('#statBudget').text(runningTotal);
+    $('#statAvgDays').text(pendingTotal);
 }
 
 function formatLakhsCrores(n) {

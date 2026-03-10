@@ -129,6 +129,7 @@ let UrlService = {
     API_ENDPOINT_SubProjectMaster: `${environment.BASE_URL}/SubProjectMaster`,
     API_ENDPOINT_ItemMaster: `${environment.BASE_URL}/Item`,
     API_ENDPOINT_VendorMaster: `${environment.BASE_URL}/VendorMaster`,
+    API_ENDPOINT_BOM: `${environment.BASE_URL}/BOM`,
 }
 
 export { UrlService  }
