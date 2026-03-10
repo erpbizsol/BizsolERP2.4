@@ -868,7 +868,7 @@ function GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo, ddlProjectNo) {
                     const button = false;
                     const stringDoubleFilterColumn = [];
                     const showButtons = [];
-                    const hiddenColumns = ["BomTransactionOrderWise_Codes","Code", "SortPriority","BuyerPODetail_Code", "Thickness_Code", "Grade_Code", "BuyerPOMaster_Code", "EntryNo", "GodownMaster_Code", "AccountMaster_Code", "EntryDate","InspectionDate"];
+            const hiddenColumns = ["BomTransactionOrderWise_Codes","Code", "SortPriority","BuyerPODetail_Code", "Thickness_Code", "Grade_Code", "BuyerPOMaster_Code", "EntryNo", "GodownMaster_Code", "AccountMaster_Code", "EntryDate","InspectionDate"];
                     const columnAlignment = {
                         "P.O. Qty(Wt.)": "right;",
                         "Balance to Inspect (Wt.)" : "right;",
@@ -878,7 +878,7 @@ function GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo, ddlProjectNo) {
                 };
                 const updatedResponse = (response).map(function (item) {
                     // Get Balance to Inspect (Wt.) from API row (property name has spaces)
-                    const balanceToInspect = parseFloat(item["Balance to Inspect (Wt.)"]) || 0;
+                    const balanceToInspect = parseFloat(item["BalQty"]) || 0;
                     item.Action = '<button class="btn btn-primary icon-height mb-1" title="Coil Details" onclick="UpdateCoilDetail('
                         + item.Grade_Code + ',' + item.Code + ',' + balanceToInspect + ')"><i class="fa fa-pencil"></i></button>';
                     //item.Action = '<button class="btn btn-primary icon-height mb-1" title="Coil Details" onclick="ShowObjectListControlModal()"><i class="fa fa-pencil"></i></button>';
