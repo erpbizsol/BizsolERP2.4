@@ -52,6 +52,37 @@ function getFinancialYear() {
     return startYear + "-" + (startYear + 1);
 }
 
+// ── Auto-generate next Project Code (max + 1) ──────────────
+function getNextProjectCode() {
+    if (!Array.isArray(G_ProjectList) || G_ProjectList.length === 0) {
+        return "1";
+    }
+
+    let maxCode = 0;
+
+    G_ProjectList.forEach(function (item) {
+        const raw = (item.ProjectCode || "").toString().trim();
+
+        // Try simple numeric code first
+        let num = parseInt(raw, 10);
+
+        // If code has prefix like "PROJ-001", extract the last numeric part
+        if (isNaN(num)) {
+            const match = raw.match(/(\d+)\s*$/);
+            if (match) {
+                num = parseInt(match[1], 10);
+            }
+        }
+
+        if (!isNaN(num) && num > maxCode) {
+            maxCode = num;
+        }
+    });
+
+    const next = maxCode + 1;
+    return next.toString();
+}
+
 /* ── New ─────────────────────────────────────────────────── */
 function OpenNew_ProjectMaster() {
     var ModuleName = "Project Master",
@@ -65,6 +96,7 @@ function OpenNew_ProjectMaster() {
             return false;
         } else {
             resetProjectForm();
+            $('#txtProjectCode').val(getNextProjectCode());
             $('#project-modal-title').text('New Project');
             showModal('dvProjectModal');
         }
