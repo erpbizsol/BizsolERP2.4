@@ -1,0 +1,1715 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+
+<style>
+    /* ═══════════════════════════════════════════════════
+       BASE
+    ═══════════════════════════════════════════════════ */
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    .vm-page-wrapper {
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        padding: 20px 18px 30px;
+        min-height: 100%;
+        background: #f1f3fb;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       MAIN CARD
+    ═══════════════════════════════════════════════════ */
+    .vm-card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #e5e7f0;
+        box-shadow: 0 4px 24px rgba(99,102,241,0.09), 0 1px 4px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
+
+    /* ── Card Header ── */
+    .vm-card-header {
+        background: linear-gradient(130deg, #5b5ef4 0%, #8b5cf6 55%, #a855f7 100%);
+        padding: 5px 26px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .vm-card-header::before {
+            content: '';
+            position: absolute;
+            top: -40px;
+            right: -40px;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.07);
+            pointer-events: none;
+        }
+
+        .vm-card-header::after {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            right: 90px;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            pointer-events: none;
+        }
+
+    .vm-header-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .vm-header-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        background: rgba(255,255,255,0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: #fff;
+        flex-shrink: 0;
+    }
+
+    .vm-header-title {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .vm-header-sub {
+        color: rgba(255,255,255,0.68);
+        font-size: 12px;
+        margin-top: 2px;
+    }
+
+    .vm-btn-new {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 20px;
+        border-radius: 999px;
+        border: 2px solid rgba(255,255,255,0.48);
+        background: rgba(255,255,255,0.14);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.14s;
+        white-space: nowrap;
+        position: relative;
+        z-index: 1;
+    }
+
+        .vm-btn-new:hover {
+            background: rgba(255,255,255,0.26);
+            border-color: rgba(255,255,255,0.80);
+            transform: translateY(-1px);
+        }
+
+    /* ── Card Body ── */
+    .vm-card-body {
+        padding: 18px 20px 26px;
+    }
+
+    /* .vm-table-wrapper {
+        border-radius: 11px;
+        overflow: hidden;
+        border: 1px solid #e8eaf2;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        height: 300px;
+        box-shadow: 0 2px 12px rgba(91,94,244,0.06);
+        background: #fff;
+        position: relative;
+    } */
+    .vm-card-body {
+        padding: 18px 20px 26px;
+    }
+
+    /* ── Grid Wrapper ── */
+    .vm-table-wrapper {
+        border-radius: 12px;
+        border: 1px solid #e4e7f0;
+        overflow-x: hidden;
+        height: 300px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        box-shadow: 0 2px 12px rgba(91,94,244,0.06);
+        background: #fff;
+        position: relative;
+    }
+
+        .vm-table-wrapper thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+    /* Filter dropdown — fixed positioning via JS */
+    .vm-filter-fixed {
+        position: fixed !important;
+        z-index: 99999 !important;
+    }
+
+    /* ── Table base ── */
+    .vm-table-wrapper table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 600px;
+    }
+    /* ── Table ── */
+    th {
+        background: linear-gradient(135deg, #5b5ef4, #5b5ef4) !important;
+        color: #fff !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        padding: 11px 14px !important;
+        white-space: nowrap;
+        position: relative;
+        min-width: 99px !important;
+        letter-spacing: 0.02em;
+        transition: background 0.18s, color 0.18s !important;
+        cursor: default;
+        text-transform: uppercase;
+    }
+
+        th:hover {
+            background: linear-gradient(90deg, #e6091f 0%, #6b5ee6 100%) !important;
+        }
+
+
+    td {
+        font-size: 13px;
+        color: #374151;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+    }
+
+    tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    tbody tr:nth-child(even) {
+        background: #fafbff;
+    }
+
+    tbody tr:nth-child(odd) {
+        background: #ffffff;
+    }
+
+    tbody tr:hover {
+        background: #eef2ff !important;
+        transition: background 0.12s;
+    }
+
+    /* ── Action Buttons ── */
+    .vm-btn-view, .vm-btn-edit, .vm-btn-delete {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.13s;
+        margin-right: 3px;
+    }
+
+    .vm-btn-view {
+        background: #ecfeff;
+        color: #0891b2;
+    }
+
+    .vm-btn-edit {
+        background: #eef2ff;
+        color: #5b5ef4;
+    }
+
+    .vm-btn-delete {
+        background: #fef2f2;
+        color: #ef4444;
+    }
+
+    .vm-btn-view:hover {
+        background: #0891b2;
+        color: #fff;
+        transform: scale(1.10);
+        box-shadow: 0 3px 10px rgba(8,145,178,0.30);
+    }
+
+    .vm-btn-edit:hover {
+        background: #5b5ef4;
+        color: #fff;
+        transform: scale(1.10);
+        box-shadow: 0 3px 10px rgba(91,94,244,0.30);
+    }
+
+    .vm-btn-delete:hover {
+        background: #ef4444;
+        color: #fff;
+        transform: scale(1.10);
+        box-shadow: 0 3px 10px rgba(239,68,68,0.30);
+    }
+
+    .paginator {
+        margin-top: 14px;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       BACKDROP
+    ═══════════════════════════════════════════════════ */
+    .vm-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(8,12,36,0.54);
+        backdrop-filter: blur(5px);
+        display: none;
+        align-items: flex-start;
+        justify-content: center;
+        z-index: 1050;
+        padding: 20px 12px;
+        overflow-y: auto;
+    }
+
+        .vm-backdrop.show {
+            display: flex;
+        }
+
+    .vm-modal,
+    .vm-view-modal,
+    .vm-delete-modal,
+    .vm-success-modal {
+        margin: auto;
+    }
+
+    @@keyframes vm-up {
+        from {
+            transform: translateY(22px) scale(0.97);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes vm-pop {
+        from {
+            transform: scale(0.55);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       FORM MODAL
+    ═══════════════════════════════════════════════════ */
+    .vm-modal {
+        width: 720px;
+        max-width: calc(100vw - 20px);
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 20px 56px rgba(8,12,36,0.24);
+        display: flex;
+        flex-direction: column;
+        animation: vm-up 0.24s cubic-bezier(0.34,1.46,0.64,1);
+        overflow: hidden;
+    }
+
+    .vm-modal-header {
+        background: linear-gradient(130deg, #5b5ef4, #a855f7);
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .vm-modal-header::before {
+            content: '';
+            position: absolute;
+            top: -18px;
+            right: -18px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            pointer-events: none;
+        }
+
+    .vm-modal-header-title {
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .vm-modal-close {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255,255,255,0.18);
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: background 0.13s;
+        position: relative;
+        z-index: 1;
+    }
+
+        .vm-modal-close:hover {
+            background: rgba(255,255,255,0.32);
+        }
+
+    .vm-modal-body {
+        padding: 20px 22px 14px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+        .vm-modal-body::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .vm-modal-body::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+
+    /* ── Section Label ── */
+    .vm-section-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #5b5ef4;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        margin-top: 4px;
+    }
+
+        .vm-section-label i {
+            font-size: 12px;
+        }
+
+        .vm-section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, #eef2ff, transparent);
+        }
+
+    .vm-form-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px 16px;
+    }
+
+    .vm-form-grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px 16px;
+        margin-top: 14px;
+    }
+
+    .vm-form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+        .vm-form-group label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #4b5563;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+    .vm-required {
+        color: #ef4444;
+        margin-left: 2px;
+    }
+
+    .vm-input {
+        width: 100%;
+        padding: 9px 12px;
+        border-radius: 9px;
+        border: 1.5px solid #dde0ee;
+        font-size: 13px;
+        color: #111827;
+        background: #f8f9fc;
+        outline: none;
+        transition: border-color 0.13s, box-shadow 0.13s, background 0.13s;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+
+        .vm-input:focus {
+            border-color: #5b5ef4;
+            box-shadow: 0 0 0 3px rgba(91,94,244,0.12);
+            background: #fff;
+        }
+
+        .vm-input.vm-input-error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.10);
+        }
+
+        .vm-input[readonly] {
+            background: #f3f4f6;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+
+    /* ── Error / Dup text ── */
+    .vm-err-text, .vm-dup-warning {
+        display: none;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-top: 2px;
+    }
+
+    .vm-err-text {
+        color: #ef4444;
+    }
+
+    .vm-dup-warning {
+        color: #f59e0b;
+    }
+
+    /* ── Modal Footer ── */
+    .vm-modal-footer {
+        padding: 12px 22px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        border-top: 1px solid #eef2ff;
+        flex-shrink: 0;
+    }
+
+    .vm-btn-cancel {
+        padding: 9px 20px;
+        border-radius: 999px;
+        border: 1.5px solid #d4d7e8;
+        background: #fff;
+        color: #374151;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.13s;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+        .vm-btn-cancel:hover {
+            background: #f5f5fb;
+            border-color: #9ca3af;
+        }
+
+    .vm-btn-save {
+        padding: 9px 24px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(130deg, #5b5ef4, #a855f7);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 5px 16px rgba(91,94,244,0.32);
+        transition: all 0.14s;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+        .vm-btn-save:hover {
+            box-shadow: 0 7px 22px rgba(91,94,244,0.48);
+            transform: translateY(-1px);
+        }
+
+        .vm-btn-save:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+    /* ═══════════════════════════════════════════════════
+       VIEW MODAL
+    ═══════════════════════════════════════════════════ */
+    .vm-view-modal {
+        width: 520px;
+        max-width: calc(100vw - 20px);
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 20px 56px rgba(8,12,36,0.24);
+        display: flex;
+        flex-direction: column;
+        animation: vm-up 0.24s cubic-bezier(0.34,1.46,0.64,1);
+        overflow: hidden;
+    }
+
+    .vm-view-header {
+        background: linear-gradient(130deg, #5b5ef4, #a855f7);
+        padding: 18px 46px 16px 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        position: relative;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+        .vm-view-header::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.07);
+            pointer-events: none;
+        }
+
+    .vm-view-close-btn {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255,255,255,0.18);
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        transition: background 0.13s;
+        z-index: 1;
+    }
+
+        .vm-view-close-btn:hover {
+            background: rgba(255,255,255,0.32);
+        }
+
+    .vm-view-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.22);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: #fff;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .vm-view-header-text {
+        flex: 1;
+        min-width: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .vm-view-header-code {
+        font-size: 10px;
+        color: rgba(255,255,255,0.65);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+    }
+
+    .vm-view-header-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 5px;
+    }
+
+    .vm-view-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .vm-view-badge {
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.18);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+    }
+
+    .vm-view-body {
+        padding: 18px 20px 10px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+        .vm-view-body::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .vm-view-body::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+
+    .vm-view-section-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 10px;
+        font-weight: 700;
+        color: #9ca3af;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+    }
+
+        .vm-view-section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, #e5e7eb, transparent);
+        }
+
+    .vm-view-fields-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+    }
+
+    .vm-view-field {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        background: #f9fafb;
+        border-radius: 11px;
+        padding: 11px 14px;
+        border: 1px solid #f0f1f6;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.13s;
+    }
+
+        .vm-view-field::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .vm-view-field:nth-child(1)::before {
+            background: linear-gradient(#5b5ef4,#818cf8);
+        }
+
+        .vm-view-field:nth-child(2)::before {
+            background: linear-gradient(#5b5ef4,#818cf8);
+        }
+
+        .vm-view-field:nth-child(3)::before {
+            background: linear-gradient(#0891b2,#22d3ee);
+        }
+
+        .vm-view-field:nth-child(4)::before {
+            background: linear-gradient(#f59e0b,#fcd34d);
+        }
+
+        .vm-view-field:nth-child(5)::before {
+            background: linear-gradient(#a855f7,#c084fc);
+        }
+
+        .vm-view-field:nth-child(6)::before {
+            background: linear-gradient(#ef4444,#fca5a5);
+        }
+
+        .vm-view-field:nth-child(7)::before {
+            background: linear-gradient(#06b6d4,#67e8f9);
+        }
+
+        .vm-view-field:hover {
+            background: #fff;
+            box-shadow: 0 3px 12px rgba(91,94,244,0.09);
+            transform: translateX(2px);
+            border-color: #e5e7eb;
+        }
+
+    .vm-view-field-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .vm-view-field:nth-child(1) .vm-view-field-icon {
+        background: #eef2ff;
+        color: #5b5ef4;
+    }
+
+    .vm-view-field:nth-child(2) .vm-view-field-icon {
+        background: #eef2ff;
+        color: #5b5ef4;
+    }
+
+    .vm-view-field:nth-child(3) .vm-view-field-icon {
+        background: #ecfeff;
+        color: #0891b2;
+    }
+
+    .vm-view-field:nth-child(4) .vm-view-field-icon {
+        background: #fffbeb;
+        color: #f59e0b;
+    }
+
+    .vm-view-field:nth-child(5) .vm-view-field-icon {
+        background: #faf5ff;
+        color: #a855f7;
+    }
+
+    .vm-view-field:nth-child(6) .vm-view-field-icon {
+        background: #fef2f2;
+        color: #ef4444;
+    }
+
+    .vm-view-field:nth-child(7) .vm-view-field-icon {
+        background: #ecfeff;
+        color: #06b6d4;
+    }
+
+    .vm-view-field-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .vm-view-field-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: #9ca3af;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+    }
+
+    .vm-view-field-value {
+        font-size: 13px;
+        font-weight: 700;
+        color: #111827;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .vm-view-footer {
+        padding: 12px 20px 18px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        border-top: 1px solid #f3f4f6;
+        flex-shrink: 0;
+    }
+
+    .vm-btn-view-edit {
+        padding: 8px 20px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(130deg, #5b5ef4, #a855f7);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 5px 16px rgba(91,94,244,0.32);
+        transition: all 0.14s;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+        .vm-btn-view-edit:hover {
+            box-shadow: 0 7px 22px rgba(91,94,244,0.48);
+            transform: translateY(-1px);
+        }
+
+    .vm-btn-view-close {
+        padding: 8px 20px;
+        border-radius: 999px;
+        border: 1.5px solid #d4d7e8;
+        background: #fff;
+        color: #374151;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.13s;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+        .vm-btn-view-close:hover {
+            background: #f5f5fb;
+            border-color: #9ca3af;
+        }
+
+    /* ═══════════════════════════════════════════════════
+       DELETE MODAL
+    ═══════════════════════════════════════════════════ */
+    .vm-delete-modal {
+        width: 370px;
+        max-width: calc(100vw - 20px);
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 20px 56px rgba(8,12,36,0.24);
+        text-align: center;
+        padding: 32px 24px 24px;
+        animation: vm-up 0.24s cubic-bezier(0.34,1.46,0.64,1);
+    }
+
+    .vm-delete-icon-wrap {
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #fef2f2, #fee2e2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        color: #ef4444;
+        margin: 0 auto 14px;
+        box-shadow: 0 5px 16px rgba(239,68,68,0.16);
+    }
+
+    .vm-delete-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 7px;
+    }
+
+    .vm-delete-text {
+        font-size: 13px;
+        color: #6b7280;
+        line-height: 1.5;
+        margin-bottom: 22px;
+    }
+
+    .vm-delete-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .vm-delete-reason {
+        margin: 0 0 18px;
+        text-align: left;
+    }
+
+    .vm-delete-reason-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #4b5563;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+    }
+
+    .vm-delete-reason-input {
+        width: 100%;
+        padding: 9px 12px;
+        border-radius: 9px;
+        border: 1.5px solid #dde0ee;
+        font-size: 13px;
+        color: #111827;
+        background: #f8f9fc;
+        outline: none;
+        transition: border-color 0.13s, box-shadow 0.13s;
+    }
+
+        .vm-delete-reason-input:focus {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.10);
+            background: #fff;
+        }
+
+        .vm-delete-reason-input::placeholder {
+            color: #9ca3af;
+        }
+
+    .vm-btn-confirm-delete {
+        padding: 9px 22px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 5px 16px rgba(239,68,68,0.32);
+        transition: all 0.14s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .vm-btn-confirm-delete:hover {
+            box-shadow: 0 7px 22px rgba(239,68,68,0.48);
+            transform: translateY(-1px);
+        }
+
+    /* ═══════════════════════════════════════════════════
+       SUCCESS MODAL
+    ═══════════════════════════════════════════════════ */
+    .vm-success-modal {
+        width: 370px;
+        max-width: calc(100vw - 20px);
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 20px 56px rgba(8,12,36,0.24);
+        text-align: center;
+        padding: 32px 24px 24px;
+        animation: vm-up 0.24s cubic-bezier(0.34,1.46,0.64,1);
+    }
+
+    .vm-success-icon-wrap {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #eef2ff, #c7d2fe);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        color: #5b5ef4;
+        margin: 0 auto 16px;
+        box-shadow: 0 6px 20px rgba(91,94,244,0.18);
+        animation: vm-pop 0.28s cubic-bezier(0.34,1.56,0.64,1) 0.14s both;
+    }
+
+    .vm-success-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 7px;
+    }
+
+    .vm-success-text {
+        font-size: 13px;
+        color: #6b7280;
+        line-height: 1.5;
+        margin-bottom: 22px;
+    }
+
+    .vm-btn-success-ok {
+        padding: 9px 34px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(135deg, #5b5ef4, #a855f7);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 5px 16px rgba(91,94,244,0.32);
+        transition: all 0.14s;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+        .vm-btn-success-ok:hover {
+            box-shadow: 0 7px 22px rgba(91,94,244,0.48);
+            transform: translateY(-1px);
+        }
+
+    /* ═══════════════════════════════════════════════════
+       EMPTY STATE
+    ═══════════════════════════════════════════════════ */
+    .vm-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 20px;
+        gap: 12px;
+    }
+
+    .vm-empty-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #eef2ff, #c7d2fe);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        color: #5b5ef4;
+        box-shadow: 0 6px 20px rgba(91,94,244,0.16);
+        margin-bottom: 4px;
+    }
+
+    .vm-empty-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .vm-empty-sub {
+        font-size: 13px;
+        color: #9ca3af;
+        text-align: center;
+        max-width: 260px;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       RESPONSIVE — TABLET ≤ 900px
+    ═══════════════════════════════════════════════════ */
+    @@media (max-width: 900px) {
+        .vm-form-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 13px 15px;
+        }
+
+        .vm-form-grid-2 {
+            grid-template-columns: 1fr 1fr;
+            gap: 13px 15px;
+        }
+
+        .vm-view-fields-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       RESPONSIVE — MOBILE ≤ 640px
+    ═══════════════════════════════════════════════════ */
+    @@media (max-width: 640px) {
+        .vm-page-wrapper {
+            padding: 10px 10px 20px;
+        }
+
+        .vm-card-header {
+            padding: 14px 16px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .vm-header-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 17px;
+            border-radius: 10px;
+        }
+
+        .vm-header-title {
+            font-size: 15px;
+        }
+
+        .vm-header-sub {
+            font-size: 11px;
+        }
+
+        .vm-btn-new {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .vm-card-body {
+            padding: 12px 12px 18px;
+        }
+
+        .vm-modal {
+            border-radius: 15px;
+        }
+
+        .vm-form-grid {
+            grid-template-columns: 1fr;
+            gap: 11px;
+        }
+
+        .vm-form-grid-2 {
+            grid-template-columns: 1fr;
+            gap: 11px;
+        }
+
+        .vm-modal-body {
+            padding: 15px 15px 10px;
+        }
+
+        .vm-modal-footer {
+            flex-direction: column-reverse;
+            gap: 8px;
+            padding: 10px 15px 16px;
+        }
+
+        .vm-btn-cancel, .vm-btn-save {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .vm-view-modal {
+            border-radius: 15px;
+        }
+
+        .vm-view-header {
+            padding: 15px 42px 13px 15px;
+            gap: 12px;
+        }
+
+        .vm-view-avatar {
+            width: 44px;
+            height: 44px;
+            font-size: 19px;
+            border-radius: 12px;
+        }
+
+        .vm-view-header-name {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .vm-view-fields-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .vm-view-body {
+            padding: 14px 14px 8px;
+        }
+
+        .vm-view-footer {
+            flex-direction: column-reverse;
+            gap: 8px;
+            padding: 10px 14px 16px;
+        }
+
+        .vm-btn-view-edit,
+        .vm-btn-view-close {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .vm-delete-modal,
+        .vm-success-modal {
+            padding: 26px 16px 20px;
+        }
+
+        .vm-delete-actions {
+            flex-direction: column-reverse;
+            gap: 8px;
+        }
+
+            .vm-delete-actions .vm-btn-cancel,
+            .vm-btn-confirm-delete {
+                width: 100%;
+                justify-content: center;
+            }
+
+        .vm-backdrop {
+            padding: 10px 8px;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       RESPONSIVE — SMALL ≤ 400px
+    ═══════════════════════════════════════════════════ */
+    @@media (max-width: 400px) {
+        .vm-page-wrapper {
+            padding: 8px 6px 14px;
+        }
+
+        .vm-card-header {
+            padding: 12px 13px;
+        }
+
+        .vm-modal-body {
+            padding: 13px 12px 8px;
+        }
+
+        .vm-view-body {
+            padding: 12px 12px 6px;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       AUTOCOMPLETE DROPDOWN
+    ═══════════════════════════════════════════════════ */
+    .vm-ac-wrap {
+        position: relative;
+    }
+
+    .vm-ac-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1.5px solid #dde0ee;
+        border-radius: 10px;
+        box-shadow: 0 8px 28px rgba(91,94,244,0.14), 0 2px 8px rgba(0,0,0,0.07);
+        z-index: 2000;
+        max-height: 210px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        display: none;
+        padding: 4px 0;
+        -webkit-overflow-scrolling: touch;
+    }
+
+        .vm-ac-dropdown.open {
+            display: block;
+        }
+
+        .vm-ac-dropdown::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .vm-ac-dropdown::-webkit-scrollbar-thumb {
+            background: #c7d2fe;
+            border-radius: 4px;
+        }
+
+    .vm-ac-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 12px;
+        font-size: 13px;
+        color: #111827;
+        cursor: pointer;
+        border-radius: 0;
+        transition: background 0.1s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+        .vm-ac-item:hover,
+        .vm-ac-item.vm-ac-active {
+            background: #eef2ff;
+            color: #3730a3;
+        }
+
+        .vm-ac-item i {
+            font-size: 11px;
+            color: #5b5ef4;
+            flex-shrink: 0;
+        }
+
+        .vm-ac-item mark {
+            background: none;
+            color: #5b5ef4;
+            font-weight: 700;
+            padding: 0;
+        }
+
+    .vm-ac-sub {
+        font-size: 10px;
+        color: #9ca3af;
+        margin-left: auto;
+        flex-shrink: 0;
+        letter-spacing: 0.03em;
+    }
+
+    .vm-ac-empty {
+        padding: 10px 12px;
+        font-size: 12px;
+        color: #9ca3af;
+        text-align: center;
+        font-style: italic;
+    }
+
+    /* Pincode auto-fill hint */
+    .vm-pin-hint {
+        display: none;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        color: #5b5ef4;
+        font-weight: 600;
+        margin-top: 3px;
+    }
+
+        .vm-pin-hint i {
+            font-size: 10px;
+        }
+</style>
+
+<div class="vm-page-wrapper">
+    <div class="vm-card">
+
+        <!-- ── Header ── -->
+        <div class="vm-card-header">
+            <div class="vm-header-left">
+                <div class="vm-header-icon">
+                    <i class="fas fa-store"></i>
+                </div>
+                <div>
+                    <div class="vm-header-title">Vendor Master</div>
+                    <div class="vm-header-sub">Manage your vendor records</div>
+                </div>
+            </div>
+            <button type="button" class="vm-btn-new" onclick="OpenNewVendor()">
+                <i class="fas fa-plus"></i>
+                <span>New Vendor</span>
+            </button>
+        </div>
+
+        <!-- ── Table ── -->
+        <div class="vm-card-body">
+            <div id="tblVendorMaster">
+                <div class="vm-table-wrapper">
+                    <table id="VendorMaster" style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead id="VendorMaster-header"></thead>
+                        <tbody id="VendorMaster-body"></tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-VendorMaster"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════ FORM MODAL ═══════════════ -->
+<div id="vendorDialogBackdrop" class="vm-backdrop">
+    <div class="vm-modal" id="vendorFormContainer">
+
+        <div class="vm-modal-header">
+            <div class="vm-modal-header-title">
+                <i class="fas fa-store"></i>
+                <span id="vmFormModalTitle">Add New Vendor</span>
+            </div>
+            <button type="button" class="vm-modal-close" id="vmBtnModalClose" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="vm-modal-body">
+
+            <!-- ── Basic Info ── -->
+            <div class="vm-section-label">
+                <i class="fas fa-info-circle"></i> Basic Information
+            </div>
+            <div class="vm-form-grid">
+
+                <div class="vm-form-group">
+                    <label for="AccountDesp">Vendor Name <span class="vm-required">*</span></label>
+                    <input type="text" id="AccountDesp" class="vm-input" placeholder="Enter vendor name" autocomplete="off" />
+                    <span class="vm-err-text" id="err_AccountDesp"><i class="fas fa-circle-exclamation"></i> Vendor Name is required.</span>
+                    <span class="vm-dup-warning" id="dup_AccountDesp"><i class="fas fa-triangle-exclamation"></i> Already exists.</span>
+                </div>
+
+                <div class="vm-form-group">
+                    <label for="BillName">Display Name</label>
+                    <input type="text" id="BillName" class="vm-input" placeholder="Enter display name" autocomplete="off" />
+                </div>
+
+                <div class="vm-form-group">
+                    <label for="GSTNNo">GST Number</label>
+                    <input type="text" id="GSTNNo" class="vm-input" placeholder="e.g. 22AAAAA0000A1Z5" autocomplete="off" maxlength="15" style="text-transform:uppercase;" />
+                    <span class="vm-err-text" id="err_GSTNNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid GST format.</span>
+                </div>
+
+            </div>
+
+            <!-- ── Contact Info ── -->
+            <div class="vm-section-label" style="margin-top:18px;">
+                <i class="fas fa-address-book"></i> Contact Details
+            </div>
+            <div class="vm-form-grid">
+
+                <div class="vm-form-group">
+                    <label for="EMail">Email Address</label>
+                    <input type="email" id="EMail" class="vm-input" placeholder="e.g. vendor@example.com" autocomplete="off" />
+                    <span class="vm-err-text" id="err_EMail" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid email address.</span>
+                </div>
+
+                <div class="vm-form-group">
+                    <label for="PhoneNo">Phone Number</label>
+                    <input type="text" id="PhoneNo" class="vm-input" placeholder="e.g. 9876543210" autocomplete="off" inputmode="numeric" maxlength="15" />
+                    <span class="vm-err-text" id="err_PhoneNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid phone number (10 digits required).</span>
+                </div>
+
+            </div>
+
+            <!-- ── Address Info ── -->
+            <div class="vm-section-label" style="margin-top:18px;">
+                <i class="fas fa-location-dot"></i> Address Details
+            </div>
+            <div class="vm-form-grid">
+                <div class="vm-form-group">
+                    <label for="Nation">Nation / Country</label>
+                    <div class="vm-ac-wrap">
+                        @* <input type="text" id="Nation" class="vm-input" placeholder="Type to search country…" autocomplete="off" /> *@
+                        <select id="Nation" class="vm-input" autocomplete="off" tabindex="1" maxlength="50"> </select>
+                        <ul class="vm-ac-dropdown" id="ac_Nation"></ul>
+                    </div>
+                </div>
+                <div class="vm-form-group">
+                    <label for="City">City</label>
+                    <div class="vm-ac-wrap">
+                        @*  <input type="text" id="City" class="vm-input" placeholder="Type to search city…" autocomplete="off" /> *@
+                        <select id="City" class="vm-input" autocomplete="off" tabindex="1" maxlength="50"> </select>
+                        <ul class="vm-ac-dropdown" id="ac_City"></ul>
+                    </div>
+                </div>
+
+                <div class="vm-form-group">
+                    <label for="State">State</label>
+                    <div class="vm-ac-wrap">
+                        @* <input type="text" id="State" class="vm-input" placeholder="Type to search state…" autocomplete="off" /> *@
+                        <select id="State" class="vm-input" autocomplete="off" tabindex="1" maxlength="50"> </select>
+                        <ul class="vm-ac-dropdown" id="ac_State"></ul>
+                    </div>
+                </div>
+                <div class="vm-form-group">
+                    <label for="PinCode">Pincode</label>
+                    <input type="text" id="PinCode" class="vm-input" tabindex="1" autocomplete="off" inputmode="numeric" maxlength="6" />
+                    <span class="vm-pin-hint" id="pin_hint"><i class="fas fa-circle-check"></i> <span id="pin_hint_text"></span></span>
+                    <span class="vm-err-text" id="err_PinCode" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid pincode.</span>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="vm-modal-footer">
+            <button type="button" class="vm-btn-cancel" id="vmBtnCancelVendor">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="vm-btn-save" id="vmBtnSaveVendor" onclick="SaveVendor()">
+                <i class="fas fa-floppy-disk"></i>
+                <span id="vmBtnSaveText">Save Vendor</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════ VIEW MODAL ═══════════════ -->
+<div id="viewVendorBackdrop" class="vm-backdrop">
+    <div class="vm-view-modal">
+
+        <div class="vm-view-header">
+            <button type="button" class="vm-view-close-btn" onclick="CloseVendorViewModal()" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="vm-view-avatar">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="vm-view-header-text">
+                <div class="vm-view-header-code">
+                    <i class="fas fa-hashtag" style="margin-right:3px;"></i>Vendor Details
+                </div>
+                <div class="vm-view-header-name" id="viewVendorName">—</div>
+                <div style="font-size:9px;color:rgba(255,255,255,0.55);letter-spacing:0.06em;text-transform:uppercase;margin-top:-5px;margin-bottom:6px;">
+                    <i class="fas fa-store" style="margin-right:3px;"></i>Vendor Name
+                </div>
+                <div class="vm-view-badges">
+                    <span class="vm-view-badge" id="viewCityBadge" style="display:none;"></span>
+                    <span class="vm-view-badge" id="viewGSTBadge" style="display:none;"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="vm-view-body">
+            <div class="vm-view-section-label">Vendor Information</div>
+            <div class="vm-view-fields-grid">
+
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-store"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Vendor Name</div>
+                        <div class="vm-view-field-value" id="vf_VendorName">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-tag"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Display Name</div>
+                        <div class="vm-view-field-value" id="vf_DisplayName">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-globe"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Country</div>
+                        <div class="vm-view-field-value" id="vf_Nation">—</div>
+
+                    </div>
+                </div>
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-city"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">City</div>
+                        <div class="vm-view-field-value" id="vf_City">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-map"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">State</div>
+                        <div class="vm-view-field-value" id="vf_State">—</div>
+                    </div>
+                </div>
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-location-pin"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Pincode</div>
+                        <div class="vm-view-field-value" id="vf_Pincode">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-receipt"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">GST Number</div>
+                        <div class="vm-view-field-value" id="vf_GSTNo">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-envelope"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Email</div>
+                        <div class="vm-view-field-value" id="vf_EMail">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-phone"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Phone No</div>
+                        <div class="vm-view-field-value" id="vf_PhoneNo">—</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="vm-view-footer">
+            <button type="button" class="vm-btn-view-close" onclick="CloseVendorViewModal()">
+                <i class="fas fa-times"></i> Close
+            </button>
+            <button type="button" class="vm-btn-view-edit" onclick="EditFromVendorView()">
+                <i class="fas fa-pen"></i> Edit Vendor
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════ DELETE CONFIRM ═══════════════ -->
+<div id="vmDeleteConfirmBackdrop" class="vm-backdrop">
+    <div class="vm-delete-modal">
+        <div class="vm-delete-icon-wrap">
+            <i class="fas fa-trash-can"></i>
+        </div>
+        <div class="vm-delete-title">Delete this Vendor?</div>
+        <div class="vm-delete-text">
+            This action cannot be undone.<br>The vendor record will be permanently removed.
+        </div>
+
+        <div class="vm-delete-reason">
+            <label class="vm-delete-reason-label">
+                <i class="fas fa-comment-dots"></i> Reason for Delete <span class="vm-required">*</span>
+            </label>
+            <input type="text" id="vmReasonForDeleteInput" class="vm-delete-reason-input"
+                   placeholder="Enter reason for deletion…" autocomplete="off" />
+        </div>
+
+        <div class="vm-delete-actions">
+            <button type="button" class="vm-btn-cancel" id="vmBtnCancelDelete">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="vm-btn-confirm-delete" onclick="DoVendorDelete()">
+                <i class="fas fa-trash-can"></i> Yes, Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ SUCCESS MODAL ═══════════════ -->
+<div id="vmSuccessBackdrop" class="vm-backdrop">
+    <div class="vm-success-modal">
+        <div class="vm-success-icon-wrap">
+            <i id="vmSuccessModalIcon" class="fas fa-circle-check"></i>
+        </div>
+        <div class="vm-success-title" id="vmSuccessModalTitle">Done!</div>
+        <div class="vm-success-text" id="vmSuccessModalText">Operation completed successfully.</div>
+        <button type="button" class="vm-btn-success-ok" onclick="CloseVendorSuccessModal()">
+            <i class="fas fa-check"></i> OK
+        </button>
+    </div>
+</div>
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Masters/js/VendorMaster.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
