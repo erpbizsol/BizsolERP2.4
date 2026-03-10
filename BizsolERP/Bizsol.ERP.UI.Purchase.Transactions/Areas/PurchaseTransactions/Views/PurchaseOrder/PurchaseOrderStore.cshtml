@@ -7,351 +7,791 @@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/PurchaseOrderStore.js"></script>
 
 <style>
-    .po-section-title {
-        font-size: 0.78rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--accent-primary, #667eea);
-        border-bottom: 2px solid var(--accent-primary, #667eea);
-        padding-bottom: 4px;
-        margin-bottom: 10px;
-    }
-    .po-summary-row {
+    /* ── PO LIST ──────────────────────────────────── */
+    .po-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 18px 22px;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        padding: 4px 8px;
-        border-bottom: 1px solid var(--border-light, #f1f5f9);
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .po-list-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .po-list-header small { color: rgba(255,255,255,0.75); font-size: 0.78rem; display: block; }
+    .po-filter-bar {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        padding: 14px 18px 10px;
+        margin-bottom: 14px;
+    }
+    .po-grid-wrap {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 12px rgba(102,126,234,0.07);
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    .table-wrapper.po-table-scroll { max-height: 420px; overflow-y: auto; }
+
+    /* ── STEP CARDS ───────────────────────────────── */
+    .po-step-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 14px;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease;
+    }
+    .po-step-card:hover { box-shadow: 0 4px 20px rgba(102,126,234,0.13); }
+    .po-step-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 18px;
+        background: #fafbff;
+        border-bottom: 1px solid #eef0f8;
+        border-left: 4px solid var(--step-clr, #667eea);
+    }
+    .po-step-num {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: var(--step-clr, #667eea); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.72rem; flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(102,126,234,0.35);
+    }
+    .po-step-title {
+        font-weight: 700; font-size: 0.84rem;
+        color: #1e293b; letter-spacing: 0.04em; text-transform: uppercase;
+        flex: 1;
+    }
+    .po-step-icon { color: var(--step-clr, #667eea); font-size: 1rem; }
+    .po-step-body { padding: 16px 18px; }
+
+    /* ── FIELD ROWS ───────────────────────────────── */
+    .po-field-row {
+        display: flex; align-items: center;
+        gap: 8px; margin-bottom: 9px;
+    }
+    .po-field-lbl {
+        font-size: 0.79rem; font-weight: 600; color: #475569;
+        flex: 0 0 160px; min-width: 0;
+    }
+    .po-field-ctrl { flex: 1; min-width: 0; }
+    .form-control, .form-select {
+        border: 1.5px solid #ddd6fe;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        background-color: #f5f3ff;
+        color: #1e1b4b;
+        transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+    }
+    .form-control[readonly] {
+        background-color: #ede9fe;
+        border-color: #c4b5fd;
+        color: #5b21b6;
+        cursor: default;
+    }
+    .form-control-sm, .form-select-sm { height: 30px; padding: 3px 8px; font-size: 0.8rem; }
+    textarea.form-control-sm { height: auto; }
+
+    /* ── AGAINST PROJECT TOGGLE ───────────────────── */
+    .ap-toggle-wrap {
+        display: inline-flex; align-items: center; gap: 10px;
+        background: linear-gradient(135deg,rgba(102,126,234,0.07),rgba(13,202,240,0.07));
+        border: 1.5px solid #e2e8f0; border-radius: 30px;
+        padding: 5px 14px;
+    }
+    .ap-toggle-wrap .form-check-input { width: 2.2em; height: 1.1em; cursor: pointer; }
+    .ap-lbl { font-size: 0.78rem; font-weight: 600; color: #64748b; }
+    .ap-lbl.active { color: #667eea; }
+
+    /* ── ITEMS TABLE ──────────────────────────────── */
+    .items-table { width: 100%; border-collapse: collapse; }
+    .items-table thead tr th {
+        background: #4f46e5;
+        color: #fff; font-size: 0.73rem; font-weight: 600;
+        text-align: center; vertical-align: middle;
+        padding: 8px 6px; white-space: nowrap;
+        border: none; letter-spacing: 0.03em;
+    }
+    .items-table thead tr th:first-child { border-radius: 8px 0 0 0; }
+    .items-table thead tr th:last-child  { border-radius: 0 8px 0 0; }
+    .items-table tbody tr { transition: background 0.15s; }
+    .items-table tbody tr:hover { background: #f5f3ff; }
+    .items-table tbody tr td {
+        padding: 4px 5px; vertical-align: middle;
+        border: 1px solid #ede9fe; font-size: 0.79rem;
+    }
+    .items-table .form-control-sm,
+    .items-table .form-select-sm { height: 27px; border-radius: 6px; }
+    .items-table input[type="number"] { text-align: right; }
+    .del-row-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 26px; height: 26px;
+        background: #fee2e2; border: 1.5px solid #fca5a5; cursor: pointer;
+        color: #dc2626; font-size: 0.85rem; padding: 0;
+        border-radius: 6px; transition: all 0.18s;
+    }
+    .del-row-btn:hover {
+        background: #dc2626; border-color: #dc2626;
+        color: #fff; transform: scale(1.12);
+        box-shadow: 0 2px 8px rgba(220,38,38,0.35);
+    }
+    .add-item-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        border: none; color: #fff;
+        border-radius: 8px; font-size: 0.79rem; font-weight: 700;
+        padding: 6px 16px; transition: all 0.2s;
+        box-shadow: 0 3px 10px rgba(102,126,234,0.35);
+    }
+    .add-item-btn:hover {
+        background: linear-gradient(135deg,#764ba2,#667eea);
+        transform: translateY(-1px);
+        box-shadow: 0 5px 14px rgba(102,126,234,0.45);
+        color: #fff;
+    }
+
+    /* ── SUMMARY CARD ─────────────────────────────── */
+    .po-summary-line {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 7px 12px; border-radius: 8px;
+        margin-bottom: 4px; background: #f8fafc;
         font-size: 0.82rem;
     }
-    .po-summary-row.total {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: #fff;
-        border-radius: 6px;
-        font-weight: 700;
-        font-size: 0.9rem;
-        margin-top: 4px;
+    .po-summary-line:hover { background: #f0f4ff; }
+    .po-summary-line .lbl { font-weight: 600; color: #475569; display: flex; align-items: center; gap: 6px; }
+    .po-summary-line .val { font-weight: 700; color: #1e293b; min-width: 90px; text-align: right; }
+    .po-summary-total {
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        color: #fff; border-radius: 10px;
+        padding: 10px 14px; display: flex;
+        justify-content: space-between; align-items: center;
+        font-size: 0.95rem; font-weight: 700;
+        margin-top: 8px;
+        box-shadow: 0 4px 16px rgba(102,126,234,0.3);
     }
-    .po-summary-label { font-weight: 600; color: #495057; }
-    .po-summary-value { font-weight: 700; min-width: 100px; text-align: right; }
-    .items-table th {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: #fff;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-align: center;
-        vertical-align: middle;
-        padding: 6px 4px;
-        white-space: nowrap;
+    .other-charge-lbl-input {
+        display: inline-block; width: 100px; font-size: 0.73rem;
+        height: 22px; padding: 2px 6px; border-radius: 6px;
+        border: 1px solid #cbd5e1; background: #fff; color: #475569;
     }
-    .items-table td {
-        padding: 3px 4px;
-        vertical-align: middle;
-        font-size: 0.8rem;
+    .other-charge-amt-input {
+        width: 100px; text-align: right;
+        height: 26px; border-radius: 6px; font-size: 0.8rem;
+        padding: 2px 8px; border: 1.5px solid #e2e8f0;
     }
-    .items-table .form-control, .items-table .form-select {
-        font-size: 0.8rem;
-        padding: 2px 6px;
-        height: 26px;
+    .other-charge-amt-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+        outline: none;
     }
-    .items-table input[type="number"] { text-align: right; }
-    .form-section-card {
-        border: 1px solid var(--border-color, #e2e8f0);
-        border-radius: 10px;
-        background: var(--card-bg, #fff);
-        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
-        padding: 12px 16px;
-        margin-bottom: 12px;
-    }
-    .col-form-label-sm { font-size: 0.8rem; }
-    .po-form-label {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #495057;
-        margin-bottom: 2px;
-    }
-    .btn-height { height: 28px; padding-top: 2px; padding-bottom: 2px; }
-    .icon-height { height: 28px; padding-top: 2px; padding-bottom: 2px; }
-    #divPOForm { display: none; }
-    .table-wrapper.fixed-height-table { max-height: 400px; overflow-y: auto; }
-    .against-project-badge {
-        display: inline-flex; align-items: center; gap: 8px;
-        background: #f0f4f8; border-radius: 20px; padding: 4px 12px;
-        border: 1px solid #e2e8f0;
-    }
-    .po-heading-bar {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: #fff;
-        border-radius: 8px 8px 0 0;
-        padding: 10px 16px;
-        display: flex;
+
+    /* ── FLOATING SAVE BAR ────────────────────────── */
+    .po-float-bar {
+        position: fixed;
+        bottom: 44px;
+        left: 0;
+        right: 0;
+        margin-left: 280px;    /* push right of sidebar — matches footer pattern */
+        z-index: 1050;
+        display: none;
+        background: rgba(255,255,255,0.97);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-top: 3px solid #667eea;
+        border-bottom: 1px solid #e2e8f0;
+        box-shadow: 0 -3px 18px rgba(102,126,234,0.18);
+        padding: 10px 24px;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 0;
+        gap: 12px;
+        flex-wrap: nowrap;
     }
-    .po-heading-bar h6 { margin: 0; font-weight: 700; font-size: 0.95rem; }
-    .delete-row-btn {
-        background: none; border: none; color: #dc3545; cursor: pointer;
-        font-size: 0.9rem; padding: 2px 6px;
+    .po-float-bar-left { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .po-float-bar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: auto; }
+    .po-no-pill {
+        background: linear-gradient(135deg,rgba(102,126,234,0.1),rgba(118,75,162,0.1));
+        border: 1px solid rgba(102,126,234,0.2);
+        border-radius: 20px; padding: 4px 14px;
+        font-size: 0.8rem; font-weight: 700; color: #667eea;
+        display: flex; align-items: center; gap: 6px;
     }
-    .delete-row-btn:hover { color: #a71d2a; }
+    .po-mode-badge {
+        font-size: 0.7rem; font-weight: 700; padding: 3px 10px;
+        border-radius: 20px; letter-spacing: 0.05em;
+    }
+    .btn-po-save {
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        border: none; color: #fff;
+        border-radius: 10px; padding: 10px 28px;
+        font-size: 0.9rem; font-weight: 700;
+        box-shadow: 0 4px 14px rgba(102,126,234,0.4);
+        transition: all 0.2s; cursor: pointer;
+        line-height: 1.4;
+    }
+    .btn-po-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102,126,234,0.5);
+        color: #fff;
+    }
+    .btn-po-cancel {
+        background: linear-gradient(135deg,#f59e0b,#d97706);
+        border: none; color: #fff;
+        border-radius: 10px; padding: 10px 24px;
+        font-size: 0.9rem; font-weight: 700;
+        box-shadow: 0 4px 14px rgba(245,158,11,0.4);
+        transition: all 0.2s; cursor: pointer;
+        line-height: 1.4;
+    }
+    .btn-po-cancel:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245,158,11,0.5); color: #fff; }
+
+    /* ── MISC ─────────────────────────────────────── */
+    #divPOForm { display: none; }
+    .req { color: #ef4444; }
+    /* desktop: bar 44px (footer) + ~50px (bar height) */
+    .po-form-wrap { padding-bottom: 100px; }
+
+    /* ── MOBILE  ≤ 768px ───────────────────────────
+       Layout stack from bottom:
+         footer        ≈ 30px   (bottom:0,  z:1001)
+         mobile-nav    ≈ 65px   (bottom:30px, z:1000)
+         save-bar              → bottom: 95px  (30+65)
+    ─────────────────────────────────────────────── */
+    @@media (max-width: 768px) {
+        .po-field-lbl { flex: 0 0 110px; font-size: 0.74rem; }
+        .po-float-bar {
+            bottom: 95px;
+            margin-left: 0;    /* no sidebar on mobile */
+            padding: 9px 14px;
+            justify-content: flex-end;
+            border-radius: 14px 14px 0 0;
+            box-shadow: 0 -3px 20px rgba(102,126,234,0.22);
+        }
+        .po-float-bar-left { display: none; }
+        .po-float-bar-right { width: 100%; justify-content: flex-end; gap: 8px; }
+        .btn-po-save  { font-size: 0.84rem; padding: 10px 20px; }
+        .btn-po-cancel{ font-size: 0.84rem; padding: 10px 16px; }
+        /* bar 95px + bar height ~50px */
+        .po-form-wrap { padding-bottom: 150px; }
+    }
+    @@media (max-width: 576px) {
+        #modalDeletePO .modal-dialog { margin: auto 12px; }
+    }
+    .section-entry-animation {
+        animation: fadeSlideIn 0.3s ease both;
+    }
+    @@keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── LIST HEADER STAT CHIPS ─────────────────────*/
+    .po-stat-chip {
+        background: rgba(255,255,255,0.18); border-radius: 10px;
+        padding: 5px 14px; text-align: center; min-width: 80px;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    .po-stat-chip .val { font-size: 1.15rem; font-weight: 800; color: #fff; line-height: 1; }
+    .po-stat-chip .lbl { font-size: 0.65rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── MOBILE ITEM CARDS ────────────────────────── */
+    .items-desktop-wrap { display: block; }
+    .items-mobile-wrap  { display: none;  }
+    @@media (max-width: 768px) {
+        .items-desktop-wrap { display: none !important; }
+        .items-mobile-wrap  { display: block !important; }
+    }
+    .mobile-item-card {
+        background: #fff;
+        border: 1.5px solid #ddd6fe;
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 6px rgba(102,126,234,0.08);
+    }
+    .item-card-header {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+    }
+    .item-card-num {
+        width: 22px; height: 22px; border-radius: 50%;
+        background: linear-gradient(135deg,#10b981,#059669); color: #fff;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.7rem; font-weight: 800; flex-shrink: 0;
+    }
+    .item-card-name {
+        flex: 1; font-size: 0.82rem; font-weight: 700; color: #1e293b;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .item-card-actions { display: flex; gap: 5px; flex-shrink: 0; }
+    .item-card-edit-btn {
+        width: 28px; height: 28px; border-radius: 7px;
+        background: #eff6ff; border: 1px solid #bfdbfe;
+        color: #2563eb; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center; font-size: 0.78rem;
+        transition: all 0.18s;
+    }
+    .item-card-edit-btn:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .item-card-del-btn {
+        width: 28px; height: 28px; border-radius: 7px;
+        background: #fee2e2; border: 1px solid #fca5a5;
+        color: #dc2626; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center; font-size: 0.78rem;
+        transition: all 0.18s;
+    }
+    .item-card-del-btn:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+    .item-card-details { display: flex; flex-wrap: wrap; gap: 5px 8px; }
+    .item-card-detail {
+        font-size: 0.73rem; color: #64748b;
+        background: #f8fafc; border: 1px solid #e2e8f0;
+        border-radius: 6px; padding: 2px 7px;
+    }
+    .item-card-value {
+        background: #f0fdf4; border-color: #bbf7d0;
+        color: #059669; font-weight: 700;
+    }
+    .mobile-item-empty {
+        text-align: center; padding: 22px 12px;
+        color: #94a3b8; font-size: 0.82rem;
+    }
 </style>
 
-<!-- ===== PO LIST SECTION ===== -->
+<!-- ══════════════════════════════════════════════════
+     PO LIST SECTION
+═══════════════════════════════════════════════════ -->
 <div id="divPOList">
-    <div class="card col-md-12">
-        <div class="card-body pb-2">
-            <div class="row align-items-end g-2">
-                <div class="col-md-2">
-                    <label class="col-form-label-sm fw-bold">Status</label>
-                    <select id="lstDdlStatus" class="form-control form-control-sm"></select>
-                </div>
-                <div class="col-md-2">
-                    <label class="col-form-label-sm fw-bold">From Date <span class="text-danger">*</span></label>
-                    <input type="date" id="lstTxtFromDate" class="form-control form-control-sm" />
-                </div>
-                <div class="col-md-2">
-                    <label class="col-form-label-sm fw-bold">To Date <span class="text-danger">*</span></label>
-                    <input type="date" id="lstTxtToDate" class="form-control form-control-sm" />
-                </div>
-                <div class="col-md-3 d-flex gap-2" style="margin-top:1.5rem">
-                    <button type="button" class="btn btn-primary btn-height" onclick="ShowPOListGrid()">
-                        <i class="fa fa-search me-1"></i>Show
-                    </button>
-                    <button type="button" class="btn btn-success btn-height" onclick="OpenPOForm('New', null)">
-                        <i class="fa fa-plus me-1"></i>Create New
-                    </button>
-                </div>
+    <!-- Gradient header bar -->
+    <div class="po-list-header">
+        <div>
+            <h5><i class="fa fa-file-invoice me-2"></i>Purchase Orders</h5>
+            <small>Manage and track all purchase orders</small>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+            <div class="po-stat-chip">
+                <div class="val" id="statTotalPO">—</div>
+                <div class="lbl">Total</div>
+            </div>
+            <a onclick="OpenPOForm('New', null)"
+                    style="display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#fff;border:2px solid rgba(255,255,255,0.6);color:#667eea;border-radius:10px;padding:8px 18px;font-weight:800;box-shadow:0 3px 12px rgba(0,0,0,0.2);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:all 0.2s;line-height:1;"
+                    onmouseover="this.style.background='#f0f4ff';this.style.borderColor='#667eea';"
+                    onmouseout="this.style.background='#fff';this.style.borderColor='rgba(255,255,255,0.6)';">
+                <i class="fa fa-plus-circle"></i>Create New PO
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="po-filter-bar">
+        <div class="row align-items-end g-2">
+            <div class="col-6 col-md-2">
+                <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Status</label>
+                <select id="lstDdlStatus" class="form-control form-control-sm form-select"></select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">From Date <span class="req">*</span></label>
+                <input type="date" id="lstTxtFromDate" class="form-control form-control-sm" />
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">To Date <span class="req">*</span></label>
+                <input type="date" id="lstTxtToDate" class="form-control form-control-sm" />
+            </div>
+            <div class="col-6 col-md-2 d-flex align-items-end pb-1">
+                <button type="button" onclick="ShowPOListGrid()"
+                        style="background:linear-gradient(135deg,#667eea,#764ba2);border:none;color:#fff;border-radius:9px;padding:7px 20px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(102,126,234,0.35);transition:all 0.2s;height:32px;white-space:nowrap;"
+                        onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+                    <i class="fa fa-search me-1"></i>Show
+                </button>
             </div>
         </div>
     </div>
 
-    <div class="row mt-2">
-        <div class="col-md-12">
-            <div class="table-wrapper fixed-height-table">
-                <table id="tblPOList" class="table table-sm table-bordered table-hover">
-                    <thead id="table-header-POList"></thead>
-                    <tbody id="table-body-POList"></tbody>
-                </table>
-            </div>
-            <div class="paginator" id="paginator-POList"></div>
+    <!-- Grid -->
+    <div class="po-grid-wrap">
+        <div class="table-wrapper po-table-scroll">
+            <table id="tblPOList" class="table table-sm table-hover mb-0">
+                <thead id="tblPOListHeader"></thead>
+                <tbody id="tblPOListBody"></tbody>
+            </table>
         </div>
+        <div class="paginator px-3 py-2" id="paginator-tblPOList"></div>
+
     </div>
 </div>
 
-<!-- ===== PO ENTRY FORM SECTION ===== -->
+<!-- ══════════════════════════════════════════════════
+     PO ENTRY FORM SECTION
+═══════════════════════════════════════════════════ -->
 <div id="divPOForm">
-    <!-- Form Header Bar -->
-    <div class="po-heading-bar">
-        <h6><i class="fa fa-file-alt me-2"></i>Purchase Order Entry</h6>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-light btn-height btn-sm" onclick="SavePO()">
-                <i class="fa fa-save me-1"></i>Save
-            </button>
-            <button type="button" class="btn btn-outline-light btn-height btn-sm" onclick="ClosePOForm()">
-                <i class="fa fa-times me-1"></i>Cancel
-            </button>
-        </div>
-    </div>
+    <div class="po-form-wrap">
 
-    <!-- Section: PO Header Info -->
-    <div class="form-section-card" style="border-radius:0 0 10px 10px; border-top: none;">
-        <div class="row g-2">
-            <!-- Left Column -->
-            <div class="col-md-6">
-                <div class="po-section-title">PO Information</div>
-                <div class="row g-1 mb-1">
-                    <div class="col-5"><label class="po-form-label">PO Number</label></div>
-                    <div class="col-7">
-                        <input type="text" id="frmTxtPONo" class="form-control form-control-sm" readonly placeholder="Auto Generate" />
-                        <input type="hidden" id="frmHfCode" />
+        <!-- ── STEP 1 : PO INFORMATION ────────────── -->
+        <div class="po-step-card section-entry-animation" style="--step-clr:#667eea;">
+            <div class="po-step-header">
+                <div class="po-step-num">1</div>
+                <span class="po-step-title">PO Information</span>
+                <i class="fa fa-file-alt po-step-icon ms-auto"></i>
+            </div>
+            <div class="po-step-body">
+                <div class="row g-0">
+                    <div class="col-md-6 pe-md-3">
+                        <div class="po-field-row">
+                            <span class="po-field-lbl">PO Number</span>
+                            <div class="po-field-ctrl">
+                                <input type="text" id="frmTxtPONo" class="form-control form-control-sm"
+                                       readonly placeholder="Auto Generate"
+                                       style="background:#f8fafc;font-weight:700;color:#667eea;letter-spacing:0.05em;" />
+                                <input type="hidden" id="frmHfCode" />
+                            </div>
+                        </div>
+                        <div class="po-field-row">
+                            <span class="po-field-lbl">PO Date <span class="req">*</span></span>
+                            <div class="po-field-ctrl">
+                                <input type="date" id="frmTxtPODate" class="form-control form-control-sm" />
+                            </div>
+                        </div>
+                        <div class="po-field-row">
+                            <span class="po-field-lbl">Vendor Name <span class="req">*</span></span>
+                            <div class="po-field-ctrl">
+                                <select id="frmDdlVendor" class="form-control form-control-sm"></select>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="row g-1 mb-1">
-                    <div class="col-5"><label class="po-form-label">PO Date <span class="text-danger">*</span></label></div>
-                    <div class="col-7">
-                        <input type="date" id="frmTxtPODate" class="form-control form-control-sm" />
-                    </div>
-                </div>
-                <div class="row g-1 mb-1">
-                    <div class="col-5"><label class="po-form-label">Vendor Name <span class="text-danger">*</span></label></div>
-                    <div class="col-7">
-                        <select id="frmDdlVendor" class="form-control form-control-sm"></select>
-                    </div>
-                </div>
-                <div class="row g-1 mb-1">
-                    <div class="col-5"><label class="po-form-label">Ref No</label></div>
-                    <div class="col-7">
-                        <input type="text" id="frmTxtRefNo" class="form-control form-control-sm" maxlength="50" autocomplete="off" />
-                    </div>
-                </div>
-                <div class="row g-1 mb-1">
-                    <div class="col-5"><label class="po-form-label">Ref Date</label></div>
-                    <div class="col-7">
-                        <input type="date" id="frmTxtRefDate" class="form-control form-control-sm" />
-                    </div>
-                </div>
-                <div class="row g-1 mb-1">
-                    <div class="col-5"><label class="po-form-label">Payment Terms</label></div>
-                    <div class="col-7">
-                        <select id="frmDdlPaymentTerms" class="form-control form-control-sm"></select>
-                    </div>
-                </div>
-                <div class="row g-1 mb-1">
-                    <div class="col-5"><label class="po-form-label">Remarks</label></div>
-                    <div class="col-7">
-                        <textarea id="frmTxtRemarks" class="form-control form-control-sm" rows="2" maxlength="500"></textarea>
+                    <div class="col-md-6 ps-md-3" style="border-left:1px dashed #eef2ff;">
+                        <div class="po-field-row">
+                            <span class="po-field-lbl">Ref No</span>
+                            <div class="po-field-ctrl">
+                                <input type="text" id="frmTxtRefNo" class="form-control form-control-sm" maxlength="50" autocomplete="off" />
+                            </div>
+                        </div>
+                        <div class="po-field-row">
+                            <span class="po-field-lbl">Ref Date</span>
+                            <div class="po-field-ctrl">
+                                <input type="date" id="frmTxtRefDate" class="form-control form-control-sm" />
+                            </div>
+                        </div>
+                        <div class="po-field-row">
+                            <span class="po-field-lbl">Work Type</span>
+                            <div class="po-field-ctrl">
+                                <select id="frmDdlWorkType" class="form-control form-control-sm">
+                                    <option value="">-- Select Work Type --</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Right Column -->
-            <div class="col-md-6">
-                <div class="po-section-title">Project Details</div>
-                <div class="row g-1 mb-1">
-                    <div class="col-5"><label class="po-form-label">Against Project</label></div>
-                    <div class="col-7">
-                        <div class="against-project-badge">
-                            <span class="po-form-label mb-0">No</span>
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" id="frmChkAgainstProject" onchange="ToggleProjectFields()" />
+        <!-- ── STEP 2 : PROJECT DETAILS ───────────── -->
+        <div class="po-step-card section-entry-animation" style="--step-clr:#0dcaf0;">
+            <div class="po-step-header">
+                <div class="po-step-num" style="background:linear-gradient(135deg,#0dcaf0,#0891b2);">2</div>
+                <span class="po-step-title">Project Details</span>
+                <i class="fa fa-project-diagram po-step-icon ms-auto" style="color:#0dcaf0;"></i>
+            </div>
+            <div class="po-step-body">
+                <div class="po-field-row">
+                    <span class="po-field-lbl">Against Project</span>
+                    <div class="po-field-ctrl">
+                        <div class="ap-toggle-wrap">
+                            <span class="ap-lbl" id="apLblNo">No</span>
+                            <div class="form-check form-switch mb-0" style="padding-left:2.5em;">
+                                <input class="form-check-input" type="checkbox" id="frmChkAgainstProject"
+                                       role="switch" onchange="ToggleProjectFields()" />
                             </div>
-                            <span class="po-form-label mb-0">Yes</span>
+                            <span class="ap-lbl active" id="apLblYes">Yes</span>
                         </div>
                     </div>
                 </div>
                 <div id="divProjectFields" style="display:none;">
-                    <div class="row g-1 mb-1">
-                        <div class="col-5"><label class="po-form-label">Project Name</label></div>
-                        <div class="col-7">
-                            <select id="frmDdlProject" class="form-control form-control-sm" onchange="LoadSubProjects()"></select>
+                    <div class="row g-0 mt-1">
+                        <div class="col-md-6 pe-md-3">
+                            <div class="po-field-row">
+                                <span class="po-field-lbl">Project Name</span>
+                                <div class="po-field-ctrl">
+                                    <select id="frmDdlProject" class="form-control form-control-sm" onchange="LoadSubProjects()">
+                                        <option value="">-- Select Project --</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="row g-1 mb-1">
-                        <div class="col-5"><label class="po-form-label">Sub Project Name</label></div>
-                        <div class="col-7">
-                            <select id="frmDdlSubProject" class="form-control form-control-sm"></select>
+                        <div class="col-md-6 ps-md-3">
+                            <div class="po-field-row">
+                                <span class="po-field-lbl">Sub Project</span>
+                                <div class="po-field-ctrl">
+                                    <select id="frmDdlSubProject" class="form-control form-control-sm">
+                                        <option value="">-- Select Sub Project --</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="row g-1 mb-1">
-                        <div class="col-5"><label class="po-form-label">Work Type</label></div>
-                        <div class="col-7">
-                            <input type="text" id="frmTxtWorkType" class="form-control form-control-sm" maxlength="100" autocomplete="off" />
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Summary Panel -->
-                <div class="mt-3">
-                    <div class="po-section-title">PO Summary</div>
-                    <div class="po-summary-row">
-                        <span class="po-summary-label">Taxable Amount</span>
-                        <span class="po-summary-value" id="sumTaxableAmount">0.00</span>
-                    </div>
-                    <div class="po-summary-row">
-                        <span class="po-summary-label">
-                            Other Charges 1
-                            <input type="text" id="frmTxtOtherChargesLbl1" class="form-control form-control-sm d-inline-block ms-1" style="width:90px;font-size:0.75rem;" placeholder="Label" value="Other Charges" />
-                        </span>
-                        <input type="number" id="frmTxtOtherCharges1" class="form-control form-control-sm po-summary-value" style="width:100px;text-align:right;" value="0" min="0" onchange="CalcTotals()" />
-                    </div>
-                    <div class="po-summary-row">
-                        <span class="po-summary-label">
-                            Other Charges 2
-                            <input type="text" id="frmTxtOtherChargesLbl2" class="form-control form-control-sm d-inline-block ms-1" style="width:90px;font-size:0.75rem;" placeholder="Label" value="Freight" />
-                        </span>
-                        <input type="number" id="frmTxtOtherCharges2" class="form-control form-control-sm po-summary-value" style="width:100px;text-align:right;" value="0" min="0" onchange="CalcTotals()" />
-                    </div>
-                    <div class="po-summary-row">
-                        <span class="po-summary-label">Total GST</span>
-                        <span class="po-summary-value" id="sumTotalGST">0.00</span>
-                    </div>
-                    <div class="po-summary-row">
-                        <span class="po-summary-label d-flex align-items-center gap-2">
-                            Round Off
-                            <input type="checkbox" id="frmChkRoundOff" onchange="CalcTotals()" />
-                        </span>
-                        <span class="po-summary-value" id="sumRoundOff">0.00</span>
-                    </div>
-                    <div class="po-summary-row total">
-                        <span>Total PO Amount</span>
-                        <span id="sumTotalPOAmount">0.00</span>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Section: Line Items -->
-    <div class="form-section-card">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <div class="po-section-title mb-0">Item Details</div>
-            <button type="button" class="btn btn-outline-primary btn-height btn-sm" onclick="AddItemRow()">
-                <i class="fa fa-plus me-1"></i>Add Item
-            </button>
+        <!-- ── STEP 3 : ITEM DETAILS ──────────────── -->
+        <div class="po-step-card section-entry-animation" style="--step-clr:#10b981;">
+            <div class="po-step-header">
+                <div class="po-step-num" style="background:linear-gradient(135deg,#10b981,#059669);">3</div>
+                <span class="po-step-title">Item Details</span>
+                <button type="button" class="add-item-btn ms-auto" onclick="AddItemRow()">
+                    <i class="fa fa-plus me-1"></i>Add Item
+                </button>
+            </div>
+            <div class="po-step-body" style="padding-top:10px;">
+                <!-- Desktop: scrollable table -->
+                <div class="items-desktop-wrap">
+                    <div style="overflow-x:auto;">
+                        <table class="items-table" id="tblPOItems">
+                            <thead>
+                                <tr>
+                                    <th style="width:36px;">#</th>
+                                    <th style="min-width:190px;">Item Name <span style="color:#fde68a;">*</span></th>
+                                    <th style="min-width:95px;">UOM</th>
+                                    <th style="min-width:85px;">GST %</th>
+                                    <th style="min-width:85px;">Qty <span style="color:#fde68a;">*</span></th>
+                                    <th style="min-width:95px;">Rate <span style="color:#fde68a;">*</span></th>
+                                    <th style="min-width:95px;">Value</th>
+                                    <th style="width:38px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tblPOItemsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Mobile: card list (rendered by JS) -->
+                <div id="mobileItemCards" class="items-mobile-wrap"></div>
+                <div class="d-flex justify-content-end mt-2 pe-1" style="font-size:0.76rem;color:#94a3b8;">
+                    <i class="fa fa-info-circle me-1 mt-1"></i> Value = Qty × Rate
+                </div>
+            </div>
         </div>
-        <div style="overflow-x:auto;">
-            <table class="table table-sm table-bordered items-table w-100" id="tblPOItems">
-                <thead>
-                    <tr>
-                        <th style="width:35px;">#</th>
-                        <th style="min-width:180px;">Item Name <span class="text-warning">*</span></th>
-                        <th style="min-width:90px;">UOM</th>
-                        <th style="min-width:80px;">GST Rate (%)</th>
-                        <th style="min-width:80px;">Qty <span class="text-warning">*</span></th>
-                        <th style="min-width:90px;">Rate <span class="text-warning">*</span></th>
-                        <th style="min-width:90px;">Value</th>
-                        <th style="width:40px;"></th>
-                    </tr>
-                </thead>
-                <tbody id="tblPOItemsBody">
-                </tbody>
-            </table>
+
+        <!-- ── STEP 4 : PAYMENT TERMS & REMARKS ────── -->
+        <div class="po-step-card section-entry-animation" style="--step-clr:#f59e0b;">
+            <div class="po-step-header">
+                <div class="po-step-num" style="background:linear-gradient(135deg,#f59e0b,#d97706);">4</div>
+                <span class="po-step-title">Payment Terms &amp; Remarks</span>
+                <i class="fa fa-comment-alt po-step-icon ms-auto" style="color:#f59e0b;"></i>
+            </div>
+            <div class="po-step-body">
+                <div class="row g-0">
+                    <div class="col-md-6 pe-md-3">
+                        <div class="po-field-row">
+                            <span class="po-field-lbl">Payment Terms</span>
+                            <div class="po-field-ctrl">
+                                <select id="frmDdlPaymentTerms" class="form-control form-control-sm"></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 ps-md-3" style="border-left:1px dashed #fef3c7;">
+                        <div class="po-field-row">
+                            <span class="po-field-lbl">Remarks</span>
+                            <div class="po-field-ctrl">
+                                <textarea id="frmTxtRemarks" class="form-control form-control-sm" rows="2" maxlength="500" style="height:auto;resize:vertical;" placeholder="Optional remarks…"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <!-- ── STEP 5 : PO SUMMARY ────────────────── -->
+        <div class="po-step-card section-entry-animation" style="--step-clr:#764ba2;">
+            <div class="po-step-header">
+                <div class="po-step-num" style="background:linear-gradient(135deg,#764ba2,#667eea);">5</div>
+                <span class="po-step-title">PO Summary</span>
+                <i class="fa fa-calculator po-step-icon ms-auto" style="color:#764ba2;"></i>
+            </div>
+            <div class="po-step-body">
+                <div class="row">
+                    <div class="col-md-6 offset-md-6">
+                        <div class="po-summary-line">
+                            <span class="lbl"><i class="fa fa-receipt me-2 text-muted"></i>Taxable Amount</span>
+                            <span class="val" id="sumTaxableAmount">0.00</span>
+                        </div>
+                        <div class="po-summary-line">
+                            <span class="lbl">
+                                <i class="fa fa-plus-circle me-2 text-muted"></i>
+                                <input type="text" id="frmTxtOtherChargesLbl1" class="other-charge-lbl-input"
+                                       value="Other Charges" placeholder="Label" />
+                            </span>
+                            <input type="number" id="frmTxtOtherCharges1" class="other-charge-amt-input form-control"
+                                   value="0" min="0" step="0.01" onchange="CalcTotals()" oninput="CalcTotals()" />
+                        </div>
+                        <div class="po-summary-line">
+                            <span class="lbl">
+                                <i class="fa fa-truck me-2 text-muted"></i>
+                                <input type="text" id="frmTxtOtherChargesLbl2" class="other-charge-lbl-input"
+                                       value="Freight" placeholder="Label" />
+                            </span>
+                            <input type="number" id="frmTxtOtherCharges2" class="other-charge-amt-input form-control"
+                                   value="0" min="0" step="0.01" onchange="CalcTotals()" oninput="CalcTotals()" />
+                        </div>
+                        <div class="po-summary-line">
+                            <span class="lbl"><i class="fa fa-percent me-2 text-muted"></i>Total GST</span>
+                            <span class="val" id="sumTotalGST">0.00</span>
+                        </div>
+                        <div class="po-summary-line">
+                            <span class="lbl">
+                                <i class="fa fa-adjust me-2 text-muted"></i>Round Off
+                                <div class="form-check form-switch mb-0 ms-2" style="display:inline-flex;vertical-align:middle;">
+                                    <input class="form-check-input" type="checkbox" id="frmChkRoundOff" onchange="CalcTotals()" />
+                                </div>
+                            </span>
+                            <span class="val" id="sumRoundOff">0.00</span>
+                        </div>
+                        <div class="po-summary-total">
+                            <span><i class="fa fa-coins me-2"></i>Total PO Amount</span>
+                            <span id="sumTotalPOAmount">0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /po-form-wrap -->
+
+</div><!-- /divPOForm -->
+
+<!-- ── FLOATING SAVE BAR (fixed, always on top) ──────────────────────────── -->
+<div class="po-float-bar" id="poFloatBar">
+    <div class="po-float-bar-left">
+        <div class="po-no-pill">
+            <i class="fa fa-hashtag" style="font-size:0.7rem;"></i>
+            <span id="floatPONo">New PO</span>
+        </div>
+        <span id="floatModeBadge" class="po-mode-badge badge bg-success">NEW</span>
+    </div>
+    <div class="po-float-bar-right">
+        <a  class="btn-po-cancel" onclick="ClosePOForm()">
+            <i class="fa fa-arrow-left me-1"></i>Back
+        </a>
+        <a  class="btn-po-save" onclick="SavePO()">
+            <i class="fa fa-save me-2"></i>Save Purchase Order
+        </a>
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="modalDeletePO" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="background:linear-gradient(135deg,#dc3545,#c82333);color:#fff;">
-                <h5 class="modal-title"><i class="fa fa-trash me-2"></i>Delete Purchase Order</h5>
+<!-- ══════════════════════════════════════════════════
+     DELETE MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalDeletePO" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:440px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;padding:16px 20px;">
+                <h5 class="modal-title" style="font-size:0.95rem;font-weight:700;">
+                    <i class="fa fa-exclamation-triangle me-2"></i>Delete Purchase Order
+                </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete PO <strong id="modalDeletePONo"></strong>?</p>
-                <div class="mb-2">
-                    <label class="col-form-label-sm fw-bold">Reason for Delete <span class="text-danger">*</span></label>
-                    <textarea id="modalTxtDeleteReason" class="form-control form-control-sm" rows="2" maxlength="200"></textarea>
+            <div class="modal-body" style="padding:20px;">
+                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:0.82rem;color:#7f1d1d;">
+                    <i class="fa fa-trash me-2 text-danger"></i>
+                    You are about to permanently delete PO <strong id="modalDeletePONo"></strong>. This action cannot be undone.
                 </div>
+                <label class="form-label" style="font-size:0.79rem;font-weight:700;color:#475569;">
+                    Reason for Delete <span class="req">*</span>
+                </label>
+                <textarea id="modalTxtDeleteReason" class="form-control form-control-sm" rows="3"
+                          maxlength="200" placeholder="Enter reason…" style="resize:none;border-radius:8px;"></textarea>
                 <input type="hidden" id="modalHfDeleteCode" />
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger btn-height" onclick="ConfirmDeletePO()"><i class="fa fa-trash me-1"></i>Delete</button>
-                <button type="button" class="btn btn-secondary btn-height" data-bs-dismiss="modal">Cancel</button>
+            <div class="modal-footer" style="border:none;padding:12px 20px;background:#fafafa;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Cancel</button>
+                <button type="button" onclick="ConfirmDeletePO()"
+                        style="background:linear-gradient(135deg,#ef4444,#dc2626);border:none;color:#fff;border-radius:8px;padding:6px 18px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(239,68,68,0.35);">
+                    <i class="fa fa-trash me-1"></i>Confirm Delete
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- View PO Modal -->
-<div class="modal fade" id="modalViewPO" tabindex="-1" role="dialog" aria-hidden="true">
+<!-- ══════════════════════════════════════════════════
+     VIEW PO MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalViewPO" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
-                <h5 class="modal-title"><i class="fa fa-eye me-2"></i>View Purchase Order</h5>
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:16px 22px;">
+                <h5 class="modal-title" style="font-size:0.95rem;font-weight:700;">
+                    <i class="fa fa-eye me-2"></i>Purchase Order Details
+                </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="modalViewPOBody">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-height" data-bs-dismiss="modal">Close</button>
+            <div class="modal-body" id="modalViewPOBody" style="padding:20px;"></div>
+            <div class="modal-footer" style="border-top:1px solid #eef2ff;padding:10px 20px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Close</button>
             </div>
         </div>
     </div>
 </div>
 
-
-
+<!-- ══════════════════════════════════════════════════
+     MOBILE ITEM ENTRY MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalMobileItemEntry" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:500px;margin:auto 12px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;padding:14px 18px;">
+                <h5 class="modal-title" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-box me-2"></i><span id="mobileItemModalTitle">Add Item</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:16px 18px;">
+                <div class="mb-3">
+                    <label style="font-size:0.79rem;font-weight:600;color:#475569;">Item Name <span class="req">*</span></label>
+                    <select id="mobileItemDdlItem" class="form-control form-control-sm mt-1"></select>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label style="font-size:0.79rem;font-weight:600;color:#475569;">UOM</label>
+                        <select id="mobileItemDdlUOM" class="form-control form-control-sm mt-1"></select>
+                    </div>
+                    <div class="col-6">
+                        <label style="font-size:0.79rem;font-weight:600;color:#475569;">GST %</label>
+                        <input type="number" id="mobileItemTxtGST" class="form-control form-control-sm mt-1" value="0" min="0" max="100" step="0.01" />
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label style="font-size:0.79rem;font-weight:600;color:#475569;">Qty <span class="req">*</span></label>
+                        <input type="number" id="mobileItemTxtQty" class="form-control form-control-sm mt-1" value="0" min="0" step="0.001" oninput="MobileCalcValue()" />
+                    </div>
+                    <div class="col-6">
+                        <label style="font-size:0.79rem;font-weight:600;color:#475569;">Rate <span class="req">*</span></label>
+                        <input type="number" id="mobileItemTxtRate" class="form-control form-control-sm mt-1" value="0" min="0" step="0.01" oninput="MobileCalcValue()" />
+                    </div>
+                </div>
+                <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-size:0.79rem;font-weight:600;color:#059669;"><i class="fa fa-coins me-1"></i>Value</span>
+                    <span id="mobileItemCalcValue" style="font-size:1rem;font-weight:800;color:#059669;">0.00</span>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:12px 16px;background:#f8fafc;gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Cancel</button>
+                <button type="button" onclick="MobileItemModalConfirm()"
+                        style="background:linear-gradient(135deg,#10b981,#059669);border:none;color:#fff;border-radius:8px;padding:7px 22px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(16,185,129,0.3);">
+                    <i class="fa fa-check me-1"></i><span id="mobileItemModalBtnTxt">Add Item</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

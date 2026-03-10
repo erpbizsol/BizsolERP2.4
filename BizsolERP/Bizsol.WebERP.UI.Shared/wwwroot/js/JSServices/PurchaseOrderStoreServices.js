@@ -4,16 +4,17 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 const PurchaseOrderStoreService = {
 
     GetPurchaseOrderStoreList: function GetPurchaseOrderStoreList(Status, FromDate, ToDate) {
-        let url = UrlService.API_ENDPOINT_PurchaseOrderStore + `/GetPurchaseOrderStoreList?Status=${Status}&FromDate=${FromDate}&ToDate=${ToDate}`;
-        return promiseAjaxCallApi.CallAPI('GET', url, '').then(
-            function (value) {
-                return value;
-            }
-        );
+       // let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/GetPurchaseOrderMasterList?Status=${Status}&FromDate=${FromDate}&ToDate=${ToDate}`;
+        return PurchaseOrderStoreService.Getddl('LOCATE');
+        
     },
 
     GetPurchaseOrderStoreById: function GetPurchaseOrderStoreById(code) {
-        let url = UrlService.API_ENDPOINT_PurchaseOrderStore + `/GetPurchaseOrderStoreById?Code=${code}`;
+        return PurchaseOrderStoreService.Getddl('SHOWDATA', code);
+    },
+
+    Getddl: function Getddl(Mode, Code = 0) {
+        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/Getddl?Mode=${Mode}&Code=${Code}`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(
             function (value) {
                 return value;
@@ -22,61 +23,43 @@ const PurchaseOrderStoreService = {
     },
 
     GetPOStoreStatusList: function GetPOStoreStatusList() {
-        let url = UrlService.API_ENDPOINT_PurchaseOrderStore + `/GetPOStoreStatusList`;
-        return promiseAjaxCallApi.CallAPI('GET', url, '').then(
-            function (value) {
-                return value;
-            }
-        );
+        return PurchaseOrderStoreService.Getddl('POStoreStatusList');
     },
 
     GetVendorList: function GetVendorList() {
-        let url = UrlService.API_ENDPOINT_PurchaseOrderStore + `/GetVendorList`;
-        return promiseAjaxCallApi.CallAPI('GET', url, '').then(
-            function (value) {
-                return value;
-            }
-        );
+        return PurchaseOrderStoreService.Getddl('DDL_VENDORLIST');
     },
 
     GetGodownList: function GetGodownList() {
-        let url = UrlService.API_ENDPOINT_PurchaseOrderStore + `/GetGodownList`;
-        return promiseAjaxCallApi.CallAPI('GET', url, '').then(
-            function (value) {
-                return value;
-            }
-        );
+        return PurchaseOrderStoreService.Getddl('DDL_WORKTYPELIST');
+    },
+
+    GetWorkTypeList: function GetWorkTypeList() {
+        return PurchaseOrderStoreService.Getddl('DDL_WORKTYPELIST');
     },
 
     GetItemList: function GetItemList() {
-        let url = UrlService.API_ENDPOINT_PurchaseOrderStore + `/GetItemList`;
-        return promiseAjaxCallApi.CallAPI('GET', url, '').then(
-            function (value) {
-                return value;
-            }
-        );
+        return PurchaseOrderStoreService.Getddl('DDL_ITEMLIST');
     },
 
     GetUOMList: function GetUOMList() {
-        let url = UrlService.API_ENDPOINT_UOM + `/GetUOMMasterList`;
-        return promiseAjaxCallApi.CallAPI('GET', url, '').then(
-            function (value) {
-                return value;
-            }
-        );
+        return PurchaseOrderStoreService.Getddl('DDL_UOMLIST');
     },
 
     GetPaymentTermsList: function GetPaymentTermsList() {
-        let url = UrlService.API_ENDPOINT_PAYMENT_TERMS_MASTER + `/GetPaymentTermsMasterList`;
-        return promiseAjaxCallApi.CallAPI('GET', url, '').then(
-            function (value) {
-                return value;
-            }
-        );
+        return PurchaseOrderStoreService.Getddl('DDL_PAYMENTTREMSLIST');
     },
 
-    SavePurchaseOrderStore: function SavePurchaseOrderStore(payload, Mode) {
-        let url = UrlService.API_ENDPOINT_PurchaseOrderStore + `/SavePurchaseOrderStore?Mode=${Mode}`;
+    GetProjectList: function GetProjectList() {
+        return PurchaseOrderStoreService.Getddl('DDL_PROJECTLIST');
+    },
+
+    GetSubProjectList: function GetSubProjectList(projectCode) {
+        return PurchaseOrderStoreService.Getddl('DDL_SUBPROJECTLIST', projectCode);
+    },
+
+    SavePurchaseOrderStore: function SavePurchaseOrderStore(payload) {
+        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/SavePurchaseOrder`;
         return promiseAjaxCallApi.CallAPI('POST', url, payload).then(
             function (value) {
                 return value;
@@ -85,7 +68,7 @@ const PurchaseOrderStoreService = {
     },
 
     DeletePurchaseOrderStore: function DeletePurchaseOrderStore(code, UserMaster_Code, ReasonForDelete) {
-        let url = UrlService.API_ENDPOINT_PurchaseOrderStore + `/DeletePurchaseOrderStore?Code=${code}&UserMaster_Code=${UserMaster_Code}&ReasonForDelete=${encodeURIComponent(ReasonForDelete)}&IPAddress=1&Location=1`;
+        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/DeletePurchaseOrder?Code=${code}&ReasonForDelete=${encodeURIComponent(ReasonForDelete)}`;
         return promiseAjaxCallApi.CallAPI('POST', url, '').then(
             function (value) {
                 return value;
@@ -94,7 +77,7 @@ const PurchaseOrderStoreService = {
     },
 
     GetPendingPOStoreList: function GetPendingPOStoreList() {
-        let url = UrlService.API_ENDPOINT_PurchaseOrderStore + `/GetPendingPOStoreList`;
+        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/GetPendingPOStoreList`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(
             function (value) {
                 return value;
