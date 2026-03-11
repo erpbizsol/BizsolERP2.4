@@ -51,9 +51,17 @@ function GetItemMasterList() {
 
         if (rows.length > 0) {
             $("#tblitemMaster").show();
-            var hiddenColumns = ["Code"];
-            var ColumnAlignment = { "Action": ";width:118px;" };
-
+            const StringFilterColumn = ["Item Code", "Item Name", "UOM", "Type"];
+            const NumericFilterColumn = ["Entry No"];
+            const DateFilterColumn = ["Entry Date"];
+            const Button = false;
+            const showButtons = [];
+            const StringdoubleFilterColumn = [];
+            const hiddenColumns = ["CurrentStatus", "MaintenanceType", "Priority", "NatureofBreakdown", "DescriptionofBreakdown", "SpareConsumed", "JobAssignedTo", "MobileNo", "RequestTime", "ConcernedPerson", "ConcenedPersonMobileNo", "Code", "Job Assigned", "Request Date", "Work Start Date", "Machine Failed Date", "Failed Remark", "Start Remark", "Description"];
+            const ColumnAlignment = {
+                
+                "Action": "center;width:118px;",
+            };
             var updatedResponse = rows.map(function (item) {
                 var btns =
                     '<button class="im-btn-view" title="View" onclick="ViewItem(' + item.Code + ')">' +
@@ -69,9 +77,7 @@ function GetItemMasterList() {
             });
 
             BizsolCustomFilterGrid.CreateDataTable(
-                "ItemMaster-header", "ItemMaster-body",
-                updatedResponse, false, [],
-                [], [], [], [], hiddenColumns, ColumnAlignment
+                "ItemMaster-header", "ItemMaster-body", updatedResponse,Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment
             );
 
         } else {
@@ -220,7 +226,7 @@ function DoDelete() {
         OptionName = "Delete",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
         if (response.CheckModuleOptionRight == 'N') {
             toastr.error(response.Msg);
             return false;
