@@ -131,6 +131,7 @@ let UrlService = {
     API_ENDPOINT_BOM: `${environment.BASE_URL}/BOM`,
     API_ENDPOINT_PurchaseOrderMaster: `${environment.BASE_URL}/PurchaseOrderMaster`,
     API_ENDPOINT_POApprovalConfig: `${environment.BASE_URL}/POApprovalConfig`,
+    API_ENDPOINT_POLevelsApprove: `${environment.BASE_URL}/POLevelApprove`,
 }
 
 export { UrlService  }
