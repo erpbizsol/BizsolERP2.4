@@ -230,6 +230,25 @@
         white-space: nowrap;
     }
 
+    .bom-btn.add {
+        background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(14,165,233,.35);
+    }
+
+    .bom-btn.back {
+        background: linear-gradient(135deg, #f97316, #fb923c);
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(249,115,22,.35);
+    }
+
+    .bom-btn.secondary {
+        background: #f3f4f6;
+        color: var(--text-dark);
+        border: 1px solid var(--border-color);
+        box-shadow: none;
+    }
+
     .bom-btn.save {
         background: var(--primary-gradient);
         color: #fff;
@@ -239,6 +258,56 @@
     .bom-btn.verify {
         background: linear-gradient(135deg, #16a34a, #22c55e);
         color: #fff;
+    }
+
+    /* List action buttons – match ProjectMaster look */
+    .bom-btn.icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: transform .14s, box-shadow .14s;
+    }
+
+    .bom-btn.icon:hover {
+        transform: translateY(-2px);
+    }
+
+    .bom-btn.icon.view {
+        background: rgba(6,182,212,.12);
+        color: var(--accent-info);
+        border: 1px solid rgba(6,182,212,.25);
+    }
+
+    .bom-btn.icon.view:hover {
+        background: rgba(6,182,212,.22);
+        box-shadow: 0 4px 12px rgba(6,182,212,.25);
+    }
+
+    .bom-btn.icon.edit {
+        background: rgba(102,126,234,.12);
+        color: var(--accent-primary);
+        border: 1px solid rgba(102,126,234,.25);
+    }
+
+    .bom-btn.icon.edit:hover {
+        background: rgba(102,126,234,.22);
+        box-shadow: var(--shadow-primary);
+    }
+
+    .bom-btn.icon.del {
+        background: rgba(239,68,68,.1);
+        color: #ef4444;
+        border: 1px solid rgba(239,68,68,.2);
+    }
+
+    .bom-btn.icon.del:hover {
+        background: rgba(239,68,68,.18);
+        box-shadow: 0 4px 12px rgba(239,68,68,.3);
     }
 
     .bom-btn:disabled {
@@ -451,6 +520,32 @@
         color: var(--text-muted);
     }
 
+    /* Reuse ProjectMaster button styles for modals */
+    .pm-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding: 8px 20px;
+        border: none;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        outline: none;
+    }
+
+    .pm-btn.secondary {
+        background: var(--light-bg);
+        color: var(--text-muted);
+        border: 1.5px solid var(--border-color);
+    }
+
+    .pm-btn.danger {
+        background: linear-gradient(135deg, #ef4444, #f87171);
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(239,68,68,.32);
+    }
+
     .pm-btn-new {
         display: inline-flex;
         align-items: center;
@@ -496,7 +591,7 @@
     }
 </style>
 
-<div class="bom-page">
+<div class="bom-page" id="dvBOMGrid">
     <div class="bom-hero">
         <div class="bom-hero-left">
             <div class="bom-hero-icon">
@@ -504,9 +599,6 @@
             </div>
             <div>
                 <div class="bom-hero-title">Bill of Material</div>
-                <div class="bom-hero-sub">
-                    Manage and verify BOM entries for projects.
-                </div>
             </div>
         </div>
         <button class="pm-btn-new" id="btnCreateBOM" type="button">
@@ -515,7 +607,7 @@
         </button>
     </div>
 
-    <div class="pm-card" id="dvBOMGrid">
+    <div class="pm-card">
         <div class="pm-card-toolbar">
             <div class="pm-search-wrap">
                 <i class="fas fa-search"></i>
@@ -532,6 +624,7 @@
                         <th style="min-width:220px;">Sub Project Name</th>
                         <th class="right" style="min-width:140px;">Total Amount</th>
                         <th class="center" style="width:120px;">Status</th>
+                        <th class="center" style="width:130px;">Action</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -540,65 +633,102 @@
     </div>
 </div>
 
+<div class="bom-card" id="dvBOMEntry" style="display:none;">
+    <div class="bom-card-toolbar">
+        <div class="bom-fg">
+            <label for="ddlProject">Project Name</label>
+            <select id="ddlProject">
+                <option value="">Loading…</option>
+            </select>
+        </div>
+        <div class="bom-fg">
+            <label for="ddlSubProject">Sub Project Name</label>
+            <select id="ddlSubProject">
+                <option value="">Select project first</option>
+            </select>
+        </div>
+
+        <div style="margin-left:auto; display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="bom-btn add" id="btnAddBomRow">
+                <i class="fas fa-plus-circle"></i> Add New Row
+            </button>
+            <button type="button" class="bom-btn save" id="btnSaveAllBomRows">
+                <i class="fas fa-save"></i> Save All
+            </button>
+            <button type="button" class="bom-btn verify" id="btnVerifyAllBomRows" style="display:none;">
+                <i class="fas fa-check-circle"></i> Verify All
+            </button>
+            <button type="button" class="bom-btn back" id="btnBackToBomList">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+    </div>
+
+    <input type="hidden" id="hfBOMCode" value="0" />
+
+    <div class="bom-table-wrap">
+        <table class="bom-table" id="tblBOM">
+            <thead>
+                <tr>
+                    <th class="center" style="width:50px;">#</th>
+                    <th style="min-width:120px;">Project Category</th>
+                    <th style="min-width:110px;">Work Type</th>
+                    <th style="min-width:200px;">Work Material / Service Desp (Item Name)</th>
+                    <th style="min-width:80px;">UOM</th>
+                    <th style="min-width:90px;" class="right">Tolerance</th>
+                    <th style="min-width:110px;" class="right">Qty Required</th>
+                    <th style="min-width:110px;" class="right">Rate Tol (%)</th>
+                    <th style="min-width:110px;" class="right">EST. Rate</th>
+                    <th style="min-width:120px;" class="right">Amount</th>
+                    <th style="width:40px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <!-- ════════════════════════════════════════════════════════
-     CREATE / EDIT BOM MODAL
+     VIEW BOM MODAL
 ════════════════════════════════════════════════════════ -->
-<div class="modal fade pm-modal" id="dvBOMModal" tabindex="-1" role="dialog"
-     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 1100px;">
+<div class="modal fade pm-modal" id="dvBOMViewModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
         <div class="modal-content">
 
-            <div class="modal-header">
+            <div class="modal-header" style="background: var(--info-gradient);">
                 <div class="pm-modal-hdr-icon">
-                    <i class="fas fa-clipboard-list"></i>
+                    <i class="fas fa-eye"></i>
                 </div>
-                <h5 class="modal-title" id="bom-modal-title">New BOM</h5>
+                <h5 class="modal-title">BOM Details</h5>
                 <button type="button" class="pm-close-btn" data-bs-dismiss="modal" aria-label="Close">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
 
             <div class="modal-body">
-                <div class="bom-card">
-                    <div class="bom-card-toolbar">
-                        <div class="bom-fg">
-                            <label for="ddlProject">Project Name</label>
-                            <select id="ddlProject">
-                                <option value="">Loading…</option>
-                            </select>
-                        </div>
-                        <div class="bom-fg">
-                            <label for="ddlSubProject">Sub Project Name</label>
-                            <select id="ddlSubProject">
-                                <option value="">Select project first</option>
-                            </select>
-                        </div>
-                        <span class="bom-pill" style="margin-left:auto; margin-right:4px;">
-                            <i class="fas fa-info-circle"></i>
-                            &nbsp;Amount = Qty Required × Est. Rate
-                        </span>
+                <div class="pm-form-section">
+                    <div class="pm-form-section-title">
+                        <i class="fas fa-info-circle"></i> Project Information
                     </div>
-
-                    <div class="bom-table-wrap">
-                        <table class="bom-table" id="tblBOM">
-                            <thead>
-                                <tr>
-                                    <th class="center" style="width:50px;">#</th>
-                                    <th style="min-width:120px;">Project Category</th>
-                                    <th style="min-width:110px;">Work Type</th>
-                                    <th style="min-width:200px;">Work Material / Service Desp (Item Name)</th>
-                                    <th style="min-width:80px;">UOM</th>
-                                    <th style="min-width:90px;" class="right">Tolerance</th>
-                                    <th style="min-width:110px;" class="right">Qty Required</th>
-                                    <th style="min-width:110px;" class="right">Rate Tol (%)</th>
-                                    <th style="min-width:110px;" class="right">EST. Rate</th>
-                                    <th style="min-width:120px;" class="right">Amount</th>
-                                    <th class="center" style="min-width:120px;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">Project Name</span>
+                        <span class="pm-view-val" id="viewBOMProjectName">—</span>
+                    </div>
+                    <div class="pm-view-divider"></div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">Sub Project Name</span>
+                        <span class="pm-view-val" id="viewBOMSubProjectName">—</span>
+                    </div>
+                    <div class="pm-view-divider"></div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">Total Amount (&#8377;)</span>
+                        <span class="pm-view-val" id="viewBOMAmount">—</span>
+                    </div>
+                    <div class="pm-view-divider"></div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">Status</span>
+                        <span class="pm-view-val" id="viewBOMStatus">—</span>
                     </div>
                 </div>
             </div>
@@ -606,6 +736,62 @@
             <div class="modal-footer">
                 <button type="button" class="pm-btn secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     DELETE BOM CONFIRM MODAL
+════════════════════════════════════════════════════════ -->
+<div class="modal fade pm-modal" id="dvBOMDeleteConfirmModal" tabindex="-1" role="dialog"
+     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+        <div class="modal-content">
+
+            <div class="modal-header" style="background: linear-gradient(135deg,#dc2626,#ef4444);">
+                <div class="pm-modal-hdr-icon">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="pm-close-btn" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body" style="background:#fff; text-align:center; padding:28px 24px 20px;">
+                <div class="pm-del-icon-wrap">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div style="font-size:15px; font-weight:700; color:var(--text-dark); margin-bottom:8px;">
+                    Delete BOM?
+                </div>
+                <div style="font-size:13.5px; color:var(--text-muted); line-height:1.65; margin-bottom:20px;">
+                    You are about to delete BOM for
+                    <strong id="delBOMName" style="color:var(--accent-primary-dark);"></strong>.
+                    <br />This action <strong style="color:#ef4444;">cannot be undone</strong>.
+                </div>
+                <div style="text-align:left;">
+                    <label for="bomReasonForDeleteInput" style="font-size:12.5px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;">
+                        Reason for Deletion <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="bomReasonForDeleteInput" autocomplete="off"
+                           placeholder="Enter reason for deletion"
+                           style="width:100%; padding:10px 13px; border-radius:10px; border:1.5px solid var(--border-color);
+                                  font-size:13.5px; outline:none; background:#fff; color:var(--text-dark);
+                                  transition:border-color .2s, box-shadow .2s; box-sizing:border-box;" />
+                </div>
+                <input type="hidden" id="hfDeleteBOMId" value="0" />
+            </div>
+
+            <div class="modal-footer" style="justify-content:center; gap:12px; background:#fff; border-top:1px solid #fee2e2;">
+                <button type="button" class="pm-btn secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-ban"></i> Cancel
+                </button>
+                <button type="button" class="pm-btn danger" id="btnConfirmDeleteBOM">
+                    <i class="fas fa-trash-alt"></i> Delete
                 </button>
             </div>
 
