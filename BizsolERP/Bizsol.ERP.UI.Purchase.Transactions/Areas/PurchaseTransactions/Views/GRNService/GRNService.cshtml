@@ -934,3 +934,28 @@
         </button>
     </div>
 </div>
+
+<script>
+    /* Sync float-bar margin-left with sidebar collapsed/expanded state */
+    (function () {
+        const sidebar = document.getElementById('modern-sidebar');
+        const bar     = document.getElementById('floatBar');
+        if (!sidebar || !bar) return;
+
+        function syncMargin() {
+            if (window.innerWidth <= 768) {
+                bar.style.marginLeft = '';   /* let CSS media-query handle mobile */
+                return;
+            }
+            bar.style.marginLeft = sidebar.classList.contains('collapsed') ? '70px' : '280px';
+        }
+
+        syncMargin();   /* apply on page load */
+
+        /* Watch sidebar class changes (collapse / expand) */
+        new MutationObserver(syncMargin).observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+
+        /* Re-evaluate on resize (mobile ↔ desktop switch) */
+        window.addEventListener('resize', syncMargin);
+    })();
+</script>

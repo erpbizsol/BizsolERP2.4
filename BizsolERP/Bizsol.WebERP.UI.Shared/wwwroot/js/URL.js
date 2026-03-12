@@ -130,6 +130,7 @@ let UrlService = {
     API_ENDPOINT_VendorMaster: `${environment.BASE_URL}/VendorMaster`,
     API_ENDPOINT_BOM: `${environment.BASE_URL}/BOM`,
     API_ENDPOINT_PurchaseOrderMaster: `${environment.BASE_URL}/PurchaseOrderMaster`,
+    API_ENDPOINT_GRNService: `${environment.BASE_URL}/GRNService`,
 }
 
 export { UrlService  }
