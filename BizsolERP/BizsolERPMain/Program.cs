@@ -87,6 +87,10 @@ namespace BizsolERPMain
                name: "PurchaseReports",
                pattern: "{area:exists}/{controller=Reports}/{action=MaizeReport}/{id?}");
 
+            app.MapControllerRoute(
+               name: "PurchaseMasters",
+               pattern: "{area:exists}/{controller=PurchaseOrder}/{action=POApprovalConfiguration}/{id?}");
+
             app.Run();
         }
 

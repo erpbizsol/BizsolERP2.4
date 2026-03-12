@@ -3023,7 +3023,7 @@ function GateEntry_ExportExecl() {
 }
 function BindddlVehiclesStatusInFectory() {
     let ddlVehiclesStatusInFectoryArray = [];
-    ddlVehiclesStatusInFectoryArray.push({ Code: "all", Desp: "All" });
+    ddlVehiclesStatusInFectoryArray.push({ Code: "all", Desp: "All vehicles in progress" });
     ddlVehiclesStatusInFectoryArray.push({ Code: "ALIN", Desp: "All Inward" });
     ddlVehiclesStatusInFectoryArray.push({ Code: "AEIN", Desp: "All Outward" });
     ddlVehiclesStatusInFectoryArray.push({ Code: "LIN", Desp: "Loaded IN (completed)" });
