@@ -624,6 +624,51 @@
         border: 3px solid rgba(239,68,68,.25);
     }
 
+    /* ── Select2 multiselect overrides ─────────────────────────── */
+    .pm-fg .select2-container { width: 100% !important; }
+
+    .pm-fg .select2-container--default .select2-selection--multiple {
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        min-height: 42px;
+        background: var(--white-bg);
+        padding: 4px 8px;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+    .pm-fg .select2-container--default.select2-container--focus .select2-selection--multiple,
+    .pm-fg .select2-container--default.select2-container--open .select2-selection--multiple {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+        outline: none;
+    }
+
+    .pm-fg .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background: var(--primary-gradient);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 2px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        margin: 2px 4px 2px 0;
+    }
+
+    .pm-fg .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: rgba(255,255,255,.8);
+        margin-right: 5px;
+        font-weight: 700;
+    }
+
+    .pm-fg .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+        color: #fff;
+    }
+
+    .pm-fg .select2-container--default .select2-selection--multiple .select2-selection__placeholder {
+        color: var(--text-muted);
+        font-size: 13.5px;
+    }
+
     /* ── Responsive ────────────────────────────────────────────── */
     @@media (max-width: 880px) {
         .pm-stats { gap: 10px; }
@@ -783,6 +828,12 @@
                                 <input type="number" id="txtEstimatedDays" autocomplete="off" min="0" placeholder="30" style="text-align:right;" />
                             </div>
                         </div>
+                        <div class="col-12">
+                            <div class="pm-fg">
+                                <label for="ddlVerifyPOUsers">User Right To Verify PO</label>
+                                <select id="ddlVerifyPOUsers" multiple="multiple" style="width:100%;"></select>
+                            </div>
+                        </div>
                     </div>
                     <input type="hidden" id="hfSubProjectCode" value="0" />
                 </div>
@@ -851,6 +902,11 @@
                     <div class="pm-view-row">
                         <span class="pm-view-lbl">Estimated Days</span>
                         <span class="pm-view-val" id="viewEstDays">—</span>
+                    </div>
+                    <div class="pm-view-divider"></div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">Verify PO Users</span>
+                        <span class="pm-view-val" id="viewVerifyPOUsers" style="white-space:normal;">—</span>
                     </div>
                 </div>
             </div>
