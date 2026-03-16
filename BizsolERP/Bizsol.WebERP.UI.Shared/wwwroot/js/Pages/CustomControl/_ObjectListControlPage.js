@@ -73,9 +73,9 @@ function createObjectlistControlModal(id) {
 function buildObjectListHeader(columns) {
     let headerHTML = '<tr>';
     columns.forEach(function (col) {
-        if (col.visible !== false) {
-            headerHTML += `<th>${col.header}</th>`;
-        }
+        // Show all columns in header, but apply display:none if not visible
+        const displayStyle = col.visible !== false ? '' : 'style="display:none;"';
+        headerHTML += `<th ${displayStyle}>${col.header}</th>`;
     });
     headerHTML += '</tr>';
     $('#objListTableHead').html(headerHTML);
@@ -93,13 +93,13 @@ function renderObjectListRows(data, columns) {
     data.forEach(function (row, index) {
         bodyHTML += `<tr class="objlist-row" style="cursor:pointer;" data-index="${index}">`;
         columns.forEach(function (col) {
-            if (col.visible !== false) {
-                let cellValue = row[col.field] !== undefined && row[col.field] !== null ? row[col.field] : '';
-                if (G_ObjectListNumericColumns.includes(col.field) && cellValue !== '') {
-                    cellValue = parseFloat(cellValue).toFixed(3);
-                }
-                bodyHTML += `<td>${cellValue}</td>`;
+            // Render all columns, but apply display:none if not visible
+            let cellValue = row[col.field] !== undefined && row[col.field] !== null ? row[col.field] : '';
+            if (G_ObjectListNumericColumns.includes(col.field) && cellValue !== '') {
+                cellValue = parseFloat(cellValue).toFixed(3);
             }
+            const displayStyle = col.visible !== false ? '' : 'style="display:none;"';
+            bodyHTML += `<td ${displayStyle}>${cellValue}</td>`;
         });
         bodyHTML += '</tr>';
     });

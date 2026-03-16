@@ -1,0 +1,614 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/POLevelsApprove.js"></script>
+
+<style>
+    /* ── PAGE HEADER ──────────────────────────────────────────── */
+    .pla-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 18px rgba(102,126,234,0.28);
+    }
+    .pla-header h5  { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .pla-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; margin-top: 3px; }
+
+    /* ── STAT CHIPS ───────────────────────────────────────────── */
+    .pla-stat-chip {
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 10px;
+        padding: 5px 14px;
+        text-align: center;
+        min-width: 78px;
+    }
+    .pla-stat-chip .val { font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1; }
+    .pla-stat-chip .lbl { font-size: 0.64rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── FILTER BAR ───────────────────────────────────────────── */
+    .pla-filter-bar {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 14px 18px 10px;
+        margin-bottom: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .pla-filter-bar .form-label {
+        font-size: 0.77rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 4px;
+        display: block;
+    }
+    .form-control, .form-select {
+        border: 1.5px solid #ddd6fe;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        background-color: #f5f3ff;
+        color: #1e1b4b;
+        transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+        outline: none;
+    }
+    .form-control-sm, .form-select-sm { height: 30px; padding: 3px 8px; font-size: 0.8rem; }
+    .btn-pla-search {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none; color: #fff;
+        border-radius: 8px; padding: 7px 18px;
+        font-size: 0.82rem; font-weight: 700;
+        box-shadow: 0 3px 10px rgba(102,126,234,0.35);
+        transition: all 0.2s; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 5px;
+    }
+    .btn-pla-search:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(102,126,234,0.45); color: #fff; }
+
+    /* ── PO CARDS ─────────────────────────────────────────────── */
+    .pla-po-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease, transform 0.15s ease;
+        border-left: 4px solid #667eea;
+    }
+    .pla-po-card:hover { box-shadow: 0 6px 22px rgba(102,126,234,0.16); transform: translateY(-1px); }
+    .pla-po-card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px 10px;
+    }
+    .pla-po-no-badge {
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        border-radius: 10px;
+        padding: 8px 12px;
+        min-width: 68px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        box-shadow: 0 3px 10px rgba(102,126,234,0.35);
+    }
+    .pla-po-card-vendor { flex: 1; min-width: 0; }
+    .pla-po-vendor-name {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #1e293b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 4px;
+    }
+    .pla-po-card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+        font-size: 0.74rem;
+        color: #64748b;
+    }
+    .pla-po-level-chip {
+        background: rgba(102,126,234,0.08);
+        border: 1px solid rgba(102,126,234,0.18);
+        border-radius: 6px;
+        padding: 1px 7px;
+        color: #667eea;
+        font-weight: 600;
+    }
+    .pla-po-card-right {
+        flex-shrink: 0;
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        align-items: flex-end;
+    }
+    .pla-po-amount { font-size: 0.92rem; font-weight: 800; color: #667eea; }
+    .pla-po-status-badge {
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        display: inline-block;
+    }
+
+    /* ── CARD LEVEL STEPPER ───────────────────────────────────── */
+    .pla-po-card-levels {
+        padding: 8px 16px 10px;
+        border-top: 1px solid #f0f4ff;
+        background: #fafbff;
+    }
+    .pla-po-level-label {
+        font-size: 0.73rem;
+        color: #64748b;
+        margin-bottom: 8px;
+    }
+    .pla-stepper {
+        display: flex;
+        align-items: center;
+        overflow-x: auto;
+        gap: 0;
+        padding-bottom: 2px;
+    }
+    .pla-step-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        flex-shrink: 0;
+    }
+    .pla-step-circle {
+        width: 28px; height: 28px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.72rem; font-weight: 800;
+        border: 2px solid transparent;
+        transition: all 0.2s;
+    }
+    .pla-step-done     { background: linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 2px 8px rgba(16,185,129,0.35); }
+    .pla-step-active   { background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; box-shadow:0 2px 8px rgba(102,126,234,0.4); animation: pulseStep 1.6s infinite; }
+    .pla-step-rejected { background: linear-gradient(135deg,#dc2626,#ef4444); color:#fff; box-shadow:0 2px 8px rgba(220,38,38,0.35); }
+    .pla-step-pending  { background: #f1f5f9; color:#94a3b8; border-color:#e2e8f0; }
+    @@keyframes pulseStep {
+        0%,100% { box-shadow: 0 2px 8px rgba(102,126,234,0.4); }
+        50%     { box-shadow: 0 2px 18px rgba(102,126,234,0.75); }
+    }
+    .pla-step-lbl { font-size: 0.63rem; color: #94a3b8; font-weight: 600; }
+    .pla-step-connector {
+        flex: 1; height: 3px; min-width: 18px; max-width: 56px;
+        border-radius: 2px; margin-bottom: 12px;
+    }
+    .pla-step-line-done    { background: linear-gradient(90deg,#10b981,#059669); }
+    .pla-step-line-pending { background: #e2e8f0; }
+
+    /* ── CARD FOOTER ──────────────────────────────────────────── */
+    .pla-po-card-footer {
+        padding: 8px 16px 12px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .btn-pla-card-approve {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: linear-gradient(135deg,#10b981,#059669);
+        border: none; color: #fff;
+        border-radius: 8px; padding: 7px 18px;
+        font-size: 0.8rem; font-weight: 700;
+        box-shadow: 0 3px 10px rgba(16,185,129,0.35);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-pla-card-approve:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(16,185,129,0.45); color: #fff; }
+    .btn-pla-card-view {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: #eff6ff; border: 1.5px solid #bfdbfe;
+        color: #2563eb; border-radius: 8px; padding: 7px 18px;
+        font-size: 0.8rem; font-weight: 700;
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-pla-card-view:hover { background: #2563eb; color: #fff; border-color: #2563eb; transform: translateY(-1px); }
+
+    /* ── EMPTY & LOADING STATES ───────────────────────────────── */
+    .pla-empty-state {
+        text-align: center; padding: 52px 16px; color: #94a3b8;
+        background: #fff; border-radius: 14px; border: 1px dashed #e2e8f0;
+        margin-bottom: 14px;
+    }
+    .pla-empty-state i { font-size: 2.8rem; margin-bottom: 12px; display: block; color: #c4b5fd; }
+    .pla-empty-state div { font-size: 0.88rem; font-weight: 600; margin-bottom: 4px; }
+    .pla-empty-state small { font-size: 0.78rem; }
+    .pla-loading-state {
+        text-align: center; padding: 52px 16px; color: #667eea;
+        margin-bottom: 14px;
+    }
+    .pla-loading-state div { font-size: 0.85rem; margin-top: 10px; font-weight: 600; }
+
+    /* ── DETAIL MODAL — INFO GRID ─────────────────────────────── */
+    .pla-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+    .pla-info-item {
+        background: #fafbff;
+        border: 1px solid #eef0f8;
+        border-radius: 10px;
+        padding: 8px 12px;
+    }
+    .pla-info-lbl {
+        font-size: 0.7rem; font-weight: 600; color: #64748b;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        display: block; margin-bottom: 3px;
+    }
+    .pla-info-val { font-size: 0.84rem; font-weight: 700; color: #1e293b; }
+
+    /* ── DETAIL MODAL — LEVEL STEPPER ────────────────────────── */
+    .pla-level-stepper-wrap {
+        background: #fafbff;
+        border: 1px solid #eef0f8;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+    }
+    .pla-level-stepper-title {
+        font-size: 0.78rem; font-weight: 700; color: #475569;
+        margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .pla-detail-stepper {
+        display: flex;
+        align-items: flex-start;
+        overflow-x: auto;
+        gap: 0;
+        padding-bottom: 4px;
+    }
+    .pla-dstep-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        flex-shrink: 0;
+        min-width: 100px;
+    }
+    .pla-dstep-circle {
+        width: 38px; height: 38px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; font-weight: 800;
+        margin-bottom: 7px; flex-shrink: 0;
+        border: 2px solid transparent;
+    }
+    .pla-dstep-done     .pla-dstep-circle { background:linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 2px 10px rgba(16,185,129,0.35); }
+    .pla-dstep-active   .pla-dstep-circle { background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; box-shadow:0 2px 10px rgba(102,126,234,0.4); animation:pulseStep 1.6s infinite; }
+    .pla-dstep-rejected .pla-dstep-circle { background:linear-gradient(135deg,#dc2626,#ef4444); color:#fff; box-shadow:0 2px 10px rgba(220,38,38,0.35); }
+    .pla-dstep-pending  .pla-dstep-circle { background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; }
+    .pla-dstep-body { display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .pla-dstep-title { font-size:0.75rem; font-weight:700; color:#1e293b; margin-bottom:2px; }
+    .pla-dstep-sub   { font-size:0.68rem; color:#64748b; }
+    .pla-dstep-badge {
+        font-size: 0.64rem; font-weight: 700; padding: 2px 9px;
+        border-radius: 20px; margin-top: 5px; display: inline-block;
+    }
+    .pla-dstep-badge-done     { background:#d1fae5; color:#059669; }
+    .pla-dstep-badge-active   { background:#ede9fe; color:#667eea; }
+    .pla-dstep-badge-rejected { background:#fee2e2; color:#dc2626; }
+    .pla-dstep-badge-pending  { background:#f1f5f9; color:#94a3b8; }
+    .pla-dstep-line {
+        flex-shrink: 0;
+        width: 28px; height: 3px;
+        align-self: flex-start;
+        margin-top: 17px;
+        border-radius: 2px;
+    }
+    .pla-dstep-line-done    { background:linear-gradient(90deg,#10b981,#059669); }
+    .pla-dstep-line-pending { background:#e2e8f0; }
+
+    /* ── DETAIL MODAL — ITEMS TABLE ───────────────────────────── */
+    .pla-items-wrap  { margin-bottom: 14px; }
+    .pla-items-title {
+        font-size: 0.78rem; font-weight: 700; color: #475569;
+        text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;
+    }
+    .pla-items-table { width: 100%; border-collapse: collapse; }
+    .pla-items-table thead tr th {
+        background: #4f46e5; color: #fff;
+        font-size: 0.72rem; font-weight: 600;
+        text-align: center; vertical-align: middle;
+        padding: 8px 10px; white-space: nowrap; border: none;
+    }
+    .pla-items-table thead tr th:first-child { border-radius: 8px 0 0 0; }
+    .pla-items-table thead tr th:last-child  { border-radius: 0 8px 0 0; }
+    .pla-items-table tbody tr { transition: background 0.15s; }
+    .pla-items-table tbody tr:hover { background: #f5f3ff; }
+    .pla-items-table tbody tr td {
+        padding: 7px 10px; vertical-align: middle;
+        border: 1px solid #ede9fe; font-size: 0.8rem; color: #374151;
+    }
+
+    /* ── REMARKS ──────────────────────────────────────────────── */
+    .pla-remarks-wrap  { margin-top: 10px; }
+    .pla-remarks-lbl { font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 5px; display: block; }
+    .pla-remarks-wrap textarea { font-size: 0.82rem; resize: vertical; }
+
+    /* ── MODAL ACTION BUTTONS ─────────────────────────────────── */
+    .btn-pla-approve {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#10b981,#059669);
+        border:none; color:#fff; border-radius:9px; padding:9px 22px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(16,185,129,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-pla-approve:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(16,185,129,0.5); color:#fff; }
+    .btn-pla-reject {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#dc2626,#ef4444);
+        border:none; color:#fff; border-radius:9px; padding:9px 22px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(220,38,38,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-pla-reject:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(220,38,38,0.5); color:#fff; }
+    .btn-pla-close {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#f59e0b,#d97706);
+        border:none; color:#fff; border-radius:9px; padding:9px 20px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(245,158,11,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-pla-close:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(245,158,11,0.5); color:#fff; }
+
+    /* ── CONFIRM MODAL BUTTONS ────────────────────────────────── */
+    .btn-pla-confirm-approve {
+        display:inline-flex; align-items:center; gap:4px;
+        background:linear-gradient(135deg,#10b981,#059669);
+        border:none; color:#fff; border-radius:8px; padding:8px 18px;
+        font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s;
+    }
+    .btn-pla-confirm-approve:hover { transform:translateY(-1px); color:#fff; }
+    .btn-pla-confirm-reject {
+        display:inline-flex; align-items:center; gap:4px;
+        background:linear-gradient(135deg,#dc2626,#ef4444);
+        border:none; color:#fff; border-radius:8px; padding:8px 18px;
+        font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s;
+    }
+    .btn-pla-confirm-reject:hover { transform:translateY(-1px); color:#fff; }
+    .btn-pla-reject-sm {
+        background:#f1f5f9; border:1px solid #e2e8f0; color:#475569;
+        border-radius:8px; padding:8px 16px; font-size:0.82rem; font-weight:600;
+        cursor:pointer; transition:all 0.2s;
+    }
+    .btn-pla-reject-sm:hover { background:#e2e8f0; }
+
+    /* ── ANIMATIONS ───────────────────────────────────────────── */
+    .section-entry-animation { animation: fadeSlideIn 0.3s ease both; }
+    @@keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── MOBILE ≤ 768px ───────────────────────────────────────── */
+    @@media (max-width: 768px) {
+        .pla-header { border-radius: 10px; padding: 14px 16px; }
+        .pla-po-card-header { flex-wrap: wrap; }
+        .pla-po-card-right {
+            flex-direction: row; align-items: center;
+            width: 100%; justify-content: space-between;
+        }
+        .pla-info-grid { grid-template-columns: repeat(2, 1fr); }
+        .pla-po-card-footer { justify-content: stretch; }
+        .pla-po-card-footer .btn-pla-card-approve,
+        .pla-po-card-footer .btn-pla-card-view { width: 100%; justify-content: center; }
+        .btn-pla-approve, .btn-pla-reject, .btn-pla-close { padding: 9px 14px; font-size: 0.8rem; }
+    }
+    @@media (max-width: 576px) {
+        .pla-info-grid  { grid-template-columns: 1fr 1fr; }
+        .pla-dstep-item { min-width: 72px; }
+        #modalPODetail .modal-dialog { margin: 8px; }
+        #modalConfirm  .modal-dialog { margin: auto 12px; }
+    }
+</style>
+
+<!-- ══════════════════════════════════════════════════
+     PAGE HEADER
+═══════════════════════════════════════════════════ -->
+<div class="pla-header section-entry-animation">
+    <div>
+        <h5><i class="fa fa-check-double me-2"></i>PO Level Approval</h5>
+        <small>Review and approve pending purchase orders by approval level</small>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <div class="pla-stat-chip">
+            <div class="val" id="statPendingPO">—</div>
+            <div class="lbl">Pending</div>
+        </div>
+        <div class="pla-stat-chip">
+            <div class="val" id="statApprovedToday">—</div>
+            <div class="lbl">Approved</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     FILTER BAR
+═══════════════════════════════════════════════════ -->
+<div class="pla-filter-bar section-entry-animation">
+    <div class="row align-items-end g-2">
+        <div class="col-6 col-md-2">
+            <label class="form-label">From Date</label>
+            <input type="date" id="lstFromDate" class="form-control form-control-sm" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label">To Date</label>
+            <input type="date" id="lstToDate" class="form-control form-control-sm" />
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label">Search PO / Vendor</label>
+            <input type="text" id="lstSearch" class="form-control form-control-sm"
+                   placeholder="PO number or vendor name…" autocomplete="off" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label">Status</label>
+            <select id="lstDdlStatus" class="form-control form-control-sm form-select">
+                <option value="">-- All Status --</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-2 d-flex align-items-end">
+            <a onclick="LoadPOList()" class="btn-pla-search w-100">
+                <i class="fa fa-search"></i>Search
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PO CARDS LIST
+═══════════════════════════════════════════════════ -->
+<div id="poPendingList" class="section-entry-animation"></div>
+
+<div id="poPendingEmpty" style="display:none;" class="pla-empty-state section-entry-animation">
+    <i class="fa fa-inbox"></i>
+    <div>No pending POs found for approval</div>
+    <small>Change your filters or check back later.</small>
+</div>
+
+<div id="poPendingLoading" style="display:none;" class="pla-loading-state">
+    <i class="fa fa-spinner fa-spin fa-2x" style="color:#667eea;"></i>
+    <div>Loading purchase orders…</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     DETAIL / APPROVE MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalPODetail" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+
+            <div class="modal-header"
+                 style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 20px;border:none;">
+                <div>
+                    <h5 class="modal-title mb-0" style="font-size:0.95rem;font-weight:700;">
+                        <i class="fa fa-file-invoice me-2"></i><span id="modalPONo"></span>
+                    </h5>
+                    <small id="modalVendorName" style="font-size:0.75rem;opacity:0.82;display:block;margin-top:2px;"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto"
+                        onclick="CloseDetailModal()" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body" style="padding:16px;max-height:72vh;overflow-y:auto;">
+
+                <!-- PO header info -->
+                <div id="modalPOHeader"></div>
+
+                <!-- Approval level flow stepper -->
+                <div class="pla-level-stepper-wrap">
+                    <div class="pla-level-stepper-title">
+                        <i class="fa fa-layer-group me-1"></i>Approval Flow
+                    </div>
+                    <div id="modalApprovalStepper"></div>
+                </div>
+
+                <!-- PO line items -->
+                <div class="pla-items-wrap">
+                    <div class="pla-items-title">
+                        <i class="fa fa-boxes me-1"></i>PO Items
+                    </div>
+                    <div class="table-responsive">
+                        <table class="pla-items-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;">#</th>
+                                    <th>Item / Description</th>
+                                    <th style="width:70px;">UOM</th>
+                                    <th style="width:90px;">Qty</th>
+                                    <th style="width:110px;">Rate</th>
+                                    <th style="width:120px;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalItemsBody">
+                                <tr>
+                                    <td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                        <i class="fa fa-spinner fa-spin me-1"></i>Loading items…
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Remarks -->
+                <div class="pla-remarks-wrap">
+                    <label class="pla-remarks-lbl">
+                        <i class="fa fa-comment me-1"></i>Remarks
+                        <small style="font-weight:400;color:#94a3b8;">(required for rejection)</small>
+                    </label>
+                    <textarea id="frmRemarks" class="form-control form-control-sm" rows="2"
+                              placeholder="Enter approval / rejection remarks…"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer"
+                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;">
+                <input type="hidden" id="hfPOCode" value="0" />
+                <input type="hidden" id="hfLevelCode" value="0" />
+                <button type="button" id="btnRejectAction" class="btn-pla-reject"
+                        onclick="SubmitApproval('Reject')" style="display:none;">
+                    <i class="fa fa-times"></i>Reject
+                </button>
+                <button type="button" id="btnApproveAction" class="btn-pla-approve"
+                        onclick="SubmitApproval('Approve')" style="display:none;">
+                    <i class="fa fa-check"></i>Approve
+                </button>
+                <button type="button" class="btn-pla-close ms-auto" onclick="CloseDetailModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     CONFIRM MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalConfirm" tabindex="-1" role="dialog"
+     aria-hidden="true" style="z-index:1060;">
+    <div class="modal-dialog modal-sm" style="margin-top:140px;">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header" id="confirmModalHeader"
+                 style="padding:12px 16px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
+                <h5 class="modal-title mb-0"
+                    style="font-size:0.9rem;font-weight:700;" id="confirmTitle"></h5>
+            </div>
+            <div class="modal-body" style="padding:14px 16px;font-size:0.85rem;color:#475569;">
+                <span id="confirmMessage"></span>
+            </div>
+            <div class="modal-footer" style="padding:10px 16px;gap:8px;border-top:1px solid #eef0f8;">
+                <button type="button" class="btn-pla-reject-sm"
+                        onclick="CloseConfirmModal()">Cancel</button>
+                <button type="button" id="btnConfirmAction"></button>
+            </div>
+        </div>
+    </div>
+</div>

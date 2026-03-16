@@ -21,6 +21,12 @@ const SubProjectMasterService = {
             return value;
         });
     },
+    GetUserList: function GetUserList() {
+        let url = UrlService.API_ENDPOINT_SubProjectMaster + '/GetUserList';
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(function (value) {
+            return value;
+        });
+    },
 };
 
 export { SubProjectMasterService }
