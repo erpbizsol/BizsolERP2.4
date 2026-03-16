@@ -165,7 +165,7 @@ function CreateNew() {
             HideGrid();
         }
     });
-}   
+}
 function ShowGrid() {
     $("#dvGrid").show();
     $("#dvFrom").hide();
@@ -1102,6 +1102,7 @@ function addNewEditableRow() {
     uniqueGodowns.forEach(function (godown) {
         godownOptionsHtml += `<option value="${godown.Code}">${godown.Name}</option>`;
     });
+
     // Get current row count for SNo
     const currentRowCount = $tbody.find('tr.editable-row').length;
     const newSNo = currentRowCount + 1;
@@ -1110,7 +1111,6 @@ function addNewEditableRow() {
         <tr class="editable-row">
             <td class="row-sno">${newSNo}
                 <input type="hidden" class="Code" value="0" />
-                <input type="hidden" class="DatabaseName" value="" />
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm identification-no"
@@ -1505,7 +1505,6 @@ function initializeEditableRow($row, detail) {
         const existingQty = detail.qtyMTOffer || detail.QtyMTOffer || '';
         const existingGodownCode = detail.godownMaster_Code || detail.GodownMaster_Code || '';
         const existingGodownName = detail.godownName || detail.GodownName || '';
-        const existingDatabaseName = detail.databaseName || detail.DatabaseName || '';
 
         if (existingIdentification) {
             // Try direct value match first
@@ -1538,17 +1537,43 @@ function initializeEditableRow($row, detail) {
             $coilWt.val(existingQty);
         }
 
-        // Store DatabaseName in hidden field within the row
-        const $rowSno = $row.find('.row-sno');
-        let $databaseNameInput = $rowSno.find('.DatabaseName');
-        if ($databaseNameInput.length === 0) {
-            $databaseNameInput = $('<input>').attr('type', 'hidden').addClass('DatabaseName').val(existingDatabaseName);
-            $rowSno.append($databaseNameInput);
-        } else {
-            // Update existing DatabaseName input with value from detail
-            $databaseNameInput.val(existingDatabaseName);
+        // Prefer mapping via Identification change (will set Godown from master list and max BalQtyMT)
+        if ($identificationNo.val()) {
+            handleIdentificationChange();
+            // Also ensure max value is set for validation — read from value already stored on the input
+            const balQtyMT = parseFloat($coilWt.data('max-bal-qty')) || parseFloat($coilWt.attr('max')) || 0;
+            if (balQtyMT > 0) {
+                $coilWt.attr('max', balQtyMT);
+                $coilWt.data('max-bal-qty', balQtyMT);
+            }
+        } else if (existingGodownCode || existingGodownName) {
+            // Fallback: set Godown directly if we have code or name
+            if (existingGodownCode) {
+                $coilLocation.val(String(existingGodownCode));
+            } else {
+                const normalizedName = String(existingGodownName).trim().toLowerCase();
+                let matchedLocVal = null;
+                $coilLocation.find('option').each(function () {
+                    const text = ($(this).text() || '').trim().toLowerCase();
+                    if (text === normalizedName) {
+                        matchedLocVal = $(this).val();
+                        return false;
+                    }
+                });
+                if (matchedLocVal !== null) {
+                    $coilLocation.val(matchedLocVal);
+                }
+            }
+
+            if ($.fn.select2 && $coilLocation.hasClass('select2-hidden-accessible')) {
+                $coilLocation.trigger('change.select2');
+            } else {
+                $coilLocation.trigger('change');
+            }
         }
 
+        // Final validation state
+        checkRowComplete();
     } else {
         // Initial check for new blank rows
         checkRowComplete();
@@ -1586,7 +1611,6 @@ function bindEmptyEditableRow() {
         <tr class="editable-row">
             <td class="row-sno">1
                 <input type="hidden" class="Code" value="0" />
-                <input type="hidden" class="DatabaseName" value="" />
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm identification-no"
@@ -1634,14 +1658,12 @@ function bindExistingEditableRows(detailResponse) {
         const verifyStatus = detail.Verify || detail.verify || 'N';
         const isLocked = verifyStatus !== 'N';
         const lockedClass = isLocked ? 'locked-row' : '';
-        const databaseName = detail.databaseName || detail.DatabaseName || '';
         
         const rowHtml = `
             <tr class="editable-row ${lockedClass}">
                 <td class="row-sno">${index + 1}
                     <input type="hidden" class="Code" value="${detail.Code || 0}" />
                     <input type="hidden" class="Verify" value="${verifyStatus}" />
-                    <input type="hidden" class="DatabaseName" value="${databaseName}" />
                 </td>
                 <td>
                     <input type="text" class="form-control form-control-sm identification-no"
@@ -1848,7 +1870,6 @@ function SaveRMInspectionRequest() {
             const coilWt = parseFloat($row.find('.coil-wt').val()) || 0;
             const locationCode = $row.find('.coil-location').val() || '';
             const rowCode = $row.find('.Code').val() || 0;   // hidden code per row
-            const databaseName = $row.find('.DatabaseName').val() || '';  // Get DatabaseName
 
             if (
                 identificationNo !== '' &&
@@ -1870,7 +1891,6 @@ function SaveRMInspectionRequest() {
                     godownMaster_Code: locationCode,
                     identificationNo: identificationNo,
                     qtyMTOffer: coilWt,
-                    databaseName: databaseName,
                     BomTransaction_Codes: BomTransaction_Codes
                 });
             }
@@ -1960,7 +1980,6 @@ function Back() {
     if ($tableBodyEditable && $tableBodyEditable.length) {
         $tableBodyEditable.empty();
     }
-    
     try {
         const $table = $tableBodyEditable.closest('table');
         if ($table && $table.length && $.fn.DataTable) {
@@ -2174,7 +2193,6 @@ function ShowIdentificationModal(value) {
                 CallBackFunctionName_btnDone: 'onIdentificationSelected',
                 DefaultColumnfilter: 'IdentificationNo',
                 NumericColumns: ['BalQtyMT'],
-                NoOfHideColumn: 1,
                 Columns: [
                     { field: 'GodownCode', visible: false },
                     { field: 'GodownMaster_Code', visible: false }
@@ -2192,14 +2210,13 @@ function ShowObjectlistControlModal(value) {
             ModalId: 'DivControlmodal',
             searchvalue: value,
             MultiSelect: true,
-            NoOfHideColumn: 2,
+            NoOfHideColumn: 1,
             ClientOrderProjectData: G_GetBOMMasterDataOrderWise,
             CallBackFunctionName_btnDone: 'onSelectedRowApplied',
             DefaultColumnfilter: 'Order No',
             NumericColumns: ["Offer Qty","P.O. Qty(Wt.)"],
             Columns: [
-                { field: 'Code', visible: false },
-                { field: 'DatabaseName', visible: false }
+                { field: 'Code', visible: false }
             ]
         };
         initializeObjectlistControl(options);
@@ -2214,7 +2231,6 @@ window.onIdentificationSelected = function (response) {
 
     response.forEach(function (item, index) {
         const identNo = item.IdentificationNo || item.IdentificationNos || '';
-        const databaseName = item.DatabaseName || '';
         if (!identNo) return;
 
         let $targetRow;
@@ -2237,16 +2253,6 @@ window.onIdentificationSelected = function (response) {
         }
 
         $targetRow.find('.identification-no').val(identNo).trigger('change.identification');
-        
-        // Store DatabaseName in hidden field
-        const $rowSno = $targetRow.find('.row-sno');
-        let $databaseNameInput = $rowSno.find('.DatabaseName');
-        if ($databaseNameInput.length === 0) {
-            $databaseNameInput = $('<input>').attr('type', 'hidden').addClass('DatabaseName').val(databaseName);
-            $rowSno.append($databaseNameInput);
-        } else {
-            $databaseNameInput.val(databaseName);
-        }
     });
 };
 

@@ -93,7 +93,7 @@ $(document).ready(function () {
     //     GetDispatchAdvicePlanList($(this).val());
     // })
     var initialStatus = $("#ddlStatus").val();
-    if (initialStatus === 'R') {
+    if (initialStatus === 'R' || initialStatus === 'T') {
         $(".despatch-activity-filter").removeClass('d-none');
         $("#dvTableDispatch").hide();
     } else {
@@ -102,7 +102,7 @@ $(document).ready(function () {
     }
     $("#ddlStatus").change(function () {
         var status = $(this).val();
-        if (status === 'R') {
+        if (status === 'R' || status === 'T') {
             $(".despatch-activity-filter").removeClass('d-none');
             $("#dvTableDispatch").hide();
         } else {
@@ -111,15 +111,25 @@ $(document).ready(function () {
         }
     });
     $("#txtFromDate").change(function () {
-        ShowDespatchActivityList();
+        if ($("#ddlStatus").val() === 'R') {
+            ShowFilteredList();
+        }
     });
     $("#txtToDate").change(function () {
-        ShowDespatchActivityList();
+        if ($("#ddlStatus").val() === 'R') {
+            ShowFilteredList();
+        }
     });
 });
-function GetDispatchAdvicePlanList(Status) {
+function GetDispatchAdvicePlanList(Status, fromdate, todate) {
+    if (fromdate == undefined) {
+        fromdate = '';
+    }
+    if (todate == undefined) {
+        todate = '';
+    }
     Showloader();
-    VerifyDispatchPlanService.GetDispatchAdvicePlanList(Status).then(function (response) {
+    VerifyDispatchPlanService.GetDispatchAdvicePlanList(Status, fromdate, todate).then(function (response) {
         if (response && response.length > 0) {
             G_DispatchPlanlist = response;
             $("#dvTableDispatch").show();
@@ -133,7 +143,7 @@ function GetDispatchAdvicePlanList(Status) {
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"
-            ,"Remarks","Marketing Remark","PPC Remark"];
+                , "Remarks", "Marketing Remark", "PPC Remark","CityMaster_Code_Freight"];
             const columnAlignment = {
                 "Ord Qty Pc": "right;max-width:30px;",
                 "Ord Qty MT": "right",
@@ -157,12 +167,15 @@ function GetDispatchAdvicePlanList(Status) {
                 const Action = Status == 'C' ? `<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>` : `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["Code"]})"><i class="fa fa-check"></i></button>&nbsp;<button class="btn btn-info icon-height mb-1" title="Update Qty" onclick="EditQty(${item["Code"]})"><i class="fa fa-pencil"></i></button>`;
                 const Remark = `<button class="btn btn-info icon-height mb-1" title="Remarks" onclick="OpenShowRemarksModal(${item["Code"]})">Remark</button>`;
                 const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Verify/Send Mail" onclick="SendMail(${item["Code"]})">Verify/Send Mail</button>&nbsp;<button class="btn btn-info icon-height mb-1" title="Update Qty" onclick="EditQty(${item["Code"]})"><i class="fa fa-pencil"></i></button>` : '';
+                const Area = `${item["Area"]}&nbsp;<button class="btn btn-success icon-height mb-1" title="add/update area" onclick="UpdateArea(${item["Code"]},${item["CityMaster_Code_Freight"] != null ? item["CityMaster_Code_Freight"] : 0})"><i class="fa fa-plus"></i></button>`;
+
                 let formattedItem;
                 if (Status == 'D') {
                     formattedItem = {
                         ...item,
                         Remark: Remark,
                         //Action: Action,
+                        Area: Area,
                         Other: Other
                     };
                 } else if (Status == 'C') { 
@@ -963,7 +976,7 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
 });
 function ExportExcel() {
     var status = $("#ddlStatus").val();
-    if (status === 'R') {
+    if (status === 'R' || status === 'T') {
         var fromDate = $('#txtFromDate').val();
         var toDate = $('#txtToDate').val();
         if (!fromDate || !toDate) {
@@ -974,19 +987,38 @@ function ExportExcel() {
             toastr.warning('To Date must be greater than or equal to From Date.');
             return;
         }
-        Showloader();
-        VerifyDispatchPlanService.GetDespatchActivityReportList(fromDate, toDate).then(function (response) {
+        if (status === 'R') {
+            Showloader();
+            VerifyDispatchPlanService.GetDespatchActivityReportList(fromDate, toDate).then(function (response) {
+                HideLoader();
+                if (response && response.length > 0) {
+                    ExportToExcelControl.ExportToExcel(response, [], "DespatchActivityReport");
+                    toastr.success('Export completed successfully.');
+                } else {
+                    toastr.info('No data to export for the selected date range.');
+                }
+            }).catch(function (error) {
+                HideLoader();
+                toastr.error(error.Msg || error.message || 'Error during export.');
+            });
+            return;
+        }
+        if (status === 'T') {
+            const hiddenFields = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
+            Showloader();
+            VerifyDispatchPlanService.GetDispatchAdvicePlanList(status, fromDate, toDate).then(function (response) {
+                HideLoader();
+                if (response && response.length > 0) {
+                    ExportToExcelControl.ExportToExcel(response, hiddenFields, "DispatchAdvicePlan");
+                    toastr.success('Export completed successfully.');
+                } else {
+                    toastr.info('No data to export.');
+                }
+            }).catch(function (error) {
+                toastr.error(error.Msg || error.message || 'Error during export.');
+            });
             HideLoader();
-            if (response && response.length > 0) {
-                ExportToExcelControl.ExportToExcel(response, [], "DespatchActivityReport");
-                toastr.success('Export completed successfully.');
-            } else {
-                toastr.info('No data to export for the selected date range.');
-            }
-        }).catch(function (error) {
-            HideLoader();
-            toastr.error(error.Msg || error.message || 'Error during export.');
-        });
+        }
         return;
     }
     const hiddenFields = ["Code","AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
@@ -1789,6 +1821,129 @@ function OpenShowRemarksModal(Code) {
 function CloseShowRemarksModal() {
     $('#dvShowRemarks').modal('hide');
 }
+function UpdateArea(Code, CityMaster_Code_Freight) {
+    var ModuleName = "Delivery Order/Despatch Advice (GST)",
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            $('#hfAreaCode').val(Code);
+            $('#dvUpdateArea').modal({ backdrop: 'static' });
+            $('#dvUpdateArea').modal('show');
+            BindCityMasterDropdownForArea(CityMaster_Code_Freight || 0);
+        }
+    });  
+}
+function BindCityMasterDropdownForArea(selectedCityCode) {
+    var $ddl = $('#ddlAreaCity');
+    if (!$ddl.length) return;
+
+    $ddl.off('change select2:select');
+    $ddl.off('select2:open select2:close');
+
+    var options = '<option value="">-- Select City --</option>';
+    Showloader();
+    VerifyDispatchPlanService.GetCityMasterList('India', 'All').then(function (response) {
+        HideLoader();
+        (response || []).forEach(function (item) {
+            var code = item.Code || item.code || 0;
+            var cityName = item.CityName || item.Descp || item.cityName || '';
+            if (cityName) {
+                options += '<option value="' + code + '">' + cityName + '</option>';
+            }
+        });
+        $ddl.html(options);
+        if (selectedCityCode) {
+            $ddl.val(selectedCityCode);
+        }
+
+        try {
+            if ($.fn.select2) {
+                if ($ddl.hasClass('select2-hidden-accessible')) {
+                    $ddl.select2('destroy');
+                }
+                $ddl.select2({
+                    width: '100%',
+                    placeholder: '-- Select City --',
+                    allowClear: true,
+                    dropdownParent: $('#dvUpdateArea')
+                });
+                if (typeof attachSelect2ScrollPrevention === 'function') {
+                    attachSelect2ScrollPrevention($ddl);
+                } else {
+                    function preventScroll() {
+                        var scrollY = window.scrollY || window.pageYOffset;
+                        document.documentElement.style.overflow = 'hidden';
+                        document.body.style.position = 'fixed';
+                        document.body.style.top = '-' + scrollY + 'px';
+                        document.body.style.width = '100%';
+                        document.body.setAttribute('data-scroll-y', scrollY);
+                    }
+                    function restoreScroll() {
+                        var scrollY = document.body.getAttribute('data-scroll-y') || '0';
+                        document.documentElement.style.overflow = '';
+                        document.body.style.position = '';
+                        document.body.style.top = '';
+                        document.body.style.width = '';
+                        window.scrollTo(0, parseInt(scrollY, 10));
+                        document.body.removeAttribute('data-scroll-y');
+                    }
+                    $ddl.on('select2:open', preventScroll);
+                    $ddl.on('select2:close', restoreScroll);
+                }
+            }
+        } catch (e) {
+            toastr.error('Error initializing select2 for City:', e);
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || error.message || 'Error loading city list.');
+    });
+}
+function SaveArea() {
+    var code = $('#hfAreaCode').val();
+    var cityMaster_Code = $('#ddlAreaCity').val();
+    if (!code) {
+        toastr.error('Invalid record.');
+        return;
+    }
+    if (!cityMaster_Code) {
+        toastr.warning('Please select a city.');
+        return;
+    }
+    Showloader();
+    VerifyDispatchPlanService.SaveArea(code, cityMaster_Code).then(function (response) {
+        HideLoader();
+        if (response && (response.Status === 'Y' || response.status === 'Y')) {
+            toastr.success(response.Msg || 'Area saved successfully.');
+            CloseUpdateAreaModal();
+            var s = $("#ddlStatus").val();
+            if (s === 'T') {
+                GetDispatchAdvicePlanList(s, $('#txtFromDate').val(), $('#txtToDate').val());
+            } else {
+                GetDispatchAdvicePlanList(s);
+            }
+        } else {
+            toastr.error(response.Msg || 'Error saving area.');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || error.message || 'Error saving area.');
+    });
+}
+function CloseUpdateAreaModal() {
+    var $ddl = $('#ddlAreaCity');
+    if ($ddl.hasClass('select2-hidden-accessible')) {
+        $ddl.select2('destroy');
+    }
+    $('#dvUpdateArea').modal('hide');
+    $('#hfAreaCode').val('');
+    $ddl.empty().append('<option value="">-- Select City --</option>').val('');
+}
 function setCurrentDateDespatchActivity() {
     let today = new Date();
     let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -1803,18 +1958,7 @@ function setCurrentDateDespatchActivity() {
     $('#txtFromDate').val(formatDate(firstOfMonth));
     $('#txtToDate').val(formatDate(today));
 }
-
-function ShowDespatchActivityList() {
-    var fromDate = $('#txtFromDate').val();
-    var toDate = $('#txtToDate').val();
-    if (!fromDate || !toDate) {
-        toastr.warning('Please select From Date and To Date.');
-        return;
-    }
-    if (new Date(toDate) < new Date(fromDate)) {
-        toastr.warning('To Date must be greater than or equal to From Date.');
-        return;
-    }
+function ShowDespatchActivityList(fromDate, toDate) {
     Showloader();
     VerifyDispatchPlanService.GetDespatchActivityReportList(fromDate, toDate).then(function (response) {
         HideLoader();
@@ -1848,7 +1992,23 @@ function ShowDespatchActivityList() {
         toastr.error(error.Msg || error.message || 'Error loading Despatch Activity Report.');
     });
 }
-
+function ShowFilteredList() {
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate) {
+        toastr.warning('Please select From Date and To Date.');
+        return;
+    }
+    if (new Date(toDate) < new Date(fromDate)) {
+        toastr.warning('To Date must be greater than or equal to From Date.');
+        return;
+    }
+    if ($("#ddlStatus").val() === 'R') {
+        ShowDespatchActivityList(fromDate, toDate)
+    } else {
+        GetDispatchAdvicePlanList($("#ddlStatus").val(), fromDate, toDate);
+    }
+}
 window.ViewAll = ViewAll;
 window.EditQty = EditQty;
 window.CloseVerifyModal = CloseVerifyModal;
@@ -1871,4 +2031,8 @@ window.ApprovedTransporter = ApprovedTransporter;
 window.UpdateQty = UpdateQty;
 window.OpenShowRemarksModal = OpenShowRemarksModal;
 window.CloseShowRemarksModal = CloseShowRemarksModal;
+window.UpdateArea = UpdateArea;
+window.CloseUpdateAreaModal = CloseUpdateAreaModal;
+window.SaveArea = SaveArea;
 window.ShowDespatchActivityList = ShowDespatchActivityList;
+window.ShowFilteredList = ShowFilteredList;
