@@ -1,6 +1,5 @@
 @{
-    ViewBag.Title = "Goods Receipt Note";
-    Layout = "_Layout";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
@@ -9,7 +8,7 @@
 <style>
     /* ── PO LIST ──────────────────────────────────── */
     .po-list-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(130deg, #5b5ef4 0%, #8b5cf6 55%, #a855f7 100%);
         border-radius: 14px 14px 0 0;
         padding: 18px 22px;
         display: flex;
@@ -19,18 +18,18 @@
         gap: 10px;
     }
 
-        .po-list-header h5 {
-            margin: 0;
-            color: #fff;
-            font-weight: 700;
-            font-size: 1rem;
-        }
+    .po-list-header h5 {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+    }
 
-        .po-list-header small {
-            color: rgba(255,255,255,0.75);
-            font-size: 0.78rem;
-            display: block;
-        }
+    .po-list-header small {
+        color: rgba(255,255,255,0.75);
+        font-size: 0.78rem;
+        display: block;
+    }
 
     .po-filter-bar {
         background: #fff;
@@ -199,18 +198,7 @@
         border-collapse: collapse;
     }
 
-        .items-table thead tr th {
-            background: #4f46e5;
-            color: #fff;
-            font-size: 0.73rem;
-            font-weight: 600;
-            text-align: center;
-            vertical-align: middle;
-            padding: 8px 6px;
-            white-space: nowrap;
-            border: none;
-            letter-spacing: 0.03em;
-        }
+      
 
             .items-table thead tr th:first-child {
                 border-radius: 8px 0 0 0;
@@ -423,24 +411,11 @@
         letter-spacing: 0.05em;
     }
 
-    .btn-po-save {
-        background: linear-gradient(135deg,#667eea,#764ba2);
-        border: none;
-        color: #fff;
-        border-radius: 10px;
-        padding: 10px 28px;
-        font-size: 0.9rem;
-        font-weight: 700;
-        box-shadow: 0 4px 14px rgba(102,126,234,0.4);
-        transition: all 0.2s;
-        cursor: pointer;
-        line-height: 1.4;
-    }
 
         .btn-po-save:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102,126,234,0.5);
-            color: #fff;
+        color: #e6091f;
         }
 
     .btn-po-cancel {
@@ -448,7 +423,7 @@
         border: none;
         color: #fff;
         border-radius: 10px;
-        padding: 10px 24px;
+        padding: 4px 24px;
         font-size: 0.9rem;
         font-weight: 700;
         box-shadow: 0 4px 14px rgba(245,158,11,0.4);
@@ -457,19 +432,35 @@
         line-height: 1.4;
     }
 
-        .btn-po-cancel:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(245,158,11,0.5);
-            color: #fff;
-        }
+    .btn-po-cancel:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(245,158,11,0.5);
+        color: #fff;
+    }
 
     /* ── MISC ─────────────────────────────────────── */
     #divPOForm {
         display: none;
     }
 
+    #divGRNForm {
+        display: none;
+    }
+
     .req {
         color: #ef4444;
+    }
+
+    /* Validation error highlight */
+    .is-invalid {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239,68,68,0.18) !important;
+        animation: shake 0.3s ease;
+    }
+    @@keyframes shake {
+        0%, 100% { transform: translateX(0);  }
+        25%       { transform: translateX(-4px); }
+        75%       { transform: translateX(4px);  }
     }
     /* desktop: bar 44px (footer) + ~50px (bar height) */
     .po-form-wrap {
@@ -568,23 +559,14 @@
             letter-spacing: 0.06em;
         }
 
-    /* ── MOBILE ITEM CARDS ────────────────────────── */
+    /* ── ITEM TABLE — always show table, never show mobile cards ── */
     .items-desktop-wrap {
-        display: block;
+        display: block !important;
+        overflow-x: auto;   /* horizontal scroll on small screens */
     }
 
     .items-mobile-wrap {
-        display: none;
-    }
-
-    @@media (max-width: 768px) {
-        .items-desktop-wrap {
-            display: none !important;
-        }
-
-        .items-mobile-wrap {
-            display: block !important;
-        }
+        display: none !important;  /* mobile card view disabled */
     }
 
     .mobile-item-card {
@@ -748,9 +730,160 @@
         border-radius: 8px;
     }
 
+    /* ── Grid Action Buttons ──────────────────────*/
+    .im-btn-edit {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 12px;
+        background: #eff6ff;
+        color: #2563eb;
+        border: 1.5px solid #bfdbfe;
+        border-radius: 7px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.18s;
+        margin-right: 4px;
+    }
+    .im-btn-edit:hover {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+        box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+    }
+
+    .im-btn-delete {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 12px;
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1.5px solid #fca5a5;
+        border-radius: 7px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.18s;
+    }
+    .im-btn-delete:hover {
+        background: #dc2626;
+        color: #fff;
+        border-color: #dc2626;
+        box-shadow: 0 2px 8px rgba(220,38,38,0.3);
+    }
+
+    th {
+        background: linear-gradient(135deg, #5b5ef4, #5b5ef4) !important;
+        color: #fff !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        padding: 11px 14px !important;
+        white-space: nowrap;
+        position: relative;
+        min-width: 99px !important;
+        letter-spacing: 0.02em;
+        transition: background 0.18s, color 0.18s !important;
+        cursor: default;
+        text-transform: uppercase;
+    }
+
+        th:hover {
+            background: linear-gradient(90deg, #e6091f 0%, #6b5ee6 100%) !important;
+        }
+
+    table, th, td, tr {
+        /* padding: 5px 5px !important; */
+        border: 1px solid #ddd;
+        height: 16px !important;
+        vertical-align: middle;
+    }
+    /* ── Card Body ── */
+    .vm-card-body {
+        padding: 18px 20px 26px;
+    }
+
+    .vm-card-body {
+        padding: 18px 20px 26px;
+    }
+
+    /* ── Grid Wrapper ── */
+    .vm-table-wrapper {
+        border-radius: 12px;
+        border: 1px solid #e4e7f0;
+        overflow-x: hidden;
+        height: 300px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        box-shadow: 0 2px 12px rgba(91,94,244,0.06);
+        background: #fff;
+        position: relative;
+    }
+
+        .vm-table-wrapper thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+    /* Filter dropdown — fixed positioning via JS */
+    .vm-filter-fixed {
+        position: fixed !important;
+        z-index: 99999 !important;
+    }
+
+    /* ── Table base ── */
+    .vm-table-wrapper table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 600px;
+    }
+
+    .btn-po-save {
+        background: linear-gradient(170deg, #ffffff, #ffffff);
+        border: none;
+        color: #925bf7;
+        border-radius: 10px;
+        padding: 3px 28px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        box-shadow: 0 4px 14px rgb(255 255 255);
+        transition: all 0.2s;
+        cursor: pointer;
+        line-height: 1.4;
+    }
 </style>
 
+<div id="divGRNList" class="container-fluid mt-3">
 
+    <!-- Header -->
+    <div class="po-list-header">
+        <div>
+            <h5><i class="fa fa-receipt me-2"></i>GRN Service List</h5>
+            <small>Goods Receipt Note – All Records</small>
+        </div>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <button type="button" class="btn-po-save" onclick="newGRN()">
+                <i class="fa fa-plus me-1"></i> New GRN
+            </button>
+        </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="po-grid-wrap vm-card-body">
+        <div class="table-wrapper po-table-scroll vm-table-wrapper">
+            <table class="items-table w-100" id="grnListTable">
+                <thead id="grnListTable-hader">
+                </thead>
+                <tbody id="grnListTbody-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-grnListTable"></div>
+    </div>
+   
+</div>
 <div id="divGRNForm" class="container-fluid mt-3 po-form-wrap">
 
     <!-- ── SECTION 1 : GRN INFORMATION ─────────────── -->
@@ -764,33 +897,33 @@
             <div class="row g-2">
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">GRN Number</label>
-                    <input type="text" id="txtGRNNo" class="form-control form-control-sm" placeholder="Auto Generate" readonly>
+                    <input type="text" id="txtGRNNo" class="form-control form-control-sm" autocomplete="off" placeholder="Auto Generate" readonly>
                 </div>
-                <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">GRN Date <span class="req">*</span></label>
-                    <input type="date" id="dtGRNDate" class="form-control form-control-sm">
-                </div>
+
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Bill No <span class="req">*</span></label>
-                    <input type="text" id="txtBillNo" class="form-control form-control-sm" placeholder="Enter Bill No">
+                    <input type="text" id="txtBillNo" class="form-control form-control-sm" placeholder="Enter Bill No" autocomplete="off">
                 </div>
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Bill Date</label>
-                    <input type="date" id="dtBillDate" class="form-control form-control-sm">
+                    <input type="date" id="dtBillDate" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-md-3">
+                    <label class="po-field-lbl d-block mb-1">Recv Date</label>
+                    <input type="date" id="dtRecvDate" class="form-control form-control-sm" autocomplete="off">
                 </div>
             </div>
             <div class="row g-2 mt-1">
-                <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">Recv Date</label>
-                    <input type="date" id="dtRecvDate" class="form-control form-control-sm">
-                </div>
+
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Transporter Name</label>
-                    <input type="text" id="txtTransporterName" class="form-control form-control-sm" placeholder="Transporter name">
+                    <input type="text" id="txtTransporterName" class="form-control form-control-sm" placeholder="Transporter name" autocomplete="off">
                 </div>
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Party Name <span class="req">*</span></label>
-                    <input type="text" id="txtPartyName" class="form-control form-control-sm" placeholder="Party name">
+                    <select id="ddlPartyName" class="form-control form-control-sm" autocomplete="off">
+                        <option value="">-- Select Party --</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -803,21 +936,41 @@
             <span class="po-step-title">Project Details</span>
             <div class="ap-toggle-wrap ms-auto">
                 <span class="ap-lbl">Against Project</span>
-                <input class="form-check-input" type="checkbox" id="chkAgainstProject" onchange="toggleProjectFields(this)">
+                <input class="form-check-input" type="checkbox" id="chkAgainstProject" onchange="toggleProjectFields(this)" autocomplete="off">
                 <span class="ap-lbl active">ON</span>
             </div>
         </div>
+
+        <!-- Hint — visible when toggle is OFF -->
+        <div id="divProjectHint" class="po-step-body" style="padding-top:6px;padding-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:10px;
+                        background:linear-gradient(135deg,rgba(13,202,240,0.08),rgba(8,145,178,0.06));
+                        border:1px dashed rgba(13,202,240,0.45);
+                        border-radius:10px;padding:10px 14px;">
+                <i class="fa fa-info-circle" style="color:#0dcaf0;font-size:1.1rem;flex-shrink:0;"></i>
+                <span style="font-size:0.8rem;color:#475569;line-height:1.5;">
+                    For project-based GRN:&nbsp;
+                    Turn <strong style="color:#0891b2;">Against Project</strong> toggle
+                    <strong style="color:#0891b2;">ON</strong>,
+                    then select <strong style="color:#0891b2;">Project Name</strong> and
+                    <strong style="color:#0891b2;">Sub Project</strong>.
+                    Items will auto-fill from the selected project.
+                </span>
+            </div>
+        </div>
+
         <div class="po-step-body" id="divProjectFields" style="display:none;">
             <div class="row g-2">
                 <div class="col-md-6">
                     <label class="po-field-lbl d-block mb-1">Project Name <span class="req">*</span></label>
-                    <select id="frmDdlProject" class="form-control form-control-sm" onchange="loadSubProjects()">
+                    <select id="frmDdlProject" class="form-control form-control-sm" onchange="loadSubProjects()" autocomplete="off">
                         <option value="">-- Select Project --</option>
                     </select>
                 </div>
                 <div class="col-md-6">
                     <label class="po-field-lbl d-block mb-1">Sub Project <span class="req">*</span></label>
-                    <select id="frmDdlSubProject" class="form-control form-control-sm">
+                    <select id="frmDdlSubProject" class="form-control form-control-sm"
+                            onchange="onSubProjectChange()" autocomplete="off">
                         <option value="">-- Select Sub Project --</option>
                     </select>
                 </div>
@@ -830,28 +983,28 @@
         <div class="po-step-header">
             <div class="po-step-num" style="background:linear-gradient(135deg,#10b981,#059669);">3</div>
             <span class="po-step-title">GRN Item Details</span>
-            <button type="button" class="add-item-btn ms-auto" onclick="addItemRow()">
+            <button type="button" class="add-item-btn ms-auto" onclick="addItemRow()" style="display:none;">
                 <i class="fa fa-plus"></i> Add Item
             </button>
         </div>
         <div class="po-step-body p-0">
 
-            <!-- Desktop table -->
-            <div class="items-desktop-wrap table-responsive">
-                <table class="items-table" id="itemTable">
+            <!-- Desktop table — always visible on all screen sizes -->
+            <div class="items-desktop-wrap table-responsive" style="display:block!important;overflow-x:auto;">
+                <table class="items-table" id="itemTable" style="min-width:780px;">
                     <thead>
                         <tr>
-                            <th style="width:36px;">#</th>
-                            <th style="width:115px;">PO No</th>
-                            <th style="min-width:160px;">Item Name</th>
-                            <th style="width:88px;">Bill Qty</th>
-                            <th style="width:88px;">Accept Qty</th>
-                            <th style="width:88px;">Reject Qty</th>
-                            <th style="width:95px;">Shortage Qty</th>
-                            <th style="width:90px;">Rate</th>
-                            <th style="width:105px;">Amount</th>
-                            <th style="min-width:120px;">Remark</th>
-                            <th style="width:36px;"></th>
+                            <th style="width:32px;">#</th>
+                            <th style="width:100px;">PO No</th>
+                            <th style="min-width:140px;">Item Name</th>
+                            <th style="width:78px;">Bill Qty</th>
+                            <th style="width:78px;">Accept Qty</th>
+                            <th style="width:78px;">Reject Qty</th>
+                            <th style="width:85px;">Shortage</th>
+                            <th style="width:80px;">Rate</th>
+                            <th style="width:90px;">Amount</th>
+                            <th style="min-width:100px;">Remark</th>
+                            <th style="width:32px;"></th>
                         </tr>
                     </thead>
                     <tbody id="itemTbody">
@@ -873,8 +1026,8 @@
                 </table>
             </div>
 
-            <!-- Mobile cards -->
-            <div class="items-mobile-wrap p-2" id="mobileItemCards">
+            <!-- Mobile cards — permanently hidden, table is used on all screens -->
+            <div class="items-mobile-wrap p-2" id="mobileItemCards" style="display:none!important;">
                 <div class="mobile-item-empty" id="mobileEmptyMsg">
                     <i class="fa fa-box-open me-1"></i> No items added. Tap <b>+ Add Item</b>.
                 </div>
@@ -898,6 +1051,7 @@
                         <input type="file" id="fileAttachment" class="form-control form-control-sm"
                                onchange="fileUploadChange(event)" accept="image/*,.pdf">
                         <button type="button" id="viewImageBtn"
+                                onclick="viewAttachment()"
                                 style="display:none!important;white-space:nowrap;height:30px;padding:2px 12px;
                                        background:#ede9fe;color:#4f46e5;border:1px solid #c4b5fd;border-radius:8px;
                                        font-size:0.78rem;font-weight:600;cursor:pointer;">
@@ -915,9 +1069,8 @@
     </div>
 
 </div>
-
 <!-- ── FLOATING SAVE BAR ──────────────────────────── -->
-<div class="po-float-bar" id="floatBar" style="display:flex;">
+<div class="po-float-bar" id="floatBar" style="display:none;">
     <div class="po-float-bar-left">
         <div class="po-no-pill">
             <i class="fa fa-receipt"></i>
@@ -927,11 +1080,49 @@
     </div>
     <div class="po-float-bar-right">
         <button type="button" class="btn-po-cancel" onclick="cancelGRN()">
-            <i class="fa fa-times me-1"></i> Cancel
+            <i class="fa fa-arrow-left me-1"></i> Back to List
         </button>
         <button type="button" class="btn-po-save" onclick="saveGRN()">
             <i class="fa fa-save me-1"></i> Save GRN
         </button>
+    </div>
+</div>
+
+<!-- ── DELETE CONFIRMATION MODAL ──────────────────── -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+            <div class="modal-header" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;">
+                <h6 class="modal-title mb-0">
+                    <i class="fa fa-exclamation-triangle me-2"></i>Confirm Delete
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:20px 24px;">
+                <p style="font-size:0.88rem;color:#334155;margin-bottom:14px;">
+                    Are you sure you want to delete GRN:
+                    <strong id="deleteGRNNoLabel" style="color:#ef4444;"></strong>?
+                    <br><small class="text-muted">This action cannot be undone.</small>
+                </p>
+                <div>
+                    <label style="font-size:0.79rem;font-weight:600;color:#475569;margin-bottom:4px;display:block;">
+                        Reason for Delete <span style="color:#ef4444;">*</span>
+                    </label>
+                    <textarea id="txtDeleteReason" class="form-control form-control-sm" rows="2"
+                              placeholder="Enter reason for deletion..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:10px 20px 18px;">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"
+                        style="border-radius:8px;padding:6px 18px;">
+                    <i class="fa fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" id="btnConfirmDelete"
+                        style="border-radius:8px;padding:6px 18px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;">
+                    <i class="fa fa-trash me-1"></i> Yes, Delete
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
