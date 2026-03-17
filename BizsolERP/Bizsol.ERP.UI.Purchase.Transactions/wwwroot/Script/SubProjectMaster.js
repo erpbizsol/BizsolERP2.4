@@ -5,11 +5,13 @@ import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSService
 
 let G_SubProjectList = [];
 let G_ProjectList    = [];
+let G_UserList       = [];
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
     loadProjectDropdown();
+    loadUserDropdown();
     loadSubProjects();
 
     $('#btnCreateSubProject').on('click', function () {
@@ -71,6 +73,36 @@ function loadProjectDropdown() {
         });
 }
 
+/* ── Load user dropdown (User Right To Verify PO) ────────── */
+function loadUserDropdown() {
+    SubProjectMasterService.GetUserList()
+        .then(function (response) {
+            G_UserList = Array.isArray(response) ? response : [];
+            const $sel = $('#ddlVerifyPOUsers');
+            $sel.empty();
+            G_UserList.forEach(function (u) {
+                const val  = u.Code || u.UserMaster_Code || u.ID || 0;
+                const text = u.UserName || u.Name || u.FullName || '';
+                $sel.append(`<option value="${val}">${escHtml(text)}</option>`);
+            });
+            initVerifyPOSelect2();
+        })
+        .catch(function () {
+            toastr.error('Error loading user list.');
+        });
+}
+
+function initVerifyPOSelect2() {
+    try {
+        $('#ddlVerifyPOUsers').select2({
+            placeholder: 'Select users...',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('#dvSubProjectModal')
+        });
+    } catch (e) { }
+}
+
 /* ── New ─────────────────────────────────────────────────── */
 function OpenNew_SubProjectMaster() {
     var ModuleName = "Sub Project Master",
@@ -128,6 +160,12 @@ function SubProjectMaster_EditData(code) {
                     }
                 }
 
+                const userCodesRaw = row.UserRightToVerifyPO || '';
+                const userCodes = userCodesRaw
+                    ? String(userCodesRaw).split(',').map(x => x.trim()).filter(Boolean)
+                    : [];
+                $('#ddlVerifyPOUsers').val(userCodes).trigger('change');
+
                 $('#spm-modal-title').text('Edit Sub Project');
             }
             showModal('dvSubProjectModal');
@@ -176,6 +214,16 @@ function viewSubProject(code) {
     }
     $('#viewEstimatedDate').text(estDateTxt);
     $('#viewEstDays').text((row.EstimatedCompletionDays || row.EstimatedDays || 0) + ' days');
+
+    const userCodesRaw = row.UserRightToVerifyPO || '';
+    const userCodes = userCodesRaw
+        ? String(userCodesRaw).split(',').map(x => x.trim()).filter(Boolean)
+        : [];
+    const userNames = userCodes.map(function (c) {
+        const u = G_UserList.find(x => String(x.Code || x.UserMaster_Code || x.ID) === c);
+        return u ? (u.UserName || u.Name || u.FullName || c) : c;
+    }).filter(Boolean);
+    $('#viewVerifyPOUsers').text(userNames.length ? userNames.join(', ') : '—');
 
     showModal('dvSubProjectViewModal');
 }
@@ -231,6 +279,7 @@ function resetSubProjectForm() {
     $('#txtStartDate').val(getTodayForInput());
     $('#txtEstimatedDate').val(getTodayForInput());
     $('#txtEstimatedDays').val('');
+    $('#ddlVerifyPOUsers').val([]).trigger('change');
 }
 
 /* ── Validate ────────────────────────────────────────────── */
@@ -291,7 +340,8 @@ function callSaveSubProjectApi() {
         ProjectEstimatedDate: ($('#txtEstimatedDate').val() || '').trim() || null,
         EstimatedCompletionDays: $('#txtEstimatedDays').val()
                                      ? parseInt($('#txtEstimatedDays').val(), 10)
-                                     : 0
+                                     : 0,
+        UserRightToVerifyPO:     ($('#ddlVerifyPOUsers').val() || []).join(',')
     };
 
     Showloader && Showloader();
