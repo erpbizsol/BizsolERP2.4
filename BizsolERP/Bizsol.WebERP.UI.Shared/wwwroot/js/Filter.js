@@ -1005,6 +1005,8 @@ window.createPaginator = function createPaginator(tableId, bodyId) {
                 <option value="20">20</option>
                 <option value="30">30</option>
                 <option value="50">50</option>   
+                <option value="100">100</option>   
+                <option value="200">200</option>   
             </select>
         </div>
         <button id="firstBtn-${tableId}" onclick="firstBtn('${tableId}','${bodyId}')" class="btn btn-primary paginator-btn icon-height">

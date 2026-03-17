@@ -938,7 +938,6 @@ function WithPO() {
         $('#RowfrmLoadedInPoItemGrid').hide();
     }
 }
-
 function PrintGateEntry(GateEntyMaster_Code) {
     GateEntryService.Print(GateEntyMaster_Code).then(function (response) {
         let url = response.Url;
@@ -950,8 +949,6 @@ function PrintGateEntry(GateEntyMaster_Code) {
         a.click();
     });
 }
-
-
 function GateEntry_SaveData(Mode) {
     let valid = true;
     let NetWeight = 0;
@@ -1156,6 +1153,7 @@ function GateEntry_SaveData(Mode) {
             RejectEntry = 'Y';
         }
 
+        let isOthersDocument = Documenttype && Documenttype.toLowerCase() === 'others';
 
         let VehiclePhotoLenth = $('#frmLoadedOut_fileVehiclePhoto')[0].files.length;
         let GoodsPhotoLenth = $('#frmLoadedOut_fileGoodsPhoto')[0].files.length;
@@ -1194,79 +1192,83 @@ function GateEntry_SaveData(Mode) {
                 return;
             }
         }
-
         if (RejectEntry == 'N' && Mode === 'UpdateEmptyInSave' && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Vehicle Photo can not be blank');
             $('#frmLoadedOut_fileVehiclePhoto').focus();
             return;
         }
-        if (RejectEntry == 'N' && Mode === 'UpdateEmptyInSave' && (typeof GoodsPhotoLenth === 'undefined' || GoodsPhotoLenth === 0)) {
-            valid = false;
-            toastr.error('Please Check! Goods Photo can not be blank');
-            $('#frmLoadedOut_fileGoodsPhoto').focus();
-            return;
-        }
-        if (RejectEntry == 'N' && Mode === 'UpdateEmptyInSave' && (typeof InvoicePhotoLenth === 'undefined' || InvoicePhotoLenth === 0)) {
-            valid = false;
-            toastr.error('Please Check! Document Photo can not be blank');
-            $('#frmLoadedOut_fileInvoicePhoto').focus();
-            return;
-        }
-        
-        if (RejectEntry == 'N' && (typeof GoodDescription === 'undefined' || GoodDescription === '' || GoodDescription === null)) {
-            valid = false;
-            toastr.error('Please Check! Goods Description can not be blank');
-            $('#frmLoadedOut_txtGoodsDescription').focus();
-            return;
-        }
-        if (RejectEntry == 'N' && (typeof Qty === 'undefined' || Qty === '0' || Qty === '' || Qty === 0 || Qty === null)) {
-            valid = false;
-            toastr.error('Please Check! Qty can not be blank or zero');
-            $('#frmLoadedOut_txtQty').focus();
-            return;
-        }
-        if (RejectEntry == 'N' && (typeof Uom === 'undefined' || Uom === '' || Uom === '0' || Uom === null)) {
-            valid = false;
-            toastr.error('Please Check! Uom can not be blank');
-            $('#frmLoadedOut_ddlUOM').focus();
-            return;
-        }
-        if (RejectEntry == 'N' && (typeof Documenttype === 'undefined' || Documenttype === '' || Documenttype === '0' || Documenttype === null)) {
-            valid = false;
-            toastr.error('Please Check! Document Type can not be blank');
-            $('#frmLoadedOut_ddlDocumentType').focus();
-            return;
-        }
+        if (isOthersDocument) {
+            // Only driver name is mandatory for "Others" document type
+            // Skip all other field validations
+        } else {
+            
+            if (RejectEntry == 'N' && Mode === 'UpdateEmptyInSave' && (typeof GoodsPhotoLenth === 'undefined' || GoodsPhotoLenth === 0)) {
+                valid = false;
+                toastr.error('Please Check! Goods Photo can not be blank');
+                $('#frmLoadedOut_fileGoodsPhoto').focus();
+                return;
+            }
+            if (RejectEntry == 'N' && Mode === 'UpdateEmptyInSave' && (typeof InvoicePhotoLenth === 'undefined' || InvoicePhotoLenth === 0)) {
+                valid = false;
+                toastr.error('Please Check! Document Photo can not be blank');
+                $('#frmLoadedOut_fileInvoicePhoto').focus();
+                return;
+            }
 
-        if (RejectEntry == 'N' && (typeof VendorName === 'undefined' || VendorName === '' || VendorName === null)) {
-            valid = false;
-            toastr.error('Please Check! Customer Name can not be blank');
-            $('#frmLoadedOut_txtCustomerName').focus();
-            return;
-        }
-        
-        
-        if (RejectEntry == 'N' && (typeof InvoiceNo === 'undefined' || InvoiceNo === '' || InvoiceNo === null)) {
-            valid = false;
-            toastr.error('Please Check! Document No. can not be blank');
-            $('#frmLoadedOut_txtDocumentNo').focus();
-            return;
-        }
-        if (RejectEntry == 'N' && (typeof InvoiceDate === 'undefined' || InvoiceDate === '' || InvoiceDate === null)) {
-            valid = false;
-            toastr.error('Please Check! Document Date can not be blank');
-            $('#frmLoadedOut_txtDocumentDate').focus();
-            return;
-        }
+            if (RejectEntry == 'N' && (typeof GoodDescription === 'undefined' || GoodDescription === '' || GoodDescription === null)) {
+                valid = false;
+                toastr.error('Please Check! Goods Description can not be blank');
+                $('#frmLoadedOut_txtGoodsDescription').focus();
+                return;
+            }
+            if (RejectEntry == 'N' && (typeof Qty === 'undefined' || Qty === '0' || Qty === '' || Qty === 0 || Qty === null)) {
+                valid = false;
+                toastr.error('Please Check! Qty can not be blank or zero');
+                $('#frmLoadedOut_txtQty').focus();
+                return;
+            }
+            if (RejectEntry == 'N' && (typeof Uom === 'undefined' || Uom === '' || Uom === '0' || Uom === null)) {
+                valid = false;
+                toastr.error('Please Check! Uom can not be blank');
+                $('#frmLoadedOut_ddlUOM').focus();
+                return;
+            }
+            if (RejectEntry == 'N' && (typeof Documenttype === 'undefined' || Documenttype === '' || Documenttype === '0' || Documenttype === null)) {
+                valid = false;
+                toastr.error('Please Check! Document Type can not be blank');
+                $('#frmLoadedOut_ddlDocumentType').focus();
+                return;
+            }
 
-        if (RejectEntry ==='Y' && (typeof OutReason === 'undefined' || OutReason === '' || OutReason === null)) {
-            valid = false;
-            toastr.error('Please Check! Out Reason can not be blank');
-            $('#frmLoadedOut_txtOutReason').focus();
-            return;
-        }
+            if (RejectEntry == 'N' && (typeof VendorName === 'undefined' || VendorName === '' || VendorName === null)) {
+                valid = false;
+                toastr.error('Please Check! Customer Name can not be blank');
+                $('#frmLoadedOut_txtCustomerName').focus();
+                return;
+            }
 
+
+            if (RejectEntry == 'N' && (typeof InvoiceNo === 'undefined' || InvoiceNo === '' || InvoiceNo === null)) {
+                valid = false;
+                toastr.error('Please Check! Document No. can not be blank');
+                $('#frmLoadedOut_txtDocumentNo').focus();
+                return;
+            }
+            if (RejectEntry == 'N' && (typeof InvoiceDate === 'undefined' || InvoiceDate === '' || InvoiceDate === null)) {
+                valid = false;
+                toastr.error('Please Check! Document Date can not be blank');
+                $('#frmLoadedOut_txtDocumentDate').focus();
+                return;
+            }
+
+            if (RejectEntry === 'Y' && (typeof OutReason === 'undefined' || OutReason === '' || OutReason === null)) {
+                valid = false;
+                toastr.error('Please Check! Out Reason can not be blank');
+                $('#frmLoadedOut_txtOutReason').focus();
+                return;
+            }
+        }
     }
     else if (Mode === 'LoadedInSave' || Mode ==='loadedinedit') {
         Time = $('#frmLoadedIn_txtVehicleInTime').val();
@@ -3195,10 +3197,7 @@ function GateEntry_changeDocumentType() {
             //    }
             //);
         });
-
-    }
-
-    
+    } 
 }
 function GateEntry_GetNetWeight() {
     let EmptyWeight = 0;
