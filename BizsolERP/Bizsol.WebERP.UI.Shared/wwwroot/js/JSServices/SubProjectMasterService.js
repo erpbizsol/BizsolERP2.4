@@ -27,6 +27,18 @@ const SubProjectMasterService = {
             return value;
         });
     },
+    GetSubProjectByCode: function GetSubProjectByCode(code) {
+        const URL = UrlService.API_ENDPOINT_SubProjectMaster + "/GetSubProjectByCode?Code=" + code;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) {
+            return value;
+        });
+    },
+    GetLevelList: function GetLevelList() {
+        let url = UrlService.API_ENDPOINT_SubProjectMaster + '/GetLevelList';
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(function (value) {
+            return value;
+        });
+    },
 };
 
 export { SubProjectMasterService }

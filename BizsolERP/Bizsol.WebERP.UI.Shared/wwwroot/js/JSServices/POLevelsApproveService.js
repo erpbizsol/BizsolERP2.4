@@ -3,12 +3,7 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const POLevelsApproveService = {
 
-    // ── Generic Getddl helper ─────────────────────────────────────────────────
-    Getddl: function Getddl(Mode, Code = 0) {
-        let url = UrlService.API_ENDPOINT_POLevelsApprove + `/Getddl?Mode=${Mode}&Code=${Code}`;
-        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
-    },
-
+  
     // ── Get pending PO list for level approval ───────────────────────────────
     GetPendingPOList: function GetPendingPOList(FromDate, ToDate, Status) {
         let url = UrlService.API_ENDPOINT_POLevelsApprove +
@@ -24,8 +19,8 @@ const POLevelsApproveService = {
 
     // ── Get PO line items (reuses POApproval endpoint) ────────────────────────
     GetPOItems: function GetPOItems(poCode) {
-        let url = UrlService.API_ENDPOINT_POApproval + `/GetPODetail?PurchaseOrderMaster_Code=${poCode}`;
-        return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
+        let url = UrlService.API_ENDPOINT_POLevelsApprove + `/GetPODetail?PurchaseOrderMaster_Code=${poCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
     // ── Approve a PO at the current level ─────────────────────────────────────

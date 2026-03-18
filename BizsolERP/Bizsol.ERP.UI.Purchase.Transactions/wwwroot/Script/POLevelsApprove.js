@@ -2,7 +2,8 @@ import { POLevelsApproveService } from '../../Bizsol.WebERP.UI.Shared/js/JSServi
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 // ─── DUMMY MODE — set false when backend is ready ─────────────────────────────
-const USE_DUMMY = true;
+//const USE_DUMMY = true;
+const USE_DUMMY = false;
 
 // ─── DUMMY PO LIST ────────────────────────────────────────────────────────────
 const DUMMY_PO_LIST = [
@@ -165,6 +166,28 @@ function EscHtml(str) {
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// ─── NORMALIZE API RESPONSE ───────────────────────────────────────────────────
+function NormalizePOList(list) {
+    return list.map(function (po) {
+        // Parse LevelDetails if the API returns it as a JSON string
+        if (typeof po.LevelDetails === 'string') {
+            try {
+                po.LevelDetails = JSON.parse(po.LevelDetails);
+            } catch (e) {
+                po.LevelDetails = [];
+            }
+        }
+        if (!Array.isArray(po.LevelDetails)) {
+            po.LevelDetails = [];
+        }
+        // Derive TotalLevels from the parsed array when not supplied by API
+        if (!po.TotalLevels && po.LevelDetails.length > 0) {
+            po.TotalLevels = po.LevelDetails.length;
+        }
+        return po;
+    });
+}
+
 // ─── LOAD PO LIST ─────────────────────────────────────────────────────────────
 function LoadPOList() {
     const fromDate = $('#lstFromDate').val() || '';
@@ -200,7 +223,7 @@ function LoadPOList() {
     POLevelsApproveService.GetPendingPOList(fromDate, toDate, status)
         .then(function (data) {
             ShowLoading(false);
-            G_POList = Array.isArray(data) ? data : [];
+            G_POList = NormalizePOList(Array.isArray(data) ? data : []);
             UpdateStatChips();
             RenderPOCards(G_POList);
         })
