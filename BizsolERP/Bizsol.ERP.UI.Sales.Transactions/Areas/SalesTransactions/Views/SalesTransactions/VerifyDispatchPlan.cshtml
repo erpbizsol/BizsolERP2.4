@@ -463,7 +463,7 @@
                     <input type="date" id="txtToDate" name="txtToDate" class="box_border form-control form-control-sm" />
                 </div>
                 <div class="col-auto despatch-activity-filter d-none mb-2">
-                    <button type="button" onclick="ShowDespatchActivityList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button>
+                    <button type="button" onclick="ShowFilteredList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button>
                 </div>
                 <div class="col text-md-end mb-2">
                     <button type="button" id="btnExportExcel" class="btn btn-primary btn-height" onclick="ExportExcel();">
@@ -640,6 +640,29 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger icon-height" onclick="CloseShowRemarksModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade rps-detail-modal" id="dvUpdateArea" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Area / City</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="hfAreaCode" />
+                <div class="col-md-12 mb-2">
+                    <label for="ddlAreaCity" class="form-label filter-label">City <span class="text-danger">*</span></label>
+                    <select id="ddlAreaCity" class="form-control form-control-sm box_border">
+                        <option value="">-- Select City --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveArea()">Save</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseUpdateAreaModal()">Close</button>
             </div>
         </div>
     </div>
