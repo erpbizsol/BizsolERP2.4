@@ -37,6 +37,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     ]);
     await loadGRNList();
     showListView();
+
+    // Allow only positive numbers with decimals in amount fields
+    ['txtTotalBillAmountManual', 'txtDedution'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('keypress', e => {
+            const char = String.fromCharCode(e.which);
+            if (!/[\d.]/.test(char)) { e.preventDefault(); return; }
+            if (char === '.' && el.value.includes('.')) e.preventDefault();
+        });
+        el.addEventListener('input', () => {
+            el.value = el.value.replace(/[^\d.]/g, '').replace(/(\..*?)\..*/g, '$1');
+            calcNetPayable();
+        });
+    });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -625,6 +640,17 @@ function calcTotal() {
     });
     const el = document.getElementById('txtTotalAmount');
     if (el) el.value = total.toFixed(2);
+
+    const elManual = document.getElementById('txtTotalBillAmountManual');
+    if (elManual) elManual.value = total.toFixed(2);
+    calcNetPayable();
+}
+
+function calcNetPayable() {
+    const total   = parseFloat(document.getElementById('txtTotalBillAmountManual')?.value) || 0;
+    const deduct  = parseFloat(document.getElementById('txtDedution')?.value) || 0;
+    const netEl   = document.getElementById('txtNetPayable');
+    if (netEl) netEl.value = Math.max(0, total - deduct).toFixed(2);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -734,6 +760,9 @@ async function editGRN(code) {
                 set('dtRecvDate', toInputDate(master.ReceiveDate));
                 set('txtTransporterName', master.TransporterName ?? master.Transporter ?? '');
                 set('txtRemark', master.Remarks ?? '');
+                set('txtTotalBillAmountManual', master.TotalBillAmountManual ?? '0');
+                set('txtDedution', master.Dedution ?? '0');
+                calcNetPayable();
 
                 // Party dropdown (SP: PartyMaster_Code)
                 const ddlParty = document.getElementById('ddlPartyName');
@@ -899,9 +928,16 @@ function validateGRN() {
     const party   = document.getElementById('ddlPartyName')?.value;
 
    
+    const billDate = document.getElementById('dtBillDate')?.value?.trim();
+
     if (!billNo) {
         showToast('Please enter Bill No.', 'warning');
         document.getElementById('txtBillNo')?.focus();
+        return false;
+    }
+    if (!billDate) {
+        showToast('Please enter Bill Date.', 'warning');
+        document.getElementById('dtBillDate')?.focus();
         return false;
     }
     if (!party) {
@@ -1029,12 +1065,11 @@ function saveGRN() {
                 TransporterName: document.getElementById('txtTransporterName')?.value || '',
                 Remarks: document.getElementById('txtRemark')?.value || '',
                 AttachFileName: fileName || existingFileName || '',
-                // Send null when no image — SP param @AttachData IMAGE = NULL handles null safely
-                AttachData: imageBase64Data.length > 0
-                    ? imageBase64Data
-                    : existingImageData.length > 0
-                        ? existingImageData
-                        : [],
+                AttachData: imageBase64Data.length > 0 ? imageBase64Data : existingImageData.length > 0 ? existingImageData : [],
+                TotalBillAmountManual: document.getElementById('txtTotalBillAmountManual')?.value || 0,
+                Dedution: document.getElementById('txtDedution')?.value || 0,
+                NetPayable: document.getElementById('txtNetPayable')?.value ||0,
+
             }];
 
             const payload = {
