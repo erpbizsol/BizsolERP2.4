@@ -669,6 +669,76 @@
         font-size: 13.5px;
     }
 
+    /* ── PO Verify Levels Table ─────────────────────────────────── */
+    .pm-levels-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+    }
+
+    .pm-levels-table thead th {
+        background: linear-gradient(135deg, #4f46e5, #667eea);
+        color: #fff;
+        font-weight: 700;
+        padding: 10px 12px;
+        text-align: left;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        border: none;
+    }
+
+    .pm-levels-table tbody tr:nth-child(even) { background: var(--light-bg); }
+    .pm-levels-table tbody tr:nth-child(odd)  { background: #fff; }
+    .pm-levels-table tbody tr:hover           { background: rgba(102,126,234,.06); }
+
+    .pm-levels-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-light);
+        vertical-align: middle;
+    }
+
+    .pm-levels-table tbody tr:last-child td { border-bottom: none; }
+
+    .pm-levels-table .select2-container { width: 100% !important; }
+
+    .pm-levels-table .select2-container--default .select2-selection--multiple {
+        border: 1.5px solid var(--border-color);
+        border-radius: 8px;
+        min-height: 36px;
+        background: var(--white-bg);
+        padding: 3px 6px;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+    .pm-levels-table .select2-container--default.select2-container--focus .select2-selection--multiple,
+    .pm-levels-table .select2-container--default.select2-container--open  .select2-selection--multiple {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+        outline: none;
+    }
+
+    .pm-levels-table .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background: var(--primary-gradient);
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        margin: 2px 3px 2px 0;
+    }
+
+    .pm-levels-table .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: rgba(255,255,255,.8);
+        margin-right: 4px;
+        font-weight: 700;
+    }
+
+    .pm-levels-table .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+        color: #fff;
+    }
+
     /* ── Responsive ────────────────────────────────────────────── */
     @@media (max-width: 880px) {
         .pm-stats { gap: 10px; }
@@ -771,7 +841,7 @@
 ════════════════════════════════════════════════════════ -->
 <div class="modal fade pm-modal" id="dvSubProjectModal" tabindex="-1" role="dialog"
      aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width:620px;">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width:700px;">
         <div class="modal-content">
 
             <div class="modal-header">
@@ -825,17 +895,29 @@
                         <div class="col-md-4">
                             <div class="pm-fg">
                                 <label for="txtEstimatedDays">Est. Days <span class="text-danger">*</span></label>
-                                <input type="number" id="txtEstimatedDays" autocomplete="off" min="0" placeholder="30" style="text-align:right;" />
+                                <input type="number" id="txtEstimatedDays" autocomplete="off" min="0" placeholder="0" style="text-align:right;" />
                             </div>
                         </div>
-                        <div class="col-12">
-                            <div class="pm-fg">
-                                <label for="ddlVerifyPOUsers">User Right To Verify PO</label>
-                                <select id="ddlVerifyPOUsers" multiple="multiple" style="width:100%;"></select>
-                            </div>
                         </div>
-                    </div>
-                    <input type="hidden" id="hfSubProjectCode" value="0" />
+                        <div class="pm-form-section-title" style="margin-top:4px;">
+                            <i class="fas fa-shield-alt"></i> PO Approval Levels — User Assignment
+                        </div>
+                        <div id="dvSingleLevelSelect" class="pm-fg" style="display:none;"></div>
+                        <div id="dvPOLevelsTableWrap" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                            <table class="pm-levels-table" id="tblPOLevels">
+                                <thead>
+                                    <tr>
+                                        <th style="width:44px; text-align:center;">#</th>
+                                        <th style="min-width:160px;">Level</th>
+                                        <th style="min-width:220px;">Users to Verify PO</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tblPOLevelsBody">
+                                    <tr><td colspan="3" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <input type="hidden" id="hfSubProjectCode" value="0" />
                 </div>
             </div>
 
@@ -856,7 +938,7 @@
      VIEW MODAL
 ════════════════════════════════════════════════════════ -->
 <div class="modal fade pm-modal" id="dvSubProjectViewModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:560px;">
         <div class="modal-content">
 
             <div class="modal-header" style="background: var(--info-gradient);">
@@ -904,9 +986,9 @@
                         <span class="pm-view-val" id="viewEstDays">—</span>
                     </div>
                     <div class="pm-view-divider"></div>
-                    <div class="pm-view-row">
-                        <span class="pm-view-lbl">Verify PO Users</span>
-                        <span class="pm-view-val" id="viewVerifyPOUsers" style="white-space:normal;">—</span>
+                    <div class="pm-view-row" style="align-items:flex-start;">
+                        <span class="pm-view-lbl">Verify PO Levels</span>
+                        <div class="pm-view-val" id="viewVerifyPOUsers" style="white-space:normal; overflow-x:auto;">—</div>
                     </div>
                 </div>
             </div>

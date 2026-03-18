@@ -210,6 +210,10 @@
         cursor: not-allowed;
     }
 
+    .bom-input.right {
+        text-align: right;
+    }
+
     .bom-actions {
         display: flex;
         gap: 6px;
@@ -611,7 +615,7 @@
         <div class="pm-card-toolbar">
             <div class="pm-search-wrap">
                 <i class="fas fa-search"></i>
-                <input type="text" id="bomSearch" placeholder="Search by project or sub project…" autocomplete="off" />
+                <input type="text" id="bomSearch" placeholder="Search by project…" autocomplete="off" />
             </div>
         </div>
 
@@ -622,8 +626,7 @@
                         <th class="center" style="width:60px;">#</th>
                         <th style="min-width:220px;">Project Name</th>
                         <th style="min-width:220px;">Sub Project Name</th>
-                        <th class="right" style="min-width:140px;">Total Amount</th>
-                        <th class="center" style="width:120px;">Status</th>
+                        <th class="center" style="min-width:100px;">Total Items</th>
                         <th class="center" style="width:130px;">Action</th>
                     </tr>
                 </thead>
@@ -712,23 +715,18 @@
                         <i class="fas fa-info-circle"></i> Project Information
                     </div>
                     <div class="pm-view-row">
-                        <span class="pm-view-lbl">Project Name</span>
+                        <span class="pm-view-lbl">Project Name -</span>
                         <span class="pm-view-val" id="viewBOMProjectName">—</span>
                     </div>
                     <div class="pm-view-divider"></div>
                     <div class="pm-view-row">
-                        <span class="pm-view-lbl">Sub Project Name</span>
-                        <span class="pm-view-val" id="viewBOMSubProjectName">—</span>
+                        <span class="pm-view-lbl">Total Items -</span>
+                        <span class="pm-view-val" id="viewBOMTotalItems">—</span>
                     </div>
                     <div class="pm-view-divider"></div>
                     <div class="pm-view-row">
-                        <span class="pm-view-lbl">Total Amount (&#8377;)</span>
-                        <span class="pm-view-val" id="viewBOMAmount">—</span>
-                    </div>
-                    <div class="pm-view-divider"></div>
-                    <div class="pm-view-row">
-                        <span class="pm-view-lbl">Status</span>
-                        <span class="pm-view-val" id="viewBOMStatus">—</span>
+                        <span class="pm-view-lbl">Total Amount -</span>
+                        <span class="pm-view-val" id="viewBOMTotalAmount">—</span>
                     </div>
                 </div>
             </div>
