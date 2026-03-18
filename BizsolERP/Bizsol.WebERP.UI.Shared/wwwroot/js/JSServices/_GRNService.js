@@ -45,9 +45,9 @@ const GRNService = {
             });
     },
 
-    GetPOItemDetails: function GetPOItemDetails(POCode) {
-        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster +
-            `/GetPOItemDetails?POCode=${POCode}`;
+    GetPOItemDetails: function GetPOItemDetails(ProjectCode, SubProjectMaster_Code) {
+        let url = UrlService.API_ENDPOINT_GRNService +
+            `/GetPOItemDetails?ProjectMaster_Code=${ProjectCode}&SubProjectMaster_Code=${SubProjectMaster_Code}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
@@ -57,7 +57,7 @@ const GRNService = {
     // ── Project / Sub-Project helpers ──────────────────────────────────────
 
     GetProjectList: function GetProjectList() {
-        let url = UrlService.API_ENDPOINT_ProjectMaster + `/GetProjectList`;
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetProjectList`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
@@ -65,7 +65,7 @@ const GRNService = {
     },
 
     GetSubProjectList: function GetSubProjectList(ProjectCode) {
-        let url = UrlService.API_ENDPOINT_SubProjectMaster +
+        let url = UrlService.API_ENDPOINT_GRNService +
             `/GetSubProjectList?ProjectCode=${ProjectCode}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
@@ -73,7 +73,29 @@ const GRNService = {
             });
     },
 
-  
+    GetVendor: function GetVendor() {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetVendor`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    GetGRNList: function GetGRNList() {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetGRNServiceList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    GetPendingPOByProject: function GetPendingPOByProject(ProjectCode) {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetPendingPOByProject?ProjectCode=${ProjectCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
 
 }
 

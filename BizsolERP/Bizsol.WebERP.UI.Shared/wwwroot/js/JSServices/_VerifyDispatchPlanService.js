@@ -1,9 +1,9 @@
-﻿import { UrlService } from '../URL.js';
+import { UrlService } from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const VerifyDispatchPlanService = {
-    GetDispatchAdvicePlanList: function GetDispatchAdvicePlanList(Status) {
-        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetVerifyDispatchAdviceList?Status=" + Status;
+    GetDispatchAdvicePlanList: function GetDispatchAdvicePlanList(Status, FromDate, ToDate) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetVerifyDispatchAdviceList?Status=" + Status+"&FromDate=" + FromDate + "&ToDate=" + ToDate;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -96,6 +96,22 @@ const VerifyDispatchPlanService = {
     },
     GetTimeBasedVerifyNotAllowInDispatch: function GetTimeBasedVerifyNotAllowInDispatch() {
         var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetTimeBasedVerifyNotAllowInDispatch";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetCityMasterList: function GetCityMasterList(CountryName, StateName) {
+        var URL = UrlService.API_ENDPOINT_CITY + "/GetCityList?CountryName=" + (CountryName || 'India') + "&StateName=" + (StateName || 'All');
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SaveArea: function SaveArea(Code, CityMaster_Code) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/SaveDespatchAdviceArea?Code=" + encodeURIComponent(Code) + "&CityMaster_Code=" + encodeURIComponent(CityMaster_Code);
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
