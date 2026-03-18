@@ -815,7 +815,6 @@ async function editGRN(code) {
                         poSel.value = poCode;
                     }
 
-                    // Item dropdown
                     // SP returns: ItemMaster_Code (MRNDetail) + ItemName (LEFT JOIN ItemMaster)
                     const itemCode = String(item.ItemMaster_Code ?? '');
                     const itemName = item.ItemName ?? item.itemName ?? itemCode;
