@@ -6,12 +6,14 @@ import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSService
 let G_SubProjectList = [];
 let G_ProjectList    = [];
 let G_UserList       = [];
+let G_POLevelList    = [];
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
     loadProjectDropdown();
     loadUserDropdown();
+    loadPOLevelList();
     loadSubProjects();
 
     $('#btnCreateSubProject').on('click', function () {
@@ -73,34 +75,158 @@ function loadProjectDropdown() {
         });
 }
 
-/* ── Load user dropdown (User Right To Verify PO) ────────── */
+/* ── Load user list ───────────────────────────────────────── */
 function loadUserDropdown() {
     SubProjectMasterService.GetUserList()
         .then(function (response) {
             G_UserList = Array.isArray(response) ? response : [];
-            const $sel = $('#ddlVerifyPOUsers');
-            $sel.empty();
-            G_UserList.forEach(function (u) {
-                const val  = u.Code || u.UserMaster_Code || u.ID || 0;
-                const text = u.UserName || u.Name || u.FullName || '';
-                $sel.append(`<option value="${val}">${escHtml(text)}</option>`);
-            });
-            initVerifyPOSelect2();
         })
         .catch(function () {
             toastr.error('Error loading user list.');
         });
 }
 
-function initVerifyPOSelect2() {
-    try {
-        $('#ddlVerifyPOUsers').select2({
-            placeholder: 'Select users...',
-            allowClear: true,
-            width: '100%',
-            dropdownParent: $('#dvSubProjectModal')
+/* ── Load PO approval levels list ────────────────────────── */
+function loadPOLevelList() {
+    SubProjectMasterService.GetLevelList()
+        .then(function (response) {
+            G_POLevelList = Array.isArray(response) ? response : [];
+        })
+        .catch(function () {
+            toastr.error('Error loading PO approval levels.');
         });
-    } catch (e) { }
+}
+
+/* ── Render PO levels user-assignment in form modal ──────── */
+function renderPOLevelsFormTable(existingDetails) {
+    $('#tblPOLevelsBody').find('select').each(function () {
+        try { $(this).select2('destroy'); } catch (e) {}
+    });
+    try { $('#ddlSingleLevelUsers').select2('destroy'); } catch (e) {}
+    $('#tblPOLevelsBody').empty();
+    $('#dvSingleLevelSelect').empty().hide();
+
+    if (!G_POLevelList || G_POLevelList.length === 0) {
+        $('#dvPOLevelsTableWrap').show();
+        $('#tblPOLevelsBody').append('<tr><td colspan="3" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">No PO approval levels configured.</td></tr>');
+        return;
+    }
+
+    if (G_POLevelList.length === 1) {
+        // Single level — show a plain labelled dropdown, no table needed
+        const level     = G_POLevelList[0];
+        const levelCode = level.Code || level.PurchaseOrderApprovalConfiguration_Code || 0;
+        const levelDesp = level.LevelDesp || '';
+        const existing  = (existingDetails || []).find(function (d) {
+            return String(d.PurchaseOrderApprovalConfiguration_Code) === String(levelCode);
+        });
+        const preSelected = existing
+            ? String(existing.UserMaster_Codes_RightToVerifyPO || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)
+            : [];
+
+        let opts = '';
+        (G_UserList || []).forEach(function (u) {
+            const val  = String(u.Code || u.UserMaster_Code || u.ID || 0);
+            const text = u.UserName || u.Name || u.FullName || '';
+            const sel  = preSelected.includes(val) ? ' selected' : '';
+            opts += `<option value="${val}"${sel}>${escHtml(text)}</option>`;
+        });
+
+        $('#dvSingleLevelSelect').html(
+            `<label style="font-size:12.5px;font-weight:700;color:var(--text-primary);margin-bottom:6px;display:block;">Users \u2014 ${escHtml(levelDesp)}</label>` +
+            `<select id="ddlSingleLevelUsers" data-level-code="${levelCode}" multiple="multiple" style="width:100%;">${opts}</select>`
+        ).show();
+        $('#dvPOLevelsTableWrap').hide();
+
+        try {
+            $('#ddlSingleLevelUsers').select2({
+                placeholder  : 'Select users\u2026',
+                allowClear   : true,
+                width        : '100%',
+                dropdownParent: $('#dvSubProjectModal')
+            });
+        } catch (e) {}
+        return;
+    }
+
+    // Multiple levels — table grid
+    $('#dvPOLevelsTableWrap').show();
+    G_POLevelList.forEach(function (level, idx) {
+        const levelCode = level.Code || level.PurchaseOrderApprovalConfiguration_Code || 0;
+        const levelDesp = level.LevelDesp || '';
+        const existing  = (existingDetails || []).find(function (d) {
+            return String(d.PurchaseOrderApprovalConfiguration_Code) === String(levelCode);
+        });
+        const preSelected = existing
+            ? String(existing.UserMaster_Codes_RightToVerifyPO || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)
+            : [];
+
+        const selectId = 'ddlLevelUsers_' + levelCode;
+        let opts = '';
+        (G_UserList || []).forEach(function (u) {
+            const val  = String(u.Code || u.UserMaster_Code || u.ID || 0);
+            const text = u.UserName || u.Name || u.FullName || '';
+            const sel  = preSelected.includes(val) ? ' selected' : '';
+            opts += `<option value="${val}"${sel}>${escHtml(text)}</option>`;
+        });
+
+        $('#tblPOLevelsBody').append(`
+            <tr data-level-code="${levelCode}">
+                <td class="center" style="width:44px;"><span class="pm-sno">${idx + 1}</span></td>
+                <td style="white-space:nowrap; font-weight:600;">${escHtml(levelDesp)}</td>
+                <td><select id="${selectId}" multiple="multiple" style="width:100%;">${opts}</select></td>
+            </tr>
+        `);
+
+        try {
+            $('#' + selectId).select2({
+                placeholder  : 'Select users\u2026',
+                allowClear   : true,
+                width        : '100%',
+                dropdownParent: $('#dvSubProjectModal')
+            });
+        } catch (e) {}
+    });
+}
+
+/* ── Collect PO level-user details for save payload ─────── */
+function collectPOLevelDetails() {
+    const details        = [];
+    const subProjectCode = parseInt($('#hfSubProjectCode').val() || '0', 10) || 0;
+
+    if (G_POLevelList.length === 1) {
+        const level     = G_POLevelList[0];
+        const levelCode = level.Code || level.PurchaseOrderApprovalConfiguration_Code || 0;
+        const levelDesp = level.LevelDesp || '';
+        const userCodes = ($('#ddlSingleLevelUsers').val() || []).join(',');
+        if (levelCode > 0) {
+            details.push({
+                PurchaseOrderApprovalConfiguration_Code: levelCode,
+                LevelDesp                              : levelDesp,
+                UserMaster_Codes_RightToVerifyPO       : userCodes,
+                SubProjectMaster_Code                  : subProjectCode
+            });
+        }
+        return details;
+    }
+
+    $('#tblPOLevelsBody tr[data-level-code]').each(function () {
+        const $row      = $(this);
+        const levelCode = parseInt($row.data('level-code'), 10) || 0;
+        if (levelCode <= 0) return;
+        const levelObj  = (G_POLevelList || []).find(function (l) {
+            return (l.Code || l.PurchaseOrderApprovalConfiguration_Code || 0) === levelCode;
+        });
+        const levelDesp = levelObj ? (levelObj.LevelDesp || '') : '';
+        const userCodes = ($('#ddlLevelUsers_' + levelCode).val() || []).join(',');
+        details.push({
+            PurchaseOrderApprovalConfiguration_Code: levelCode,
+            LevelDesp                              : levelDesp,
+            UserMaster_Codes_RightToVerifyPO       : userCodes,
+            SubProjectMaster_Code                  : subProjectCode
+        });
+    });
+    return details;
 }
 
 /* ── New ─────────────────────────────────────────────────── */
@@ -122,6 +248,42 @@ function OpenNew_SubProjectMaster() {
     });
 }
 
+/* ── Parse GetSubProjectByCode response ──────────────────── */
+/*  Handles two common shapes returned by the API:
+    1. { SubProjectMasterData:[{...}], PurchaseOrderLevelsApprovalProjectUserDetails:[...] }
+    2. A single main-row object with PurchaseOrderLevelsApprovalProjectUserDetails embedded     */
+function parseSubProjectByCodeResponse(response) {
+    var row          = null;
+    var levelDetails = [];
+    if (!response) return { row: row, levelDetails: levelDetails };
+
+    var mainArr = response.SubProjectMasterData
+               || response.SubProjectData
+               || response.SubProjectDetails
+               || null;
+
+    if (Array.isArray(mainArr) && mainArr.length > 0) {
+        row = mainArr[0];
+    } else if (Array.isArray(response) && response.length > 0) {
+        if (Array.isArray(response[0])) {
+            row          = (response[0] || [])[0] || null;
+            levelDetails = Array.isArray(response[1]) ? response[1] : [];
+            return { row: row, levelDetails: levelDetails };
+        }
+        row = response[0];
+    } else if (response.Code || response.code) {
+        row = response;
+    }
+
+    if (Array.isArray(response.PurchaseOrderLevelsApprovalProjectUserDetails)) {
+        levelDetails = response.PurchaseOrderLevelsApprovalProjectUserDetails;
+    } else if (row && Array.isArray(row.PurchaseOrderLevelsApprovalProjectUserDetails)) {
+        levelDetails = row.PurchaseOrderLevelsApprovalProjectUserDetails;
+    }
+
+    return { row: row, levelDetails: levelDetails };
+}
+
 /* ── Edit ────────────────────────────────────────────────── */
 function SubProjectMaster_EditData(code) {
     var ModuleName = "Sub Project Master",
@@ -133,99 +295,120 @@ function SubProjectMaster_EditData(code) {
         if (response.CheckModuleOptionRight == 'N') {
             toastr.error(response.Msg);
             return false;
-        } else {
-            resetSubProjectForm();
-            const row = (G_SubProjectList || []).find(x => String(x.Code) === String(code));
-            if (row) {
-                $('#hfSubProjectCode').val(row.Code);
-                $('#ddlMasterProject').val(row.ProjectMaster_Code || row.MasterProjectCode || '');
-                $('#txtSubProjectName').val(row.SubProjectDesp || row.SubProjectName || '');
+        }
 
-                const budgetVal = row.Budget || row.SubProjectBudget || 0;
+        Showloader && Showloader();
+        SubProjectMasterService.GetSubProjectByCode(code)
+            .then(function (res) {
+                HideLoader && HideLoader();
+                var parsed       = parseSubProjectByCodeResponse(res);
+                var row          = parsed.row;
+                var levelDetails = parsed.levelDetails;
+
+                if (!row) { toastr.warning('Sub Project not found.'); return; }
+
+                resetSubProjectForm();
+
+                $('#hfSubProjectCode').val(row.Code);
+                $('#ddlMasterProject').val(row.ProjectMaster_Code || '');
+                $('#txtSubProjectName').val(row.SubProjectDesp || '');
+
+                var budgetVal = row.Budget || 0;
                 $('#txtBudget').val(budgetVal ? formatBudgetRaw(String(budgetVal)) : '');
 
-                if (row.SubProjectStartDate || row.ProjectStartDate) {
-                    const d = new Date(row.SubProjectStartDate || row.ProjectStartDate);
-                    if (!isNaN(d.getTime())) {
-                        $('#txtStartDate').val(formatDate(d));
-                    }
+                if (row.ProjectStartDate) {
+                    var d = new Date(row.ProjectStartDate);
+                    if (!isNaN(d.getTime())) $('#txtStartDate').val(formatDate(d));
                 }
 
-                $('#txtEstimatedDays').val(row.EstimatedCompletionDays || row.ProjectEstimatedDate || '');
-
-                if (row.EstimatedCompletionDate || row.ProjectEstimatedDate) {
-                    const ed = new Date(row.EstimatedCompletionDate || row.ProjectEstimatedDate);
-                    if (!isNaN(ed.getTime())) {
-                        $('#txtEstimatedDate').val(formatDate(ed));
-                    }
+                if (row.EstimatedCompletionDate) {
+                    var ed = new Date(row.EstimatedCompletionDate);
+                    if (!isNaN(ed.getTime())) $('#txtEstimatedDate').val(formatDate(ed));
                 }
 
-                const userCodesRaw = row.UserRightToVerifyPO || '';
-                const userCodes = userCodesRaw
-                    ? String(userCodesRaw).split(',').map(x => x.trim()).filter(Boolean)
-                    : [];
-                $('#ddlVerifyPOUsers').val(userCodes).trigger('change');
+                $('#txtEstimatedDays').val(row.EstimatedCompletionDays || '');
 
+                renderPOLevelsFormTable(levelDetails);
                 $('#spm-modal-title').text('Edit Sub Project');
-            }
-            showModal('dvSubProjectModal');
-        }
+                showModal('dvSubProjectModal');
+            })
+            .catch(function () {
+                HideLoader && HideLoader();
+                toastr.error('Error loading sub project for editing.');
+            });
     });
 }
 
 /* ── View ────────────────────────────────────────────────── */
 function viewSubProject(code) {
-    const row = (G_SubProjectList || []).find(x => String(x.Code) === String(code));
-    if (!row) { toastr.warning('Sub Project not found.'); return; }
+    Showloader && Showloader();
+    SubProjectMasterService.GetSubProjectByCode(code)
+        .then(function (res) {
+            HideLoader && HideLoader();
+            var parsed       = parseSubProjectByCodeResponse(res);
+            var row          = parsed.row;
+            var levelDetails = parsed.levelDetails;
 
-    const masterCode = row.ProjectMaster_Code || row.MasterProjectCode || '';
-    const master = G_ProjectList.find(p => String(p.Code) === String(masterCode));
-    const masterName = master
-        ? (master.ProjectDesp || master.ProjectName || '') + (master.ProjectCode ? ' (' + master.ProjectCode + ')' : '')
-        : '—';
+            if (!row) { toastr.warning('Sub Project not found.'); return; }
 
-    $('#viewMasterProject').text(masterName);
-    $('#viewSubProjectName').text(row.SubProjectDesp || row.SubProjectName || '—');
+            $('#viewMasterProject').text(row.ProjectDesp || '—');
+            $('#viewSubProjectName').text(row.SubProjectDesp || '—');
 
-    const budget = row.Budget || row.SubProjectBudget || 0;
-    $('#viewBudget').text(budget
-        ? '₹ ' + Number(budget).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-        : '—');
+            var budget = row.Budget || 0;
+            $('#viewBudget').text(budget
+                ? '₹ ' + Number(budget).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : '—');
 
-    let startTxt = '—';
-    const startRaw = row.SubProjectStartDate || row.ProjectStartDate;
-    if (startRaw) {
-        const d = new Date(startRaw);
-        if (!isNaN(d.getTime())) {
-            const parts = formatDate(d).split('-');
-            startTxt = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-    }
-    $('#viewStartDate').text(startTxt);
+            var startTxt = '—';
+            if (row.ProjectStartDate) {
+                var d = new Date(row.ProjectStartDate);
+                if (!isNaN(d.getTime())) {
+                    var p = formatDate(d).split('-');
+                    startTxt = p[2] + '-' + p[1] + '-' + p[0];
+                }
+            }
+            $('#viewStartDate').text(startTxt);
 
-    let estDateTxt = '—';
-    const estRaw = row.EstimatedCompletionDate || row.ProjectEstimatedDate;
-    if (estRaw) {
-        const ed = new Date(estRaw);
-        if (!isNaN(ed.getTime())) {
-            const parts = formatDate(ed).split('-');
-            estDateTxt = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-    }
-    $('#viewEstimatedDate').text(estDateTxt);
-    $('#viewEstDays').text((row.EstimatedCompletionDays || row.EstimatedDays || 0) + ' days');
+            var estDateTxt = '—';
+            if (row.EstimatedCompletionDate) {
+                var ed = new Date(row.EstimatedCompletionDate);
+                if (!isNaN(ed.getTime())) {
+                    var ep = formatDate(ed).split('-');
+                    estDateTxt = ep[2] + '-' + ep[1] + '-' + ep[0];
+                }
+            }
+            $('#viewEstimatedDate').text(estDateTxt);
+            $('#viewEstDays').text((row.EstimatedCompletionDays || 0) + ' days');
 
-    const userCodesRaw = row.UserRightToVerifyPO || '';
-    const userCodes = userCodesRaw
-        ? String(userCodesRaw).split(',').map(x => x.trim()).filter(Boolean)
-        : [];
-    const userNames = userCodes.map(function (c) {
-        const u = G_UserList.find(x => String(x.Code || x.UserMaster_Code || x.ID) === c);
-        return u ? (u.UserName || u.Name || u.FullName || c) : c;
-    }).filter(Boolean);
-    $('#viewVerifyPOUsers').text(userNames.length ? userNames.join(', ') : '—');
+            if (levelDetails.length > 0) {
+                var tbl = '<table style="width:100%;border-collapse:collapse;font-size:12.5px;">';
+                tbl += '<thead><tr>' +
+                       '<th style="padding:5px 10px;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Level</th>' +
+                       '<th style="padding:5px 10px;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Users</th>' +
+                       '</tr></thead><tbody>';
+                levelDetails.forEach(function (d) {
+                    var codes = String(d.UserMaster_Codes_RightToVerifyPO || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+                    var names = codes.map(function (c) {
+                        var u = (G_UserList || []).find(function (x) { return String(x.Code || x.UserMaster_Code || x.ID) === c; });
+                        return u ? (u.UserName || u.Name || u.FullName || c) : c;
+                    }).filter(Boolean);
+                    tbl += '<tr>' +
+                           '<td style="padding:5px 10px;border:1px solid #e2e8f0;font-weight:600;white-space:nowrap;">' + escHtml(d.LevelDesp || '') + '</td>' +
+                           '<td style="padding:5px 10px;border:1px solid #e2e8f0;">' + escHtml(names.join(', ') || '—') + '</td>' +
+                           '</tr>';
+                });
+                tbl += '</tbody></table>';
+                $('#viewVerifyPOUsers').html(tbl);
+            } else {
+                $('#viewVerifyPOUsers').html('—');
+            }
 
-    showModal('dvSubProjectViewModal');
+            showModal('dvSubProjectViewModal');
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            toastr.error('Error loading sub project details.');
+        });
 }
 
 /* ── Delete ──────────────────────────────────────────────── */
@@ -279,7 +462,7 @@ function resetSubProjectForm() {
     $('#txtStartDate').val(getTodayForInput());
     $('#txtEstimatedDate').val(getTodayForInput());
     $('#txtEstimatedDays').val('');
-    $('#ddlVerifyPOUsers').val([]).trigger('change');
+    renderPOLevelsFormTable([]);
 }
 
 /* ── Validate ────────────────────────────────────────────── */
@@ -341,7 +524,7 @@ function callSaveSubProjectApi() {
         EstimatedCompletionDays: $('#txtEstimatedDays').val()
                                      ? parseInt($('#txtEstimatedDays').val(), 10)
                                      : 0,
-        UserRightToVerifyPO:     ($('#ddlVerifyPOUsers').val() || []).join(',')
+        PurchaseOrderLevelsApprovalProjectUserDetails: collectPOLevelDetails()
     };
 
     Showloader && Showloader();
