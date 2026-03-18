@@ -307,11 +307,11 @@ function callSaveProjectApi() {
         .then(function (response) {
             HideLoader && HideLoader();
             if (response.Status === 'Y') {
-                toastr.success(response.Msg || 'Project saved successfully.');
+                toastr.success(response.Message || 'Project saved successfully.');
                 hideModal('dvProjectModal');
                 loadProjects();
             } else {
-                toastr.warning(response.Msg || 'Failed to save project.');
+                toastr.warning(response.Message);
             }
         })
         .catch(function (error) {

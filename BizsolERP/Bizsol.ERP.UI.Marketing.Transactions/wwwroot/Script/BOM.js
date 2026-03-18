@@ -4,13 +4,14 @@ import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSService
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 import { BOMService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BOMService.js';
 
-let G_ProjectList = [];
-let G_SubProjectList = [];
-let G_CategoryList = [];
-let G_WorkTypeList = [];
+let G_ProjectList         = [];
+let G_SubProjectList      = [];
+let G_CategoryList        = [];
+let G_WorkTypeList        = [];
 let G_ItemCacheByWorkType = {};
-let G_BOMRows = [];   // rows within current BOM entry
-let G_BOMList = [];   // header list for main grid
+let G_BOMRows             = [];
+let G_BOMList             = [];
+let G_BOMHeader           = {};
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
@@ -19,64 +20,39 @@ $(document).ready(function () {
     loadProjectsAndSubProjects();
     loadCategoryAndWorkTypeMaster();
 
-    $('#btnCreateBOM').on('click', function () {
-        openNewBOM();
-    });
-
-    $('#btnAddBomRow').on('click', function () {
-        addNewBomRow();
-    });
-
-    $('#btnSaveAllBomRows').on('click', function () {
-        saveAllRows();
-    });
-
-    $('#btnVerifyAllBomRows').on('click', function () {
-        verifyAllRows();
-    });
-
-    $('#btnBackToBomList').on('click', function () {
-        showBOMListView();
-    });
+    $('#btnCreateBOM').on('click', function () { openNewBOM(); });
+    $('#btnAddBomRow').on('click', function () { addNewBomRow(); });
+    $('#btnSaveAllBomRows').on('click', function () { saveAllRows(); });
+    $('#btnVerifyAllBomRows').on('click', function () { verifyAllRows(); });
+    $('#btnBackToBomList').on('click', function () { showBOMListView(); });
+    $('#btnConfirmDeleteBOM').on('click', function () { confirmDeleteBOM(); });
 
     $('#tblBOMList').on('click', '.js-bom-view', function () {
-        const id = $(this).closest('tr').data('id');
-        viewBOM(id);
+        viewBOM($(this).closest('tr').data('id'));
     });
-
     $('#tblBOMList').on('click', '.js-bom-edit', function () {
-        const id = $(this).closest('tr').data('id');
-        openBOMFromList(id, 'edit');
+        const $tr = $(this).closest('tr');
+        openBOMFromList($tr.data('id'), 'edit', $tr.data('sub-id') || 0);
     });
-
     $('#tblBOMList').on('click', '.js-bom-delete', function () {
-        const id = $(this).closest('tr').data('id');
-        deleteBOMFromList(id);
-    });
-
-    $('#btnConfirmDeleteBOM').on('click', function () {
-        confirmDeleteBOM();
+        deleteBOMFromList($(this).closest('tr').data('id'));
     });
 
     $('#bomSearch').on('input', function () {
-        const q = $(this).val().toLowerCase().trim();
-        filterBOMs(q);
+        filterBOMs($(this).val().toLowerCase().trim());
     });
 });
-
 function loadBOMList() {
-    if (!BOMService || typeof BOMService.GetBOMList !== 'function') {
-        return;
-    }
+    if (!BOMService || typeof BOMService.GetBOMList !== 'function') return;
 
     Showloader && Showloader();
     BOMService.GetBOMList()
         .then(function (response) {
             HideLoader && HideLoader();
             let rows = [];
-            if (Array.isArray(response)) rows = response;
-            else if (Array.isArray(response.data)) rows = response.data;
-            else if (Array.isArray(response.Data)) rows = response.Data;
+            if (Array.isArray(response))             rows = response;
+            else if (Array.isArray(response.data))  rows = response.data;
+            else if (Array.isArray(response.Data))  rows = response.Data;
             G_BOMList = rows || [];
             bindBOMGrid(G_BOMList);
         })
@@ -87,7 +63,6 @@ function loadBOMList() {
             toastr.error((error && error.Msg) || 'Error loading BOM list.');
         });
 }
-
 function bindBOMGrid(list) {
     const $tbody = $('#tblBOMList tbody');
     if (!$tbody.length) return;
@@ -96,7 +71,7 @@ function bindBOMGrid(list) {
     if (!list || list.length === 0) {
         $tbody.append(`
             <tr>
-                <td colspan="6">
+                <td colspan="4">
                     <div class="pm-empty">
                         <div class="pm-empty-icon"><i class="fas fa-folder-open"></i></div>
                         <div class="pm-empty-title">No BOM records found</div>
@@ -108,26 +83,19 @@ function bindBOMGrid(list) {
     }
 
     list.forEach(function (item, index) {
-        const projectName = item.ProjectName || item.ProjectDesp || item.Project || '';
-        const subProjectName = item.SubProjectName || item.SubProjectDesp || item.SubProject || '';
-        const totalAmtRaw = item.TotalAmount || item.Amount || item.Total || 0;
-        const totalAmt = Number(totalAmtRaw) || 0;
-        const statusVal = (item.Verify || item.Verified || '').toString().toUpperCase();
-        const statusTxt = statusVal === 'Y' ? 'Verified' : 'Pending';
-        const statusClass = statusVal === 'Y' ? 'pm-days-chip' : 'pm-code-badge';
-        const bomId = item.BOMCode || item.Code || item.BOMId || 0;
+        const projectName = item.ProjectName || item.ProjectDesp || '';
+        const subProjectName = item.SubProjectName || item.SubProjectDesp || '';
+        const totalItems  = item.TotalItems  || 0;
+        // data-id = ProjectMaster_Code, data-sub-id = SubProjectMaster_Code → passed to GETBYCODE
+        const bomId    = item.ProjectMaster_Code || item.Code || 0;
+        const subBomId = item.SubProjectMaster_Code || 0;
 
         $tbody.append(`
-            <tr data-index="${index}" data-id="${bomId}">
+            <tr data-index="${index}" data-id="${bomId}" data-sub-id="${subBomId}">
                 <td class="center"><span class="pm-sno">${index + 1}</span></td>
                 <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis;">${escHtml(projectName)}</td>
                 <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis;">${escHtml(subProjectName)}</td>
-                <td class="right">
-                    <span class="pm-budget">&#8377; ${totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </td>
-                <td class="center">
-                    <span class="${statusClass}">${statusTxt}</span>
-                </td>
+                <td class="center">${totalItems}</td>
                 <td class="center">
                     <div class="bom-actions">
                         <button type="button" class="bom-btn icon view js-bom-view" title="View">
@@ -144,337 +112,358 @@ function bindBOMGrid(list) {
             </tr>`);
     });
 }
-
 function filterBOMs(query) {
-    if (!query) {
-        bindBOMGrid(G_BOMList);
-        return;
-    }
+    if (!query) { bindBOMGrid(G_BOMList); return; }
     const filtered = (G_BOMList || []).filter(function (item) {
-        const p = (item.ProjectName || item.ProjectDesp || item.Project || '').toLowerCase();
-        const s = (item.SubProjectName || item.SubProjectDesp || item.SubProject || '').toLowerCase();
-        return p.includes(query) || s.includes(query);
+        return (item.ProjectName || item.ProjectDesp || '').toLowerCase().includes(query);
     });
     bindBOMGrid(filtered);
 }
-
-function openNewBOM() {
-    // switch from list view to entry form
-    $('#dvBOMGrid').hide();
-    $('#dvBOMEntry').show();
-
-    resetBomForm();
-
-    if (!G_ProjectList.length || !G_SubProjectList.length) {
-        loadProjectsAndSubProjects();
-    }
-    if (!G_CategoryList.length || !G_WorkTypeList.length) {
-        loadCategoryAndWorkTypeMaster();
-    }
-
-    addNewBomRow();
-}
-
 function viewBOM(id) {
     if (!G_BOMList || !G_BOMList.length) return;
-    const header = G_BOMList.find(function (x) {
-        return String(x.BOMCode || x.Code || x.BOMId || 0) === String(id || 0);
+    const row = G_BOMList.find(function (x) {
+        return String(x.ProjectMaster_Code || x.Code || 0) === String(id || 0);
     });
-    if (!header) return;
+    if (!row) return;
 
-    const projectName = header.ProjectName || header.ProjectDesp || header.Project || '';
-    const subProjectName = header.SubProjectName || header.SubProjectDesp || header.SubProject || '';
-    const totalAmtRaw = header.TotalAmount || header.Amount || header.Total || 0;
-    const totalAmt = Number(totalAmtRaw) || 0;
-    const statusVal = (header.Verify || header.Verified || '').toString().toUpperCase();
-    const statusTxt = statusVal === 'Y' ? 'Verified' : 'Pending';
-
-    $('#viewBOMProjectName').text(projectName || '—');
-    $('#viewBOMSubProjectName').text(subProjectName || '—');
-    $('#viewBOMAmount').text('₹ ' + totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    $('#viewBOMStatus').text(statusTxt);
+    $('#viewBOMProjectName').text(row.ProjectName || row.ProjectDesp || '—');
+    $('#viewBOMTotalItems').text(row.TotalItems || 0);
+    $('#viewBOMTotalAmount').text('₹ ' + parseFloat(row.TotalAmount || 0).toFixed(2));
 
     showModal('dvBOMViewModal');
 }
-
 function showBOMListView() {
-    // go back to main grid
     $('#dvBOMEntry').hide();
     $('#dvBOMGrid').show();
     loadBOMList();
 }
+function openNewBOM() {
+    $('#dvBOMGrid').hide();
+    $('#dvBOMEntry').show();
+    resetBomForm();
+    Showloader && Showloader();
 
-function openBOMFromList(id, mode) {
-    if (!G_BOMList || !G_BOMList.length) return;
-    const header = G_BOMList.find(function (x) {
-        return String(x.BOMCode || x.Code || x.BOMId || 0) === String(id || 0);
-    });
-    if (!header) return;
+    const projectPromise = (!G_ProjectList.length || !G_SubProjectList.length)
+        ? loadProjectsAndSubProjects()
+        : Promise.resolve();
 
-    openNewBOM();
+    const masterPromise = (!G_CategoryList.length || !G_WorkTypeList.length)
+        ? loadCategoryAndWorkTypeMaster()
+        : Promise.resolve();
 
-    // set current BOM code
-    const bomCode = header.BOMCode || header.Code || header.BOMId || 0;
-    $('#hfBOMCode').val(bomCode || 0);
+    Promise.all([projectPromise, masterPromise])
+        .then(function ()  { HideLoader && HideLoader(); addNewBomRow(); })
+        .catch(function () { HideLoader && HideLoader(); addNewBomRow(); });
+}
+function openBOMFromList(id, mode, subProjectCode) {
+    const projectCode    = parseInt(id             || '0', 10) || 0;
+    const subProjCode    = parseInt(subProjectCode || '0', 10) || 0;
+    if (!projectCode) return;
 
-    // preselect project & sub project from header, if codes exist
-    const projectCode = header.ProjectCode || header.ProjectMaster_Code || header.ProjectId || 0;
-    const subProjectCode = header.SubProjectCode || header.SubProjectId || 0;
-
-    if (projectCode) {
-        $('#ddlProject').val(String(projectCode));
-        bindSubProjectDropdown();
-    }
-    if (subProjectCode) {
-        $('#ddlSubProject').val(String(subProjectCode));
-    }
-
-    // populate line items if detail collection is present in header
-    const details =
-        (Array.isArray(header.Details) && header.Details) ||
-        (Array.isArray(header.BOMDetails) && header.BOMDetails) ||
-        (Array.isArray(header.BOMLines) && header.BOMLines) ||
-        (Array.isArray(header.BOMList) && header.BOMList) ||
-        (Array.isArray(header.DetailsList) && header.DetailsList) ||
-        [];
-
-    if (details.length) {
-        const $tbody = $('#tblBOM tbody');
-        $tbody.empty();
-
-        details.forEach(function (d) {
-            addNewBomRow();
-            const $tr = $('#tblBOM tbody tr').last();
-
-            const catCode = d.ProjectCategoryCode || d.ProjectCategory || 0;
-            const wtCode = d.WorkTypeCode || 0;
-            const itemCode = d.ItemCode || 0;
-
-            if (catCode) {
-                $tr.find('.bom-project-category').val(String(catCode));
-            }
-
-            if (wtCode) {
-                $tr.find('.bom-work-type').val(String(wtCode)).trigger('change');
-            }
-
-            if (itemCode) {
-                // item dropdown will be filled after work type change / API load
-                setTimeout(function () {
-                    $tr.find('.bom-item').val(String(itemCode)).trigger('change');
-                }, 150);
-            }
-
-            if (d.UOM !== undefined) $tr.find('.bom-uom').val(d.UOM);
-            if (d.Tolerance !== undefined) $tr.find('.bom-tolerance').val(d.Tolerance);
-            if (d.QtyRequired !== undefined) $tr.find('.bom-qty-required').val(d.QtyRequired);
-            if (d.RateTolerancePerc !== undefined) $tr.find('.bom-rate-tol').val(d.RateTolerancePerc);
-            if (d.EstRate !== undefined) $tr.find('.bom-est-rate').val(d.EstRate);
-            if (d.Amount !== undefined) $tr.find('.bom-amount').val(d.Amount);
-        });
-    }
+    $('#dvBOMGrid').hide();
+    $('#dvBOMEntry').show();
+    resetBomForm();
+    $('#hfBOMCode').val(projectCode);
 
     if (mode === 'view') {
         $('#btnSaveAllBomRows').prop('disabled', true);
         $('#btnVerifyAllBomRows').prop('disabled', true);
-        $('#tblBOM .bom-input, #tblBOM .bom-select').prop('disabled', true).prop('readonly', true);
-    } else {
-        $('#btnSaveAllBomRows').prop('disabled', false);
-        $('#btnVerifyAllBomRows').prop('disabled', false);
-        $('#tblBOM .bom-input, #tblBOM .bom-select').prop('disabled', false).prop('readonly', false);
     }
-}
 
+    if (!BOMService || typeof BOMService.GetBOMByCode !== 'function') {
+        if (mode === 'view') disableEntryForm();
+        return;
+    }
+
+    Showloader && Showloader();
+
+    const projectPromise = (!G_ProjectList.length || !G_SubProjectList.length)
+        ? loadProjectsAndSubProjects()
+        : Promise.resolve();
+
+    const masterPromise = (!G_CategoryList.length || !G_WorkTypeList.length)
+        ? loadCategoryAndWorkTypeMaster()
+        : Promise.resolve();
+
+    const bomDataPromise = BOMService.GetBOMByCode(projectCode, subProjCode);
+
+    Promise.all([projectPromise, masterPromise, bomDataPromise])
+        .then(function (results) {
+            HideLoader && HideLoader();
+
+            const response = results[2];
+
+            // GETBYCODE returns a flat array: [{ row1 }, { row2 }, …]
+            var detailRows = [];
+            if (Array.isArray(response))                    detailRows = response;
+            else if (response && Array.isArray(response.Data)) detailRows = response.Data;
+            else if (response && Array.isArray(response.data)) detailRows = response.data;
+
+            // ── Bind header controls ──────────────────────────────────────
+            if (detailRows.length > 0) {
+                const first  = detailRows[0];
+                const pCode  = parseInt(first.ProjectMaster_Code     || 0, 10) || projectCode;
+                const spCode = parseInt(first.ProjectSubCategory_Code || 0, 10) || 0;
+                // SubProjectDesp stored on save — use as primary text match key
+                const spDesp = (first.SubProjectDesp || '').trim();
+
+                // ── Project Name ──
+                // If G_ProjectList is loaded but options haven't been rendered yet, force rebuild
+                if (G_ProjectList.length && $('#ddlProject option').length <= 1) {
+                    bindProjectDropdown();
+                }
+                // Bind by ProjectMaster_Code (option value = project Code)
+                $('#ddlProject').val(String(pCode));
+                // Fallback: text match using ProjectName returned by GETBYCODE (PM.ProjectDesp AS ProjectName)
+                if (!$('#ddlProject').val()) {
+                    const pName = (first.ProjectName || first.ProjectDesp || '').trim().toLowerCase();
+                    if (pName) {
+                        $('#ddlProject option').each(function () {
+                            if ($(this).text().trim().toLowerCase() === pName) {
+                                $('#ddlProject').val($(this).val());
+                                return false;
+                            }
+                        });
+                    }
+                }
+
+                // Rebuild sub-project list filtered to the now-selected project
+                // GetSubProjectList fields: Code, ProjectMaster_Code, SubProjectDesp
+                bindSubProjectDropdown();
+
+                // ── Sub Project Name ──
+                // Primary: match by SubProjectDesp text (stored on save, matches option text)
+                var spBound = false;
+                if (spDesp) {
+                    const needle = spDesp.toLowerCase();
+                    $('#ddlSubProject option').each(function () {
+                        if ($(this).text().trim().toLowerCase() === needle) {
+                            $('#ddlSubProject').val($(this).val());
+                            spBound = true;
+                            return false;
+                        }
+                    });
+                }
+                // Fallback: match by ProjectSubCategory_Code (= sub project Code)
+                if (!spBound && spCode) {
+                    $('#ddlSubProject').val(String(spCode));
+                }
+
+                G_BOMHeader = { ProjectMaster_Code: pCode, ProjectSubCategory_Code: spCode };
+            }
+
+            // ── Build detail rows ─────────────────────────────────────────
+            $('#tblBOM tbody').empty();
+
+            if (detailRows.length > 0) {
+                detailRows.forEach(function (d) {
+                    addNewBomRow();
+                    var $tr = $('#tblBOM tbody tr').last();
+
+                    // Store DB code, UOM code, item code and work-type name as attributes
+                    // (work-type name is needed later by applyUOMsFromCache)
+                    $tr.attr('data-detail-code',    d.Code || 0);
+                    $tr.attr('data-uom-code',        parseInt(d.UOMMaster_Code || 0, 10) || 0);
+                    $tr.attr('data-item-code',       parseInt(d.ItemMaster_Code || 0, 10) || 0);
+                    $tr.attr('data-work-type-name',  (d.WorkTypeDesp || '').trim().toUpperCase());
+
+                    // Project Category (bind by code)
+                    $tr.find('.bom-project-category').val(String(d.ProjectCategory_Code || ''));
+
+                    // Work Type — set silently by CODE first, then name, so item dropdown
+                    // is NOT cleared (setWorkTypeSilent does NOT fire the change event)
+                    setWorkTypeSilent($tr, d.WorkTypeMaster_Code || 0, d.WorkTypeDesp || '');
+
+                    // Inject the saved item as the only option so it shows immediately
+                    var $itemDdl = $tr.find('.bom-item');
+                    $itemDdl.empty().append('<option value="">Select</option>');
+                    if (d.ItemMaster_Code) {
+                        // UOM text: try from GETBYCODE (d.UOM) or from item cache (if pre-loaded)
+                        var cachedUom = getUomTextFromCache(d.WorkTypeDesp || '', d.ItemMaster_Code);
+                        var uomText   = d.UOM || cachedUom || '';
+
+                        $itemDdl.append(
+                            `<option value="${d.ItemMaster_Code}"
+                                     data-uom="${escHtml(uomText)}"
+                                     data-uom-code="${parseInt(d.UOMMaster_Code || 0, 10) || 0}">
+                                ${escHtml(d.ItemName || '')}
+                             </option>`
+                        );
+                        $tr.find('.bom-uom').val(uomText);
+                    }
+                    $itemDdl.val(String(d.ItemMaster_Code || 0));
+
+                    // Numeric / text fields — exact SP column names
+                    $tr.find('.bom-tolerance').val(   d.Tolerance     != null ? d.Tolerance    : '');
+                    $tr.find('.bom-qty-required').val( d.QtyRequired   != null ? d.QtyRequired  : '');
+                    $tr.find('.bom-rate-tol').val(     d.RateTolerance != null ? d.RateTolerance : '');
+                    $tr.find('.bom-est-rate').val(     d.Rate          != null ? d.Rate          : '');
+                    $tr.find('.bom-amount').val(       d.Amount        != null ? d.Amount        : '');
+                });
+
+                // Async-fetch item lists for each work type present in these rows so UOM
+                // text gets filled even when GETBYCODE does not return IM.UOM
+                prefetchUOMsForRows(detailRows);
+            } else {
+                addNewBomRow();
+            }
+
+            if (mode === 'view') {
+                disableEntryForm();
+            } else {
+                // Lock project/sub-project dropdowns — project is fixed for an existing BOM
+                $('#ddlProject, #ddlSubProject').prop('disabled', true);
+                $('#btnSaveAllBomRows').prop('disabled', false);
+                $('#btnVerifyAllBomRows').prop('disabled', false);
+            }
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            toastr.error('Error loading BOM details.');
+            if (mode === 'view') disableEntryForm();
+            else $('#ddlProject, #ddlSubProject').prop('disabled', true);
+        });
+}
+function disableEntryForm() {
+    $('#tblBOM .bom-input, #tblBOM .bom-select').prop('disabled', true).prop('readonly', true);
+    $('#ddlProject, #ddlSubProject').prop('disabled', true);
+}
+function enableEntryFormHeader() {
+    $('#ddlProject, #ddlSubProject').prop('disabled', false);
+}
 function deleteBOMFromList(id) {
     if (!G_BOMList || !G_BOMList.length) return;
-    const header = G_BOMList.find(function (x) {
-        return String(x.BOMCode || x.Code || x.BOMId || 0) === String(id || 0);
+    const row = G_BOMList.find(function (x) {
+        return String(x.ProjectMaster_Code || x.Code || 0) === String(id || 0);
     });
-    if (!header) return;
+    if (!row) return;
 
-    const projectName = header.ProjectName || header.ProjectDesp || header.Project || '';
-    const subProjectName = header.SubProjectName || header.SubProjectDesp || header.SubProject || '';
-    const label = [projectName, subProjectName].filter(Boolean).join(' / ');
-
-    $('#delBOMName').text(label || 'this BOM');
+    $('#delBOMName').text(row.ProjectName || row.ProjectDesp || 'this BOM');
     $('#hfDeleteBOMId').val(id || 0);
     $('#bomReasonForDeleteInput').val('');
-
     showModal('dvBOMDeleteConfirmModal');
 }
-
 function confirmDeleteBOM() {
-    const id = parseInt($('#hfDeleteBOMId').val() || '0', 10) || 0;
+    const id     = parseInt($('#hfDeleteBOMId').val() || '0', 10) || 0;
     const reason = ($('#bomReasonForDeleteInput').val() || '').trim();
 
-    if (!id) {
-        toastr.error('Invalid BOM selected for deletion.');
-        return;
-    }
-    if (!reason) {
-        toastr.warning('Please enter reason for deletion.');
-        $('#bomReasonForDeleteInput').focus();
-        return;
-    }
+    if (!id)     { toastr.error('Invalid BOM selected for deletion.'); return; }
+    if (!reason) { toastr.warning('Please enter reason for deletion.'); $('#bomReasonForDeleteInput').focus(); return; }
 
-    if (BOMService && typeof BOMService.DeleteBOM === 'function') {
-        Showloader && Showloader();
-        BOMService.DeleteBOM(id, reason)
-            .then(function (resp) {
-                HideLoader && HideLoader();
-                if (resp && resp.Status === 'Y') {
-                    toastr.success(resp.Msg || 'BOM deleted successfully.');
-                    hideModal('dvBOMDeleteConfirmModal');
-                    loadBOMList();
-                } else {
-                    toastr.warning((resp && resp.Msg) || 'Failed to delete BOM.');
-                }
-            })
-            .catch(function () {
-                HideLoader && HideLoader();
-                toastr.error('Error while deleting BOM.');
-            });
-    } else {
-        // fallback – remove locally
-        const idx = (G_BOMList || []).findIndex(function (x) {
-            return String(x.BOMCode || x.Code || x.BOMId || 0) === String(id || 0);
+    if (!BOMService || typeof BOMService.DeleteBOM !== 'function') return;
+
+    Showloader && Showloader();
+    BOMService.DeleteBOM(id, reason)
+        .then(function (resp) {
+            HideLoader && HideLoader();
+            if (resp && resp.Status === 'Y') {
+                toastr.success(resp.Msg || 'BOM deleted successfully.');
+                hideModal('dvBOMDeleteConfirmModal');
+                loadBOMList();
+            } else {
+                toastr.warning((resp && resp.Msg) || 'Failed to delete BOM.');
+            }
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            toastr.error('Error while deleting BOM.');
         });
-        if (idx >= 0) {
-            G_BOMList.splice(idx, 1);
-            bindBOMGrid(G_BOMList);
-        }
-        hideModal('dvBOMDeleteConfirmModal');
-        toastr.success('BOM removed from list (local only).');
-    }
 }
-
 function loadProjectsAndSubProjects() {
-    // Load projects
-    ProjectMasterService.GetProjectList()
+    const projPromise = ProjectMasterService.GetProjectList()
         .then(function (projects) {
             G_ProjectList = Array.isArray(projects) ? projects : [];
             bindProjectDropdown();
         })
-        .catch(function () {
-            toastr.error('Error loading project list.');
-        });
+        .catch(function () { toastr.error('Error loading project list.'); });
 
-    // Load sub projects
-    SubProjectMasterService.GetSubProjectList()
+    const subPromise = SubProjectMasterService.GetSubProjectList()
         .then(function (subs) {
             G_SubProjectList = Array.isArray(subs) ? subs : [];
-            bindSubProjectDropdown(); // safe – project dropdown may not be ready yet, will re-bind on project change
+            bindSubProjectDropdown();
         })
-        .catch(function () {
-            toastr.error('Error loading sub project list.');
-        });
-}
+        .catch(function () { toastr.error('Error loading sub-project list.'); });
 
+    return Promise.all([projPromise, subPromise]);
+}
 function bindProjectDropdown() {
     const $ddl = $('#ddlProject');
-    $ddl.empty();
-    // Match SubProjectMaster pattern: master project dropdown
-    $ddl.append('<option value="">-- Select Master Project --</option>');
-    $ddl.append('<option value="ALL">All Projects</option>');
-
+    $ddl.empty().append('<option value="">-- Select Project --</option>');
     G_ProjectList.forEach(function (p) {
         const code = p.Code || 0;
-        const name = (p.ProjectDesp || p.ProjectName || '').trim();
-        const display = name || (p.ProjectCode || '');
-        $ddl.append(`<option value="${code}">${escHtml(display)}</option>`);
+        const name = (p.ProjectDesp || p.ProjectName || '').trim() || ('Project ' + code);
+        $ddl.append(`<option value="${code}">${escHtml(name)}</option>`);
     });
-
-    $ddl.off('change').on('change', function () {
-        bindSubProjectDropdown();
-    });
+    $ddl.off('change').on('change', function () { bindSubProjectDropdown(); });
 }
-
 function bindSubProjectDropdown() {
-    const $ddl = $('#ddlSubProject');
+    const $ddl            = $('#ddlSubProject');
     const selectedProject = $('#ddlProject').val();
 
     $ddl.empty();
 
     if (!G_SubProjectList.length) {
-        $ddl.append('<option value="">No sub projects found</option>');
+        $ddl.append('<option value="">No sub-projects found</option>');
         return;
     }
-
     if (!selectedProject) {
         $ddl.append('<option value="">Select project first</option>');
         return;
     }
 
-    $ddl.append('<option value="ALL">All Sub Projects</option>');
+    $ddl.append('<option value="">-- Select Sub Project --</option>');
 
-    let filtered = [];
-    if (selectedProject === 'ALL') {
-        filtered = G_SubProjectList.slice();
-    } else {
-        filtered = G_SubProjectList.filter(function (row) {
-            const masterCode = row.ProjectMaster_Code || row.MasterProjectCode || 0;
-            return String(masterCode) === String(selectedProject);
+    G_SubProjectList
+        .filter(function (row) {
+            return String(row.ProjectMaster_Code || row.MasterProjectCode || 0) === String(selectedProject);
+        })
+        .forEach(function (sp) {
+            const code = sp.Code || 0;
+            const name = (sp.SubProjectDesp || sp.SubProjectName || '').trim() || ('Sub Project ' + code);
+            $ddl.append(`<option value="${code}" data-name="${escHtml(name)}">${escHtml(name)}</option>`);
         });
-    }
-
-    filtered.forEach(function (sp) {
-        const code = sp.Code || 0;
-        const name = (sp.SubProjectDesp || sp.SubProjectName || '').trim() || ('Sub Project ' + code);
-        $ddl.append(`<option value="${code}">${escHtml(name)}</option>`);
-    });
-
-    $ddl.off('change').on('change', function () {
-        const val = $(this).val();
-        if (val && val !== 'ALL') {
-            const row = G_SubProjectList.find(function (x) { return String(x.Code) === String(val); });
-            if (row) {
-                const masterCode = row.ProjectMaster_Code || row.MasterProjectCode || '';
-                if (masterCode) {
-                    $('#ddlProject').val(String(masterCode));
-                }
-            }
-        }
-    });
 }
-
 function loadCategoryAndWorkTypeMaster() {
-    if (!BOMService) return;
+    if (!BOMService) return Promise.resolve();
 
-    // Category list for Project Category column
-    BOMService.GetCategoryList()
+    const catPromise = BOMService.GetCategoryList()
         .then(function (categories) {
-            let rows = [];
-            if (Array.isArray(categories)) rows = categories;
-            else if (Array.isArray(categories.data)) rows = categories.data;
-            else if (Array.isArray(categories.Data)) rows = categories.Data;
+            let rows = Array.isArray(categories) ? categories
+                : (Array.isArray(categories.data) ? categories.data
+                : (Array.isArray(categories.Data) ? categories.Data : []));
             G_CategoryList = rows || [];
         })
-        .catch(function () {
-            toastr.error('Error loading project category list.');
-        });
+        .catch(function () { toastr.error('Error loading project category list.'); });
 
-    // Work type list for Work Type column
-    BOMService.GetWorkTypeList()
+    const wtPromise = BOMService.GetWorkTypeList()
         .then(function (workTypes) {
-            let rows = [];
-            if (Array.isArray(workTypes)) rows = workTypes;
-            else if (Array.isArray(workTypes.data)) rows = workTypes.data;
-            else if (Array.isArray(workTypes.Data)) rows = workTypes.Data;
+            let rows = Array.isArray(workTypes) ? workTypes
+                : (Array.isArray(workTypes.data) ? workTypes.data
+                : (Array.isArray(workTypes.Data) ? workTypes.Data : []));
             G_WorkTypeList = rows || [];
         })
-        .catch(function () {
-            toastr.error('Error loading work type list.');
-        });
+        .catch(function () { toastr.error('Error loading work type list.'); });
+
+    return Promise.all([catPromise, wtPromise]);
 }
+function resetBomForm() {
+    G_BOMRows   = [];
+    G_BOMHeader = {};
 
+    $('#hfBOMCode').val(0);
+    $('#ddlProject').val('').prop('disabled', false);
+    $('#ddlSubProject').empty().append('<option value="">Select project first</option>').prop('disabled', false);
+    $('#tblBOM tbody').empty();
+    $('#btnVerifyAllBomRows').hide().prop('disabled', false);
+    $('#btnSaveAllBomRows').prop('disabled', false);
+}
 function addNewBomRow() {
-    const $tbody = $('#tblBOM tbody');
+    const $tbody    = $('#tblBOM tbody');
     const nextIndex = $tbody.children('tr').length + 1;
-
-    const rowId = `bomRow_${Date.now()}_${nextIndex}`;
+    const rowId     = `bomRow_${Date.now()}_${nextIndex}`;
 
     const $tr = $(`
-        <tr data-row-id="${rowId}" data-state="edit">
+        <tr data-row-id="${rowId}" data-state="edit" data-detail-code="0" data-uom-code="0">
             <td class="center">${nextIndex}</td>
             <td>
                 <select class="bom-select bom-project-category">
@@ -523,94 +512,95 @@ function addNewBomRow() {
     initRowWorkTypeDropdown($tr);
     initRowEvents($tr);
 }
-
 function initRowCategoryDropdown($tr) {
     const $cat = $tr.find('.bom-project-category');
     $cat.empty().append('<option value="">Select</option>');
-
     (G_CategoryList || []).forEach(function (c) {
         const code = c.Code || 0;
         const name = (c.CategoryDesp || c.CategoryName || c.Category || '').trim() || ('Category ' + code);
         $cat.append(`<option value="${code}">${escHtml(name)}</option>`);
     });
 }
-
-function resetBomForm() {
-    G_BOMRows = [];
-
-    $('#hfBOMCode').val(0);
-
-    $('#ddlProject').val('');
-    const $sub = $('#ddlSubProject');
-    $sub.empty().append('<option value="">Select project first</option>');
-
-    const $tbody = $('#tblBOM tbody');
-    $tbody.empty();
-
-    $('#btnVerifyAllBomRows').hide().prop('disabled', false);
-    $('#btnSaveAllBomRows').prop('disabled', false);
-}
-
 function initRowWorkTypeDropdown($tr) {
     const $wt = $tr.find('.bom-work-type');
     $wt.empty().append('<option value="">Select</option>');
-
     (G_WorkTypeList || []).forEach(function (t) {
         const code = t.Code || 0;
-        const name = (t.WorkType || t.WorkTypeDesp || t.WorkTypeName || t.ItemType || '').trim();
+        const name = (t.WorkTypeDesp || t.WorkType || t.WorkTypeName || t.ItemType || '').trim();
         if (!name) return;
         $wt.append(`<option value="${code}" data-worktype="${escHtml(name)}">${escHtml(name)}</option>`);
     });
-
     $wt.off('change').on('change', function () {
         bindItemDropdownForRow($tr);
     });
 }
-
-function bindItemDropdownForRow($tr) {
+function setWorkTypeSilent($tr, workTypeCode, workTypeName) {
     const $wt = $tr.find('.bom-work-type');
-    const selectedTypeCode = $wt.val();
+
+    // Primary: match by numeric code
+    if (workTypeCode) {
+        $wt.val(String(workTypeCode));
+        if ($wt.val()) return;  // jQuery returns null if the value isn't an existing option
+    }
+
+    // Fallback: match by option text
+    if (!workTypeName) return;
+    const needle = workTypeName.trim().toLowerCase();
+    $wt.find('option').each(function () {
+        if (($(this).data('worktype') || $(this).text() || '').toLowerCase() === needle) {
+            $wt.val($(this).val());
+            return false;
+        }
+    });
+}
+function bindItemDropdownForRow($tr) {
+    const $wt          = $tr.find('.bom-work-type');
+    const selectedCode = $wt.val();
     const workTypeName = ($wt.find('option:selected').data('worktype') || '').toString().trim();
 
     const $item = $tr.find('.bom-item');
     $item.empty().append('<option value="">Select</option>');
     $tr.find('.bom-uom').val('');
+    $tr.attr('data-uom-code', 0);
 
-    if (!selectedTypeCode || !workTypeName) return;
+    if (!selectedCode || !workTypeName) return;
 
     const cacheKey = workTypeName.toUpperCase();
 
     function bindItems(items) {
         (items || []).forEach(function (it) {
-            const code = it.Code || 0;
-            const name = (it.ItemName || it.ItemCode || '').trim();
-            const uom = it.UOM || '';
-            $item.append(`<option value="${code}" data-uom="${escHtml(uom)}">${escHtml(name)}</option>`);
+            const itemCode = it.Code || 0;
+            const name     = (it.ItemName || '').trim();
+            const uom      = it.UOM || '';
+            const uomCode  = parseInt(it.UOMMaster_Code || 0, 10) || 0;
+            $item.append(
+                `<option value="${itemCode}" data-uom="${escHtml(uom)}" data-uom-code="${uomCode}">${escHtml(name)}</option>`
+            );
         });
 
         $item.off('change').on('change', function () {
-            const uom = $(this).find('option:selected').data('uom') || '';
-            $tr.find('.bom-uom').val(uom || '');
+            const $opt  = $(this).find('option:selected');
+            const uom     = $opt.data('uom') || '';
+            const uomCode = parseInt($opt.data('uom-code') || 0, 10) || 0;
+            $tr.find('.bom-uom').val(uom);
+            $tr.attr('data-uom-code', uomCode);
         });
+
+        if ($item.val()) $item.trigger('change');
     }
 
-    // use cached items if we already fetched for this work type
     if (G_ItemCacheByWorkType[cacheKey]) {
         bindItems(G_ItemCacheByWorkType[cacheKey]);
         return;
     }
 
-    if (!BOMService || typeof BOMService.GetItemMasterList !== 'function') {
-        return;
-    }
+    if (!BOMService || typeof BOMService.GetItemMasterList !== 'function') return;
 
-    BOMService.GetItemMasterList(encodeURIComponent(workTypeName))
+    BOMService.GetItemMasterList(workTypeName)
         .then(function (items) {
-            let rows = [];
-            if (Array.isArray(items)) rows = items;
-            else if (Array.isArray(items.data)) rows = items.data;
-            else if (Array.isArray(items.Data)) rows = items.Data;
-
+            let rows = Array.isArray(items) ? items
+                : (Array.isArray(items.data) ? items.data
+                : (Array.isArray(items.Data) ? items.Data : []));
             G_ItemCacheByWorkType[cacheKey] = rows || [];
             bindItems(G_ItemCacheByWorkType[cacheKey]);
         })
@@ -618,131 +608,114 @@ function bindItemDropdownForRow($tr) {
             toastr.error('Error loading item master for selected work type.');
         });
 }
+function getUomTextFromCache(workTypeName, itemCode) {
+    if (!workTypeName || !itemCode) return '';
+    const cacheKey = workTypeName.toUpperCase();
+    const items = G_ItemCacheByWorkType[cacheKey] || [];
+    const found = items.find(function (it) { return (it.Code || 0) === itemCode; });
+    return found ? (found.UOM || '') : '';
+}
 
-function initRowEvents($tr) {
-    const $qty = $tr.find('.bom-qty-required');
-    const $estRate = $tr.find('.bom-est-rate');
-    const $tol = $tr.find('.bom-tolerance');
-    const $rateTol = $tr.find('.bom-rate-tol');
+// After edit rows are built, fetch item lists for every work type present so that
+// UOM text (not returned by GETBYCODE) can be filled in from the GETITEMMASATERLIST cache.
+function prefetchUOMsForRows(detailRows) {
+    if (!BOMService || typeof BOMService.GetItemMasterList !== 'function') return;
 
-    $qty.on('input', function () { enforceNumeric(this, 3); recalcAmount($tr); });
-    $estRate.on('input', function () { enforceNumeric(this, 3); recalcAmount($tr); });
-    $tol.on('input', function () { enforceNumeric(this, 3); });
-    $rateTol.on('input', function () { enforceNumeric(this, 3); });
+    // Collect unique work-type names (key = uppercased name, value = original case for API call)
+    var workTypeMap = {};
+    detailRows.forEach(function (d) {
+        var name = (d.WorkTypeDesp || '').trim();
+        if (name) workTypeMap[name.toUpperCase()] = name;
+    });
 
-    $tr.find('.js-bom-row-delete').on('click', function () {
-        deleteBomRow($tr);
+    Object.keys(workTypeMap).forEach(function (key) {
+        var displayName = workTypeMap[key];
+
+        if (G_ItemCacheByWorkType[key]) {
+            // Already cached — apply immediately
+            applyUOMsFromCache(key);
+        } else {
+            // Fetch from API, cache, then apply
+            BOMService.GetItemMasterList(displayName)
+                .then(function (items) {
+                    var rows = Array.isArray(items) ? items
+                        : (Array.isArray(items.data) ? items.data
+                        : (Array.isArray(items.Data) ? items.Data : []));
+                    G_ItemCacheByWorkType[key] = rows || [];
+                    applyUOMsFromCache(key);
+                })
+                .catch(function () {});
+        }
     });
 }
 
+// For every table row whose data-work-type-name matches cacheKey, look up the item
+// in the cache and write the UOM text + UOM code into the row.
+function applyUOMsFromCache(cacheKey) {
+    var items = G_ItemCacheByWorkType[cacheKey] || [];
+    if (!items.length) return;
+
+    $('#tblBOM tbody tr').each(function () {
+        var $tr          = $(this);
+        var rowWtKey     = ($tr.attr('data-work-type-name') || '').toUpperCase();
+        if (rowWtKey !== cacheKey) return;
+
+        var itemCode = parseInt($tr.attr('data-item-code') || '0', 10) || 0;
+        if (!itemCode) return;
+
+        var found = items.find(function (it) { return (it.Code || 0) === itemCode; });
+        if (!found) return;
+
+        var uom     = found.UOM || '';
+        var uomCode = parseInt(found.UOMMaster_Code || 0, 10) || 0;
+
+        // Update the injected option so future item change-events carry correct UOM
+        $tr.find('.bom-item option[value="' + itemCode + '"]')
+            .attr('data-uom', uom)
+            .attr('data-uom-code', uomCode);
+
+        // Fill the visible UOM field and row attribute
+        $tr.find('.bom-uom').val(uom);
+        $tr.attr('data-uom-code', uomCode);
+    });
+}
+function initRowEvents($tr) {
+    $tr.find('.bom-qty-required').on('input', function () { enforceNumeric(this, 3); recalcAmount($tr); });
+    $tr.find('.bom-est-rate').on('input',    function () { enforceNumeric(this, 3); recalcAmount($tr); });
+    $tr.find('.bom-tolerance').on('input',   function () { enforceNumeric(this, 3); });
+    $tr.find('.bom-rate-tol').on('input',    function () { enforceNumeric(this, 3); });
+
+    $tr.find('.js-bom-row-delete').on('click', function () { deleteBomRow($tr); });
+}
 function deleteBomRow($tr) {
     const $tbody = $('#tblBOM tbody');
     if ($tbody.children('tr').length <= 1) {
-        // keep at least one empty row
         $tr.find('input.bom-input').val('');
         $tr.find('select.bom-select').val('');
         $tr.find('.bom-uom').val('');
+        $tr.attr('data-detail-code', 0).attr('data-uom-code', 0);
         return;
     }
     $tr.remove();
-
-    // re-number S.No
     $tbody.children('tr').each(function (idx) {
         $(this).find('td').first().text(idx + 1);
     });
 }
-
-function enforceNumeric(input, maxDecimals) {
-    let v = (input.value || '').toString();
-    v = v.replace(/,/g, '').replace(/[^0-9.]/g, '');
-    const parts = v.split('.');
-    if (parts.length > 2) {
-        v = parts[0] + '.' + parts.slice(1).join('');
-    }
-    const p2 = v.split('.');
-    if (p2[1]) {
-        v = p2[0] + '.' + p2[1].slice(0, maxDecimals);
-    }
-    input.value = v;
-}
-
-function recalcAmount($tr) {
-    const qty = parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0;
-    const rate = parseFloat(($tr.find('.bom-est-rate').val() || '0').replace(/,/g, '')) || 0;
-    const amt = qty * rate;
-    if (!isNaN(amt)) {
-        $tr.find('.bom-amount').val(amt.toFixed(2));
-    } else {
-        $tr.find('.bom-amount').val('');
-    }
-}
-
-function validateRow($tr) {
-    const workType = $tr.find('.bom-work-type').val();
-    const item = $tr.find('.bom-item').val();
-    const qty = $tr.find('.bom-qty-required').val();
-    const estRate = $tr.find('.bom-est-rate').val();
-
-    if (!workType) {
-        toastr.warning('Please select Work Type.');
-        return false;
-    }
-    if (!item) {
-        toastr.warning('Please select Item.');
-        return false;
-    }
-
-    if (!isValidNumber(qty)) {
-        toastr.warning('Please enter valid Qty Required (integer / decimal).');
-        return false;
-    }
-
-    if (!isValidNumber(estRate)) {
-        toastr.warning('Please enter valid Est. Rate (integer / decimal).');
-        return false;
-    }
-
-    const tol = $tr.find('.bom-tolerance').val();
-    const rateTol = $tr.find('.bom-rate-tol').val();
-
-    if (tol && !isValidNumber(tol)) {
-        toastr.warning('Please enter valid Tolerance.');
-        return false;
-    }
-    if (rateTol && !isValidNumber(rateTol)) {
-        toastr.warning('Please enter valid Rate Tol (%).');
-        return false;
-    }
-
-    return true;
-}
-
-function isValidNumber(val) {
-    if (val === null || val === undefined) return false;
-    const v = val.toString().trim();
-    if (!v) return false;
-    return !isNaN(parseFloat(v));
-}
-
 function buildRowPayload($tr) {
-    const projectVal = $('#ddlProject').val() || '';
-    const subProjectVal = $('#ddlSubProject').val() || '';
-
     return {
-        ProjectCode: projectVal === 'ALL' ? 0 : parseInt(projectVal || '0', 10) || 0,
-        SubProjectCode: subProjectVal === 'ALL' ? 0 : parseInt(subProjectVal || '0', 10) || 0,
-        ProjectCategory: $tr.find('.bom-project-category').val() || '',
-        WorkTypeCode: parseInt($tr.find('.bom-work-type').val() || '0', 10) || 0,
-        ItemCode: parseInt($tr.find('.bom-item').val() || '0', 10) || 0,
-        UOM: $tr.find('.bom-uom').val() || '',
-        Tolerance: parseFloat($tr.find('.bom-tolerance').val() || '0') || 0,
-        QtyRequired: parseFloat($tr.find('.bom-qty-required').val() || '0') || 0,
-        RateTolerancePerc: parseFloat($tr.find('.bom-rate-tol').val() || '0') || 0,
-        EstRate: parseFloat($tr.find('.bom-est-rate').val() || '0') || 0,
-        Amount: parseFloat($tr.find('.bom-amount').val() || '0') || 0
+        DetailCode    : parseInt($tr.attr('data-detail-code') || '0', 10) || 0,
+        CategoryCode  : parseInt($tr.find('.bom-project-category').val() || '0', 10) || 0,
+        WorkTypeCode  : parseInt($tr.find('.bom-work-type').val() || '0', 10) || 0,
+        ItemCode      : parseInt($tr.find('.bom-item').val() || '0', 10) || 0,
+        UOM           : $tr.find('.bom-uom').val() || '',
+        UOMMaster_Code: parseInt($tr.attr('data-uom-code') || '0', 10) || 0,
+        Tolerance     : parseFloat($tr.find('.bom-tolerance').val() || '0') || 0,
+        QtyRequired   : parseFloat($tr.find('.bom-qty-required').val() || '0') || 0,
+        RateTolerance : parseFloat($tr.find('.bom-rate-tol').val() || '0') || 0,
+        EstRate       : parseFloat($tr.find('.bom-est-rate').val() || '0') || 0,
+        Amount        : parseFloat($tr.find('.bom-amount').val() || '0') || 0
     };
 }
-
 function saveAllRows() {
     const $rows = $('#tblBOM tbody tr');
     if (!$rows.length) {
@@ -751,154 +724,180 @@ function saveAllRows() {
     }
 
     const payloads = [];
-    let hasError = false;
+    let hasError   = false;
 
     $rows.each(function () {
-        const $tr = $(this);
-
-        // allow completely blank rows to be ignored
-        const workType = $tr.find('.bom-work-type').val();
+        const $tr  = $(this);
         const item = $tr.find('.bom-item').val();
-        const qty = $tr.find('.bom-qty-required').val();
-        const estRate = $tr.find('.bom-est-rate').val();
-        if (!workType && !item && !qty && !estRate) {
-            return;
-        }
+        const qty  = $tr.find('.bom-qty-required').val();
 
-        if (!validateRow($tr)) {
-            hasError = true;
-            return false; // break
-        }
+        // Skip completely empty rows
+        if (!item && (!qty || parseFloat(qty) === 0)) return;
+
+        if (!validateRow($tr)) { hasError = true; return false; }
 
         payloads.push(buildRowPayload($tr));
     });
 
     if (hasError) return;
-
     if (!payloads.length) {
         toastr.warning('Please enter at least one complete line before saving.');
         return;
     }
 
-    const bomCode = parseInt($('#hfBOMCode').val() || '0', 10) || 0;
-    const projectVal = $('#ddlProject').val() || '';
-    const subProjectVal = $('#ddlSubProject').val() || '';
+    // For edit, hfBOMCode holds the ProjectMaster_Code; for new, fall back to ddlProject
+    const projectMaster_Code =
+        parseInt($('#hfBOMCode').val() || '0', 10) ||
+        parseInt($('#ddlProject').val() || '0', 10) || 0;
 
-    const headerProjectCode = projectVal === 'ALL' ? 0 : parseInt(projectVal || '0', 10) || 0;
-    const headerSubProjectCode = subProjectVal === 'ALL' ? 0 : parseInt(subProjectVal || '0', 10) || 0;
-
-    // store locally for verify-all
-    G_BOMRows = payloads.map(function (p, idx) {
-        return Object.assign({ RowId: 'row_' + (idx + 1), Verified: 'N' }, p);
-    });
-
-    const transactions = payloads.map(function (p, idx) {
-        return {
-            srNo: idx + 1,
-            projectCode: p.ProjectCode,
-            subProjectCode: p.SubProjectCode,
-            projectCategory: p.ProjectCategory,
-            workTypeCode: p.WorkTypeCode,
-            itemCode: p.ItemCode,
-            uom: p.UOM,
-            tolerance: p.Tolerance,
-            qtyRequired: p.QtyRequired,
-            rateTolerancePerc: p.RateTolerancePerc,
-            estRate: p.EstRate,
-            amount: p.Amount
-        };
-    });
-
-    const payload = {
-        code: bomCode,
-        master: [{
-            code: bomCode,
-            projectCode: headerProjectCode,
-            subProjectCode: headerSubProjectCode
-        }],
-        transactions: transactions
-    };
-
-    if (BOMService && typeof BOMService.SaveBOMRow === 'function') {
-        Showloader && Showloader();
-        BOMService.SaveBOMRow(payload)
-            .then(function (resp) {
-                HideLoader && HideLoader();
-                if (resp && resp.Status === 'Y') {
-                    lockAllRowsAfterSave();
-                    $('#btnVerifyAllBomRows').show();
-                    $('#btnSaveAllBomRows').prop('disabled', true);
-                    toastr.success(resp.Msg || 'BOM saved successfully.');
-                    // update current BOM code if returned
-                    if (resp.BOMCode || resp.Code) {
-                        $('#hfBOMCode').val(resp.BOMCode || resp.Code);
-                    }
-                } else {
-                    toastr.warning((resp && resp.Msg) || 'Failed to save BOM.');
-                }
-            })
-            .catch(function () {
-                HideLoader && HideLoader();
-                toastr.error('Error while saving BOM.');
-            });
-    } else {
-        // local-only fallback
-        lockAllRowsAfterSave();
-        $('#btnVerifyAllBomRows').show();
-        $('#btnSaveAllBomRows').prop('disabled', true);
-        toastr.success('All BOM lines saved (local only).');
-    }
-}
-
-function lockAllRowsAfterSave() {
-    const $rows = $('#tblBOM tbody tr');
-    $rows.each(function () {
-        const $tr = $(this);
-        $tr.attr('data-state', 'saved');
-        $tr.find('.bom-input, .bom-select')
-            .prop('readonly', true)
-            .prop('disabled', true);
-        $tr.find('.bom-amount').prop('readonly', true);
-    });
-}
-
-function verifyAllRows() {
-    if (!G_BOMRows || !G_BOMRows.length) {
-        toastr.warning('Please save all lines before verify.');
+    if (!projectMaster_Code) {
+        toastr.warning('Please select a Project before saving.');
         return;
     }
 
-    if (BOMService && typeof BOMService.VerifyBOMRow === 'function') {
-        Showloader && Showloader();
-        Promise.all(G_BOMRows.map(function (row) { return BOMService.VerifyBOMRow(row); }))
-            .then(function (responses) {
-                HideLoader && HideLoader();
+    // Sub project
+    const subProjectCode = parseInt($('#ddlSubProject').val() || '0', 10) || 0;
+    const subProjectDesp = subProjectCode
+        ? (($('#ddlSubProject option:selected').data('name') ||
+            $('#ddlSubProject option:selected').text() || '')).trim()
+        : '';
 
-                const hasFailure = responses.some(function (resp) {
-                    return !resp || resp.Status !== 'Y';
-                });
+    G_BOMRows = payloads.slice();
 
-                if (hasFailure) {
-                    toastr.warning('Some BOM lines could not be verified. Please check and try again.');
-                    return;
-                }
+    // Map to TY_ProjectBOMDetails TVP — column names must exactly match the SQL type
+    const Details = payloads.map(function (p) {
+        return {
+            Code                             : p.DetailCode || 0,
+            ProjectMaster_Code               : projectMaster_Code,
+            ProjectCategory_Code             : p.CategoryCode || 0,
+            ProjectSubCategory_Code          : subProjectCode,
+            F_CommonValues_WorkType_Code     : 0,
+            WorkTypeMaster_Code              : p.WorkTypeCode || 0,
+            UOMMaster_Code                   : p.UOMMaster_Code || 0,
+            QtyRequired                      : p.QtyRequired || 0,
+            Rate                             : p.EstRate || 0,
+            Amount                           : p.Amount || 0,
+            ItemMaster_Code                  : p.ItemCode || 0,
+            GodownMaster_Code                : 0,
+            SubProjectDesp                   : subProjectDesp,
+            ServiceProviderNatureMaster_Code : 0,
+            Tolerance                        : p.Tolerance || 0,
+            RateTolerance                    : p.RateTolerance || 0,
+            SubProjectMaster_Code            : subProjectCode
+        };
+    });
 
-                $('#tblBOM tbody tr').addClass('table-success');
-                $('#btnVerifyAllBomRows').prop('disabled', true);
-                toastr.success('All BOM lines verified successfully.');
+    // Payload matches VM_BOMSaveRequest { Code, Details }
+    const payload = { Code: projectMaster_Code, Details: Details };
+
+    if (!BOMService || typeof BOMService.SaveBOM !== 'function') {
+        lockAllRowsAfterSave();
+        toastr.success('All BOM lines saved (local only).');
+        return;
+    }
+
+    Showloader && Showloader();
+    BOMService.SaveBOM(payload)
+        .then(function (resp) {
+            HideLoader && HideLoader();
+            if (resp && resp.Status === 'Y') {
+                // Ensure hfBOMCode always holds the project code after a successful save
+                // (important for new BOM where it was 0 before first save)
+                $('#hfBOMCode').val(projectMaster_Code);
+
+                lockAllRowsAfterSave();
+                $('#btnVerifyAllBomRows').show();
+                $('#btnSaveAllBomRows').prop('disabled', true);
+                toastr.success(resp.Msg || 'BOM saved successfully.');
                 loadBOMList();
-            })
-            .catch(function () {
-                HideLoader && HideLoader();
-                toastr.error('Error while verifying BOM lines.');
-            });
-    } else {
+            } else {
+                toastr.warning((resp && resp.Msg) || 'Failed to save BOM.');
+            }
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            toastr.error('Error while saving BOM.');
+        });
+}
+function lockAllRowsAfterSave() {
+    $('#tblBOM tbody tr').each(function () {
+        $(this).attr('data-state', 'saved');
+        $(this).find('.bom-input, .bom-select').prop('readonly', true).prop('disabled', true);
+    });
+}
+function verifyAllRows() {
+    const bomCode = parseInt($('#hfBOMCode').val() || '0', 10) || 0;
+    if (!bomCode) {
+        toastr.warning('Please save BOM before verify.');
+        return;
+    }
+
+    if (!BOMService || typeof BOMService.VerifyBOM !== 'function') {
         $('#tblBOM tbody tr').addClass('table-success');
         $('#btnVerifyAllBomRows').prop('disabled', true);
-        toastr.success('All BOM lines verified (local only).');
+        toastr.success('BOM verified (local only).');
+        return;
     }
+
+    Showloader && Showloader();
+    BOMService.VerifyBOM(bomCode)
+        .then(function (resp) {
+            HideLoader && HideLoader();
+            if (resp && resp.Status === 'Y') {
+                $('#tblBOM tbody tr').addClass('table-success');
+                $('#btnVerifyAllBomRows').prop('disabled', true);
+                toastr.success(resp.Msg || 'BOM verified successfully.');
+                loadBOMList();
+            } else {
+                toastr.warning((resp && resp.Msg) || 'Failed to verify BOM.');
+            }
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            toastr.error('Error while verifying BOM.');
+        });
+}
+function validateRow($tr) {
+    const item    = $tr.find('.bom-item').val();
+    const qty     = $tr.find('.bom-qty-required').val();
+    const tol     = $tr.find('.bom-tolerance').val();
+    const rateTol = $tr.find('.bom-rate-tol').val();
+    const estRate = $tr.find('.bom-est-rate').val();
+
+    if (!item) {
+        toastr.warning('Please select Item (Work Material / Service).');
+        return false;
+    }
+    if (!qty || parseFloat(qty) <= 0) {
+        toastr.warning('Please enter Qty Required greater than 0.');
+        return false;
+    }
+    if (tol     && !isValidNumber(tol))     { toastr.warning('Please enter valid Tolerance value.');  return false; }
+    if (rateTol && !isValidNumber(rateTol)) { toastr.warning('Please enter valid Rate Tol (%).');     return false; }
+    if (estRate && !isValidNumber(estRate)) { toastr.warning('Please enter valid Est. Rate.');        return false; }
+
+    return true;
 }
 
+function isValidNumber(val) {
+    if (val == null) return false;
+    const v = val.toString().trim();
+    return !!v && !isNaN(parseFloat(v));
+}
+function enforceNumeric(input, maxDecimals) {
+    let v = (input.value || '').replace(/,/g, '').replace(/[^0-9.]/g, '');
+    const parts = v.split('.');
+    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+    const p2 = v.split('.');
+    if (p2[1]) v = p2[0] + '.' + p2[1].slice(0, maxDecimals);
+    input.value = v;
+}
+function recalcAmount($tr) {
+    const qty  = parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0;
+    const rate = parseFloat(($tr.find('.bom-est-rate').val()     || '0').replace(/,/g, '')) || 0;
+    const amt  = qty * rate;
+    $tr.find('.bom-amount').val(isNaN(amt) ? '' : amt.toFixed(2));
+}
 function escHtml(str) {
     return String(str || '')
         .replace(/&/g, '&amp;')
@@ -906,7 +905,6 @@ function escHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 }
-
 function showModal(id) {
     try {
         const el = document.getElementById(id);
@@ -915,11 +913,8 @@ function showModal(id) {
         } else {
             $(`#${id}`).modal('show');
         }
-    } catch (e) {
-        $(`#${id}`).modal('show');
-    }
+    } catch (e) { $(`#${id}`).modal('show'); }
 }
-
 function hideModal(id) {
     try {
         const el = document.getElementById(id);
@@ -928,8 +923,5 @@ function hideModal(id) {
         } else {
             $(`#${id}`).modal('hide');
         }
-    } catch (e) {
-        $(`#${id}`).modal('hide');
-    }
+    } catch (e) { $(`#${id}`).modal('hide'); }
 }
-
