@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
@@ -329,30 +329,6 @@
                     </div>
                     <div class="row">
                         <div class="col-4">
-                            Goods Description <span class="text-danger fw-semibold">*</span>
-                        </div>
-                        <div class="col-8">
-                            <input id="frmLoadedOut_txtGoodsDescription" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
-                            <ul id="frmLoadedOut_txtGoodsDescription_List" class="AutoSuggestion-list"></ul>
-                            
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-4">
-                            QTY <span class="text-danger fw-semibold">*</span>
-                        </div>
-                        <div class="col-3">
-                            <input id="frmLoadedOut_txtQty" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="8" autocomplete="off">
-                        </div>
-                        <div class="col-2">
-                            UOM <span class="text-danger fw-semibold">*</span>
-                        </div>
-                        <div class="col-3">
-                            <select id="frmLoadedOut_ddlUOM" class="BizSolFormControl form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" > </select>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-4">
                             Document Type <span class="text-danger fw-semibold">*</span>
                         </div>
                         <div class="col-8">
@@ -369,7 +345,30 @@
 
                         </div>
                     </div>
-                   
+                    <div class="row">
+                        <div class="col-4">
+                            Goods Description <span class="text-danger fw-semibold">*</span>
+                        </div>
+                        <div class="col-8">
+                            <input id="frmLoadedOut_txtGoodsDescription" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                            <ul id="frmLoadedOut_txtGoodsDescription_List" class="AutoSuggestion-list"></ul>
+                            
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            QTY <span class="text-danger fw-semibold">*</span>
+                        </div>
+                        <div class="col-3">
+                            <input id="frmLoadedOut_txtQty" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);"  maxlength="8" autocomplete="off">
+                        </div>
+                        <div class="col-2">
+                            UOM <span class="text-danger fw-semibold">*</span>
+                        </div>
+                        <div class="col-3">
+                            <select id="frmLoadedOut_ddlUOM" class="BizSolFormControl form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" > </select>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-4">
                             Document No. <span class="text-danger fw-semibold">*</span>
@@ -642,7 +641,7 @@
                             Document Type <span class="text-danger fw-semibold">*</span>
                         </div>
                         <div class="col-8">
-                            <select id="frmLoadedIn_ddlDocumentType" class="BizSolFormControl form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)"></select>
+                            <select id="frmLoadedIn_ddlDocumentType" class="BizSolFormControl form-control form-control-sm" onkeypress="BizSolhandleEnterKey(event)" onchange="GateEntry_changeDocumentType_LoadedIn()"></select>
                         </div>
                     </div>
                     <div class="row">
@@ -712,7 +711,7 @@
                             QTY <span class="text-danger fw-semibold">*</span>
                         </div>
                         <div class="col-3">
-                            <input id="frmLoadedIn_txtQTY" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="8" autocomplete="off">
+                            <input id="frmLoadedIn_txtQTY" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);" maxlength="8" autocomplete="off">
                         </div>
                         <div class="col-2">
                             UOM <span class="text-danger fw-semibold">*</span>
@@ -728,6 +727,7 @@
                         </div>
                         <div class="col-8">
                             <input id="frmLoadedIn_txtDocumentNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
+                            <ul id="frmLoadedIn_txtDocumentNo_List" class="AutoSuggestion-list"></ul>
                         </div>
                     </div>
                     <div class="row">

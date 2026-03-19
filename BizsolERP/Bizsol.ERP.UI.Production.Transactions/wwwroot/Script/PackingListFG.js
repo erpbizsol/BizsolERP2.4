@@ -1,4 +1,4 @@
-﻿import { PackingListFGService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PackingListFGService.js';
+import { PackingListFGService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PackingListFGService.js';
 import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
 import { PalletPackingService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PalletPackingService.js';
 $("#ERPHeading").text("Packing List FG");
@@ -1887,7 +1887,8 @@ async function PackingListFG_AddManualItem() {
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm text-end" id="txtQtyMT_${ManualItemRowCounter}" 
-                       onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" 
+                       onkeypress="return BizSolInputControl.OnKeyDownPressFloatTextBox(event,this);" 
+                       onchange="BizSolInputControl.OnChangeFloatTextBox(this,3);" 
                        maxlength="10" autocomplete="off" value="0" />
             </td>
             <td>
