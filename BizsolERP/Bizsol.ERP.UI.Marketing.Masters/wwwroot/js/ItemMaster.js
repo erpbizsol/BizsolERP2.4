@@ -10,7 +10,7 @@ $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     GetItemMasterList();
     GetUOMList();
-    GetTypeMaster();
+
     // Modal close buttons
     $("#btnModalClose, #btnCancelItem").on("click", CloseForm);
     $("#btnCancelDelete").on("click", function () {
@@ -38,7 +38,22 @@ $(document).ready(function () {
         }
     });
 
+    // HSN — numbers only, max 8 digits
+    $("#HSN").on("keypress", function (e) {
+        if (!/\d/.test(String.fromCharCode(e.which))) e.preventDefault();
+    }).on("input", function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 8);
+        if (this.value.length > 0) $("#err_HSN").hide();
+    });
 
+    // GST Rate — numbers and single decimal only, no alphabets
+    $("#GSTRate").on("keypress", function (e) {
+        var ch = String.fromCharCode(e.which);
+        if (!/[\d.]/.test(ch)) { e.preventDefault(); return; }
+        if (ch === '.' && $(this).val().includes('.')) e.preventDefault();
+    }).on("input", function () {
+        this.value = this.value.replace(/[^\d.]/g, '').replace(/(\..*?)\..*/g, '$1');
+    });
 });
 
 // ── Load Grid ──────────────────────────────────────────────
@@ -95,9 +110,8 @@ function OpenNewItem() {
     ClearForm();
     $("#formModalTitle").text("Add New Item");
     $("#btnSaveText").text("Save Item");
-    $("#ItemCode").prop("readonly", false);
     $("#itemDialogBackdrop").addClass("show");
-    setTimeout(function () { $("#ItemCode").focus(); }, 140);
+    setTimeout(function () { $("#ItemName").focus(); }, 140);
 };
 
 // ── Open Edit Form ──────────────────────────────────────────
@@ -130,14 +144,9 @@ function EditItem(code) {
                     $("#ItemName").val(item.ItemName || "");
                     SelectOptionByText('UOM', item.UOM);
                     $("#GSTRate").val(item.DutyValue || "0");
-
-
-                    $("#ItemType").val(item.TypeMaster_Code || "0");
-                    $("#ItemType").select2({
-                        width: '-webkit-fill-available'
-                    });
-                    
+                    $("#ItemType").val((otherDetail && otherDetail.ItemNature) ? otherDetail.ItemNature : "");
                     $("#HSN").val((otherDetail && otherDetail.HSNCode != null) ? otherDetail.HSNCode : "");
+                    $("#ItemSpecification").val(item.ItemSpecification || "");
                     $("#itemDialogBackdrop").addClass("show");
                 } else {
                     toastr.error("Failed to load item data.");
@@ -173,8 +182,9 @@ function ViewItem(code) {
                 $("#viewItemName").text(item.ItemName || "—");
 
                 // Badges
-                var typeText = $("#ItemType option[value='" + item.TypeMaster_Code + "']").text();
-                if (typeText && typeText !== "select") {
+                var natureVal = item.ItemNature || "";
+                var typeText  = natureVal === 'G' ? 'Good' : natureVal === 'S' ? 'Services' : '';
+                if (typeText) {
                     $("#viewItemTypeBadge").html('<i class="fas fa-cubes" style="margin-right:5px;font-size:10px;"></i>Type: ' + typeText).show();
                 } else {
                     $("#viewItemTypeBadge").hide();
@@ -190,8 +200,9 @@ function ViewItem(code) {
                 $("#vf_ItemName").text(item.ItemName || "—");
                 $("#vf_UOM").text(item.UOM || "—");
                 $("#vf_GSTRate").text(item.DutyValue ? item.DutyValue + "%" : "—");
-                $("#vf_ItemType").text((typeText && typeText !== "select") ? typeText : "—");
+                $("#vf_ItemType").text(typeText || "—");
                 $("#vf_HSN").text((otherDetail && otherDetail.HSNCode != null && otherDetail.HSNCode !== "") ? otherDetail.HSNCode : "—");
+                $("#vf_ItemSpecification").text((otherDetail && otherDetail.ItemSpecification) ? otherDetail.ItemSpecification : "—");
 
                 // Open view modal
                 $("#viewItemBackdrop").addClass("show");
@@ -323,7 +334,7 @@ function BuildPayload() {
             {
                 // tblItemMaster fields
                 Code: parseInt(G_EditCode) || 0,
-                ItemCode: $("#ItemCode").val().trim(),
+                ItemCode: 0,
                 ItemName: $("#ItemName").val().trim(),
                 UOM: $("#UOM").val(),
                 DisplayName: $("#ItemName").val().trim(),
@@ -363,7 +374,7 @@ function BuildPayload() {
                 VerifiedOn: null,
                 DecimalPoints: 0,
                 DutyValue: parseFloat($("#GSTRate").val()) || 0,
-                TypeMaster_Code: parseInt($("#ItemType").val()) || 0,
+                ItemSpecification: $("#ItemSpecification").val().trim(),
             }
         ],
         ItemMasterOtherDetail: [
@@ -371,6 +382,7 @@ function BuildPayload() {
                 Code: parseInt(G_EditCode),
                 ItemMaster_Code: parseInt(G_EditCode) || 0,
                 HSNCode: $("#HSN").val().trim(),
+                ItemNature: $("#ItemType").val() || '',
                 ItemCodeForGI: 0,
                 ItemGroupName: "",
                 ItemNameForProductionReceive: "",
@@ -398,7 +410,7 @@ function BuildPayload() {
 function ValidateForm() {
     var valid = true;
 
-    ["ItemCode", "ItemName"].forEach(function (id) {
+    ["ItemName"].forEach(function (id) {
         var el = $("#" + id);
         var err = $("#err_" + id);
         if (!el.val().trim()) {
@@ -425,7 +437,7 @@ function ValidateForm() {
     }
 
     // Block save if any duplicate warning is visible
-    if ($("#dup_ItemCode").is(":visible") || $("#dup_ItemName").is(":visible")) {
+    if ($("#dup_ItemName").is(":visible")) {
         toastr.warning("Please resolve duplicate warnings before saving.");
         valid = false;
     }
@@ -434,12 +446,10 @@ function ValidateForm() {
 }
 
 function ClearForm() {
-    ["ItemCode", "ItemName", "UOM", "HSN", "GSTRate"].forEach(function (id) {
-        $("#" + id)
-            .val("")
-            .removeClass("im-input-error")
-            .prop("readonly", false)
-            .prop("disabled", false);
+    ["ItemCode", "ItemName", "UOM", "HSN", "GSTRate", "ItemSpecification"].forEach(function (id) {
+        var el = $("#" + id);
+        el.val("").removeClass("im-input-error").prop("disabled", false);
+        if (id !== "ItemCode") el.prop("readonly", false);
         $("#err_" + id).hide();
         $("#dup_" + id).hide();
     });
@@ -473,15 +483,6 @@ function ShowSuccessModal(title, text, iconClass) {
 
 function CloseSuccessModal() {
     $("#successBackdrop").removeClass("show");
-}
-function GetTypeMaster() {
-
-    ItemMasterService.GetTypeMasterList().then(function (resObj) {
-        BindSelectList($('#ItemType')[0], resObj.map((item) => ({ Code: item.Code, Desp: item.ItemType })));
-        $('#ItemType').select2({
-            width: '-webkit-fill-available'
-        });
-    });
 }
 function GetUOMList() {
     ItemMasterService.GetUomMasterList().then(function (resObj) {
@@ -530,4 +531,3 @@ window.DoDelete = DoDelete;
 window.SaveItem = SaveItem;
 window.CloseSuccessModal = CloseSuccessModal;
 window.GetUOMList = GetUOMList;
-window.GetTypeMaster = GetTypeMaster;
