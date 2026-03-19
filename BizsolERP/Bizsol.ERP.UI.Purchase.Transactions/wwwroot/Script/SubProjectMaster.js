@@ -43,6 +43,10 @@ $(document).ready(function () {
         calcEstimatedDays();
     });
 
+    $('#txtEstimatedDays').on('input', function () {
+        calcEstimatedDateFromDays();
+    });
+
     $('#spmSearch').on('input', function () {
         filterSubProjects($(this).val().toLowerCase().trim());
     });
@@ -444,12 +448,12 @@ function callDeleteSubProjectApi(code, reason) {
                 hideModal('dvDeleteConfirmModal');
                 loadSubProjects();
             } else {
-                toastr.warning(response.Msg || 'Failed to delete sub project.');
+                toastr.warning(response.Msg);
             }
         })
         .catch(function (error) {
             HideLoader && HideLoader();
-            toastr.error((error && error.Msg) || 'Error while deleting sub project. Please try again.');
+            toastr.error((error && error.Msg));
         });
 }
 
@@ -537,12 +541,12 @@ function callSaveSubProjectApi() {
                 hideModal('dvSubProjectModal');
                 loadSubProjects();
             } else {
-                toastr.warning(response.Msg || 'Failed to save sub project.');
+                toastr.warning(response.Msg);
             }
         })
         .catch(function (error) {
             HideLoader && HideLoader();
-            toastr.error((error && error.Msg) || 'Error while saving sub project. Please try again.');
+            toastr.error((error && error.Msg) );
         });
 }
 
@@ -562,7 +566,7 @@ function loadSubProjects() {
             G_SubProjectList = [];
             updateStats([]);
             bindSubProjectGrid([]);
-            toastr.error((error && error.Msg) || 'Error loading sub project list.');
+            toastr.error((error && error.Msg) );
         });
 }
 
@@ -713,6 +717,16 @@ function calcEstimatedDays() {
             $('#txtEstimatedDays').val('');
         }
     }
+}
+function calcEstimatedDateFromDays() {
+    const startVal = $('#txtStartDate').val();
+    const days     = parseInt($('#txtEstimatedDays').val() || '', 10);
+    if (!startVal || isNaN(days) || days < 0) return;
+    const start = new Date(startVal);
+    if (isNaN(start.getTime())) return;
+    const estDate = new Date(start);
+    estDate.setDate(estDate.getDate() + days);
+    $('#txtEstimatedDate').val(formatDate(estDate));
 }
 
 function escHtml(str) {
