@@ -8,8 +8,8 @@
 
 <style>
     /* ═══════════════════════════════════════════════════
-       BASE
-    ═══════════════════════════════════════════════════ */
+           BASE
+        ═══════════════════════════════════════════════════ */
     *, *::before, *::after {
         box-sizing: border-box;
         margin: 0;
@@ -24,8 +24,8 @@
     }
 
     /* ═══════════════════════════════════════════════════
-       MAIN CARD
-    ═══════════════════════════════════════════════════ */
+           MAIN CARD
+        ═══════════════════════════════════════════════════ */
     .vm-card {
         background: #fff;
         border-radius: 16px;
@@ -133,6 +133,7 @@
     .vm-card-body {
         padding: 18px 20px 26px;
     }
+
     .vm-card-body {
         padding: 18px 20px 26px;
     }
@@ -142,7 +143,7 @@
         border-radius: 12px;
         border: 1px solid #e4e7f0;
         overflow-x: hidden;
-        height: 300px;
+        height: 388px;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         box-shadow: 0 2px 12px rgba(91,94,244,0.06);
@@ -268,24 +269,29 @@
     }
 
     /* ═══════════════════════════════════════════════════
-       BACKDROP
-    ═══════════════════════════════════════════════════ */
+           BACKDROP
+        ═══════════════════════════════════════════════════ */
     .vm-backdrop {
         position: fixed;
         inset: 0;
         background: rgba(8,12,36,0.54);
         backdrop-filter: blur(5px);
         display: none;
-        align-items: flex-start;
+        align-items: center;
         justify-content: center;
         z-index: 1050;
         padding: 20px 12px;
-        overflow-y: auto;
+        overflow: hidden;
     }
 
         .vm-backdrop.show {
             display: flex;
         }
+
+    /* Modal open hone par body scroll band — scroll sirf modal me */
+    body:has(.vm-backdrop.show) {
+        overflow: hidden;
+    }
 
     .vm-modal,
     .vm-view-modal,
@@ -319,11 +325,12 @@
     }
 
     /* ═══════════════════════════════════════════════════
-       FORM MODAL
-    ═══════════════════════════════════════════════════ */
+           FORM MODAL
+        ═══════════════════════════════════════════════════ */
     .vm-modal {
         width: 720px;
-        max-width: calc(100vw - 20px);
+        max-width: calc(100vw - 24px);
+        max-height: calc(100vh - 40px);
         background: #fff;
         border-radius: 18px;
         box-shadow: 0 20px 56px rgba(8,12,36,0.24);
@@ -335,7 +342,7 @@
 
     .vm-modal-header {
         background: linear-gradient(130deg, #5b5ef4, #a855f7);
-        padding: 16px 20px;
+        padding: 4px 15px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -390,17 +397,23 @@
 
     .vm-modal-body {
         padding: 20px 22px 14px;
+        flex: 1;
+        min-height: 0;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
     }
 
         .vm-modal-body::-webkit-scrollbar {
-            width: 4px;
+            width: 8px;
         }
 
         .vm-modal-body::-webkit-scrollbar-thumb {
-            background: #d1d5db;
+            background: #c4c8d4;
             border-radius: 4px;
+        }
+
+        .vm-modal-body::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
         }
 
     /* ── Section Label ── */
@@ -568,11 +581,12 @@
         }
 
     /* ═══════════════════════════════════════════════════
-       VIEW MODAL
-    ═══════════════════════════════════════════════════ */
+           VIEW MODAL
+        ═══════════════════════════════════════════════════ */
     .vm-view-modal {
         width: 520px;
         max-width: calc(100vw - 20px);
+        max-height: calc(100vh - 40px);
         background: #fff;
         border-radius: 18px;
         box-shadow: 0 20px 56px rgba(8,12,36,0.24);
@@ -686,6 +700,8 @@
 
     .vm-view-body {
         padding: 18px 20px 10px;
+        flex: 1;
+        min-height: 0;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
     }
@@ -902,8 +918,8 @@
         }
 
     /* ═══════════════════════════════════════════════════
-       DELETE MODAL
-    ═══════════════════════════════════════════════════ */
+           DELETE MODAL
+        ═══════════════════════════════════════════════════ */
     .vm-delete-modal {
         width: 370px;
         max-width: calc(100vw - 20px);
@@ -1010,8 +1026,8 @@
         }
 
     /* ═══════════════════════════════════════════════════
-       SUCCESS MODAL
-    ═══════════════════════════════════════════════════ */
+           SUCCESS MODAL
+        ═══════════════════════════════════════════════════ */
     .vm-success-modal {
         width: 370px;
         max-width: calc(100vw - 20px);
@@ -1074,8 +1090,8 @@
         }
 
     /* ═══════════════════════════════════════════════════
-       EMPTY STATE
-    ═══════════════════════════════════════════════════ */
+           EMPTY STATE
+        ═══════════════════════════════════════════════════ */
     .vm-empty-state {
         display: flex;
         flex-direction: column;
@@ -1113,8 +1129,8 @@
     }
 
     /* ═══════════════════════════════════════════════════
-       RESPONSIVE — TABLET ≤ 900px
-    ═══════════════════════════════════════════════════ */
+           RESPONSIVE — TABLET ≤ 900px
+        ═══════════════════════════════════════════════════ */
     @@media (max-width: 900px) {
         .vm-form-grid {
             grid-template-columns: 1fr 1fr;
@@ -1132,8 +1148,8 @@
     }
 
     /* ═══════════════════════════════════════════════════
-       RESPONSIVE — MOBILE ≤ 640px
-    ═══════════════════════════════════════════════════ */
+           RESPONSIVE — MOBILE ≤ 640px
+        ═══════════════════════════════════════════════════ */
     @@media (max-width: 640px) {
         .vm-page-wrapper {
             padding: 10px 10px 20px;
@@ -1259,12 +1275,33 @@
 
         .vm-backdrop {
             padding: 10px 8px;
+            overflow: hidden;
+        }
+
+        .vm-modal,
+        .vm-view-modal {
+            max-width: calc(100vw - 16px);
+            max-height: calc(100vh - 20px);
+        }
+
+        .vm-view-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .vm-modal-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
     }
 
     /* ═══════════════════════════════════════════════════
-       RESPONSIVE — SMALL ≤ 400px
-    ═══════════════════════════════════════════════════ */
+           RESPONSIVE — SMALL ≤ 400px
+        ═══════════════════════════════════════════════════ */
     @@media (max-width: 400px) {
         .vm-page-wrapper {
             padding: 8px 6px 14px;
@@ -1274,8 +1311,30 @@
             padding: 12px 13px;
         }
 
+        .vm-backdrop {
+            padding: 8px 6px;
+            overflow: hidden;
+        }
+
+        .vm-modal,
+        .vm-view-modal {
+            max-width: calc(100vw - 12px);
+            max-height: calc(100vh - 16px);
+        }
+
+        .vm-view-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         .vm-modal-body {
             padding: 13px 12px 8px;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .vm-view-body {
@@ -1284,8 +1343,63 @@
     }
 
     /* ═══════════════════════════════════════════════════
-       AUTOCOMPLETE DROPDOWN
-    ═══════════════════════════════════════════════════ */
+           RESPONSIVE — VERY SMALL ≤ 300px (scroll modal me hi)
+        ═══════════════════════════════════════════════════ */
+    @@media (max-width: 300px) {
+        .vm-backdrop {
+            padding: 6px 4px;
+            overflow: hidden;
+        }
+
+        .vm-modal,
+        .vm-view-modal {
+            max-width: calc(100vw - 8px);
+            max-height: calc(100vh - 12px);
+        }
+
+        .vm-view-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .vm-modal-header {
+            padding: 12px 14px;
+        }
+
+        .vm-modal-header-title {
+            font-size: 13px;
+        }
+
+        .vm-modal-body {
+            padding: 12px 10px 8px;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .vm-modal-footer {
+            padding: 8px 10px 12px;
+        }
+
+        .vm-section-label {
+            font-size: 10px;
+        }
+
+        .vm-form-group label {
+            font-size: 11px;
+        }
+
+        .vm-input {
+            font-size: 13px;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+           AUTOCOMPLETE DROPDOWN
+        ═══════════════════════════════════════════════════ */
     .vm-ac-wrap {
         position: relative;
     }
@@ -1447,14 +1561,14 @@
 
                 <div class="vm-form-group">
                     <label for="AccountDesp">Vendor Name <span class="vm-required">*</span></label>
-                    <input type="text" id="AccountDesp" class="vm-input" placeholder="Enter vendor name" autocomplete="off" />
+                    <input type="text" id="AccountDesp" class="vm-input" placeholder="Enter vendor name" autocomplete="off"  maxlength="100"/>
                     <span class="vm-err-text" id="err_AccountDesp"><i class="fas fa-circle-exclamation"></i> Vendor Name is required.</span>
                     <span class="vm-dup-warning" id="dup_AccountDesp"><i class="fas fa-triangle-exclamation"></i> Already exists.</span>
                 </div>
 
                 <div class="vm-form-group">
                     <label for="BillName">Display Name</label>
-                    <input type="text" id="BillName" class="vm-input" placeholder="Enter display name" autocomplete="off" />
+                    <input type="text" id="BillName" class="vm-input" placeholder="Enter display name" autocomplete="off" maxlength="100" />
                 </div>
 
                 <div class="vm-form-group">
@@ -1462,29 +1576,21 @@
                     <input type="text" id="GSTNNo" class="vm-input" placeholder="e.g. 22AAAAA0000A1Z5" autocomplete="off" maxlength="15" style="text-transform:uppercase;" />
                     <span class="vm-err-text" id="err_GSTNNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid GST format.</span>
                 </div>
-
-            </div>
-
-            <!-- ── Contact Info ── -->
-            <div class="vm-section-label" style="margin-top:18px;">
-                <i class="fas fa-address-book"></i> Contact Details
-            </div>
-            <div class="vm-form-grid">
-
                 <div class="vm-form-group">
-                    <label for="EMail">Email Address</label>
-                    <input type="email" id="EMail" class="vm-input" placeholder="e.g. vendor@example.com" autocomplete="off" />
-                    <span class="vm-err-text" id="err_EMail" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid email address.</span>
+                    <label for="Address1">Address</label>
+                    <input type="text" id="Address1" class="vm-input" placeholder="e.g. Address" autocomplete="off" maxlength="100" />
                 </div>
 
                 <div class="vm-form-group">
-                    <label for="PhoneNo">Phone Number</label>
-                    <input type="text" id="PhoneNo" class="vm-input" placeholder="e.g. 9876543210" autocomplete="off" inputmode="numeric" maxlength="15" />
-                    <span class="vm-err-text" id="err_PhoneNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid phone number (10 digits required).</span>
+                    <label for="Nature">Nature</label>
+                    <select id="Nature" class="vm-input">
+                        <option value="">-- Select Nature --</option>
+                        <option value="Goods">Goods</option>
+                        <option value="Services">Services</option>
+                        
+                    </select>
                 </div>
-
             </div>
-
             <!-- ── Address Info ── -->
             <div class="vm-section-label" style="margin-top:18px;">
                 <i class="fas fa-location-dot"></i> Address Details
@@ -1523,6 +1629,66 @@
                 </div>
 
             </div>
+            <!-- ── Contact Info ── -->
+            <div class="vm-section-label" style="margin-top:18px;">
+                <i class="fas fa-address-book"></i> Account ContactPerson Detail
+            </div>
+            <div class="vm-form-grid">
+
+                <div class="vm-form-group">
+                    <label for="ContactPersonName"> Contact Person Name </label>
+                    <input type="text" id="ContactPersonName" class="vm-input" maxlength="200" placeholder="Enter Contact Person Name" autocomplete="off" />
+                </div>
+
+                <div class="vm-form-group">
+                    <label for="ContactPersonDesignation">Contact Person Designation</label>
+                    <input type="text" id="ContactPersonDesignation" maxlength="100" class="vm-input" placeholder="Contact Person Designation" autocomplete="off" />
+                </div>
+                <div class="vm-form-group">
+                    <label for="ContactPersonMobile">Contact Person Mobile</label>
+                    <input type="text" id="ContactPersonMobile" class="vm-input" placeholder="e.g. 9876543210" inputmode="numeric" autocomplete="off" maxlength="10" />
+                    <span class="vm-err-text" id="err_ContactPersonMobile" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid mobile number (10 digits).</span>
+                </div>
+
+                <div class="vm-form-group">
+                    <label for="ContactPersonEMail">Contact Person EMail</label>
+                    <input type="text" id="ContactPersonEMail" class="vm-input" placeholder="e.g. contact@example.com" autocomplete="off" maxlength="200" />
+                    <span class="vm-err-text" id="err_ContactPersonEMail" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid email address.</span>
+                </div>
+
+            </div>
+
+            <!-- ── Contact Info ── -->
+            <div class="vm-section-label" style="margin-top:18px;">
+                <i class="fas fa-address-book"></i> Bank Account Detail
+            </div>
+            <div class="vm-form-grid">
+
+                <div class="vm-form-group">
+                    <label for="BankName">Bank Name</label>
+                    <input type="text" id="BankName" class="vm-input" placeholder="Enter Bank Name" autocomplete="off" maxlength="200" />
+                </div>
+
+                <div class="vm-form-group">
+                    <label for="BankAddress">Bank Address</label>
+                    <input type="text" id="BankAddress" class="vm-input" placeholder="Bank Address" autocomplete="off" maxlength="500" />
+                </div>
+                <div class="vm-form-group">
+                    <label for="AccountNo">Account No</label>
+                    <input type="text" id="AccountNo" name="AccountNo" class="vm-input" placeholder="Enter account number" autocomplete="off" inputmode="numeric" maxlength="50" />
+                </div>
+
+                <div class="vm-form-group">
+                    <label for="IFSCCode">IFSC Code</label>
+                    <input type="text" id="IFSCCode" class="vm-input" placeholder="IFSC Code" autocomplete="off" maxlength="20" />
+                </div>
+                <div class="vm-form-group">
+                    <label for="Refrence">Refrence</label>
+                    <input type="text" id="Refrence" class="vm-input" placeholder="Refrence" autocomplete="off" maxlength="100" />
+                </div>
+
+            </div>
+
 
         </div>
 
@@ -1586,6 +1752,14 @@
                 </div>
 
                 <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-location-dot"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Address</div>
+                        <div class="vm-view-field-value" id="vf_Address1">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field">
                     <div class="vm-view-field-icon"><i class="fas fa-globe"></i></div>
                     <div class="vm-view-field-info">
                         <div class="vm-view-field-label">Country</div>
@@ -1637,6 +1811,70 @@
                     <div class="vm-view-field-info">
                         <div class="vm-view-field-label">Phone No</div>
                         <div class="vm-view-field-value" id="vf_PhoneNo">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field" style="grid-column:1/-1;">
+                    <div class="vm-view-section-label" style="margin-top:12px;margin-bottom:8px;"><i class="fas fa-address-book"></i> Contact Person</div>
+                </div>
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-user"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Contact Name</div>
+                        <div class="vm-view-field-value" id="vf_ContactPersonName">—</div>
+                    </div>
+                </div>
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-briefcase"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Designation</div>
+                        <div class="vm-view-field-value" id="vf_ContactPersonDesignation">—</div>
+                    </div>
+                </div>
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-mobile"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Contact Mobile</div>
+                        <div class="vm-view-field-value" id="vf_ContactPersonMobile">—</div>
+                    </div>
+                </div>
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-envelope"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Contact Email</div>
+                        <div class="vm-view-field-value" id="vf_ContactPersonEMail">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field" style="grid-column:1/-1;">
+                    <div class="vm-view-section-label" style="margin-top:12px;margin-bottom:8px;"><i class="fas fa-university"></i> Bank Details</div>
+                </div>
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-university"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Bank Name</div>
+                        <div class="vm-view-field-value" id="vf_BankName">—</div>
+                    </div>
+                </div>
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-location-dot"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Bank Address</div>
+                        <div class="vm-view-field-value" id="vf_BankAddress">—</div>
+                    </div>
+                </div>
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-hashtag"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Account No</div>
+                        <div class="vm-view-field-value" id="vf_AccountNo">—</div>
+                    </div>
+                </div>
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-code"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">IFSC Code</div>
+                        <div class="vm-view-field-value" id="vf_IFSCCode">—</div>
                     </div>
                 </div>
 
