@@ -1,4 +1,4 @@
-﻿import { UrlService } from '../URL.js';
+import { UrlService } from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const StockAgeingReportService = {
@@ -50,6 +50,15 @@ const StockAgeingReportService = {
             }
         );
     },
+    GetParameterMasterFilter: function GetParameterMasterFilter(ItemMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_ItemSize + "/GetParameterMasterFilter?ItemMaster_Codes=" + encodeURIComponent(ItemMaster_Code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+
 }
 
 export { StockAgeingReportService }

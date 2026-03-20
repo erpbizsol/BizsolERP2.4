@@ -37,6 +37,10 @@ const VendorMasterService = {
         var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetNationList`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
+    GetServiceProviderNatureList: function GetServiceProviderNatureList() {
+        var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetServiceProviderNatureList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
 };
 
 export { VendorMasterService };
