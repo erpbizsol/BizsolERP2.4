@@ -398,6 +398,18 @@
     }
     .btn-pla-reject-sm:hover { background:#e2e8f0; }
 
+    /* ── BACK BUTTON ──────────────────────────────────────────── */
+    .btn-pla-back {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: #fff; border: 2px solid rgba(255,255,255,0.6); color: #667eea;
+        border-radius: 10px; padding: 7px 16px; font-weight: 800; font-size: 0.84rem;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.18); white-space: nowrap;
+        cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+        line-height: 1; text-decoration: none;
+    }
+    .btn-pla-back:hover { background: #f0f4ff; border-color: #667eea; color: #667eea; }
+    @@media (max-width: 480px) { .pla-back-label { display: none; } .btn-pla-back { padding: 7px 10px; } }
+
     /* ── ANIMATIONS ───────────────────────────────────────────── */
     .section-entry-animation { animation: fadeSlideIn 0.3s ease both; }
     @@keyframes fadeSlideIn {
@@ -444,6 +456,10 @@
             <div class="val" id="statApprovedToday">—</div>
             <div class="lbl">Approved</div>
         </div>
+        <a onclick="NavigateToPOStore()" class="btn-pla-back" title="Back to Purchase Order Store">
+            <i class="fa fa-arrow-left"></i>
+            <span class="pla-back-label">Back</span>
+        </a>
     </div>
 </div>
 
@@ -468,10 +484,10 @@
         <div class="col-6 col-md-2">
             <label class="form-label">Status</label>
             <select id="lstDdlStatus" class="form-control form-control-sm form-select">
-                <option value="">-- All Status --</option>
-                <option value="Pending">Pending</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
+                <option value="A">-- All Status --</option>
+                <option value="N">Pending</option>
+                <option value="Y">Approved</option>
+                <option value="R">Rejected</option>
             </select>
         </div>
         <div class="col-6 col-md-2 d-flex align-items-end">

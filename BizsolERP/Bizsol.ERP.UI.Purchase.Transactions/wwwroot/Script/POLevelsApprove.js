@@ -619,9 +619,16 @@ function ShowEmpty(show) {
     document.getElementById('poPendingEmpty').style.display = show ? '' : 'none';
 }
 
+function NavigateToPOStore() {
+    const appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/'))
+        .replace(/\/?$/, '/');
+    window.location.href = appBase + 'PurchaseTransactions/PurchaseOrder/PurchaseOrderStore?ModuleDesp=Purchase%20Order%20(Store)';
+}
+
 // ─── EXPOSE GLOBALS (onclick handlers in HTML) ────────────────────────────────
 window.LoadPOList        = LoadPOList;
 window.OpenDetailModal   = OpenDetailModal;
 window.SubmitApproval    = SubmitApproval;
 window.CloseDetailModal  = CloseDetailModal;
 window.CloseConfirmModal = CloseConfirmModal;
+window.NavigateToPOStore = NavigateToPOStore;
