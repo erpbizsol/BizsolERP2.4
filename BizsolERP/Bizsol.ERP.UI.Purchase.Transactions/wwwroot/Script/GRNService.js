@@ -428,12 +428,14 @@ function addItemRow() {
         <td>
             <input type="text" class="form-control form-control-sm row-remark" placeholder="Remark">
         </td>
-        <td style="text-align:center;">
-            <button type="button" class="del-row-btn" onclick="removeItemRow(this)" title="Remove">
-                <i class="fa fa-times"></i>
-            </button>
-        </td>`;
+       
 
+        `;
+    //<td style="text-align:center;">
+    //    <button type="button" class="del-row-btn" onclick="removeItemRow(this)" title="Remove">
+    //        <i class="fa fa-times"></i>
+    //    </button>
+    //</td>
     tbody.appendChild(tr);
 
     // Fill PO dropdown

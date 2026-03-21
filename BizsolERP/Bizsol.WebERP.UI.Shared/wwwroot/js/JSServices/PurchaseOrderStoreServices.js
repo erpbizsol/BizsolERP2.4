@@ -5,16 +5,27 @@ const PurchaseOrderStoreService = {
 
     GetPurchaseOrderStoreList: function GetPurchaseOrderStoreList(Status, FromDate, ToDate) {
        // let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/GetPurchaseOrderMasterList?Status=${Status}&FromDate=${FromDate}&ToDate=${ToDate}`;
-        return PurchaseOrderStoreService.Getddl('LOCATE');
-        
+        return PurchaseOrderStoreService.Getddl('LOCATE', 0, Status, FromDate, ToDate);
+
     },
 
     GetPurchaseOrderStoreById: function GetPurchaseOrderStoreById(code) {
         return PurchaseOrderStoreService.Getddl('SHOWDATA', code);
     },
 
-    Getddl: function Getddl(Mode, Code = 0) {
-        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/Getddl?Mode=${Mode}&Code=${Code}`;
+    Getddl: function Getddl(Mode, Code = 0, Status = null, FromDate = null, ToDate = null) {
+        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/Getddl?Mode=${encodeURIComponent(Mode)}`;
+        // Always include Code (backend default is 0)
+        url += `&Code=${encodeURIComponent(Code)}`;
+        if (Status !== null && Status !== undefined && String(Status).length > 0) {
+            url += `&Status=${encodeURIComponent(Status)}`;
+        }
+        if (FromDate !== null && FromDate !== undefined && String(FromDate).length > 0) {
+            url += `&FromDate=${encodeURIComponent(FromDate)}`;
+        }
+        if (ToDate !== null && ToDate !== undefined && String(ToDate).length > 0) {
+            url += `&ToDate=${encodeURIComponent(ToDate)}`;
+        }
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(
             function (value) {
                 return value;
@@ -23,7 +34,7 @@ const PurchaseOrderStoreService = {
     },
 
     GetPOStoreStatusList: function GetPOStoreStatusList() {
-        return PurchaseOrderStoreService.Getddl('POStoreStatusList');
+        return PurchaseOrderStoreService.Getddl('DDL_POSTORESTATUSLIST');
     },
 
     GetVendorList: function GetVendorList() {
@@ -77,12 +88,11 @@ const PurchaseOrderStoreService = {
     },
 
     GetPendingPOStoreList: function GetPendingPOStoreList() {
-        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/GetPendingPOStoreList`;
-        return promiseAjaxCallApi.CallAPI('GET', url, '').then(
-            function (value) {
-                return value;
-            }
-        );
+        return PurchaseOrderStoreService.Getddl('DDL_PENDINGPOONME');
+    },
+
+    GetPOApprovedList: function GetPOApprovedList() {
+        return PurchaseOrderStoreService.Getddl('APPROVEDLIST');
     }
 
 }

@@ -11,10 +11,12 @@ let G_POLevelList    = [];
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
-    loadProjectDropdown();
     loadUserDropdown();
     loadPOLevelList();
-    loadSubProjects();
+    // Chain: load master projects first, then sub-projects (avoids race where grid binds before G_ProjectList is ready)
+    loadProjectDropdown().finally(function () {
+        loadSubProjects();
+    });
 
     $('#btnCreateSubProject').on('click', function () {
         OpenNew_SubProjectMaster();
@@ -43,6 +45,10 @@ $(document).ready(function () {
         calcEstimatedDays();
     });
 
+    $('#txtEstimatedDays').on('input', function () {
+        calcEstimatedDateFromDays();
+    });
+
     $('#spmSearch').on('input', function () {
         filterSubProjects($(this).val().toLowerCase().trim());
     });
@@ -59,7 +65,7 @@ function getFinancialYear() {
 
 /* ── Load master project dropdown ────────────────────────── */
 function loadProjectDropdown() {
-    ProjectMasterService.GetProjectList()
+    return ProjectMasterService.GetProjectList()
         .then(function (response) {
             G_ProjectList = Array.isArray(response) ? response : [];
             const $sel = $('#ddlMasterProject');
@@ -72,6 +78,7 @@ function loadProjectDropdown() {
         })
         .catch(function () {
             toastr.error('Error loading master projects.');
+            G_ProjectList = [];
         });
 }
 
@@ -444,12 +451,12 @@ function callDeleteSubProjectApi(code, reason) {
                 hideModal('dvDeleteConfirmModal');
                 loadSubProjects();
             } else {
-                toastr.warning(response.Msg || 'Failed to delete sub project.');
+                toastr.warning(response.Msg);
             }
         })
         .catch(function (error) {
             HideLoader && HideLoader();
-            toastr.error((error && error.Msg) || 'Error while deleting sub project. Please try again.');
+            toastr.error((error && error.Msg));
         });
 }
 
@@ -537,12 +544,12 @@ function callSaveSubProjectApi() {
                 hideModal('dvSubProjectModal');
                 loadSubProjects();
             } else {
-                toastr.warning(response.Msg || 'Failed to save sub project.');
+                toastr.warning(response.Msg);
             }
         })
         .catch(function (error) {
             HideLoader && HideLoader();
-            toastr.error((error && error.Msg) || 'Error while saving sub project. Please try again.');
+            toastr.error((error && error.Msg) );
         });
 }
 
@@ -553,7 +560,13 @@ function loadSubProjects() {
     SubProjectMasterService.GetSubProjectList()
         .then(function (response) {
             HideLoader && HideLoader();
-            G_SubProjectList = Array.isArray(response) ? response : [];
+            // Handle array or wrapped response (Data, data, SubProjectList, etc.)
+            var list = Array.isArray(response) ? response
+                : (response && Array.isArray(response.Data) ? response.Data : null)
+                || (response && Array.isArray(response.data) ? response.data : null)
+                || (response && Array.isArray(response.SubProjectList) ? response.SubProjectList : null)
+                || [];
+            G_SubProjectList = list;
             updateStats(G_SubProjectList);
             bindSubProjectGrid(G_SubProjectList);
         })
@@ -562,7 +575,7 @@ function loadSubProjects() {
             G_SubProjectList = [];
             updateStats([]);
             bindSubProjectGrid([]);
-            toastr.error((error && error.Msg) || 'Error loading sub project list.');
+            toastr.error((error && error.Msg) );
         });
 }
 
@@ -604,8 +617,11 @@ function bindSubProjectGrid(list) {
     list.forEach(function (item, index) {
         const code            = item.Code || 0;
         const masterCode      = item.ProjectMaster_Code || item.MasterProjectCode || '';
+        // Prefer master name from API response (when JOIN returns it); fallback to G_ProjectList lookup
+        const apiMasterName   = item.MasterProjectDesp || item.MasterProjectName || item.ProjectDesp || '';
         const master          = G_ProjectList.find(p => String(p.Code) === String(masterCode));
-        const masterName      = master ? (master.ProjectDesp || master.ProjectName || master.ProjectCode || '—') : '—';
+        const lookupMasterName = master ? (master.ProjectDesp || master.ProjectName || master.ProjectCode || '') : '';
+        const masterName      = (apiMasterName && String(apiMasterName).trim()) || lookupMasterName || '—';
         const subProjectName  = item.SubProjectDesp || item.SubProjectName || '';
         const budget          = item.Budget || item.SubProjectBudget || 0;
         const estimatedDays   = item.EstimatedCompletionDays || item.EstimatedDays || 0;
@@ -657,9 +673,11 @@ function filterSubProjects(query) {
     if (!query) { bindSubProjectGrid(G_SubProjectList); return; }
     const filtered = G_SubProjectList.filter(function (item) {
         const name       = (item.SubProjectDesp || item.SubProjectName || '').toLowerCase();
+        const apiMaster  = (item.MasterProjectDesp || item.MasterProjectName || item.ProjectDesp || '').toLowerCase();
         const masterCode = item.ProjectMaster_Code || item.MasterProjectCode || '';
         const master     = G_ProjectList.find(p => String(p.Code) === String(masterCode));
-        const masterName = master ? (master.ProjectDesp || master.ProjectName || '').toLowerCase() : '';
+        const lookupMaster = master ? (master.ProjectDesp || master.ProjectName || '').toLowerCase() : '';
+        const masterName = apiMaster || lookupMaster;
         return name.includes(query) || masterName.includes(query);
     });
     bindSubProjectGrid(filtered);
@@ -713,6 +731,16 @@ function calcEstimatedDays() {
             $('#txtEstimatedDays').val('');
         }
     }
+}
+function calcEstimatedDateFromDays() {
+    const startVal = $('#txtStartDate').val();
+    const days     = parseInt($('#txtEstimatedDays').val() || '', 10);
+    if (!startVal || isNaN(days) || days < 0) return;
+    const start = new Date(startVal);
+    if (isNaN(start.getTime())) return;
+    const estDate = new Date(start);
+    estDate.setDate(estDate.getDate() + days);
+    $('#txtEstimatedDate').val(formatDate(estDate));
 }
 
 function escHtml(str) {

@@ -45,19 +45,25 @@ const BOMService = {
         });
     },
 
-    VerifyBOM: function VerifyBOM(code) {
-        const authKey = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+    VerifyBOM: function VerifyBOM(code, subProjectMaster_Code) {
+        const authKey  = JSON.parse(sessionStorage.getItem('authKey') || '{}');
         const userCode = authKey.UserMaster_Code || 0;
-        const URL = UrlService.API_ENDPOINT_BOM + "/VerifyBOM?Code=" + (code || 0) + "&UserMaster_Code=" + userCode;
+        const URL = UrlService.API_ENDPOINT_BOM + "/VerifyBOM?Code=" + (code || 0)
+                  + "&SubProjectMaster_Code=" + (subProjectMaster_Code || 0)
+                  + "&UserMaster_Code=" + userCode;
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(function (value) {
             return value;
         });
     },
 
-    DeleteBOM: function DeleteBOM(code, reason) {
-        const authKey = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+    DeleteBOM: function DeleteBOM(code, subProjectMaster_Code, reason) {
+        const authKey  = JSON.parse(sessionStorage.getItem('authKey') || '{}');
         const userCode = authKey.UserMaster_Code || 0;
-        const URL = UrlService.API_ENDPOINT_BOM + "/DeleteBOM?Code=" + (code || 0) + "&UserMaster_Code=" + userCode + "&ReasonForDelete=" + encodeURIComponent(reason || '') + "&IPAddress=1&Location=1";
+        const URL = UrlService.API_ENDPOINT_BOM + "/DeleteBOM?Code=" + (code || 0)
+                  + "&SubProjectMaster_Code=" + (subProjectMaster_Code || 0)
+                  + "&UserMaster_Code=" + userCode
+                  + "&ReasonForDelete=" + encodeURIComponent(reason || '')
+                  + "&IPAddress=1&Location=1";
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(function (value) {
             return value;
         });

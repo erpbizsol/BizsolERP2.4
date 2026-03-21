@@ -11,15 +11,36 @@
     .po-list-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 14px 14px 0 0;
-        padding: 18px 22px;
+        padding: 16px 22px 14px;
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
+        flex-direction: column;
         gap: 10px;
     }
     .po-list-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
     .po-list-header small { color: rgba(255,255,255,0.75); font-size: 0.78rem; display: block; }
+    .po-header-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .po-create-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        background: #fff; border: 2px solid rgba(255,255,255,0.6); color: #667eea;
+        border-radius: 10px; padding: 8px 16px; font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.2); white-space: nowrap;
+        cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+        line-height: 1; text-decoration: none; font-size: 0.85rem;
+    }
+    .po-create-btn:hover { background: #f0f4ff; border-color: #667eea; color: #667eea; }
+    .po-stats-strip {
+        display: flex; gap: 8px; align-items: center;
+        overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+        flex-wrap: nowrap; padding-bottom: 2px;
+    }
+    .po-stats-strip::-webkit-scrollbar { display: none; }
+    @@media (max-width: 480px) {
+        .po-create-btn-label { display: none; }
+        .po-create-btn { padding: 8px 12px; font-size: 1rem; }
+        .po-stat-chip { min-width: 62px; padding: 4px 8px; }
+        .po-stat-chip .val { font-size: 1rem; }
+        .po-stat-chip .lbl { font-size: 0.6rem; }
+    }
     .po-filter-bar {
         background: #fff;
         border: 1px solid #e2e8f0;
@@ -305,6 +326,8 @@
     }
     .po-stat-chip .val { font-size: 1.15rem; font-weight: 800; color: #fff; line-height: 1; }
     .po-stat-chip .lbl { font-size: 0.65rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.06em; }
+    .po-chip-link { transition: transform 0.18s ease, background 0.18s ease; }
+    .po-chip-link:hover { background: rgba(255,255,255,0.32) !important; transform: scale(1.06); }
 
     /* ── MOBILE ITEM CARDS ────────────────────────── */
     .items-desktop-wrap { display: block; }
@@ -373,21 +396,36 @@
 <div id="divPOList">
     <!-- Gradient header bar -->
     <div class="po-list-header">
-        <div>
-            <h5><i class="fa fa-file-invoice me-2"></i>Purchase Orders</h5>
-            <small>Manage and track all purchase orders</small>
+        <!-- Row 1: title + create button -->
+        <div class="po-header-top">
+            <div>
+                <h5><i class="fa fa-file-invoice me-2"></i>Purchase Orders</h5>
+                <small>Manage and track all purchase orders</small>
+            </div>
+            <a onclick="OpenPOForm('New', null)" class="po-create-btn">
+                <i class="fa fa-plus-circle"></i>
+                <span class="po-create-btn-label ms-1">Create New PO</span>
+            </a>
         </div>
-        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <!-- Row 2: stats strip (scrollable on mobile) -->
+        <div class="po-stats-strip">
             <div class="po-stat-chip">
                 <div class="val" id="statTotalPO">—</div>
                 <div class="lbl">Total</div>
             </div>
-            <a onclick="OpenPOForm('New', null)"
-                    style="display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#fff;border:2px solid rgba(255,255,255,0.6);color:#667eea;border-radius:10px;padding:8px 18px;font-weight:800;box-shadow:0 3px 12px rgba(0,0,0,0.2);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:all 0.2s;line-height:1;"
-                    onmouseover="this.style.background='#f0f4ff';this.style.borderColor='#667eea';"
-                    onmouseout="this.style.background='#fff';this.style.borderColor='rgba(255,255,255,0.6)';">
-                <i class="fa fa-plus-circle"></i>Create New PO
-            </a>
+            <div class="po-stat-chip" style="border:1.5px solid rgba(255,165,0,0.55);">
+                <div class="val" id="statPendingPO" style="color:#ffd580;">—</div>
+                <div class="lbl">Pending</div>
+            </div>
+            <div class="po-stat-chip po-chip-link" style="border:1.5px solid rgba(255,165,0,0.55);cursor:pointer;"
+                 onclick="NavigateToPOApproval()" title="View PO Approvals pending on me">
+                <div class="val" id="statPendingOnMePO" style="color:#c7206d;">—</div>
+                <div class="lbl">Pending on Me</div>
+            </div>
+            <div class="po-stat-chip" style="border:1.5px solid rgba(16,185,129,0.55);">
+                <div class="val" id="statApprovedPO" style="color:#6ee7b7;">—</div>
+                <div class="lbl">Approved</div>
+            </div>
         </div>
     </div>
 

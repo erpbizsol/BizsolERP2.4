@@ -36,6 +36,10 @@ $(document).ready(function () {
         calcEstimatedDays();
     });
 
+    $('#txtEstimatedDays').on('input', function () {
+        calcEstimatedDateFromDays();
+    });
+
     $('#pmSearch').on('input', function () {
         filterProjects($(this).val().toLowerCase().trim());
     });
@@ -221,12 +225,12 @@ function callDeleteProjectApi(code, reason) {
                 hideModal('dvDeleteConfirmModal');
                 loadProjects();
             } else {
-                toastr.warning(response.Msg || 'Failed to delete project.');
+                toastr.warning(response.Msg);
             }
         })
         .catch(function (error) {
             HideLoader && HideLoader();
-            toastr.error((error && error.Msg) || 'Error while deleting project. Please try again.');
+            toastr.error((error && error.Msg));
         });
 }
 
@@ -316,7 +320,7 @@ function callSaveProjectApi() {
         })
         .catch(function (error) {
             HideLoader && HideLoader();
-            toastr.error((error && error.Msg) || 'Error while saving project. Please try again.');
+            toastr.error((error && error.Msg) );
         });
 }
 
@@ -336,7 +340,7 @@ function loadProjects() {
             G_ProjectList = [];
             updateStats([]);
             bindProjectGrid([]);
-            toastr.error((error && error.Msg) || 'Error loading project list.');
+            toastr.error((error && error.Msg));
         });
 }
 
@@ -482,6 +486,16 @@ function calcEstimatedDays() {
             $('#txtEstimatedDays').val('');
         }
     }
+}
+function calcEstimatedDateFromDays() {
+    const startVal = $('#txtStartDate').val();
+    const days     = parseInt($('#txtEstimatedDays').val() || '', 10);
+    if (!startVal || isNaN(days) || days < 0) return;
+    const start = new Date(startVal);
+    if (isNaN(start.getTime())) return;
+    const estDate = new Date(start);
+    estDate.setDate(estDate.getDate() + days);
+    $('#txtEstimatedDate').val(formatDate(estDate));
 }
 
 function escHtml(str) {
