@@ -45,7 +45,7 @@ function bindMenu() {
                         // Mobile bottom navigation (only top-level items, limited to maxMobileItems)
                         if (mobileMenuCount < maxMobileItems) {
                             var firstChildUrl = getFirstChildUrl(value, item.Code, baseUrl);
-                            var mobileHref = firstChildUrl || 'javascript:void(0);';
+                            var mobileHref = childMenuHtml ? 'javascript:void(0);' : (firstChildUrl || 'javascript:void(0);');
                             var mobileClass = childMenuHtml ? 'mobile-nav-item mobile-menu-toggle' : 'mobile-nav-item';
 
                             mobileMenuHtml += '<a href="' + mobileHref + '" class="' + mobileClass + '" data-menu-code="' + item.Code + '" data-menu-name="' + item.ModuleDesp + '">';
@@ -98,31 +98,29 @@ function bindMenu() {
 
                 // Handle mobile menu items with submenus - open sidebar on mobile
                 $('.mobile-menu-toggle').click(function (e) {
-                    if ($(this).attr('href') === 'javascript:void(0);') {
-                        e.preventDefault();
+                    e.preventDefault();
 
-                        // Get the menu code from clicked mobile nav item
-                        var menuCode = $(this).data('menu-code');
-                        var menuName = $(this).data('menu-name');
+                    // Get the menu code from clicked mobile nav item
+                    var menuCode = $(this).data('menu-code');
+                    var menuName = $(this).data('menu-name');
 
-                        // Open the sidebar on mobile
-                        $('#modern-sidebar').addClass('show');
-                        $('#sidebar-overlay').addClass('show');
+                    // Open the sidebar on mobile
+                    $('#modern-sidebar').addClass('show');
+                    $('#sidebar-overlay').addClass('show');
 
-                        // Find the corresponding menu item in sidebar by menu code
-                        var correspondingMenuItem = $('#sidebar-menu .sidebar-menu-item[data-menu-code="' + menuCode + '"]');
+                    // Find the corresponding menu item in sidebar by menu code
+                    var correspondingMenuItem = $('#sidebar-menu .sidebar-menu-item[data-menu-code="' + menuCode + '"]');
 
-                        if (correspondingMenuItem.length) {
-                            // Close all submenus first
-                            $('#sidebar-menu .sub-menu').slideUp();
-                            $('#sidebar-menu .sidebar-menu-item').removeClass('active');
+                    if (correspondingMenuItem.length) {
+                        // Close all submenus first
+                        $('#sidebar-menu .sub-menu').slideUp();
+                        $('#sidebar-menu .sidebar-menu-item').removeClass('active');
 
-                            // Open the selected submenu
-                            var subMenu = correspondingMenuItem.next('.sub-menu');
-                            if (subMenu.length) {
-                                subMenu.slideDown();
-                                correspondingMenuItem.addClass('active');
-                            }
+                        // Open the selected submenu
+                        var subMenu = correspondingMenuItem.next('.sub-menu');
+                        if (subMenu.length) {
+                            subMenu.slideDown();
+                            correspondingMenuItem.addClass('active');
                         }
                     }
                 });

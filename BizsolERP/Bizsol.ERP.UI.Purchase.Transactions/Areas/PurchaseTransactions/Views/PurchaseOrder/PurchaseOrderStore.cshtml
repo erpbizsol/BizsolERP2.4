@@ -388,6 +388,71 @@
         text-align: center; padding: 22px 12px;
         color: #94a3b8; font-size: 0.82rem;
     }
+
+    /* ── BILL TO / SHIP TO ────────────────────────── */
+    .bts-panel {
+        border: 1.5px solid #ddd6fe; border-radius: 10px;
+        padding: 12px 14px; background: #fdf4ff;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .bts-panel:hover { border-color: #c084fc; box-shadow: 0 2px 10px rgba(192,132,252,0.12); }
+    .bts-panel-title {
+        font-size: 0.78rem; font-weight: 700; color: #a855f7;
+        letter-spacing: 0.04em; text-transform: uppercase;
+        margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+    }
+    .bts-add-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px; border-radius: 8px;
+        background: linear-gradient(135deg, #e879f9, #a855f7);
+        border: none; color: #fff; cursor: pointer; flex-shrink: 0;
+        font-size: 0.85rem; box-shadow: 0 2px 8px rgba(168,85,247,0.35);
+        transition: all 0.18s;
+    }
+    .bts-add-btn:hover { transform: scale(1.12); box-shadow: 0 4px 12px rgba(168,85,247,0.5); }
+    .bts-address-box {
+        margin-top: 8px; background: #fff;
+        border: 1.5px solid #e9d5ff; border-radius: 8px;
+        padding: 9px 12px; font-size: 0.78rem; color: #475569;
+        display: none; animation: fadeSlideIn 0.25s ease both;
+    }
+    .bts-address-box .bts-addr-name    { font-weight: 700; color: #1e293b; font-size: 0.82rem; }
+    .bts-address-box .bts-addr-display { color: #7c3aed; font-weight: 600; font-size: 0.77rem; margin-top: 1px; }
+    .bts-address-box .bts-addr-line    { color: #475569; margin-top: 3px; }
+    .bts-address-box .bts-addr-gst     { color: #059669; font-weight: 600; margin-top: 3px; font-size: 0.77rem; }
+    .bts-view-panel {
+        border: 1.5px solid #e9d5ff; border-radius: 10px;
+        padding: 10px 14px; background: #fdf4ff; font-size: 0.8rem;
+    }
+    .bts-view-panel .bts-vp-title { font-weight: 700; color: #a855f7; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; }
+    .bts-view-panel .bts-vp-name  { font-weight: 700; color: #1e293b; }
+    .bts-view-panel .bts-vp-disp  { color: #7c3aed; font-weight: 600; font-size: 0.77rem; }
+    .bts-view-panel .bts-vp-addr  { color: #475569; margin-top: 2px; }
+    .bts-view-panel .bts-vp-gst   { color: #059669; font-weight: 600; font-size: 0.77rem; margin-top: 2px; }
+    /* Select2 overrides inside BTS panels */
+    .bts-panel .select2-container--default .select2-selection--single {
+        height: 30px; border: 1.5px solid #ddd6fe;
+        border-radius: 8px; background-color: #f5f3ff;
+    }
+    .bts-panel .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 28px; padding-left: 8px; font-size: 0.8rem; color: #1e1b4b;
+    }
+    .bts-panel .select2-container--default .select2-selection--single .select2-selection__arrow { height: 28px; }
+    .bts-panel .select2-container--default.select2-container--focus .select2-selection--single,
+    .bts-panel .select2-container--default.select2-container--open .select2-selection--single {
+        border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.15); outline: none;
+    }
+    .bts-panel .select2-container--default .select2-selection--single .select2-selection__placeholder { color: #94a3b8; }
+    /* ── PAYMENT TERMS ADD BUTTON ──────────────────── */
+    .pt-add-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px; border-radius: 8px;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none; color: #fff; cursor: pointer; flex-shrink: 0;
+        font-size: 0.85rem; box-shadow: 0 2px 8px rgba(245,158,11,0.35);
+        transition: all 0.18s;
+    }
+    .pt-add-btn:hover { transform: scale(1.12); box-shadow: 0 4px 12px rgba(245,158,11,0.5); }
 </style>
 
 <!-- ══════════════════════════════════════════════════
@@ -519,9 +584,9 @@
                             </div>
                         </div>
                         <div class="po-field-row">
-                            <span class="po-field-lbl">Work Type</span>
+                            <span class="po-field-lbl">Work Type <span class="req">*</span></span>
                             <div class="po-field-ctrl">
-                                <select id="frmDdlWorkType" class="form-control form-control-sm">
+                                <select id="frmDdlWorkType" class="form-control form-control-sm" onchange="RefreshAllItemDropdowns()">
                                     <option value="">-- Select Work Type --</option>
                                 </select>
                             </div>
@@ -531,10 +596,77 @@
             </div>
         </div>
 
-        <!-- ── STEP 2 : PROJECT DETAILS ───────────── -->
+        <!-- ── STEP 2 : BILL TO & SHIP TO ───────────── -->
+        <div class="po-step-card section-entry-animation" style="--step-clr:#e879f9;">
+            <div class="po-step-header">
+                <div class="po-step-num" style="background:linear-gradient(135deg,#e879f9,#a855f7);">2</div>
+                <span class="po-step-title">Bill To &amp; Ship To</span>
+                <i class="fa fa-map-marker-alt po-step-icon ms-auto" style="color:#e879f9;"></i>
+            </div>
+            <div class="po-step-body">
+                <div class="row g-3">
+                    <!-- Bill To -->
+                    <div class="col-md-6">
+                        <div class="bts-panel">
+                            <div class="bts-panel-title">
+                                <i class="fa fa-file-invoice"></i> Bill To
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="flex-grow-1" style="min-width:0;">
+                                    <select id="frmDdlBillTo" class="form-control form-control-sm" style="width:100%;"></select>
+                                </div>
+                                <button type="button" class="bts-add-btn" onclick="OpenAddAddressModal('BillTo')" title="Add new Bill To address">
+                                    <i class="fa fa-plus"></i>
+                                </button>
+                            </div>
+                            <div id="divBillToAddress" class="bts-address-box">
+                                <div class="bts-addr-name" id="billToName"></div>
+                                <div class="bts-addr-display" id="billToDisplayName"></div>
+                                <div class="bts-addr-line">
+                                    <i class="fa fa-map-marker-alt me-1 text-muted" style="font-size:0.73rem;"></i>
+                                    <span id="billToAddress"></span>
+                                </div>
+                                <div class="bts-addr-gst">
+                                    <i class="fa fa-id-card me-1" style="font-size:0.73rem;"></i>GST: <span id="billToGSTNo"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Ship To -->
+                    <div class="col-md-6">
+                        <div class="bts-panel">
+                            <div class="bts-panel-title">
+                                <i class="fa fa-shipping-fast"></i> Ship To
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="flex-grow-1" style="min-width:0;">
+                                    <select id="frmDdlShipTo" class="form-control form-control-sm" style="width:100%;"></select>
+                                </div>
+                                <button type="button" class="bts-add-btn" onclick="OpenAddAddressModal('ShipTo')" title="Add new Ship To address">
+                                    <i class="fa fa-plus"></i>
+                                </button>
+                            </div>
+                            <div id="divShipToAddress" class="bts-address-box">
+                                <div class="bts-addr-name" id="shipToName"></div>
+                                <div class="bts-addr-display" id="shipToDisplayName"></div>
+                                <div class="bts-addr-line">
+                                    <i class="fa fa-map-marker-alt me-1 text-muted" style="font-size:0.73rem;"></i>
+                                    <span id="shipToAddress"></span>
+                                </div>
+                                <div class="bts-addr-gst">
+                                    <i class="fa fa-id-card me-1" style="font-size:0.73rem;"></i>GST: <span id="shipToGSTNo"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── STEP 3 : PROJECT DETAILS ───────────── -->
         <div class="po-step-card section-entry-animation" style="--step-clr:#0dcaf0;">
             <div class="po-step-header">
-                <div class="po-step-num" style="background:linear-gradient(135deg,#0dcaf0,#0891b2);">2</div>
+                <div class="po-step-num" style="background:linear-gradient(135deg,#0dcaf0,#0891b2);">3</div>
                 <span class="po-step-title">Project Details</span>
                 <i class="fa fa-project-diagram po-step-icon ms-auto" style="color:#0dcaf0;"></i>
             </div>
@@ -556,7 +688,7 @@
                     <div class="row g-0 mt-1">
                         <div class="col-md-6 pe-md-3">
                             <div class="po-field-row">
-                                <span class="po-field-lbl">Project Name</span>
+                                <span class="po-field-lbl">Project Name <span class="req">*</span></span>
                                 <div class="po-field-ctrl">
                                     <select id="frmDdlProject" class="form-control form-control-sm" onchange="LoadSubProjects()">
                                         <option value="">-- Select Project --</option>
@@ -566,9 +698,9 @@
                         </div>
                         <div class="col-md-6 ps-md-3">
                             <div class="po-field-row">
-                                <span class="po-field-lbl">Sub Project</span>
+                                <span class="po-field-lbl">Sub Project <span class="req">*</span></span>
                                 <div class="po-field-ctrl">
-                                    <select id="frmDdlSubProject" class="form-control form-control-sm">
+                                    <select id="frmDdlSubProject" class="form-control form-control-sm" onchange="RefreshAllItemDropdowns()">
                                         <option value="">-- Select Sub Project --</option>
                                     </select>
                                 </div>
@@ -579,10 +711,10 @@
             </div>
         </div>
 
-        <!-- ── STEP 3 : ITEM DETAILS ──────────────── -->
+        <!-- ── STEP 4 : ITEM DETAILS ──────────────── -->
         <div class="po-step-card section-entry-animation" style="--step-clr:#10b981;">
             <div class="po-step-header">
-                <div class="po-step-num" style="background:linear-gradient(135deg,#10b981,#059669);">3</div>
+                <div class="po-step-num" style="background:linear-gradient(135deg,#10b981,#059669);">4</div>
                 <span class="po-step-title">Item Details</span>
                 <button type="button" class="add-item-btn ms-auto" onclick="AddItemRow()">
                     <i class="fa fa-plus me-1"></i>Add Item
@@ -597,6 +729,7 @@
                                 <tr>
                                     <th style="width:36px;">#</th>
                                     <th style="min-width:190px;">Item Name <span style="color:#fde68a;">*</span></th>
+                                    <th style="min-width:160px;">Specification</th>
                                     <th style="min-width:95px;">UOM</th>
                                     <th style="min-width:85px;">GST %</th>
                                     <th style="min-width:85px;">Qty <span style="color:#fde68a;">*</span></th>
@@ -617,10 +750,10 @@
             </div>
         </div>
 
-        <!-- ── STEP 4 : PAYMENT TERMS & REMARKS ────── -->
+        <!-- ── STEP 5 : PAYMENT TERMS & REMARKS ────── -->
         <div class="po-step-card section-entry-animation" style="--step-clr:#f59e0b;">
             <div class="po-step-header">
-                <div class="po-step-num" style="background:linear-gradient(135deg,#f59e0b,#d97706);">4</div>
+                <div class="po-step-num" style="background:linear-gradient(135deg,#f59e0b,#d97706);">5</div>
                 <span class="po-step-title">Payment Terms &amp; Remarks</span>
                 <i class="fa fa-comment-alt po-step-icon ms-auto" style="color:#f59e0b;"></i>
             </div>
@@ -630,7 +763,12 @@
                         <div class="po-field-row">
                             <span class="po-field-lbl">Payment Terms</span>
                             <div class="po-field-ctrl">
-                                <select id="frmDdlPaymentTerms" class="form-control form-control-sm"></select>
+                                <div class="d-flex align-items-center gap-2">
+                                    <select id="frmDdlPaymentTerms" class="form-control form-control-sm flex-grow-1"></select>
+                                    <button type="button" class="pt-add-btn" onclick="OpenAddPaymentTermsModal()" title="Add new Payment Terms">
+                                        <i class="fa fa-plus"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -646,10 +784,10 @@
             </div>
         </div>
 
-        <!-- ── STEP 5 : PO SUMMARY ────────────────── -->
+        <!-- ── STEP 6 : PO SUMMARY ────────────────── -->
         <div class="po-step-card section-entry-animation" style="--step-clr:#764ba2;">
             <div class="po-step-header">
-                <div class="po-step-num" style="background:linear-gradient(135deg,#764ba2,#667eea);">5</div>
+                <div class="po-step-num" style="background:linear-gradient(135deg,#764ba2,#667eea);">6</div>
                 <span class="po-step-title">PO Summary</span>
                 <i class="fa fa-calculator po-step-icon ms-auto" style="color:#764ba2;"></i>
             </div>
@@ -798,6 +936,10 @@
                     <label style="font-size:0.79rem;font-weight:600;color:#475569;">Item Name <span class="req">*</span></label>
                     <select id="mobileItemDdlItem" class="form-control form-control-sm mt-1"></select>
                 </div>
+                <div class="mb-3">
+                    <label style="font-size:0.79rem;font-weight:600;color:#475569;">Specification</label>
+                    <input type="text" id="mobileItemTxtSpec" class="form-control form-control-sm mt-1" placeholder="Item specification…" />
+                </div>
                 <div class="row g-2 mb-3">
                     <div class="col-6">
                         <label style="font-size:0.79rem;font-weight:600;color:#475569;">UOM</label>
@@ -828,6 +970,85 @@
                 <button type="button" onclick="MobileItemModalConfirm()"
                         style="background:linear-gradient(135deg,#10b981,#059669);border:none;color:#fff;border-radius:8px;padding:7px 22px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(16,185,129,0.3);">
                     <i class="fa fa-check me-1"></i><span id="mobileItemModalBtnTxt">Add Item</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     ADD BILL TO / SHIP TO ADDRESS MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalAddAddress" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#e879f9,#a855f7);color:#fff;border:none;padding:16px 20px;">
+                <h5 class="modal-title" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-map-marker-alt me-2"></i><span id="modalAddAddressTitle">Add Address</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:18px 20px;">
+                <input type="hidden" id="addrModalType" value="" />
+                <div class="mb-3">
+                    <label style="font-size:0.79rem;font-weight:600;color:#475569;">Name <span class="req">*</span></label>
+                    <input type="text" id="addrTxtName" class="form-control form-control-sm mt-1"
+                           maxlength="50" placeholder="Enter name" autocomplete="off" />
+                </div>
+                <div class="mb-3">
+                    <label style="font-size:0.79rem;font-weight:600;color:#475569;">Display Name <span class="req">*</span></label>
+                    <input type="text" id="addrTxtDisplayName" class="form-control form-control-sm mt-1"
+                           maxlength="100" placeholder="Enter display name" autocomplete="off" />
+                </div>
+                <div class="mb-3">
+                    <label style="font-size:0.79rem;font-weight:600;color:#475569;">Address <span class="req">*</span></label>
+                    <textarea id="addrTxtAddress" class="form-control form-control-sm mt-1" rows="3"
+                              maxlength="500" placeholder="Enter full address" style="resize:vertical;height:auto;"></textarea>
+                </div>
+                <div class="mb-1">
+                    <label style="font-size:0.79rem;font-weight:600;color:#475569;">GST No</label>
+                    <input type="text" id="addrTxtGSTNo" class="form-control form-control-sm mt-1"
+                           maxlength="20" placeholder="e.g. 27AABCU9603R1ZX" autocomplete="off" />
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:12px 20px;background:#fafafa;gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Cancel</button>
+                <button type="button" onclick="SaveBillToShipToAddress()"
+                        style="background:linear-gradient(135deg,#e879f9,#a855f7);border:none;color:#fff;border-radius:8px;padding:7px 22px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(168,85,247,0.3);">
+                    <i class="fa fa-save me-1"></i>Save Address
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     ADD PAYMENT TERMS MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalAddPaymentTerms" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;padding:16px 20px;">
+                <h5 class="modal-title" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-handshake me-2"></i>Add Payment Terms
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:18px 20px;">
+                
+                <div class="mb-3">
+                    <label style="font-size:0.79rem;font-weight:600;color:#475569;">Description <span class="req">*</span> </label>
+                    <textarea id="ptTxtDescription" class="form-control form-control-sm mt-1" rows="2"
+                              maxlength="500" placeholder="Optional description…" style="resize:vertical;height:auto;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:12px 20px;background:#fafafa;gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Cancel</button>
+                <button type="button" onclick="SavePaymentTerms()"
+                        style="background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:#fff;border-radius:8px;padding:7px 22px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(245,158,11,0.3);">
+                    <i class="fa fa-save me-1"></i>Save
                 </button>
             </div>
         </div>

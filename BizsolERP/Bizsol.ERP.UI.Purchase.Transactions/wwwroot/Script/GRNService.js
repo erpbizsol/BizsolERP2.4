@@ -23,6 +23,7 @@ let existingImageData = [];
 let existingFileName  = '';
 let rowIndex          = 0;
 let poList            = [];
+let projectItemsCache = [];
 let editMode          = false;
 let editCode          = 0;
 $(document).ready(async function () {
@@ -68,6 +69,8 @@ function showFormView() {
     document.getElementById('divGRNForm').style.display = 'block';
     document.getElementById('floatBar').style.display   = 'flex';
     syncFloatBarMargin();
+    // Fill Grid: only in New mode, always hidden in Edit
+    showFillGridCheckbox(!editMode);
 }
 
 function syncFloatBarMargin() {
@@ -131,6 +134,46 @@ async function loadProjectList() {
     }
 }
 
+// ── Fill Grid checkbox (New case only) ───────────────────────────────────────
+function isFillGridChecked() {
+    const chk = document.getElementById('chkFillGrid');
+    return chk ? chk.checked : true;
+}
+
+function showFillGridCheckbox(show) {
+    const div = document.getElementById('divFillGridCheck');
+    // Fill Grid: only in Create mode; always hidden in Edit
+    if (div) {
+        const visible = show && !editMode;
+        div.style.setProperty('display', visible ? 'flex' : 'none', 'important');
+    }
+}
+
+function onFillGridChange() {
+    const projectCode = document.getElementById('frmDdlProject')?.value;
+    const subProjectCode = document.getElementById('frmDdlSubProject')?.value;
+    if (isFillGridChecked() && projectCode && subProjectCode) {
+        loadItemsByProject(projectCode, subProjectCode);
+    } else if (!isFillGridChecked()) {
+        document.getElementById('itemTbody').innerHTML = '';
+        rowIndex = 0;
+        document.getElementById('trProjectHint')?.remove();
+        addItemRow();
+        loadAllPOs();
+        calcTotal();
+        updateMobileCards();
+    }
+}
+
+function addRowDirectToGrid() {
+    document.getElementById('trProjectHint')?.remove();
+    addItemRow();
+}
+
+function onAddItemClick() {
+    openAddItemModalForm();
+}
+
 // ── Project toggle ──────────────────────────────────────────────────────────
 // ── Show a placeholder row in grid asking user to select project first ────────
 function showGridProjectHint() {
@@ -156,11 +199,7 @@ function showGridProjectHint() {
 }
 
 function setAddItemBtnState(enabled) {
-    const btn = document.querySelector('.add-item-btn');
-    if (!btn) return;
-    btn.disabled = !enabled;
-    btn.style.opacity = enabled ? '1' : '0.45';
-    btn.style.cursor  = enabled ? 'pointer' : 'not-allowed';
+    // Add Item button removed - Add Row modal is used instead
 }
 
 function toggleProjectFields(chk) {
@@ -168,10 +207,10 @@ function toggleProjectFields(chk) {
     const hint   = document.getElementById('divProjectHint');
 
     if (chk.checked) {
-        // Against Project ON → show fields, hide hint, clear poList
         if (fields) fields.style.display = 'block';
         if (hint)   hint.style.display   = 'none';
         poList = [];
+        projectItemsCache = [];
         rowIndex = 0;
         // Show placeholder in grid and disable Add Item until project+sub-project selected
         showGridProjectHint();
@@ -202,9 +241,9 @@ async function loadSubProjects() {
 
     subDdl.innerHTML = '<option value="">-- Select Sub Project --</option>';
 
-    // Clear grid when project changes
     document.getElementById('itemTbody').innerHTML = '';
     rowIndex = 0;
+    projectItemsCache = [];
     calcTotal();
 
     if (!projectId) {
@@ -244,6 +283,7 @@ async function onSubProjectChange() {
 
     document.getElementById('itemTbody').innerHTML = '';
     rowIndex = 0;
+    projectItemsCache = [];
 
     if (!projectCode || !subProjectCode) {
         // Not fully selected yet — show placeholder and keep Add Item disabled
@@ -252,9 +292,15 @@ async function onSubProjectChange() {
         return;
     }
 
-    // Both selected — enable Add Item and auto-fill grid
     setAddItemBtnState(true);
-    await loadItemsByProject(projectCode, subProjectCode);
+    if (isFillGridChecked()) {
+        await loadItemsByProject(projectCode, subProjectCode);
+    } else {
+        document.getElementById('itemTbody').innerHTML = '';
+        rowIndex = 0;
+        addItemRow();
+        loadAllPOs();
+    }
 }
 
 // ── Fetch items for project+subproject and auto-fill grid rows ───────────────
@@ -263,6 +309,7 @@ async function loadItemsByProject(projectCode, subProjectCode) {
 
     try {
         const result = await GRNService.GetPOItemDetails(projectCode, subProjectCode);
+        projectItemsCache = result || [];
 
         if (!result || result.length === 0) {
             addItemRow();
@@ -294,12 +341,14 @@ async function loadItemsByProject(projectCode, subProjectCode) {
             const itemCode = item.ItemMaster_Code ?? item.Item_Code ?? '';
             const itemName = item.ItemName        ?? item.Item_Name ?? '';
             const rate     = parseFloat(item.Rate ?? 0);
+            const poTranCode = item.PurchaseOrderTransaction_Code ?? item.PurchaseOrderTransactionCode ?? item.code ?? item.Code ?? '';
             if (itSel && itemCode) {
                 itSel.innerHTML = '';
                 const opt        = document.createElement('option');
                 opt.value        = itemCode;
                 opt.text         = itemName;
                 opt.dataset.rate = rate;
+                opt.dataset.purchaseOrderTransactionCode = String(poTranCode);
                 itSel.appendChild(opt);
                 itSel.value = itemCode;
             }
@@ -318,6 +367,13 @@ async function loadItemsByProject(projectCode, subProjectCode) {
 
             // Store on row so onQtyChange can validate against it
             if (pendingQty !== '') tr.dataset.pendingQty = pendingQty;
+
+            // Store PurchaseOrderTransaction_Code for save (backend needs it to update MRNQtyMT)
+            if (poTranCode) {
+                tr.dataset.purchaseOrderTransactionCode = String(poTranCode);
+                const hf = tr.querySelector('.hf-purchase-order-transaction-code');
+                if (hf) hf.value = String(poTranCode);
+            }
 
             const billQtyEl = tr.querySelector('.bill-qty');
             if (billQtyEl && pendingQty !== '') billQtyEl.value = pendingQty;
@@ -427,25 +483,39 @@ function addItemRow() {
         </td>
         <td>
             <input type="text" class="form-control form-control-sm row-remark" placeholder="Remark">
+            <input type="hidden" class="hf-purchase-order-transaction-code" value="">
         </td>
-       
-
+        <td style="text-align:center;">
+            <button type="button" class="del-row-btn" onclick="removeItemRow(this)" title="Delete Row">
+                <i class="fa fa-trash"></i>
+            </button>
+        </td>
         `;
-    //<td style="text-align:center;">
-    //    <button type="button" class="del-row-btn" onclick="removeItemRow(this)" title="Remove">
-    //        <i class="fa fa-times"></i>
-    //    </button>
-    //</td>
     tbody.appendChild(tr);
 
-    // Fill PO dropdown
+    // Fill PO dropdown: from poList or projectItemsCache (when Against Project ON)
     const poSel = tr.querySelector('.po-select');
-    poList.forEach(po => {
-        const opt = document.createElement('option');
-        opt.value = po.PurchaseOrderMaster_Code ?? po.PurchaseOrder_Code ?? po.Code ?? '';
-        opt.text  = po.PoNO ?? po.PO_No ?? po.PONo ?? po.PONumber ?? '';
-        poSel.appendChild(opt);
-    });
+    const isAgainstProject = document.getElementById('chkAgainstProject')?.checked;
+    const projectCode = document.getElementById('frmDdlProject')?.value;
+    const subProjectCode = document.getElementById('frmDdlSubProject')?.value;
+    if (isAgainstProject && projectCode && subProjectCode && projectItemsCache.length > 0) {
+        const poMap = new Map();
+        projectItemsCache.forEach(item => {
+            const code = item.PurchaseOrderMaster_Code ?? item.PurchaseOrder_Code ?? '';
+            const text = item.PoNO ?? item.PONo ?? item.PO_No ?? '';
+            if (code && !poMap.has(code)) poMap.set(code, text || `PO-${code}`);
+        });
+        poMap.forEach((text, code) => {
+            poSel.add(new Option(text, code));
+        });
+    } else {
+        poList.forEach(po => {
+            const opt = document.createElement('option');
+            opt.value = po.PurchaseOrderMaster_Code ?? po.PurchaseOrder_Code ?? po.Code ?? '';
+            opt.text  = po.PoNO ?? po.PO_No ?? po.PONo ?? po.PONumber ?? '';
+            poSel.appendChild(opt);
+        });
+    }
 
     renumberRows();
     updateMobileCards();
@@ -469,6 +539,232 @@ function removeItemRowByIndex(idx) {
         updateMobileCards();
         updateFloatBar();
     }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SHOW ALL — keeps current working state (recalc, no filter)
+// ══════════════════════════════════════════════════════════════════════════════
+function showAllItems() {
+    calcTotal();
+    updateMobileCards();
+    renumberRows();
+    showToast('Showing all items.', 'info');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ADD ITEM MODAL — form style: PO, Item, UOM, GST%, Qty, Rate, Value
+// ══════════════════════════════════════════════════════════════════════════════
+let addItemModalPOItemData = [];
+let addItemModalUsePOList  = false;
+
+async function openAddItemModalForm() {
+    const isAgainstProject = document.getElementById('chkAgainstProject')?.checked;
+    const projectCode     = document.getElementById('frmDdlProject')?.value;
+    const subProjectCode  = document.getElementById('frmDdlSubProject')?.value;
+    const hintEl          = document.getElementById('addItemModalHint');
+    const formEl          = document.getElementById('addItemModalForm');
+
+    resetAddItemModalForm();
+
+    if (!editMode && isAgainstProject && (!projectCode || !subProjectCode) && isFillGridChecked()) {
+        if (hintEl) hintEl.style.display = 'block';
+        const hintText = document.getElementById('addItemModalHintText');
+        if (hintText) hintText.textContent = 'Please select Project Name and Sub Project first.';
+        if (formEl) formEl.style.display = 'none';
+    } else {
+        if (hintEl) hintEl.style.display = 'none';
+        if (formEl) formEl.style.display = 'block';
+        const poSel = document.getElementById('addItemModalPO');
+        const itemSel = document.getElementById('addItemModalItem');
+        if (poSel) poSel.innerHTML = '<option value="">-- Select PO --</option>';
+        if (itemSel) itemSel.innerHTML = '<option value="">-- Select Item --</option>';
+
+        if (isAgainstProject && projectCode && subProjectCode) {
+            addItemModalUsePOList = false;
+            try {
+                const result = await GRNService.GetPOItemDetails(projectCode, subProjectCode);
+                addItemModalPOItemData = result || [];
+                const poMap = new Map();
+                addItemModalPOItemData.forEach(item => {
+                    const code = item.PurchaseOrderMaster_Code ?? item.PurchaseOrder_Code ?? '';
+                    const text = item.PoNO ?? item.PONo ?? item.PO_No ?? '';
+                    if (code && !poMap.has(code)) poMap.set(code, text || `PO-${code}`);
+                });
+                poMap.forEach((text, code) => { if (poSel) poSel.add(new Option(text, code)); });
+            } catch (e) {
+                showToast('Failed to load PO items.', 'error');
+            }
+        } else {
+            addItemModalUsePOList = true;
+            try {
+                await loadAllPOs();
+                poList.forEach(po => {
+                    const code = po.PurchaseOrderMaster_Code ?? po.PurchaseOrder_Code ?? po.Code ?? '';
+                    const text = po.PoNO ?? po.PO_No ?? po.PONo ?? po.PONumber ?? '';
+                    if (code && poSel) poSel.add(new Option(text, code));
+                });
+            } catch (e) {
+                showToast('Failed to load PO list.', 'error');
+            }
+        }
+    }
+
+    new bootstrap.Modal(document.getElementById('addItemModal')).show();
+}
+
+function resetAddItemModalForm() {
+    const po = document.getElementById('addItemModalPO');
+    const item = document.getElementById('addItemModalItem');
+    if (po) po.value = '';
+    if (item) item.innerHTML = '<option value="">-- Select Item --</option>';
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set('addItemModalBillQty', '0');
+    set('addItemModalAcceptQty', '0');
+    set('addItemModalRejectQty', '0');
+    set('addItemModalShortage', '0');
+    set('addItemModalRate', '0');
+    set('addItemModalAmount', '0.00');
+    set('addItemModalRemark', '');
+}
+
+async function onAddItemModalPOChange() {
+    const poCode = document.getElementById('addItemModalPO')?.value;
+    const itemSel = document.getElementById('addItemModalItem');
+    itemSel.innerHTML = '<option value="">-- Select Item --</option>';
+    document.getElementById('addItemModalRate').value = '0';
+    document.getElementById('addItemModalBillQty').value = '0';
+    calcAddItemModalAmount();
+
+    if (!poCode) return;
+
+    let filtered = [];
+    if (addItemModalUsePOList) {
+        try {
+            itemSel.innerHTML = '<option value="">Loading…</option>';
+            const result = await GRNService.GetPOItemsByPO(poCode);
+            filtered = result || [];
+            itemSel.innerHTML = '<option value="">-- Select Item --</option>';
+        } catch (e) {
+            itemSel.innerHTML = '<option value="">-- Select Item --</option>';
+            showToast('Failed to load items for this PO.', 'error');
+            return;
+        }
+    } else {
+        filtered = addItemModalPOItemData.filter(item =>
+            String(item.PurchaseOrderMaster_Code ?? item.PurchaseOrder_Code ?? '') === String(poCode));
+    }
+
+    filtered.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.ItemMaster_Code ?? item.Item_Code ?? '';
+        opt.text  = item.ItemName ?? item.Item_Name ?? '';
+        const qtyMT = parseFloat(item.QtyMT ?? 0);
+        const amount = parseFloat(item.Amount ?? 0);
+        let rate = parseFloat(item.Rate ?? 0);
+        if (rate <= 0 && qtyMT > 0 && amount > 0) rate = amount / qtyMT;
+        opt.dataset.rate = rate;
+        opt.dataset.purchaseOrderTransactionCode = item.PurchaseOrderTransaction_Code ?? item.PurchaseOrderTransactionCode ?? '';
+        const mrnQtyMT = parseFloat(item.MRNQtyMT ?? 0);
+        const cancelQtyMT = parseFloat(item.CancelQtyMT ?? 0);
+        const pendingQty = item.PendingQty ?? (qtyMT > 0 ? Math.max(0, qtyMT - mrnQtyMT - cancelQtyMT) : 0);
+        opt.dataset.pendingQty = pendingQty;
+        itemSel.appendChild(opt);
+    });
+}
+
+function onAddItemModalItemChange() {
+    const itemSel = document.getElementById('addItemModalItem');
+    const opt = itemSel?.options[itemSel.selectedIndex];
+    const rate = parseFloat(opt?.dataset?.rate ?? 0);
+    const pendingQty = opt?.dataset?.pendingQty ?? '';
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set('addItemModalRate', rate > 0 ? rate.toFixed(2) : '0');
+    set('addItemModalBillQty', pendingQty !== '' ? pendingQty : '0');
+    set('addItemModalAcceptQty', '0');
+    set('addItemModalRejectQty', '0');
+    set('addItemModalShortage', '0');
+    calcAddItemModalAmount();
+}
+
+function calcAddItemModalAmount() {
+    const billQty   = parseFloat(document.getElementById('addItemModalBillQty')?.value) || 0;
+    const acceptQty = parseFloat(document.getElementById('addItemModalAcceptQty')?.value) || 0;
+    const rejectQty = parseFloat(document.getElementById('addItemModalRejectQty')?.value) || 0;
+    const rate      = parseFloat(document.getElementById('addItemModalRate')?.value) || 0;
+    const shortage  = Math.max(0, billQty - acceptQty - rejectQty);
+    const amount    = billQty * rate;
+    const shortageEl = document.getElementById('addItemModalShortage');
+    const amountEl   = document.getElementById('addItemModalAmount');
+    if (shortageEl) shortageEl.value = shortage;
+    if (amountEl) amountEl.value = amount.toFixed(2);
+}
+
+function saveAddItemModalToGrid() {
+    const poCode   = document.getElementById('addItemModalPO')?.value;
+    const itemCode = document.getElementById('addItemModalItem')?.value;
+    const billQty  = document.getElementById('addItemModalBillQty')?.value;
+    const rate     = document.getElementById('addItemModalRate')?.value;
+
+    if (!poCode || !itemCode) {
+        showToast('Please select PO and Item.', 'warning');
+        return;
+    }
+    const qtyNum = parseFloat(billQty) || 0;
+    const rateNum = parseFloat(rate) || 0;
+    if (qtyNum <= 0 || rateNum <= 0) {
+        showToast('Bill Qty and Rate must be greater than 0.', 'warning');
+        return;
+    }
+
+    document.getElementById('trProjectHint')?.remove();
+    addItemRow();
+    const tbody = document.getElementById('itemTbody');
+    const tr = tbody.rows[tbody.rows.length - 1];
+    const poSel = tr.querySelector('.po-select');
+    const itemSel = tr.querySelector('.item-select');
+    const poOpt = document.getElementById('addItemModalPO').options[document.getElementById('addItemModalPO').selectedIndex];
+    const itemOpt = document.getElementById('addItemModalItem').options[document.getElementById('addItemModalItem').selectedIndex];
+
+    if (poSel) {
+        if (!Array.from(poSel.options).some(o => o.value === poCode))
+            poSel.add(new Option(poOpt?.text ?? poCode, poCode));
+        poSel.value = poCode;
+    }
+    if (itemSel) {
+        itemSel.innerHTML = '';
+        const opt = document.createElement('option');
+        opt.value = itemCode;
+        opt.text  = itemOpt?.text ?? '';
+        opt.dataset.rate = rate;
+        opt.dataset.purchaseOrderTransactionCode = itemOpt?.dataset?.purchaseOrderTransactionCode ?? '';
+        itemSel.appendChild(opt);
+        itemSel.value = itemCode;
+    }
+
+    const setCell = (cls, val) => { const el = tr.querySelector(cls); if (el) el.value = val ?? ''; };
+    setCell('.bill-qty',   document.getElementById('addItemModalBillQty')?.value);
+    setCell('.accept-qty', document.getElementById('addItemModalAcceptQty')?.value);
+    setCell('.reject-qty', document.getElementById('addItemModalRejectQty')?.value);
+    setCell('.shortage-qty', document.getElementById('addItemModalShortage')?.value);
+    setCell('.rate',       rate);
+    setCell('.row-remark', document.getElementById('addItemModalRemark')?.value ?? '');
+
+    const poTranCode = itemOpt?.dataset?.purchaseOrderTransactionCode ?? '';
+    if (poTranCode) {
+        tr.dataset.purchaseOrderTransactionCode = String(poTranCode);
+        const hf = tr.querySelector('.hf-purchase-order-transaction-code');
+        if (hf) hf.value = String(poTranCode);
+    }
+
+    calcRowAmount(tr);
+    renumberRows();
+    calcTotal();
+    updateMobileCards();
+    updateFloatBar();
+
+    bootstrap.Modal.getInstance(document.getElementById('addItemModal'))?.hide();
+    resetAddItemModalForm();
+    showToast('Item added to grid.', 'success');
 }
 
 function renumberRows() {
@@ -553,6 +849,7 @@ async function onPOChange(select) {
                 opt.value        = item.ItemMaster_Code ?? item.Item_Code ?? '';   // SQL: ItemMaster_Code
                 opt.text         = item.ItemName        ?? item.Item_Name ?? '';   // SQL: ItemName
                 opt.dataset.rate = item.Rate            ?? 0;                      // SQL: Rate
+                opt.dataset.purchaseOrderTransactionCode = item.PurchaseOrderTransaction_Code ?? item.PurchaseOrderTransactionCode ?? item.Code ?? '';
                 itemSel.appendChild(opt);
             });
 
@@ -570,7 +867,7 @@ async function onPOChange(select) {
     }
 }
 
-// ── Item change → auto-fill rate ────────────────────────────────────────────
+// ── Item change → auto-fill rate + store PurchaseOrderTransaction_Code ─────────
 function onItemChange(select) {
     const tr   = select.closest('tr');
     if (!tr) return;
@@ -578,6 +875,13 @@ function onItemChange(select) {
     const rate = opt?.dataset?.rate ?? '';
     const rateEl = tr.querySelector('.rate');
     if (rateEl) rateEl.value = rate ? parseFloat(rate).toFixed(2) : '';
+    // Store PurchaseOrderTransaction_Code from selected option (for save / update)
+    const poTranCode = opt?.dataset?.purchaseOrderTransactionCode ?? '';
+    if (poTranCode) {
+        tr.dataset.purchaseOrderTransactionCode = String(poTranCode);
+        const hf = tr.querySelector('.hf-purchase-order-transaction-code');
+        if (hf) hf.value = String(poTranCode);
+    }
     calcRowAmount(tr);
     updateMobileCards();
 }
@@ -751,7 +1055,7 @@ async function editGRN(code) {
                 editMode = true;
                 editCode = code;
 
-                // In edit mode Add Item is always enabled (no project gate)
+                showFillGridCheckbox(false);
                 setAddItemBtnState(true);
 
                 // ── Master fields (SP: MRNMaster columns) ────────────────────────────
@@ -760,7 +1064,6 @@ async function editGRN(code) {
                 set('txtBillNo', master.BillNo ?? '');
                 set('dtBillDate', toInputDate(master.BillDate));
                 set('dtRecvDate', toInputDate(master.ReceiveDate));
-                set('txtTransporterName', master.TransporterName ?? master.Transporter ?? '');
                 set('txtRemark', master.Remarks ?? '');
                 set('txtTotalBillAmountManual', master.TotalBillAmountManual ?? '0');
                 set('txtDedution', master.Dedution ?? '0');
@@ -769,6 +1072,22 @@ async function editGRN(code) {
                 // Party dropdown (SP: PartyMaster_Code)
                 const ddlParty = document.getElementById('ddlPartyName');
                 if (ddlParty) ddlParty.value = master.PartyMaster_Code ?? '';
+
+                // ── Project & Sub Project (edit case) — API: ProjectDesp, SubProjectDesp, pm.ProjectMaster_Code, pm.SubProjectMaster_Code ──
+                const projectCode = master.ProjectMaster_Code ?? master.projectMaster_Code ?? items[0]?.ProjectMaster_Code ?? items[0]?.projectMaster_Code ?? '';
+                const subProjectCode = master.SubProjectMaster_Code ?? master.subProjectMaster_Code ?? items[0]?.SubProjectMaster_Code ?? items[0]?.subProjectMaster_Code ?? '';
+                if (projectCode || subProjectCode) {
+                    document.getElementById('chkAgainstProject').checked = true;
+                    document.getElementById('divProjectFields').style.display = 'block';
+                    document.getElementById('divProjectHint').style.display = 'none';
+                    if (projectCode) {
+                        document.getElementById('frmDdlProject').value = projectCode;
+                        await loadSubProjects();
+                    }
+                    if (subProjectCode) {
+                        document.getElementById('frmDdlSubProject').value = subProjectCode;
+                    }
+                }
 
                 // ── Attachment ────────────────────────────────────────────────────────
                 // SP SHOWDATA 3rd result set: AttachInfo → AttachFileName + AttachData
@@ -824,9 +1143,22 @@ async function editGRN(code) {
                         itSel.innerHTML = '';
                         const opt = new Option(itemName, itemCode);
                         opt.dataset.rate = item.Rate ?? 0;
+                        opt.dataset.purchaseOrderTransactionCode = item.PurchaseOrderTransaction_Code ?? item.PurchaseOrderTransactionCode ?? '';
                         itSel.add(opt);
                         itSel.value = itemCode;
                     }
+
+                    // Store PurchaseOrderTransaction_Code on row (for save on update) — MRNDetail.PurchaseOrderTransaction_Code
+                    const poTranCode = item.PurchaseOrderTransaction_Code ?? item.PurchaseOrderTransactionCode ?? '';
+                    if (poTranCode) {
+                        tr.dataset.purchaseOrderTransactionCode = String(poTranCode);
+                        const hf = tr.querySelector('.hf-purchase-order-transaction-code');
+                        if (hf) hf.value = String(poTranCode);
+                    }
+
+                    // Store MRNDetail Code + MRNMaster_Code on row (for save on update)
+                    const detailCode = item.Code ?? item.code ?? '';
+                    if (detailCode) tr.dataset.detailCode = String(detailCode);
 
                     // Quantity / rate / amount / remark cells
                     // SP columns: QtyBill, RejectedQtyBill, GRNRejectedQty, SortageQty, Rate, Amount, Remarks
@@ -848,6 +1180,7 @@ async function editGRN(code) {
                 document.getElementById('floatModeBadge').textContent = 'EDIT';
                 document.getElementById('floatModeBadge').className = 'po-mode-badge badge bg-warning text-dark';
                 updateFloatBar();
+                showFillGridCheckbox(false);  // Ensure hidden in Edit before showing form
                 showFormView();
                 showToast('GRN loaded for editing.', 'success');
             } catch (e) {
@@ -1035,15 +1368,24 @@ function saveGRN() {
 
             // ── GRNServiceDetail — maps to TY_GRNMasterDetail TVP ───────────────────
             // SP TVP columns: Code, MRNMaster_Code, ItemMaster_Code, PurchaseOrderMaster_Code,
-            //                 Rate, Amount, SortageQty, GRNRejectedQty, QtyBill, RejectedQtyBill, Remarks
+            //                 PurchaseOrderTransaction_Code, Rate, Amount, SortageQty, GRNRejectedQty, QtyBill, RejectedQtyBill, Remarks
             const GRNServiceDetail = [];
             document.querySelectorAll('#itemTbody tr').forEach(tr => {
                 const poSel = tr.querySelector('.po-select');
                 const itemSel = tr.querySelector('.item-select');
+                // PurchaseOrderTransaction_Code: hidden input → dataset → selected option (for new + update)
+                const hfEl = tr.querySelector('.hf-purchase-order-transaction-code');
+                let poTranCode = parseInt(hfEl?.value || tr.dataset.purchaseOrderTransactionCode) || 0;
+                if (poTranCode === 0 && itemSel?.selectedIndex > 0) {
+                    const opt = itemSel.options[itemSel.selectedIndex];
+                    poTranCode = parseInt(opt?.dataset?.purchaseOrderTransactionCode) || 0;
+                }
+                const mrnMasterCode = editMode ? editCode : 0;
                 GRNServiceDetail.push({
-                    Code: 0,                // SP handles via ROW_NUMBER()+@TranCode
-                    MRNMaster_Code: 0,                // SP sets via @Code param
+                    Code: parseInt(tr.dataset.detailCode) || 0,  // MRNDetail Code for update; 0 for new
+                    MRNMaster_Code: mrnMasterCode,   // Master Code — editCode when update
                     PurchaseOrderMaster_Code: parseInt(poSel?.value) || 0,
+                    PurchaseOrderTransaction_Code: poTranCode,  // From GetPOItemDetails - needed to update MRNQtyMT
                     ItemMaster_Code: parseInt(itemSel?.value) || 0,
                     QtyBill: parseFloat(tr.querySelector('.bill-qty')?.value) || 0,
                     RejectedQtyBill: parseFloat(tr.querySelector('.accept-qty')?.value) || 0,
@@ -1063,7 +1405,7 @@ function saveGRN() {
                 BillDate: toDateOrFallback('dtBillDate', 'dtGRNDate'),
                 ReceiveDate: toDateOrFallback('dtRecvDate', 'dtGRNDate'),
                 PartyMaster_Code: parseInt(document.getElementById('ddlPartyName')?.value) || 0,
-                TransporterName: document.getElementById('txtTransporterName')?.value || '',
+                TransporterName: '',
                 Remarks: document.getElementById('txtRemark')?.value || '',
                 AttachFileName: fileName || existingFileName || '',
                 AttachData: imageBase64Data.length > 0 ? imageBase64Data : existingImageData.length > 0 ? existingImageData : [],
@@ -1117,32 +1459,36 @@ function cancelGRN() {
 }
 
 function resetForm() {
-    ['txtGRNNo', 'txtBillNo', 'dtBillDate', 'dtRecvDate', 'txtTransporterName', 'txtRemark']
+    ['txtGRNNo', 'txtBillNo', 'dtBillDate', 'dtRecvDate', 'txtRemark']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 
     document.getElementById('ddlPartyName').value             = '';
     document.getElementById('fileAttachment').value           = '';
-    document.getElementById('chkAgainstProject').checked      = false;
-    document.getElementById('divProjectFields').style.display = 'none';
+    document.getElementById('chkAgainstProject').checked      = true;  // Create: Against Project always ON
+    document.getElementById('divProjectFields').style.display = 'block';
     document.getElementById('frmDdlProject').value            = '';
     document.getElementById('frmDdlSubProject').innerHTML     = '<option value="">-- Select Sub Project --</option>';
     document.getElementById('itemTbody').innerHTML            = '';
     document.getElementById('floatModeBadge').textContent     = 'NEW';
     document.getElementById('floatModeBadge').className       = 'po-mode-badge badge bg-success';
 
+    projectItemsCache = [];
+    const chkFill = document.getElementById('chkFillGrid');
+    if (chkFill) chkFill.checked = true;
+    showFillGridCheckbox(true);
+
     rowIndex = 0; files = []; fileName = '';
     imageBase64Data = []; existingImageData = []; existingFileName = '';
     editMode = false; editCode = 0;
 
     document.getElementById('viewImageBtn').style.setProperty('display', 'none', 'important');
-    // Show hint for project section on new GRN
+    // Against Project ON by default in Create → hide hint, show project fields, show grid hint
     const hint = document.getElementById('divProjectHint');
-    if (hint) hint.style.display = 'block';
-    // Against Project starts OFF → Add Item enabled, normal empty row
-    setAddItemBtnState(true);
+    if (hint) hint.style.display = 'none';
+    showGridProjectHint();
+    setAddItemBtnState(false);
     calcTotal();
     setTodayDates();
-    addItemRow();
     updateFloatBar();
 }
 
@@ -1380,3 +1726,9 @@ window.onSubProjectChange   = onSubProjectChange;
 window.loadGRNList          = loadGRNList;
 window.fileUploadChange     = fileUploadChange;
 window.viewAttachment       = viewAttachment;
+window.showAllItems         = showAllItems;
+window.onAddItemClick       = onAddItemClick;
+window.onFillGridChange     = onFillGridChange;
+window.onAddItemModalPOChange   = onAddItemModalPOChange;
+window.onAddItemModalItemChange = onAddItemModalItemChange;
+window.saveAddItemModalToGrid   = saveAddItemModalToGrid;

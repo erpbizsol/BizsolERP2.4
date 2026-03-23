@@ -1,4 +1,4 @@
-﻿import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
+import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
 const Indx_Tbl = {
@@ -75,17 +75,22 @@ $(document).ready(function () {
         VerifyExpenseEntryMaster();
     });
 
+    $('#eeBtnConfirmCancel').on('click', function () { ApplyAmountExceedResponse(false); });
+    $('#eeBtnConfirmProceed').on('click', function () { ApplyAmountExceedResponse(true); });
+
     DisableControls();
     ValidateMarketingPersonSenior();
 });
 
 function DisableControls() {
-    if (param_Mode == 'View' && param_ExpenseEntryMaster_Code > 0) {
+    if (param_Mode == 'View') {
         $('input, textarea').prop('disabled', true);
-        //$('a').addClass('disabled');
         $("#btnBack").prop("disabled", false);
-        $("#btnVerify").prop("disabled", true);
-
+        $("#btnSubmit").hide();
+        $("#btnVerify").hide();
+    } else {
+        $("#btnSubmit").show();
+        $("#btnVerify").show();
     }
     if (param_ExpenseEntryMaster_Code > 0) {
         $("#ExpenseEntryDetails thead tr th:nth-child(" + (Indx_Tbl.Attachment + 1) + ")").css('display', '');
@@ -109,7 +114,13 @@ function PopulateExpenseHeadDetails(Code) {
         }
     });
     ExpenseEntryService.GetExpenseEntryDetails(MarketingPersonName, Code).then(function (response) {
-        if (response.ExpenseEntryDetail.length > 0) {
+        if (!response) {
+            toastr.error('No Data Found');
+            DisableControls();
+            return;
+        }
+        var detailData = response.ExpenseEntryDetail || [];
+        if (detailData.length > 0) {
             const StringFilterColumn = [];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
@@ -133,9 +144,12 @@ function PopulateExpenseHeadDetails(Code) {
                 item["Remarks"] = `<input type="text" id="txtRemarks" data-index="${index}" value="${item["Remarks"]}" class="bal-mtrs-input txtRemarks" autocomplete="off" maxlength="16">`;
                 item["Attachment"] = `<a id="btnAttachment}" class="btn btn-success icon-height mb-1" title="Attachment" onclick="ViewAttachment(this)"><i class="fa fa-paperclip" aria-hidden="true"></i></a>`;
             });
-            BizsolCustomFilterGrid.CreateDataTable("ExpenseEntryDetails-header", "ExpenseEntryDetails-body", response.ExpenseEntryDetail, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+            BizsolCustomFilterGrid.CreateDataTable("ExpenseEntryDetails-header", "ExpenseEntryDetails-body", detailData, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            $("#paginator-ExpenseEntryDetails").show();
+        } else {
+            ShowExpenseEntryDetailEmptyState();
         }
-        if (response.ExpenseEntryMaster.length > 0) {
+        if (response.ExpenseEntryMaster && response.ExpenseEntryMaster.length > 0) {
             $('#txtEntryNo').val(response.ExpenseEntryMaster[0].EntryNo);
             $('#txtEntryDate').val(response.ExpenseEntryMaster[0].EntryDate);
             $('#txtFromDate').val(response.ExpenseEntryMaster[0].FromDate);
@@ -147,11 +161,23 @@ function PopulateExpenseHeadDetails(Code) {
         }
 
         else {
-            toastr.error('No Data Found')
+            toastr.error('No Data Found');
         }
         DisableControls();
     });
 
+}
+function ShowExpenseEntryDetailEmptyState() {
+    var emptyRow = {
+        "Expense Head": "", "Designation Name": "", "Effective From": "", "Per Day Limit": 0,
+        "Allowed Amount": 0, "Expense Amount": 0, "Approved Amount": 0, "Remarks": "",
+        "Attachment": "", ExpenseEntryDetail_Code: 0, ExpenseHeadMaster_Code: 0
+    };
+    var hiddenColumns = ["Designation Name", "Per Day Limit", "VerifyStatus", "ExpenseEntryDetail_Code", "ExpenseHeadMaster_Code", "Attachment", "Effective From"];
+    renderTableHeader(hiddenColumns, "ExpenseEntryDetails-header", "ExpenseEntryDetails-body", Object.keys(emptyRow), false, [], [], [], []);
+    var colCount = Object.keys(emptyRow).length;
+    $("#ExpenseEntryDetails-body").html('<tr class="expense-entry-empty-row"><td colspan="' + colCount + '"><span>No expense heads configured for this sales person</span></td></tr>');
+    $("#paginator-ExpenseEntryDetails").hide();
 }
 function limitInputLength(elem, maxLength) {
     let value = elem.value;
@@ -177,38 +203,50 @@ function InitAttachmentControl(masterTableName, masterTableCode, detailTableName
     $('#ExpenseEntryDetail_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode });
 }
 
+var G_AmountExceedRow = null;
+
 function CalculateApprovedAmount(x) {
     var ApprovedAmount = 0;
     var ObjCurrRow = $(x).closest('tr');
-    var AllowedAmount = ObjCurrRow.find('#txtAllowedAmount').val();
-    var ExpendedAmount = ObjCurrRow.find('#txtExpendedAmount').val();
-    var ApprovedAmount = ExpendedAmount;
+    var AllowedAmount = ObjCurrRow.find('.txtAllowedAmount').val();
+    var ExpendedAmount = ObjCurrRow.find('.txtExpendedAmount').val();
+    ApprovedAmount = ExpendedAmount;
     if (parseFloat(AllowedAmount) < parseFloat(ExpendedAmount)) {
         ApprovedAmount = AllowedAmount;
+        G_AmountExceedRow = ObjCurrRow;
+        G_AmountExceedRow.data('allowedAmount', AllowedAmount);
+        $('#eeConfirmBackdrop').addClass('show');
+        return;
     }
-    ObjCurrRow.find('#txtApprovedAmount').val(ApprovedAmount);
+    ObjCurrRow.find('.txtApprovedAmount').val(ApprovedAmount);
+}
 
-    if (parseFloat(AllowedAmount) < parseFloat(ExpendedAmount)) {
-        let ExpendedAmountGreater = confirm("The amount exceeds the allowed amount! Do you want to proceed with this !");
-        if (ExpendedAmountGreater) {
-            if (parseFloat(AllowedAmount) < parseFloat(ExpendedAmount)) {
-                ApprovedAmount = AllowedAmount;
-            }
-            ObjCurrRow.find('#txtApprovedAmount').val(ApprovedAmount);
-        }
-        else {
-            ObjCurrRow.find('#txtApprovedAmount').val(AllowedAmount);
-        }
+function ApplyAmountExceedResponse(proceed) {
+    if (G_AmountExceedRow && G_AmountExceedRow.length) {
+        var allowedAmount = G_AmountExceedRow.data('allowedAmount');
+        G_AmountExceedRow.find('.txtApprovedAmount').val(allowedAmount);
+        G_AmountExceedRow = null;
     }
-    
+    $('#eeConfirmBackdrop').removeClass('show');
+}
+
+function ShowExpenseEntryDetailSuccessModal(title, text, iconClass) {
+    $('#eeSuccessModalTitle').text(title || "Done!");
+    $('#eeSuccessModalText').text(text || "Operation completed successfully.");
+    $('#eeSuccessModalIcon').removeClass().addClass('fas ' + (iconClass || 'fa-circle-check'));
+    $('#eeSuccessBackdrop').addClass('show');
+}
+
+function CloseExpenseEntryDetailSuccessModal() {
+    $('#eeSuccessBackdrop').removeClass('show');
 }
 function ApprovedAmountIncrease(x) {
     var ObjCurrRow = $(x).closest('tr');
-    var allowedAmountIncrease = parseFloat(ObjCurrRow.find('#txtApprovedAmount').val()) || 0;
-    var expendedAmountIncrease = parseFloat(ObjCurrRow.find('#txtExpendedAmount').val()) || 0;
+    var allowedAmountIncrease = parseFloat(ObjCurrRow.find('.txtApprovedAmount').val()) || 0;
+    var expendedAmountIncrease = parseFloat(ObjCurrRow.find('.txtExpendedAmount').val()) || 0;
 
     if (allowedAmountIncrease > expendedAmountIncrease) {
-        ObjCurrRow.find('#txtApprovedAmount').val(expendedAmountIncrease);
+        ObjCurrRow.find('.txtApprovedAmount').val(expendedAmountIncrease);
         toastr.warning("Approved amount should be Less than Expended amount.");
     }
 }
@@ -317,8 +355,11 @@ function DatePicker() {
 }
 function parseDate(dateStr) {
     var parts = dateStr.split('-');
-    // Ensure the date is in dd-mm-yyyy format and create a new Date object
-    return new Date(parts[2], parts[1] - 1, parts[0]);
+    // dd-mm-yyyy format: parts[0]=day, parts[1]=month, parts[2]=year
+    var day = parseInt(parts[0], 10);
+    var month = parseInt(parts[1], 10) - 1; // JS Date months are 0-indexed
+    var year = parseInt(parts[2], 10);
+    return new Date(year, month, day);
 }
 function CalculateTotalDays(MarketingManMaster_Code) {
     var fromDate = $('#txtFromDate').val();
@@ -328,10 +369,11 @@ function CalculateTotalDays(MarketingManMaster_Code) {
         var fromDateObj = parseDate(fromDate);
         var toDateObj = parseDate(toDate);
 
+        // Inclusive: same day = 1, 22nd to 24th = 3 days
         var timeDiff = toDateObj - fromDateObj;
-        var totalDays = (timeDiff / (1000 * 3600 * 24)) + 1;
+        var totalDays = Math.round((timeDiff / (1000 * 3600 * 24)) + 1);
 
-        if (totalDays >= 0) {
+        if (totalDays >= 1) {
             $('#txtTotalDays').val(totalDays);
 
             // Call service once and apply allowed amount to each row
@@ -469,20 +511,14 @@ function VerifyExpenseEntryMaster() {
         var Data = JSON.stringify(allTablesData);
 
         ExpenseEntryService.VerifyExpenseEntryMaster(allTablesData).then(function (response) {
-
-            if (response != '') {
-                if (response.Status == 'N') {
-                    toastr.error(response.Msg);
-                } else {
-
-                    toastr.success(response.Msg);
-                    setTimeout(function () {
-                        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
-                    }, 2000); // 2 seconds delay before redirect
-                }
-
+            if (response && response.Status === 'N') {
+                toastr.error(response.Msg);
+            } else if (response && response.Status === 'Y') {
+                ShowExpenseEntryDetailSuccessModal("Verified Successfully!", response.Msg || "Expense entry has been verified.", "fa-circle-check");
+                setTimeout(function () {
+                    window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
+                }, 2000);
             }
-
         });
 
     });
@@ -580,22 +616,17 @@ function SaveData() {
             //var Data = JSON.stringify(allTablesData);
 
             ExpenseEntryService.SaveExpenseEntryMaster(allTablesData).then(function (response) {
-
-                if (response != '') {
-                    if (response.Status == 'N') {
-                        toastr.error(response.Msg);
-                    } else {
-                        var Code = response.Code == undefined || response.Code=='' ? 0 : response.Code;
-                        toastr.success(response.Msg);
-                        setTimeout(function () {
-                            //window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
-                            const codes = window.btoa(Code);
-                            var MarketingPersonName = window.btoa(param_MarketingMan_Name);
-                            var Mode = window.btoa("Edit");
-                            window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryDetail?Code=" + codes + "&Mode=" + Mode + "&MarketingMan_Name=" + MarketingPersonName;
-                        }, 2000); // 2 seconds delay before redirect
-                       
-                    }
+                if (response && response.Status === 'N') {
+                    toastr.error(response.Msg);
+                } else if (response && response.Status === 'Y') {
+                    var Code = response.Code == undefined || response.Code == '' ? 0 : response.Code;
+                    ShowExpenseEntryDetailSuccessModal("Saved Successfully!", response.Msg || "Expense entry has been saved.", "fa-circle-check");
+                    setTimeout(function () {
+                        const codes = window.btoa(Code);
+                        var MarketingPersonName = window.btoa(param_MarketingMan_Name);
+                        var Mode = window.btoa("Edit");
+                        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryDetail?Code=" + codes + "&Mode=" + Mode + "&MarketingMan_Name=" + MarketingPersonName;
+                    }, 2000);
                 }
             });
         }
@@ -699,3 +730,5 @@ window.ApprovedAmountIncrease = ApprovedAmountIncrease;
 window.SaveData = SaveData;
 window.VerifyExpenseEntryMaster = VerifyExpenseEntryMaster;
 window.limitInputLength = limitInputLength;
+window.ApplyAmountExceedResponse = ApplyAmountExceedResponse;
+window.CloseExpenseEntryDetailSuccessModal = CloseExpenseEntryDetailSuccessModal;
