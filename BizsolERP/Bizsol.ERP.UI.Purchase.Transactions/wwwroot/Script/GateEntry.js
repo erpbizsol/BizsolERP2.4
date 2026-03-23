@@ -1,4 +1,4 @@
-﻿import { GateEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GateEntryService.js';
+import { GateEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GateEntryService.js';
 import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
@@ -3233,6 +3233,74 @@ applyAlphaNumUppercase(".alphanum-uppercase");
 BindddlVehiclesStatusInFectory();
 BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnGateEntyConfiguration');
 
+function GateEntry_changeDocumentType_LoadedIn() {
+    G_TableName = '';
+    G_TableCode = 0;
+    $('#frmLoadedIn_txtVendorName').removeAttr('readonly');
+    $('#frmLoadedIn_txtGoodsDescription').removeAttr('readonly');
+    $('#frmLoadedIn_txtQTY').removeAttr('readonly');
+    let F_GateEntryType_Desp = $('#frmLoadedIn_ddlDocumentType').val();
+    let IsMultipleDocument = false;
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'MultipleDocument').PerameterValue === 'Y') {
+        IsMultipleDocument = true;
+    }
+
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'AutoFatchDocumentDetails').PerameterValue === 'Y') {
+
+        GateEntryService.GetGateEntryERPDocumentDetails("0", F_GateEntryType_Desp, 'Y', LoginGodownMaster_Code).then(function (response) {
+            const DocList = response.map((item) => ({ Desp: item.InvoiceNo }));
+            AutoSuggestionControl.SetUpAutoSuggestion(
+                $('#frmLoadedIn_txtDocumentNo'),
+                $('#frmLoadedIn_txtDocumentNo_List'),
+                DocList,
+                'StartWith',
+                true,
+                function (selectedItem) {
+                    if (selectedItem) {
+                        let DocNos = ''
+                        if (IsMultipleDocument == true) {
+                            DocNos = selectedItem.map(x => x.Desp).join(',');
+                        }
+                        else {
+                            DocNos = selectedItem.Desp;
+                        }
+                        GateEntryService.GetGateEntryERPDocumentDetails(DocNos, F_GateEntryType_Desp, 'N', LoginGodownMaster_Code).then(function (RespDocumentDetails) {
+                            if (RespDocumentDetails.length > 0) {
+
+                                const sumtotalWeight = RespDocumentDetails.reduce((sum, item) => {
+                                    const raw = item.TotalWeight ?? 0;
+                                    const parsed = parseFloat(String(raw).replace(/,/g, '')) || 0;
+                                    return sum + parsed;
+                                }, 0);
+
+                                $('#frmLoadedIn_txtVendorName').val(RespDocumentDetails[0].PartyName)
+                                $('#frmLoadedIn_txtGoodsDescription').val(RespDocumentDetails[0].GoodsDesp)
+                                $('#frmLoadedIn_txtQTY').val(parseFloat(sumtotalWeight).toFixed(2))
+                                $('#frmLoadedIn_txtUOM').val(RespDocumentDetails[0].UOM).trigger('change')
+
+                                $('#frmLoadedIn_txtVendorName').attr('readonly', 'readonly');
+                                $('#frmLoadedIn_txtGoodsDescription').attr('readonly', 'readonly');
+                                $('#frmLoadedIn_txtQTY').attr('readonly', 'readonly');
+
+                                G_GateEntryLinkedERPDocuments = RespDocumentDetails.map((x) => ({ TableName: x.TableName, TableCode: x.Code }));
+
+                            } else {
+                                toastr.error('Document Not Fund');
+                                $('#frmLoadedIn_txtVendorName').removeAttr('readonly');
+                                $('#frmLoadedIn_txtGoodsDescription').removeAttr('readonly');
+                                $('#frmLoadedIn_txtQTY').removeAttr('readonly');
+                                G_TableName = '';
+                                G_TableCode = 0;
+                            }
+                        });
+                    }
+                },
+                IsMultipleDocument
+            );
+        });
+    }
+}
+
 window.GateEntyMode_GateEntry = GateEntyMode_GateEntry
 window.GateEntryGirdByDates = GateEntryGirdByDates
 window.ViewAttachment_GateEntry = ViewAttachment_GateEntry
@@ -3245,4 +3313,5 @@ window.GateEntry_InitSelectMachineToGetWeightControl = GateEntry_InitSelectMachi
 window.GateEnty_PrintPreviewToken = GateEnty_PrintPreviewToken
 window.GateEntry_ExportExecl = GateEntry_ExportExecl
 window.GateEntry_changeDocumentType = GateEntry_changeDocumentType
+window.GateEntry_changeDocumentType_LoadedIn = GateEntry_changeDocumentType_LoadedIn
 window.GateEntry_GetNetWeight = GateEntry_GetNetWeight

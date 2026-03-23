@@ -30,12 +30,29 @@ function SyncFloatBarMargin() {
     bar.style.marginLeft = (sidebar && sidebar.classList.contains('collapsed')) ? '70px' : '280px';
 }
 
+// ─── PO STAT COUNTS (Pending on Me / Approved) ──────────────────────────────
+
+function LoadPOStatCounts() {
+    // Pending On Me = POs awaiting the current user's approval
+    PurchaseOrderStoreService.GetPendingPOStoreList().then(function (data) {
+        const count = Array.isArray(data) ? data.length : 0;
+        $('#statPendingOnMePO').text(count > 0 ? count : '—');
+    }).catch(() => { $('#statPendingOnMePO').text('—'); });
+}
+
+function NavigateToPOApproval() {
+    const appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/');
+    window.location.href = appBase + 'PurchaseTransactions/PurchaseOrder/POLevelsApprove?ModuleDesp=PO%20Approval';
+}
+
 $(document).ready(function () {
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     $('#lstTxtFromDate').val(FormatDateInput(firstDay));
     $('#lstTxtToDate').val(FormatDateInput(today));
     InitDropdowns();
+    LoadPOStatCounts();
+    window.ShowPOListGrid(); 
 
     // Watch sidebar class changes (collapse/expand) and sync float bar
     const sidebarEl = document.getElementById('modern-sidebar');
@@ -222,14 +239,18 @@ window.ShowPOListGrid = function () {
 
     PurchaseOrderStoreService.GetPurchaseOrderStoreList(status, fromDate, toDate).then(function (data) {
         G_POStoreList = data || [];
-        $('#statTotalPO').text(G_POStoreList.length);
+        $('#statTotalPO').text(G_POStoreList.length || '—');
+        const pendingCount  = G_POStoreList.filter(i => (i.Status || '').toLowerCase() === 'pending').length;
+        const approvedCount = G_POStoreList.filter(i => (i.Status || '').toLowerCase() === 'approved').length;
+        $('#statPendingPO').text(pendingCount  > 0 ? pendingCount  : '—');
+        $('#statApprovedPO').text(approvedCount > 0 ? approvedCount : '—');
         if (G_POStoreList.length === 0) {
             $('#tblPOListHeader').html('');
             $('#tblPOListBody').html('<tr><td colspan="10" class="text-center text-muted py-4"><i class="fa fa-inbox fa-2x d-block mb-2 text-muted"></i>No records found for the selected period.</td></tr>');
             $('#paginator-tblPOList').html('');
             return;
         }
-        const stringFilterColumn = ['PO No', 'Vendor', 'Status'];
+        const stringFilterColumn = ['PO No', 'Vendor', 'Status', 'Project Name','Sub Project Name'];
         const numericFilterColumn = ['Total Amount'];
         const dateFilterColumn = ['PO Date'];
         const button = false;
@@ -243,6 +264,8 @@ window.ShowPOListGrid = function () {
             'PO Date': FormatDateDisplay(item.PODate || item.PO_Date),
             'Vendor': item.VendorName || item.Vendor || '',
             'Ref No': item.RefNo || '',
+            'Project Name': item.ProjectName,
+            'Sub Project Name': item.SubProjectName,
             'Total Amount': parseFloat(item.TotalPOAmount || item.Total_Amount || 0).toFixed(2),
             'Status': item.Status || '',
             'Action': `<button class="btn btn-info icon-height mb-1" title="View" onclick="ViewPO('${item.Code}')"><i class="fa fa-eye"></i></button>
@@ -313,10 +336,10 @@ function ResetPOForm() {
     $('#frmTxtRefDate').val('');
     $('#frmDdlPaymentTerms').val('');
     $('#frmTxtRemarks').val('');
-    $('#frmChkAgainstProject').prop('checked', false);
-    $('#divProjectFields').hide();
-    G_ProjectList = [];
+    $('#frmChkAgainstProject').prop('checked', true);
+    $('#divProjectFields').show();
     G_SubProjectList = [];
+    if (G_ProjectList.length === 0) LoadProjectDropdown();
     $('#frmDdlProject').html('<option value="">-- Select Project --</option>');
     $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>');
     $('#frmDdlWorkType').val('');
@@ -527,6 +550,7 @@ window.SavePO = function () {
             toastr.success(res.Msg || 'PO saved successfully.');
             ClosePOForm();
             ShowPOListGrid();
+            LoadPOStatCounts();
         } else {
             toastr.error(res ? res.Msg : 'Failed to save PO.');
         }
@@ -619,6 +643,71 @@ function LoadPOForEdit(code) {
 
 // ─── VIEW PO ──────────────────────────────────────────────────────────────────
 
+function BuildApprovalFlowHTML(steps) {
+    if (!steps || steps.length === 0) return '';
+    let html = '';
+    steps.forEach(function (step, idx) {
+        const status   = (step.ApprovalStatus || '').trim().toLowerCase();
+        const approved = status === 'approved';
+        const rejected = status === 'rejected';
+
+        // ── circle colours ────────────────────────────────────────────────────
+        const circleBg  = approved ? '#1a9e5c' : rejected ? '#e53935' : '#e0e0e0';
+        const circleBdr = approved ? '#1a9e5c' : rejected ? '#e53935' : '#bdbdbd';
+        const circleIcon = rejected ? 'fa-times' : 'fa-check';
+        const iconClr    = (approved || rejected) ? '#fff' : '#aaaaaa';
+
+        // ── badge ─────────────────────────────────────────────────────────────
+        const badgeBg  = approved ? '#d4f5e2' : rejected ? '#fde8e8' : '#f0f0f0';
+        const badgeClr = approved ? '#1a9e5c' : rejected ? '#e53935' : '#aaaaaa';
+        const badgeTxt = approved ? 'Approved' : rejected ? 'Rejected' : 'Pending';
+
+        // ── approver name ─────────────────────────────────────────────────────
+        const nameHtml = (approved || rejected) && step.ApproverName && step.ApproverName.trim() !== ''
+            ? '<div style="font-size:10px;color:#333;font-weight:600;margin-top:4px;text-align:center;max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + step.ApproverName + '">'
+              + '<i class="fa fa-user" style="font-size:9px;margin-right:2px;color:' + circleBg + ';"></i>' + step.ApproverName
+              + '</div>'
+            : '';
+
+        // ── approved / action date ────────────────────────────────────────────
+        const dateStr  = ((approved || rejected) && step.ApprovedOn && step.ApprovedOn.trim() !== '') ? FormatDateDisplay(step.ApprovedOn) : '';
+        const dateHtml = dateStr
+            ? '<div style="font-size:10px;color:#888;margin-top:2px;text-align:center;white-space:nowrap;">'
+              + '<i class="fa fa-calendar-check" style="font-size:9px;margin-right:2px;"></i>' + dateStr
+              + '</div>'
+            : '';
+
+        // ── remarks ───────────────────────────────────────────────────────────
+        const remarkHtml = step.Remarks && step.Remarks.trim() !== ''
+            ? '<div style="font-size:10px;color:#666;margin-top:3px;text-align:center;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:italic;" title="' + step.Remarks + '">'
+              + '<i class="fa fa-comment-dots" style="font-size:9px;margin-right:2px;color:#aaa;"></i>' + step.Remarks
+              + '</div>'
+            : '';
+
+        html += '<div style="display:flex;flex-direction:column;align-items:center;min-width:80px;max-width:96px;">'
+              + '<div style="width:44px;height:44px;border-radius:50%;background:' + circleBg + ';border:3px solid ' + circleBdr + ';display:flex;align-items:center;justify-content:center;">'
+              + '<i class="fa ' + circleIcon + '" style="color:' + iconClr + ';font-size:14px;"></i>'
+              + '</div>'
+              + '<div style="font-size:12px;font-weight:600;color:#444;margin-top:7px;text-align:center;">' + step.LevelDesc + '</div>'
+              + '<div style="background:' + badgeBg + ';color:' + badgeClr + ';font-size:11px;font-weight:600;padding:2px 10px;border-radius:12px;margin-top:4px;white-space:nowrap;">' + badgeTxt + '</div>'
+              + nameHtml
+              + dateHtml
+              + remarkHtml
+              + '</div>';
+        if (idx < steps.length - 1) {
+            html += '<div style="flex:1;border-top:2px dashed #bdbdbd;min-width:16px;margin-top:20px;"></div>';
+        }
+    });
+    return '<div style="background:#f8fffe;border:1px solid #ddf0e8;border-radius:10px;padding:14px 20px;margin-bottom:16px;">'
+         + '<div style="font-size:11px;font-weight:700;color:#667;letter-spacing:1.2px;margin-bottom:14px;">'
+         + '<i class="fa fa-layer-group" style="color:#1a9e5c;margin-right:6px;"></i>APPROVAL FLOW'
+         + '</div>'
+         + '<div style="display:flex;align-items:flex-start;overflow-x:auto;padding-bottom:4px;">'
+         + html
+         + '</div>'
+         + '</div>';
+}
+
 window.ViewPO = function (code) {
     const ModuleName = $('#ERPHeading').text().trim();
     const ShowMsg = 'Y';
@@ -634,6 +723,7 @@ window.ViewPO = function (code) {
             if (!res) { toastr.error('PO not found.'); return; }
         const header = res[0][0];
         const details = res[1] || [];
+        const approvalFlow = res[2] || [];
 
         const vendorName = (G_VendorList.find(v => v.Code == header.VendorMaster_Code) || {}).Name || '';
         const paymentTermsName = (G_PaymentTermsList.find(p => p.Code == header.PaymentTermsMaster_Code) || {}).Name || '';
@@ -670,8 +760,8 @@ window.ViewPO = function (code) {
                 <div class="col-md-6">
                     <table class="table table-sm table-borderless">
                         <tr><td class="fw-bold" style="width:45%">Against Project</td><td>${againstProject ? 'Yes' : 'No'}</td></tr>
-                        ${againstProject ? `<tr><td class="fw-bold">Project</td><td>${header.ProjectMaster_Code || '-'}</td></tr>
-                        <tr><td class="fw-bold">Sub Project</td><td>${header.SubProjectMaster_Code || '-'}</td></tr>` : ''}
+                        ${againstProject ? `<tr><td class="fw-bold">Project</td><td>${header.ProjectName || '-'}</td></tr>
+                        <tr><td class="fw-bold">Sub Project</td><td>${header.SubProjectName || '-'}</td></tr>` : ''}
                         <tr><td class="fw-bold">Taxable Amount</td><td class="text-end">${parseFloat(header.TotalAssValue || 0).toFixed(2)}</td></tr>
                         <tr><td class="fw-bold">${header.OtherChargesDesp || 'Other Charges'}</td><td class="text-end">${parseFloat(header.OtherChargesAmount || 0).toFixed(2)}</td></tr>
                         <tr><td class="fw-bold">Freight</td><td class="text-end">${parseFloat(header.FreightAmount || 0).toFixed(2)}</td></tr>
@@ -681,6 +771,7 @@ window.ViewPO = function (code) {
                     </table>
                 </div>
             </div>
+            ${BuildApprovalFlowHTML(approvalFlow)}
             <div class="table-responsive">
                 <table class="table table-sm table-bordered">
                     <thead style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
@@ -735,6 +826,7 @@ window.ConfirmDeletePO = function () {
                 toastr.success(res.Msg || 'PO deleted successfully.');
                 $('#modalDeletePO').modal('hide');
                 ShowPOListGrid();
+                LoadPOStatCounts();
             } else {
                 toastr.error(res ? res.Msg : 'Failed to delete PO.');
             }
@@ -894,6 +986,7 @@ function RenderMobileItemCards() {
 window.ShowPOListGrid = ShowPOListGrid;
 window.OpenPOForm = OpenPOForm;
 window.ClosePOForm = ClosePOForm;
+window.NavigateToPOApproval = NavigateToPOApproval;
 window.AddItemRow = AddItemRow;
 window.DeleteItemRow = DeleteItemRow;
 window.OnItemChange = OnItemChange;

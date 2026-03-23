@@ -1,4 +1,4 @@
-﻿import { UrlService } from '../URL.js';
+import { UrlService } from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 
@@ -89,7 +89,7 @@ const ExpenseEntryService = {
     DeleteExpenseEntryMaster: function DeleteExpenseEntryMaster(Code, Reason, IPAddress, Location) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_EXPENSE_ENTRY + `/DeleteExpenseEntryMaster?UserMaster_Code=${encodeURIComponent(userMasterCode)}&Code=${encodeURIComponent(Code)}&ReasonForDelete=${Reason}&IPAddress=${1}&Location=${1}`;
+        var URL = UrlService.API_ENDPOINT_EXPENSE_ENTRY + `/DeleteExpenseEntryMaster?UserMaster_Code=${encodeURIComponent(userMasterCode)}&Code=${encodeURIComponent(Code)}&ReasonForDelete=${encodeURIComponent(Reason || '')}&IPAddress=1&Location=1`;
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
             function (value) {
                 return value;
