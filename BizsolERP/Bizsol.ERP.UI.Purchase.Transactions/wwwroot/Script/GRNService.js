@@ -94,9 +94,6 @@ function setTodayDates() {
     });
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 1 — VENDOR LIST → ddlPartyName
-// ══════════════════════════════════════════════════════════════════════════════
 async function loadVendorList() {
     const ddl = document.getElementById('ddlPartyName');
     if (!ddl) return;
@@ -114,9 +111,6 @@ async function loadVendorList() {
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 2 — PROJECT LIST → frmDdlProject
-// ══════════════════════════════════════════════════════════════════════════════
 async function loadProjectList() {
     const ddl = document.getElementById('frmDdlProject');
     if (!ddl) return;
@@ -134,7 +128,6 @@ async function loadProjectList() {
     }
 }
 
-// ── Fill Grid checkbox (New case only) ───────────────────────────────────────
 function isFillGridChecked() {
     const chk = document.getElementById('chkFillGrid');
     return chk ? chk.checked : true;
@@ -142,7 +135,6 @@ function isFillGridChecked() {
 
 function showFillGridCheckbox(show) {
     const div = document.getElementById('divFillGridCheck');
-    // Fill Grid: only in Create mode; always hidden in Edit
     if (div) {
         const visible = show && !editMode;
         div.style.setProperty('display', visible ? 'flex' : 'none', 'important');
@@ -174,14 +166,12 @@ function onAddItemClick() {
     openAddItemModalForm();
 }
 
-// ── Project toggle ──────────────────────────────────────────────────────────
-// ── Show a placeholder row in grid asking user to select project first ────────
 function showGridProjectHint() {
     const tbody = document.getElementById('itemTbody');
     if (!tbody) return;
     tbody.innerHTML = `
         <tr id="trProjectHint">
-            <td colspan="11" style="text-align:center;padding:18px 10px;">
+            <td colspan="12" style="text-align:center;padding:18px 10px;">
                 <div style="display:inline-flex;align-items:center;gap:10px;
                             background:linear-gradient(135deg,rgba(13,202,240,0.08),rgba(8,145,178,0.06));
                             border:1px dashed rgba(13,202,240,0.45);border-radius:10px;
@@ -231,9 +221,6 @@ function toggleProjectFields(chk) {
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 3 — PROJECT CHANGE → SubProject dropdown
-// ══════════════════════════════════════════════════════════════════════════════
 async function loadSubProjects() {
     const projectId = document.getElementById('frmDdlProject')?.value;
     const subDdl    = document.getElementById('frmDdlSubProject');
@@ -271,9 +258,6 @@ async function loadSubProjects() {
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// STEP 3b — SUB-PROJECT CHANGE → auto-bind POs + items into grid
-// ══════════════════════════════════════════════════════════════════════════════
 async function onSubProjectChange() {
     // Clear validation error
     document.getElementById('frmDdlSubProject')?.classList.remove('is-invalid');
@@ -303,7 +287,6 @@ async function onSubProjectChange() {
     }
 }
 
-// ── Fetch items for project+subproject and auto-fill grid rows ───────────────
 async function loadItemsByProject(projectCode, subProjectCode) {
     showToast('Loading items for selected project...', 'info');
 
@@ -336,10 +319,12 @@ async function loadItemsByProject(projectCode, subProjectCode) {
                 poSel.value = poCode;
             }
 
-            // ── Item dropdown — SQL returns: ItemMaster_Code, ItemName ───────
+            // ── Item dropdown — SQL returns: ItemMaster_Code, ItemName, UOMMaster_Code, UOM ───
             const itSel    = tr.querySelector('.item-select');
             const itemCode = item.ItemMaster_Code ?? item.Item_Code ?? '';
             const itemName = item.ItemName        ?? item.Item_Name ?? '';
+            const uomMasterCode = String(item.UOMMaster_Code ?? item.uomMaster_Code ?? '');
+            const itemUom = item.UOM ?? item.uom ?? item.Uom ?? uomMasterCode;
             const rate     = parseFloat(item.Rate ?? 0);
             const poTranCode = item.PurchaseOrderTransaction_Code ?? item.PurchaseOrderTransactionCode ?? item.code ?? item.Code ?? '';
             if (itSel && itemCode) {
@@ -348,10 +333,17 @@ async function loadItemsByProject(projectCode, subProjectCode) {
                 opt.value        = itemCode;
                 opt.text         = itemName;
                 opt.dataset.rate = rate;
+                opt.dataset.uom  = itemUom;
+                opt.dataset.uomMasterCode = uomMasterCode;
                 opt.dataset.purchaseOrderTransactionCode = String(poTranCode);
                 itSel.appendChild(opt);
                 itSel.value = itemCode;
             }
+
+            // ── UOM bind (grid uses uom-cell readonly; save uses tr.dataset.uomMasterCode) ──
+            const uomCell = tr.querySelector('.uom-cell');
+            if (uomCell) uomCell.value = itemUom || '';
+            if (uomMasterCode) tr.dataset.uomMasterCode = String(uomMasterCode);
 
             // ── Rate ─────────────────────────────────────────────────────────
             const rateEl = tr.querySelector('.rate');
@@ -392,9 +384,6 @@ async function loadItemsByProject(projectCode, subProjectCode) {
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// PO LIST HELPERS
-// ══════════════════════════════════════════════════════════════════════════════
 async function loadAllPOs() {
     try {
         const result = await GRNService.GetPendingPOStoreList();
@@ -422,9 +411,6 @@ function refreshAllPODropdowns() {
     });
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ITEM ROW MANAGEMENT
-// ══════════════════════════════════════════════════════════════════════════════
 function addItemRow() {
     rowIndex++;
     const tbody = document.getElementById('itemTbody');
@@ -446,6 +432,9 @@ function addItemRow() {
             <select class="form-control form-control-sm item-select" onchange="onItemChange(this)">
                 <option value="">-- Select Item --</option>
             </select>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm uom-cell"  placeholder="--" style="background:#f1f5f9;">
         </td>
         <td>
             <input type="number" class="form-control form-control-sm bill-qty"
@@ -541,9 +530,6 @@ function removeItemRowByIndex(idx) {
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SHOW ALL — keeps current working state (recalc, no filter)
-// ══════════════════════════════════════════════════════════════════════════════
 function showAllItems() {
     calcTotal();
     updateMobileCards();
@@ -551,9 +537,6 @@ function showAllItems() {
     showToast('Showing all items.', 'info');
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ADD ITEM MODAL — form style: PO, Item, UOM, GST%, Qty, Rate, Value
-// ══════════════════════════════════════════════════════════════════════════════
 let addItemModalPOItemData = [];
 let addItemModalUsePOList  = false;
 
@@ -618,6 +601,7 @@ function resetAddItemModalForm() {
     if (po) po.value = '';
     if (item) item.innerHTML = '<option value="">-- Select Item --</option>';
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set('addItemModalUOM', '');
     set('addItemModalBillQty', '0');
     set('addItemModalAcceptQty', '0');
     set('addItemModalRejectQty', '0');
@@ -663,6 +647,9 @@ async function onAddItemModalPOChange() {
         let rate = parseFloat(item.Rate ?? 0);
         if (rate <= 0 && qtyMT > 0 && amount > 0) rate = amount / qtyMT;
         opt.dataset.rate = rate;
+        const uomMc = String(item.UOMMaster_Code ?? item.uomMaster_Code ?? '');
+        opt.dataset.uom  = item.UOM ?? item.uom ?? item.Uom ?? uomMc;
+        opt.dataset.uomMasterCode = uomMc;
         opt.dataset.purchaseOrderTransactionCode = item.PurchaseOrderTransaction_Code ?? item.PurchaseOrderTransactionCode ?? '';
         const mrnQtyMT = parseFloat(item.MRNQtyMT ?? 0);
         const cancelQtyMT = parseFloat(item.CancelQtyMT ?? 0);
@@ -677,9 +664,12 @@ function onAddItemModalItemChange() {
     const opt = itemSel?.options[itemSel.selectedIndex];
     const rate = parseFloat(opt?.dataset?.rate ?? 0);
     const pendingQty = opt?.dataset?.pendingQty ?? '';
+    const uomMasterCode = opt?.dataset?.uomMasterCode ?? '';
+    const uomDisplay   = opt?.dataset?.uom ?? uomMasterCode;
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
     set('addItemModalRate', rate > 0 ? rate.toFixed(2) : '0');
     set('addItemModalBillQty', pendingQty !== '' ? pendingQty : '0');
+    set('addItemModalUOM', uomDisplay); 
     set('addItemModalAcceptQty', '0');
     set('addItemModalRejectQty', '0');
     set('addItemModalShortage', '0');
@@ -730,18 +720,26 @@ function saveAddItemModalToGrid() {
             poSel.add(new Option(poOpt?.text ?? poCode, poCode));
         poSel.value = poCode;
     }
+    const uomMasterCodeVal = itemOpt?.dataset?.uomMasterCode ?? '';
+    const uomDisplayVal   = itemOpt?.dataset?.uom ?? document.getElementById('addItemModalUOM')?.value ?? '';
+
     if (itemSel) {
         itemSel.innerHTML = '';
         const opt = document.createElement('option');
         opt.value = itemCode;
         opt.text  = itemOpt?.text ?? '';
         opt.dataset.rate = rate;
+        opt.dataset.uom = uomDisplayVal;
+        opt.dataset.uomMasterCode = uomMasterCodeVal;
         opt.dataset.purchaseOrderTransactionCode = itemOpt?.dataset?.purchaseOrderTransactionCode ?? '';
         itemSel.appendChild(opt);
         itemSel.value = itemCode;
     }
 
     const setCell = (cls, val) => { const el = tr.querySelector(cls); if (el) el.value = val ?? ''; };
+    const uomCell = tr.querySelector('.uom-cell');
+    if (uomCell) uomCell.value = uomDisplayVal || '';
+    if (uomMasterCodeVal) tr.dataset.uomMasterCode = String(uomMasterCodeVal);
     setCell('.bill-qty',   document.getElementById('addItemModalBillQty')?.value);
     setCell('.accept-qty', document.getElementById('addItemModalAcceptQty')?.value);
     setCell('.reject-qty', document.getElementById('addItemModalRejectQty')?.value);
@@ -849,6 +847,9 @@ async function onPOChange(select) {
                 opt.value        = item.ItemMaster_Code ?? item.Item_Code ?? '';   // SQL: ItemMaster_Code
                 opt.text         = item.ItemName        ?? item.Item_Name ?? '';   // SQL: ItemName
                 opt.dataset.rate = item.Rate            ?? 0;                      // SQL: Rate
+                const uomMc = String(item.UOMMaster_Code ?? item.uomMaster_Code ?? '');
+                opt.dataset.uom  = item.UOM ?? item.uom ?? item.Uom ?? uomMc;
+                opt.dataset.uomMasterCode = uomMc;
                 opt.dataset.purchaseOrderTransactionCode = item.PurchaseOrderTransaction_Code ?? item.PurchaseOrderTransactionCode ?? item.Code ?? '';
                 itemSel.appendChild(opt);
             });
@@ -867,14 +868,19 @@ async function onPOChange(select) {
     }
 }
 
-// ── Item change → auto-fill rate + store PurchaseOrderTransaction_Code ─────────
+// ── Item change → auto-fill rate, UOM + store PurchaseOrderTransaction_Code ────
 function onItemChange(select) {
     const tr   = select.closest('tr');
     if (!tr) return;
     const opt  = select.options[select.selectedIndex];
     const rate = opt?.dataset?.rate ?? '';
+    const uom  = opt?.dataset?.uom ?? '';
+    const uomMasterCode = opt?.dataset?.uomMasterCode ?? '';
     const rateEl = tr.querySelector('.rate');
     if (rateEl) rateEl.value = rate ? parseFloat(rate).toFixed(2) : '';
+    const uomCell = tr.querySelector('.uom-cell');
+    if (uomCell) uomCell.value = uom || '';
+    if (uomMasterCode) tr.dataset.uomMasterCode = String(uomMasterCode);
     // Store PurchaseOrderTransaction_Code from selected option (for save / update)
     const poTranCode = opt?.dataset?.purchaseOrderTransactionCode ?? '';
     if (poTranCode) {
@@ -970,7 +976,7 @@ function loadGRNList() {
         else if (Array.isArray(response.Data)) rows = response.Data;
         if (rows.length > 0) {
             $("#grnListTable").show();
-            const StringFilterColumn = ["Bill No","Party Name"];
+            const StringFilterColumn = ["Bill No", "Party Name","Sub Project","Project"];
             const NumericFilterColumn = ["MRN No"];
             const DateFilterColumn = ["Bill Date","Receive Date"];
             const Button = false;
@@ -1136,17 +1142,26 @@ async function editGRN(code) {
                         poSel.value = poCode;
                     }
 
-                    // SP returns: ItemMaster_Code (MRNDetail) + ItemName (LEFT JOIN ItemMaster)
+                   
                     const itemCode = String(item.ItemMaster_Code ?? '');
                     const itemName = item.ItemName ?? item.itemName ?? itemCode;
+                    const itemUomMasterCode = String(item.UOMMaster_Code ?? item.uomMaster_Code ?? '');
+                    const itemUom = item.UOM ?? item.uom ?? item.Uom ?? itemUomMasterCode;
                     if (itSel && itemCode) {
                         itSel.innerHTML = '';
                         const opt = new Option(itemName, itemCode);
                         opt.dataset.rate = item.Rate ?? 0;
+                        opt.dataset.uom = itemUom;
+                        opt.dataset.uomMasterCode = itemUomMasterCode;
                         opt.dataset.purchaseOrderTransactionCode = item.PurchaseOrderTransaction_Code ?? item.PurchaseOrderTransactionCode ?? '';
                         itSel.add(opt);
                         itSel.value = itemCode;
                     }
+
+                    // ── UOM bind (grid uses uom-cell readonly; save uses tr.dataset.uomMasterCode) ──
+                    const uomCell = tr.querySelector('.uom-cell');
+                    if (uomCell) uomCell.value = itemUom || '';
+                    if (itemUomMasterCode) tr.dataset.uomMasterCode = String(itemUomMasterCode);
 
                     // Store PurchaseOrderTransaction_Code on row (for save on update) — MRNDetail.PurchaseOrderTransaction_Code
                     const poTranCode = item.PurchaseOrderTransaction_Code ?? item.PurchaseOrderTransactionCode ?? '';
@@ -1167,8 +1182,8 @@ async function editGRN(code) {
                         if (el) el.value = val ?? '';
                     };
                     setCell('.bill-qty', item.QtyBill ?? 0);
-                    setCell('.accept-qty', item.RejectedQtyBill ?? 0);
-                    setCell('.reject-qty', item.GRNRejectedQty ?? 0);
+                    setCell('.accept-qty', item.GRNRejectedQty ?? 0);
+                    setCell('.reject-qty', item.RejectedQtyBill ?? 0);
                     setCell('.shortage-qty', item.SortageQty ?? 0);
                     setCell('.rate', parseFloat(item.Rate ?? 0).toFixed(2));
                     setCell('.amount', parseFloat(item.Amount ?? 0).toFixed(2));
@@ -1380,6 +1395,11 @@ function saveGRN() {
                     const opt = itemSel.options[itemSel.selectedIndex];
                     poTranCode = parseInt(opt?.dataset?.purchaseOrderTransactionCode) || 0;
                 }
+                let uomMasterCode = parseInt(tr.dataset.uomMasterCode) || 0;
+                if (uomMasterCode === 0 && itemSel?.selectedIndex > 0) {
+                    const opt = itemSel.options[itemSel.selectedIndex];
+                    uomMasterCode = parseInt(opt?.dataset?.uomMasterCode) || 0;
+                }
                 const mrnMasterCode = editMode ? editCode : 0;
                 GRNServiceDetail.push({
                     Code: parseInt(tr.dataset.detailCode) || 0,  // MRNDetail Code for update; 0 for new
@@ -1387,9 +1407,10 @@ function saveGRN() {
                     PurchaseOrderMaster_Code: parseInt(poSel?.value) || 0,
                     PurchaseOrderTransaction_Code: poTranCode,  // From GetPOItemDetails - needed to update MRNQtyMT
                     ItemMaster_Code: parseInt(itemSel?.value) || 0,
+                    UOMMaster_Code: uomMasterCode,  // PurchaseOrderTransaction.UOMMaster_Code
                     QtyBill: parseFloat(tr.querySelector('.bill-qty')?.value) || 0,
-                    RejectedQtyBill: parseFloat(tr.querySelector('.accept-qty')?.value) || 0,
-                    GRNRejectedQty: parseFloat(tr.querySelector('.reject-qty')?.value) || 0,
+                    GRNRejectedQty: parseFloat(tr.querySelector('.accept-qty')?.value) || 0,
+                    RejectedQtyBill : parseFloat(tr.querySelector('.reject-qty')?.value) || 0,
                     SortageQty: parseFloat(tr.querySelector('.shortage-qty')?.value) || 0,
                     Rate: parseFloat(tr.querySelector('.rate')?.value) || 0,
                     Amount: parseFloat(tr.querySelector('.amount')?.value) || 0,
@@ -1442,7 +1463,7 @@ function saveGRN() {
                             showListView();
                         }, 1200);
                     } else {
-                        showToast(data?.message ?? data?.Message ?? 'Save failed.', 'error');
+                        showToast(data?.Msg ?? data?.Msg ?? 'Save failed.', 'error');
                     }
                 })
                 .catch(() => showToast('Network error. Please try again.', 'error'));
@@ -1538,6 +1559,7 @@ function updateMobileCards() {
             </div>
             <div class="item-card-details">
                 <span class="item-card-detail">PO: <b>${poText}</b></span>
+                <span class="item-card-detail">UOM: ${tr.querySelector('.uom-cell')?.value || '–'}</span>
                 <span class="item-card-detail">Bill Qty: ${tr.querySelector('.bill-qty')?.value   || '0'}</span>
                 <span class="item-card-detail">Accept:   ${tr.querySelector('.accept-qty')?.value || '0'}</span>
                 <span class="item-card-detail">Reject:   ${tr.querySelector('.reject-qty')?.value || '0'}</span>
