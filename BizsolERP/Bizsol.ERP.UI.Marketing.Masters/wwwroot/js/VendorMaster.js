@@ -6,20 +6,33 @@ var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
 var G_UserMasterCode = authKeyData.UserMaster_Code;
 var G_EditCode = 0;
 var G_ViewCode = 0;
+var G_VendorVerifyCode = 0;
+let G_IsClientOrVendor = 'N';
+let G_ModuleName = "Vendor Master";
+window.G_VendorHasVerifyRight = false;
+function syncVendorModuleContextFromHeading() {
+    var raw = ($("#ERPHeading").text() || "").trim();
+    G_ModuleName = raw || "Vendor Master";
+    G_IsClientOrVendor = G_ModuleName === "Vendor Master" ? "V" : "C";
+}
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
-    GetVendorMasterList();
+    syncVendorModuleContextFromHeading();
+    applyVendorMasterClientModeUi();
+    resolveVendorVerifyRight().then(function () {
+        GetVendorMasterList();
+    });
     GetNationList();
     GetStateList();
     GetCityList();
-    // Modal close buttons
+   
     $("#vmBtnModalClose, #vmBtnCancelVendor").on("click", CloseVendorForm);
     $("#vmBtnCancelDelete").on("click", function () {
         $("#vmDeleteConfirmBackdrop").removeClass("show");
     });
+    $("#vmBtnCancelVerify").on("click", CloseVendorVerifyModal);
 
-    // Live clear validation on input
     $("#AccountDesp").on("input", function () {
         if ($(this).val()) {
             $("#err_AccountDesp").hide();
@@ -27,7 +40,6 @@ $(document).ready(function () {
         }
     });
 
-    // GST — auto-uppercase + validate only when 15 chars typed
     $("#GSTNNo").on("input", function () {
         $(this).val($(this).val().toUpperCase());
         var val = $(this).val();
@@ -35,20 +47,18 @@ $(document).ready(function () {
             $("#err_GSTNNo").hide();
             $(this).removeClass("vm-input-error");
         } else if (val.length === 15) {
-            validateGST(true);   // full length ho to live error dikhao
+            validateGST(true);
         } else {
             $("#err_GSTNNo").hide();
             $(this).removeClass("vm-input-error");
         }
     });
 
-    // Pincode — digits only
     $("#PinCode").on("input", function () {
         $(this).val($(this).val().replace(/\D/g, ''));
         $("#err_PinCode").hide();
     });
 
-    // Email — live validation
     $("#EMail").on("input", function () {
         var val = $(this).val();
         if (!val) {
@@ -59,7 +69,6 @@ $(document).ready(function () {
         }
     });
 
-    // PhoneNo — digits only + live validation
     $("#PhoneNo").on("input", function () {
         $(this).val($(this).val().replace(/\D/g, ''));
         var val = $(this).val();
@@ -71,7 +80,6 @@ $(document).ready(function () {
         }
     });
 
-    // ContactPersonMobile — digits only + live validation
     $("#ContactPersonMobile").on("input", function () {
         $(this).val($(this).val().replace(/\D/g, ''));
         var val = $(this).val();
@@ -83,7 +91,6 @@ $(document).ready(function () {
         }
     });
 
-    // ContactPersonEMail — live validation
     $("#ContactPersonEMail").on("input", function () {
         var val = $(this).val();
         if (!val) {
@@ -105,60 +112,348 @@ $(document).ready(function () {
     //    $("#City").val("").trigger("change");
     //});
 
-});
+    // Summary chips: filter grid by All / Verified / Pending
+    $(document).on("click", ".vm-stat-chip[data-vm-filter]", function () {
+        var mode = $(this).attr("data-vm-filter");
+        window.G_VendorStatFilter = mode;
+        if (window.G_VendorMasterSourceRows && window.G_VendorMasterSourceRows.length > 0) {
+            refreshVendorMasterGrid();
+        }
+    });
+    $(document).on("keydown", ".vm-stat-chip[data-vm-filter]", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            $(this).trigger("click");
+        }
+    });
 
-// ── Load Grid ──────────────────────────────────────────────
+    // Verified badge: title="" has no reliable hover on touch — tap shows the same details (toastr).
+    $(document).on("click", ".vm-verify-status--done[data-vm-verify-info]", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        showVendorVerifyDetailFromBadge(this);
+    });
+    $(document).on("keydown", ".vm-verify-status--done[data-vm-verify-info]", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            showVendorVerifyDetailFromBadge(this);
+        }
+    });
+
+    $(window).on("load", function () {
+        syncVendorModuleContextFromHeading();
+        applyVendorMasterClientModeUi();
+    });
+});
+function rowIsVerified(item) {
+    var v = item && item.Verified;
+    if (v === undefined || v === null) return false;
+    if (typeof v === "string") {
+        var u = v.toUpperCase();
+        return u === "Y" || u === "YES" || v === "1";
+    }
+    return v === true || v === 1;
+}
+
+function escapeVendorAttr(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+/** Resolve verify-by display text from API variants (PascalCase or spaced labels). */
+function getVendorVerifiedByDisplay(item) {
+    if (!item) return "";
+    var v =
+        item.VerifiedByName ||
+        item.VerifiedByDesp ||
+        item.VerifiedBy ||
+        item["Verify By"] ||
+        item["Verified By"] ||
+        item.UserVerifiedBy;
+    if (v === undefined || v === null || v === "") return "";
+    if (typeof v === "number" && v === 0) return "";
+    return String(v).trim();
+}
+function getVendorVerifiedOnRaw(item) {
+    if (!item) return null;
+    var d =
+        item.VerifiedON !== undefined && item.VerifiedON !== null
+            ? item.VerifiedON
+            : item.VerifiedOn !== undefined && item.VerifiedOn !== null
+              ? item.VerifiedOn
+              : item["Verified ON"] !== undefined && item["Verified ON"] !== null
+                ? item["Verified ON"]
+                : item["Verified On"];
+    return d === undefined ? null : d;
+}
+function pad2VendorDate(n) {
+    return n < 10 ? "0" + n : String(n);
+}
+/** Verified ON shown as dd/mm/yyyy (local calendar date). */
+function formatDateDdMmYyyy(d) {
+    if (!(d instanceof Date) || isNaN(d.getTime())) return "";
+    return pad2VendorDate(d.getDate()) + "/" + pad2VendorDate(d.getMonth() + 1) + "/" + d.getFullYear();
+}
+function formatVendorVerifiedOnDisplay(val) {
+    if (val === null || val === undefined || val === "") return "";
+    if (typeof val === "number" && isFinite(val)) {
+        return formatDateDdMmYyyy(new Date(val));
+    }
+    if (typeof val === "string") {
+        var t = val.trim();
+        if (!t) return "";
+        var parsed = Date.parse(t);
+        if (!isNaN(parsed)) return formatDateDdMmYyyy(new Date(parsed));
+        return t;
+    }
+    if (val instanceof Date) return formatDateDdMmYyyy(val);
+    return String(val);
+}
+function showVendorVerifyDetailFromBadge(el) {
+    var enc = el.getAttribute("data-vm-verify-info");
+    if (!enc) return;
+    var txt = decodeURIComponent(enc);
+    var oneLine = txt.replace(/\s*\n+\s*/g, " · ");
+    if (typeof toastr !== "undefined") {
+        toastr.info(oneLine, "Verification", { timeOut: 5500 });
+    } else {
+        window.alert(txt);
+    }
+}
+
+/** Verified badge; desktop: title tooltip. Touch/mobile: tap opens toastr (native title is unreliable on touch). */
+function buildVerifiedBadgeHtml(item) {
+    var by = getVendorVerifiedByDisplay(item);
+    var on = formatVendorVerifiedOnDisplay(getVendorVerifiedOnRaw(item));
+    var parts = [];
+    if (by) parts.push("Verify By: " + by);
+    if (on) parts.push("Verified ON: " + on);
+    var titleAttr = parts.length ? ' title="' + escapeVendorAttr(parts.join(" · ")) + '"' : "";
+    var dataAttr = "";
+    var a11y = "";
+    var extraClass = "";
+    if (parts.length) {
+        extraClass = " vm-verify-status--with-detail";
+        dataAttr = ' data-vm-verify-info="' + encodeURIComponent(parts.join("\n")) + '"';
+        a11y =
+            ' role="button" tabindex="0" aria-label="' +
+            escapeVendorAttr(parts.join(". ")) +
+            '"';
+    }
+    return (
+        '<span class="vm-verify-status vm-verify-status--done' +
+        extraClass +
+        '"' +
+        titleAttr +
+        dataAttr +
+        a11y +
+        ">Verified</span>"
+    );
+}
+function updateVendorMasterStats(rows) {
+    var list = Array.isArray(rows) ? rows : [];
+    var total = list.length;
+    var verified = 0;
+    for (var i = 0; i < list.length; i++) {
+        if (rowIsVerified(list[i])) verified++;
+    }
+    var pending = total - verified;
+    $("#vmStatTotal").text(total);
+    $("#vmStatVerified").text(verified);
+    $("#vmStatPending").text(pending);
+}
+
+/** Silent check: Verify column if user has Verify right (Vendor Master or Client Master — uses G_ModuleName). */
+function resolveVendorVerifyRight() {
+    var FinYear = getFinancialYear();
+    return MenuService.CheckModuleOptionRight(G_ModuleName, "Verify", "N", FinYear)
+        .then(function (response) {
+            window.G_VendorHasVerifyRight = response && response.CheckModuleOptionRight === "Y";
+        })
+        .catch(function () {
+            window.G_VendorHasVerifyRight = false;
+        });
+}
+
+window.G_VendorMasterSourceRows = window.G_VendorMasterSourceRows || [];
+
+window.G_VendorStatFilter = window.G_VendorStatFilter || "all";
+function filterVendorRowsByStat(rows, mode) {
+    var list = Array.isArray(rows) ? rows : [];
+    if (mode === "verified") return list.filter(function (r) { return rowIsVerified(r); });
+    if (mode === "pending") return list.filter(function (r) { return !rowIsVerified(r); });
+    return list.slice();
+}
+function mapVendorRowsToGrid(rows) {
+    return rows.map(function (item) {
+        var verifyCell = "";
+        if (window.G_VendorHasVerifyRight) {
+            verifyCell = rowIsVerified(item)
+                ? buildVerifiedBadgeHtml(item)
+                : '<button type="button" class="vm-btn-verify" onclick="VerifyVendor(' +
+                  item.Code +
+                  ')"><i class="fas fa-check"></i></button>';
+        }
+
+        if (G_IsClientOrVendor === "C") {
+            var clientPatch = {};
+            if (window.G_VendorHasVerifyRight) {
+                clientPatch.Verify = verifyCell;
+            }
+            return Object.assign({}, item, clientPatch);
+        }
+
+        var btns =
+            '<button class="vm-btn-view" title="View" onclick="ViewVendor(' + item.Code + ')">' +
+            '<i class="fas fa-eye"></i>' +
+            "</button>" +
+            '<button class="vm-btn-edit" title="Edit" onclick="EditVendor(' + item.Code + ')">' +
+            '<i class="fas fa-pen"></i>' +
+            "</button>" +
+            '<button class="vm-btn-delete" title="Delete" onclick="ConfirmVendorDelete(' + item.Code + ')">' +
+            '<i class="fas fa-trash-can"></i>' +
+            "</button>";
+        var patch = {};
+        if (window.G_VendorHasVerifyRight) {
+            patch.Verify = verifyCell;
+        }
+        patch.Action = btns;
+        return Object.assign({}, item, patch);
+    });
+}
+function applyVendorMasterClientModeUi() {
+    var $btn = $("#vmBtnNewVendor");
+    if (!$btn.length) return;
+    if (G_IsClientOrVendor === "C") {
+        $btn.hide();
+    } else {
+        $btn.show();
+    }
+}
+function getVendorMasterHiddenColumns() {
+    var cols = [
+        "Code",
+        "Short Code",
+        "Category",
+        "Active",
+        "PAN No",
+        "Verified",
+        "CityMaster_Code",
+        "StateMaster_Code",
+        "CountryMaster_Code",
+        "VerifiedBy",
+        "VerifiedByName",
+        "VerifiedByDesp",
+        "VerifiedON",
+        "VerifiedOn",
+        "Verify By",
+        "Verified By",
+        "Verified ON",
+        "Verified On",
+    ];
+    if (G_IsClientOrVendor === "C") {
+        cols.push("Action");
+    }
+    return cols;
+}
+function getVendorMasterColumnAlignment() {
+    var ca = {};
+    if (window.G_VendorHasVerifyRight) {
+        ca.Verify = "center;min-width:96px;white-space:nowrap;";
+    }
+    if (G_IsClientOrVendor === "V") {
+        ca.Action = "center;min-width:120px;white-space:nowrap;";
+    }
+    return ca;
+}
+function syncVendorStatChipClasses() {
+    var mode = window.G_VendorStatFilter || "all";
+    $(".vm-stat-chip[data-vm-filter]").removeClass("vm-stat-chip--active").attr("aria-pressed", "false");
+    $('.vm-stat-chip[data-vm-filter="' + mode + '"]').addClass("vm-stat-chip--active").attr("aria-pressed", "true");
+}
+function refreshVendorMasterGrid() {
+    var source = window.G_VendorMasterSourceRows || [];
+    var mode = window.G_VendorStatFilter || "all";
+    if (source.length === 0) return;
+
+    var filtered = filterVendorRowsByStat(source, mode);
+    var mapped = mapVendorRowsToGrid(filtered);
+
+    const StringFilterColumn = ["Account Name", "GSTN No", "Phone", "Email", "City", "State", "Country", "Pin Code"];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = [];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = getVendorMasterHiddenColumns();
+    const ColumnAlignment = getVendorMasterColumnAlignment();
+
+    if (typeof window.columnFilters === "object" && window.columnFilters !== null) {
+        window.columnFilters = {};
+    }
+
+    if (mapped.length === 0) {
+        window.filteredData_VendorMaster = [];
+        window.filteredDataTemp_VendorMaster = [];
+        window.currentPage_VendorMaster = 1;
+        var colCount = $("#VendorMaster-header th:visible").length;
+        if (!colCount) colCount = 1;
+        $("#VendorMaster-body").html(
+            '<tr><td colspan="' +
+                colCount +
+                '" style="text-align:center;padding:28px;color:#6b7280;">No data found</td></tr>'
+        );
+        $("#VendorMaster-header").find("th span.filter-table-heading .fa-filter").remove();
+        if (typeof window.updatePageInfo === "function") window.updatePageInfo("VendorMaster");
+        if (typeof window.updateButtons === "function") window.updateButtons("VendorMaster");
+        if (typeof window.updateFilteredClass === "function") window.updateFilteredClass("VendorMaster-body");
+        syncVendorStatChipClasses();
+        return;
+    }
+
+    BizsolCustomFilterGrid.CreateDataTable(
+        "VendorMaster-header",
+        "VendorMaster-body",
+        mapped,
+        Button,
+        showButtons,
+        StringFilterColumn,
+        NumericFilterColumn,
+        DateFilterColumn,
+        StringdoubleFilterColumn,
+        hiddenColumns,
+        ColumnAlignment
+    );
+    syncVendorStatChipClasses();
+}
 function GetVendorMasterList() {
-    VendorMasterService.GetSolarVendorMasterList().then(function (response) {
+
+        VendorMasterService.GetSolarVendorMasterList(G_IsClientOrVendor).then(function (response) {
         var rows = [];
         if (Array.isArray(response)) rows = response;
         else if (Array.isArray(response.data)) rows = response.data;
         else if (Array.isArray(response.Data)) rows = response.Data;
 
+        updateVendorMasterStats(rows);
+        window.G_VendorMasterSourceRows = rows;
+        window.G_VendorStatFilter = "all";
+
         if (rows.length > 0) {
             $("#tblVendorMaster").show();
-            const StringFilterColumn = ["Account Name", "GSTN No", "Phone", "Email", "City", "State", "Country", "Pin Code"];
-            const NumericFilterColumn = [];
-            const DateFilterColumn = [];
-            const Button = false;
-            const showButtons = [];
-            const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Code", "Short Code", "Category", "Active", "PAN No", "CityMaster_Code", "StateMaster_Code", "CountryMaster_Code"];
-            const ColumnAlignment = {
-
-                "Action": "center;width:118px;",
-            };
-
-            var updatedResponse = rows.map(function (item) {
-                var btns =
-                    '<button class="vm-btn-view" title="View" onclick="ViewVendor(' + item.Code + ')">' +
-                    '<i class="fas fa-eye"></i>' +
-                    '</button>' +
-                    '<button class="vm-btn-edit" title="Edit" onclick="EditVendor(' + item.Code + ')">' +
-                    '<i class="fas fa-pen"></i>' +
-                    '</button>' +
-                    '<button class="vm-btn-delete" title="Delete" onclick="ConfirmVendorDelete(' + item.Code + ')">' +
-                    '<i class="fas fa-trash-can"></i>' +
-                    '</button>';
-                return Object.assign({}, item, { Action: btns });
-            });
-
-            BizsolCustomFilterGrid.CreateDataTable(
-                "VendorMaster-header", "VendorMaster-body",
-                updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment
-            );
+            refreshVendorMasterGrid();
         } else {
             toastr.warning("No vendors found. Add your first vendor!");
             $("#tblVendorMaster").hide();
         }
     }).catch(function () {
+        updateVendorMasterStats([]);
+        window.G_VendorMasterSourceRows = [];
         toastr.error("Failed to load vendor list.");
     });
 }
-
-// ── Open New Form ───────────────────────────────────────────
 function OpenNewVendor() {
-
     G_EditCode = 0;
     ClearVendorForm();
     $("#vmFormModalTitle").text("Add New Vendor");
@@ -166,10 +461,8 @@ function OpenNewVendor() {
     $("#vendorDialogBackdrop").addClass("show");
     setTimeout(function () { $("#AccountDesp").focus(); }, 140);
 }
-
-// ── Open Edit Form ──────────────────────────────────────────
 function EditVendor(code) {
-    var ModuleName = "Vendor Master",
+    var ModuleName = G_ModuleName,
         OptionName = "Edit",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
@@ -275,10 +568,8 @@ function EditVendor(code) {
         toastr.error("Permission check failed.");
     });
 }
-
-// ── View Vendor ─────────────────────────────────────────────
 function ViewVendor(code) {
-    var ModuleName = "Vendor Master",
+    var ModuleName = G_ModuleName,
         OptionName = "View",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
@@ -360,27 +651,75 @@ function ViewVendor(code) {
     });
 }
 
+function VerifyVendor(code) {
+    G_VendorVerifyCode = code;
+    var isClient = G_IsClientOrVendor === "C";
+    var noun = isClient ? "client" : "vendor";
+    $("#vmVerifyConfirmTitle").text("Verify this " + noun + "?");
+    $("#vmVerifyConfirmText").text("This will mark the " + noun + " as verified.");
+    $("#vmVerifyConfirmBackdrop").addClass("show");
+}
+
+function CloseVendorVerifyModal() {
+    G_VendorVerifyCode = 0;
+    $("#vmVerifyConfirmBackdrop").removeClass("show");
+}
+
+function DoVendorVerify() {
+    var code = G_VendorVerifyCode;
+    if (!code) {
+        CloseVendorVerifyModal();
+        return;
+    }
+    var ModuleName = G_ModuleName,
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight === "N") {
+            toastr.error(response.Msg);
+            CloseVendorVerifyModal();
+            return;
+        }
+        VendorMasterService.VerifySolarVendorMaster(code)
+            .then(function (res) {
+                var ok = res && (res.Status === "Y" || res.status === "Y");
+                if (ok) {
+                    CloseVendorVerifyModal();
+                    toastr.success(res.Msg || "Verified successfully.");
+                    GetVendorMasterList();
+                } else {
+                    toastr.error((res && (res.Msg || res.message)) || "Verify failed.");
+                }
+            })
+            .catch(function () {
+                toastr.error("Verify failed. Please try again.");
+            });
+    }).catch(function (err) {
+        console.error("DoVendorVerify permission check error:", err);
+        toastr.error("Permission check failed.");
+        CloseVendorVerifyModal();
+    });
+}
+
 function CloseVendorViewModal() {
     G_ViewCode = 0;
     $("#viewVendorBackdrop").removeClass("show");
 }
-
 function EditFromVendorView() {
     var codeToEdit = G_ViewCode;
     CloseVendorViewModal();
     EditVendor(codeToEdit);
 }
-
-// ── Delete Flow ─────────────────────────────────────────────
 function ConfirmVendorDelete(code) {
     G_EditCode = code;
     $("#vmReasonForDeleteInput").val("");
     $("#vmDeleteConfirmBackdrop").addClass("show");
     setTimeout(function () { $("#vmReasonForDeleteInput").focus(); }, 150);
 }
-
 function DoVendorDelete() {
-    var ModuleName = "Vendor Master",
+    var ModuleName = G_ModuleName,
         OptionName = "Delete",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
@@ -416,11 +755,9 @@ function DoVendorDelete() {
 
     });
 }
-
-// ── Save / Update ────────────────────────────────────────────
 function SaveVendor() {
     var isEdit     = G_EditCode > 0;
-    var ModuleName = "Vendor Master";
+    var ModuleName = G_ModuleName;
     var OptionName = isEdit ? "Edit" : "New";   // ✔ correct option per mode
     var ShowMsg    = "Y";
     var FinYear    = getFinancialYear();
@@ -469,8 +806,6 @@ function SaveVendor() {
             toastr.error("Permission check failed. Please refresh and try again.");
         });
 }
-
-// ── Helpers ─────────────────────────────────────────────────
 function BuildVendorPayload() {
     var vendorCode = parseInt(G_EditCode) || 0;
 
@@ -701,7 +1036,6 @@ function BuildVendorPayload() {
         UserMasterCode: G_UserMasterCode
     };
 }
-
 function ValidateVendorForm() {
     var valid = true;
 
@@ -739,7 +1073,6 @@ function ValidateVendorForm() {
     console.log("ValidateVendorForm result:", valid);
     return valid;
 }
-
 function validateGST(showError) {
     var gstVal = $("#GSTNNo").val();
     if (!gstVal) {
@@ -759,8 +1092,6 @@ function validateGST(showError) {
     $("#GSTNNo").removeClass("vm-input-error");
     return true;
 }
-
-
 function validatePhone(showError) {
     var phoneVal = $("#PhoneNo").val();
     if (!phoneVal) {
@@ -780,7 +1111,6 @@ function validatePhone(showError) {
     $("#PhoneNo").removeClass("vm-input-error");
     return true;
 }
-
 function validateCPMobile(showError) {
     var val = $("#ContactPersonMobile").val();
     if (!val) {
@@ -805,7 +1135,6 @@ function validateCPMobile(showError) {
     $("#PhoneNo").removeClass("vm-input-error");
     return true;
 }
-
 function validateCPEmail(showError) {
     var val = $("#ContactPersonEMail").val();
     if (!val) {
@@ -825,7 +1154,6 @@ function validateCPEmail(showError) {
     $("#ContactPersonEMail").removeClass("vm-input-error");
     return true;
 }
-
 function ClearVendorForm() {
     // VendorMaster fields
     ["AccountDesp", "BillName", "GSTNNo", "EMail", "PhoneNo", "Address1", "City", "State", "Nation", "PinCode"].forEach(function (id) {
@@ -865,14 +1193,12 @@ function ClearVendorForm() {
     $("#vmBtnSaveVendor").show().prop("disabled", false);
     $("#vmBtnCancelVendor").html('<i class="fas fa-times"></i> Cancel');
 }
-
 function CloseVendorForm() {
     ClearVendorForm();
     G_EditCode = 0;
     G_ViewCode = 0;
     $("#vendorDialogBackdrop").removeClass("show");
 }
-
 function ShowVendorSuccessModal(title, text, iconClass) {
     $("#vmSuccessModalTitle").text(title || "Done!");
     $("#vmSuccessModalText").text(text || "Operation completed successfully.");
@@ -881,11 +1207,9 @@ function ShowVendorSuccessModal(title, text, iconClass) {
         .addClass("fas " + (iconClass || "fa-circle-check"));
     $("#vmSuccessBackdrop").addClass("show");
 }
-
 function CloseVendorSuccessModal() {
     $("#vmSuccessBackdrop").removeClass("show");
 }
-
 function getFinancialYear() {
     var d = new Date();
     var month = d.getMonth();
@@ -940,10 +1264,12 @@ function SelectOptionByText(Id, FindText) {
     })
 }
 
-// ── Expose to global scope ──────────────────────────────────
 window.OpenNewVendor = OpenNewVendor;
 window.EditVendor = EditVendor;
 window.ViewVendor = ViewVendor;
+window.VerifyVendor = VerifyVendor;
+window.CloseVendorVerifyModal = CloseVendorVerifyModal;
+window.DoVendorVerify = DoVendorVerify;
 window.CloseVendorViewModal = CloseVendorViewModal;
 window.EditFromVendorView = EditFromVendorView;
 window.ConfirmVendorDelete = ConfirmVendorDelete;

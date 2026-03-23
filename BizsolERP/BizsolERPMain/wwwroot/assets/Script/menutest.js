@@ -155,10 +155,42 @@ function getChildMenu(value, masterCode, baseUrl) {
     return childMenuHtml;
 }
 
-function setActiveMenu() {
+function normalizeModuleDesp(value) {
+    if (value == null || value === '') return '';
+    try {
+        return decodeURIComponent(String(value)).trim();
+    } catch (e) {
+        return String(value).trim();
+    }
+}
+
+function menuLinkMatchesCurrentPage(menuLink) {
+    if (!menuLink || menuLink.indexOf('javascript:') === 0) return false;
     var currentUrl = window.location.pathname;
     const LastChar = currentUrl.slice(-1);
+    const currentParams = new URLSearchParams(window.location.search);
+    const currentModuleDesp = currentParams.get('ModuleDesp');
+    try {
+        var menuUrl = new URL(menuLink, window.location.origin);
+        var pathnameMatch =
+            currentUrl === menuUrl.pathname && currentUrl !== '/' && LastChar !== '/';
+        if (!pathnameMatch) return false;
+        if (currentModuleDesp) {
+            var menuModuleDesp = menuUrl.searchParams.get('ModuleDesp');
+            if (
+                normalizeModuleDesp(menuModuleDesp) !==
+                normalizeModuleDesp(currentModuleDesp)
+            ) {
+                return false;
+            }
+        }
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
 
+function setActiveMenu() {
     // Initially hide all submenus
     $('#sidebar-menu .sub-menu').hide();
     $('#sidebar-menu .sidebar-menu-item').removeClass('active');
@@ -167,7 +199,7 @@ function setActiveMenu() {
     // Find and activate the current page menu item
     $('#sidebar-menu a').each(function () {
         var menuLink = $(this).attr('href');
-        if (menuLink && menuLink !== 'javascript:void(0);' && (currentUrl === new URL(menuLink, window.location.origin).pathname) && currentUrl !== "/" && LastChar !='/') {
+        if (menuLink && menuLink !== 'javascript:void(0);' && menuLinkMatchesCurrentPage(menuLink)) {
             $(this).addClass('active');
 
             // Show all parent submenus
@@ -182,7 +214,7 @@ function setActiveMenu() {
     // Set active state for mobile nav
     $('.mobile-nav-item').each(function () {
         var menuLink = $(this).attr('href');
-        if (menuLink && menuLink !== 'javascript:void(0);' && (currentUrl === new URL(menuLink, window.location.origin).pathname) && currentUrl !== "/" && LastChar !='/') {
+        if (menuLink && menuLink !== 'javascript:void(0);' && menuLinkMatchesCurrentPage(menuLink)) {
             $(this).addClass('active');
         }
     });
