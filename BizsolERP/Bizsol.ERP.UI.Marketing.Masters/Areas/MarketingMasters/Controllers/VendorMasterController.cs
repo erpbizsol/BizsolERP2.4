@@ -9,5 +9,13 @@ namespace Bizsol.WebERP.UI.Marketing.Masters.Areas.MarketingMasters.Controllers
         {
             return View();
         }
+        public IActionResult TransporterMaster()
+        {
+            return View();
+        }
+        public IActionResult Ledger()
+        {
+            return View();
+        }
     }
 }
