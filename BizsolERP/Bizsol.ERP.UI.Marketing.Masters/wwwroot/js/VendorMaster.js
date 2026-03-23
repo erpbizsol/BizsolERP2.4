@@ -785,6 +785,7 @@ function validateCPMobile(showError) {
     var val = $("#ContactPersonMobile").val();
     if (!val) {
         $("#err_ContactPersonMobile").hide();
+        $("#err_PhoneNo").hide();
         $("#ContactPersonMobile").removeClass("vm-input-error");
         return true;
     }
@@ -792,12 +793,16 @@ function validateCPMobile(showError) {
     if (!pattern.test(val)) {
         if (showError) {
             $("#err_ContactPersonMobile").css("display", "flex");
+            $("#err_PhoneNo").css("display", "flex");
             $("#ContactPersonMobile").addClass("vm-input-error");
+            $("#PhoneNo").addClass("vm-input-error");
         }
         return false;
     }
     $("#err_ContactPersonMobile").hide();
+    $("#err_PhoneNo").hide();
     $("#ContactPersonMobile").removeClass("vm-input-error");
+    $("#PhoneNo").removeClass("vm-input-error");
     return true;
 }
 
@@ -842,9 +847,13 @@ function ClearVendorForm() {
     $("#ContactPersonName").val("");
     $("#ContactPersonDesignation").val("");
     $("#ContactPersonMobile").val("").removeClass("vm-input-error");
+    $("#PhoneNo").val("").removeClass("vm-input-error");
     $("#err_ContactPersonMobile").hide();
+    $("#err_PhoneNo").hide();
     $("#ContactPersonEMail").val("").removeClass("vm-input-error");
+    $("#EMail").val("").removeClass("vm-input-error");
     $("#err_ContactPersonEMail").hide();
+    $("#err_EMail").hide();
 
     // BankAccount fields
     $("#BankName").val("");
