@@ -93,6 +93,20 @@ const PurchaseOrderStoreService = {
 
     GetPOApprovedList: function GetPOApprovedList() {
         return PurchaseOrderStoreService.Getddl('APPROVEDLIST');
+    },
+
+    GetBillToShipToList: function GetBillToShipToList() {
+        return PurchaseOrderStoreService.Getddl('DDL_BILLTOSHIPTOADDRLIST');
+    },
+
+    SaveBillToShipToAddress: function SaveBillToShipToAddress(payload) {
+        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/SaveBillToShipToAddress`;
+        return promiseAjaxCallApi.CallAPI('POST', url, payload).then(function (value) { return value; });
+    },
+
+    SavePaymentTerms: function SavePaymentTerms(payload) {
+        let url = UrlService.API_ENDPOINT_PAYMENT_TERMS_MASTER + `/SavePaymentTermsMaster`;
+        return promiseAjaxCallApi.CallAPI('POST', url, payload).then(function (value) { return value; });
     }
 
 }
