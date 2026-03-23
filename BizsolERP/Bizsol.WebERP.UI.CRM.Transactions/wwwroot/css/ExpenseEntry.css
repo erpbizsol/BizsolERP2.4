@@ -1,0 +1,512 @@
+/* Expense Entry Pages - Matches Layout, Project Master, BOM, Purchase Order design */
+/* Uses Layout CSS variables: --primary-gradient, --accent-primary, --white-bg, --border-color, etc. */
+
+/* ── Page wrapper (matches pm-page, bom-page) ───────────────────────── */
+.ee-page {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding: 4px 0 32px;
+}
+
+/* ── Card (matches pm-card, bom-card) ───────────────────────────────── */
+.expense-entry-card {
+    background: var(--white-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    position: relative;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.expense-entry-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--primary-gradient);
+    border-radius: 20px 20px 0 0;
+}
+
+.expense-entry-card:hover {
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.13);
+}
+
+.expense-entry-card.expense-entry-card-table {
+    padding: 0;
+}
+
+.expense-entry-card.expense-entry-card-table #tblExpenseEntryList,
+.expense-entry-card.expense-entry-card-table #tblExpenseEntryDetails,
+.expense-entry-card.expense-entry-card-table #tblExpenseHeadMaster,
+.expense-entry-card.expense-entry-card-table #tblExpenseHeadLimitDetails,
+.expense-entry-card.expense-entry-card-table #tblCommonSingleEntryForm {
+    padding: 0;
+}
+
+.expense-entry-card.expense-entry-card-table .paginator {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border-light);
+}
+
+.expense-entry-card.expense-entry-card-table::before {
+    height: 3px;
+}
+
+/* ── Fieldset / form section ─────────────────────────────────────────── */
+.expense-entry-fieldset {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.expense-entry-fieldset::before {
+    display: none;
+}
+
+/* ── Form Controls (matches bom-fg, po form-control) ─────────────────── */
+.expense-entry-card .form-label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.box_border.form-control,
+.box_border.form-select,
+.expense-entry-card .form-control,
+.expense-entry-card .form-select {
+    padding: 9px 13px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-color);
+    font-size: 13.5px;
+    outline: none;
+    background: var(--white-bg);
+    color: var(--text-dark);
+    transition: border-color .2s, box-shadow .2s, background .2s;
+}
+
+.box_border.form-control:focus,
+.box_border.form-select:focus,
+.expense-entry-card .form-control:focus,
+.expense-entry-card .form-select:focus {
+    border-color: var(--accent-primary);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
+    outline: none;
+}
+
+/* ── Table wrapper (matches pm-table-wrap, bom-table-wrap) ───────────── */
+.expense-entry-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(100vh - 360px);
+    overflow-y: auto;
+}
+
+.expense-entry-table-limit {
+    max-height: 320px;
+}
+
+/* ── Table header (matches pm-table, items-table: #4f46e5 to #667eea) ── */
+.expense-entry-table-wrapper .table {
+    margin-bottom: 0;
+    font-size: 13.5px;
+}
+
+.expense-entry-table-wrapper .table thead {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: transparent;
+    --bs-table-hover-bg: transparent;
+}
+
+.expense-entry-table-wrapper .table thead th {
+    color: #fff !important;
+    background: transparent !important;
+    font-weight: 700;
+    padding: 13px 16px;
+    text-align: left;
+    white-space: nowrap;
+    border: none !important;
+    font-size: 12px;
+    letter-spacing: .04em;
+}
+
+.expense-entry-table-wrapper .table thead th .filter-table-heading,
+.expense-entry-table-wrapper .table thead th .table-filter-arrow,
+.expense-entry-table-wrapper .table thead th .fa,
+.expense-entry-table-wrapper .table thead th i {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.expense-entry-table-wrapper .table thead th .dropdown-content {
+    background: var(--white-bg);
+}
+
+.expense-entry-table-wrapper .table thead th .dropdown-item {
+    color: var(--text-dark);
+}
+
+/* ── Table body (matches pm-table striped rows) ──────────────────────── */
+.expense-entry-table-wrapper .table tbody tr {
+    transition: background .12s;
+    --bs-table-bg: transparent;
+}
+
+.expense-entry-table-wrapper .table tbody tr:nth-child(even) {
+    background: var(--light-bg) !important;
+}
+
+.expense-entry-table-wrapper .table tbody tr:nth-child(odd) {
+    background: #fff !important;
+}
+
+.expense-entry-table-wrapper .table tbody tr:hover {
+    background: rgba(102, 126, 234, .07) !important;
+}
+
+.expense-entry-table-wrapper .table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-light) !important;
+    color: var(--text-dark) !important;
+    background: transparent !important;
+    vertical-align: middle;
+}
+
+.expense-entry-table-wrapper .table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+/* ── Empty state (matches pm-empty) ─────────────────────────────────── */
+.expense-entry-empty-row td {
+    text-align: center !important;
+    padding: 56px 20px !important;
+    color: var(--text-muted);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.expense-entry-empty-row td span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.expense-entry-empty-row td span::before {
+    content: '\f06a';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: var(--accent-warning);
+}
+
+/* ── Buttons (matches pm-btn-new, Layout gradients) ───────────────────── */
+.expense-entry-actions .btn,
+.expense-entry-card .btn {
+    border-radius: 12px;
+    font-weight: 700;
+    transition: transform .15s, box-shadow .15s;
+}
+
+.expense-entry-actions .btn-primary,
+.expense-entry-card .btn.btn-primary {
+    background: var(--primary-gradient);
+    border: none;
+    color: #fff;
+    box-shadow: var(--shadow-primary);
+}
+
+.expense-entry-actions .btn-primary:hover,
+.expense-entry-card .btn.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(102, 126, 234, .45);
+}
+
+.expense-entry-actions .btn-success,
+.expense-entry-card .btn.btn-success {
+    background: var(--success-gradient);
+    border: none;
+    color: #fff;
+}
+
+.expense-entry-actions .btn-success:hover,
+.expense-entry-card .btn.btn-success:hover {
+    transform: translateY(-2px);
+}
+
+.expense-entry-actions .btn-secondary,
+.expense-entry-card .btn.btn-secondary {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    border: none;
+    color: #fff;
+}
+
+.expense-entry-actions .btn-secondary:hover,
+.expense-entry-card .btn.btn-secondary:hover {
+    transform: translateY(-2px);
+}
+
+.expense-entry-actions .btn-warning,
+.expense-entry-card .btn.btn-warning {
+    background: var(--warning-gradient);
+    border: none;
+    color: #fff;
+}
+
+.expense-entry-actions .btn-warning:hover,
+.expense-entry-card .btn.btn-warning:hover {
+    transform: translateY(-2px);
+}
+
+.expense-entry-actions .btn-info,
+.expense-entry-card .btn.btn-info {
+    background: var(--info-gradient);
+    border: none;
+    color: #fff;
+}
+
+/* ── Button alignment ───────────────────────────────────────────────── */
+.without-label-field {
+    display: flex;
+    align-items: flex-end;
+}
+
+/* ── Modal (matches po/step cards) ──────────────────────────────────── */
+.expense-entry-modal .modal-content {
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.13);
+}
+
+.expense-entry-modal .modal-header {
+    background: #fafbff;
+    border-bottom: 1px solid #eef0f8;
+    border-radius: 14px 14px 0 0;
+}
+
+/* ── VendorMaster-style confirmation modals ─────────────────────────── */
+.ee-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 12, 36, 0.54);
+    backdrop-filter: blur(5px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    padding: 20px 12px;
+}
+.ee-backdrop.show { display: flex; }
+body:has(.ee-backdrop.show) { overflow: hidden; }
+
+.ee-delete-modal, .ee-success-modal, .ee-confirm-modal {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 20px 56px rgba(8, 12, 36, 0.24);
+    animation: ee-modal-up 0.24s cubic-bezier(0.34, 1.46, 0.64, 1);
+}
+@keyframes ee-modal-up {
+    from { transform: translateY(22px) scale(0.97); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.ee-delete-modal, .ee-confirm-modal {
+    width: 370px;
+    max-width: calc(100vw - 20px);
+    padding: 32px 24px 24px;
+    text-align: center;
+}
+.ee-delete-icon-wrap {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: #ef4444;
+    margin: 0 auto 14px;
+    box-shadow: 0 5px 16px rgba(239, 68, 68, 0.16);
+}
+.ee-confirm-icon-wrap {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: #f59e0b;
+    margin: 0 auto 14px;
+    box-shadow: 0 5px 16px rgba(245, 158, 11, 0.2);
+}
+.ee-delete-title, .ee-confirm-title { font-size: 17px; font-weight: 700; color: #111827; margin-bottom: 7px; }
+.ee-delete-text, .ee-confirm-text { font-size: 13px; color: #6b7280; line-height: 1.5; margin-bottom: 22px; }
+.ee-delete-reason { margin: 0 0 18px; text-align: left; }
+.ee-delete-reason-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #4b5563;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+.ee-delete-reason-input {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 9px;
+    border: 1.5px solid #dde0ee;
+    font-size: 13px;
+    color: #111827;
+    background: #f8f9fc;
+    outline: none;
+}
+.ee-delete-reason-input:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    background: #fff;
+}
+.ee-delete-actions, .ee-confirm-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.ee-btn-confirm-delete {
+    padding: 9px 22px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 5px 16px rgba(239, 68, 68, 0.32);
+    transition: all 0.14s;
+}
+.ee-btn-confirm-delete:hover {
+    box-shadow: 0 7px 22px rgba(239, 68, 68, 0.48);
+    transform: translateY(-1px);
+}
+.ee-success-modal {
+    width: 370px;
+    max-width: calc(100vw - 20px);
+    padding: 32px 24px 24px;
+    text-align: center;
+}
+.ee-success-icon-wrap {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #eef2ff, #c7d2fe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    color: #5b5ef4;
+    margin: 0 auto 16px;
+    box-shadow: 0 6px 20px rgba(91, 94, 244, 0.18);
+}
+.ee-success-title { font-size: 17px; font-weight: 700; color: #111827; margin-bottom: 7px; }
+.ee-success-text { font-size: 13px; color: #6b7280; line-height: 1.5; margin-bottom: 22px; }
+.ee-btn-success-ok {
+    padding: 9px 34px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, #5b5ef4, #a855f7);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 5px 16px rgba(91, 94, 244, 0.32);
+    transition: all 0.14s;
+}
+.ee-btn-success-ok:hover {
+    box-shadow: 0 7px 22px rgba(91, 94, 244, 0.48);
+    transform: translateY(-1px);
+}
+.ee-btn-cancel {
+    padding: 9px 20px;
+    border-radius: 999px;
+    border: 1.5px solid #d4d7e8;
+    background: #fff;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.13s;
+}
+.ee-btn-cancel:hover { background: #f5f5fb; border-color: #9ca3af; }
+
+/* ── Datepicker ─────────────────────────────────────────────────────── */
+.highlighted-date {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    border-radius: 30px !important;
+}
+
+/* ── Hide number spinners ──────────────────────────────────────────── */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 991px) {
+    .expense-entry-card {
+        padding: 1rem;
+    }
+
+    .expense-entry-table-wrapper {
+        max-height: calc(100vh - 320px);
+    }
+}
+
+@media (max-width: 768px) {
+    .expense-entry-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 14px;
+    }
+
+    .expense-entry-card::before {
+        border-radius: 14px 14px 0 0;
+    }
+
+    .without-label-field {
+        margin-top: 0.5rem;
+        align-items: stretch;
+    }
+
+    .expense-entry-actions .btn {
+        flex: 1;
+        min-width: 120px;
+    }
+}
+
+@media (max-width: 576px) {
+    .expense-entry-card {
+        padding: 0.75rem;
+    }
+
+    .expense-entry-table-wrapper .table thead th,
+    .expense-entry-table-wrapper .table td {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .expense-entry-actions .btn {
+        width: 100%;
+    }
+}

@@ -1,105 +1,94 @@
-﻿@{
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <script src="~/assets/js/jquery-3.6.0.min.js"></script>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.CRM.Transactions/css/ExpenseEntry.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/ExpenseHeadMaster.js"></script>
-<style>
-    .fixed-height-table-limit{
-        height: 320px;
-    }
-</style>
-<div id="locateExpenseHeadMaster">
-    <div class="card col-md-8">
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-12 text-end">
-                    <button type="button" onclick="CreateNew_ExpenseHeadMaster()" title="Create New" class="btn btn-primary btn-height">Create New</button>
-                    <button type="button" id="btnExpenseEntryListDetails" title="Back" class="btn btn-primary btn-height">Back</button>
-                </div>
-            </div>
+
+<div id="locateExpenseHeadMaster" class="row g-3 mx-0">
+    <div class="expense-entry-card col-12 col-lg-10 col-xl-8">
+        <div class="d-flex flex-wrap gap-2 justify-content-end">
+            <button type="button" onclick="CreateNew_ExpenseHeadMaster()" title="Create New" class="btn btn-success btn-height">Create New</button>
+            <button type="button" id="btnExpenseEntryListDetails" title="Back" class="btn btn-secondary btn-height">Back</button>
         </div>
     </div>
-    <div class="row">
-        <div class="col-md-8">
-            <div id="tblExpenseHeadMaster">
-                <div class="table-wrapper fixed-height-table">
-                    <table id="ExpenseHeadMaster" class="fixed-width-table table">
-                        <thead id="table-header-ExpenseHeadMaster">
-                        </thead>
-                        <tbody id="table-body-ExpenseHeadMaster">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="paginator" id="paginator-ExpenseHeadMaster">
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="newCreateForm" class="card col-md-8" style="display:none">
-    <form class="card-body">
-        <div class="row">
-            <input type="hidden" name="Code" id="Code" class="form-control" value="0">
-
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label for="txtExpenseDescription" class="col-form-label-sm fw-bold">Expense Description:<span class="text-danger">*</span></label>
-                    <input id="txtExpenseDescription" type="text" name="txtExpenseDescription" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Expense Description" maxlength="11" required />
-                </div>
-            </div>
-            <div class="col-md-9 text-end" style="margin-top:2rem">
-                <button type="button" id="btnExpenseEntryListBack" class="btn btn-primary btn-height" title="Back" onclick="ExpenseHeadMaster_Back()">Back</button>
-            </div>
-        </div>
-    </form>
-</div>
-<div id="newCreateFormExpenseHeadLimit" class="card col-md-8" style="display:none">
-    <form class="card-body">
-        <div class="row">
-            
-
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label for="txtDesignation" class="col-form-label-sm fw-bold">Expense Category:<span class="text-danger">*</span></label>
-                    <select id="txtDesignation" class="form-control form-control-sm box_border"></select>
-                </div>
-            </div> 
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label for="txtEffectiveDate" class="col-form-label-sm fw-bold">Effective Date:<span class="text-danger">*</span></label>
-                    <input type="date" id="txtEffectiveDate" name="txtEffectiveDate" class="box_border form-control form-control-sm" required />
-                </div>
-            </div> 
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label for="txtPerDayLimit" class="col-form-label-sm fw-bold">Per Day Limit:<span class="text-danger">*</span></label>
-                    <input id="txtPerDayLimit" type="text" name="txtPerDayLimit" class="box_border form-control form-control-sm text-end" autocomplete="off" maxlength="8" oninput="validateDecimalInput(this)" required />
-                </div>
-            </div>
-
-            <div class="col-md-3 text-end" style="margin-top:2rem">
-                <button type="button" onclick="submit_ExpenseHeadMaster()" id="saveExpenseHeadMasterButton" title="Save" class="btn btn-primary btn-height">Save</button>
-            </div>
-        </div>
-    </form>
-</div>
-<div class="row">
-    <div class="col-md-8">
-        <div id="tblExpenseHeadLimitDetails">
-            <div class="table-wrapper fixed-height-table-limit">
-                <table id="ExpenseHeadLimitDetails" class="fixed-width-table table">
-                    <thead id="table-header-ExpenseHeadLimitDetails">
-                    </thead>
-                    <tbody id="table-body-ExpenseHeadLimitDetails">
-                    </tbody>
+    <div class="expense-entry-card expense-entry-card-table col-12 col-lg-10 col-xl-8" id="cardExpenseHeadMaster">
+        <div id="tblExpenseHeadMaster">
+            <div class="expense-entry-table-wrapper">
+                <table id="ExpenseHeadMaster" class="fixed-width-table table">
+                    <thead id="table-header-ExpenseHeadMaster"></thead>
+                    <tbody id="table-body-ExpenseHeadMaster"></tbody>
                 </table>
             </div>
-            <div class="paginator" id="paginator-ExpenseHeadLimitDetails">
+            <div class="paginator" id="paginator-ExpenseHeadMaster"></div>
+        </div>
+    </div>
+</div>
+
+<div id="newCreateForm" class="row g-3" style="display:none">
+    <div class="expense-entry-card col-12 col-lg-10 col-xl-8">
+    <form>
+        <input type="hidden" name="Code" id="Code" value="0">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-sm-6 col-md-4">
+                <label for="txtExpenseDescription" class="form-label fw-bold">Expense Description <span class="text-danger">*</span></label>
+                <input id="txtExpenseDescription" type="text" name="txtExpenseDescription" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Expense Description" maxlength="11" required />
+            </div>
+                <div class="col-12 col-sm-6 col-md-4 without-label-field" style="margin-bottom:0.8rem">
+                <button type="button" id="btnExpenseEntryListBack" class="btn btn-secondary btn-height" title="Back" onclick="ExpenseHeadMaster_Back()">Back</button>
             </div>
         </div>
+    </form>
+    </div>
+</div>
+
+<div id="newCreateFormExpenseHeadLimit" class="row g-3" style="display:none">
+    <div class="expense-entry-card col-12 col-lg-10 col-xl-8">
+    <form>
+        <div class="row g-3 align-items-end">
+                <div class="col-12 col-sm-6 col-md-4" style="margin-bottom:auto">
+                <label for="txtDesignation" class="form-label fw-bold">Expense Category <span class="text-danger">*</span></label>
+                <select id="txtDesignation" class="form-control form-control-sm box_border"></select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4">
+                <label for="txtEffectiveDate" class="form-label fw-bold">Effective Date <span class="text-danger">*</span></label>
+                <input type="date" id="txtEffectiveDate" name="txtEffectiveDate" class="box_border form-control form-control-sm" required />
+            </div>
+            <div class="col-12 col-sm-6 col-md-4">
+                <label for="txtPerDayLimit" class="form-label fw-bold">Per Day Limit <span class="text-danger">*</span></label>
+                <input id="txtPerDayLimit" type="text" name="txtPerDayLimit" class="box_border form-control form-control-sm text-end" autocomplete="off" maxlength="8" oninput="validateDecimalInput(this)" required />
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 without-label-field">
+                <button type="button" onclick="submit_ExpenseHeadMaster()" id="saveExpenseHeadMasterButton" title="Save" class="btn btn-success btn-height">Save</button>
+            </div>
+        </div>
+    </form>
+    </div>
+</div>
+
+<div class="row g-3" id="rowExpenseHeadLimitDetails" style="display:none">
+    <div class="expense-entry-card expense-entry-card-table col-12 col-lg-10 col-xl-8" id="cardExpenseHeadLimitDetails">
+        <div id="tblExpenseHeadLimitDetails">
+        <div class="expense-entry-table-wrapper expense-entry-table-limit">
+            <table id="ExpenseHeadLimitDetails" class="fixed-width-table table">
+                <thead id="table-header-ExpenseHeadLimitDetails"></thead>
+                <tbody id="table-body-ExpenseHeadLimitDetails"></tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-ExpenseHeadLimitDetails"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Success modal -->
+<div id="eeSuccessBackdrop" class="ee-backdrop">
+    <div class="ee-success-modal">
+        <div class="ee-success-icon-wrap"><i id="eeSuccessModalIcon" class="fas fa-circle-check"></i></div>
+        <div class="ee-success-title" id="eeSuccessModalTitle">Done!</div>
+        <div class="ee-success-text" id="eeSuccessModalText">Operation completed successfully.</div>
+        <button type="button" class="ee-btn-success-ok" onclick="CloseExpenseHeadMasterSuccessModal()"><i class="fas fa-check"></i> OK</button>
     </div>
 </div>
