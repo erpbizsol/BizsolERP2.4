@@ -7,12 +7,10 @@ let G_CheckCreditLimitAmountBase = 'Y';
 let G_CheckCreditLimitDaysBase = 'Y';
 let CreditLimitCheck_BuyerPO = 'Y';
 let SaleOrderApprovalFixedParaMeters = [];
-/** Client-side list for card UI */
 let G_SaleOrderListRaw = [];
 let G_SaleOrderCardPage = 1;
 let G_SaleOrderPageSize = 10;
 
-/** Column keys from GetSaleOrderDetail — hidden in line grid, shown in header panel below grid */
 const SALE_ORDER_DETAIL_GRID_HIDDEN = [
     "BuyerPOMaster_OtherChargesDesp1",
     "BuyerPOMaster_OtherCharges1",
@@ -27,7 +25,6 @@ const SALE_ORDER_DETAIL_GRID_HIDDEN = [
     "Credit Limit",
     "CreditLimit",
 ];
-
 function pickRowValue(row, keys) {
     if (!row) return "";
     for (let i = 0; i < keys.length; i++) {
@@ -39,8 +36,6 @@ function pickRowValue(row, keys) {
     }
     return "";
 }
-
-/** Drop keys from each row (line-items grid: no duplicate charge / marketing columns). */
 function stripKeysFromRows(rows, keysToStrip) {
     if (!rows || !rows.length) return rows;
     const omit = new Set(keysToStrip);
@@ -52,8 +47,6 @@ function stripKeysFromRows(rows, keysToStrip) {
         return o;
     });
 }
-
-/** Prefix each delivery-terms row with Marketing Man & Credit Limit from order header. */
 function mergeTermsRowsWithMaster(termsRows, masterRow) {
     if (!termsRows || !termsRows.length) return termsRows;
     const marketing = masterRow ? pickRowValue(masterRow, ["Marketing Man", "MarketingMan"]) : "";
@@ -83,8 +76,6 @@ function mergeTermsRowsWithMaster(termsRows, masterRow) {
         return out;
     });
 }
-
-/** Map Qty KG→Qty MT, Qty SQM→Qty MR for grid headers; preserves key order from API. */
 function normalizeSaleOrderDetailRows(rows) {
     if (!rows || !rows.length) return rows;
     return rows.map(function (row) {
@@ -117,7 +108,6 @@ function normalizeSaleOrderDetailRows(rows) {
         return result;
     });
 }
-
 function populateSaleOrderDetailHeaderPanel(row) {
     $("#sod_BuyerPOMaster_OtherChargesDesp1").val(pickRowValue(row, ["BuyerPOMaster_OtherChargesDesp1"]));
     $("#sod_BuyerPOMaster_OtherCharges1").val(pickRowValue(row, ["BuyerPOMaster_OtherCharges1"]));
@@ -127,11 +117,9 @@ function populateSaleOrderDetailHeaderPanel(row) {
     $("#sod_FreightCondition").val(pickRowValue(row, ["Freight Condition", "FreightCondition"]));
     $("#sod_Freight").val(pickRowValue(row, ["Freight"]));
 }
-
 function clearSaleOrderDetailHeaderPanel() {
     $("#saleOrderDetailHeaderPanel input").val("");
 }
-
 function escapeHtml(s) {
     if (s == null || s === "") return "";
     return String(s)

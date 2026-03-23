@@ -18,7 +18,6 @@
 
     .vm-page-wrapper {
         font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-        padding: 20px 18px 30px;
         min-height: 100%;
         background: #f1f3fb;
     }
@@ -215,7 +214,12 @@
     }
 
     /* ── Action Buttons ── */
-    .vm-btn-view, .vm-btn-edit, .vm-btn-delete {
+    /* Action column: keep View / Edit / Delete on one row (grid sets inline width) */
+    #VendorMaster tbody td:last-child {
+        white-space: nowrap;
+    }
+
+    .vm-btn-view, .vm-btn-edit, .vm-btn-delete, .vm-btn-verify {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -226,6 +230,7 @@
         cursor: pointer;
         transition: all 0.13s;
         margin-right: 3px;
+        vertical-align: middle;
     }
 
     .vm-btn-view {
@@ -241,6 +246,7 @@
     .vm-btn-delete {
         background: #fef2f2;
         color: #ef4444;
+        margin-right: 0;
     }
 
     .vm-btn-view:hover {
@@ -262,6 +268,40 @@
         color: #fff;
         transform: scale(1.10);
         box-shadow: 0 3px 10px rgba(239,68,68,0.30);
+    }
+
+    .vm-btn-verify {
+        background: #ecfdf5;
+        color: #059669;
+    }
+
+    .vm-btn-verify:hover {
+        background: #059669;
+        color: #fff;
+        transform: scale(1.10);
+        box-shadow: 0 3px 10px rgba(5, 150, 105, 0.35);
+    }
+
+    .vm-verify-status--done {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: #047857;
+        background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+        border: 1px solid #34d399;
+        white-space: nowrap;
+        box-shadow: 0 1px 3px rgba(5, 80, 60, 0.12);
+    }
+
+    .vm-verify-status--with-detail {
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(5, 150, 105, 0.18);
+        user-select: none;
     }
 
     .paginator {
@@ -296,6 +336,7 @@
     .vm-modal,
     .vm-view-modal,
     .vm-delete-modal,
+    .vm-verify-modal,
     .vm-success-modal {
         margin: auto;
     }
@@ -1026,6 +1067,69 @@
         }
 
     /* ═══════════════════════════════════════════════════
+           VERIFY CONFIRM MODAL
+        ═══════════════════════════════════════════════════ */
+    .vm-verify-modal {
+        width: 370px;
+        max-width: calc(100vw - 20px);
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 20px 56px rgba(8,12,36,0.24);
+        text-align: center;
+        padding: 32px 24px 24px;
+        animation: vm-up 0.24s cubic-bezier(0.34,1.46,0.64,1);
+    }
+
+    .vm-verify-icon-wrap {
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        color: #059669;
+        margin: 0 auto 14px;
+        box-shadow: 0 5px 16px rgba(5, 150, 105, 0.18);
+    }
+
+    .vm-verify-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 7px;
+    }
+
+    .vm-verify-text {
+        font-size: 13px;
+        color: #6b7280;
+        line-height: 1.5;
+        margin-bottom: 22px;
+    }
+
+    .vm-btn-confirm-verify {
+        padding: 9px 22px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(135deg, #059669, #047857);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 5px 16px rgba(5, 150, 105, 0.32);
+        transition: all 0.14s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .vm-btn-confirm-verify:hover {
+            box-shadow: 0 7px 22px rgba(5, 150, 105, 0.45);
+            transform: translateY(-1px);
+        }
+
+    /* ═══════════════════════════════════════════════════
            SUCCESS MODAL
         ═══════════════════════════════════════════════════ */
     .vm-success-modal {
@@ -1151,9 +1255,7 @@
            RESPONSIVE — MOBILE ≤ 640px
         ═══════════════════════════════════════════════════ */
     @@media (max-width: 640px) {
-        .vm-page-wrapper {
-            padding: 10px 10px 20px;
-        }
+        
 
         .vm-card-header {
             padding: 14px 16px;
@@ -1258,6 +1360,7 @@
         }
 
         .vm-delete-modal,
+        .vm-verify-modal,
         .vm-success-modal {
             padding: 26px 16px 20px;
         }
@@ -1268,7 +1371,8 @@
         }
 
             .vm-delete-actions .vm-btn-cancel,
-            .vm-btn-confirm-delete {
+            .vm-btn-confirm-delete,
+            .vm-btn-confirm-verify {
                 width: 100%;
                 justify-content: center;
             }
@@ -1303,9 +1407,7 @@
            RESPONSIVE — SMALL ≤ 400px
         ═══════════════════════════════════════════════════ */
     @@media (max-width: 400px) {
-        .vm-page-wrapper {
-            padding: 8px 6px 14px;
-        }
+        
 
         .vm-card-header {
             padding: 12px 13px;
@@ -1499,25 +1601,179 @@
         .vm-pin-hint i {
             font-size: 10px;
         }
+
+    /* ── Summary stat cards (Project Master style) ───────────── */
+    .vm-stats-strip {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    /* Above purple header: sits in main content strip under app bar */
+    .vm-stats-strip--above-card {
+        padding: 0 0 16px;
+        margin: 0 0 4px;
+        background: transparent;
+        border: none;
+    }
+
+    .vm-stat-chip {
+        flex: 1;
+        min-width: 150px;
+        background: #fff;
+        border: 1px solid #e5e7f0;
+        border-radius: 14px;
+        padding: 14px 18px;
+        box-shadow: 0 2px 12px rgba(91, 94, 244, 0.07);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .vm-stat-chip::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 14px 14px 0 0;
+        }
+
+        .vm-stat-chip.vm-stat-total::before {
+            background: linear-gradient(90deg, #7c3aed 0%, #8b5cf6 50%, #a855f7 100%);
+        }
+
+        .vm-stat-chip.vm-stat-verified::before {
+            background: linear-gradient(90deg, #ea580c 0%, #f97316 100%);
+        }
+
+        .vm-stat-chip.vm-stat-pending::before {
+            background: linear-gradient(90deg, #0891b2 0%, #06b6d4 100%);
+        }
+
+        .vm-stat-chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(91, 94, 244, 0.12);
+        }
+
+    .vm-stat-chip[data-vm-filter] {
+        cursor: pointer;
+        user-select: none;
+    }
+
+        .vm-stat-chip[data-vm-filter]:focus-visible {
+            outline: 2px solid #5b5ef4;
+            outline-offset: 2px;
+        }
+
+        .vm-stat-chip--active {
+            border-color: #c7d2fe;
+            box-shadow: 0 4px 20px rgba(91, 94, 244, 0.18);
+            background: linear-gradient(180deg, #fafbff 0%, #fff 100%);
+        }
+
+    .vm-stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+        color: #fff;
+        flex-shrink: 0;
+        box-shadow: 0 6px 16px rgba(91, 94, 244, 0.22);
+    }
+
+    .vm-stat-total .vm-stat-icon {
+        background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+        box-shadow: 0 6px 18px rgba(139, 92, 246, 0.35);
+    }
+
+    .vm-stat-verified .vm-stat-icon {
+        background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+        box-shadow: 0 6px 18px rgba(249, 115, 22, 0.32);
+    }
+
+    .vm-stat-pending .vm-stat-icon {
+        background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
+        box-shadow: 0 6px 18px rgba(6, 182, 212, 0.3);
+    }
+
+    .vm-stat-val {
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #1e3a8a;
+        letter-spacing: -0.02em;
+    }
+
+    .vm-stat-lbl {
+        font-size: 11px;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+        margin-top: 3px;
+    }
+
+    @@media (max-width: 640px) {
+        .vm-stats-strip--above-card {
+            padding: 0 0 12px;
+        }
+
+        .vm-stat-chip {
+            min-width: calc(50% - 7px);
+        }
+    }
 </style>
 
 <div class="vm-page-wrapper">
+    <!-- ── Summary: Total / Verified / Pending — top strip (above purple header) ── -->
+    <div class="vm-stats-strip vm-stats-strip--above-card" aria-label="Vendor summary counts — click to filter the grid">
+        <div class="vm-stat-chip vm-stat-total vm-stat-chip--active" data-vm-filter="all" role="button" tabindex="0" aria-pressed="true" title="Show all vendors">
+            <div class="vm-stat-icon" aria-hidden="true"><i class="fas fa-layer-group"></i></div>
+            <div>
+                <div class="vm-stat-val" id="vmStatTotal">0</div>
+                <div class="vm-stat-lbl">Total</div>
+            </div>
+        </div>
+        <div class="vm-stat-chip vm-stat-verified" data-vm-filter="verified" role="button" tabindex="0" aria-pressed="false" title="Show verified vendors only">
+            <div class="vm-stat-icon" aria-hidden="true"><i class="fas fa-circle-check"></i></div>
+            <div>
+                <div class="vm-stat-val" id="vmStatVerified">0</div>
+                <div class="vm-stat-lbl">Verified</div>
+            </div>
+        </div>
+        <div class="vm-stat-chip vm-stat-pending" data-vm-filter="pending" role="button" tabindex="0" aria-pressed="false" title="Show pending (not verified) vendors only">
+            <div class="vm-stat-icon" aria-hidden="true"><i class="fas fa-clock"></i></div>
+            <div>
+                <div class="vm-stat-val" id="vmStatPending">0</div>
+                <div class="vm-stat-lbl">Pending</div>
+            </div>
+        </div>
+    </div>
+
     <div class="vm-card">
 
         <!-- ── Header ── -->
         <div class="vm-card-header">
             <div class="vm-header-left">
-                <div class="vm-header-icon">
+                @* <div class="vm-header-icon">
                     <i class="fas fa-store"></i>
                 </div>
                 <div>
                     <div class="vm-header-title">Vendor Master</div>
                     <div class="vm-header-sub">Manage your vendor records</div>
-                </div>
+                </div> *@
             </div>
-            <button type="button" class="vm-btn-new" onclick="OpenNewVendor()">
+            <button type="button" id="vmBtnNewVendor" class="vm-btn-new" onclick="OpenNewVendor()">
                 <i class="fas fa-plus"></i>
-                <span>New Vendor</span>
+                <span>New</span>
             </button>
         </div>
 
@@ -1918,6 +2174,27 @@
             </button>
             <button type="button" class="vm-btn-confirm-delete" onclick="DoVendorDelete()">
                 <i class="fas fa-trash-can"></i> Yes, Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ VERIFY CONFIRM ═══════════════ -->
+<div id="vmVerifyConfirmBackdrop" class="vm-backdrop">
+    <div class="vm-verify-modal">
+        <div class="vm-verify-icon-wrap">
+            <i class="fas fa-circle-check"></i>
+        </div>
+        <div class="vm-verify-title" id="vmVerifyConfirmTitle">Verify this vendor?</div>
+        <div class="vm-verify-text" id="vmVerifyConfirmText">
+            This will mark the vendor as verified.
+        </div>
+        <div class="vm-delete-actions">
+            <button type="button" class="vm-btn-cancel" id="vmBtnCancelVerify">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="vm-btn-confirm-verify" onclick="DoVendorVerify()">
+                <i class="fas fa-check"></i> Yes, Verify
             </button>
         </div>
     </div>
