@@ -15,6 +15,7 @@ let G_ProjectList = [];
 let G_SubProjectList = [];
 let G_ItemRowCount = 0;
 let G_MobileItemEditRowId = null;
+let G_BillToShipToList = [];
 
 BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
@@ -100,6 +101,7 @@ function InitDropdowns() {
     LoadItemDropdown();
     LoadUOMDropdown();
     LoadPaymentTermsDropdown();
+    LoadBillToShipToDropdown();
 }
 
 function LoadStatusDropdown() {
@@ -143,13 +145,50 @@ function LoadUOMDropdown() {
     }).catch(() => { G_UOMMasterList = []; });
 }
 
-function LoadPaymentTermsDropdown() {
+function LoadPaymentTermsDropdown(selectedCode) {
     PurchaseOrderStoreService.GetPaymentTermsList().then(function (data) {
         G_PaymentTermsList = data || [];
         let html = '<option value="">-- Select Payment Terms --</option>';
-        G_PaymentTermsList.forEach(p => { html += `<option value="${p.Code}">${p.Name}</option>`; });
+        G_PaymentTermsList.forEach(p => {
+            const sel = selectedCode && p.Code == selectedCode ? 'selected' : '';
+            html += `<option value="${p.Code}" ${sel}>${p.Name}</option>`;
+        });
         $('#frmDdlPaymentTerms').html(html);
     }).catch(() => { $('#frmDdlPaymentTerms').html('<option value="">-- Select Payment Terms --</option>'); });
+}
+
+// ─── FILTERED ITEM LIST ──────────────────────────────────────────────────────
+
+function GetFilteredItemList() {
+    const againstProject = $('#frmChkAgainstProject').is(':checked');
+    const projectCode    = parseInt($('#frmDdlProject').val())    || 0;
+    const subProjectCode = parseInt($('#frmDdlSubProject').val()) || 0;
+    const workTypeCode   = parseInt($('#frmDdlWorkType').val())   || 0;
+
+    if (againstProject && subProjectCode) {
+        return G_ItemMasterList.filter(i =>
+            i.ProjectMaster_Code    == projectCode &&
+            i.SubProjectMaster_Code == subProjectCode
+        );
+    }
+    if (workTypeCode) {
+        return G_ItemMasterList.filter(i => i.WorkTypeMaster_Code == workTypeCode);
+    }
+    return G_ItemMasterList;
+}
+
+function RefreshAllItemDropdowns() {
+    const filtered = GetFilteredItemList();
+    $('#tblPOItemsBody tr').each(function () {
+        const rowId     = $(this).attr('id').replace('itemRow_', '');
+        const currentVal = $(`#frmDdlItem_${rowId}`).val();
+        let html = '<option value="">-- Select Item --</option>';
+        filtered.forEach(i => {
+            const sel = currentVal && i.Code == currentVal ? 'selected' : '';
+            html += `<option value="${i.Code}" ${sel}>${i.Name}</option>`;
+        });
+        $(`#frmDdlItem_${rowId}`).html(html);
+    });
 }
 
 // ─── ITEM SELECT HTML ────────────────────────────────────────────────────────
@@ -157,7 +196,7 @@ function LoadPaymentTermsDropdown() {
 function BuildItemSelect(rowId, selectedCode) {
     let html = `<select id="frmDdlItem_${rowId}" class="form-control form-control-sm" onchange="OnItemChange(${rowId})">
         <option value="">-- Select Item --</option>`;
-    G_ItemMasterList.forEach(i => {
+    GetFilteredItemList().forEach(i => {
         const sel = selectedCode && i.Code == selectedCode ? 'selected' : '';
         html += `<option value="${i.Code}" ${sel}>${i.Name}</option>`;
     });
@@ -190,6 +229,7 @@ window.ToggleProjectFields = function () {
         $('#frmDdlProject').html('<option value="">-- Select Project --</option>');
         $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>');
     }
+    RefreshAllItemDropdowns();
 };
 
 function LoadProjectDropdown(selectedCode) {
@@ -208,6 +248,7 @@ window.LoadSubProjects = function (selectedCode) {
     const projectCode = $('#frmDdlProject').val();
     if (!projectCode) {
         $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>');
+        RefreshAllItemDropdowns();
         return;
     }
     PurchaseOrderStoreService.GetSubProjectList(projectCode).then(function (data) {
@@ -218,7 +259,111 @@ window.LoadSubProjects = function (selectedCode) {
             html += `<option value="${s.Code}" ${sel}>${s.Name}</option>`;
         });
         $('#frmDdlSubProject').html(html);
+        RefreshAllItemDropdowns();
     }).catch(() => { $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>'); });
+};
+
+// ─── BILL TO / SHIP TO ───────────────────────────────────────────────────────
+
+function LoadBillToShipToDropdown(billToCode, shipToCode) {
+    PurchaseOrderStoreService.GetBillToShipToList().then(function (data) {
+        G_BillToShipToList = data || [];
+        PopulateBillShipDropdowns(billToCode, shipToCode);
+    }).catch(() => {
+        G_BillToShipToList = [];
+        PopulateBillShipDropdowns(billToCode, shipToCode);
+    });
+}
+
+function PopulateBillShipDropdowns(billToCode, shipToCode) {
+    let opts = '<option value="">-- Select Address --</option>';
+    G_BillToShipToList.forEach(a => {
+        opts += `<option value="${a.Code}">${a.Name}</option>`;
+    });
+
+    if ($('#frmDdlBillTo').data('select2')) $('#frmDdlBillTo').select2('destroy');
+    if ($('#frmDdlShipTo').data('select2')) $('#frmDdlShipTo').select2('destroy');
+
+    $('#frmDdlBillTo').html(opts);
+    $('#frmDdlShipTo').html(opts);
+
+    if ($.fn.select2) {
+        $('#frmDdlBillTo').select2({
+            placeholder: '-- Select Bill To Address --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('body')
+        });
+        $('#frmDdlShipTo').select2({
+            placeholder: '-- Select Ship To Address --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('body')
+        });
+        $('#frmDdlBillTo').off('change.bts').on('change.bts', function () {
+            ShowAddressDetails('BillTo', $(this).val());
+        });
+        $('#frmDdlShipTo').off('change.bts').on('change.bts', function () {
+            ShowAddressDetails('ShipTo', $(this).val());
+        });
+    }
+
+    if (billToCode) { $('#frmDdlBillTo').val(billToCode).trigger('change'); }
+    if (shipToCode) { $('#frmDdlShipTo').val(shipToCode).trigger('change'); }
+}
+
+function ShowAddressDetails(type, code) {
+    const prefix = type === 'BillTo' ? 'billTo' : 'shipTo';
+    const divId  = type === 'BillTo' ? '#divBillToAddress' : '#divShipToAddress';
+    if (!code) { $(divId).hide(); return; }
+    const addr = G_BillToShipToList.find(a => String(a.Code) === String(code));
+    if (!addr)  { $(divId).hide(); return; }
+    $(`#${prefix}Name`).text(addr.Name || '');
+    $(`#${prefix}DisplayName`).text(addr.DisplayName || '');
+    $(`#${prefix}Address`).text(addr.Address || '');
+    $(`#${prefix}GSTNo`).text(addr.GSTNo || '');
+    $(divId).show();
+}
+
+window.OpenAddAddressModal = function (type) {
+    $('#addrModalType').val(type);
+    $('#modalAddAddressTitle').text(type === 'BillTo' ? 'Add Bill To Address' : 'Add Ship To Address');
+    $('#addrTxtName').val('');
+    $('#addrTxtDisplayName').val('');
+    $('#addrTxtAddress').val('');
+    $('#addrTxtGSTNo').val('');
+    $('#modalAddAddress').modal('show');
+};
+
+window.SaveBillToShipToAddress = function () {
+    const name        = $('#addrTxtName').val().trim();
+    const displayName = $('#addrTxtDisplayName').val().trim();
+    const address     = $('#addrTxtAddress').val().trim();
+    const gstNo       = $('#addrTxtGSTNo').val().trim();
+    const type        = $('#addrModalType').val();
+
+    if (!name)        { toastr.warning('Please enter Name.');         return; }
+    if (!displayName) { toastr.warning('Please enter Display Name.'); return; }
+    if (!address)     { toastr.warning('Please enter Address.');      return; }
+
+    const payload = JSON.stringify({ Code:0, Addresses: [{ Name: name, DisplayName: displayName, Address: address, GSTNo: gstNo }]});
+
+    PurchaseOrderStoreService.SaveBillToShipToAddress(payload).then(function (res) {
+        if (res && res.Status === 'Y') {
+            toastr.success(res.Msg || 'Address saved successfully.');
+            $('#modalAddAddress').modal('hide');
+            const newCode = res.Code || res.NewCode || null;
+            LoadBillToShipToDropdown(
+                type === 'BillTo'  ? (newCode || $('#frmDdlBillTo').val() || null)  : ($('#frmDdlBillTo').val() || null),
+                type === 'ShipTo'  ? (newCode || $('#frmDdlShipTo').val() || null)  : ($('#frmDdlShipTo').val() || null)
+            );
+        } else {
+            toastr.error(res ? res.Msg : 'Failed to save address.');
+        }
+    }).catch(err => {
+        toastr.error('Error saving address.');
+        console.error(err);
+    });
 };
 
 // ─── PO LIST GRID ────────────────────────────────────────────────────────────
@@ -250,7 +395,7 @@ window.ShowPOListGrid = function () {
             $('#paginator-tblPOList').html('');
             return;
         }
-        const stringFilterColumn = ['PO No', 'Vendor', 'Status', 'Project Name','Sub Project Name'];
+        const stringFilterColumn = ['PO No', 'Vendor', 'Status', 'Project Name', 'Sub Project Name','Work Type'];
         const numericFilterColumn = ['Total Amount'];
         const dateFilterColumn = ['PO Date'];
         const button = false;
@@ -266,11 +411,14 @@ window.ShowPOListGrid = function () {
             'Ref No': item.RefNo || '',
             'Project Name': item.ProjectName,
             'Sub Project Name': item.SubProjectName,
+            'Work Type': item.WorkType,
             'Total Amount': parseFloat(item.TotalPOAmount || item.Total_Amount || 0).toFixed(2),
             'Status': item.Status || '',
             'Action': `<button class="btn btn-info icon-height mb-1" title="View" onclick="ViewPO('${item.Code}')"><i class="fa fa-eye"></i></button>
                        <button class="btn btn-warning icon-height mb-1 ms-1" title="Edit" onclick="OpenPOForm('Edit','${item.Code}')"><i class="fa fa-edit"></i></button>
-                       <button class="btn btn-danger icon-height mb-1 ms-1" title="Delete" onclick="InitDeletePO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-trash"></i></button>`
+                       <button class="btn btn-danger icon-height mb-1 ms-1" title="Delete" onclick="InitDeletePO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-trash"></i></button>
+                       <button class="btn btn-secondary icon-height mb-1 ms-1" title="Print Preview" onclick="PrintPO('${item.Code}','preview')"><i class="fa fa-search-plus"></i></button>
+                       <button class="btn btn-dark icon-height mb-1 ms-1" title="Print" onclick="PrintPO('${item.Code}','print')"><i class="fa fa-print"></i></button>`
         }));
         BizsolCustomFilterGrid.CreateDataTable('tblPOListHeader', 'tblPOListBody', displayData, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, [], hiddenColumns, columnAlignment);
     }).catch(err => {
@@ -349,6 +497,15 @@ function ResetPOForm() {
     $('#tblPOItemsBody').html('');
     G_ItemRowCount = 0;
     UpdateSummary(0, 0, 0, 0, 0);
+    if ($('#frmDdlBillTo').data('select2')) {
+        $('#frmDdlBillTo').val(null).trigger('change');
+        $('#frmDdlShipTo').val(null).trigger('change');
+    } else {
+        $('#frmDdlBillTo').val('');
+        $('#frmDdlShipTo').val('');
+    }
+    $('#divBillToAddress').hide();
+    $('#divShipToAddress').hide();
 }
 
 // ─── ADD / DELETE ITEM ROWS ──────────────────────────────────────────────────
@@ -365,6 +522,7 @@ window.AddItemRow = function (silent) {
     const row = `<tr id="itemRow_${rowId}">
         <td class="text-center fw-bold">${rowId}</td>
         <td>${itemSelect}</td>
+        <td><input type="text" id="frmTxtSpecification_${rowId}" class="form-control form-control-sm" placeholder="Specification…" /></td>
         <td>${uomSelect}</td>
         <td><input type="number" id="frmTxtGSTRate_${rowId}" class="form-control form-control-sm" value="0" min="0" max="100" step="0.01" onchange="CalcRowValue(${rowId})" /></td>
         <td><input type="number" id="frmTxtQty_${rowId}" class="form-control form-control-sm" value="0" min="0" step="0.001" onchange="CalcRowValue(${rowId})" /></td>
@@ -405,6 +563,7 @@ window.OnItemChange = function (rowId) {
     if (item && item.GSTRate !== undefined) {
         $(`#frmTxtGSTRate_${rowId}`).val(item.GSTRate || 0);
     }
+    $(`#frmTxtSpecification_${rowId}`).val(item ? (item.ItemSpecificationDesp || '') : '');
     CalcRowValue(rowId);
 };
 
@@ -457,8 +616,13 @@ window.SavePO = function () {
     const poDate = $('#frmTxtPODate').val();
     const vendorCode = $('#frmDdlVendor').val();
 
-    if (!poDate) { toastr.warning('Please select PO Date.'); return; }
+    if (!poDate)     { toastr.warning('Please select PO Date.'); return; }
     if (!vendorCode) { toastr.warning('Please select Vendor.'); return; }
+    if (!$('#frmDdlWorkType').val()) { toastr.warning('Please select Work Type.'); return; }
+    if ($('#frmChkAgainstProject').is(':checked')) {
+        if (!$('#frmDdlProject').val())    { toastr.warning('Please select Project.');     return; }
+        if (!$('#frmDdlSubProject').val()) { toastr.warning('Please select Sub Project.'); return; }
+    }
 
     const masterCode = parseInt($('#frmHfCode').val()) || 0;
     const agaistProject = $('#frmChkAgainstProject').is(':checked') ? 'Y' : 'N';
@@ -500,7 +664,8 @@ window.SavePO = function () {
             gstRate: gstRate,
             gstAmount: parseFloat((amount * gstRate / 100).toFixed(2)),
             remark: '',
-            projectMaster_Code: projectCode
+            projectMaster_Code: projectCode,
+            specification: $(`#frmTxtSpecification_${rowId}`).val() || ''
         });
     });
 
@@ -540,7 +705,10 @@ window.SavePO = function () {
             remarks1: '',
             isPOAgainstProject: agaistProject,
             projectMaster_Code: projectCode,
-            subProjectMaster_Code: agaistProject === 'Y' ? (parseInt($('#frmDdlSubProject').val()) || 0) : 0
+            billingAddress: parseInt($('#frmDdlBillTo').val()) || 0,
+            ShippingAdress: parseInt($('#frmDdlShipTo').val()) || 0,
+            subProjectMaster_Code: agaistProject === 'Y' ? (parseInt($('#frmDdlSubProject').val()) || 0) : 0,
+            workTypeMaster_Code: parseInt($('#frmDdlWorkType').val()) || 0
         }],
         transactions: transactions
     };
@@ -581,6 +749,19 @@ function LoadPOForEdit(code) {
         const againstProject = (header.IsPOAgainstProject === 'Y');
         $('#frmChkAgainstProject').prop('checked', againstProject);
         $('#frmDdlWorkType').val(header.WorkTypeMaster_Code || '');
+
+        // ── Bill To / Ship To ──────────────────────────────────────────────
+        if (G_BillToShipToList.length > 0) {
+            if (header.BillToAddress_Code) {
+                $('#frmDdlBillTo').val(header.BillToAddress_Code).trigger('change');
+            }
+            if (header.ShipToAddress_Code) {
+                $('#frmDdlShipTo').val(header.ShipToAddress_Code).trigger('change');
+            }
+        } else {
+            LoadBillToShipToDropdown(header.BillToAddress_Code || null, header.ShipToAddress_Code || null);
+        }
+
         if (againstProject) {
             $('#divProjectFields').show();
             LoadProjectDropdown(header.ProjectMaster_Code);
@@ -619,6 +800,7 @@ function LoadPOForEdit(code) {
             const row = `<tr id="itemRow_${rowId}">
                 <td class="text-center fw-bold">${rowId}</td>
                 <td>${itemSelect}</td>
+                <td><input type="text" id="frmTxtSpecification_${rowId}" class="form-control form-control-sm" placeholder="Specification…" value="${(det.Specification || '').replace(/"/g, '&quot;')}" /></td>
                 <td>${uomSelect}</td>
                 <td><input type="number" id="frmTxtGSTRate_${rowId}" class="form-control form-control-sm" value="${det.GSTRate || 0}" min="0" max="100" step="0.01" onchange="CalcRowValue(${rowId})" /></td>
                 <td><input type="number" id="frmTxtQty_${rowId}" class="form-control form-control-sm" value="${det.QtyMT || 0}" min="0" step="0.001" onchange="CalcRowValue(${rowId})" /></td>
@@ -728,6 +910,8 @@ window.ViewPO = function (code) {
         const vendorName = (G_VendorList.find(v => v.Code == header.VendorMaster_Code) || {}).Name || '';
         const paymentTermsName = (G_PaymentTermsList.find(p => p.Code == header.PaymentTermsMaster_Code) || {}).Name || '';
         const againstProject = header.IsPOAgainstProject === 'Y';
+        const billToAddr = G_BillToShipToList.find(a => a.Code == header.BillToAddress_Code) || null;
+        const shipToAddr = G_BillToShipToList.find(a => a.Code == header.ShipToAddress_Code) || null;
 
         let detailRows = '';
         details.forEach((det, idx) => {
@@ -736,6 +920,7 @@ window.ViewPO = function (code) {
             detailRows += `<tr>
                 <td class="text-center">${idx + 1}</td>
                 <td>${itemName}</td>
+                <td>${det.Specification || ''}</td>
                 <td class="text-center">${uomName}</td>
                 <td class="text-center">${det.GSTRate || 0}%</td>
                 <td class="text-end">${det.QtyMT || 0}</td>
@@ -771,6 +956,30 @@ window.ViewPO = function (code) {
                     </table>
                 </div>
             </div>
+            <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                    <div class="bts-view-panel">
+                        <div class="bts-vp-title"><i class="fa fa-file-invoice me-1"></i>Bill To</div>
+                        ${billToAddr
+                            ? `<div class="bts-vp-name">${billToAddr.Name}</div>
+                               <div class="bts-vp-disp">${billToAddr.DisplayName}</div>
+                               <div class="bts-vp-addr"><i class="fa fa-map-marker-alt me-1 text-muted" style="font-size:0.73rem;"></i>${billToAddr.Address}</div>
+                               <div class="bts-vp-gst"><i class="fa fa-id-card me-1" style="font-size:0.73rem;"></i>GST: ${billToAddr.GSTNo}</div>`
+                            : '<span style="color:#94a3b8;font-size:0.78rem;"><i class="fa fa-minus me-1"></i>Not specified</span>'}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="bts-view-panel">
+                        <div class="bts-vp-title"><i class="fa fa-shipping-fast me-1"></i>Ship To</div>
+                        ${shipToAddr
+                            ? `<div class="bts-vp-name">${shipToAddr.Name}</div>
+                               <div class="bts-vp-disp">${shipToAddr.DisplayName}</div>
+                               <div class="bts-vp-addr"><i class="fa fa-map-marker-alt me-1 text-muted" style="font-size:0.73rem;"></i>${shipToAddr.Address}</div>
+                               <div class="bts-vp-gst"><i class="fa fa-id-card me-1" style="font-size:0.73rem;"></i>GST: ${shipToAddr.GSTNo}</div>`
+                            : '<span style="color:#94a3b8;font-size:0.78rem;"><i class="fa fa-minus me-1"></i>Not specified</span>'}
+                    </div>
+                </div>
+            </div>
             ${BuildApprovalFlowHTML(approvalFlow)}
             <div class="table-responsive">
                 <table class="table table-sm table-bordered">
@@ -778,6 +987,7 @@ window.ViewPO = function (code) {
                         <tr>
                             <th class="text-center">#</th>
                             <th>Item Name</th>
+                            <th>Specification</th>
                             <th class="text-center">UOM</th>
                             <th class="text-center">GST Rate</th>
                             <th class="text-end">Qty</th>
@@ -858,6 +1068,7 @@ function OpenMobileItemModal(rowId) {
         const item = G_ItemMasterList.find(i => String(i.Code) === String(code));
         if (item && item.UOM_Code) $('#mobileItemDdlUOM').val(item.UOM_Code);
         if (item && item.GSTRate !== undefined) $('#mobileItemTxtGST').val(item.GSTRate || 0);
+        $('#mobileItemTxtSpec').val(item ? (item.ItemSpecificationDesp || '') : '');
         MobileCalcValue();
     });
 
@@ -870,6 +1081,7 @@ function OpenMobileItemModal(rowId) {
         $('#mobileItemTxtGST').val(0);
         $('#mobileItemTxtQty').val(0);
         $('#mobileItemTxtRate').val(0);
+        $('#mobileItemTxtSpec').val('');
         $('#mobileItemCalcValue').text('0.00');
     } else {
         // Edit existing row
@@ -880,6 +1092,7 @@ function OpenMobileItemModal(rowId) {
         $('#mobileItemTxtGST').val($(`#frmTxtGSTRate_${rowId}`).val());
         $('#mobileItemTxtQty').val($(`#frmTxtQty_${rowId}`).val());
         $('#mobileItemTxtRate').val($(`#frmTxtRate_${rowId}`).val());
+        $('#mobileItemTxtSpec').val($(`#frmTxtSpecification_${rowId}`).val());
         MobileCalcValue();
     }
 
@@ -903,6 +1116,7 @@ function MobileItemModalConfirm() {
     const gst = parseFloat($('#mobileItemTxtGST').val()) || 0;
     const rate = parseFloat($('#mobileItemTxtRate').val()) || 0;
     const value = (qty * rate).toFixed(2);
+    const spec = $('#mobileItemTxtSpec').val() || '';
 
     if (G_MobileItemEditRowId === null) {
         // Add new row to the hidden table
@@ -913,6 +1127,7 @@ function MobileItemModalConfirm() {
         const row = `<tr id="itemRow_${rowId}">
             <td class="text-center fw-bold">${rowId}</td>
             <td>${itemSelect}</td>
+            <td><input type="text" id="frmTxtSpecification_${rowId}" class="form-control form-control-sm" placeholder="Specification…" value="${spec.replace(/"/g, '&quot;')}" /></td>
             <td>${uomSelect}</td>
             <td><input type="number" id="frmTxtGSTRate_${rowId}" class="form-control form-control-sm" value="${gst}" min="0" max="100" step="0.01" onchange="CalcRowValue(${rowId})" /></td>
             <td><input type="number" id="frmTxtQty_${rowId}" class="form-control form-control-sm" value="${qty}" min="0" step="0.001" onchange="CalcRowValue(${rowId})" /></td>
@@ -934,6 +1149,7 @@ function MobileItemModalConfirm() {
         $(`#frmTxtQty_${rowId}`).val(qty);
         $(`#frmTxtRate_${rowId}`).val(rate);
         $(`#frmTxtValue_${rowId}`).val(value);
+        $(`#frmTxtSpecification_${rowId}`).val(spec);
     }
 
     CalcTotals();
@@ -959,6 +1175,7 @@ function RenderMobileItemCards() {
         const qty = $(`#frmTxtQty_${rowId}`).val();
         const rate = parseFloat($(`#frmTxtRate_${rowId}`).val() || 0).toFixed(2);
         const value = parseFloat($(`#frmTxtValue_${rowId}`).val() || 0).toFixed(2);
+        const spec = $(`#frmTxtSpecification_${rowId}`).val() || '';
 
         container.append(`
             <div class="mobile-item-card">
@@ -976,12 +1193,322 @@ function RenderMobileItemCards() {
                     <span class="item-card-detail"><i class="fa fa-sort-amount-up me-1"></i>Qty: ${qty}</span>
                     <span class="item-card-detail"><i class="fa fa-tag me-1"></i>Rate: ${rate}</span>
                     <span class="item-card-detail item-card-value"><i class="fa fa-coins me-1"></i>Value: ${value}</span>
+                    ${spec ? `<span class="item-card-detail" style="width:100%;"><i class="fa fa-align-left me-1"></i>${spec}</span>` : ''}
                 </div>
             </div>`);
     });
 }
 
-// ─── EXPOSE GLOBALS ───────────────────────────────────────────────────────────
+// ─── PAYMENT TERMS QUICK-ADD ────────────────────────────────────────────────
+
+window.OpenAddPaymentTermsModal = function () {
+    
+    $('#ptTxtDescription').val('');
+    $('#modalAddPaymentTerms').modal('show');
+};
+
+window.SavePaymentTerms = function () {
+    const Desp = $('#ptTxtDescription').val().trim();
+    if (!Desp) { toastr.warning('Please enter Payment Terms Description.'); return; }
+
+    const payload = JSON.stringify([
+        {
+            code: 0,
+            desp: Desp,
+            databaseLocation_Code: 0,
+            advPaymentApplicable: "N",
+            advancePayment: 0,
+            defaultForOrder: "N",
+            isActive: "Y",
+            userMaster_Code: 0
+        }
+    ]);
+
+    PurchaseOrderStoreService.SavePaymentTerms(payload).then(function (res) {
+        if (res && res.Status === 'Y') {
+            toastr.success(res.Msg || 'Payment Terms saved successfully.');
+            $('#modalAddPaymentTerms').modal('hide');
+            const newCode = res.Code || res.NewCode || null;
+            LoadPaymentTermsDropdown(newCode);
+        } else {
+            toastr.error(res ? res.Msg : 'Failed to save Payment Terms.');
+        }
+    }).catch(err => {
+        toastr.error('Error saving Payment Terms.');
+        console.error(err);
+    });
+};
+
+// ─── NUMBER TO WORDS ──────────────────────────────────────────────────────────
+
+function NumberToWords(amount) {
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+                  'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+                  'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    function twoD(n) {
+        if (n < 20) return ones[n];
+        return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+    }
+    function threeD(n) {
+        if (n >= 100) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + twoD(n % 100) : '');
+        return twoD(n);
+    }
+    let n = Math.floor(Math.abs(amount));
+    if (n === 0) return 'Zero Rupees Only';
+    let w = '';
+    if (n >= 10000000) { w += threeD(Math.floor(n / 10000000)) + ' Crore ';    n %= 10000000; }
+    if (n >= 100000)   { w += twoD(Math.floor(n / 100000))     + ' Lakh ';     n %= 100000;   }
+    if (n >= 1000)     { w += twoD(Math.floor(n / 1000))       + ' Thousand '; n %= 1000;     }
+    if (n >= 100)      { w += ones[Math.floor(n / 100)]         + ' Hundred ';  n %= 100;      }
+    if (n > 0)         { w += twoD(n); }
+    return w.trim() + ' Rupees Only';
+}
+
+// ─── PRINT PO ───────────────────────────────────────────────────────────────────
+
+function PrintPO(code, mode) {
+    PurchaseOrderStoreService.GetPurchaseOrderStoreById(code).then(function (res) {
+        if (!res) { toastr.error('PO not found.'); return; }
+
+        const header  = res[0][0];
+        const details = res[1] || [];
+
+        // ── Resolve related data ──────────────────────────────────────────────────
+        const vendorObj    = G_VendorList.find(v => v.Code == header.VendorMaster_Code) || {};
+        const payTermsName = (G_PaymentTermsList.find(p => p.Code == header.PaymentTermsMaster_Code) || {}).Name || '';
+        const billToAddr   = G_BillToShipToList.find(a => a.Code == header.BillToAddress_Code)  || null;
+        const shipToAddr   = G_BillToShipToList.find(a => a.Code == header.ShipToAddress_Code)  || null;
+        const againstProj  = header.IsPOAgainstProject === 'Y';
+
+        // ── Company info from session ──────────────────────────────────────────
+        let companyName = '', companyAddr = '', companyPhone = '', companyEmail = '', companyWeb = '', companyGST = '';
+        try {
+            //const ud = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
+            const ud = res[3]||[];
+            if (ud && ud[0]) {
+                companyName  = ud[0].CompanyName    || ud[0].CompanyNameForShow || '';
+                companyAddr  = ud[0].CompanyAddress || '';
+                companyPhone = ud[0].PhoneNo        || ud[0].CompanyPhone       || '';
+                companyEmail = ud[0].Email          || ud[0].CompanyEmail       || '';
+                companyWeb   = ud[0].Website        || ud[0].CompanyWebsite     || '';
+                companyGST   = ud[0].GSTIN          || ud[0].CompanyGSTIN       || '';
+            }
+        } catch (e) {}
+
+        // ── Vendor info ───────────────────────────────────────────────────────────────
+        const vName    = vendorObj.Name             || '';
+        const vAddr    = vendorObj.Address          || vendorObj.VendorAddress || '';
+        const vGSTIN   = vendorObj.GSTIN            || vendorObj.GSTINNo       || '';
+        const vEmail   = vendorObj.Email            || '';
+        const vContact = vendorObj.ContactPerson    || vendorObj.ContactPersonName || '';
+        const vMobile  = vendorObj.Mobile           || vendorObj.PhoneNo        || '';
+        const vBank    = vendorObj.BankName         || '';
+        const vAcc     = vendorObj.AccountNo        || vendorObj.AccountNumber  || '';
+        const vIFSC    = vendorObj.IFSCCode         || vendorObj.IFSC           || '';
+
+        // ── Amounts ──────────────────────────────────────────────────────────────────
+        const taxable   = parseFloat(header.TotalAssValue      || 0);
+        const freight   = parseFloat(header.FreightAmount      || 0);
+        const otherChg  = parseFloat(header.OtherChargesAmount || 0);
+        const otherLbl  = header.OtherChargesDesp || 'Other Charges';
+        const totalGST  = parseFloat(header.TaxAmount          || 0);
+        const grandTot  = parseFloat(header.TotalPOAmount      || 0);
+        const roundOff  = parseFloat(header.RoundOff           || 0);
+        const subTotal  = taxable + freight + otherChg;
+        const amtWords  = NumberToWords(Math.round(grandTot));
+        const poDateStr = FormatDateDisplay(header.PODate);
+        const refDateStr = header.RefDate ? FormatDateDisplay(header.RefDate) : '';
+        const gstRates  = [...new Set(details.map(d => parseFloat(d.GSTRate || 0)).filter(r => r > 0))];
+        const gstLabel  = gstRates.length === 1 ? (gstRates[0] + '% GST') : 'Total GST';
+
+        // ── Build HTML sections ───────────────────────────────────────────────
+        let hdrContact = '';
+        if (companyPhone) hdrContact += '&#9990;&nbsp;' + companyPhone + '<br>';
+        if (companyEmail) hdrContact += '&#9993;&nbsp;' + companyEmail + '<br>';
+        if (companyWeb)   hdrContact += '&#127760;&nbsp;' + companyWeb + '<br>';
+        if (companyGST)   hdrContact += 'GSTIN:&nbsp;' + companyGST;
+
+        let supplierHtml = '<div class="info-name">' + vName + '</div>';
+        if (vAddr)    supplierHtml += '<div class="info-field"><b>ADDRESS : </b>' + vAddr    + '</div>';
+        if (vGSTIN)   supplierHtml += '<div class="info-field"><b>GSTIN : </b>'   + vGSTIN   + '</div>';
+        if (vEmail)   supplierHtml += '<div class="info-field"><b>Email : </b>'   + vEmail   + '</div>';
+        if (vContact) supplierHtml += '<div class="info-field"><b>Contact Person: </b>' + vContact + '</div>';
+        if (vMobile)  supplierHtml += '<div class="info-field"><b>Mobile : </b>'  + vMobile  + '</div>';
+        if (vBank)    supplierHtml += '<div class="info-field"><b>Bank : </b>'    + vBank
+            + (vAcc  ? ' &bull; A/C: ' + vAcc   : '')
+            + (vIFSC ? ' &bull; IFSC: ' + vIFSC : '') + '</div>';
+
+        let billToHtml = '<span style="color:#999;font-size:7.5pt;">Not specified</span>';
+        if (billToAddr) {
+            billToHtml = '<div class="info-name">' + (billToAddr.Name || '') + '</div>';
+            if (billToAddr.DisplayName) billToHtml += '<div class="info-field">' + billToAddr.DisplayName + '</div>';
+            if (billToAddr.Address)     billToHtml += '<div class="info-field"><b>ADDRESS : </b>' + billToAddr.Address + '</div>';
+            if (billToAddr.GSTNo)       billToHtml += '<div class="info-field"><b>GSTIN: </b>' + billToAddr.GSTNo + '</div>';
+        }
+
+        let shipToSection = '';
+        if (shipToAddr) {
+            let st = '<div class="info-name">' + (shipToAddr.Name || '') + '</div>';
+            if (shipToAddr.DisplayName) st += '<div class="info-field"><b>Site Name : </b>' + shipToAddr.DisplayName + '</div>';
+            if (shipToAddr.Address)     st += '<div class="info-field"><b>ADDRESS : </b>' + shipToAddr.Address + '</div>';
+            if (shipToAddr.GSTNo)       st += '<div class="info-field"><b>GSTIN : </b>' + shipToAddr.GSTNo + '</div>';
+            shipToSection = '<div class="info-row"><div class="info-cell full"><div class="info-label">Ship To :</div>' + st + '</div></div>';
+        }
+
+        let itemRows = '';
+        details.forEach(function (det, idx) {
+            const itm     = G_ItemMasterList.find(i => i.Code == det.ItemMaster_Code) || {};
+            const iName   = itm.Name || '';
+            const hsnCode = itm.HSNCode || itm.HSN_Code || itm.HSNMaster_Code || '';
+            const uName   = (G_UOMMasterList.find(u => u.Code == det.UOMMaster_Code) || {}).Name || '';
+            const amt     = parseFloat(det.Amount || 0);
+            const spec    = det.Specification || '';
+            itemRows += '<tr>'
+                + '<td class="tc">' + (idx + 1) + '</td>'
+                + '<td>' + iName + (spec ? '<br><span style="font-size:7pt;color:#555;">' + spec + '</span>' : '') + '</td>'
+                + '<td class="tc">' + hsnCode + '</td>'
+                + '<td class="tc">' + uName   + '</td>'
+                + '<td class="tr">' + parseFloat(det.QtyMT || 0) + '</td>'
+                + '<td class="tr">&#8377;' + parseFloat(det.Rate || 0).toFixed(2) + '</td>'
+                + '<td class="tr">&#8377;' + amt.toFixed(2) + '</td>'
+                + '</tr>';
+        });
+
+        let totalsHtml = '';
+        totalsHtml += '<tr><td class="lbl">Total Amount Before Tax</td><td class="val">&#8377; ' + taxable.toFixed(2)  + '</td></tr>';
+        if (freight)  totalsHtml += '<tr><td class="lbl">Freight</td><td class="val">&#8377; ' + freight.toFixed(2)  + '</td></tr>';
+        if (otherChg) totalsHtml += '<tr><td class="lbl">' + otherLbl + '</td><td class="val">&#8377; ' + otherChg.toFixed(2) + '</td></tr>';
+        totalsHtml += '<tr><td class="lbl">Total Amount</td><td class="val">&#8377; ' + subTotal.toFixed(2) + '</td></tr>';
+        totalsHtml += '<tr><td class="lbl">' + gstLabel + '</td><td class="val">&#8377; ' + totalGST.toFixed(2) + '</td></tr>';
+        if (roundOff) totalsHtml += '<tr><td class="lbl">Round Off</td><td class="val">&#8377; ' + roundOff.toFixed(2) + '</td></tr>';
+        totalsHtml += '<tr class="grand"><td class="lbl">Total</td><td class="val">&#8377; ' + grandTot.toFixed(2) + '</td></tr>';
+
+        const ptHtml = payTermsName
+            ? '<div class="pt-box"><b>Payment Terms :-</b><br>&bull;&nbsp;' + payTermsName + '</div>'
+            : '';
+
+        let nowParts = [];
+        if (againstProj && header.ProjectName)    nowParts.push(header.ProjectName);
+        if (againstProj && header.SubProjectName) nowParts.push(header.SubProjectName);
+        const sectionBand = againstProj
+            ? 'ASSIGNMENT DETAILS' + (nowParts.length ? ' &bull; Nature of Work : ' + nowParts.join(' &mdash; ') : '')
+            : 'ITEM DETAILS';
+
+        // ── Compose full print document ──────────────────────────────────────────
+        const css = '@page{size:A4 portrait;margin:8mm 10mm;}'
+            + '*{box-sizing:border-box;margin:0;padding:0;}'
+            + 'body{font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;color:#111;background:#fff;}'
+            + '.no-print{margin-bottom:5mm;}'
+            + '@media print{.no-print{display:none!important;}}'
+            + '.po-hdr{display:flex;align-items:flex-start;padding-bottom:5px;border-bottom:2.5px solid #1a2a6c;margin-bottom:5px;}'
+            + '.hdr-co{flex:1;}'
+            + '.hdr-name{font-size:14pt;font-weight:800;color:#1a2a6c;letter-spacing:0.3px;line-height:1.2;}'
+            + '.hdr-tag{font-size:7.5pt;color:#444;letter-spacing:1px;margin-top:1px;}'
+            + '.hdr-contact{text-align:right;font-size:7.5pt;color:#222;line-height:1.75;min-width:155px;}'
+            + '.po-title{text-align:center;font-size:10pt;font-weight:800;border:1.5px solid #1a2a6c;color:#1a2a6c;padding:2px 0;margin:4px 0;letter-spacing:1.5px;}'
+            + '.info-row{display:flex;border:1px solid #bbb;margin-bottom:4px;}'
+            + '.info-cell{flex:1;padding:4px 7px;font-size:8pt;}'
+            + '.info-cell+.info-cell{border-left:1px solid #bbb;}'
+            + '.info-cell.full{flex:unset;width:100%;}'
+            + '.info-label{font-weight:700;font-size:7.5pt;color:#1a2a6c;border-bottom:1px dashed #ccc;padding-bottom:2px;margin-bottom:3px;}'
+            + '.info-name{font-weight:700;font-size:8.5pt;margin-bottom:2px;}'
+            + '.info-field{font-size:8pt;margin-bottom:1px;}'
+            + '.sec-band{background:#1a2a6c;color:#fff;font-weight:700;font-size:8pt;padding:3px 8px;margin:4px 0 3px;letter-spacing:0.5px;}'
+            + 'table.items{width:100%;border-collapse:collapse;}'
+            + 'table.items th{background:#1a2a6c;color:#fff;padding:3px 4px;font-size:8pt;border:1px solid #555;text-align:center;}'
+            + 'table.items td{padding:3px 4px;font-size:8pt;border:1px solid #ccc;vertical-align:top;}'
+            + 'table.items tbody tr:nth-child(even){background:#f4f6fb;}'
+            + '.tc{text-align:center;}.tr{text-align:right;}'
+            + '.tot-wrap{display:flex;justify-content:flex-end;margin-top:4px;}'
+            + 'table.totals{border-collapse:collapse;min-width:280px;}'
+            + 'table.totals td{padding:2.5px 7px;font-size:8pt;border:1px solid #ccc;}'
+            + 'table.totals .lbl{font-weight:600;}'
+            + 'table.totals .val{text-align:right;min-width:95px;}'
+            + 'table.totals tr.grand{background:#1a2a6c;color:#fff;font-weight:700;}'
+            + '.words-box{border:1px solid #bbb;padding:4px 8px;margin:4px 0;font-size:8pt;}'
+            + '.pt-box{border:1px solid #bbb;padding:4px 8px;margin:4px 0;font-size:8pt;}'
+            + '.sig-row{display:flex;gap:12px;margin-top:12px;}'
+            + '.sig-box{flex:1;border:1px solid #bbb;padding:6px 10px;text-align:center;}'
+            + '.sig-title{font-weight:700;font-size:8pt;color:#1a2a6c;margin-bottom:36px;}'
+            + '.sig-line{border-top:1px solid #555;margin:0 15px 3px;}'
+            + '.sig-name{font-size:7.5pt;color:#333;}'
+            + '.footer-bar{text-align:center;font-size:7.5pt;margin-top:8px;padding-top:4px;border-top:1.5px solid #1a2a6c;color:#222;}';
+
+        const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Purchase Order - '
+            + (header.PONo || '') + '</title><style>' + css + '</style></head><body>'
+            // Toolbar (hidden on print)
+            + '<div class="no-print" style="display:flex;gap:8px;padding:3px 0 6px;">'
+            + '<button onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:5px 16px;border-radius:5px;font-size:9pt;cursor:pointer;">&#128438;&nbsp;Print</button>'
+            + '<button onclick="window.close()" style="background:#666;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:9pt;cursor:pointer;">&#10005;&nbsp;Close</button>'
+            + '</div>'
+            // Header
+            + '<div class="po-hdr">'
+            + '<div class="hdr-co"><div class="hdr-name">' + (companyName || 'COMPANY NAME') + '</div><div class="hdr-tag">PURCHASE ORDER</div></div>'
+            + '<div class="hdr-contact">' + hdrContact + '</div>'
+            + '</div>'
+            // PO title bar
+            + '<div class="po-title">PURCHASE ORDER</div>'
+            // Date | PO No
+            + '<div class="info-row">'
+            + '<div class="info-cell">'
+            + '<div class="info-field"><b>Date : </b>' + poDateStr + '</div>'
+            + (refDateStr ? '<div class="info-field"><b>Ref Date : </b>' + refDateStr + '</div>' : '')
+            + (header.RefNo ? '<div class="info-field"><b>Ref No : </b>' + (header.RefNo || '') + '</div>' : '')
+            + '</div>'
+            + '<div class="info-cell" style="text-align:right;">'
+            + '<div class="info-field"><b>PO No : </b>' + (header.PONo || '') + '</div>'
+            + (againstProj && header.ProjectName    ? '<div class="info-field"><b>Project : </b>' + header.ProjectName    + '</div>' : '')
+            + (againstProj && header.SubProjectName ? '<div class="info-field"><b>Sub Project : </b>' + header.SubProjectName + '</div>' : '')
+            + '</div></div>'
+            // Supplier | Bill To
+            + '<div class="info-row">'
+            + '<div class="info-cell"><div class="info-label">Supplier Details :</div>' + supplierHtml + '</div>'
+            + '<div class="info-cell"><div class="info-label">Bill To :</div>' + billToHtml + '</div>'
+            + '</div>'
+            // Ship To
+            + shipToSection
+            // Section band
+            + '<div class="sec-band">' + sectionBand + '</div>'
+            // Items table
+            + '<table class="items"><thead><tr>'
+            + '<th style="width:28px;">S.No</th>'
+            + '<th>Description</th>'
+            + '<th style="width:58px;">HSN Code</th>'
+            + '<th style="width:50px;">Unit</th>'
+            + '<th style="width:52px;">Qty</th>'
+            + '<th style="width:72px;">Rate</th>'
+            + '<th style="width:80px;">Amount</th>'
+            + '</tr></thead><tbody>' + itemRows + '</tbody></table>'
+            // Totals
+            + '<div class="tot-wrap"><table class="totals"><tbody>' + totalsHtml + '</tbody></table></div>'
+            // Amount in words
+            + '<div class="words-box"><b>Amount in Word : </b>' + amtWords + '</div>'
+            // Payment Terms
+            + ptHtml
+            // Signatures
+            + '<div class="sig-row">'
+            + '<div class="sig-box"><div class="sig-title">For ' + (companyName || '') + '</div><div class="sig-line"></div><div class="sig-name">Approved by Finance</div></div>'
+            + '<div class="sig-box"><div class="sig-title">For ' + (companyName || '') + '</div><div class="sig-line"></div><div class="sig-name">Approved by Management</div></div>'
+            + '</div>'
+            // Footer
+            + (companyAddr ? '<div class="footer-bar">&#9679;&nbsp;' + companyAddr + '</div>' : '')
+            + '</body></html>';
+
+        const win = window.open('', '_blank', 'width=920,height=760,scrollbars=yes,resizable=yes');
+        if (!win) { toastr.warning('Please allow popups for this site to use the print feature.'); return; }
+        win.document.write(html);
+        win.document.close();
+        if (mode === 'print') {
+            setTimeout(function () { win.focus(); win.print(); }, 600);
+        }
+    }).catch(function (err) {
+        toastr.error('Error loading PO for print.');
+        console.error(err);
+    });
+}
+
+// ─── EXPOSE GLOBALS ─────────────────────────────────────────────────────────
 
 window.ShowPOListGrid = ShowPOListGrid;
 window.OpenPOForm = OpenPOForm;
@@ -1001,4 +1528,6 @@ window.ToggleProjectFields = ToggleProjectFields;
 window.OpenMobileItemModal = OpenMobileItemModal;
 window.MobileCalcValue = MobileCalcValue;
 window.MobileItemModalConfirm = MobileItemModalConfirm;
+window.RefreshAllItemDropdowns = RefreshAllItemDropdowns;
+window.PrintPO = PrintPO;
 
