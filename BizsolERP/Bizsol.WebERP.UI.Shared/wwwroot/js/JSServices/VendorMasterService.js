@@ -3,8 +3,8 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const VendorMasterService = {
 
-    GetSolarVendorMasterList: function GetSolarVendorMasterList() {
-        var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetSolarVendorMasterList`;
+    GetSolarVendorMasterList: function GetSolarVendorMasterList(IsClientOrVendor) {
+        var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetSolarVendorMasterList?IsClientOrVendor=${IsClientOrVendor}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
 
@@ -25,6 +25,12 @@ const VendorMasterService = {
             `/DeleteSolarVendorMaster?Code=${Code}&UserMaster_Code=${userMasterCode}&ReasonForDelete=${encodeURIComponent(ReasonForDelete || '')}`;
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(function (value) { return value; });
     },
+
+    VerifySolarVendorMaster: function VerifySolarVendorMaster(Code) {
+        var URL = UrlService.API_ENDPOINT_VendorMaster +
+            `/VerifySolarVendorMaster?Code=${Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
     GetCityList: function GetCityList() {
         var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetCityList`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
@@ -39,6 +45,10 @@ const VendorMasterService = {
     },
     GetServiceProviderNatureList: function GetServiceProviderNatureList() {
         var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetServiceProviderNatureList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
+    GetFixedParameterDetails: function GetFixedParameterDetails() {
+        var URL = UrlService.API_ENDPOINT_FixedParameter + `/GetFixedParameterDetails`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
 };

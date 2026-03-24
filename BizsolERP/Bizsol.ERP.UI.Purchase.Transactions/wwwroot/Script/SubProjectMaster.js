@@ -3,10 +3,11 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 
-let G_SubProjectList = [];
-let G_ProjectList    = [];
-let G_UserList       = [];
-let G_POLevelList    = [];
+let G_SubProjectList    = [];
+let G_ProjectList       = [];
+let G_UserList          = [];
+let G_POLevelList       = [];
+let G_ActiveStatusFilter = 'all'; // 'all' | 'running' | 'pending'
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
@@ -50,7 +51,17 @@ $(document).ready(function () {
     });
 
     $('#spmSearch').on('input', function () {
-        filterSubProjects($(this).val().toLowerCase().trim());
+        applySubProjectFilters();
+    });
+
+    $('.pm-stat-chip[data-filter]').on('click', function () {
+        const filter = $(this).data('filter');
+        if (filter) {
+            G_ActiveStatusFilter = filter;
+            $('.pm-stat-chip[data-filter]').removeClass('pm-stat-active');
+            $(this).addClass('pm-stat-active');
+            applySubProjectFilters();
+        }
     });
 });
 
@@ -568,13 +579,13 @@ function loadSubProjects() {
                 || [];
             G_SubProjectList = list;
             updateStats(G_SubProjectList);
-            bindSubProjectGrid(G_SubProjectList);
+            applySubProjectFilters();
         })
         .catch(function (error) {
             HideLoader && HideLoader();
             G_SubProjectList = [];
             updateStats([]);
-            bindSubProjectGrid([]);
+            applySubProjectFilters();
             toastr.error((error && error.Msg) );
         });
 }
@@ -668,19 +679,37 @@ function bindSubProjectGrid(list) {
     });
 }
 
-/* ── Client-side search ──────────────────────────────────── */
+/* ── Apply status + search filters and bind grid ──────────── */
+function applySubProjectFilters() {
+    const query = ($('#spmSearch').val() || '').toLowerCase().trim();
+    let list   = G_SubProjectList;
+
+    // Status filter (from card click)
+    if (G_ActiveStatusFilter === 'running') {
+        list = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'Y'; });
+    } else if (G_ActiveStatusFilter === 'pending') {
+        list = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'N'; });
+    }
+
+    // Search filter
+    if (query) {
+        list = list.filter(function (item) {
+            const name       = (item.SubProjectDesp || item.SubProjectName || '').toLowerCase();
+            const apiMaster  = (item.MasterProjectDesp || item.MasterProjectName || item.ProjectDesp || '').toLowerCase();
+            const masterCode = item.ProjectMaster_Code || item.MasterProjectCode || '';
+            const master     = G_ProjectList.find(p => String(p.Code) === String(masterCode));
+            const lookupMaster = master ? (master.ProjectDesp || master.ProjectName || '').toLowerCase() : '';
+            const masterName = apiMaster || lookupMaster;
+            return name.includes(query) || masterName.includes(query);
+        });
+    }
+
+    bindSubProjectGrid(list);
+}
+
+/* ── Client-side search (legacy, now delegates to apply) ─── */
 function filterSubProjects(query) {
-    if (!query) { bindSubProjectGrid(G_SubProjectList); return; }
-    const filtered = G_SubProjectList.filter(function (item) {
-        const name       = (item.SubProjectDesp || item.SubProjectName || '').toLowerCase();
-        const apiMaster  = (item.MasterProjectDesp || item.MasterProjectName || item.ProjectDesp || '').toLowerCase();
-        const masterCode = item.ProjectMaster_Code || item.MasterProjectCode || '';
-        const master     = G_ProjectList.find(p => String(p.Code) === String(masterCode));
-        const lookupMaster = master ? (master.ProjectDesp || master.ProjectName || '').toLowerCase() : '';
-        const masterName = apiMaster || lookupMaster;
-        return name.includes(query) || masterName.includes(query);
-    });
-    bindSubProjectGrid(filtered);
+    applySubProjectFilters();
 }
 
 /* ── Budget formatting ───────────────────────────────────── */

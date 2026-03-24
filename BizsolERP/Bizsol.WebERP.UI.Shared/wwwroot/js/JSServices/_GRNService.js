@@ -45,9 +45,9 @@ const GRNService = {
             });
     },
 
-    GetPOItemDetails: function GetPOItemDetails(ProjectCode, SubProjectMaster_Code) {
+    GetPOItemDetails: function GetPOItemDetails(ProjectCode, SubProjectMaster_Code, partyMaster_Code) {
         let url = UrlService.API_ENDPOINT_GRNService +
-            `/GetPOItemDetails?ProjectMaster_Code=${ProjectCode}&SubProjectMaster_Code=${SubProjectMaster_Code}`;
+            `/GetPOItemDetails?ProjectMaster_Code=${ProjectCode}&SubProjectMaster_Code=${SubProjectMaster_Code}&partyMaster_Code=${partyMaster_Code}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
