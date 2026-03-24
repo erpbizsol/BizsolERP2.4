@@ -12,7 +12,6 @@ const API_ENDPOINT_GRNPaymentApprovalConfig = {
             }
         );
     },
-
     // ── Get all approval levels (LOCATE) ──────────────────────────────────────
     GetLevelList: function GetLevelList() {
         return API_ENDPOINT_GRNPaymentApprovalConfig.GetGRNPaymentddl('LOCATE');
