@@ -10,19 +10,65 @@ var G_VendorVerifyCode = 0;
 let G_IsClientOrVendor = 'N';
 let G_ModuleName = "Vendor Master";
 window.G_VendorHasVerifyRight = false;
+/** From GetFixedParameterDetails; when Y, show stats strip + Verify column (with menu Verify right). */
+window.G_PartyVerificationBeforeOrderY = false;
+
 function syncVendorModuleContextFromHeading() {
     var raw = ($("#ERPHeading").text() || "").trim();
     G_ModuleName = raw || "Vendor Master";
     G_IsClientOrVendor = G_ModuleName === "Vendor Master" ? "V" : "C";
 }
 
+function extractPartyVerificationBeforeOrderY(res) {
+    var row = null;
+    if (Array.isArray(res) && res.length > 0) row = res[0];
+    else if (res && Array.isArray(res.data) && res.data.length > 0) row = res.data[0];
+    else if (res && Array.isArray(res.Data) && res.Data.length > 0) row = res.Data[0];
+    else if (res && typeof res === "object" && !Array.isArray(res)) row = res;
+    if (!row || typeof row !== "object") return false;
+    var v = row.PartyVerificationBeforeOrder;
+    if (v === undefined || v === null) v = row.partyVerificationBeforeOrder;
+    if (v === undefined || v === null) return false;
+    var s = String(v).trim().toUpperCase();
+    return s === "Y" || s === "YES" || s === "1";
+}
+
+function applyVendorMasterPartyVerificationUi() {
+    var show = !!window.G_PartyVerificationBeforeOrderY;
+    var $strip = $("#vendorMasterStatsStrip");
+    if (!$strip.length) return;
+    if (show) {
+        $strip.show();
+    } else {
+        $strip.hide();
+        window.G_VendorStatFilter = "all";
+    }
+}
+
+function shouldShowVendorPartyVerifyColumn() {
+    return !!(window.G_PartyVerificationBeforeOrderY && window.G_VendorHasVerifyRight);
+}
+
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     syncVendorModuleContextFromHeading();
     applyVendorMasterClientModeUi();
-    resolveVendorVerifyRight().then(function () {
-        GetVendorMasterList();
-    });
+    window.G_PartyVerificationBeforeOrderY = false;
+
+    VendorMasterService.GetFixedParameterDetails()
+        .then(function (res) {
+            window.G_PartyVerificationBeforeOrderY = extractPartyVerificationBeforeOrderY(res);
+        })
+        .catch(function () {
+            window.G_PartyVerificationBeforeOrderY = false;
+        })
+        .finally(function () {
+            applyVendorMasterPartyVerificationUi();
+            resolveVendorVerifyRight().then(function () {
+                GetVendorMasterList();
+            });
+        });
+
     GetNationList();
     GetStateList();
     GetCityList();
@@ -282,6 +328,7 @@ window.G_VendorMasterSourceRows = window.G_VendorMasterSourceRows || [];
 window.G_VendorStatFilter = window.G_VendorStatFilter || "all";
 function filterVendorRowsByStat(rows, mode) {
     var list = Array.isArray(rows) ? rows : [];
+    if (!window.G_PartyVerificationBeforeOrderY) return list.slice();
     if (mode === "verified") return list.filter(function (r) { return rowIsVerified(r); });
     if (mode === "pending") return list.filter(function (r) { return !rowIsVerified(r); });
     return list.slice();
@@ -289,7 +336,7 @@ function filterVendorRowsByStat(rows, mode) {
 function mapVendorRowsToGrid(rows) {
     return rows.map(function (item) {
         var verifyCell = "";
-        if (window.G_VendorHasVerifyRight) {
+        if (shouldShowVendorPartyVerifyColumn()) {
             verifyCell = rowIsVerified(item)
                 ? buildVerifiedBadgeHtml(item)
                 : '<button type="button" class="vm-btn-verify" onclick="VerifyVendor(' +
@@ -299,7 +346,7 @@ function mapVendorRowsToGrid(rows) {
 
         if (G_IsClientOrVendor === "C") {
             var clientPatch = {};
-            if (window.G_VendorHasVerifyRight) {
+            if (shouldShowVendorPartyVerifyColumn()) {
                 clientPatch.Verify = verifyCell;
             }
             return Object.assign({}, item, clientPatch);
@@ -316,7 +363,7 @@ function mapVendorRowsToGrid(rows) {
             '<i class="fas fa-trash-can"></i>' +
             "</button>";
         var patch = {};
-        if (window.G_VendorHasVerifyRight) {
+        if (shouldShowVendorPartyVerifyColumn()) {
             patch.Verify = verifyCell;
         }
         patch.Action = btns;
@@ -356,11 +403,14 @@ function getVendorMasterHiddenColumns() {
     if (G_IsClientOrVendor === "C") {
         cols.push("Action");
     }
+    if (!window.G_PartyVerificationBeforeOrderY) {
+        cols.push("Verify");
+    }
     return cols;
 }
 function getVendorMasterColumnAlignment() {
     var ca = {};
-    if (window.G_VendorHasVerifyRight) {
+    if (shouldShowVendorPartyVerifyColumn()) {
         ca.Verify = "center;min-width:96px;white-space:nowrap;";
     }
     if (G_IsClientOrVendor === "V") {
@@ -369,9 +419,14 @@ function getVendorMasterColumnAlignment() {
     return ca;
 }
 function syncVendorStatChipClasses() {
+    if (!window.G_PartyVerificationBeforeOrderY) return;
     var mode = window.G_VendorStatFilter || "all";
-    $(".vm-stat-chip[data-vm-filter]").removeClass("vm-stat-chip--active").attr("aria-pressed", "false");
-    $('.vm-stat-chip[data-vm-filter="' + mode + '"]').addClass("vm-stat-chip--active").attr("aria-pressed", "true");
+    $("#vendorMasterStatsStrip .vm-stat-chip[data-vm-filter]")
+        .removeClass("vm-stat-chip--active")
+        .attr("aria-pressed", "false");
+    $('#vendorMasterStatsStrip .vm-stat-chip[data-vm-filter="' + mode + '"]')
+        .addClass("vm-stat-chip--active")
+        .attr("aria-pressed", "true");
 }
 function refreshVendorMasterGrid() {
     var source = window.G_VendorMasterSourceRows || [];
@@ -652,6 +707,14 @@ function ViewVendor(code) {
 }
 
 function VerifyVendor(code) {
+    if (!window.G_PartyVerificationBeforeOrderY) {
+        toastr.warning("Party verification is not enabled in fixed parameters.");
+        return;
+    }
+    if (!window.G_VendorHasVerifyRight) {
+        toastr.warning("You do not have Verify permission.");
+        return;
+    }
     G_VendorVerifyCode = code;
     var isClient = G_IsClientOrVendor === "C";
     var noun = isClient ? "client" : "vendor";
@@ -668,6 +731,11 @@ function CloseVendorVerifyModal() {
 function DoVendorVerify() {
     var code = G_VendorVerifyCode;
     if (!code) {
+        CloseVendorVerifyModal();
+        return;
+    }
+    if (!window.G_PartyVerificationBeforeOrderY) {
+        toastr.warning("Party verification is not enabled in fixed parameters.");
         CloseVendorVerifyModal();
         return;
     }
