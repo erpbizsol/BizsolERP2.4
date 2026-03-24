@@ -1,0 +1,495 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentApproval.js"></script>
+
+<style>
+    /* ── GRN Payment Approval — same visual system as GRN Service ── */
+    .po-step-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 14px;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease;
+    }
+        .po-step-card:hover { box-shadow: 0 4px 20px rgba(102,126,234,0.13); }
+    .po-step-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 18px;
+        background: #fafbff;
+        border-bottom: 1px solid #eef0f8;
+        border-left: 4px solid var(--step-clr, #667eea);
+    }
+    .po-step-num {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--step-clr, #667eea);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.72rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(102,126,234,0.35);
+    }
+    .po-step-title {
+        font-weight: 700;
+        font-size: 0.84rem;
+        color: #1e293b;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        flex: 1;
+    }
+    .po-step-icon { color: var(--step-clr, #667eea); font-size: 1rem; }
+    .po-step-body { padding: 16px 18px; }
+    .po-field-lbl {
+        font-size: 0.79rem;
+        font-weight: 600;
+        color: #475569;
+    }
+    .form-control, .form-select {
+        border: 1.5px solid #ddd6fe;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        background-color: #f5f3ff;
+        color: #1e1b4b;
+        transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+    }
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+        }
+        .form-control[readonly] {
+            background-color: #ede9fe;
+            border-color: #c4b5fd;
+            color: #5b21b6;
+            cursor: default;
+        }
+    .form-control-sm, .form-select-sm {
+        height: 30px;
+        padding: 3px 8px;
+        font-size: 0.8rem;
+    }
+    textarea.form-control-sm {
+        height: auto;
+        min-height: 56px;
+        resize: vertical;
+    }
+    .req { color: #ef4444; }
+    .items-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+        .items-table thead tr th:first-child { border-radius: 8px 0 0 0; }
+        .items-table thead tr th:last-child { border-radius: 0 8px 0 0; }
+        .items-table tbody tr { transition: background 0.15s; }
+        .items-table tbody tr:hover { background: #f5f3ff; }
+        .items-table tbody tr td {
+            padding: 4px 5px;
+            vertical-align: middle;
+            border: 1px solid #ede9fe;
+            font-size: 0.79rem;
+        }
+        .items-table .form-control-sm { height: 27px; border-radius: 6px; }
+        .items-table input[type="number"] { text-align: right; }
+    th {
+        background: linear-gradient(135deg, #5b5ef4, #5b5ef4) !important;
+        color: #fff !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        padding: 5px 14px !important;
+        white-space: nowrap;
+        min-width: 99px !important;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+        th:hover {
+            background: linear-gradient(90deg, #e6091f 0%, #6b5ee6 100%) !important;
+        }
+    table, th, td, tr {
+        border: 1px solid #ddd;
+        vertical-align: middle;
+    }
+    .gpa-tfoot td {
+        font-weight: 700;
+        font-size: 0.82rem;
+        background: #faf5ff;
+        border: 1px solid #ddd6fe !important;
+    }
+    .gpa-tfoot .gpa-lbl { text-align: right; color: #475569; }
+    .gpa-tfoot .gpa-val input {
+        font-weight: 700;
+        text-align: right;
+        background: #ede9fe !important;
+        border-color: #c4b5fd !important;
+        color: #5b21b6;
+    }
+    .gpa-hint-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: linear-gradient(135deg,rgba(102,126,234,0.08),rgba(118,75,162,0.06));
+        border: 1px dashed rgba(102,126,234,0.45);
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.8rem;
+        color: #475569;
+        line-height: 1.5;
+    }
+    /* ── FLOATING SAVE BAR (GRN same) ── */
+    #floatBar.po-float-bar {
+        display: flex !important;
+        position: fixed;
+        bottom: 44px;
+        left: 0;
+        right: 0;
+        margin-left: 280px;
+        z-index: 1050;
+        background: rgba(255,255,255,0.97);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-top: 3px solid #667eea;
+        border-bottom: 1px solid #e2e8f0;
+        box-shadow: 0 -3px 18px rgba(102,126,234,0.18);
+        padding: 10px 24px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: nowrap;
+    }
+    .po-float-bar-left { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .po-float-bar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: auto; }
+    .po-no-pill {
+        background: linear-gradient(135deg,rgba(102,126,234,0.1),rgba(118,75,162,0.1));
+        border: 1px solid rgba(102,126,234,0.2);
+        border-radius: 20px;
+        padding: 4px 14px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #667eea;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .btn-po-save {
+        background: linear-gradient(170deg, #ffffff, #ffffff);
+        border: none;
+        color: #925bf7;
+        border-radius: 10px;
+        padding: 3px 28px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        box-shadow: 0 4px 14px rgb(255 255 255);
+        transition: all 0.2s;
+        cursor: pointer;
+        line-height: 1.4;
+    }
+        .btn-po-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102,126,234,0.5);
+            color: #e6091f;
+        }
+    .btn-po-cancel {
+        background: linear-gradient(135deg,#f59e0b,#d97706);
+        border: none;
+        color: #fff;
+        border-radius: 10px;
+        padding: 4px 24px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        box-shadow: 0 4px 14px rgba(245,158,11,0.4);
+        transition: all 0.2s;
+        cursor: pointer;
+        line-height: 1.4;
+    }
+        .btn-po-cancel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245,158,11,0.5);
+            color: #fff;
+        }
+    .po-form-wrap { padding-bottom: 100px; }
+    .items-desktop-wrap { display: block !important; overflow-x: auto; }
+    .section-entry-animation {
+        animation: gpaFadeSlideIn 0.3s ease both;
+    }
+    @@keyframes gpaFadeSlideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    /* GRNService.showToast uses animation: fadeSlideIn */
+    @@keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @@media (max-width: 768px) {
+        #floatBar.po-float-bar {
+            bottom: 95px;
+            margin-left: 0;
+            padding: 9px 14px;
+            justify-content: flex-end;
+            border-radius: 14px 14px 0 0;
+        }
+        .po-float-bar-left { display: none; }
+        .po-float-bar-right { width: 100%; justify-content: flex-end; gap: 8px; }
+        .po-form-wrap { padding-bottom: 150px; }
+    }
+    /* ── LIST (same pattern as GRNService) ── */
+    .po-list-header {
+        background: linear-gradient(130deg, #5b5ef4 0%, #8b5cf6 55%, #a855f7 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .po-list-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .po-list-header small { color: rgba(255,255,255,0.75); font-size: 0.78rem; display: block; }
+    .po-grid-wrap {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 12px rgba(102,126,234,0.07);
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    .table-wrapper.po-table-scroll { max-height: 420px; overflow-y: auto; }
+    .vm-btn-new {
+        background: rgba(255,255,255,0.18);
+        border: 1.5px solid rgba(255,255,255,0.55);
+        color: #fff !important;
+        border-radius: 10px;
+        padding: 6px 18px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.14s;
+    }
+    .vm-btn-new:hover {
+        background: rgba(255,255,255,0.26);
+        border-color: rgba(255,255,255,0.80);
+        transform: translateY(-1px);
+    }
+    .im-btn-edit {
+        display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
+        background: #eff6ff; color: #2563eb; border: 1.5px solid #bfdbfe; border-radius: 7px;
+        font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s; margin-right: 4px;
+    }
+    .im-btn-edit:hover { background: #2563eb; color: #fff; border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
+    .im-btn-delete {
+        display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
+        background: #fee2e2; color: #dc2626; border: 1.5px solid #fca5a5; border-radius: 7px;
+        font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s;
+    }
+    .im-btn-delete:hover { background: #dc2626; color: #fff; border-color: #dc2626; box-shadow: 0 2px 8px rgba(220,38,38,0.3); }
+</style>
+
+<!-- ── LIST VIEW ───────────────────────────────── -->
+<div id="divGPAList" class="container-fluid mt-3">
+    <div class="po-list-header">
+        <div>
+            <h5><i class="fa fa-money-check-alt me-2"></i>GRN Payment Approval List</h5>
+            <small>Payment entries – all records</small>
+        </div>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <button type="button" class="vm-btn-new" onclick="newGRNPaymentApproval()">
+                <i class="fa fa-plus me-1"></i> New
+            </button>
+        </div>
+    </div>
+    <div class="po-grid-wrap">
+        <div class="table-wrapper po-table-scroll">
+            <table class="items-table w-100" id="gpaListTable">
+                <thead id="gpaListTable-hader"></thead>
+                <tbody id="gpaListTbody-body"></tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-gpaListTable"></div>
+    </div>
+</div>
+
+<div id="divGPAForm" class="container-fluid mt-3 po-form-wrap" style="display:none;">
+
+    <!-- ── SECTION 1 : same pattern as GRN “GRN Information” ── -->
+    <div class="po-step-card section-entry-animation" style="--step-clr:#667eea;">
+        <div class="po-step-header">
+            <div class="po-step-num">1</div>
+            <span class="po-step-title">GRN Payment Approval</span>
+            <i class="fa fa-file-invoice po-step-icon ms-auto"></i>
+        </div>
+        <div class="po-step-body">
+            <div class="row g-2">
+                <input type="hidden" id="hdnGRNPaymentMasterCode" value="0" />
+                <div class="col-md-3">
+                    <label class="po-field-lbl d-block mb-1">Entry No</label>
+                    <input type="text" id="txtEntryNo" class="form-control form-control-sm" autocomplete="off" placeholder="Auto Generate" readonly>
+                </div>
+                <div class="col-md-3">
+                    <label class="po-field-lbl d-block mb-1">Date <span class="req">*</span></label>
+                    <input type="date" id="dtPaymentDate" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-md-3">
+                    <label class="po-field-lbl d-block mb-1">Party Name <span class="req">*</span></label>
+                    <select id="ddlPartyName" class="form-control form-control-sm" autocomplete="off" onchange="onPartyChange()">
+                        <option value="">-- Select Party --</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="po-field-lbl d-block mb-1">Payment mode</label>
+                    <select id="ddlPaymentMode" class="form-control form-control-sm" title="BANKPAYMENTTYPE (API)">
+                        <option value="">-- Select --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-md-3">
+                    <label class="po-field-lbl d-block mb-1">Ref No / CH No</label>
+                    <input type="text" id="txtRefNo" class="form-control form-control-sm" maxlength="50" autocomplete="off" placeholder="Reference / Cheque no.">
+                </div>
+                <div class="col-md-3">
+                    <label class="po-field-lbl d-block mb-1">Amount</label>
+                    <input type="number" id="txtHeaderAmount" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00" autocomplete="off">
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="gpa-hint-box w-100 mb-1">
+                        <i class="fa fa-info-circle" style="color:#667eea;flex-shrink:0;"></i>
+                        <span>Fill all working fields before save. Total payment and Advance / On account update automatically.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-12">
+                    <label class="po-field-lbl d-block mb-1">Narration</label>
+                    <textarea id="txtNarration" class="form-control form-control-sm" rows="2" maxlength="225" autocomplete="off" placeholder="Enter narration (optional)"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── SECTION 2 : same pattern as GRN “GRN Item Details” ── -->
+    <div class="po-step-card section-entry-animation" style="--step-clr:#10b981;">
+        <div class="po-step-header">
+            <div class="po-step-num" style="background:linear-gradient(135deg,#10b981,#059669);">2</div>
+            <span class="po-step-title">Bill allocation</span>
+            <i class="fa fa-table po-step-icon ms-auto" style="color:#10b981;"></i>
+        </div>
+        <div class="po-step-body p-0">
+            <div class="px-3 pt-3 pb-2 d-flex flex-wrap align-items-end gap-2 justify-content-end">
+                <div class="mb-1">
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="addBillRowFromBar()" title="Add blank row">
+                        <i class="fa fa-plus me-1"></i> Add row
+                    </button>
+                </div>
+            </div>
+            <div class="items-desktop-wrap table-responsive">
+                <table class="items-table" style="min-width:720px;">
+                    <thead>
+                        <tr>
+                            <th>Bill no</th>
+                            <th>Bill date</th>
+                            <th>Bill amount</th>
+                            <th>Payable amount</th>
+                            <th>Payment amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="billTbody"></tbody>
+                    <tfoot class="gpa-tfoot">
+                        <tr>
+                            <td colspan="3"></td>
+                            <td class="gpa-lbl">Total</td>
+                            <td class="gpa-val"><input type="text" id="txtFooterTotal" class="form-control form-control-sm" readonly tabindex="-1" value="0.00"></td>
+                        </tr>
+                        <tr>
+                            <td colspan="3"></td>
+                            <td class="gpa-lbl">Advance / On account</td>
+                            <td class="gpa-val"><input type="text" id="txtFooterAdvance" class="form-control form-control-sm" readonly tabindex="-1" value="0.00"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── FLOATING SAVE BAR (GRN same layout) ── -->
+<div class="po-float-bar" id="floatBar" style="display:none;">
+    <div class="po-float-bar-left">
+        <div class="po-no-pill">
+            <i class="fa fa-money-check-alt"></i>
+            <span id="floatEntryNo">New</span>
+            <span class="text-muted small ms-1">·</span>
+            <span id="floatPayTitle">GRN Payment Approval</span>
+        </div>
+    </div>
+    <div class="po-float-bar-right">
+        <button type="button" class="btn-po-cancel" onclick="cancelGRNPaymentApproval()">
+            <i class="fa fa-arrow-left me-1"></i> Back to List
+        </button>
+        <button type="button" class="btn-po-cancel" onclick="resetGRNPaymentApprovalForm()">
+            <i class="fa fa-undo me-1"></i> Reset
+        </button>
+        <button type="button" class="btn-po-save" onclick="saveGRNPaymentApproval()">
+            <i class="fa fa-save me-1"></i> Save
+        </button>
+    </div>
+</div>
+
+<!-- ── DELETE CONFIRMATION (GRN-style) ── -->
+<div class="modal fade" id="gpaDeleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+            <div class="modal-header" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;">
+                <h6 class="modal-title mb-0"><i class="fa fa-exclamation-triangle me-2"></i>Confirm Delete</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:20px 24px;">
+                <p style="font-size:0.88rem;color:#334155;margin-bottom:14px;">
+                    Delete payment entry:
+                    <strong id="gpaDeleteEntryLabel" style="color:#ef4444;"></strong>?
+                    <br><small class="text-muted">This action cannot be undone.</small>
+                </p>
+                <div>
+                    <label style="font-size:0.79rem;font-weight:600;color:#475569;margin-bottom:4px;display:block;">
+                        Reason for Delete <span style="color:#ef4444;">*</span>
+                    </label>
+                    <textarea id="gpaTxtDeleteReason" class="form-control form-control-sm" rows="2" placeholder="Enter reason for deletion..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:10px 20px 18px;">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal" style="border-radius:8px;padding:6px 18px;">
+                    <i class="fa fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" id="gpaBtnConfirmDelete"
+                        style="border-radius:8px;padding:6px 18px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;">
+                    <i class="fa fa-trash me-1"></i> Yes, Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const sidebar = document.getElementById('modern-sidebar');
+        const bar = document.getElementById('floatBar');
+        if (!sidebar || !bar) return;
+        function syncMargin() {
+            if (window.innerWidth <= 768) { bar.style.marginLeft = ''; return; }
+            bar.style.marginLeft = sidebar.classList.contains('collapsed') ? '70px' : '280px';
+        }
+        syncMargin();
+        new MutationObserver(syncMargin).observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+        window.addEventListener('resize', syncMargin);
+    })();
+</script>
