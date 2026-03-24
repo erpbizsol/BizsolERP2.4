@@ -2,7 +2,8 @@ import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFun
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 
-let G_ProjectList = [];
+let G_ProjectList         = [];
+let G_ActiveStatusFilter  = 'all'; // 'all' | 'running' | 'pending'
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
@@ -41,7 +42,17 @@ $(document).ready(function () {
     });
 
     $('#pmSearch').on('input', function () {
-        filterProjects($(this).val().toLowerCase().trim());
+        applyProjectFilters();
+    });
+
+    $('.pm-stat-chip[data-filter]').on('click', function () {
+        const filter = $(this).data('filter');
+        if (filter) {
+            G_ActiveStatusFilter = filter;
+            $('.pm-stat-chip[data-filter]').removeClass('pm-stat-active');
+            $(this).addClass('pm-stat-active');
+            applyProjectFilters();
+        }
     });
 });
 
@@ -333,13 +344,13 @@ function loadProjects() {
             HideLoader && HideLoader();
             G_ProjectList = Array.isArray(response) ? response : [];
             updateStats(G_ProjectList);
-            bindProjectGrid(G_ProjectList);
+            applyProjectFilters();
         })
         .catch(function (error) {
             HideLoader && HideLoader();
             G_ProjectList = [];
             updateStats([]);
-            bindProjectGrid([]);
+            applyProjectFilters();
             toastr.error((error && error.Msg));
         });
 }
@@ -427,15 +438,33 @@ function bindProjectGrid(list) {
     });
 }
 
-/* ── Client-side search ──────────────────────────────────── */
+/* ── Apply status + search filters and bind grid ──────────── */
+function applyProjectFilters() {
+    const query = ($('#pmSearch').val() || '').toLowerCase().trim();
+    let list   = G_ProjectList;
+
+    // Status filter (from card click)
+    if (G_ActiveStatusFilter === 'running') {
+        list = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'Y'; });
+    } else if (G_ActiveStatusFilter === 'pending') {
+        list = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'N'; });
+    }
+
+    // Search filter
+    if (query) {
+        list = list.filter(function (item) {
+            const code = (item.ProjectCode || '').toLowerCase();
+            const name = (item.ProjectDesp || item.ProjectName || '').toLowerCase();
+            return code.includes(query) || name.includes(query);
+        });
+    }
+
+    bindProjectGrid(list);
+}
+
+/* ── Client-side search (legacy, now delegates to apply) ─── */
 function filterProjects(query) {
-    if (!query) { bindProjectGrid(G_ProjectList); return; }
-    const filtered = G_ProjectList.filter(function (item) {
-        const code = (item.ProjectCode || '').toLowerCase();
-        const name = (item.ProjectDesp || item.ProjectName || '').toLowerCase();
-        return code.includes(query) || name.includes(query);
-    });
-    bindProjectGrid(filtered);
+    applyProjectFilters();
 }
 
 /* ── Budget formatting ───────────────────────────────────── */
