@@ -99,12 +99,22 @@ const PurchaseOrderStoreService = {
         return PurchaseOrderStoreService.Getddl('DDL_BILLTOSHIPTOADDRLIST');
     },
 
+    GetSiteRepresentativeList: function GetSiteRepresentativeList() {
+        return PurchaseOrderStoreService.Getddl('DDL_SITEREPRESENTATIVELIST');
+    },
+
     SaveBillToShipToAddress: function SaveBillToShipToAddress(payload) {
         let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/SaveBillToShipToAddress`;
         return promiseAjaxCallApi.CallAPI('POST', url, payload).then(function (value) { return value; });
     },
 
+    SaveSiteRepresentative: function SaveSiteRepresentative(payload) {
+        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/SaveSiteRepresentative`;
+        return promiseAjaxCallApi.CallAPI('POST', url, payload).then(function (value) { return value; });
+    },
+
     SavePaymentTerms: function SavePaymentTerms(payload) {
+
         let url = UrlService.API_ENDPOINT_PAYMENT_TERMS_MASTER + `/SavePaymentTermsMaster`;
         return promiseAjaxCallApi.CallAPI('POST', url, payload).then(function (value) { return value; });
     }

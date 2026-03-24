@@ -16,6 +16,7 @@ let G_SubProjectList = [];
 let G_ItemRowCount = 0;
 let G_MobileItemEditRowId = null;
 let G_BillToShipToList = [];
+let G_SiteRepList = [];
 
 BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
@@ -102,6 +103,7 @@ function InitDropdowns() {
     LoadUOMDropdown();
     LoadPaymentTermsDropdown();
     LoadBillToShipToDropdown();
+    LoadSiteRepDropdown();
 }
 
 function LoadStatusDropdown() {
@@ -165,10 +167,11 @@ function GetFilteredItemList() {
     const subProjectCode = parseInt($('#frmDdlSubProject').val()) || 0;
     const workTypeCode   = parseInt($('#frmDdlWorkType').val())   || 0;
 
-    if (againstProject && subProjectCode) {
+    if (againstProject && subProjectCode && workTypeCode) {
         return G_ItemMasterList.filter(i =>
             i.ProjectMaster_Code    == projectCode &&
-            i.SubProjectMaster_Code == subProjectCode
+            i.SubProjectMaster_Code == subProjectCode &&
+            i.WorkTypeMaster_Code == workTypeCode
         );
     }
     if (workTypeCode) {
@@ -366,7 +369,88 @@ window.SaveBillToShipToAddress = function () {
     });
 };
 
-// ─── PO LIST GRID ────────────────────────────────────────────────────────────
+// ─── SITE REPRESENTATIVE ──────────────────────────────────────────────────
+
+function LoadSiteRepDropdown(selectedCode) {
+    PurchaseOrderStoreService.GetSiteRepresentativeList().then(function (data) {
+        G_SiteRepList = data || [];
+        PopulateSiteRepDropdown(selectedCode);
+    }).catch(function () {
+        G_SiteRepList = [];
+        PopulateSiteRepDropdown(selectedCode);
+    });
+}
+
+function PopulateSiteRepDropdown(selectedCode) {
+    let opts = '<option value="">-- Select Site Representative --</option>';
+    G_SiteRepList.forEach(function (r) {
+        opts += '<option value="' + r.Code + '">' + r.Name + '</option>';
+    });
+    if ($('#frmDdlSiteRep').data('select2')) $('#frmDdlSiteRep').select2('destroy');
+    $('#frmDdlSiteRep').html(opts);
+    if ($.fn.select2) {
+        $('#frmDdlSiteRep').select2({
+            placeholder: '-- Select Site Representative --',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('body')
+        });
+        $('#frmDdlSiteRep').off('change.srep').on('change.srep', function () {
+            ShowSiteRepDetails($(this).val());
+        });
+    }
+    if (selectedCode) { $('#frmDdlSiteRep').val(selectedCode).trigger('change'); }
+}
+
+function ShowSiteRepDetails(code) {
+    if (!code) { $('#divSiteRepDetails').hide(); return; }
+    const rep = G_SiteRepList.find(function (r) { return String(r.Code) === String(code); });
+    if (!rep) { $('#divSiteRepDetails').hide(); return; }
+    $('#siteRepName').text(rep.Name || '');
+    $('#siteRepMobile').text(rep.Mobile || rep.MobileNo || '');
+    $('#siteRepEmail').text(rep.Email || '');
+    $('#divSiteRepDetails').show();
+}
+
+window.OpenAddSiteRepModal = function () {
+    $('#siteRepTxtName').val('');
+    $('#siteRepTxtMobile').val('');
+    $('#siteRepTxtEmail').val('');
+    $('#modalAddSiteRep').modal('show');
+};
+
+window.SaveSiteRepresentative = function () {
+    const name   = $('#siteRepTxtName').val().trim();
+    const mobile = $('#siteRepTxtMobile').val().trim();
+    const email  = $('#siteRepTxtEmail').val().trim();
+    if (!name) { toastr.warning('Please enter Name.'); return; }
+    if (mobile && !/^[6-9]\d{9}$/.test(mobile)) {
+        toastr.warning('Please enter a valid 10-digit Mobile No (starting with 6–9).');
+        $('#siteRepTxtMobile').focus();
+        return;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        toastr.warning('Please enter a valid Email address.');
+        $('#siteRepTxtEmail').focus();
+        return;
+    }
+    const payload = JSON.stringify({ siteRepresentatives: [{ Code: 0, Name: name, MobileNo: mobile, Email: email }]});
+    PurchaseOrderStoreService.SaveSiteRepresentative(payload).then(function (res) {
+        if (res && res.Status === 'Y') {
+            toastr.success(res.Msg || 'Site Representative saved.');
+            $('#modalAddSiteRep').modal('hide');
+            const newCode = res.Code || res.NewCode || null;
+            LoadSiteRepDropdown(newCode);
+        } else {
+            toastr.error(res ? res.Msg : 'Failed to save Site Representative.');
+        }
+    }).catch(function (err) {
+        toastr.error('Error saving Site Representative.');
+        console.error(err);
+    });
+};
+
+// ─── PO LIST GRID ──────────────────────────────────────────────────
 
 window.ShowPOListGrid = function () {
     const fromDate = $('#lstTxtFromDate').val();
@@ -506,6 +590,12 @@ function ResetPOForm() {
     }
     $('#divBillToAddress').hide();
     $('#divShipToAddress').hide();
+    if ($('#frmDdlSiteRep').data('select2')) {
+        $('#frmDdlSiteRep').val(null).trigger('change');
+    } else {
+        $('#frmDdlSiteRep').val('');
+    }
+    $('#divSiteRepDetails').hide();
 }
 
 // ─── ADD / DELETE ITEM ROWS ──────────────────────────────────────────────────
@@ -708,7 +798,8 @@ window.SavePO = function () {
             billingAddress: parseInt($('#frmDdlBillTo').val()) || 0,
             ShippingAdress: parseInt($('#frmDdlShipTo').val()) || 0,
             subProjectMaster_Code: agaistProject === 'Y' ? (parseInt($('#frmDdlSubProject').val()) || 0) : 0,
-            workTypeMaster_Code: parseInt($('#frmDdlWorkType').val()) || 0
+            workTypeMaster_Code: parseInt($('#frmDdlWorkType').val()) || 0,
+            SiteRepresentativeMaster_Code: parseInt($('#frmDdlSiteRep').val()) || 0
         }],
         transactions: transactions
     };
@@ -788,6 +879,13 @@ function LoadPOForEdit(code) {
         $('#frmTxtOtherChargesLbl2').val('Freight');
         $('#frmTxtOtherCharges2').val(header.FreightAmount || 0);
         $('#frmChkRoundOff').prop('checked', header.IsRoundOff === 'Y');
+        if (G_SiteRepList.length > 0) {
+            if (header.SiteRepresentativeMaster_Code) {
+                $('#frmDdlSiteRep').val(header.SiteRepresentativeMaster_Code).trigger('change');
+            }
+        } else {
+            LoadSiteRepDropdown(header.SiteRepresentativeMaster_Code || null);
+        }
 
         $('#tblPOItemsBody').html('');
         G_ItemRowCount = 0;
@@ -929,6 +1027,18 @@ window.ViewPO = function (code) {
             </tr>`;
         });
 
+        const siteRepObj = G_SiteRepList.find(function (r) { return r.Code == header.SiteRepresentativeMaster_Code; }) || null;
+        let siteRepViewHtml = '';
+        if (siteRepObj) {
+            const srMobile = siteRepObj.Mobile || siteRepObj.MobileNo || '';
+            let sr = '<div class="row g-2 mt-1">';
+            if (siteRepObj.Name)  sr += '<div class="col-md-4" style="font-size:0.8rem;"><i class="fa fa-user me-1 text-muted"></i><b>Name:</b> ' + siteRepObj.Name + '</div>';
+            if (srMobile)         sr += '<div class="col-md-4" style="font-size:0.8rem;"><i class="fa fa-phone me-1 text-muted"></i><b>Mobile:</b> ' + srMobile + '</div>';
+            if (siteRepObj.Email) sr += '<div class="col-md-4" style="font-size:0.8rem;"><i class="fa fa-envelope me-1 text-muted"></i><b>Email:</b> ' + siteRepObj.Email + '</div>';
+            sr += '</div>';
+            siteRepViewHtml = '<div class="row g-2 mb-3"><div class="col-12"><div class="bts-view-panel" style="border-color:#d1fae5;background:#f0fdf4;"><div class="bts-vp-title" style="color:#059669;"><i class="fa fa-user-tie me-1"></i>Site Representative</div>' + sr + '</div></div></div>';
+        }
+
         $('#modalViewPOBody').html(`
             <div class="row g-2 mb-3">
                 <div class="col-md-6">
@@ -980,6 +1090,7 @@ window.ViewPO = function (code) {
                     </div>
                 </div>
             </div>
+            ${siteRepViewHtml}
             ${BuildApprovalFlowHTML(approvalFlow)}
             <div class="table-responsive">
                 <table class="table table-sm table-bordered">
@@ -1356,6 +1467,19 @@ function PrintPO(code, mode) {
             shipToSection = '<div class="info-row"><div class="info-cell full"><div class="info-label">Ship To :</div>' + st + '</div></div>';
         }
 
+        const siteRepPrint = G_SiteRepList.find(function (r) { return r.Code == header.SiteRepresentativeMaster_Code; }) || null;
+        let siteRepSection = '';
+        const srName   = siteRepPrint ? (siteRepPrint.Name                              || '') : '';
+        const srMobile = siteRepPrint ? (siteRepPrint.Mobile || siteRepPrint.MobileNo   || '') : '';
+        const srEmail  = siteRepPrint ? (siteRepPrint.Email                              || '') : '';
+        if (srName || srMobile || srEmail) {
+            let sr = '';
+            if (srName)   sr += '<span style="margin-right:14px;"><b>Name : </b>' + srName + '</span>';
+            if (srMobile) sr += '<span style="margin-right:14px;"><b>Mobile : </b>' + srMobile + '</span>';
+            if (srEmail)  sr += '<span><b>Email : </b>' + srEmail + '</span>';
+            siteRepSection = '<div class="info-row"><div class="info-cell full"><div class="info-label">Site Representative :</div><div class="info-field" style="padding-top:2px;">' + sr + '</div></div></div>';
+        }
+
         let itemRows = '';
         details.forEach(function (det, idx) {
             const itm     = G_ItemMasterList.find(i => i.Code == det.ItemMaster_Code) || {};
@@ -1468,6 +1592,8 @@ function PrintPO(code, mode) {
             + '</div>'
             // Ship To
             + shipToSection
+            // Site Representative
+            + siteRepSection
             // Section band
             + '<div class="sec-band">' + sectionBand + '</div>'
             // Items table
@@ -1530,4 +1656,6 @@ window.MobileCalcValue = MobileCalcValue;
 window.MobileItemModalConfirm = MobileItemModalConfirm;
 window.RefreshAllItemDropdowns = RefreshAllItemDropdowns;
 window.PrintPO = PrintPO;
+window.OpenAddSiteRepModal = OpenAddSiteRepModal;
+window.SaveSiteRepresentative = SaveSiteRepresentative;
 
