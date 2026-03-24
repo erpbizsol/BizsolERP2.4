@@ -113,7 +113,7 @@ async function GetBuyingCapacityList() {
                     __RowIndex: index
                 };
             });
-            const StringFilterColumn = ["Party Name", "Marketing Person","Country", "City", "State","PinCode","Customer Rating"];
+            const StringFilterColumn = ["Party Name", "Marketing Person","Country", "City", "State","PinCode"];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
             const Button = false;
