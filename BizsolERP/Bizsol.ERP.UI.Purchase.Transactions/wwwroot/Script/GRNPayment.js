@@ -7,6 +7,7 @@ let G_LevelList = [];
 let G_GroupList = [];
 let G_EditMode = 'New'; // 'New' | 'Edit'
 
+
 BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
 
 // ─── USER RIGHTS HELPER ──────────────────────────────────────────────────────
