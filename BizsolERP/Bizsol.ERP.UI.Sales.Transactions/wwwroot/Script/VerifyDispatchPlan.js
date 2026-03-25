@@ -18,7 +18,8 @@ function getViewportHeight() {
     return (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : (window.innerHeight || document.documentElement.clientHeight || 0);
 }
 function getFooterViewportOverlapHeight() {
-    const footer = document.querySelector('footer.footer');
+    // Layout uses <footer class="modern-footer"> (fixed bottom), not footer.footer
+    const footer = document.querySelector('footer.modern-footer') || document.querySelector('footer.footer') || document.querySelector('footer');
     if (!footer) return 0;
     const viewportHeight = getViewportHeight();
     const rect = footer.getBoundingClientRect();
@@ -61,6 +62,10 @@ function bindVerifyDispatchPlanTableHeightHandlers() {
     window.addEventListener('orientationchange', scheduleVerifyDispatchPlanTableHeightAdjust, { passive: true });
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', scheduleVerifyDispatchPlanTableHeightAdjust, { passive: true });
+    }
+    const sidebarEl = document.getElementById('modern-sidebar');
+    if (sidebarEl) {
+        new MutationObserver(scheduleVerifyDispatchPlanTableHeightAdjust).observe(sidebarEl, { attributes: true, attributeFilter: ['class'] });
     }
 
     setTimeout(scheduleVerifyDispatchPlanTableHeightAdjust, 0);
@@ -1801,9 +1806,9 @@ function OpenShowRemarksModal(Code) {
         const stringDoubleFilterColumn = [];
         let hiddenColumns = [];
         if ($("#ddlStatus").val() == "M") {
-             hiddenColumns = ["Marketing Remark", "PPC Remark"];
+            hiddenColumns = ["Marketing Remark", "PPC Remark","Dispatch Remark"];
         } else if($("#ddlStatus").val() == "P"){
-            hiddenColumns = ["Remarks","PPC Remark"];
+            hiddenColumns = ["Remarks", "PPC Remark","Dispatch Remark"];
         }else {
             hiddenColumns = ["Remarks"];
         }
@@ -2009,6 +2014,7 @@ function ShowFilteredList() {
         GetDispatchAdvicePlanList($("#ddlStatus").val(), fromDate, toDate);
     }
 }
+
 window.ViewAll = ViewAll;
 window.EditQty = EditQty;
 window.CloseVerifyModal = CloseVerifyModal;
