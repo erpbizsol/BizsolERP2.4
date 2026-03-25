@@ -1,4 +1,4 @@
-﻿import { BuyingCapacityService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BuyingCapacityService.js';
+import { BuyingCapacityService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BuyingCapacityService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 let G_BuyingCapacityRows = [];
@@ -98,6 +98,10 @@ function GetNestedMarketingManList() {
 }
 async function GetBuyingCapacityList() {
     var MarketingPersonName = $("#ddlMarketingMan").val();
+    // Procedure expects 'All' (not 'ALL') when showing all marketing persons
+    if (MarketingPersonName === 'ALL' || MarketingPersonName === '0') {
+        MarketingPersonName = 'All';
+    }
 
     try {
         const response = await BuyingCapacityService.GetBuyingCapacityList(MarketingPersonName);
@@ -121,11 +125,13 @@ async function GetBuyingCapacityList() {
                 const rowIndex = item.__RowIndex;
                 let BuyingFrequencyInputHTML = `<select type="text" class="form-control form-control-sm box_border" id="ddlFillBuyingFrequency_${rowIndex}" onchange="SaveBuyingCapacity(${rowIndex},'${item.Code}')"></select>`;
                 let MonthlyRequiredQtyInputHTML = `<input type="text" class="form-control form-control-sm box_border text-end" id="txtMonthlyRequired_${rowIndex}" oninput="validateDecimalRateInput(this)" onblur="SaveBuyingCapacity(${rowIndex},'${item.Code}')" style="width:120px" autocomplete="off"/>`;
+                let CustomerRatingInputHTML = `<input type="text" class="form-control form-control-sm box_border" id="txtCustomerRating_${rowIndex}" maxlength="100" onblur="SaveBuyingCapacity(${rowIndex},'${item.Code}')" style="width:150px" placeholder="Customer Rating" autocomplete="off"/>`;
 
                 return {
                     ...item,
                     'Buying Frequency': BuyingFrequencyInputHTML,
                     'Monthly Required(Qty)': MonthlyRequiredQtyInputHTML,
+                    'Customer Rating': CustomerRatingInputHTML,
                 };
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header-BuyingCapacity", "table-body-BuyingCapacity", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false);
@@ -147,6 +153,7 @@ async function GetBuyingCapacityList() {
                         if (bfText && codeMap[bfText]) { bfText = codeMap[bfText]; }
                     } catch(eMap) { }
                     var qty = baseRow.MonthlyRequiredQty != null ? baseRow.MonthlyRequiredQty : (baseRow['Monthly Required(Qty)'] != null ? baseRow['Monthly Required(Qty)'] : '');
+                    var customerRating = baseRow['Customer Rating'] != null ? baseRow['Customer Rating'] : (baseRow.CustomerRating != null ? baseRow.CustomerRating : (baseRow.Ratings != null ? baseRow.Ratings : ''));
 
                     // Bind Buying Frequency by text using helper (matches option display text)
                     try {
@@ -165,6 +172,11 @@ async function GetBuyingCapacityList() {
                     var $qtyInp = $(`#txtMonthlyRequired_${domIndex}`);
                     if ($qtyInp && $qtyInp.length) {
                         if (qty !== '' && !isNaN(qty)) { $qtyInp.val(parseFloat(qty).toFixed(3)); } else { $qtyInp.val(''); }
+                    }
+                    // Bind Customer Rating
+                    var $ratingInp = $(`#txtCustomerRating_${domIndex}`);
+                    if ($ratingInp && $ratingInp.length) {
+                        $ratingInp.val(customerRating || '');
                     }
                 }
             } catch(e) { }
@@ -188,34 +200,39 @@ function SaveBuyingCapacity(index,Code) {
             return;
         }
         var buyingFrequency = $('#ddlFillBuyingFrequency_' + index).val();
-        var monthlyQtyStr = $('#txtMonthlyRequired_' + index).val();
-        var monthlyQty = monthlyQtyStr !== undefined && monthlyQtyStr !== '' ? parseFloat(monthlyQtyStr) : 0;
+        var monthlyQtyStr = ($('#txtMonthlyRequired_' + index).val() || '').trim();
+        var monthlyQty = monthlyQtyStr !== '' ? parseFloat(monthlyQtyStr) : null;
+        var customerRatingVal = $('#txtCustomerRating_' + index).val();
+        var customerRating = (customerRatingVal != null && typeof customerRatingVal === 'string') ? String(customerRatingVal).trim().substring(0, 100) : '';
 
         if (!buyingFrequency || buyingFrequency === '0') {
             return;
         }
-        if (isNaN(monthlyQty) || monthlyQty < 0) {
+        if (monthlyQty !== null && (isNaN(monthlyQty) || monthlyQty < 0)) {
             toastr.error('Enter a valid Monthly Required Qty');
             return;
         }
 
+        // Payload - allow filling one column at a time; CustomerRating optional (empty string for null)
         var payload = {
-            ...baseItem,
-            AccountMaster_Code:Code,
+            Code: 0,
+            AccountMaster_Code: parseInt(Code, 10) || 0,
             BuyingFrequency: buyingFrequency,
-            MonthlyRequiredQty: monthlyQty
+            MonthlyRequiredQty: monthlyQty,
+            CustomerRating: customerRating === '' ? '' : customerRating
         };
 
         Showloader();
         BuyingCapacityService.SaveBuyingCapacity(JSON.stringify(payload)).then(function (response) {
             HideLoader();
             if (response) {
+                var msg = response.Message || response.Msg || '';
                 if (response.Status === 'Y') {
-                    toastr.success(response.Message || 'Saved successfully');
-                } else if (response.Status === 'U' || (response.Message && response.Message.toLowerCase().indexOf('update') >= 0)) {
-                    toastr.info(response.Message || 'Updated successfully');
+                    toastr.success(msg || 'Saved successfully');
+                } else if (response.Status === 'N') {
+                    toastr.error(msg || 'Save failed');
                 } else {
-                    toastr.error(response.Message || 'Save failed');
+                    toastr.info(msg || 'Updated successfully');
                 }
             } else {
                 toastr.error('No response received');
@@ -336,6 +353,15 @@ function refreshBuyingCapacityRowControls(rows) {
                     qty = baseRow['Monthly Required(Qty)'];
                 }
 
+                var customerRating = '';
+                if (baseRow['Customer Rating'] !== undefined && baseRow['Customer Rating'] !== null) {
+                    customerRating = baseRow['Customer Rating'];
+                } else if (baseRow.CustomerRating !== undefined && baseRow.CustomerRating !== null) {
+                    customerRating = baseRow.CustomerRating;
+                } else if (baseRow.Ratings !== undefined && baseRow.Ratings !== null) {
+                    customerRating = baseRow.Ratings;
+                }
+
                 var selectId = 'ddlFillBuyingFrequency_' + domIndex;
                 var $bfSel = $('#' + selectId);
 
@@ -365,6 +391,11 @@ function refreshBuyingCapacityRowControls(rows) {
                     } else {
                         $qtyInp.val('');
                     }
+                }
+
+                var $ratingInp = $('#txtCustomerRating_' + domIndex);
+                if ($ratingInp && $ratingInp.length) {
+                    $ratingInp.val(customerRating || '');
                 }
             }
         } catch (error) {
