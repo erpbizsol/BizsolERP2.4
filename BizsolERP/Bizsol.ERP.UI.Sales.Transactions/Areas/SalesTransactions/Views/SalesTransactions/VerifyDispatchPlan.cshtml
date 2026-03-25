@@ -56,10 +56,11 @@
     /* Fix for filter dropdown positioning */
     .table-wrapper {
         position: relative;
-        overflow: auto;
-        flex: 1;
+        overflow-x: auto;
+        overflow-y: auto;
+        flex: 1 1 auto;
         min-height: 0;
-        /* Table wrapper takes remaining space and scrolls internally */
+        -webkit-overflow-scrolling: touch;
     }
 
     .column-filter-dropdown {
@@ -302,14 +303,13 @@
         z-index: 2;
     }
 
-    /* Card container for table with proper height and flex layout */
+    /* Card: height comes from JS (tableWrapper) so it stops above fixed footer — avoid vh calc fighting script */
     #dvTableDispatch {
         flex: 1;
         min-height: 0;
         flex-direction: column;
         overflow: hidden;
         display: flex;
-        height: calc(100vh - 150px);
     }
     
     /* Ensure flex layout when element is shown (override inline display:none) */
@@ -317,50 +317,6 @@
     #dvTableDispatch[style*="display:block"],
     #dvTableDispatch:not([style*="display: none"]) {
         display: flex !important;
-    }
-    
-    /* Adjust height based on screen width for better responsiveness */
-    @@media (max-width: 1400px) {
-        #dvTableDispatch {
-            height: calc(100vh - 140px);
-        }
-    }
-    
-    @@media (max-width: 1200px) {
-        #dvTableDispatch {
-            height: calc(100vh - 130px);
-        }
-    }
-    
-    @@media (max-width: 992px) {
-        #dvTableDispatch {
-            height: calc(100vh - 120px);
-        }
-    }
-    
-    @@media (max-width: 768px) {
-        #dvTableDispatch {
-            height: calc(100vh - 110px);
-        }
-    }
-    
-    /* Adjust based on viewport height as well */
-    @@media (max-height: 800px) {
-        #dvTableDispatch {
-            height: calc(100vh - 120px);
-        }
-        .table-wrapper {
-            min-height: 300px;
-        }
-    }
-
-    @@media (max-height: 600px) {
-        #dvTableDispatch {
-            height: calc(100vh - 100px);
-        }
-        .table-wrapper {
-            min-height: 250px;
-        }
     }
 
     /* Update Qty modal width */
