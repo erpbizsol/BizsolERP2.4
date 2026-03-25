@@ -4,7 +4,7 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 const GRNPaymentApprovalService = {
 
     GetGRNPaymentApprovalList: function GetGRNPaymentApprovalList() {
-        let url = UrlService.API_ENDPOINT_GRNPaymentApproval + `/GetGRNPaymentApprovalList`;
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetGRNPaymentApprovalList`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
@@ -12,7 +12,7 @@ const GRNPaymentApprovalService = {
     },
 
     GetGRNPaymentApprovalByCode: function GetGRNPaymentApprovalByCode(Code) {
-        let url = UrlService.API_ENDPOINT_GRNPaymentApproval +
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry +
             `/GetGRNPaymentApprovalByCode?Code=${encodeURIComponent(Code)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
@@ -22,7 +22,7 @@ const GRNPaymentApprovalService = {
 
     SaveGRNPaymentApproval: function SaveGRNPaymentApproval(payload) {
         let json_data = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
-        let url = UrlService.API_ENDPOINT_GRNPaymentApproval + `/SaveGRNPaymentApproval`;
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/SaveGRNPaymentApproval`;
         return promiseAjaxCallApi.CallAPI('POST', url, json_data)
             .then(function (value) {
                 return value;
@@ -34,7 +34,7 @@ const GRNPaymentApprovalService = {
         let userMasterCode = authKeyData.UserMaster_Code;
         let ip = IPAddress != null ? encodeURIComponent(IPAddress) : '';
         let loc = Location != null ? encodeURIComponent(Location) : '';
-        let url = UrlService.API_ENDPOINT_GRNPaymentApproval +
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry +
             `/DeleteGRNPaymentApproval?Code=${encodeURIComponent(Code)}` +
             `&UserMaster_Code=${encodeURIComponent(userMasterCode)}` +
             `&ReasonForDelete=${encodeURIComponent(ReasonForDelete || '')}` +
@@ -46,7 +46,7 @@ const GRNPaymentApprovalService = {
     },
 
     GetVendor: function GetVendor() {
-        let url = UrlService.API_ENDPOINT_GRNPaymentApproval + `/GetVendor`;
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetVendor`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
@@ -54,7 +54,7 @@ const GRNPaymentApprovalService = {
     },
 
     GetBillDetails: function GetBillDetails(PartyMaster_Code) {
-        let url = UrlService.API_ENDPOINT_GRNPaymentApproval +
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry +
             `/GetBillDetails?PartyMaster_Code=${encodeURIComponent(PartyMaster_Code || '')}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
@@ -63,7 +63,7 @@ const GRNPaymentApprovalService = {
     },
 
     GetBankPayment: function GetBankPayment() {
-        let url = UrlService.API_ENDPOINT_GRNPaymentApproval + `/GetBankPayment`;
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetBankPayment`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
