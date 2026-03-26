@@ -2,6 +2,7 @@ import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFun
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
+import { BOMService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BOMService.js';
 
 let G_SubProjectList    = [];
 let G_ProjectList       = [];
@@ -504,6 +505,47 @@ function validateSubProjectForm() {
         $('#txtEstimatedDays').focus();
         return false;
     }
+
+    const masterCodeNum = parseInt(masterCode, 10) || 0;
+    const editingCode   = parseInt($('#hfSubProjectCode').val() || '0', 10) || 0;
+    const parent        = (G_ProjectList || []).find(function (p) { return String(p.Code) === String(masterCodeNum); });
+    if (parent) {
+        const pBud  = parseFloat(parent.Budget || parent.ProjectBudget || 0) || 0;
+        const pDays = parseInt(parent.EstimatedCompletionDays || parent.EstimatedDays || 0, 10) || 0;
+        const sBud  = $('#txtBudget').val()
+            ? parseFloat($('#txtBudget').val().toString().replace(/,/g, ''))
+            : 0;
+        const sDays = parseInt(estimatedDays, 10) || 0;
+
+        let sumOtherBud  = 0;
+        let sumOtherDays = 0;
+        (G_SubProjectList || []).forEach(function (s) {
+            if (String(s.ProjectMaster_Code || s.MasterProjectCode || 0) !== String(masterCodeNum)) return;
+            if (editingCode > 0 && String(s.Code || 0) === String(editingCode)) return;
+            sumOtherBud  += parseFloat(s.Budget || s.SubProjectBudget || 0) || 0;
+            sumOtherDays += parseInt(s.EstimatedCompletionDays || s.EstimatedDays || 0, 10) || 0;
+        });
+
+        if (pBud > 0 && (sumOtherBud + sBud) > pBud) {
+            toastr.warning(
+                'Combined sub-project budgets cannot exceed parent project budget (₹ '
+                    + Number(pBud).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    + '). Other sub-projects already total ₹ '
+                    + Number(sumOtherBud).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    + '.'
+            );
+            $('#txtBudget').focus();
+            return false;
+        }
+        if (pDays > 0 && (sumOtherDays + sDays) > pDays) {
+            toastr.warning(
+                'Combined sub-project estimated days cannot exceed parent project (' + pDays
+                    + ' days). Other sub-projects already total ' + sumOtherDays + ' days.'
+            );
+            $('#txtEstimatedDays').focus();
+            return false;
+        }
+    }
     return true;
 }
 
@@ -526,17 +568,35 @@ function saveSubProject() {
     });
 }
 
+function parseBomDetailRowsForSubSave(response) {
+    if (!response) return [];
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.Data)) return response.Data;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
+}
+
+function sumBomAmountFromRows(rows) {
+    var sum = 0;
+    (rows || []).forEach(function (r) {
+        sum += parseFloat(String(r.Amount || 0).replace(/,/g, '')) || 0;
+    });
+    return sum;
+}
+
 function callSaveSubProjectApi() {
     const code         = parseInt($('#hfSubProjectCode').val() || '0', 10) || 0;
     const startDateRaw = ($('#txtStartDate').val() || '').trim();
+    const projectMaster_Code = parseInt($('#ddlMasterProject').val() || '0', 10) || 0;
+    const newBudget = $('#txtBudget').val()
+        ? parseFloat($('#txtBudget').val().toString().replace(/,/g, ''))
+        : 0;
 
     const payload = {
         Code:                    code,
-        ProjectMaster_Code:      parseInt($('#ddlMasterProject').val() || '0', 10) || 0,
+        ProjectMaster_Code:      projectMaster_Code,
         SubProjectDesp:          ($('#txtSubProjectName').val() || '').trim(),
-        Budget:                  $('#txtBudget').val()
-                                     ? parseFloat($('#txtBudget').val().toString().replace(/,/g, ''))
-                                     : 0,
+        Budget:                  newBudget,
         ProjectStartDate:     startDateRaw || null,
         ProjectEstimatedDate: ($('#txtEstimatedDate').val() || '').trim() || null,
         EstimatedCompletionDays: $('#txtEstimatedDays').val()
@@ -545,23 +605,49 @@ function callSaveSubProjectApi() {
         PurchaseOrderLevelsApprovalProjectUserDetails: collectPOLevelDetails()
     };
 
-    Showloader && Showloader();
+    function postSaveSubProject() {
+        Showloader && Showloader();
+        SubProjectMasterService.SaveSubProject(payload)
+            .then(function (response) {
+                HideLoader && HideLoader();
+                if (response.Status === 'Y') {
+                    toastr.success(response.Msg || 'Sub Project saved successfully.');
+                    hideModal('dvSubProjectModal');
+                    loadSubProjects();
+                } else {
+                    toastr.warning(response.Msg);
+                }
+            })
+            .catch(function (error) {
+                HideLoader && HideLoader();
+                toastr.error((error && error.Msg));
+            });
+    }
 
-    SubProjectMasterService.SaveSubProject(payload)
-        .then(function (response) {
-            HideLoader && HideLoader();
-            if (response.Status === 'Y') {
-                toastr.success(response.Msg || 'Sub Project saved successfully.');
-                hideModal('dvSubProjectModal');
-                loadSubProjects();
-            } else {
-                toastr.warning(response.Msg);
-            }
-        })
-        .catch(function (error) {
-            HideLoader && HideLoader();
-            toastr.error((error && error.Msg) );
-        });
+    if (code > 0 && projectMaster_Code && BOMService && typeof BOMService.GetBOMByCode === 'function') {
+        Showloader && Showloader();
+        BOMService.GetBOMByCode(projectMaster_Code, code)
+            .then(function (resp) {
+                HideLoader && HideLoader();
+                var bomSum = sumBomAmountFromRows(parseBomDetailRowsForSubSave(resp));
+                if (bomSum > (newBudget || 0)) {
+                    toastr.warning(
+                        'Sub-project budget cannot be less than total BOM amount (₹ '
+                            + Number(bomSum).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                            + '). Reduce BOM amounts or lines first.'
+                    );
+                    $('#txtBudget').focus();
+                    return;
+                }
+                postSaveSubProject();
+            })
+            .catch(function () {
+                HideLoader && HideLoader();
+                postSaveSubProject();
+            });
+    } else {
+        postSaveSubProject();
+    }
 }
 
 /* ── Load & bind grid ────────────────────────────────────── */
@@ -607,6 +693,24 @@ function formatLakhsCrores(n) {
     return n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
+function sumSubProjectListBudget(list) {
+    let sum = 0;
+    (list || []).forEach(function (x) {
+        sum += parseFloat(x.Budget || x.SubProjectBudget || 0) || 0;
+    });
+    return sum;
+}
+
+function formatSubProjectTotalBudgetInr(sum) {
+    return '₹ ' + Number(sum).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function updateSubProjectVisibleBudgetTotals(list) {
+    const txt = formatSubProjectTotalBudgetInr(sumSubProjectListBudget(list));
+    $('#subProjectTableBudgetTotal').text(txt);
+    $('#statTotalBudget').text(txt);
+}
+
 function bindSubProjectGrid(list) {
     const $tbody = $('#tblSubProject tbody');
     $tbody.empty();
@@ -614,7 +718,7 @@ function bindSubProjectGrid(list) {
     if (!list || list.length === 0) {
         $tbody.append(`
             <tr>
-                <td colspan="7">
+                <td colspan="8">
                     <div class="pm-empty">
                         <div class="pm-empty-icon"><i class="fas fa-folder-open"></i></div>
                         <div class="pm-empty-title">No Sub Projects Found</div>
@@ -622,6 +726,7 @@ function bindSubProjectGrid(list) {
                     </div>
                 </td>
             </tr>`);
+        updateSubProjectVisibleBudgetTotals([]);
         return;
     }
 
@@ -677,6 +782,8 @@ function bindSubProjectGrid(list) {
                 </td>
             </tr>`);
     });
+
+    updateSubProjectVisibleBudgetTotals(list);
 }
 
 /* ── Apply status + search filters and bind grid ──────────── */

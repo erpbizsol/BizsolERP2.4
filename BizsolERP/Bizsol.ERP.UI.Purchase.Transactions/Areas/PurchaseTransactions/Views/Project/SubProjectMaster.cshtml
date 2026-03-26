@@ -83,8 +83,9 @@
         background: var(--primary-gradient);
     }
 
-    .pm-stat-chip:nth-child(2)::before { background: var(--warning-gradient); }
-    .pm-stat-chip:nth-child(3)::before { background: var(--info-gradient); }
+    .pm-stat-chip:nth-child(2)::before { background: linear-gradient(135deg, #059669, #10b981); }
+    .pm-stat-chip:nth-child(3)::before { background: var(--warning-gradient); }
+    .pm-stat-chip:nth-child(4)::before { background: var(--info-gradient); }
 
     .pm-stat-chip:hover {
         transform: translateY(-3px);
@@ -115,8 +116,9 @@
         box-shadow: var(--shadow-primary);
     }
 
-    .pm-stat-chip:nth-child(2) .pm-stat-icon { background: var(--warning-gradient); box-shadow: 0 8px 24px rgba(245,158,11,.3); }
-    .pm-stat-chip:nth-child(3) .pm-stat-icon { background: var(--info-gradient);    box-shadow: 0 8px 24px rgba(6,182,212,.3); }
+    .pm-stat-chip:nth-child(2) .pm-stat-icon { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 8px 24px rgba(16,185,129,.3); }
+    .pm-stat-chip:nth-child(3) .pm-stat-icon { background: var(--warning-gradient); box-shadow: 0 8px 24px rgba(245,158,11,.3); }
+    .pm-stat-chip:nth-child(4) .pm-stat-icon { background: var(--info-gradient);    box-shadow: 0 8px 24px rgba(6,182,212,.3); }
 
     .pm-stat-val {
         font-size: 22px;
@@ -298,6 +300,14 @@
     .pm-table td.center { text-align: center; }
     .pm-table td.right  { text-align: right; }
     .pm-table tbody tr:last-child td { border-bottom: none !important; }
+
+    .pm-table tfoot td {
+        background: rgba(241, 245, 249, 0.95) !important;
+        border-top: 2px solid var(--border-color, #e2e8f0);
+        font-weight: 700;
+        color: var(--text-dark);
+        padding: 12px 10px;
+    }
 
     /* S.No badge */
     .pm-sno {
@@ -840,6 +850,13 @@
                     </tr>
                 </thead>
                 <tbody></tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="right">Total Budget</td>
+                        <td class="right pm-budget" id="subProjectTableBudgetTotal">₹ 0.00</td>
+                        <td colspan="4"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
