@@ -17,8 +17,28 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>20510</FileLength>
-      <LastWriteTime>Fri, 16 May 2025 06:23:24 GMT</LastWriteTime>
+      <LastWriteTime>Sat, 17 Jan 2026 07:34:47 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\CheckInCheckOutReport.js'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\CustomerDashboard - Copy.js'))">
+      <SourceType>Package</SourceType>
+      <SourceId>Bizsol.WebERP.UI.CRM.Reports</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/Bizsol.WebERP.UI.CRM.Reports</BasePath>
+      <RelativePath>Script/CustomerDashboard - Copy.js</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>ph93sjxqjq</Fingerprint>
+      <Integrity>zao4mp1H/ll+QYc5W496qbIj2UUeou71gkqvwYkyQTc=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <FileLength>121244</FileLength>
+      <LastWriteTime>Thu, 29 Jan 2026 12:22:52 GMT</LastWriteTime>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\CustomerDashboard - Copy.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\CustomerDashboard.js'))">
       <SourceType>Package</SourceType>
@@ -32,12 +52,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>gpq7legql7</Fingerprint>
-      <Integrity>DNB2mu4iUSvSPR0QkLXw1u9mQPxFuZTlMm62NXehSGU=</Integrity>
+      <Fingerprint>2hbs3vt6zn</Fingerprint>
+      <Integrity>6sfL6/rqbZuuFxyDU3ZXjFwE4tgcOItKjyNGxrofstw=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>79468</FileLength>
-      <LastWriteTime>Wed, 12 Nov 2025 06:58:56 GMT</LastWriteTime>
+      <FileLength>144455</FileLength>
+      <LastWriteTime>Mon, 23 Feb 2026 05:04:39 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\CustomerDashboard.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\DailyVisitReport.js'))">
@@ -57,7 +77,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>41822</FileLength>
-      <LastWriteTime>Fri, 28 Mar 2025 07:08:35 GMT</LastWriteTime>
+      <LastWriteTime>Tue, 06 May 2025 06:48:53 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\DailyVisitReport.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\ExpenseEntryReport.js'))">
@@ -77,7 +97,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>5609</FileLength>
-      <LastWriteTime>Tue, 14 Jan 2025 09:26:14 GMT</LastWriteTime>
+      <LastWriteTime>Tue, 06 May 2025 06:48:53 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\ExpenseEntryReport.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\OrderReport.js'))">
@@ -97,8 +117,28 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>21433</FileLength>
-      <LastWriteTime>Mon, 04 Aug 2025 04:45:19 GMT</LastWriteTime>
+      <LastWriteTime>Sat, 17 Jan 2026 07:34:47 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\OrderReport.js'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\SalesanalysisAST.js'))">
+      <SourceType>Package</SourceType>
+      <SourceId>Bizsol.WebERP.UI.CRM.Reports</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/Bizsol.WebERP.UI.CRM.Reports</BasePath>
+      <RelativePath>Script/SalesanalysisAST.js</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>s6mwd5janv</Fingerprint>
+      <Integrity>rLYWOoRDW7qVsj/RyK+X7QEkrS5ZJw97bBgkKdwgfV0=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <FileLength>77264</FileLength>
+      <LastWriteTime>Mon, 23 Feb 2026 05:04:39 GMT</LastWriteTime>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\SalesanalysisAST.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\StockReport.js'))">
       <SourceType>Package</SourceType>
@@ -117,7 +157,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>5520</FileLength>
-      <LastWriteTime>Tue, 14 Jan 2025 09:26:14 GMT</LastWriteTime>
+      <LastWriteTime>Tue, 06 May 2025 06:48:53 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\StockReport.js'))</OriginalItemSpec>
     </StaticWebAsset>
   </ItemGroup>

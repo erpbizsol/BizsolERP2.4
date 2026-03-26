@@ -15,41 +15,47 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property._SupportedPlatformList = Linux,macOS,Windows
-build_property.TargetFrameworkIdentifier = .NETCoreApp
-build_property.TargetFrameworkVersion = v8.0
 build_property.RootNamespace = Bizsol.WebERP.UI.CRM.Reports
 build_property.RootNamespace = Bizsol.WebERP.UI.CRM.Reports
-build_property.ProjectDir = D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\
+build_property.ProjectDir = D:\WebERP2.4Core\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = true
-build_property.MSBuildProjectDirectory = D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports
+build_property.MSBuildProjectDirectory = D:\WebERP2.4Core\BizsolERP\Bizsol.WebERP.UI.CRM.Reports
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 8.0
 build_property.EnableCodeStyleSeverity = 
 
-[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/MarketingReport/CustomerDashboard.cshtml]
+[D:/WebERP2.4Core/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/MarketingReport/CustomerDashboard - Copy.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNUmVwb3J0c1xWaWV3c1xNYXJrZXRpbmdSZXBvcnRcQ3VzdG9tZXJEYXNoYm9hcmQgLSBDb3B5LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/WebERP2.4Core/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/MarketingReport/CustomerDashboard.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNUmVwb3J0c1xWaWV3c1xNYXJrZXRpbmdSZXBvcnRcQ3VzdG9tZXJEYXNoYm9hcmQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/Report/CheckInCheckOutReport.cshtml]
+[D:/WebERP2.4Core/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/MarketingReport/SalesanalysisAST.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNUmVwb3J0c1xWaWV3c1xNYXJrZXRpbmdSZXBvcnRcU2FsZXNhbmFseXNpc0FTVC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/WebERP2.4Core/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/Report/CheckInCheckOutReport.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNUmVwb3J0c1xWaWV3c1xSZXBvcnRcQ2hlY2tJbkNoZWNrT3V0UmVwb3J0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/Report/ExpenseEntryReport.cshtml]
+[D:/WebERP2.4Core/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/Report/ExpenseEntryReport.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNUmVwb3J0c1xWaWV3c1xSZXBvcnRcRXhwZW5zZUVudHJ5UmVwb3J0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/Report/GetDailyVisitReport.cshtml]
+[D:/WebERP2.4Core/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/Report/GetDailyVisitReport.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNUmVwb3J0c1xWaWV3c1xSZXBvcnRcR2V0RGFpbHlWaXNpdFJlcG9ydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/Report/OrderReport.cshtml]
+[D:/WebERP2.4Core/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/Report/OrderReport.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNUmVwb3J0c1xWaWV3c1xSZXBvcnRcT3JkZXJSZXBvcnQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/Report/StockReport.cshtml]
+[D:/WebERP2.4Core/BizsolERP/Bizsol.WebERP.UI.CRM.Reports/Areas/CRMReports/Views/Report/StockReport.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNUmVwb3J0c1xWaWV3c1xSZXBvcnRcU3RvY2tSZXBvcnQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 

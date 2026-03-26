@@ -1,6 +1,8 @@
 wwwroot\Script\CheckInCheckOutReport.js
+wwwroot\Script\CustomerDashboard - Copy.js
 wwwroot\Script\CustomerDashboard.js
 wwwroot\Script\DailyVisitReport.js
 wwwroot\Script\ExpenseEntryReport.js
 wwwroot\Script\OrderReport.js
+wwwroot\Script\SalesanalysisAST.js
 wwwroot\Script\StockReport.js
