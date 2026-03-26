@@ -17,7 +17,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>23672</FileLength>
-      <LastWriteTime>Tue, 15 Apr 2025 12:58:37 GMT</LastWriteTime>
+      <LastWriteTime>Tue, 06 May 2025 06:48:52 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\CoilProductionPlan.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\RollingProductionEntry.js'))">
@@ -32,12 +32,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>lpfz8tglgy</Fingerprint>
-      <Integrity>SRavmP2tMNMwp4FDZ7kpiohfnExTwhIARW0Fw1kpsBo=</Integrity>
+      <Fingerprint>cjfnqimnzg</Fingerprint>
+      <Integrity>aLDA+bSwiooSHKYp2TsT7lI+k5qNsE1K6+sF3iG58+A=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>51893</FileLength>
-      <LastWriteTime>Wed, 03 Sep 2025 05:52:15 GMT</LastWriteTime>
+      <FileLength>51913</FileLength>
+      <LastWriteTime>Sat, 07 Mar 2026 06:17:38 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\RollingProductionEntry.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\RollingProductionSummary.js'))">
@@ -57,7 +57,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>5907</FileLength>
-      <LastWriteTime>Thu, 08 May 2025 11:23:42 GMT</LastWriteTime>
+      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\RollingProductionSummary.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\SlittingProductionEntry.js'))">
@@ -72,12 +72,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>t41lenkwji</Fingerprint>
-      <Integrity>Az3FdH+Q+hGksdJPhlWI0vIfnly5GvMA7iRA7sNDXAo=</Integrity>
+      <Fingerprint>1db8hj8quu</Fingerprint>
+      <Integrity>hch0MxQ1b6k/xfFroLp5zPT/vb0kcNsB1JwKx+bfudo=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>67529</FileLength>
-      <LastWriteTime>Fri, 19 Sep 2025 04:33:14 GMT</LastWriteTime>
+      <FileLength>88598</FileLength>
+      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\SlittingProductionEntry.js'))</OriginalItemSpec>
     </StaticWebAsset>
   </ItemGroup>

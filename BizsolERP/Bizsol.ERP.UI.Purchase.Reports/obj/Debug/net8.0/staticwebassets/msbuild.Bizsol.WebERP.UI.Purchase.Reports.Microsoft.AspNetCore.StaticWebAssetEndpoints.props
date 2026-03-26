@@ -1,0 +1,16 @@
+﻿<Project>
+  <ItemGroup>
+    <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Purchase.Reports/Script/RMMaizeReport.js">
+      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\RMMaizeReport.js'))</AssetFile>
+      <Selectors><![CDATA[[]]]></Selectors>
+      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-NFJFnUxrMpuIMTgEzRSDRbgJoJML/CExic8\u002Ba7EfM1I="}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"5614"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022NFJFnUxrMpuIMTgEzRSDRbgJoJML/CExic8\u002Ba7EfM1I=\u0022"},{"Name":"Last-Modified","Value":"Fri, 27 Feb 2026 08:43:59 GMT"}]]]></ResponseHeaders>
+    </StaticWebAssetEndpoint>
+    <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Purchase.Reports/Script/RMMaizeReport.wf514eqry1.js">
+      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\RMMaizeReport.js'))</AssetFile>
+      <Selectors><![CDATA[[]]]></Selectors>
+      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"wf514eqry1"},{"Name":"integrity","Value":"sha256-NFJFnUxrMpuIMTgEzRSDRbgJoJML/CExic8\u002Ba7EfM1I="},{"Name":"label","Value":"_content/Bizsol.WebERP.UI.Purchase.Reports/Script/RMMaizeReport.js"}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"5614"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022NFJFnUxrMpuIMTgEzRSDRbgJoJML/CExic8\u002Ba7EfM1I=\u0022"},{"Name":"Last-Modified","Value":"Fri, 27 Feb 2026 08:43:59 GMT"}]]]></ResponseHeaders>
+    </StaticWebAssetEndpoint>
+  </ItemGroup>
+</Project>

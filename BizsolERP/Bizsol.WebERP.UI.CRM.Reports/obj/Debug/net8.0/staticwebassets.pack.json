@@ -1,27 +1,35 @@
 {
   "Files": [
     {
-      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\CheckInCheckOutReport.js",
+      "Id": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\CheckInCheckOutReport.js",
       "PackagePath": "staticwebassets\\Script\\CheckInCheckOutReport.js"
     },
     {
-      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\CustomerDashboard.js",
+      "Id": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\CustomerDashboard - Copy.js",
+      "PackagePath": "staticwebassets\\Script\\CustomerDashboard - Copy.js"
+    },
+    {
+      "Id": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\CustomerDashboard.js",
       "PackagePath": "staticwebassets\\Script\\CustomerDashboard.js"
     },
     {
-      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\DailyVisitReport.js",
+      "Id": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\DailyVisitReport.js",
       "PackagePath": "staticwebassets\\Script\\DailyVisitReport.js"
     },
     {
-      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\ExpenseEntryReport.js",
+      "Id": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\ExpenseEntryReport.js",
       "PackagePath": "staticwebassets\\Script\\ExpenseEntryReport.js"
     },
     {
-      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\OrderReport.js",
+      "Id": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\OrderReport.js",
       "PackagePath": "staticwebassets\\Script\\OrderReport.js"
     },
     {
-      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\StockReport.js",
+      "Id": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\SalesanalysisAST.js",
+      "PackagePath": "staticwebassets\\Script\\SalesanalysisAST.js"
+    },
+    {
+      "Id": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\StockReport.js",
       "PackagePath": "staticwebassets\\Script\\StockReport.js"
     },
     {
