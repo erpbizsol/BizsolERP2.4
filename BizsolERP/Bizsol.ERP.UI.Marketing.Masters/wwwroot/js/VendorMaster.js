@@ -832,6 +832,22 @@ function DoVendorDelete() {
 
     });
 }
+
+/** Map API / model validation text to short user-facing messages (save errors). */
+function friendlyValidationLine(fieldKey, apiMsg) {
+    var k = fieldKey || '';
+    var m = (apiMsg || '').toLowerCase();
+    if (k.indexOf('CountryMaster_Code') >= 0 || m.indexOf('countrymaster_code') >= 0)
+        return 'Please select Nation / Country.';
+    if (k.indexOf('StateMaster_Code') >= 0 || m.indexOf('statemaster_code') >= 0)
+        return 'Please select State.';
+    if (k.indexOf('CityMaster_Code') >= 0 || m.indexOf('citymaster_code') >= 0)
+        return 'Please select City.';
+    if (k === 'VendorMaster' || m.indexOf('vendormaster field is required') >= 0)
+        return 'Please fill all required fields (name, email, phone, country, state, city) and save again.';
+    return apiMsg;
+}
+
 function SaveVendor() {
     var isEdit     = G_EditCode > 0;
     var ModuleName = G_ModuleName;
@@ -866,7 +882,10 @@ function SaveVendor() {
                             isEdit ? "fa-pen-to-square" : "fa-circle-check"
                         );
                     } else {
-                        toastr.error((res && res.Msg) || (isEdit ? "Failed to update vendor." : "Failed to save vendor."));
+                        var rawSaveMsg = (res && res.Msg) || "";
+                        var fallbackSave = isEdit ? "Failed to update vendor." : "Failed to save vendor.";
+                        var friendlySave = friendlyValidationLine("", rawSaveMsg);
+                        toastr.error(friendlySave || fallbackSave);
                     }
                 })
                 .catch(function (err) {
