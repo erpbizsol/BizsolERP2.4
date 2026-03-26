@@ -1,13 +1,29 @@
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
+import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 
 let G_ProjectList         = [];
+let G_SubProjectsCache    = []; // all sub-projects (for validating project update vs existing subs)
 let G_ActiveStatusFilter  = 'all'; // 'all' | 'running' | 'pending'
+
+function refreshSubProjectsCache() {
+    return SubProjectMasterService.GetSubProjectList()
+        .then(function (response) {
+            G_SubProjectsCache = Array.isArray(response) ? response
+                : (response && Array.isArray(response.Data) ? response.Data : null)
+                || (response && Array.isArray(response.data) ? response.data : null)
+                || [];
+        })
+        .catch(function () {
+            G_SubProjectsCache = [];
+        });
+}
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
+    refreshSubProjectsCache();
     loadProjects();
 
     $('#btnCreateProject').on('click', function () {
@@ -302,18 +318,50 @@ function saveProject() {
 function callSaveProjectApi() {
     const code = parseInt($('#hfProjectCode').val() || '0', 10) || 0;
 
+    const newBudget = $('#txtBudget').val()
+        ? parseFloat($('#txtBudget').val().toString().replace(/,/g, ''))
+        : 0;
+    const newDays   = $('#txtEstimatedDays').val()
+        ? parseInt($('#txtEstimatedDays').val(), 10)
+        : 0;
+
+    if (code > 0 && G_SubProjectsCache && G_SubProjectsCache.length) {
+        const subs = G_SubProjectsCache.filter(function (s) {
+            return String(s.ProjectMaster_Code || s.MasterProjectCode || 0) === String(code);
+        });
+        let sumSubBud  = 0;
+        let sumSubDays = 0;
+        subs.forEach(function (s) {
+            sumSubBud  += parseFloat(s.Budget || s.SubProjectBudget || 0) || 0;
+            sumSubDays += parseInt(s.EstimatedCompletionDays || s.EstimatedDays || 0, 10) || 0;
+        });
+        if (newBudget > 0 && sumSubBud > 0 && newBudget < sumSubBud) {
+            toastr.warning(
+                'Project budget cannot be less than the combined sub-project budgets (total ₹ '
+                    + Number(sumSubBud).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    + ').'
+            );
+            $('#txtBudget').focus();
+            return;
+        }
+        if (newDays > 0 && sumSubDays > 0 && newDays < sumSubDays) {
+            toastr.warning(
+                'Project estimated days cannot be less than the combined sub-project days (total '
+                    + sumSubDays + ' days).'
+            );
+            $('#txtEstimatedDays').focus();
+            return;
+        }
+    }
+
     const payload = {
         Code:                    code,
         ProjectCode:             ($('#txtProjectCode').val() || '').trim(),
         ProjectDesp:             ($('#txtProjectName').val() || '').trim(),
-        Budget:                  $('#txtBudget').val()
-                                     ? parseFloat($('#txtBudget').val().toString().replace(/,/g, ''))
-                                     : 0,
+        Budget:                  newBudget,
         ProjectStartDate:        $('#txtStartDate').val() || null,
         ProjectEstimatedDate:    $('#txtEstimatedDate').val() || null,
-        EstimatedCompletionDays: $('#txtEstimatedDays').val()
-                                     ? parseInt($('#txtEstimatedDays').val(), 10)
-                                     : 0
+        EstimatedCompletionDays: newDays
     };
 
     Showloader && Showloader();
@@ -322,16 +370,17 @@ function callSaveProjectApi() {
         .then(function (response) {
             HideLoader && HideLoader();
             if (response.Status === 'Y') {
-                toastr.success(response.Message || 'Project saved successfully.');
+                toastr.success(response.Message || response.Msg || 'Project saved successfully.');
                 hideModal('dvProjectModal');
+                refreshSubProjectsCache();
                 loadProjects();
             } else {
-                toastr.warning(response.Message);
+                toastr.warning(response.Message || response.Msg);
             }
         })
         .catch(function (error) {
             HideLoader && HideLoader();
-            toastr.error((error && error.Msg) );
+            toastr.error((error && (error.Msg || error.Message)));
         });
 }
 
@@ -345,6 +394,7 @@ function loadProjects() {
             G_ProjectList = Array.isArray(response) ? response : [];
             updateStats(G_ProjectList);
             applyProjectFilters();
+            refreshSubProjectsCache();
         })
         .catch(function (error) {
             HideLoader && HideLoader();
@@ -372,6 +422,26 @@ function formatLakhsCrores(n) {
     return n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
+/* Sum of Budget for the list currently bound to the grid (filtered rows). */
+function sumProjectListBudget(list) {
+    let sum = 0;
+    (list || []).forEach(function (x) {
+        sum += parseFloat(x.Budget || x.ProjectBudget || 0) || 0;
+    });
+    return sum;
+}
+
+function formatTotalBudgetInr(sum) {
+    return '₹ ' + Number(sum).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Keeps table footer and Total Budget stat in sync with visible rows. */
+function updateProjectVisibleBudgetTotals(list) {
+    const txt = formatTotalBudgetInr(sumProjectListBudget(list));
+    $('#projectTableBudgetTotal').text(txt);
+    $('#statTotalBudget').text(txt);
+}
+
 function bindProjectGrid(list) {
     const $tbody = $('#tblProject tbody');
     $tbody.empty();
@@ -379,7 +449,7 @@ function bindProjectGrid(list) {
     if (!list || list.length === 0) {
         $tbody.append(`
             <tr>
-                <td colspan="7">
+                <td colspan="8">
                     <div class="pm-empty">
                         <div class="pm-empty-icon"><i class="fas fa-folder-open"></i></div>
                         <div class="pm-empty-title">No Projects Found</div>
@@ -387,6 +457,7 @@ function bindProjectGrid(list) {
                     </div>
                 </td>
             </tr>`);
+        updateProjectVisibleBudgetTotals([]);
         return;
     }
 
@@ -436,6 +507,8 @@ function bindProjectGrid(list) {
                 </td>
             </tr>`);
     });
+
+    updateProjectVisibleBudgetTotals(list);
 }
 
 /* ── Apply status + search filters and bind grid ──────────── */
