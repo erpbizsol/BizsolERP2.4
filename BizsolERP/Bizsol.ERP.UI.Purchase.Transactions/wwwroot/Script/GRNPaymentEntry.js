@@ -1584,9 +1584,7 @@ function showToast(msg, type = 'info') {
     window.addEventListener('resize', syncFloatBarMargin);
 })();
 
-// ══════════════════════════════════════════════════════════════════════════════
-// EXPOSE TO GLOBAL SCOPE (required for inline onXxx handlers)
-// ══════════════════════════════════════════════════════════════════════════════
+
 function getFinancialYear() {
     var d = new Date();
     var month = d.getMonth();

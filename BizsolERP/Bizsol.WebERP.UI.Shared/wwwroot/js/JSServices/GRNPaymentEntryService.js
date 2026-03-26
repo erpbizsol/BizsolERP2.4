@@ -11,6 +11,7 @@ const GRNPaymentApprovalService = {
             });
     },
 
+
     GetGRNPaymentApprovalByCode: function GetGRNPaymentApprovalByCode(Code) {
         let url = UrlService.API_ENDPOINT_GRNPaymentEntry +
             `/GetGRNPaymentApprovalByCode?Code=${encodeURIComponent(Code)}`;
