@@ -194,7 +194,7 @@ function renderSaleOrderCard(item) {
           encCode +
           '" title="' +
           escapeHtml(FrmAction) +
-          '"><i class="fa fa-check-circle" aria-hidden="true"></i> Review &amp; Verify</button>' +
+          '"><i class="fa fa-check-circle" aria-hidden="true"></i>Verify</button>' +
           '<button type="button" class="sopa-btn sopa-btn--secondary sopa-js-view" data-bcode="' +
           encCode +
           '"><i class="fa fa-folder-open" aria-hidden="true"></i> Details</button>'
