@@ -147,6 +147,13 @@ $(document).ready(function () {
         }
     });
 
+    $("#Nation, #State, #City").on("change", function () {
+        var sid = this.id;
+        $("#err_" + sid).hide();
+        $("#" + sid).removeClass("vm-input-error");
+        $("#" + sid).next(".select2-container").removeClass("vm-select-error");
+    });
+
     //// Country change → State/City reset (user ko dobara select karna hoga)
     //$("#Nation").on("change", function () {
     //    $("#State").val("").trigger("change");
@@ -436,7 +443,7 @@ function refreshVendorMasterGrid() {
     var filtered = filterVendorRowsByStat(source, mode);
     var mapped = mapVendorRowsToGrid(filtered);
 
-    const StringFilterColumn = ["Account Name", "GSTN No", "Phone", "Email", "City", "State", "Country", "Pin Code"];
+    const StringFilterColumn = ["Vendor Name","Nature", "GSTN No", "Phone", "Email", "City", "State", "Country", "Pin Code"];
     const NumericFilterColumn = [];
     const DateFilterColumn = [];
     const Button = false;
@@ -593,6 +600,7 @@ function EditVendor(code) {
             $("#EMail").val(item.EMail || "");
             $("#PhoneNo").val(item.PhoneNo || "");
             $("#Address1").val(item.Address1 || "");
+            $("#Address2").val(item.Address2 || "");
             $("#PinCode").val(item.PinCode || "");
             $("#Nature").val(item.AccountNature || "");
 
@@ -663,6 +671,7 @@ function ViewVendor(code) {
                 $("#vf_VendorName").text(item.AccountDesp || "—");
                 $("#vf_DisplayName").text(item.BillName || "—");
                 $("#vf_Address1").text(item.Address1 || "—");
+                $("#vf_Address2").text(item.Address2 || "—");
                 $("#vf_Pincode").text(item.PinCode || "—");
                 $("#vf_GSTNo").text(item.GSTNNo || "—");
                 $("#vf_EMail").text(item.EMail || "—");
@@ -862,7 +871,7 @@ function SaveVendor() {
                 })
                 .catch(function (err) {
                     console.error("SaveVendorMaster error:", err);
-                    toastr.error("Server error occurred. Please try again.");
+                    // Friendly / technical message already shown by promiseAjaxCallApi (toastr)
                 })
                 .finally(function () {
                     btnSave.prop("disabled", false);
@@ -874,6 +883,14 @@ function SaveVendor() {
             toastr.error("Permission check failed. Please refresh and try again.");
         });
 }
+
+/** Select2 / dropdown master codes — API expects int32, never null or "". */
+function vmDropdownMasterCode(selectId) {
+    var raw = $("#" + selectId).val();
+    var n = parseInt(raw, 10);
+    return Number.isFinite(n) ? n : 0;
+}
+
 function BuildVendorPayload() {
     var vendorCode = parseInt(G_EditCode) || 0;
 
@@ -897,7 +914,7 @@ function BuildVendorPayload() {
 
                 // ── Default Values (not in form) ─────────────────────────
                 Address1: $("#Address1").val(),
-                Address2: "",
+                Address2: $("#Address2").val(), 
                 Zone: "",
                 DespWithoutSpaces: "",
                 FaxNo: "",
@@ -984,9 +1001,9 @@ function BuildVendorPayload() {
                 Verified: "N",
                 VerifiedBy: 0,
                 VerifiedON: null,
-                CountryMaster_Code: $("#Nation").val(),
-                StateMaster_Code: $("#State").val(),
-                CityMaster_Code: $("#City").val(),
+                CountryMaster_Code: vmDropdownMasterCode("Nation"),
+                StateMaster_Code: vmDropdownMasterCode("State"),
+                CityMaster_Code: vmDropdownMasterCode("City"),
                 CityMaster_CodeFreight: 0,
                 DistributorMaster_Code: 0,
                 SalesAccountCode: 0,
@@ -1133,13 +1150,45 @@ function ValidateVendorForm() {
         $("#PinCode").removeClass("vm-input-error");
     }
 
+    if (!vmValidateRequiredSelect("Nation")) {
+        valid = false;
+        console.warn("Validation failed: Nation");
+    }
+    if (!vmValidateRequiredSelect("City")) {
+        valid = false;
+        console.warn("Validation failed: City");
+    }
+    if (!vmValidateRequiredSelect("State")) {
+        valid = false;
+        console.warn("Validation failed: State");
+    }
+
     if (!validateGST(true))      { valid = false; console.warn("Validation failed: GSTNNo"); }
+    if (!validateEmail(true))    { valid = false; console.warn("Validation failed: EMail"); }
     if (!validatePhone(true))    { valid = false; console.warn("Validation failed: PhoneNo"); }
     if (!validateCPMobile(true)) { valid = false; console.warn("Validation failed: ContactPersonMobile"); }
     if (!validateCPEmail(true))  { valid = false; console.warn("Validation failed: ContactPersonEMail"); }
 
     console.log("ValidateVendorForm result:", valid);
     return valid;
+}
+
+/** Nation / City / State dropdowns — placeholder option value "". */
+function vmValidateRequiredSelect(selectId) {
+    var $s = $("#" + selectId);
+    var v = $s.val();
+    var ok = v !== undefined && v !== null && String(v).trim() !== "";
+    var $c = $s.next(".select2-container");
+    if (!ok) {
+        $("#err_" + selectId).css("display", "flex");
+        $s.addClass("vm-input-error");
+        if ($c.length) $c.addClass("vm-select-error");
+        return false;
+    }
+    $("#err_" + selectId).hide();
+    $s.removeClass("vm-input-error");
+    if ($c.length) $c.removeClass("vm-select-error");
+    return true;
 }
 function validateGST(showError) {
     var gstVal = $("#GSTNNo").val();
@@ -1160,9 +1209,40 @@ function validateGST(showError) {
     $("#GSTNNo").removeClass("vm-input-error");
     return true;
 }
+/** Main vendor email — required + format (save uses validateEmail(true)). */
+function validateEmail(showError) {
+    var val = ($("#EMail").val() || "").trim();
+    if (!val) {
+        if (showError) {
+            $("#err_EMail").css("display", "flex");
+            $("#EMail").addClass("vm-input-error");
+            return false;
+        }
+        $("#err_EMail").hide();
+        $("#EMail").removeClass("vm-input-error");
+        return true;
+    }
+    var pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!pattern.test(val)) {
+        if (showError) {
+            $("#err_EMail").css("display", "flex");
+            $("#EMail").addClass("vm-input-error");
+        }
+        return false;
+    }
+    $("#err_EMail").hide();
+    $("#EMail").removeClass("vm-input-error");
+    return true;
+}
+/** India mobile: required on save, 10 digits starting with 6–9. */
 function validatePhone(showError) {
-    var phoneVal = $("#PhoneNo").val();
+    var phoneVal = ($("#PhoneNo").val() || "").trim();
     if (!phoneVal) {
+        if (showError) {
+            $("#err_PhoneNo").css("display", "flex");
+            $("#PhoneNo").addClass("vm-input-error");
+            return false;
+        }
         $("#err_PhoneNo").hide();
         $("#PhoneNo").removeClass("vm-input-error");
         return true;
@@ -1224,7 +1304,7 @@ function validateCPEmail(showError) {
 }
 function ClearVendorForm() {
     // VendorMaster fields
-    ["AccountDesp", "BillName", "GSTNNo", "EMail", "PhoneNo", "Address1", "City", "State", "Nation", "PinCode"].forEach(function (id) {
+    ["AccountDesp", "BillName", "GSTNNo", "EMail", "PhoneNo", "Address1","Address2", "City", "State", "Nation", "PinCode"].forEach(function (id) {
         $("#" + id)
             .val("")
             .removeClass("vm-input-error")
@@ -1250,6 +1330,11 @@ function ClearVendorForm() {
     $("#EMail").val("").removeClass("vm-input-error");
     $("#err_ContactPersonEMail").hide();
     $("#err_EMail").hide();
+    $("#err_Nation, #err_City, #err_State").hide();
+    $("#Nation, #State, #City").each(function () {
+        $(this).removeClass("vm-input-error");
+        $(this).next(".select2-container").removeClass("vm-select-error");
+    });
 
     // BankAccount fields
     $("#BankName").val("");

@@ -539,6 +539,11 @@
             box-shadow: 0 0 0 3px rgba(239,68,68,0.10);
         }
 
+        .select2-container.vm-select-error .select2-selection--single {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.10);
+        }
+
         .vm-input[readonly] {
             background: #f3f4f6;
             color: #6b7280;
@@ -1833,10 +1838,13 @@
                     <span class="vm-err-text" id="err_GSTNNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid GST format.</span>
                 </div>
                 <div class="vm-form-group">
-                    <label for="Address1">Address</label>
-                    <input type="text" id="Address1" class="vm-input" placeholder="e.g. Address" autocomplete="off" maxlength="100" />
+                    <label for="Address1">Address1</label>
+                    <input type="text" id="Address1" class="vm-input" placeholder="e.g. Address1" autocomplete="off" maxlength="100" />
                 </div>
-
+                <div class="vm-form-group">
+                    <label for="Address2">Address2</label>
+                    <input type="text" id="Address2" class="vm-input" placeholder="e.g. Address2" autocomplete="off" maxlength="100" />
+                </div>
                 <div class="vm-form-group">
                     <label for="Nature">Nature</label>
                     <select id="Nature" class="vm-input">
@@ -1847,14 +1855,14 @@
                     </select>
                 </div>
                 <div class="vm-form-group">
-                    <label for="PhoneNo">PhoneNo</label>
-                    <input type="text" id="PhoneNo" inputmode="numeric" class="vm-input" placeholder="e.g.Phone No" autocomplete="off" maxlength="10" />
-                    <span class="vm-err-text" id="err_PhoneNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid Phone number (10 digits).</span>
+                    <label for="PhoneNo">PhoneNo <span class="text-danger">*</span></label>
+                    <input type="text" id="PhoneNo" inputmode="numeric" class="vm-input" placeholder="10-digit mobile (starts 6–9)" autocomplete="off" maxlength="10" />
+                    <span class="vm-err-text" id="err_PhoneNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Enter a valid 10-digit mobile number (starts with 6–9).</span>
                 </div>
                 <div class="vm-form-group">
-                    <label for="EMail">EMail</label>
-                    <input type="text" id="EMail" class="vm-input" placeholder="e.g. EMail" autocomplete="off" maxlength="100" />
-                    <span class="vm-err-text" id="err_EMail" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid email address.</span>
+                    <label for="EMail">EMail <span class="text-danger">*</span></label>
+                    <input type="email" id="EMail" class="vm-input" placeholder="e.g. name@company.com" autocomplete="off" maxlength="100" />
+                    <span class="vm-err-text" id="err_EMail" style="display:none;"><i class="fas fa-circle-exclamation"></i> Enter a valid email address.</span>
 
                 </div>
             </div>
@@ -1864,29 +1872,32 @@
             </div>
             <div class="vm-form-grid">
                 <div class="vm-form-group">
-                    <label for="Nation">Nation / Country</label>
+                    <label for="Nation">Nation / Country <span class="text-danger">*</span></label>
                     <div class="vm-ac-wrap">
                         @* <input type="text" id="Nation" class="vm-input" placeholder="Type to search country…" autocomplete="off" /> *@
                         <select id="Nation" class="vm-input" autocomplete="off" tabindex="1" maxlength="50"> </select>
                         <ul class="vm-ac-dropdown" id="ac_Nation"></ul>
                     </div>
+                    <span class="vm-err-text" id="err_Nation" style="display:none;"><i class="fas fa-circle-exclamation"></i> Please select country.</span>
                 </div>
                 <div class="vm-form-group">
-                    <label for="City">City</label>
+                    <label for="City">City <span class="text-danger">*</span></label>
                     <div class="vm-ac-wrap">
                         @*  <input type="text" id="City" class="vm-input" placeholder="Type to search city…" autocomplete="off" /> *@
                         <select id="City" class="vm-input" autocomplete="off" tabindex="1" maxlength="50"> </select>
                         <ul class="vm-ac-dropdown" id="ac_City"></ul>
                     </div>
+                    <span class="vm-err-text" id="err_City" style="display:none;"><i class="fas fa-circle-exclamation"></i> Please select city.</span>
                 </div>
 
                 <div class="vm-form-group">
-                    <label for="State">State</label>
+                    <label for="State">State <span class="text-danger">*</span></label>
                     <div class="vm-ac-wrap">
                         @* <input type="text" id="State" class="vm-input" placeholder="Type to search state…" autocomplete="off" /> *@
                         <select id="State" class="vm-input" autocomplete="off" tabindex="1" maxlength="50"> </select>
                         <ul class="vm-ac-dropdown" id="ac_State"></ul>
                     </div>
+                    <span class="vm-err-text" id="err_State" style="display:none;"><i class="fas fa-circle-exclamation"></i> Please select state.</span>
                 </div>
                 <div class="vm-form-group">
                     <label for="PinCode">Pincode</label>
