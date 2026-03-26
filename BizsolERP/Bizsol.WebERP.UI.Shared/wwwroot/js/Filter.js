@@ -808,7 +808,9 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
         const firstItem = items[0];
         const fixedDecimalConfig = window[`fixedDecimalvalue_${bodyId}`];
 
-        const totalRow = Object.keys(firstItem).map((key, colIndex) => {
+        const _totalRowKeys = Object.keys(firstItem);
+        const _firstVisibleTotalIdx = _totalRowKeys.findIndex(k => !window[`hiddenColumns_${bodyId}`].includes(k));
+        const totalRow = _totalRowKeys.map((key, colIndex) => {
             const alignment = window[`columnAlignment_${bodyId}`][key] || 'left';
             const style = window[`hiddenColumns_${bodyId}`].includes(key)
                 ? 'display:none'
@@ -816,8 +818,8 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
 
             let cellContent = '';
 
-            if (colIndex === 0) {
-                // First column shows "Total" label
+            if (colIndex === _firstVisibleTotalIdx) {
+                // First visible column shows "Total" label
                 cellContent = '<strong>Total</strong>';
             } else if (totalColumns.includes(key)) {
                 // Show total for specified columns with appropriate decimal places
@@ -881,7 +883,9 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
     const firstItem = filteredData[0];
     const fixedDecimalConfig = window[`fixedDecimalvalue_${bodyId}`];
 
-    const grandTotalRow = Object.keys(firstItem).map((key, colIndex) => {
+    const _grandTotalRowKeys = Object.keys(firstItem);
+    const _firstVisibleGrandIdx = _grandTotalRowKeys.findIndex(k => !window[`hiddenColumns_${bodyId}`].includes(k));
+    const grandTotalRow = _grandTotalRowKeys.map((key, colIndex) => {
         const alignment = window[`columnAlignment_${bodyId}`][key] || 'left';
         const style = window[`hiddenColumns_${bodyId}`].includes(key)
             ? 'display:none'
@@ -889,8 +893,8 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
 
         let cellContent = '';
 
-        if (colIndex === 0) {
-            // First column shows "Grand Total" label
+        if (colIndex === _firstVisibleGrandIdx) {
+            // First visible column shows "Grand Total" label
             cellContent = '<strong>Grand Total</strong>';
         } else if (totalColumns.includes(key)) {
             // Show grand total for specified columns with appropriate decimal places

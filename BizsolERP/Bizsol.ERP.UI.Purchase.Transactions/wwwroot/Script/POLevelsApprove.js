@@ -14,9 +14,9 @@ const DUMMY_PO_LIST = [
         CurrentLevelDesc: 'Finance Manager', LevelCode: 202,
         PaymentTerms: '30 Days Net',
         LevelDetails: [
-            { LevelNo: 1, LevelDesc: 'Purchase Head',  ApproverName: 'Rajesh Kumar',  ApprovedOn: '2025-07-02' },
-            { LevelNo: 2, LevelDesc: 'Finance Manager', ApproverName: '', ApprovedOn: '' },
-            { LevelNo: 3, LevelDesc: 'MD Approval',     ApproverName: '', ApprovedOn: '' }
+            { LevelNo: 1, LevelDesc: 'Purchase Head',  ApproverName: 'Rajesh Kumar',  ApprovedOn: '2025-07-02', Remarks: 'Verified and forwarded' },
+            { LevelNo: 2, LevelDesc: 'Finance Manager', ApproverName: '', ApprovedOn: '', Remarks: '' },
+            { LevelNo: 3, LevelDesc: 'MD Approval',     ApproverName: '', ApprovedOn: '', Remarks: '' }
         ]
     },
     {
@@ -26,8 +26,8 @@ const DUMMY_PO_LIST = [
         CurrentLevelDesc: 'Purchase Head', LevelCode: 201,
         PaymentTerms: '45 Days',
         LevelDetails: [
-            { LevelNo: 1, LevelDesc: 'Purchase Head',  ApproverName: '', ApprovedOn: '' },
-            { LevelNo: 2, LevelDesc: 'Director',        ApproverName: '', ApprovedOn: '' }
+            { LevelNo: 1, LevelDesc: 'Purchase Head',  ApproverName: '', ApprovedOn: '', Remarks: '' },
+            { LevelNo: 2, LevelDesc: 'Director',        ApproverName: '', ApprovedOn: '', Remarks: '' }
         ]
     },
     {
@@ -37,9 +37,9 @@ const DUMMY_PO_LIST = [
         CurrentLevelDesc: 'MD Approval', LevelCode: 203,
         PaymentTerms: '15 Days',
         LevelDetails: [
-            { LevelNo: 1, LevelDesc: 'Purchase Head',  ApproverName: 'Suresh Patel',  ApprovedOn: '2025-06-21' },
-            { LevelNo: 2, LevelDesc: 'Finance Manager', ApproverName: 'Anita Sharma',  ApprovedOn: '2025-06-22' },
-            { LevelNo: 3, LevelDesc: 'MD Approval',     ApproverName: 'Vijay Mehta',   ApprovedOn: '2025-06-23' }
+            { LevelNo: 1, LevelDesc: 'Purchase Head',  ApproverName: 'Suresh Patel',  ApprovedOn: '2025-06-21', Remarks: 'All docs in order' },
+            { LevelNo: 2, LevelDesc: 'Finance Manager', ApproverName: 'Anita Sharma',  ApprovedOn: '2025-06-22', Remarks: 'Budget approved' },
+            { LevelNo: 3, LevelDesc: 'MD Approval',     ApproverName: 'Vijay Mehta',   ApprovedOn: '2025-06-23', Remarks: 'Final approval granted' }
         ]
     },
     {
@@ -49,9 +49,9 @@ const DUMMY_PO_LIST = [
         CurrentLevelDesc: 'Finance Manager', LevelCode: 202,
         PaymentTerms: '30 Days Net',
         LevelDetails: [
-            { LevelNo: 1, LevelDesc: 'Purchase Head',  ApproverName: 'Karan Singh',   ApprovedOn: '2025-06-19' },
-            { LevelNo: 2, LevelDesc: 'Finance Manager', ApproverName: 'Priya Nair',    ApprovedOn: '2025-06-20' },
-            { LevelNo: 3, LevelDesc: 'MD Approval',     ApproverName: '', ApprovedOn: '' }
+            { LevelNo: 1, LevelDesc: 'Purchase Head',  ApproverName: 'Karan Singh',   ApprovedOn: '2025-06-19', Remarks: 'Forwarded for review' },
+            { LevelNo: 2, LevelDesc: 'Finance Manager', ApproverName: 'Priya Nair',    ApprovedOn: '2025-06-20', Remarks: 'Rate too high, needs renegotiation' },
+            { LevelNo: 3, LevelDesc: 'MD Approval',     ApproverName: '', ApprovedOn: '', Remarks: '' }
         ]
     },
     {
@@ -61,10 +61,10 @@ const DUMMY_PO_LIST = [
         CurrentLevelDesc: 'Store Manager', LevelCode: 204,
         PaymentTerms: '60 Days',
         LevelDetails: [
-            { LevelNo: 1, LevelDesc: 'Store Manager',  ApproverName: '', ApprovedOn: '' },
-            { LevelNo: 2, LevelDesc: 'Purchase Head',  ApproverName: '', ApprovedOn: '' },
-            { LevelNo: 3, LevelDesc: 'Finance Manager', ApproverName: '', ApprovedOn: '' },
-            { LevelNo: 4, LevelDesc: 'MD Approval',     ApproverName: '', ApprovedOn: '' }
+            { LevelNo: 1, LevelDesc: 'Store Manager',  ApproverName: '', ApprovedOn: '', Remarks: '' },
+            { LevelNo: 2, LevelDesc: 'Purchase Head',  ApproverName: '', ApprovedOn: '', Remarks: '' },
+            { LevelNo: 3, LevelDesc: 'Finance Manager', ApproverName: '', ApprovedOn: '', Remarks: '' },
+            { LevelNo: 4, LevelDesc: 'MD Approval',     ApproverName: '', ApprovedOn: '', Remarks: '' }
         ]
     },
     {
@@ -74,10 +74,10 @@ const DUMMY_PO_LIST = [
         CurrentLevelDesc: 'Finance Manager', LevelCode: 203,
         PaymentTerms: '30 Days Net',
         LevelDetails: [
-            { LevelNo: 1, LevelDesc: 'Store Manager',  ApproverName: 'Deepak Joshi',  ApprovedOn: '2025-06-11' },
-            { LevelNo: 2, LevelDesc: 'Purchase Head',  ApproverName: 'Amit Verma',    ApprovedOn: '2025-06-12' },
-            { LevelNo: 3, LevelDesc: 'Finance Manager', ApproverName: '', ApprovedOn: '' },
-            { LevelNo: 4, LevelDesc: 'MD Approval',     ApproverName: '', ApprovedOn: '' }
+            { LevelNo: 1, LevelDesc: 'Store Manager',  ApproverName: 'Deepak Joshi',  ApprovedOn: '2025-06-11', Remarks: 'Stock requirement confirmed' },
+            { LevelNo: 2, LevelDesc: 'Purchase Head',  ApproverName: 'Amit Verma',    ApprovedOn: '2025-06-12', Remarks: 'Vendor verified' },
+            { LevelNo: 3, LevelDesc: 'Finance Manager', ApproverName: '', ApprovedOn: '', Remarks: '' },
+            { LevelNo: 4, LevelDesc: 'MD Approval',     ApproverName: '', ApprovedOn: '', Remarks: '' }
         ]
     }
 ];
@@ -448,6 +448,7 @@ function BuildDetailStepper(po) {
         const lvlName    = EscHtml(lvlInfo.LevelDesc || lvlInfo.LevelName || ('Level ' + i));
         const approver   = EscHtml(lvlInfo.ApproverName || lvlInfo.UserName || '');
         const approvedOn = lvlInfo.ApprovedOn ? FmtDateDisplay(lvlInfo.ApprovedOn) : '';
+        const remarks    = EscHtml(lvlInfo.Remarks || lvlInfo.Remark || '');
 
         let stepState;
         if (status.toLowerCase() === 'approved' || i < curLvlNo) stepState = 'done';
@@ -469,6 +470,10 @@ function BuildDetailStepper(po) {
               (approvedOn ? ' &mdash; ' + approvedOn : '') + '</div>'
             : '';
 
+        const remarksHtml = remarks
+            ? '<div class="pla-dstep-remarks"><i class="fa fa-comment me-1"></i>' + remarks + '</div>'
+            : '';
+
         const lineClass = (stepState === 'done') ? 'pla-dstep-line-done' : 'pla-dstep-line-pending';
 
         html += '<div class="pla-dstep-item pla-dstep-' + stepState + '">' +
@@ -476,6 +481,7 @@ function BuildDetailStepper(po) {
                     '<div class="pla-dstep-body">' +
                         '<div class="pla-dstep-title">' + lvlName + '</div>' +
                         approverHtml +
+                        remarksHtml +
                         '<div class="pla-dstep-badge pla-dstep-badge-' + stepState + '">' + badgeLabel + '</div>' +
                     '</div>' +
                 '</div>';
