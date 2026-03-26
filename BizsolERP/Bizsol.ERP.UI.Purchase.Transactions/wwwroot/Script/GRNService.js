@@ -44,9 +44,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const el = document.getElementById(id);
         if (!el) return;
         el.addEventListener('keypress', e => {
-            const char = String.fromCharCode(e.which);
-            if (!/[\d.]/.test(char)) { e.preventDefault(); return; }
-            if (char === '.' && el.value.includes('.')) e.preventDefault();
+            const ch = e.key;
+            if (ch.length !== 1) return;
+            if (!/[\d.]/.test(ch)) { e.preventDefault(); return; }
+            if (ch === '.' && el.value.includes('.')) e.preventDefault();
         });
         el.addEventListener('input', () => {
             el.value = el.value.replace(/[^\d.]/g, '').replace(/(\..*?)\..*/g, '$1');
@@ -1220,8 +1221,13 @@ async function editGRN(code) {
                 set('dtBillDate', toInputDate(master.BillDate));
                 set('dtRecvDate', toInputDate(master.ReceiveDate));
                 set('txtRemark', master.Remarks ?? '');
-                set('txtTotalBillAmountManual', master.TotalBillAmountManual ?? '0');
-                set('txtDedution', master.Dedution ?? '0');
+                const amtStr = v => {
+                    if (v === null || v === undefined || v === '') return '0.00';
+                    const n = parseFloat(String(v).replace(/,/g, ''));
+                    return isNaN(n) ? '0.00' : n.toFixed(2);
+                };
+                set('txtTotalBillAmountManual', amtStr(master.TotalBillAmountManual));
+                set('txtDedution', amtStr(master.Dedution));
                 calcNetPayable();
 
                 // Party dropdown (SP: PartyMaster_Code)
@@ -1590,9 +1596,9 @@ function saveGRN() {
                 Remarks: document.getElementById('txtRemark')?.value || '',
                 AttachFileName: fileName || existingFileName || '',
                 AttachData: imageBase64Data.length > 0 ? imageBase64Data : existingImageData.length > 0 ? existingImageData : [],
-                TotalBillAmountManual: document.getElementById('txtTotalBillAmountManual')?.value || 0,
-                Dedution: document.getElementById('txtDedution')?.value || 0,
-                NetPayable: document.getElementById('txtNetPayable')?.value ||0,
+                TotalBillAmountManual: parseFloat(document.getElementById('txtTotalBillAmountManual')?.value) || 0,
+                Dedution: parseFloat(document.getElementById('txtDedution')?.value) || 0,
+                NetPayable: parseFloat(document.getElementById('txtNetPayable')?.value) || 0,
 
             }];
 
@@ -1668,6 +1674,8 @@ function resetForm() {
     if (hint) hint.style.display = 'none';
     showGridProjectHint();
     setAddItemBtnState(false);
+    const dedEl = document.getElementById('txtDedution');
+    if (dedEl) dedEl.value = '0.00';
     calcTotal();
     setTodayDates();
     updateFloatBar();
@@ -1899,6 +1907,7 @@ window.onQtyChange          = onQtyChange;
 window.calcRowAmount        = calcRowAmount;
 window.blockNonNumeric      = blockNonNumeric;
 window.stripNonNumeric      = stripNonNumeric;
+window.calcNetPayable       = calcNetPayable;
 window.onPOFocus            = onPOFocus;
 window.onPOChange           = onPOChange;
 window.onItemChange         = onItemChange;
