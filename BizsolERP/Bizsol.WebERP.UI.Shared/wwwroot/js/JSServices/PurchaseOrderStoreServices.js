@@ -117,6 +117,15 @@ const PurchaseOrderStoreService = {
 
         let url = UrlService.API_ENDPOINT_PAYMENT_TERMS_MASTER + `/SavePaymentTermsMaster`;
         return promiseAjaxCallApi.CallAPI('POST', url, payload).then(function (value) { return value; });
+    },
+
+    CancelPurchaseOrderStore: function CancelPurchaseOrderStore(code, UserMaster_Code) {
+        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/CancelPurchaseOrder?Code=${code}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, '').then(
+            function (value) {
+                return value;
+            }
+        );
     }
 
 }
