@@ -4,6 +4,7 @@ wwwroot\Script\PackingListFG.js
 wwwroot\Script\PalletPacking.js
 wwwroot\Script\PhysicalStockTaking.js
 wwwroot\Script\RollingPlanSheet.js
+wwwroot\Script\StockAgeingReport.js
 wwwroot\Script\StockTransferWarehouse.js
 wwwroot\Script\Test.js
 wwwroot\Script\TestView.js

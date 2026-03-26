@@ -3,7 +3,7 @@
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=1"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=3"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 
 <style>
@@ -289,9 +289,10 @@
             padding: 6px 8px;
             font-size: 12px;
         }
-        #tblBOMSummary thead th:nth-child(1) { width: 25%; }
-        #tblBOMSummary thead th:nth-child(2) { width: 35%; }
-        #tblBOMSummary thead th:nth-child(3) { width: 40%; }
+        #tblBOMSummary thead th:nth-child(1) { width: 28%; }
+        #tblBOMSummary thead th:nth-child(2) { width: 22%; }
+        #tblBOMSummary thead th:nth-child(3) { width: 25%; }
+        #tblBOMSummary thead th:nth-child(4) { width: 25%; }
     }
 
     .bom-actions {
@@ -789,17 +790,18 @@
         </table>
     </div>
 
-    <!-- BOM Summary by UOM (inside entry card so it hides/shows with the form) -->
+    <!-- BOM Summary by project category (inside entry card so it hides/shows with the form) -->
     <div id="dvBOMSummary" style="display:none;margin-top:16px;" class="bom-card">
         <div class="bom-summary-header">
-            <i class="fas fa-chart-bar"></i> BOM Summary by UOM
+            <i class="fas fa-chart-bar"></i> BOM Summary by Prj Category
         </div>
         <div class="bom-table-wrap bom-summary-table-wrap" style="margin-top:0; border-radius:0; box-shadow:none; border:none;">
             <table class="bom-table" id="tblBOMSummary">
                 <thead>
                     <tr>
-                        <th>UOM</th>
+                        <th>Prj Category</th>
                         <th class="right">Qty Required</th>
+                        <th class="right">EST. Rate (wt. avg)</th>
                         <th class="right">Amount</th>
                     </tr>
                 </thead>
@@ -808,11 +810,13 @@
                     <tr>
                         <td><strong>Grand Total</strong></td>
                         <td class="right" id="sumQtyRequired">—</td>
+                        <td class="right" id="sumEstRate">—</td>
                         <td class="right" id="sumAmount">—</td>
                     </tr>
                 </tfoot>
             </table>
         </div>
+        <p id="bomSummaryTotalsLine" style="margin:10px 14px 14px; font-size:12.5px; color:var(--text-muted); font-weight:600;"></p>
     </div>
 </div>
 

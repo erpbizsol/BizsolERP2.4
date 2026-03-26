@@ -454,6 +454,8 @@ function ClearForm() {
         $("#err_" + id).hide();
         $("#dup_" + id).hide();
     });
+    // Select2 keeps showing the old label until the underlying select change is signaled
+    $("#UOM").trigger("change");
     // Reset UOM select2 error border
     $("#UOM").nextAll(".select2-container").first().find(".select2-selection--single").css({
         "border-color": "",

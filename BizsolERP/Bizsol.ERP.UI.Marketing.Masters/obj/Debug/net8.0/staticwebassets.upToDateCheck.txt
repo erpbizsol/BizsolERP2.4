@@ -3,3 +3,5 @@ wwwroot\js\DealerMaster.js
 wwwroot\js\DealerMasterList.js
 wwwroot\js\EnquiryMaster.js
 wwwroot\js\LeadMaster.js
+wwwroot\js\Ledger.js
+wwwroot\js\TransporterMaster.js

@@ -252,6 +252,7 @@ wwwroot\assets\libs\twitter-bootstrap-wizard\prettify.js
 wwwroot\assets\libs\wnumb\wNumb.min.js
 wwwroot\assets\Script\Logout.js
 wwwroot\assets\Script\Menu.js
+wwwroot\assets\Script\menutest.js
 wwwroot\assets\Script\theme-babycare.js
 wwwroot\assets\Script\WebNotification.js
 wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css

@@ -11,6 +11,16 @@
   <ItemGroup>
     <EmbeddedResource Include="wwwroot\**\*" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\js\JSServices\GRNPaymentEntryService.js" />
+    <Content Remove="wwwroot\js\JSServices\MachineMaintenanceService.js" />
+    <Content Remove="wwwroot\js\JSServices\SizeFillterControlService.js" />
+    <Content Remove="wwwroot\js\JSServices\VendorMasterService.js" />
+    <Content Remove="wwwroot\js\JSServices\_GRNPaymentService.js" />
+    <Content Remove="wwwroot\js\JSServices\_GRNService.js" />
+    <Content Remove="wwwroot\js\JSServices\_ItemMasterService.js" />
+  </ItemGroup>
   
   <!--<ItemGroup>
     <Compile Remove="wwwroot\lib\**" />
