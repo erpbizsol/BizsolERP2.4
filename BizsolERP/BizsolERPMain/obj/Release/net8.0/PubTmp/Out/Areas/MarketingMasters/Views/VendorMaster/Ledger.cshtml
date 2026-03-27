@@ -1,0 +1,413 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+
+<style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .vm-page-wrapper {
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        min-height: 100%;
+        background: #f1f3fb;
+    }
+
+    .vm-card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #e5e7f0;
+        box-shadow: 0 4px 24px rgba(99,102,241,0.09), 0 1px 4px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
+
+    .vm-card-header {
+        background: linear-gradient(130deg, #5b5ef4 0%, #8b5cf6 55%, #a855f7 100%);
+        padding: 14px 26px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .vm-header-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .vm-header-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        background: rgba(255,255,255,0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: #fff;
+        flex-shrink: 0;
+    }
+
+    .vm-header-title {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .vm-header-sub {
+        color: rgba(255,255,255,0.68);
+        font-size: 12px;
+        margin-top: 2px;
+    }
+
+    .vm-card-body { padding: 18px 20px 26px; }
+
+    .vm-table-wrapper {
+        border-radius: 12px;
+        border: 1px solid #e4e7f0;
+        overflow-x: auto;
+        height: 388px;
+        -webkit-overflow-scrolling: touch;
+        box-shadow: 0 2px 12px rgba(91,94,244,0.06);
+        background: #fff;
+        position: relative;
+    }
+
+    .vm-table-wrapper thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .vm-filter-fixed {
+        position: fixed !important;
+        z-index: 99999 !important;
+    }
+
+    .vm-table-wrapper table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 600px;
+    }
+
+    th {
+        background: linear-gradient(135deg, #5b5ef4, #5b5ef4) !important;
+        color: #fff !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        padding: 5px 14px !important;
+        white-space: nowrap;
+        position: relative;
+        min-width: 99px !important;
+        letter-spacing: 0.02em;
+        transition: background 0.18s, color 0.18s !important;
+        cursor: default;
+        text-transform: uppercase;
+    }
+
+    th:hover {
+        background: linear-gradient(90deg, #e6091f 0%, #6b5ee6 100%) !important;
+    }
+
+    td {
+        font-size: 13px;
+        color: #374151;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+    }
+
+    tbody tr:nth-child(even) { background: #fafbff; }
+    tbody tr:nth-child(odd) { background: #ffffff; }
+    tbody tr:hover {
+        background: #eef2ff !important;
+        transition: background 0.12s;
+    }
+
+    .vm-btn-verify {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.13s;
+        margin-right: 3px;
+        vertical-align: middle;
+        background: #ecfdf5;
+        color: #059669;
+    }
+
+    .vm-btn-verify:hover {
+        background: #d1fae5;
+        transform: scale(1.05);
+    }
+
+    .vm-verify-status--done {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        background: #ecfdf5;
+        color: #059669;
+        border: 1px solid #a7f3d0;
+    }
+
+    .vm-verify-status--with-detail { cursor: pointer; }
+
+    .vm-stats-strip {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .vm-stats-strip--above-card {
+        padding: 0 0 16px;
+        margin: 0 0 4px;
+        background: transparent;
+        border: none;
+    }
+
+    .vm-stat-chip {
+        flex: 1;
+        min-width: 150px;
+        background: #fff;
+        border: 1px solid #e5e7f0;
+        border-radius: 14px;
+        padding: 14px 18px;
+        box-shadow: 0 2px 12px rgba(91, 94, 244, 0.07);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .vm-stat-chip[data-vm-filter] {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .vm-stat-chip--active {
+        border-color: #c7d2fe;
+        box-shadow: 0 4px 20px rgba(91, 94, 244, 0.18);
+        background: linear-gradient(180deg, #fafbff 0%, #fff 100%);
+    }
+
+    .vm-stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+        color: #fff;
+        flex-shrink: 0;
+    }
+
+    .vm-stat-total .vm-stat-icon {
+        background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+    }
+
+    .vm-stat-verified .vm-stat-icon {
+        background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+    }
+
+    .vm-stat-pending .vm-stat-icon {
+        background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
+    }
+
+    .vm-stat-val {
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #1e3a8a;
+    }
+
+    .vm-stat-lbl {
+        font-size: 11px;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+        margin-top: 3px;
+    }
+
+    .vm-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100000;
+        padding: 16px;
+    }
+
+    .vm-backdrop.show { display: flex; }
+
+    .vm-verify-modal {
+        background: #fff;
+        border-radius: 16px;
+        padding: 28px 28px 22px;
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+    }
+
+    .vm-verify-icon-wrap {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+        color: #059669;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin: 0 auto 14px;
+    }
+
+    .vm-verify-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 8px;
+    }
+
+    .vm-verify-text {
+        font-size: 13px;
+        color: #6b7280;
+        margin-bottom: 22px;
+        line-height: 1.45;
+    }
+
+    .vm-delete-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .vm-btn-cancel {
+        padding: 10px 18px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        color: #374151;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 13px;
+    }
+
+    .vm-btn-confirm-verify {
+        padding: 10px 18px;
+        border-radius: 10px;
+        border: none;
+        background: linear-gradient(135deg, #059669, #10b981);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .vm-btn-confirm-verify:hover {
+        filter: brightness(1.05);
+    }
+
+    @@media (max-width: 640px) {
+        .vm-stat-chip { min-width: calc(50% - 7px); }
+    }
+</style>
+
+<div class="vm-page-wrapper">
+    <div id="ledgerStatsStrip" class="vm-stats-strip vm-stats-strip--above-card" style="display:none;" aria-label="Ledger summary — click to filter">
+        <div class="vm-stat-chip vm-stat-total vm-stat-chip--active" data-vm-filter="all" role="button" tabindex="0" aria-pressed="true">
+            <div class="vm-stat-icon" aria-hidden="true"><i class="fas fa-layer-group"></i></div>
+            <div>
+                <div class="vm-stat-val" id="vmStatTotal">0</div>
+                <div class="vm-stat-lbl">Total</div>
+            </div>
+        </div>
+        <div class="vm-stat-chip vm-stat-verified" data-vm-filter="verified" role="button" tabindex="0" aria-pressed="false">
+            <div class="vm-stat-icon" aria-hidden="true"><i class="fas fa-circle-check"></i></div>
+            <div>
+                <div class="vm-stat-val" id="vmStatVerified">0</div>
+                <div class="vm-stat-lbl">Verified</div>
+            </div>
+        </div>
+        <div class="vm-stat-chip vm-stat-pending" data-vm-filter="pending" role="button" tabindex="0" aria-pressed="false">
+            <div class="vm-stat-icon" aria-hidden="true"><i class="fas fa-clock"></i></div>
+            <div>
+                <div class="vm-stat-val" id="vmStatPending">0</div>
+                <div class="vm-stat-lbl">Pending</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="vm-card">
+        <div class="vm-card-header">
+            <div class="vm-header-left">
+                @* <div class="vm-header-icon"><i class="fas fa-book"></i></div>
+                <div>
+                    <div class="vm-header-title">Ledger Master</div>
+                    <div class="vm-header-sub">Verify ledger records</div>
+                </div> *@
+            </div>
+        </div>
+        <div class="vm-card-body">
+            <div id="tblVendorMaster">
+                <div class="vm-table-wrapper">
+                    <table id="VendorMaster" style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead id="VendorMaster-header"></thead>
+                        <tbody id="VendorMaster-body"></tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-VendorMaster"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="vmVerifyConfirmBackdrop" class="vm-backdrop">
+    <div class="vm-verify-modal">
+        <div class="vm-verify-icon-wrap">
+            <i class="fas fa-circle-check"></i>
+        </div>
+        <div class="vm-verify-title" id="vmVerifyConfirmTitle">Verify this ledger?</div>
+        <div class="vm-verify-text" id="vmVerifyConfirmText">
+            This will mark the ledger as verified.
+        </div>
+        <div class="vm-delete-actions">
+            <button type="button" class="vm-btn-cancel" id="vmBtnCancelVerify">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="vm-btn-confirm-verify" onclick="DoVendorVerify()">
+                <i class="fas fa-check"></i> Yes, Verify
+            </button>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Masters/js/Ledger.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>

@@ -1,0 +1,999 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/RMStock.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+<style>
+    /*
+     * RM Stock — colours match ProjectMaster.cshtml:
+     * - Grid header: .pm-table thead → linear-gradient(135deg, #4f46e5, #667eea)
+     * - Buttons / card bar / modals: var(--primary-gradient), var(--shadow-primary) (same as .pm-btn-new, .pm-card)
+     * - Row hover / focus ring: rgba(102,126,234,…) (same as .pm-table tbody tr:hover, #pmSearch:focus)
+     */
+    :root {
+        --pm-table-header-gradient: linear-gradient(135deg, #4f46e5, #667eea);
+    }
+
+    .rms-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        padding: 4px 0 32px;
+    }
+
+    .fixed-width-table th, .fixed-width-table td {
+        white-space: nowrap;
+        min-width: auto;
+    }
+
+    .table-wrapper {
+        position: relative;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: calc(100vh - 260px);
+        flex: 1;
+        min-height: 0;
+        margin-bottom: 0;
+    }
+
+    #RMStockCurrent,
+    #UnApproved_Planned,
+    #Slitted_Coil_Stock,
+    #dispatch,
+    #Slitted,
+    #JobWorkData,
+    #SummaryData,
+    #SlittedCoilsStockSummary {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    /* Sticky header — ProjectMaster .pm-table thead (same gradient + th rules) */
+    #RMStockCurrent thead,
+    #UnApproved_Planned thead,
+    #Slitted_Coil_Stock thead,
+    #dispatch thead,
+    #Slitted thead,
+    #JobWorkData thead,
+    #SummaryData thead,
+    #SlittedCoilsStockSummary thead,
+    #RMStockCurrentPlanned thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--pm-table-header-gradient) !important;
+        --bs-table-bg: transparent;
+        --bs-table-striped-bg: transparent;
+        --bs-table-hover-bg: transparent;
+    }
+
+    #RMStockCurrent thead th,
+    #UnApproved_Planned thead th,
+    #Slitted_Coil_Stock thead th,
+    #dispatch thead th,
+    #Slitted thead th,
+    #JobWorkData thead th,
+    #SummaryData thead th,
+    #SlittedCoilsStockSummary thead th,
+    #RMStockCurrentPlanned thead th {
+        color: #fff !important;
+        background: transparent !important;
+        position: sticky;
+        top: 0;
+        z-index: 11;
+        font-weight: 700;
+        padding: 13px 16px;
+        text-align: left;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 12px;
+        letter-spacing: .04em;
+    }
+
+    /* Body rows — ProjectMaster zebra + hover */
+    #rmStockTabContent table.table tbody tr {
+        transition: background .12s;
+    }
+
+    #rmStockTabContent table.table tbody tr:nth-child(even) {
+        background: var(--light-bg) !important;
+    }
+
+    #rmStockTabContent table.table tbody tr:nth-child(odd) {
+        background: #fff !important;
+    }
+
+    #rmStockTabContent table.table tbody tr:hover {
+        background: rgba(102, 126, 234, .07) !important;
+    }
+
+    #PlannedMyModal table.table tbody tr:nth-child(even) {
+        background: var(--light-bg) !important;
+    }
+
+    #PlannedMyModal table.table tbody tr:nth-child(odd) {
+        background: #fff !important;
+    }
+
+    #PlannedMyModal table.table tbody tr:hover {
+        background: rgba(102, 126, 234, .07) !important;
+    }
+
+    #RMStockCurrentPlanned tfoot tr.table-info td {
+        background: rgba(102, 126, 234, .12) !important;
+        color: var(--text-dark) !important;
+        font-weight: 700;
+        border-top: 1px solid var(--border-color) !important;
+    }
+
+    /* ProjectMaster .pm-table td spacing + borders */
+    #rmStockTabContent table.table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-light) !important;
+        color: var(--text-dark) !important;
+        vertical-align: middle;
+    }
+
+    #RMStockCurrent tfoot th,
+    #RMStockCurrent tfoot td,
+    #UnApproved_Planned tfoot th,
+    #UnApproved_Planned tfoot td,
+    #Slitted_Coil_Stock tfoot th,
+    #Slitted_Coil_Stock tfoot td,
+    #Slitted tfoot th,
+    #Slitted tfoot td,
+    #JobWorkData tfoot th,
+    #JobWorkData tfoot td,
+    #SummaryData tfoot th,
+    #SummaryData tfoot td {
+        height: 22px;
+        padding: 4px 8px;
+        vertical-align: middle;
+    }
+
+    @@media (max-height: 800px) {
+        #current-stock,
+        #unApproved-planned,
+        #slitted-coil-stock,
+        #dispatch,
+        #slitted,
+        #job-work,
+        #stock-summary {
+            max-height: calc(100vh - 150px);
+        }
+        .table-wrapper {
+            min-height: 280px;
+        }
+    }
+
+    @@media (max-height: 600px) {
+        #current-stock,
+        #unApproved-planned,
+        #slitted-coil-stock,
+        #dispatch,
+        #slitted,
+        #job-work,
+        #stock-summary {
+            max-height: calc(100vh - 120px);
+        }
+        .table-wrapper {
+            min-height: 220px;
+        }
+    }
+
+    /* Main panel — ProjectMaster .pm-card */
+    #rmStockTabContent.rms-shell {
+        background: var(--white-bg);
+        border: 1px solid var(--border-color) !important;
+        border-radius: 20px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        position: relative;
+    }
+
+    #rmStockTabContent.rms-shell::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: var(--primary-gradient);
+        border-radius: 20px 20px 0 0;
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    #rmStockTabContent > .tab-content {
+        border: none;
+        padding: 12px;
+        background: var(--white-bg);
+        border-radius: 0 0 18px 18px;
+    }
+
+    /* Tabs — scroll + ProjectMaster accent */
+    #rmStockTabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        gap: 8px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 4px;
+    }
+
+        #rmStockTabs .nav-link {
+            white-space: nowrap;
+            flex-shrink: 0;
+            border: 1px solid var(--border-color);
+            border-radius: 12px 12px 0 0;
+            color: var(--text-primary);
+            background: var(--light-bg);
+            font-weight: 600;
+            font-size: 13px;
+            padding: 10px 14px;
+            transition: all .2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+
+        #rmStockTabs .nav-link:hover:not(.active) {
+            background: var(--card-hover);
+            border-color: var(--accent-gray);
+            color: var(--text-dark);
+        }
+
+        #rmStockTabs .nav-link.active {
+            color: #fff !important;
+            background: var(--primary-gradient) !important;
+            border-color: transparent !important;
+            box-shadow: var(--shadow-primary);
+        }
+
+        #rmStockTabs .nav-link i {
+            margin-right: 0.45rem;
+        }
+
+        #rmStockTabs #btnDownload {
+            flex-shrink: 0;
+            align-self: center;
+            border: none;
+            border-radius: 12px;
+            padding: 8px 14px;
+            background: var(--primary-gradient);
+            color: #fff;
+            font-weight: 700;
+            box-shadow: var(--shadow-primary);
+        }
+
+        #rmStockTabs #btnDownload:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, .45);
+        }
+
+        #rmStockTabs #btnDownload:active {
+            transform: translateY(0);
+        }
+
+    .rms-filter-card {
+        background: var(--white-bg);
+        border-radius: 14px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .rms-filter-card .card-body {
+        padding: 14px 16px;
+    }
+
+    .card {
+        --bs-card-spacer-y: 0rem !important;
+        --bs-card-spacer-x: 1rem !important;
+    }
+
+    .card-header {
+        background-color: var(--card-hover);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .card-title {
+        color: var(--text-dark);
+        font-weight: 600;
+    }
+
+    .btn-height {
+        height: 28px;
+        line-height: 1;
+    }
+
+    .icon-height {
+        height: 28px;
+    }
+
+    #rmStockTabContent .btn-primary {
+        background: var(--primary-gradient);
+        border: none;
+        color: #fff;
+        font-weight: 700;
+        border-radius: 10px;
+        box-shadow: var(--shadow-primary);
+    }
+
+    #rmStockTabContent .btn-primary:hover {
+        filter: brightness(1.06);
+    }
+
+    .form-label {
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.35rem;
+        font-size: 12.5px;
+    }
+
+    .form-control, .form-select {
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
+        }
+
+    .box_border {
+        border: 1.5px solid var(--border-color) !important;
+    }
+
+    .form-check-input {
+        border: 2px solid var(--accent-gray);
+        border-radius: 4px;
+    }
+
+        .form-check-input:focus {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, .2);
+            border-color: var(--accent-primary);
+        }
+
+    .form-check-label {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    /* ProjectMaster .pm-code-badge style */
+    .form-check-label1 {
+        font-weight: 700;
+        font-size: 12px;
+        color: var(--accent-primary);
+        background: rgba(102, 126, 234, .1);
+        border: 1px solid rgba(102, 126, 234, .2);
+        border-radius: 10px;
+        padding: 6px 11px;
+        letter-spacing: .03em;
+    }
+
+    .fixed-height-table {
+        height: 460px;
+    }
+
+    #RMStockCurrent tfoot td,
+    #RMStockCurrent tfoot th,
+    #Slitted tfoot td,
+    #Slitted tfoot th,
+    #Slitted_Coil_Stock tfoot td,
+    #Slitted_Coil_Stock tfoot th,
+    #JobWorkData tfoot td,
+    #JobWorkData tfoot th,
+    #SummaryData tfoot td,
+    #SummaryData tfoot th,
+    #SlittedCoilsStockSummary .total-row td {
+        color: #fff !important;
+        background: var(--pm-table-header-gradient) !important;
+        border-color: transparent !important;
+        font-weight: 700;
+    }
+
+    /* ── ProjectMaster modal pattern (local copy) ── */
+    .pm-modal .modal-dialog {
+        margin: 1rem auto;
+    }
+
+    .pm-modal .modal-content {
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+    }
+
+    .pm-modal .modal-header {
+        background: var(--primary-gradient);
+        color: #fff;
+        border-bottom: none;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .pm-modal-hdr-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, .2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+
+    .pm-modal .modal-title {
+        color: #fff;
+        font-weight: 700;
+        font-size: 17px;
+        flex: 1;
+        margin: 0;
+    }
+
+    .pm-close-btn {
+        background: rgba(255, 255, 255, .15);
+        border: none;
+        color: #fff;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background .15s;
+        outline: none;
+        flex-shrink: 0;
+    }
+
+    .pm-close-btn:hover {
+        background: rgba(255, 255, 255, .28);
+    }
+
+    .pm-modal .modal-body {
+        padding: 18px 22px 12px;
+        background: var(--light-bg);
+        overflow-y: auto;
+    }
+
+    .pm-modal .modal-footer {
+        border-top: 1px solid var(--border-color);
+        padding: 14px 22px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        background: var(--white-bg);
+    }
+
+    .pm-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: none;
+        outline: none;
+        padding: 10px 22px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform .14s, box-shadow .14s;
+        min-height: 40px;
+    }
+
+    .pm-btn.primary {
+        background: var(--primary-gradient);
+        color: #fff;
+        box-shadow: var(--shadow-primary);
+    }
+
+    .pm-btn.secondary {
+        background: var(--light-bg);
+        color: var(--text-muted);
+        border: 1.5px solid var(--border-color);
+    }
+
+    @@media (min-width: 992px) {
+        #PlannedMyModal.pm-modal .modal-dialog.modal-lg {
+            max-width: min(900px, 96vw);
+        }
+    }
+
+    @@media (max-width: 991.98px) {
+        #PlannedMyModal.pm-modal .modal-dialog {
+            margin: 0.5rem;
+            max-width: calc(100% - 1rem);
+            width: 100%;
+        }
+
+        #PlannedMyModal.pm-modal .modal-content {
+            max-height: calc(100vh - 1rem);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #PlannedMyModal.pm-modal .modal-body {
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .table-wrapper {
+            max-height: calc(100vh - 220px);
+        }
+
+        #rmStockTabs .nav-link {
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+
+        #checkBoxHideAndShow {
+            margin-top: 0.5rem !important;
+        }
+    }
+
+    @@media (max-width: 580px) {
+        .pm-modal .modal-body {
+            padding: 14px 14px 10px;
+        }
+
+        .pm-modal .modal-footer {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .pm-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="container-fluid rms-page">
+    <div class="row">
+        <div class="col-12">
+            @* <div class="card">
+                <div class="card-body"> *@
+                    <div class="nav nav-tabs align-items-center" id="rmStockTabs" role="tablist">
+                        <div class="nav-item" role="presentation">
+                            <button class="nav-link active" id="current-stock-tab" data-bs-toggle="tab" data-bs-target="#current-stock" type="button" role="tab" aria-controls="current-stock" aria-selected="true">
+                                <i class="fas fa-boxes"></i> Current Stock
+                            </button>
+                        </div>
+                        <div class="nav-item" role="presentation">
+                            <button class="nav-link" id="unApproved-planned-tab" data-bs-toggle="tab" data-bs-target="#unApproved-planned" type="button" role="tab" aria-controls="unApproved-planned" aria-selected="false">
+                                <i class="fas fa-exclamation-triangle"></i> UnApproved-Planned
+                            </button>
+                        </div>
+                        <div class="nav-item" role="presentation">
+                             <button class="nav-link" id="slitted-coil-stock-tab" data-bs-toggle="tab" data-bs-target="#slitted-coil-stock" type="button" role="tab" aria-controls="unApproved-planned" aria-selected="false">
+                                <i class="fas fa-industry"></i> Slitted Coil Stock
+                            </button>
+                        </div>
+                        <div class="nav-item" role="presentation">
+                            <button class="nav-link" id="dispatch-tab" data-bs-toggle="tab" data-bs-target="#dispatch" type="button" role="tab" aria-controls="dispatch" aria-selected="false">
+                                <i class="fas fa-truck"></i> Dispatch (This Month)
+                            </button>
+                        </div>
+                        <div class="nav-item" role="presentation">
+                            <button class="nav-link" id="slitted-tab" data-bs-toggle="tab" data-bs-target="#slitted" type="button" role="tab" aria-controls="slitted" aria-selected="false">
+                                <i class="fas fa-cut"></i> Slitted
+                            </button>
+                        </div>
+                        <div class="nav-item" role="presentation">
+                            <button class="nav-link" id="job-work-tab" data-bs-toggle="tab" data-bs-target="#job-work" type="button" role="tab" aria-controls="job-work" aria-selected="false">
+                                <i class="fas fa-tools"></i> Job Work
+                            </button>
+                        </div>
+                        <div class="nav-item" role="presentation">
+                            <button class="nav-link" id="stock-summary-tab" data-bs-toggle="tab" data-bs-target="#stock-summary" type="button" role="tab" aria-controls="stock-summary" aria-selected="false">
+                                <i class="fas fa-chart-bar"></i> Stock Summary
+                            </button>
+                        </div>
+                        <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download List"><i class="fa fa-download" aria-hidden="true"></i></button>
+                    </div>
+            @*     </div>
+            </div> *@
+            <div class="col-12 col-sm-auto mt-2" id="checkBoxHideAndShow">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="exampleCheck" />
+                    <label class="form-check-label" for="exampleCheck">
+                        Show Quality Paramaters
+                    </label>
+                </div>
+            </div>
+
+
+            <!-- Tab Content -->
+            <div class="card border-0 rms-shell" id="rmStockTabContent">
+                <div class="tab-content">
+                    <!-- Current Stock Tab -->
+                    <div class="tab-pane fade show active" id="current-stock" role="tabpanel" aria-labelledby="current-stock-tab">
+                        <div class="table-responsive">
+                            <div id="tblRMStockCurrent">
+                                <div class="table-wrapper ">
+                                    <table id="RMStockCurrent" class="fixed-width-table table ">
+                                        <thead id="table-header-RMStockCurrent">
+                                        </thead>
+                                        <tbody id="table-body-RMStockCurrent">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td id="RowCountValue" class="text-end">Count:</td>
+                                                <td colspan="10" class="text-end">Totals</td>
+                                                <td id="totalChWt" class="text-end">0.000</td>
+                                                <td id="totalAcWt" class="text-end">0.000</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <div class="paginator" id="paginator-RMStockCurrent">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- UnApproved-Planned Tab -->
+                    <div class="tab-pane fade" id="unApproved-planned" role="tabpanel" aria-labelledby="unApproved-planned-tab">
+                        <div class="table-responsive">
+                            <div id="tblUnApproved_Planned">
+                                <div class="table-wrapper">
+                                    <table id="UnApproved_Planned" class="fixed-width-table table">
+                                        <thead id="table-header-UnApproved_Planned">
+                                        </thead>
+                                        <tbody id="table-body-UnApproved_Planned">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="7" class="text-end">Totals</td>
+                                                <td id="totalUnApproved_Planned" class="text-end">0.000</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <div class="paginator" id="paginator-UnApproved_Planned">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slitted-Coil-Stock Tab -->
+                    <div class="tab-pane fade" id="slitted-coil-stock" role="tabpanel" aria-labelledby="slitted-coil-stock-tab">
+                        <div class="table-responsive">
+                            <div id="tblSlitted_Coil_Stock">
+                                <div class="table-wrapper">
+                                    <table id="Slitted_Coil_Stock" class="fixed-width-table table ">
+                                        <thead id="table-header-Slitted_Coil_Stock">
+                                        </thead>
+                                        <tbody id="table-body-Slitted_Coil_Stock">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="5" class="text-end">Totals</td>
+                                                <td id="totalSlitted_Coil_QtyPC" class="text-end">0</td>
+                                                <td id="totalSlitted_Coil_QtyMT" class="text-end">0.000</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <div class="paginator" id="paginator-Slitted_Coil_Stock">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dispatch Tab -->
+                    <div class="tab-pane fade" id="dispatch" role="tabpanel" aria-labelledby="dispatch-tab">
+                        <div class="card col-md-12 border-0 rms-filter-card">
+                            <div class="card-body">
+                                <div class="row g-2 flex-wrap align-items-end">
+                                    <div class="col-12 col-sm-auto">
+                                        <label for="txtFromDate" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtFromDate" name="txtFromDate" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-12 col-sm-auto">
+                                        <label for="txtToDate" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtToDate" name="txtToDate" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-12 col-sm-auto mb-2">
+                                        <div><button type="button" onclick="ShowDispatchList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <div id="tbldispatch">
+                                <div class="table-wrapper">
+                                    <table id="dispatch" class="fixed-width-table table ">
+                                        <thead id="table-header-dispatch">
+                                        </thead>
+                                        <tbody id="table-body-dispatch">
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="paginator" id="paginator-dispatch">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slitted Tab -->
+                    <div class="tab-pane fade" id="slitted" role="tabpanel" aria-labelledby="slitted-tab">
+                        <div class="card col-md-12 border-0 rms-filter-card">
+                            <div class="card-body">
+                                <div class="row g-2 flex-wrap align-items-end">
+                                    <div class="col-12 col-sm-auto">
+                                        <label for="txtFromDateSlitted" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtFromDateSlitted" name="txtFromDateSlitted" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-12 col-sm-auto">
+                                        <label for="txtToDateSlitted" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtToDateSlitted" name="txtToDateSlitted" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-12 col-sm-auto mb-2">
+                                        <div><button type="button" onclick="ShowSlittedList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <div id="tblSlitted">
+                                <div class="table-wrapper">
+                                    <table id="Slitted" class="fixed-width-table table ">
+                                        <thead id="table-header-Slitted">
+                                        </thead>
+                                        <tbody id="table-body-Slitted">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="8" class="text-end">Totals</td>
+                                                <td id="totalWt" class="text-end">0.000</td>
+                                                <td id="totalActWt" class="text-end">0.000</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <div class="paginator" id="paginator-Slitted">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Job Work Tab -->
+                    <div class="tab-pane fade" id="job-work" role="tabpanel" aria-labelledby="job-work-tab">
+                        <div class="card col-md-12 border-0 rms-filter-card">
+                            <div class="card-body">
+                                <div class="row g-2 flex-wrap align-items-end">
+                                    <div class="col-12 col-sm-auto">
+                                        <label for="txtFromDateJobWork" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtFromDateJobWork" name="txtFromDateJobWork" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-12 col-sm-auto">
+                                        <label for="txtToDateJobWork" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtToDateJobWork" name="txtToDateJobWork" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-12 col-sm-auto mb-2">
+                                        <div><button type="button" onclick="ShowJobWorkList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <div id="tblJobWorkData">
+                                <div class="table-wrapper">
+                                    <table id="JobWorkData" class="fixed-width-table table ">
+                                        <thead id="table-header-JobWorkData">
+                                        </thead>
+                                        <tbody id="table-body-JobWorkData">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="8" class="text-end">Totals</td>
+                                                <td id="totalWeight" class="text-end">0.000</td>
+                                                <td id="totalActualWt" class="text-end">0.000</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <div class="paginator" id="paginator-JobWorkData">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stock Summary Tab -->
+                    <div class="tab-pane fade" id="stock-summary" role="tabpanel" aria-labelledby="stock-summary-tab">
+                        <div id="tblSummaryData">
+                            <div class="row g-2">
+                                <div class="col-12 col-md-5">
+                                    <div class="table-responsive">
+                                        <div class="table-wrapper">
+                                            <table id="SummaryData" class="fixed-width-table table" style="min-width:300px; width: 100%;">
+                                                <thead id="table-header-SummaryData">
+                                                </thead>
+                                                <tbody id="table-body-SummaryData">
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <td colspan="1" class="text-end">Totals</td>
+                                                        <td id="totalNoOFPCCoil" class="text-end">0</td>
+                                                        <td id="totalWeightStock" class="text-end">0.000</td>
+                                                        <td id="totalNoOFPC" class="text-end">0</td>
+                                                        <td id="totalWtStock" class="text-end">0.000</td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                        <div class="paginator" id="paginator-SummaryData"></div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="table-responsive">
+                                        <div class="table-wrapper">
+                                            <table id="SlittedCoilsStockSummary" class="fixed-width-table table" style="min-width:300px; width: 100%;">
+                                                <thead id="table-header-SlittedCoilsStockSummary">
+                                                </thead>
+                                                <tbody id="table-body-SlittedCoilsStockSummary">
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="paginator" id="paginator-SlittedCoilsStockSummary"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Source Modal — ProjectMaster pm-modal -->
+<div class="modal fade pm-modal" id="PlannedMyModal" tabindex="-1" aria-labelledby="PlannedMyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="pm-modal-hdr-icon"><i class="fas fa-clipboard-list"></i></div>
+                <h5 class="modal-title" id="PlannedMyModalLabel">Plan</h5>
+                <button type="button" class="pm-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-2">
+                    <div class="col-12">
+                        <div class="form-check">
+                            <label class="form-check-label" for="despSize">Size:</label>
+                            <span class="form-check-label1" id="despSize">{despSize}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label for="ddlMachineNo" class="col-form-label-sm fw-bold">Machine No:<span class="text-danger">*</span></label>
+                        <select id="ddlMachineNo" name="ddlMachineNo" class="box_border form-control form-control-sm" required></select>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label for="txtDate" class="col-form-label-sm fw-bold">Date:<span class="text-danger">*</span></label>
+                        <input id="txtDate" type="date" name="txtDate" class="box_border form-control form-control-sm" autocomplete="off" required />
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label for="txtIdentificationNo" class="col-form-label-sm fw-bold">Identification No:</label>
+                        <input id="txtIdentificationNo" name="txtIdentificationNo" class="box_border form-control form-control-sm" readonly/>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label for="txtWidth" class="col-form-label-sm fw-bold">Actual Weight:</label>
+                        <input id="txtWidth" name="txtWidth" class="box_border form-control form-control-sm text-end" autocomplete="off" readonly />
+                    </div>
+                </div>
+                <div class="row g-2 mt-1">
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="CopyFromPrevious" />
+                            <label class="form-check-label" for="CopyFromPrevious">Copy From Previous</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="AllowManualWeight" />
+                            <label class="form-check-label" for="AllowManualWeight">Allow Manual Weight</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="PartingCase" />
+                            <label class="form-check-label" for="PartingCase">Parting Case</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-2 mt-2">
+                    <div class="col-12">
+                        <div class="table-responsive">
+                            <table id="RMStockCurrentPlanned" class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width:170px">Item Name</th>
+                                        <th style="min-width:170px">Slit Width</th>
+                                        <th style="min-width:170px">OD Size</th>
+                                        <th style="min-width:100px">No Of Slits</th>
+                                        <th style="min-width:100px">Weight Per Slit</th>
+                                        <th>Total Weight</th>
+                                        <th style="min-width:80px">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="RMStocktbody">
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-info">
+                                        <td><strong>Total</strong></td>
+                                        <td class="text-end"><strong></strong></td>
+                                        <td class="text-end"><strong></strong></td>
+                                        <td class="text-end"><strong id="totalNoOfSlits">0</strong></td>
+                                        <td class="text-end"><strong id="totalWeightPerSlit">0</strong></td>
+                                        <td class="text-end"><strong id="totalWeight">0</strong></td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="pm-btn secondary" onclick="CloseModal_RMStock()"><i class="fas fa-times"></i> Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade pm-modal" id="myModalDelete" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="pm-modal-hdr-icon"><i class="fas fa-comment-dots"></i></div>
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="pm-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="background: var(--white-bg);">
+                <label for="deleteReason" class="form-label">Enter reason <span class="text-danger">*</span></label>
+                <input type="text" id="deleteReason" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="pm-btn secondary" onclick="CloseModal()"><i class="fas fa-times"></i> Cancel</button>
+                <button type="button" class="pm-btn primary" onclick="DeleteModal()"><i class="fas fa-check"></i> Ok</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
+</div>

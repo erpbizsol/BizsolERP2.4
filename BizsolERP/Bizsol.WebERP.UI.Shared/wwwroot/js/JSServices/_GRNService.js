@@ -1,0 +1,102 @@
+import { UrlService } from '../URL.js';
+import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
+
+const GRNService = {
+
+    // ── Core GRN CRUD ──────────────────────────────────────────────────────
+
+    GetGRNByCode: function GetGRNByCode(Code) {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetGRNServiceByCode?Code=${Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    SaveGRN: function SaveGRN(GRNRequestData) {
+        let json_data = JSON.stringify(GRNRequestData, null, 2);
+        let authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        let userMasterCode = authKeyData.UserMaster_Code;
+        let url = UrlService.API_ENDPOINT_GRNService + `/SaveGRNService`;
+        return promiseAjaxCallApi.CallAPI('POST', url, json_data)
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    DeleteGRN: function DeleteGRN(Code, ReasonForDelete) {
+        let authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        let userMasterCode = authKeyData.UserMaster_Code;
+        let url = UrlService.API_ENDPOINT_GRNService +
+            `/DeleteGRNService?Code=${Code}&UserMaster_Code=${userMasterCode}&ReasonForDelete=${encodeURIComponent(ReasonForDelete)}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, '')
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    // ── PO helpers ─────────────────────────────────────────────────────────
+
+    GetPendingPOStoreList: function GetPendingPOStoreList() {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetPendingPOStoreList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '')
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    GetPOItemDetails: function GetPOItemDetails(ProjectCode, SubProjectMaster_Code, partyMaster_Code) {
+        let url = UrlService.API_ENDPOINT_GRNService +
+            `/GetPOItemDetails?ProjectMaster_Code=${ProjectCode}&SubProjectMaster_Code=${SubProjectMaster_Code}&partyMaster_Code=${partyMaster_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    // ── Project / Sub-Project helpers ──────────────────────────────────────
+
+    GetProjectList: function GetProjectList() {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetProjectList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    GetSubProjectList: function GetSubProjectList(ProjectCode) {
+        let url = UrlService.API_ENDPOINT_GRNService +
+            `/GetSubProjectList?ProjectCode=${ProjectCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    GetVendor: function GetVendor() {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetVendor`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    GetGRNList: function GetGRNList() {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetGRNServiceList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    GetPendingPOByProject: function GetPendingPOByProject(ProjectCode) {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetPendingPOByProject?ProjectCode=${ProjectCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
+}
+
+export { GRNService }

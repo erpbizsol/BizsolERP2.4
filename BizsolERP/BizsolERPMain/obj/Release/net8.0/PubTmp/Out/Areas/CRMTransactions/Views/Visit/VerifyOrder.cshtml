@@ -2,7 +2,10 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <style>
-    
+    #Visit {
+        width: 140%;
+    }
+
     .align-items-end{
         margin-top:24px;
     }
@@ -10,8 +13,6 @@
     .form-label {
         font-weight: bold;
     }
-
-   
 
     .modal-dialog {
         width: 100%;
@@ -41,13 +42,17 @@
         <div class="row">
             <div class="col-md-2">
                 <label for="ddlSalesPerson" class="form-label">Sales Person <span class="text-danger">*</span></label>
-                <input list="ddlSalesPersonList" id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border" placeholder="Sales Person" autocomplete="off" value="All">
-                <datalist id="ddlSalesPersonList"></datalist>
+               @*  <input list="ddlSalesPersonList" id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border" placeholder="Sales Person" autocomplete="off" value="All" hidden>
+                <datalist id="ddlSalesPersonList"></datalist> *@
+                <select id="ddlSalesPersonlist" class="form-control form-control-sm box_border">
+                </select>
             </div>
             <div class="col-md-3">
                 <label for="ddlDealerName" class="form-label">Dealer Name  <span class="text-danger">*</span></label>
-                <input list="ddlDealerNameList" id="ddlDealerName" name="ddlDealerName" class="form-control form-control-sm box_border" placeholder="Dealer Name" autocomplete="off" value="All">
-                <datalist id="ddlDealerNameList"></datalist>
+                @* <input list="ddlDealerNameList" id="ddlDealerName" name="ddlDealerName" class="form-control form-control-sm box_border" placeholder="Dealer Name" autocomplete="off" value="All">
+                <datalist id="ddlDealerNameList"></datalist> *@
+                <select id="ddlDealerNameList" class="form-control form-control-sm box_border">
+                </select>
             </div>
             <div class="col-md-2">
                 <label for="listTemplate" class="form-label">Template<span class="text-danger">*</span></label>
@@ -58,8 +63,8 @@
                     <option value="DETAIL_OUTSTANDING_VIEW">Detailed View(With Outstanding)</option>
                 </select>
             </div>
-            <div class="col-md-1 align-items-end">
-                <button type="button" id="btnShow" class="btn btn-primary btn-height">Show</button>
+            <div class="col-md-1 without-label-field">
+                <button type="button" id="btnShow" class="btn btn-primary btn-width btn-height">Show</button>
             </div>
         </div>
     </div>
@@ -180,6 +185,16 @@
                     </div>
                     <div class="row">
                         <div class="col-md-2" id="divAmt">
+                            <label for="ddlDiscountType" class="col-form-label-sm fw-bold">Discount Type<span class="universal"></span></label>
+                            <div class="form-group">
+                                <select id="ddlDiscountType" name="ddlDiscountType" class="form-control form-control-sm box_border disabled" disabled autocomplete="off">
+                                    <option value="%" selected>%</option>
+                                    <option value="Per Unit">Per Unit</option>
+                                   
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" id="divAmt">
                             <label for="txtDiscount" class="col-form-label-sm fw-bold">Discount<span class="universal"></span></label>
                             <div class="form-group">
                                 <input type="number" onkeypress="return numberdecimalOnly(event); " onchange="ValidateDiscountLimit();" maxlength="6" ID="txtDiscount" name="txtDiscount" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" placeholder=" " />
@@ -200,6 +215,7 @@
                     <input type="hidden" id="txtVisitOrderDetailsCode" class="form-control" value="0" />
                     <input type="hidden" id="txtOldDiscount" class="form-control"  />
                     <input type="hidden" id="txtDiscountLevel" class="form-control" />
+                    <input type="hidden" id="txtModalBasicRate" class="form-control" />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary btn-height" id="btnUpdate" onclick="UpdateDiscountValue();">Update</button>
@@ -210,3 +226,4 @@
     </div>
 </div>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<div id="DivCheckCreditLimitsModal"></div>

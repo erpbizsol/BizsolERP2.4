@@ -1,0 +1,135 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.HR.Masters/js/AllowanceMaster.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/bizsolpbcontrols.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+<style>
+    .modal-dialog {
+        max-width: 350px;
+    }
+</style>
+<div id="locateAllowanceMaster">
+    <div class="card col-md-9">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"> 
+                   <label for="txtAllowance" class="col-form-label-sm fw-bold">Allowance Status:<span class="text-danger">*</span></label> 
+                   <select id="txtAllowance" name="txtAllowance" class="box_border form-control form-control-sm" required> 
+                       <option value="Y" selected>Active</option> 
+                       <option value="N">Inactive</option> 
+                       <option value="A">All</option> 
+                   </select>
+               </div> 
+                <div class="col-md-3" style="margin-top:2.1rem"> 
+                   <button type="button" onclick="ListStatus_AllowanceMaster()" title="Create New" class="btn btn-primary btn-height">Show</button>
+                    <button type="button" onclick="CreateNew_AllowanceMaster()" title="Create New" class="btn btn-primary btn-height">Create New</button>
+                    <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download List"><i class="fa fa-download" aria-hidden="true"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-9">
+            <div id="tblAllowanceMaster">
+                <div class="table-wrapper fixed-height-table">
+                    <table id="AllowanceMaster" class="fixed-width-table table">
+                        <thead id="table-header-AllowanceMaster">
+                        </thead>
+                        <tbody id="table-body-AllowanceMaster">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-AllowanceMaster">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="newCreateForm" class="card" style="display:none">
+    <form class="card-body">
+        <div class="row">
+            <input type="hidden" name="Code" id="Code" class="form-control" value="0">
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtDesp" class="col-form-label-sm fw-bold">Desp:<span class="text-danger">*</span></label>
+                    <input id="txtDesp" name="txtDesp" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Desp" required />
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtSortOrder" class="col-form-label-sm fw-bold">Sort Order:<span class="text-danger">*</span></label>
+                    <input id="txtSortOrder" name="txtSortOrder" class="box_border form-control form-control-sm" oninput="validateDecimalInput(this)" autocomplete="off" placeholder="Sort Order" required />
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtActive" class="col-form-label-sm fw-bold">Active:<span class="text-danger">*</span></label>
+                    <select id="txtActive" name="txtActive" class="box_border form-control form-control-sm" required>
+                        <option value="Y" selected>Active</option>
+                        <option value="N">Inactive</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtDefaultAmount" class="col-form-label-sm fw-bold">Default Amount:<span class="text-danger">*</span></label>
+                    <input id="txtDefaultAmount" name="txtDefaultAmount" class="box_border form-control form-control-sm" autocomplete="off" oninput="validateDecimalInput(this)" placeholder="Default Amount" required />
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="txtPartOfCTC" class="col-form-label-sm fw-bold">Part Of CTC:<span class="text-danger">*</span></label>
+                    <select id="txtPartOfCTC" name="txtPartOfCTC" class="box_border form-control form-control-sm" required>
+                        <option value="Y" selected>YES</option>
+                        <option value="N">NO</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-9 text-end" style="margin-top:2rem"> 
+                <button type="button" onclick="submit_AllowanceMaster()" id="saveAllowanceButton" title="Save" class="btn btn-primary btn-height">Save</button> 
+                 <button type="button" class="btn btn-primary btn-height" title="Back" onclick="AllowanceMaster_Back()">Back</button> 
+             </div> 
+        </div>
+    </form>
+     @* <div id="PBControls" class="mb-2"></div> *@
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="reasonForDeleteInput" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveModal_AllowanceDelete()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal_AllowanceDelete()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div> 
+<div class="table-wrapper fixed-height-table" hidden="hidden">
+    <table id="tblReport" hidden="hidden">
+        <thead id="table-headerPrint">
+            <tr></tr>
+        </thead>
+        <tbody id="table-bodyPrint">
+        </tbody>
+    </table>
+</div>

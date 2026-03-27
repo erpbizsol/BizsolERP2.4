@@ -53,9 +53,9 @@ const GateEntryService = {
             }
         );
     },
-    SaveGateEntryMaster: function SaveGateEntryMaster(payload, POItemsData) {
+    SaveGateEntryMaster: function SaveGateEntryMaster(payload, POItemsData,Mode) {
         let CompanyCode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
-        let url = `${UrlService.API_ENDPOINT_GateEntryMaster}/SaveGateEntryMaster?CompanyCode=${CompanyCode}&POItemsData=${POItemsData}`;
+        let url = `${UrlService.API_ENDPOINT_GateEntryMaster}/SaveGateEntryMaster?CompanyCode=${CompanyCode}&Mode=${Mode}&POItemsData=${POItemsData}`;
         return promiseAjaxCallApi.CallAPI('POST', url, payload).then(
             function (value) {
                 return value;
@@ -145,6 +145,14 @@ const GateEntryService = {
             }
         );
     },
+    GetGateEntryERPDocumentDetails: function GetGateEntryERPDocumentDetails(DocNo, F_GateEntryType_Desp, ShowPendingDocNo, GodownMaster_Code) {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/GetGateEntryERPDocumentDetails?DocNo=${encodeURIComponent(DocNo)}&F_GateEntryType_Desp=${encodeURIComponent(F_GateEntryType_Desp)}&ShowPendingDocNo=${encodeURIComponent(ShowPendingDocNo)}&GodownMaster_Code=${encodeURIComponent(GodownMaster_Code)}`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetUOMMasterList: function GetUOMMasterList() {
         let url = UrlService.API_ENDPOINT_UOM + `/GetUOMMasterList`
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
@@ -169,6 +177,22 @@ const GateEntryService = {
             }
         );
     },
+    GetDriverDetailsByVehicleNo: function GetDriverDetailsByVehicleNo(Mode, VehicleNo) {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/GetDriverDetailsByVehicleNo?Mode=${Mode}&VehicleNo=${VehicleNo}`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    getDll: function getDll(Mode) {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/getDll?Mode=${Mode}`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    }
 
 }
 

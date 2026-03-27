@@ -1,0 +1,195 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/OptimizeImage.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/PDI.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
+<div class="card p-2" id="LocatePDI">
+    <div style="display:block;">
+        <div class="row">
+            <div class="col-md-2">
+                <label for="txtFromDatePDI" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+                <input type="date" id="txtFromDatePDI" name="txtFromDatePDI" class="box_border form-control form-control-sm" required />
+            </div>
+            <div class="col-md-2">
+                <label for="txtToDatePDI" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+                <input type="date" id="txtToDatePDI" name="txtToDatePDI" class="box_border form-control form-control-sm" required />
+            </div>
+            <div class="col-md-8 text-end mt-4">
+                <button type="button" id="btnPDIShow" class="btn btn-primary btn-height mb-1">Show</button>
+                <button class="btn btn-success icon-height mb-1" title="Create New" onclick="CreateNew()">Create New</button>
+                <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
+            </div>
+        </div>
+        <div class="row text-end">
+        </div>
+        <div class="table-wrapper ">
+            <table id="tblPDI" class="fixed-width-table table">
+                <thead id="table-header">
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tblPDI">
+        </div>
+    </div>
+</div>
+<div class="container-fluid" id="createPDI" style="display:none;">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="ddlDespatchNo" class="col-form-label-sm fw-bold">
+                                Despatch Advice No <span class="text-danger">*</span>
+                            </label>
+                            <select id="ddlDespatchNo" type="text" class="box_border form-control form-control-sm"></select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="ddlOrderNo" class="col-form-label-sm fw-bold">
+                                Order No <span class="text-danger">*</span>
+                            </label>
+                            <select id="ddlOrderNo" name="ddlOrderNo" class="box_border form-control form-control-sm" required></select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="ddlTruckNo" class="col-form-label-sm fw-bold">
+                                Truck No 
+                            </label>
+                            <select id="ddlTruckNo" name="ddlTruckNo" class="box_border form-control form-control-sm" ></select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="ddlQty" class="col-form-label-sm fw-bold">
+                                Quantity in MT <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="ddlQty" name="ddlQty" class="box_border form-control form-control-sm" autocomplete="off" required oninput="validateNumericInput(this)" />
+                        </div>
+
+                        <div class="col-12">
+                           <label for="attachment" class="form-label">Attachment <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="height:28px">
+                                    <i class="fa fa-paperclip"></i>
+                                </span>
+                                <a href="javascript:void(0);" id="btnPDIAttachmentCreate" onclick="OpenPDIAttachmentControl('create')" class="form-control form-control-sm box_border text-decoration-underline" style="cursor: pointer; line-height: 18px;">
+                                    Add / View Attachments
+                                </a>
+                            </div>
+                            <small id="fileNamesCreate" class="form-text text-muted"></small>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtRemark" class="col-form-label-sm fw-bold">Remark</label>
+                            <textarea id="txtRemark" class="box_border form-control form-control-sm" rows="2" maxlength="250"></textarea>
+                        </div>
+
+
+                        <div class="col-12 text-end mt-3">
+                            <button id="btnSave" type="button" class="btn btn-primary icon-height">
+                                Submit
+                            </button>
+                            <button class="btn btn-danger icon-height" title="Back" id="btnBack" onclick="Back()">
+                                Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid" id="EditPDI" style="display:none;">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="txtDespatchNo" class="col-form-label-sm fw-bold">
+                                Despatch Advice No <span class="text-danger">*</span>
+                            </label>
+                            <input id="txtDespatchNo" type="text" class="box_border form-control form-control-sm" readonly />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtOrderNo" class="col-form-label-sm fw-bold">
+                                Order No <span class="text-danger">*</span>
+                            </label>
+                            <input id="txtOrderNo" name="txtOrderNo" class="box_border form-control form-control-sm" required readonly />
+                            <input type="hidden" id="txtOrderNo_Code" name="txtOrderNo_Code" class="box_border form-control form-control-sm" />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtTruckNo" class="col-form-label-sm fw-bold">
+                                Truck No <span class="text-danger">*</span>
+                            </label>
+                            <input id="txtTruckNo" name="txtTruckNo" class="box_border form-control form-control-sm" required readonly />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtQty" class="col-form-label-sm fw-bold">
+                                Quantity in MT <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="txtQty" name="txtQty" class="box_border form-control form-control-sm" autocomplete="off" required oninput="validateNumericInput(this)" />
+                        </div>
+
+                        <div class="col-12">
+                           <label for="attachment" class="form-label">Attachment <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="height:28px">
+                                    <i class="fa fa-paperclip"></i>
+                                </span>
+                                <a href="javascript:void(0);" id="btnPDIAttachmentEdit" onclick="OpenPDIAttachmentControl('edit')" class="form-control form-control-sm box_border text-decoration-underline" style="cursor: pointer; line-height: 18px;">
+                                    Add / View Attachments
+                                </a>
+                            </div>
+                            <small id="fileNamesEdit" class="form-text text-muted"></small>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="txtEditRemark" class="col-form-label-sm fw-bold">Remark</label>
+                            <textarea id="txtEditRemark" class="box_border form-control form-control-sm" rows="2" maxlength="250"></textarea>
+                        </div>
+
+
+                        <div class="col-12 text-end mt-3">
+                            <button id="btnUpdate" type="button" class="btn btn-primary icon-height">
+                                Update
+                            </button>
+                            <button class="btn btn-danger icon-height" title="Back" onclick="Back()">
+                                Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="myModalImageShow" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Display Image</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <img id="myModalImageTag" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="DeleteModal()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="PDI_AttachmentControlmodal"></div>

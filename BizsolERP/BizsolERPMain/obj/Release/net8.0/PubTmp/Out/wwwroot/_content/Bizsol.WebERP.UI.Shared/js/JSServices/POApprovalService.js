@@ -3,8 +3,8 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 
 const POApprovalService = {
-    GetUnApprovedPO: function GetUnApprovedPO() {
-        var URL = UrlService.API_ENDPOINT_POApproval + "/GetUnApprovedPO";
+    GetUnApprovedPO: function GetUnApprovedPO(QueryCondition, FrmType) {
+        var URL = UrlService.API_ENDPOINT_POApproval + "/GetUnApprovedPO?QueryCondition=" + QueryCondition + "&FrmType=" + FrmType;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -28,9 +28,10 @@ const POApprovalService = {
             }
         );
     },
-POApproved: function POApproved(PurchaseOrderMaster_Code) {
-    let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-    var URL = UrlService.API_ENDPOINT_POApproval + "/POApproved?PurchaseOrderMaster_Code=" + PurchaseOrderMaster_Code + "&UserMaster_Code=" + userCode;
+    POApproved: function POApproved(PurchaseOrderMaster_Code, QueryCondition, FrmType) {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        let GroupMaster_Code = JSON.parse(sessionStorage.getItem('UserDetails'))[0].GroupMaster_Code;
+        var URL = UrlService.API_ENDPOINT_POApproval + "/POApproved?PurchaseOrderMaster_Code=" + PurchaseOrderMaster_Code + "&UserMaster_Code=" + userCode + "&QueryCondition=" + QueryCondition + "&FrmType=" + FrmType + "&GroupMaster_Code=" + GroupMaster_Code;
     return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
         function (value) {
             return value;
@@ -52,6 +53,14 @@ GetPOIndentPriceComparisonDetails: function GetPOIndentPriceComparisonDetails(In
         function (value) {
             return value;
         }
+        );
+    },
+    GetPODeliveryTermsDetail: function GetPODeliveryTermsDetail(PurchaseOrderMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_POApproval + "/GetPODeliveryTermsDetail?PurchaseOrderMaster_Code=" + PurchaseOrderMaster_Code;
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
         );
     },
 }

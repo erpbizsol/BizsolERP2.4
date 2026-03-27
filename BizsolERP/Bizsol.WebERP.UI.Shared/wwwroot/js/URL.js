@@ -1,4 +1,4 @@
-﻿import { environment } from './environment.js';
+import { environment } from './environment.js';
 
 let UrlService = {
     BASE_URL: environment.BASE_URL,
@@ -16,9 +16,9 @@ let UrlService = {
     API_ENDPOINT_LEADSOURCE: `${environment.BASE_URL}/LeadSource`,
     API_ENDPOINT_INDUSTRYTYPE: `${environment.BASE_URL}/IndustryType`,
     API_ENDPOINT_DEPARTMENT: `${environment.BASE_URL}/Department`,
-    API_ENDPOINT_SUBDEPARTMENT: `${environment.BASE_URL}/SubDepartment`,
     API_ENDPOINT_DESIGNATION: `${environment.BASE_URL}/Designation`,
     API_ENDPOINT_SubDepartment: `${environment.BASE_URL}/SubDepartment`,
+    API_ENDPOINT_SUBDEPARTMENT: `${environment.BASE_URL}/SubDepartment`,
     API_ENDPOINT_SALESPERSON: `${environment.BASE_URL}/MarketingMan`,
     API_ENDPOINT_ENQUIRYFOLLOWUP: `${environment.BASE_URL}/EnquiryFollowUp`,
     API_ENDPOINT_UOM: `${environment.BASE_URL}/UOM`,
@@ -33,6 +33,7 @@ let UrlService = {
     API_DOCUMENT_AllowanceMaster: `${environment.BASE_URL}/AllowanceMaster`,
     API_DOCUMENT_DeductionMaster: `${environment.BASE_URL}/DeductionMaster`,
     API_DOCUMENT_LeaveMaster: `${environment.BASE_URL}/LeaveMaster`,
+    API_DOCUMENT_RollingPlanSheet: `${environment.BASE_URL}/RollingPlanSheet`,
 
     API_UserMODULE: `${environment.BASE_URL}/UserModule`,
 
@@ -79,6 +80,7 @@ let UrlService = {
     API_ENDPOINT_PackingListFG: `${environment.BASE_URL}/PackingListFG`,
     API_ENDPOINT_QTY_CONFIG: `${environment.BASE_URL}/FixedParameterQtyConfig`,
     API_ENDPOINT_CRM_ORDERENTRY_CONFIG: `${environment.BASE_URL}/ConfigCRMOrderEntry`,
+    
 
     API_ENDPOINT_BreakDown: `${environment.BASE_URL}/BreakDownStartOrEnd`,
     API_ENDPOINT_SlittingEntry: `${environment.BASE_URL}/SlittingEntry`,
@@ -95,6 +97,45 @@ let UrlService = {
     API_ENDPOINT_SelectPrinterToPrint: `${environment.BASE_URL}/SelectPrinterToPrint`,
     API_ENDPOINT_GeneratePassword: `${environment.BASE_URL}/GeneratePassword`,
     API_ENDPOINT_QualityCheck: `${environment.BASE_URL}/QualityCheck`,
+    API_ENDPOINT_CollectionCommitment: `${environment.BASE_URL}/CollectionCommitment`,
+    API_ENDPOINT_ExpenseHeadMaster: `${environment.BASE_URL}/ExpenseHeadMaster`,
+    API_ENDPOINT_Weighment: `${environment.BASE_URL}/Weighment`,
+    API_ENDPOINT_CommonSingleEntryForm: `${environment.BASE_URL}/CommonSingleEntryForm`,
+    API_ENDPOINT_RmIndent: `${environment.BASE_URL}/RmIndent`,
+    API_ENDPOINT_RMStock: `${environment.BASE_URL}/RMStock`,
+    API_ENDPOINT_FMSReport: `${environment.BASE_URL}/FMSReport`,
+    API_ENDPOINT_PDI: `${environment.BASE_URL}/PDI`,
+    API_ENDPOINT_CustomerDashboard: `${environment.BASE_URL}/CustomerDashboard`,
+    API_ENDPOINT_BuyingCapacity: `${environment.BASE_URL}/BuyingCapacity`,
+    API_ENDPOINT_ProspectiveCustomer: `${environment.BASE_URL}/ProspectiveCustomer`,
+    API_DOCUMENT_DispatchAdvicePlan: `${environment.BASE_URL}/VerifyDispatchAdvice`,
+    API_DOCUMENT_StockAgeingReport: `${environment.BASE_URL}/StockAgeingReport`,
+    API_ENDPOINT_BalancePOCancellation: `${environment.BASE_URL}/BalancePOCancellation`,
+    API_ENDPOINT_CRM_SALESRETURN: `${environment.BASE_URL}/CRMSalesReturn`,
+    API_ENDPOINT_SalesanalysisAST: `${environment.BASE_URL}/SalesanalysisAST`,
+    API_ENDPOINT_QCPropertyGroupMaster: `${environment.BASE_URL}/QCPropertyGroupMaster`,
+    API_ENDPOINT_QCPropertyMaster: `${environment.BASE_URL}/QCPropertyMaster`,
+    API_ENDPOINT_QCPropertyTestTypeMaster: `${environment.BASE_URL}/QCPropertyTestTypeMaster`,
+    API_ENDPOINT_RawMaterialOffer: `${environment.BASE_URL}/RawMaterialOffer`,
+    //MachineMaintenanceRequest
+    API_ENDPOINT_MachineMaintenance: `${environment.BASE_URL}/MachineMaintenance`,
+    API_ENDPOINT_FGInspectedOffer: `${environment.BASE_URL}/FGInspectedEntry`,
+    //Ledger
+    API_ENDPOINT_Ledger: `${environment.BASE_URL}/Ledger`,
+    API_ENDPOINT_InvoiceGST: `${environment.BASE_URL}/InvoiceGST`,
+    API_ENDPOINT_Reports: `${environment.BASE_URL}/Reports`,
+    API_ENDPOINT_ProjectMaster: `${environment.BASE_URL}/ProjectMaster`,
+    API_ENDPOINT_SubProjectMaster: `${environment.BASE_URL}/SubProjectMaster`,
+    API_ENDPOINT_ItemMaster: `${environment.BASE_URL}/Item`,
+    API_ENDPOINT_VendorMaster: `${environment.BASE_URL}/VendorMaster`,
+    API_ENDPOINT_BOM: `${environment.BASE_URL}/BOM`,
+    API_ENDPOINT_PurchaseOrderMaster: `${environment.BASE_URL}/PurchaseOrderMaster`,
+    API_ENDPOINT_POApprovalConfig: `${environment.BASE_URL}/POApprovalConfig`,
+    API_ENDPOINT_GRNPaymentApprovalConfig: `${environment.BASE_URL}/GRNPaymentApprovalConfiguration`,
+    API_ENDPOINT_GRNService: `${environment.BASE_URL}/GRNService`,
+    API_ENDPOINT_GRNPaymentEntry: `${environment.BASE_URL}/GRNPaymentEntry`,
+    API_ENDPOINT_POLevelsApprove: `${environment.BASE_URL}/POLevelsApproval`,
+    API_ENDPOINT_GRNPaymentLevelsApproval: `${environment.BASE_URL}/GRNPaymentLevelsApproval`
 }
 
 export { UrlService  }

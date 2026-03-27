@@ -3,8 +3,8 @@ build_property.TargetFramework = net8.0
 build_property.TargetFramework = net8.0
 build_property.TargetPlatformMinVersion = 
 build_property.TargetPlatformMinVersion = 
-build_property.UsingMicrosoftNETSdkWeb = true
-build_property.UsingMicrosoftNETSdkWeb = true
+build_property.UsingMicrosoftNETSdkWeb = 
+build_property.UsingMicrosoftNETSdkWeb = 
 build_property.ProjectTypeGuids = 
 build_property.ProjectTypeGuids = 
 build_property.InvariantGlobalization = 
@@ -15,33 +15,61 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.TargetFrameworkIdentifier = .NETCoreApp
+build_property.TargetFrameworkVersion = v8.0
 build_property.RootNamespace = Bizsol.WebERP.UI.Production.Transactions
 build_property.RootNamespace = Bizsol.WebERP.UI.Production.Transactions
-build_property.ProjectDir = D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Production.Transactions\
+build_property.ProjectDir = D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Production.Transactions\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = true
-build_property.MSBuildProjectDirectory = D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Production.Transactions
+build_property.MSBuildProjectDirectory = D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Production.Transactions
 build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 8.0
+build_property.EnableCodeStyleSeverity = 
 
-[D:/ERP2.4/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/PackingList/PackingListFG.cshtml]
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/BreakDown/BreakDown.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xCcmVha0Rvd25cQnJlYWtEb3duLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/PackingList/PackingListFG.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xQYWNraW5nTGlzdFxQYWNraW5nTGlzdEZHLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/ERP2.4/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/PalletPacking/PalletPacking.cshtml]
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/PalletPacking/PalletPacking.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xQYWxsZXRQYWNraW5nXFBhbGxldFBhY2tpbmcuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/ERP2.4/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/StockTransferWarehouse/ActualDispatch.cshtml]
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/RollingPlanSheet/RollingPlanSheet.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xSb2xsaW5nUGxhblNoZWV0XFJvbGxpbmdQbGFuU2hlZXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/RollingPlanSheet/Test.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xSb2xsaW5nUGxhblNoZWV0XFRlc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/RollingPlanSheet/TestView.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xSb2xsaW5nUGxhblNoZWV0XFRlc3RWaWV3LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/RollingPlanSheet/Verified.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xSb2xsaW5nUGxhblNoZWV0XFZlcmlmaWVkLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/StockAgeingReport/StockAgeingReport.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xTdG9ja0FnZWluZ1JlcG9ydFxTdG9ja0FnZWluZ1JlcG9ydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/StockTransferWarehouse/ActualDispatch.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xTdG9ja1RyYW5zZmVyV2FyZWhvdXNlXEFjdHVhbERpc3BhdGNoLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/ERP2.4/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/StockTransferWarehouse/GetWarehouse.cshtml]
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/StockTransferWarehouse/GetWarehouse.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xTdG9ja1RyYW5zZmVyV2FyZWhvdXNlXEdldFdhcmVob3VzZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/ERP2.4/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/StockTransferWarehouse/PhysicalStockTaking.cshtml]
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/StockTransferWarehouse/PhysicalStockTaking.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xTdG9ja1RyYW5zZmVyV2FyZWhvdXNlXFBoeXNpY2FsU3RvY2tUYWtpbmcuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 

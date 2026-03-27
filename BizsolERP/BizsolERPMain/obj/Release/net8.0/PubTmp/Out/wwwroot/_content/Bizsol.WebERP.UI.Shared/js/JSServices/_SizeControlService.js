@@ -20,8 +20,8 @@ const SizeControlService = {
             }
         );
     },
-    GetItemParameterMasterList: function GetItemParameterMasterList(ItemMaster_Code, ItemSizeMaster_Code) {
-        let url = UrlService.API_ENDPOINT_ItemSize + "/GetItemParameterMasterList?ItemMaster_Code=" + ItemMaster_Code + "&ItemSizeMaster_Code=" + ItemSizeMaster_Code;
+    GetItemParameterMasterList: function GetItemParameterMasterList(ItemMaster_Code, ItemSizeMaster_Code, ProcessMaster_Code) {
+        let url = UrlService.API_ENDPOINT_ItemSize + "/GetItemParameterMasterList?ItemMaster_Code=" + ItemMaster_Code + "&ItemSizeMaster_Code=" + ItemSizeMaster_Code + "&ProcessMaster_Code=" + ProcessMaster_Code;
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
             function (value) {
                 return value;
@@ -46,7 +46,16 @@ const SizeControlService = {
                 return value;
             }
         );
+    },
+    GetItemSizeParametersAllowToChange: function GetItemSizeParametersAllowToChange(processMaster_Code) {
+        let url = UrlService.API_ENDPOINT_ItemSize + "/GetItemSizeParametersAllowToChange?ProcessMaster_Code=" + processMaster_Code;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
     }
+
 }
 
 

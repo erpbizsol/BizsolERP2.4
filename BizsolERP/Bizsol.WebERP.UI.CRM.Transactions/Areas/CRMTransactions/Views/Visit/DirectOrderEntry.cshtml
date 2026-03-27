@@ -22,9 +22,9 @@
         }
      */
 
-    #tblorderbooking {
+    /* #tblorderbooking {
         width: 125%;
-    }
+    } */
    
 
   
@@ -144,7 +144,7 @@
     <div class="col-md-12">
        
 
-        <div class="tab-section">
+        <div class="tab-section" id="divSecDashboard">
             <ul class="nav nav-tabs" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard"
@@ -368,12 +368,14 @@
                                         <tr role="row">
                                             <th class="lead-Date width_cust" role="columnheader">Consignee</th>
                                             <th class="lead-Date width_cust" role="columnheader">Delivery Address</th>
+                                            <th class="lead-text width_cust" role="columnheader">Dealer</th> 
                                             <th class="lead-text width_cust" role="columnheader">Item Name</th>
-                                            <th class="lead-text width_cust" role="columnheader" style="width: 80px;">Size</th>
+                                            <th class="lead-text width_cust" role="columnheader" style="width: 154px;">Size</th>
                                             <th class="lead-text width_cust" role="columnheader">Thickness</th>
                                             <th class="lead-Date width_cust" role="columnheader">SizeDesp</th>
                                             <th class="lead-Date width_cust" role="columnheader">UOM</th>
                                             <th class="lead-text width_cust" role="columnheader">Stock</th>
+                                            <th class="lead-text width_cust" role="columnheader">Order Qty Crate</th>
                                             <th class="lead-text width_cust" role="columnheader">Order Qty PC</th>
                                             <th class="lead-text width_cust" role="columnheader">Order Qty MT</th>
                                             <th class="lead-text width_cust" role="columnheader">Order Qty MTR</th>
@@ -383,7 +385,7 @@
                                             <th class="lead-text width_cust" role="columnheader">Tolerance</th>
                                             <th class="lead-text width_cust" role="columnheader">Basic Rate</th>
                                             <th class="lead-text width_cust" role="columnheader">Extra Charges</th>
-                                            <th class="lead-text width_cust" role="columnheader">Discount Type</th>
+                                            <th class="lead-text width_cust" role="columnheader" style="width: 60px;">Dis. Type</th>
                                             <th class="lead-text width_cust" role="columnheader">Discount</th>
                                             <th class="lead-text width_cust" role="columnheader">Order Rate</th>
                                             
@@ -392,7 +394,7 @@
                                             <th class="lead-text width_cust digit10" role="columnheader">Amount</th>
                                             <th class="lead-text width_cust" role="columnheader">Delivery Date</th>
                                             <th class="lead-text width_cust digit13" role="columnheader">Price List</th>
-                                            <th class="lead-text width_cust" role="columnheader">Dealer</th>
+                                           @*  <th class="lead-text width_cust" role="columnheader">Dealer</th> *@
                                             <th class="lead-text width_cust digit10" role="columnheader">Remarks</th>
                                             <th class="lead-text width_cust" role="columnheader">Delete</th>
                                             
@@ -405,12 +407,14 @@
 
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: right;"></td>
+                                            <td style="text-align: right;"></td>
                                             <td style="text-align: center;"><b>Total</b></td>
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: right;"></td>
                                             <td style="text-align: right;" class="font-weight-bold" id="txtStockTotal"></td>
+                                            <td style="text-align: right;"></td>
                                             <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyPCTotal"></td>
                                             <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyMTTotal"></td>
                                             <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyMTRTotal"></td>

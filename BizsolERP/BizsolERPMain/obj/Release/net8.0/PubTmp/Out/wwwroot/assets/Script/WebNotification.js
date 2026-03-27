@@ -22,25 +22,24 @@ function GetWebNotificationList() {
             //            ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}
             //        </span>
             //    </div>`;
-            notificationList += `
-                <div class="dropdown-item" onclick="window.location.href='${baseUrl}/${notification.ScreenURL}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
+            notificationList += notification.NotificationCount > 0 ? `
+                <div class="dropdown-item" onclick="window.location.href='${baseUrl}/${notification.ScreenURL}?menu=${notification.NotificationDescription}&FrmType=${notification.DotNetMainMenuName}&FrmAction=${notification.ForAction}'" style="display: flex; justify-content: space-between; padding: 4px 16px;">
                     <span>${notification.NotificationDescription}</span>
                     <span>
                         ${notification.NotificationCount > 0 ? `<span class="notificationCount">${notification.NotificationCount}</span>` : ''}
                     </span>
-                </div>`;
+                </div>`:'';
         });
         if (totalNotificationCount > 0) {
             $("#notificationCount").text(totalNotificationCount).show();
         } else {
             $("#notificationCount").hide();
         }
-       
-        //$(document).click(function (event) {
-        //    if (!$(event.target).closest("#bell-icon, #notificationDropdown").length) {
-        //        $("#notificationDropdown").hide();
-        //    }
-        //});
+        if (notificationList === "") {
+            notificationList =`<div class="dropdown-item" style="display: flex; justify-content: space-between; padding: 4px 16px; ">
+               <span>No Notifications</span>
+                </div>`
+        }
     });
 }
 var minutes = 1;

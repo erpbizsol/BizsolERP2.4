@@ -1,114 +1,101 @@
-﻿@{
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <script src="~/assets/js/jquery-3.6.0.min.js"></script>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.CRM.Transactions/css/ExpenseEntry.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/ExpenseEntryDetail.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+
 <script>
     var param_ExpenseEntryMaster_Code='@ViewBag.ExpenseEntryMaster_Code';
     var param_Mode='@ViewBag.Mode';
     var param_MarketingMan_Name = '@ViewBag.MarketingMan_Name';
 </script>
 <style>
-    .highlighted-date {
-        background-color: #3926B6;
-        color: white;
-        border-radius: 30px;
-    }
-
-    .datepicker td, .datepicker th {
-        border-radius: 20px !important;
-    }
-
-    .datepicker table tr td, .datepicker table tr td {
-        padding: 8px 9px !important;
-        height: 16px !important;
-    }
-
-    .datepicker table tfoot {
-        display: none;
-    }
-
-    #hidetexbox {
-        display: none;
-    }
-
-    .btn:not(:disabled):not(.disabled) {
-        cursor: pointer !important;
-    }
-
-    /* Hide the spinner arrows in most modern browsers */
-    input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-
-    /* Hide the spinner arrows in Firefox */
-    input[type="number"] {
-        -moz-appearance: textfield;
-    }
+    .datepicker td, .datepicker th { border-radius: 20px !important; }
+    .datepicker table tr td, .datepicker table tr th { padding: 8px 9px !important; height: 16px !important; }
+    .datepicker table tfoot { display: none; }
+    #hidetexbox { display: none; }
+    .btn:not(:disabled):not(.disabled) { cursor: pointer !important; }
 </style>
-<div class="row mb-2">
-    <div class="col-md-9">
-        <fieldset class="rounded-1 p-3">
-            
 
-            <div class="row">
-                <div class="col-md-2 form-group">
-                    <label for="txtEntryNo" class="col-form-label-sm fw-bold">Entry No</label>
-                    <input type="text" id="txtEntryNo" class="box_border form-control form-control-sm" readonly="readonly" autocomplete="off" value="">
-                </div>
-                <div class="col-md-2 ">
-                    <label for="txtEntryDate" class="col-form-label-sm fw-bold">Entry Date</label>
-                    <input ID="txtEntryDate" name="txtEntryDate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
-                </div>
-                <div class="col-md-2">
-                    <label for="txtFromDate" class="col-form-label-sm fw-bold">From</label>
-                    <input type="text" id="txtFromDate" name="txtFromDate" class="box_border form-control form-control-sm" value=""  />
-                </div>
-                <div class="col-md-2">
-                   <label for="txtToDate" class="col-form-label-sm fw-bold">To</label>
-                    <input type="text" id="txtToDate" name="txtToDate" class="box_border form-control form-control-sm" value=""  />
-                   
-                    <input type="hidden" id="hfCode" name="hfCode" value="" />
-                </div>
-                <div class="col-md-2">
-                    <label for="txtTotalDays" class="col-form-label-sm fw-bold">Total Days</label>
-                    <input type="text" id="txtTotalDays" name="txtTotalDays" class="box_border form-control form-control-sm" readonly="readonly" value="" />
-                </div>
+<div class="ee-page">
+<div class="expense-entry-card">
+    <div class="expense-entry-fieldset">
+        <div class="row g-3">
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label for="txtEntryNo" class="form-label fw-bold">Entry No</label>
+                <input type="text" id="txtEntryNo" class="box_border form-control form-control-sm" readonly autocomplete="off" value="" style="text-align: right;">
             </div>
-
-   
-        </fieldset>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label for="txtEntryDate" class="form-label fw-bold">Entry Date</label>
+                <input id="txtEntryDate" name="txtEntryDate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly required />
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label for="txtFromDate" class="form-label fw-bold">From</label>
+                <input type="text" id="txtFromDate" name="txtFromDate" class="box_border form-control form-control-sm" value="" />
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label for="txtToDate" class="form-label fw-bold">To</label>
+                <input type="text" id="txtToDate" name="txtToDate" class="box_border form-control form-control-sm" value="" />
+                <input type="hidden" id="hfCode" name="hfCode" value="" />
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label for="txtTotalDays" class="form-label fw-bold">Total Days</label>
+                <input type="text" id="txtTotalDays" name="txtTotalDays" class="box_border form-control form-control-sm" readonly value="" style="text-align: right;" />
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label for="txtMarketingManName" class="form-label fw-bold">Sales Person Name</label>
+                <input type="text" id="txtMarketingManName" name="txtMarketingManName" class="box_border form-control form-control-sm" readonly value="" />
+            </div>
+        </div>
     </div>
 </div>
 
-
-<div class="row">
-     <div class="col-md-9">
+<div class="expense-entry-card expense-entry-card-table">
     <div id="tblExpenseEntryDetails">
-        <div class="table-wrapper fixed-height-table">
+        <div class="expense-entry-table-wrapper">
             <table id="ExpenseEntryDetails" class="fixed-width-table table">
-                <thead id="ExpenseEntryDetails-header">
-                </thead>
-                <tbody id="ExpenseEntryDetails-body">
-                </tbody>
+                <thead id="ExpenseEntryDetails-header"></thead>
+                <tbody id="ExpenseEntryDetails-body"></tbody>
             </table>
         </div>
-        <div class="paginator" id="paginator-ExpenseEntryDetails">
-        </div>
-    </div>
+        <div class="paginator" id="paginator-ExpenseEntryDetails"></div>
     </div>
 </div>
-<div class="row mt-4">
-    <div class="col-md-12">
-        <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-height btn-width" />
-        <input type="button" name="btnVerify" id="btnVerify" value="Verify" class="btn btn-primary btn-height btn-width"  />
-        <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-height btn-width" />
+
+<div class="expense-entry-card">
+    <div class="expense-entry-actions">
+        <button type="button" name="btnSubmit" id="btnSubmit" class="btn btn-primary btn-height">Save</button>
+        <button type="button" name="btnVerify" id="btnVerify" class="btn btn-success btn-height">Verify</button>
+        <button type="button" name="btnBack" id="btnBack" class="btn btn-secondary btn-height">Back</button>
+    </div>
+</div>
+</div>
+
+<!-- Amount exceeds confirmation modal -->
+<div id="eeConfirmBackdrop" class="ee-backdrop">
+    <div class="ee-confirm-modal">
+        <div class="ee-confirm-icon-wrap"><i class="fas fa-triangle-exclamation"></i></div>
+        <div class="ee-confirm-title">Amount Exceeds Limit</div>
+        <div class="ee-confirm-text">The amount exceeds the allowed amount! Do you want to proceed with the allowed amount?</div>
+        <div class="ee-confirm-actions">
+            <button type="button" class="ee-btn-cancel" id="eeBtnConfirmCancel"><i class="fas fa-times"></i> No</button>
+            <button type="button" class="ee-btn-confirm-delete" id="eeBtnConfirmProceed" style="background: linear-gradient(135deg, #22c55e, #16a34a);"><i class="fas fa-check"></i> Yes, Proceed</button>
+        </div>
+    </div>
+</div>
+
+<!-- Success modal -->
+<div id="eeSuccessBackdrop" class="ee-backdrop">
+    <div class="ee-success-modal">
+        <div class="ee-success-icon-wrap"><i id="eeSuccessModalIcon" class="fas fa-circle-check"></i></div>
+        <div class="ee-success-title" id="eeSuccessModalTitle">Done!</div>
+        <div class="ee-success-text" id="eeSuccessModalText">Operation completed successfully.</div>
+        <button type="button" class="ee-btn-success-ok" onclick="CloseExpenseEntryDetailSuccessModal()"><i class="fas fa-check"></i> OK</button>
     </div>
 </div>
 

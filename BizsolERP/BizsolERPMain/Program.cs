@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.FileProviders;
 
 namespace BizsolERPMain
 {
@@ -35,24 +34,14 @@ namespace BizsolERPMain
             }
 
             app.UseHttpsRedirection();
-            string Bizsol_WebERP_UI_SharedContentRootPath = Path.Combine(app.Environment.ContentRootPath.Replace("BizsolERPMain", ""), "Bizsol.WebERP.UI.Shared");
 
+            // Serve static files from wwwroot and all RCL _content paths
             app.UseStaticFiles();
-            //app.UseStaticFiles(new StaticFileOptions
-            //{
-            //    FileProvider = new PhysicalFileProvider(
-            //    Path.Combine(Bizsol_WebERP_UI_SharedContentRootPath, "NS")),
-            //    RequestPath = "/NR"
-            //});
 
             app.UseSession();
             app.UseRouting();
 
             app.UseAuthorization();
-
-            //app.MapControllerRoute(
-            //   name: "Home",
-            //   pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
             app.MapControllerRoute(
                name: "HRMasters",
@@ -71,6 +60,10 @@ namespace BizsolERPMain
                 pattern: "{area:exists}/{controller=DemoCustom}/{action=DemoCustomControl}/{id?}"
                 );
             app.MapControllerRoute(
+                name: "SalesTestArea",
+                pattern: "{area:exists}/{controller=TestTheme}/{action=Index}/{id?}"
+                );
+            app.MapControllerRoute(
               name: "PurchaseTransactions",
               pattern: "{area:exists}/{controller=ApproveVerify}/{action=POApproval}/{id?}");
 
@@ -85,6 +78,14 @@ namespace BizsolERPMain
             app.MapControllerRoute(
                 name: "ProductionMasters",
                 pattern: "{area:exists}/{controller=Slitting}/{action=SlittingProductionEntry}/{id?}");
+
+            app.MapControllerRoute(
+               name: "PurchaseReports",
+               pattern: "{area:exists}/{controller=Reports}/{action=MaizeReport}/{id?}");
+
+            app.MapControllerRoute(
+               name: "PurchaseMasters",
+               pattern: "{area:exists}/{controller=PurchaseOrder}/{action=POApprovalConfiguration}/{id?}");
 
             app.Run();
         }

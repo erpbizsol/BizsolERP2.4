@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 
@@ -64,7 +64,10 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
                                                            , int BuyerPOMaster_Code
                                                            , string CallBackFunctionName_btnDone
                                                            , int Code
-                                                           , string Mode)
+                                                           , string Mode
+                                                           , string AskPassword
+                                                           , string AskRemark
+            )
         {
 
              ViewBag.AccountMaster_Code         =AccountMaster_Code;
@@ -87,6 +90,8 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
              ViewBag.CallBackFunctionName_btnDone = CallBackFunctionName_btnDone;
              ViewBag.Code = Code;
             ViewBag.Mode = Mode;
+            ViewBag.AskPassword = AskPassword;
+            ViewBag.AskRemark = AskRemark;
             return PartialView("_CheckCreditLimits");
 
         }
@@ -107,5 +112,36 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             return PartialView("_ScanQRCodeByCameraControl");
 
         }
+        public ActionResult SelectMachineToGetWeightControl(string OutputTextElementID)
+        {
+
+            ViewBag.OutputTextElementID = OutputTextElementID;
+
+            return PartialView("_SelectMachineToGetWeightControl");
+
+        }
+
+        public ActionResult SizeFilterControl(int ItemMaster_Code, int ItemSizeMaster_Code, string CallBackFunctionName_btnDone, string EditParameterList, string CallBackFunctionName_btnClose, int RowNo, int ProcessMaster_Code = 0)
+        {
+
+            ViewBag.ItemMaster_Code = ItemMaster_Code;
+            ViewBag.ItemSizeMaster_Code = ItemSizeMaster_Code;
+            ViewBag.CallBackFunctionName_btnDone = CallBackFunctionName_btnDone;
+            ViewBag.CallBackFunctionName_btnClose = CallBackFunctionName_btnClose;
+            ViewBag.EditParameterList = EditParameterList;
+            ViewBag.SizeControlRowNo = RowNo;
+            ViewBag.ProcessMaster_Code = ProcessMaster_Code;
+            return PartialView("_SizeFilterControl");
+
+        }
+
+        /// <summary>
+        /// ObjectListControl is now JS-only (_ObjectListControlPage.js). This action returns an empty container for backward compatibility if something loads it via AJAX.
+        /// </summary>
+        public ActionResult ObjectListControl(string CallBackFunctionName_btnDone = "")
+        {
+            return Content("<div id=\"DivObjectListControlModal\"></div>", "text/html");
+        }
+
     }
 }

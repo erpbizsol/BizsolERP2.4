@@ -1,0 +1,230 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/PurchaseQualityCheck.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+    .table-wrapper.fixed-height-table {
+        height: calc(100vh - 400px);
+        min-height: 300px;
+        max-height: none;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+    .table-wrapper1 {
+    overflow-x: auto;
+    overflow-y: auto;
+    display: block;
+}
+    .qc-header-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+    
+    .qc-header-row {
+        margin-bottom: 10px;
+    }
+    
+    .qc-header-label {
+        font-weight: 600;
+        color: #495057;
+        min-width: 120px;
+    }
+    
+    .qc-header-value {
+        color: #212529;
+    }
+    
+    .qc-property-header {
+        background-color: #e9ecef;
+        font-weight: 600;
+        text-align: center;
+        padding: 8px;
+    }
+    
+    .qc-property-subheader {
+        background-color: #f8f9fa;
+        text-align: center;
+        padding: 5px;
+        font-size: 0.9em;
+    }
+    
+    .qc-item-cell {
+        text-align: left;
+        padding: 8px;
+    }
+    
+    .qc-property-cell {
+        text-align: center;
+        padding: 8px;
+    }
+    
+    .qc-disabled {
+        color: #6c757d;
+        font-style: italic;
+    }
+    
+    .changed-input {
+        background-color: #fff3cd !important;
+        border-color: #ffc107 !important;
+    }
+    
+    .changed-input:focus {
+        background-color: #fff3cd !important;
+        border-color: #ffb300 !important;
+        box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25) !important;
+    }
+    
+    .numeric-input {
+        text-align: right !important;
+    }
+    
+    #chkTestType {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    #chkTestType .form-check {
+        margin-right: 15px;
+        margin-bottom: 0;
+        white-space: nowrap;
+    }
+    
+    #chkTestType .form-check-label {
+        margin-left: 5px;
+    }
+</style>
+
+<div class="card p-2" id="dvGrid">
+    <div style="display:block;">
+        <div class="row text-end">
+            <div class="col-md-12">
+                <button class="btn btn-success icon-height mb-1" title="Create New" onclick="CreateNew()">Create New</button>
+                <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
+            </div>
+        </div>
+        <div class="table-wrapper1">
+            <table id="tbllocatePurchaseQualityCheckList" class="fixed-width-table table">
+                <thead id="table-header-locatePurchaseQualityCheckList">
+                </thead>
+                <tbody id="table-body-locatePurchaseQualityCheckList">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tbllocatePurchaseQualityCheckList">
+        </div>
+    </div>
+</div>
+<div id="locatePurchaseQualityCheck" style="display:none">
+    <div class="card p-2">
+        <form class="card-body">
+            <div class="row">
+                <input type="hidden" name="Code" id="Code" class="form-control" value="0">
+                <input type="hidden" name="MRNMasterCode" id="hfMRNMasterCode" class="form-control" value="0">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="ddlFinYear" class="col-form-label-sm fw-bold">Fin Year :<span class="text-danger">*</span></label>
+                        <select id="ddlFinYear" name="ddlFinYear" class="box_border form-control form-control-sm" autocomplete="off"></select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="ddlPartyName" class="col-form-label-sm fw-bold">Party Name :<span class="text-danger">*</span></label>
+                        <select id="ddlPartyName" name="ddlPartyName" class="box_border form-control form-control-sm" autocomplete="off" style="display:block"></select>
+                        <input type="text" id="ViewPartyName" name="ViewPartyName" class="box_border form-control form-control-sm" autocomplete="off" disabled style="display:none" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="txtMRNNo" class="col-form-label-sm fw-bold"><span id="labelNameChange">MRN No </span> : <span class="text-danger">*</span></label>
+                        <select id="txtMRNNo" name="txtMRNNo" class="box_border form-control form-control-sm" autocomplete="off" style="display:block"></select>
+                        <input type="text" id="ViewMRNNo" name="ViewMRNNo" class="box_border form-control form-control-sm" autocomplete="off" disabled style="display:none"/>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="txtMRNDate" class="col-form-label-sm fw-bold">MRN Date :<span class="text-danger">*</span></label>
+                        <input type="text" id="txtMRNDate" name="txtMRNDate" class="box_border form-control form-control-sm" autocomplete="off" disabled/>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="txtBillNo" class="col-form-label-sm fw-bold">Bill No :<span class="text-danger">*</span></label>
+                        <input id="txtBillNo" name="txtBillNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="BILL NO" maxlength="50" disabled/>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="txtBillDate" class="col-form-label-sm fw-bold">Bill Date :<span class="text-danger">*</span></label>
+                        <input type="text" id="txtBillDate" name="txtBillDate" class="box_border form-control form-control-sm" autocomplete="off" disabled/>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="txtVehicleNo" class="col-form-label-sm fw-bold">Vehicle No :<span class="text-danger">*</span></label>
+                        <input id="txtVehicleNo" name="txtVehicleNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Vehicle No" maxlength="50" disabled />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="txtTestType" class="col-form-label-sm fw-bold">Test Type :<span class="text-danger">*</span></label>
+                        <div id="chkTestType"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 text-end">
+                    <div class="form-group">
+                        <label class="col-form-label-sm fw-bold">&nbsp;</label>
+                        <button type="button" id="btnSaveQualityCheck" class="btn btn-primary btn-height" style="display:none;">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button type="button" id="btnReset" class="btn btn-info btn-height" style="display:none;">
+                            <i class="fas fa-refresh"></i> Reset
+                        </button>
+                        <button type="button" id="btnBack" class="btn btn-danger btn-height" >
+                            Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <div class="table-wrapper tblPurchaseQualityCheckClass" style="display: none;">
+            <table id="tblPurchaseQualityCheck" class="table table-bordered" style="width: 100%;">
+                <thead id="table-header">
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div class="modal fade rps-detail-modal" id="PurchaseQualityRemark" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Remark</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="txtRemark" class="form-label filter-label">Remark </label> <span class="text-danger">*</span>
+                    <input type="text" id="txtRemark" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" />
+                    <input type="hidden" id="hfCode" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-12 text-end">
+                    <button type="button" class="btn btn-success icon-height" onclick="DeletePurchaseQualityCheck()">Ok</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

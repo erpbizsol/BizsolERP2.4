@@ -1,0 +1,185 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.CRM.Transactions/css/ExpenseEntry.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/CommonSingleEntryForm.js"></script>
+
+<style>
+    /* Delete & Success modals - VendorMaster pattern */
+    .cse-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(8, 12, 36, 0.54);
+        backdrop-filter: blur(5px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1050;
+        padding: 20px 12px;
+    }
+    .cse-backdrop.show { display: flex; }
+    body:has(.cse-backdrop.show) { overflow: hidden; }
+    .cse-delete-modal, .cse-success-modal {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 20px 56px rgba(8, 12, 36, 0.24);
+        animation: cse-modal-up 0.24s cubic-bezier(0.34, 1.46, 0.64, 1);
+    }
+    @@keyframes cse-modal-up {
+        from { transform: translateY(22px) scale(0.97); opacity: 0; }
+        to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .cse-delete-modal {
+        width: 370px;
+        max-width: calc(100vw - 20px);
+        padding: 32px 24px 24px;
+        text-align: center;
+    }
+    .cse-delete-icon-wrap {
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #fef2f2, #fee2e2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        color: #ef4444;
+        margin: 0 auto 14px;
+        box-shadow: 0 5px 16px rgba(239, 68, 68, 0.16);
+    }
+    .cse-delete-title { font-size: 17px; font-weight: 700; color: #111827; margin-bottom: 7px; }
+    .cse-delete-text { font-size: 13px; color: #6b7280; line-height: 1.5; margin-bottom: 22px; }
+    .cse-delete-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .cse-btn-confirm-delete {
+        padding: 9px 22px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 5px 16px rgba(239, 68, 68, 0.32);
+        transition: all 0.14s;
+    }
+    .cse-btn-confirm-delete:hover {
+        box-shadow: 0 7px 22px rgba(239, 68, 68, 0.48);
+        transform: translateY(-1px);
+    }
+    .cse-success-modal {
+        width: 370px;
+        max-width: calc(100vw - 20px);
+        padding: 32px 24px 24px;
+        text-align: center;
+    }
+    .cse-success-icon-wrap {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #eef2ff, #c7d2fe);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        color: #5b5ef4;
+        margin: 0 auto 16px;
+        box-shadow: 0 6px 20px rgba(91, 94, 244, 0.18);
+    }
+    .cse-success-title { font-size: 17px; font-weight: 700; color: #111827; margin-bottom: 7px; }
+    .cse-success-text { font-size: 13px; color: #6b7280; line-height: 1.5; margin-bottom: 22px; }
+    .cse-btn-success-ok {
+        padding: 9px 34px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(135deg, #5b5ef4, #a855f7);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 5px 16px rgba(91, 94, 244, 0.32);
+        transition: all 0.14s;
+    }
+    .cse-btn-success-ok:hover {
+        box-shadow: 0 7px 22px rgba(91, 94, 244, 0.48);
+        transform: translateY(-1px);
+    }
+    .cse-btn-cancel {
+        padding: 9px 20px;
+        border-radius: 999px;
+        border: 1.5px solid #d4d7e8;
+        background: #fff;
+        color: #374151;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.13s;
+    }
+    .cse-btn-cancel:hover { background: #f5f5fb; border-color: #9ca3af; }
+</style>
+
+<div class="ee-page">
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <div id="newCreateForm" class="expense-entry-card">
+            <form>
+                <div class="row g-3 align-items-end">
+                    <input type="hidden" name="Code" id="Code" class="form-control" value="0">
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <label id="labelDescription" for="txtDescription" class="form-label fw-bold"><span class="text-danger">*</span></label>
+                        <input id="txtDescription" name="txtDescription" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Description" required />
+                    </div>
+                        <div class="col-12 col-sm-6 col-md-4 without-label-field" style="margin-bottom:0.8rem">
+                        <div class="expense-entry-actions">
+                            <button type="button" onclick="submit_CommonSingleEntry()" id="saveCommonSingleEntryButton" title="Save" class="btn btn-primary btn-height">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <div class="expense-entry-card expense-entry-card-table">
+            <div id="tblCommonSingleEntryForm">
+                <div class="expense-entry-table-wrapper">
+                    <table id="CommonSingleEntryForm" class="fixed-width-table table">
+                        <thead id="table-header-CommonSingleEntryForm"></thead>
+                        <tbody id="table-body-CommonSingleEntryForm"></tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-CommonSingleEntryForm"></div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Delete confirmation modal (VendorMaster pattern) -->
+<div id="cseDeleteConfirmBackdrop" class="cse-backdrop">
+    <div class="cse-delete-modal">
+        <div class="cse-delete-icon-wrap"><i class="fas fa-trash-can"></i></div>
+        <div class="cse-delete-title" id="cseDeleteTitle">Delete this record?</div>
+        <div class="cse-delete-text">This action cannot be undone. The record will be permanently removed.</div>
+        <div class="cse-delete-actions">
+            <button type="button" class="cse-btn-cancel" id="cseBtnCancelDelete"><i class="fas fa-times"></i> Cancel</button>
+            <button type="button" class="cse-btn-confirm-delete" onclick="DoSingleEntryDelete()"><i class="fas fa-trash-can"></i> Yes, Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Success modal -->
+<div id="cseSuccessBackdrop" class="cse-backdrop">
+    <div class="cse-success-modal">
+        <div class="cse-success-icon-wrap"><i id="cseSuccessModalIcon" class="fas fa-circle-check"></i></div>
+        <div class="cse-success-title" id="cseSuccessModalTitle">Done!</div>
+        <div class="cse-success-text" id="cseSuccessModalText">Operation completed successfully.</div>
+        <button type="button" class="cse-btn-success-ok" onclick="CloseCseSuccessModal()"><i class="fas fa-check"></i> OK</button>
+    </div>
+</div>

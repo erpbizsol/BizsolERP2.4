@@ -10,6 +10,7 @@ $(document).ready(function () {
     GetOrderStatusLists();
     GetDisplayNameForReportTypes();
     DatePicker();
+    GetCRMFixedParameterConfig();
     $('#txtdateFrom').on('keydown', function (e) {
         if (e.key === "Enter") {
             $("#txtdateTo").focus();
@@ -17,7 +18,9 @@ $(document).ready(function () {
     });
     $('#txtdateTo').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#txtSalesPerson").focus();
+            //$("#txtSalesPerson").focus();
+            $("#ddlSalesPersonlist").focus();
+            
         }
     });
     $('#txtSalesPerson').on('keydown', function (e) {
@@ -68,6 +71,25 @@ $(document).ready(function () {
     });
     
 });
+
+function GetCRMFixedParameterConfig() {
+
+    CRMReportsServices.GetCRMOrderEntryConfig().then(function (response) {
+
+        if (response.length > 0) {
+
+            sessionStorage.setItem('CRMOrderEntryConfig', JSON.stringify(response[0]));
+            CRMReportsServices.GetFixedParameterQtyConfig().then(function (response) {
+                if (response.length > 0) {
+                    sessionStorage.setItem('QtyConfig', JSON.stringify(response[0]));
+                   
+
+                }
+            });
+        }
+    });
+}
+
 function GetSalespersonLists() {
     CRMReportsServices.GetSalespersonList().then(function (response) {
         if (response.length > 0) {
@@ -78,8 +100,28 @@ function GetSalespersonLists() {
             }
             $('#txtSalesPersonlist').html(options);
 
+            BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })), 'FirstItemAll');
+            $('#ddlSalesPersonlist').select2({
+                // allowClear: true,
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
+            });
+
         } else {
             $('#txtSalesPersonlist').empty();
+            $('#ddlSalesPersonlist').empty();
         }
     }).catch(function (error) {
         console.error('Error fetching salesperson list:', error);
@@ -96,6 +138,24 @@ function GetDealerLists() {
             }
             $('#txtDealerNamelist').html(options);
 
+            BindSelectList($('#ddlDealerNamelist')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })), 'FirstItemAll');
+            $('#ddlDealerNamelist').select2({
+                // allowClear: true,
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
+            });
         } else {
             $('#txtDealerNamelist').empty();
         }
@@ -114,12 +174,33 @@ function GetOrderTypeLists() {
             }
             $('#txtOrderTypelist').html(options);
 
+            BindSelectList($('#ddlOrderTypelist')[0], response.map((item) => ({ Code: item.Code, Desp: item.Field })), 'FirstItemAll');
+            $('#ddlOrderTypelist').select2({
+                // allowClear: true,
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
+            });
+
         } else {
             $('#txtOrderTypelist').empty();
+            $('#ddlOrderTypelist').empty();
         }
     }).catch(function (error) {
         console.error('Error fetching salesperson list:', error);
         $('#txtOrderTypelist').empty();
+        $('#ddlOrderTypelist').empty();
     });
 }
 
@@ -139,13 +220,34 @@ function GetOrderStatusLists(VerificationCheck) {
             }
             $('#txtOrderStatuslist').html(options);
 
+            BindSelectList($('#ddlOrderStatuslist')[0], response.map((item) => ({ Code: item.Code, Desp: item.VerifyStatus })), 'FirstItemAll');
+            $('#ddlOrderStatuslist').select2({
+                // allowClear: true,
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
+            });
+
         } else {
             console.warn('Response is empty or invalid:', response);
             $('#txtOrderStatuslist').empty();
+            $('#ddlOrderStatuslist').empty();
         }
     }).catch(function (error) {
         console.error('Error fetching Order Status List:', error);
         $('#txtOrderStatuslist').empty();
+        $('#ddlOrderStatuslist').empty();
     });
 }
 
@@ -198,6 +300,25 @@ function GetDisplayNameForReportTypes() {
                 const selectedValue = $(this).val();
                 $inputField.val(selectedValue);
             });
+
+            BindSelectList($('#ddlReportTypelist')[0], response.map((item) => ({ Code: item.DisplayName, Desp: item.DisplayName })), 'FirstItemSelected');
+            $('#ddlReportTypelist').select2({
+                // allowClear: true,
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
+            });
         } else {
             $reportTypeList.empty();
             $inputField.val('');
@@ -211,15 +332,25 @@ function GetDisplayNameForReportTypes() {
 
 
 function GetDailyVistList() {
-   
+    var Qty_Config = JSON.parse(sessionStorage.getItem('QtyConfig'));
+    var QtyPCHeader = Qty_Config.QtyPC;
+    var QtyMTRHeader = Qty_Config.QtyMR;
+    var QtyMTHeader = Qty_Config.QtyMT;
+
+
     const formValues = {
         fromDate: convertDateFormat($("#txtdateFrom").val()),
         toDate: convertDateFormat($("#txtdateTo").val()),
-        orderType: $('#txtOrderType').val(),
-        orderStatusName: $('#txtOrderStatus').val(),
-        ReportTypeName: $('#txtReportType').val(),
-        PersonName: $('#txtSalesPerson').val(),
-        AccountDesp: $('#txtDealerName').val(),
+        //orderType: $('#txtOrderType').val(),
+        //orderStatusName: $('#txtOrderStatus').val(),
+        orderType: $('#ddlOrderTypelist option:selected').text(),
+        orderStatusName: $('#ddlOrderStatuslist option:selected').text(),
+        //ReportTypeName: $('#txtReportType').val(),
+        ReportTypeName: $('#ddlReportTypelist').val(),
+        //PersonName: $('#txtSalesPerson').val(),
+        PersonName: $('#ddlSalesPersonlist option:selected').text(),
+        //AccountDesp: $('#txtDealerName').val(),
+        AccountDesp: $('#ddlDealerNamelist option:selected').text(),
     };
     const fromDate = formValues.fromDate;
     const toDate = formValues.toDate;
@@ -238,6 +369,68 @@ function GetDailyVistList() {
             const showButtons = [];
             const StringdoubleFilterColumn = [];
             const hiddenColumns = ["Code"];
+
+            if (QtyMTHeader !== '') {
+                response = response.map(item => {
+                    if (item.hasOwnProperty('Total Qty ' + QtyMTHeader)) {
+                        const reorderedItem = {};
+                        for (const key in item) {
+                            if (key === 'Total Qty ' + QtyMTHeader) {
+                                reorderedItem['Total Qty ' + QtyMTHeader] = item[key];
+                            } else {
+                                reorderedItem[key] = item[key];
+                            }
+                        }
+                        return reorderedItem;
+                    }
+                    return item;
+                });
+                NumericFilterColumn.push("Total Qty MT")
+            } else {
+                hiddenColumns.push("Total Qty MT");
+            }
+
+            if (QtyPCHeader !== '') {
+                response = response.map(item => {
+                    if (item.hasOwnProperty('Total Qty ' + QtyPCHeader)) {
+                        const reorderedItem = {};
+                        for (const key in item) {
+                            if (key === 'Total Qty ' + QtyPCHeader) {
+                                reorderedItem['Total Qty ' + QtyPCHeader] = item[key];
+                            } else {
+                                reorderedItem[key] = item[key];
+                            }
+                        }
+                        return reorderedItem;
+                    }
+                    return item;
+                });
+                NumericFilterColumn.push("Total Qty PC")
+            } else {
+                hiddenColumns.push("Total Qty PC");
+            }
+            if (QtyMTRHeader !== '') {
+                response = response.map(item => {
+                    if (item.hasOwnProperty('Total Qty ' + QtyMTRHeader)) {
+                        const reorderedItem = {};
+                        for (const key in item) {
+                            if (key === 'Total Qty ' + QtyMTRHeader) {
+                                reorderedItem['Total Qty ' + QtyMTRHeader] = item[key];
+                            } else {
+                                reorderedItem[key] = item[key];
+                            }
+                        }
+                        return reorderedItem;
+                    }
+                    return item;
+                });
+                NumericFilterColumn.push("Total Qty MR")
+            } else {
+                hiddenColumns.push("Total Qty MR");
+            }
+
+
+
             const ColumnAlignment = {
                 "Payment Amount": 'right',
                 "Other Sale Qty": 'right',
@@ -251,6 +444,9 @@ function GetDailyVistList() {
                 "Extra Charges": 'right',
                 "Total Order Qty": 'right',
                 "Total Ordered Qty": 'right',
+                "Total Qty MT": 'right',
+                "Total Qty PC": 'right',
+                "Total Qty MR": 'right',
                 "Date": 'center',
             };
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns,ColumnAlignment);
@@ -259,7 +455,7 @@ function GetDailyVistList() {
             } else {
                 clearFooter();
             }
-            PopulateTableForPrint(response);
+            PopulateTableForPrint(response, hiddenColumns);
             if (reportType == 'Visit Report With Size and Thk' || reportType == 'Visit Report' || reportType == 'Visit Report 1.0' || reportType == "Route Plan Report") {
                 updateFooterPrint(response, reportType);
             } else {
@@ -271,6 +467,11 @@ function GetDailyVistList() {
     });
 }
 function updateFooter(data, reportType) {
+    var Qty_Config = JSON.parse(sessionStorage.getItem('QtyConfig'));
+    var QtyPCHeader = Qty_Config.QtyPC;
+    var QtyMTRHeader = Qty_Config.QtyMR;
+    var QtyMTHeader = Qty_Config.QtyMT;
+
     if (reportType === "Visit Report With Size and Thk") {
         const rowCount = data.length;
         let totalQuantity = 0;
@@ -278,19 +479,29 @@ function updateFooter(data, reportType) {
         let totalDiscount = 0;
         let totalExtraCharges = 0;
         let paymentAmount = 0;
+        let TotalQtyMT = 0;
+        let TotalQtyPC = 0;
+        let TotalQtyMR = 0;
+
         data.forEach(row => {
             totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
             totalBasicRate += parseFloat(row["Basic Rate"] || 0);
             totalDiscount += parseFloat(row["Discount"] || 0);
             totalExtraCharges += parseFloat(row["Extra Charges"] || 0);
             paymentAmount += parseFloat(row["Payment Amount"] || 0);
+            TotalQtyMT += parseFloat(row['Total Qty ' + QtyMTHeader] || 0);
+            TotalQtyPC += parseFloat(row['Total Qty ' + QtyPCHeader] || 0);
+            TotalQtyMR += parseFloat(row['Total Qty ' + QtyMTRHeader] || 0);
         });
         const tfootContent = `
         <tr>
             <td colspan="1"></td>
-            <td colspan="10"><b>Row Count :</b>  ${rowCount}</td>
+            <td colspan="11"><b>Row Count :</b>  ${rowCount}</td>
             <td style="text-align:right"><b>Total</b></td>
-            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
+            ${QtyMTHeader != '' ? `<td style="text-align:right"><b>${TotalQtyMT.toFixed(2)}</b></td>` : ''}
+            ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalQtyPC.toFixed(2)}</b></td>` : ''}
+            ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalQtyMR.toFixed(2)}</b></td>` : ''}
+            
             <td style="text-align:right"><b>${totalBasicRate.toFixed(2)}</b></td>
             <td style="text-align:right"><b>${totalDiscount.toFixed(2)}</b></td>
             <td style="text-align:right"><b>${totalExtraCharges.toFixed(2)}</b></td>
@@ -357,16 +568,24 @@ function updateFooter(data, reportType) {
         }
     }
     if (reportType === "Visit Report 1.0") {
-        let totalQuantity = 0;
+        //let totalQuantity = 0;
         let TotalOrderAmount = 0;
+        let TotalQtyMT = 0;
+        let TotalQtyPC = 0;
+        let TotalQtyMR = 0;
         data.forEach(row => {
-            totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
+            //totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
             TotalOrderAmount += parseFloat(row["Total Order Amount"] || 0);
+            TotalQtyMT += parseFloat(row['Total Qty ' + QtyMTHeader] || 0);
+            TotalQtyPC += parseFloat(row['Total Qty ' + QtyPCHeader] || 0);
+            TotalQtyMR += parseFloat(row['Total Qty ' + QtyMTRHeader] || 0);
         });
         const tfootContent = `
         <tr>
             <td colspan="8"><b>Total :</b></td>
-            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
+            ${QtyMTHeader != '' ? `<td style="text-align:right"><b>${TotalQtyMT.toFixed(2)}</b></td>` : ''}
+            ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalQtyPC.toFixed(2)}</b></td>` : ''}
+            ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalQtyMR.toFixed(2)}</b></td>` : ''}
             <td style="text-align:right"><b>${TotalOrderAmount.toFixed(2)}</b></td>
         </tr>
         `;
@@ -386,13 +605,22 @@ function updateFooter(data, reportType) {
     }
     if (reportType === "Route Plan Report") {
         let totalQuantity = 0;
+        let TotalQtyMT = 0;
+        let TotalQtyPC = 0;
+        let TotalQtyMR = 0;
+
         data.forEach(row => {
             totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
+            TotalQtyMT += parseFloat(row['Total Qty ' + QtyMTHeader] || 0);
+            TotalQtyPC += parseFloat(row['Total Qty ' + QtyPCHeader] || 0);
+            TotalQtyMR += parseFloat(row['Total Qty ' + QtyMTRHeader] || 0);
         });
         const tfootContent = `
         <tr>
             <td colspan="9"><b>Total :</b></td>
-            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
+             ${QtyMTHeader != '' ? `<td style="text-align:right"><b>${TotalQtyMT.toFixed(2)}</b></td>` : ''}
+            ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalQtyPC.toFixed(2)}</b></td>` : ''}
+            ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalQtyMR.toFixed(2)}</b></td>` : ''}
         </tr>
         `;
         const tfoot = document.querySelector("#table tfoot");
@@ -410,8 +638,28 @@ function updateFooter(data, reportType) {
         }
     }
 }
+function BindSelectList(element, list, FirstItem) {
+    let option = '';
 
+    if (FirstItem == 'FirstItemAll') {
+        option = '<option value="All">All</option>';
+    } else if (FirstItem == 'FirstItemSelected') {
+        option = '';
+    } else {
+        option = '<option value="0"></option>';
+    }
+   
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
 function updateFooterPrint(data, reportType) {
+    var Qty_Config = JSON.parse(sessionStorage.getItem('QtyConfig'));
+    var QtyPCHeader = Qty_Config.QtyPC;
+    var QtyMTRHeader = Qty_Config.QtyMR;
+    var QtyMTHeader = Qty_Config.QtyMT;
+
     if (reportType === "Visit Report With Size and Thk") {
         const rowCount = data.length;
         let totalQuantity = 0;
@@ -419,12 +667,18 @@ function updateFooterPrint(data, reportType) {
         let totalDiscount = 0;
         let totalExtraCharges = 0;
         let paymentAmount = 0;
+        let TotalQtyMT = 0;
+        let TotalQtyPC = 0;
+        let TotalQtyMR = 0;
         data.forEach(row => {
             totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
             totalBasicRate += parseFloat(row["Basic Rate"] || 0);
             totalDiscount += parseFloat(row["Discount"] || 0);
             totalExtraCharges += parseFloat(row["Extra Charges"] || 0);
             paymentAmount += parseFloat(row["Payment Amount"] || 0);
+            TotalQtyMT += parseFloat(row["Total Qty MT"] || 0);
+            TotalQtyPC += parseFloat(row["Total Qty PC"] || 0);
+            TotalQtyMR += parseFloat(row["Total Qty MR"] || 0);
         });
         const tfootContent = `
         <tr>
@@ -439,9 +693,12 @@ function updateFooterPrint(data, reportType) {
             <td ></td>
             <td ></td>
             <td ></td>
+             <td ></td>
             <td style="text-align:right"><b>Total</b></td>
-            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
-            <td style="text-align:right"><b>${totalBasicRate.toFixed(2)}</b></td>
+             ${QtyMTHeader != '' ? `<td style="text-align:right"><b>${TotalQtyMT.toFixed(2)}</b></td>` : ''}
+            ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalQtyPC.toFixed(2)}</b></td>` : ''}
+            ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalQtyMR.toFixed(2)}</b></td>` : ''}
+           <td style="text-align:right"><b>${totalBasicRate.toFixed(2)}</b></td>
             <td style="text-align:right"><b>${totalDiscount.toFixed(2)}</b></td>
             <td style="text-align:right"><b>${totalExtraCharges.toFixed(2)}</b></td>
             <td colspan="1"></td>
@@ -518,9 +775,15 @@ function updateFooterPrint(data, reportType) {
     if (reportType === "Visit Report 1.0") {
         let totalQuantity = 0;
         let TotalOrderAmount = 0;
+        let TotalQtyMT = 0;
+        let TotalQtyPC = 0;
+        let TotalQtyMR = 0;
         data.forEach(row => {
             totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
             TotalOrderAmount += parseFloat(row["Total Order Amount"] || 0);
+            TotalQtyMT += parseFloat(row["Total Qty MT"] || 0);
+            TotalQtyPC += parseFloat(row["Total Qty PC"] || 0);
+            TotalQtyMR += parseFloat(row["Total Qty MR"] || 0);
         });
         const tfootContent = `
         <tr>
@@ -532,7 +795,9 @@ function updateFooterPrint(data, reportType) {
             <td ></td>
             <td ></td>
             <td ></td>
-            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
+             ${QtyMTHeader != '' ? `<td style="text-align:right"><b>${TotalQtyMT.toFixed(2)}</b></td>` : ''}
+            ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalQtyPC.toFixed(2)}</b></td>` : ''}
+            ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalQtyMR.toFixed(2)}</b></td>` : ''}
             <td style="text-align:right"><b>${TotalOrderAmount.toFixed(2)}</b></td>
         </tr>
         `;
@@ -552,8 +817,14 @@ function updateFooterPrint(data, reportType) {
     }
     if (reportType === "Route Plan Report") {
         let totalQuantity = 0;
+        let TotalQtyMT = 0;
+        let TotalQtyPC = 0;
+        let TotalQtyMR = 0;
         data.forEach(row => {
             totalQuantity += parseFloat(row["Total Ordered Qty"] || 0);
+            TotalQtyMT += parseFloat(row["Total Qty MT"] || 0);
+            TotalQtyPC += parseFloat(row["Total Qty PC"] || 0);
+            TotalQtyMR += parseFloat(row["Total Qty MR"] || 0);
         });
         const tfootContent = `
         <tr>
@@ -566,7 +837,9 @@ function updateFooterPrint(data, reportType) {
             <td ></td>
             <td ></td>
             <td ></td>
-            <td style="text-align:right"><b>${totalQuantity.toFixed(2)}</b></td>
+             ${QtyMTHeader != '' ? `<td style="text-align:right"><b>${TotalQtyMT.toFixed(2)}</b></td>` : ''}
+            ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalQtyPC.toFixed(2)}</b></td>` : ''}
+            ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalQtyMR.toFixed(2)}</b></td>` : ''}
         </tr>
         `;
         const tfoot = document.querySelector("#tblReport tfoot");
@@ -699,7 +972,7 @@ function DatePicker() {
     });
 }
 
-function PopulateTableForPrint(data) {
+function PopulateTableForPrint(data,hiddencols) {
     const tableBody = document.querySelector('#tblReport tbody');
     const tableHeader = document.querySelector('#tblReport thead tr');
 
@@ -710,9 +983,12 @@ function PopulateTableForPrint(data) {
     // Get the keys from the first object to generate the header dynamically
     const headers = Object.keys(data[0]);
     headers.forEach(header => {
-        const th = document.createElement('th');
-        th.textContent = header.charAt(0).toUpperCase() + header.slice(1); // Capitalize the first letter
-        tableHeader.appendChild(th);
+        if ($.inArray(header, hiddencols) == -1) {
+            const th = document.createElement('th');
+            th.textContent = header.charAt(0).toUpperCase() + header.slice(1); // Capitalize the first letter
+            tableHeader.appendChild(th);
+        }
+       
     });
 
     $('#tblReport th').css('font-weight', 'bold');
@@ -721,9 +997,11 @@ function PopulateTableForPrint(data) {
         const row = document.createElement('tr');
 
         headers.forEach(header => {
-            const td = document.createElement('td');
-            td.textContent = item[header];
-            row.appendChild(td);
+            if ($.inArray(header, hiddencols) == -1) {
+                const td = document.createElement('td');
+                td.textContent = item[header];
+                row.appendChild(td);
+            }
         });
 
         tableBody.appendChild(row);
@@ -731,7 +1009,7 @@ function PopulateTableForPrint(data) {
 
 }
 function Export() {
-    var ReportType = $("#txtReportType").val().replace(" ", "").replace(".", "");
+    var ReportType = $('#ddlReportTypelist').val().replace(/ /g, "").replace(".", "");
     var currentDate = new Date();
     var dateString = currentDate.getFullYear() + "-" +
         (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
@@ -746,3 +1024,5 @@ function Export() {
     });
 }
 window.Export = Export;
+window.GetCRMFixedParameterConfig = GetCRMFixedParameterConfig;
+window.BindSelectList = BindSelectList;

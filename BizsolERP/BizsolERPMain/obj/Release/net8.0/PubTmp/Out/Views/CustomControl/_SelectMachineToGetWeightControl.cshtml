@@ -1,0 +1,118 @@
+﻿
+<div class="modal fade bs-example-modal-center" id="SelectMachineToGetWeightControlModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content" style="max-width:45%">
+            <div class="modal-header">
+                <h5 class="modal-title">Weighment:</h5>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    
+                    <div class="col-md-12 ">
+                        <label for="ddlMachines" class="col-form-label-sm fw-bold">Machine:</label>
+                        <select id="ddlMachines" class="form-control form-control-sm box_border"></select>
+                    </div>
+                </div>
+
+                <div class="text-end mt-1">
+                    <a class="btn btn-primary btn-height" onclick="SelectMachineToGetWeightControl_onGetWeight();">
+                        Get Weight
+                    </a>
+                    &nbsp;
+                    <a class="btn btn-danger btn-height" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                    <input type="hidden" value="@ViewBag.OutputTextElementID" id="hfOutputTextElementID" />
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
+
+<script type="module">
+
+       import { WeighmentService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/WeighmentService.js';
+
+     function getddlMachines() {
+          WeighmentService.GetMachinesList().then(function (respone) {
+               if(respone.length > 0){
+                         BindSelectList($('#ddlMachines')[0], respone.map((item) => ({ Code: item.MachineNo, Desp: item.MachineNo})));
+
+                       if(respone.length==1){
+                               $('#ddlMachines').val(respone[0].MachineNo);
+                       }
+
+                     $('#ddlMachines').select2({
+                        dropdownParent: $('#SelectMachineToGetWeightControlModal'),
+                         width: '-webkit-fill-available'
+                    });
+
+                  $(document).ready(function () {
+                          $("#SelectMachineToGetWeightControlModal").modal({
+                              backdrop: 'static',
+                          });
+                          $("#SelectMachineToGetWeightControlModal").modal('show');
+                  });
+              }else{
+                   toastr.error('No Printer Found');
+                   return;
+              }
+           
+
+           
+       })
+
+    }
+
+   function BindSelectList(element,list) {
+         let option = '<option value="0"></option>';
+        $.each(list, function (key, val) {
+            option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+        });
+        element.innerHTML = option;
+    }
+    
+    function SelectMachineToGetWeightControl_onGetWeight() {
+            
+            let MachineName = $('#ddlMachines').val();
+
+          if (MachineName === '0' || MachineName === '') {
+             toastr.error('Please select a machine');
+             return;
+            }
+          
+            Showloader();
+
+            WeighmentService.GetMachineWeight(MachineName).then(function (respone) {
+               HideLoader();
+
+               if(respone.Status=='Y')
+               {
+                   toastr.success('GET Weight: '+ respone.Msg);
+                      let outputTextElementID = $('#hfOutputTextElementID').val();
+                      if (outputTextElementID) {
+                            $('#' + outputTextElementID).val(respone.Msg);
+                      }
+
+               }
+               else
+               {
+                   toastr.error(respone.Msg);
+
+               }
+                $("#SelectMachineToGetWeightControlModal").modal('hide');
+                
+         })
+
+
+           
+
+    }
+    window.SelectMachineToGetWeightControl_onGetWeight = SelectMachineToGetWeightControl_onGetWeight;
+
+     getddlMachines()
+        
+
+         
+        
+
+</script>
+

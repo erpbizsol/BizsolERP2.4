@@ -68,6 +68,7 @@
                     <input type="hidden" value="@ViewBag.EntryNo" id="hfEntryNo" />
                     <input type="hidden" value="@ViewBag.EntryDate" id="hfEntryDate" />
                     <input type="hidden" value="@ViewBag.Mode" id="hfMode"/>
+                    <input type="hidden" value="@ViewBag.SourceDownloadFileName" id="hfSourceDownloadFileName" />
                     
                 </div>
             </div>
@@ -196,15 +197,24 @@
 <script>
     
     $(document).ready(function () {
-       GatAllAttachment();
-        $("#AttachmentControlmodal").modal({
-            backdrop: 'static',
-            // keyboard: false
-        });
-        $("#AttachmentControlmodal").modal('show');
+        // Wait for the module to load before calling GatAllAttachment
+        function initAttachmentControl() {
+            if (typeof window.GatAllAttachment === 'function') {
+                window.GatAllAttachment();
+                $("#AttachmentControlmodal").modal({
+                    backdrop: 'static',
+                    // keyboard: false
+                });
+                $("#AttachmentControlmodal").modal('show');
+            } else {
+                // Retry after a short delay if not loaded yet
+                setTimeout(initAttachmentControl, 50);
+            }
+        }
+        initAttachmentControl();
         //loadatta();
-        
-         
+
+
     });
 </script>
 

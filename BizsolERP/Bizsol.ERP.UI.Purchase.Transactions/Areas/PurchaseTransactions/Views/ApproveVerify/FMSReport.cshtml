@@ -1,0 +1,22 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/FMSReport.js"></script>
+<style>
+    .fixed-width-table th, .fixed-width-table td {
+        white-space: nowrap;
+        min-width: auto;
+    }
+</style>
+<div class="table-wrapper ">
+    <table id="FMSReport" class="fixed-width-table table">
+        <thead id="table-header-FMSReport">
+        </thead>
+        <tbody id="table-body-FMSReport">
+        </tbody>
+    </table>
+</div>
+<div class="paginator" id="paginator-FMSReport">
+</div>

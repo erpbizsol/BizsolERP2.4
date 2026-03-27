@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Bizsol.WebERP.UI.Finance.Transactions")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+24cdec779b1d43a53bf6efddee7b197d9fef2009")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bc9566f678bf89b65e44fe4922c19fa2046fd570")]
 [assembly: System.Reflection.AssemblyProductAttribute("Bizsol.WebERP.UI.Finance.Transactions")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Bizsol.WebERP.UI.Finance.Transactions")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

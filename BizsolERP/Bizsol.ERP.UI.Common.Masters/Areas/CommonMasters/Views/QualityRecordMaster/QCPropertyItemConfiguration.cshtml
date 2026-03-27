@@ -1,0 +1,161 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/QCPropertyItemConfiguration.js"></script>
+<style>
+    .select2-container--open .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+    
+    .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+    
+    .card {
+        overflow: visible !important;
+    }
+    
+    .card-body {
+        overflow: visible !important;
+    }
+    
+    #dvFrom {
+        overflow: visible !important;
+    }
+    
+    .row {
+        overflow: visible !important;
+    }
+    
+    .select2-results {
+        max-height: 200px !important;
+        overflow-y: auto !important;
+    }
+    
+    .select2-dropdown {
+        position: absolute !important;
+    }
+    .form-control-sm {
+        position: relative;
+    }
+    
+    .main-content {
+        overflow: visible !important;
+    }
+    
+    .col-md-3, .col-md-2 {
+        overflow: visible !important;
+    }
+
+    /* Responsive table height based on screen height (excluding header, paginator and footer) */
+    #dvGrid .table-wrapper {
+        max-height: calc(100vh - 320px);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+    #dvFrom .table-wrapper {
+        max-height: calc(100vh - 390px);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+    /* Sticky table header */
+    #dvGrid .table-wrapper thead,
+    #dvFrom .table-wrapper thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #fff;
+    }
+
+    .paginator {
+        position: sticky;
+        bottom:15px;
+        background-color: #fff;
+        z-index: 5;
+    }
+</style>
+<div>
+    <div class="row g-2 mb-3" id="dvIsProperty" style="display:block;">
+        <div class="col-md-2">
+            <input type="checkbox" id="chkIsProperty" checked />
+            <label for="chkIsProperty" class="form-label fw-semibold"> Without Property <span class="text-danger">*</span></label>
+        </div>
+    </div>
+</div>
+<div class="card p-2">
+    <div id="dvGrid" style="display:block;">
+        <div class="row text-end">
+            <div class="col-md-12">
+                <button class="btn btn-success icon-height mb-1" title="Create New" onclick="CreateNew()">Create New</button>
+                <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button>
+            </div>
+        </div>
+        <div class="table-wrapper ">
+            <table id="tblItemConfiguration" class="fixed-width-table table">
+                <thead id="table-header">
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tblItemConfiguration">
+        </div>
+    </div>
+    <div id="dvFrom" style="display:none;">
+        <div class="row g-2 mb-3">
+            <div class="col-md-3">
+                <label for="txtItemCategory" class="form-label fw-semibold">Item Category <span class="text-danger">*</span></label>
+                <select id="txtItemCategory" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+            </div>
+            <div class="col-md-3">
+                <label for="txtItemName" class="form-label fw-semibold">Item Name <span class="text-danger">*</span></label>
+                <select id="txtItemName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+            </div>
+        </div>
+        <div class="row text-end">
+            <div class="col-md-12">
+                <button class="btn btn-success icon-height mb-1" title="Edit" id="btnSave" onclick="SaveData()">Save</button>
+                <button class="btn btn-danger icon-height mb-1" title="Edit" id="btnBack" onclick="Back()">Back</button>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table id="tblItemConfigurationEditable" class="fixed-width-table table">
+                <thead id="table-headerEditable">
+                </thead>
+                <tbody id="table-bodyEditable">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tblItemConfigurationEditable">
+        </div>
+    </div>
+</div>
+<div class="modal fade rps-detail-modal" id="dvRemark" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Remark</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="txtRemark" class="form-label filter-label">Remark </label> <span class="text-danger">*</span>
+                    <input type="text" id="txtRemark" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" />
+                    <input type="hidden" id="hfCode" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-12 text-end">
+                    <button type="button" class="btn btn-success icon-height" onclick="DeleteItemConfiguration()">Ok</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

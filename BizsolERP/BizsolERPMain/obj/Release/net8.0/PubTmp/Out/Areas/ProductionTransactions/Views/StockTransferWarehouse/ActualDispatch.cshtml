@@ -9,37 +9,30 @@
     .modal-dialog {
         max-width: 1050px;
     }
-
     #ActualDispatch tfoot {
         position: sticky;
         bottom: 0;
         z-index: 0; 
     }
-
     #ActualDispatch tfoot td, #ActualDispatch tfoot th {
         background-color: #d5dde5; 
     }
-
-
     .mt-4 {
         margin-top: 1.6rem !important;
     }
+
+    .fixed-height-table{
+        height:470px;
+    }
 </style>
 <div class="tab-section">
-    <ul class="nav nav-tabs" id="myTab" role="tablist">
-         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="true"> Actual Dispatch</button>
-        </li> 
-    </ul>
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
             <div class="row">
                 <div class="col-md-4 form-group">
                     <label for="partyName" class="form-label">Party Name <span class="text-danger">*</span></label>
-                    @* <input list="ddlPartyNameList" id="ddlPartyName" name="ddlPartyName" class="form-control form-control-sm box_border" placeholder="Party Name" autocomplete="off" required> *@
                     <select id="ddlPartyName" class="form-control form-control-sm box_border">
                     </select>
-                    @* <datalist id="ddlPartyNameList"></datalist> *@
                 </div>
                     <div class="col-md-2 align-items-end mt-4">
                     <button type="button" id="btnShow" class="btn btn-primary btn-height" onclick="onPartyNameSelectGrid()">Show</button>
@@ -49,7 +42,7 @@
         </div>
     </div>
 </div>
-<div id="tblActualDispatch">
+<div id="tblActualDispatch" style="display: none;">
         <div class="table-wrapper fixed-height-table">
             <table id="ActualDispatch" class="fixed-width-table table">
                 <thead id="table-header-ActualDispatch">

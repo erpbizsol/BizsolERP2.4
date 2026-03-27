@@ -28,7 +28,9 @@ function ShowDashboard() {
     } else {
         ShowTodayData = 'N';
     }
-  
+    $('#btnShow').prop('hidden', true); // Disable the button to prevent multiple clicks
+    $('#btnLoading').prop('hidden', false);
+
     BindDashBoard();
 }
 
@@ -46,19 +48,40 @@ function GetCRMDashboardRefreshText() {
 function GetSalespersonList() {
     CRMDashboardService.GetSalespersonList().then(function (response) {
         if (response.length > 0) {
-            $('#txtSalesPersonlist').empty();
-            var options = '<option value="All" selected>All</option>';
-            for (var i = 0; i < response.length; i++) {
-                options += `<option value="${response[i].PersonName}" data-code="${response[i].Code}">${response[i].PersonName}</option>`;
-            }
-            $('#txtSalesPersonlist').html(options);
-            $('#txtSalesPerson').on('change', function () {
-                const selectedName = $(this).val();
-                const selectedOption = $(`#txtSalesPersonlist option[value="${selectedName}"]`);
-                const code = selectedOption.attr('data-code') || '0';
-                marketingManMaster_Code = code;
+            //$('#txtSalesPersonlist').empty();
+            //var options = '<option value="All" selected>All</option>';
+            //for (var i = 0; i < response.length; i++) {
+            //    options += `<option value="${response[i].PersonName}" data-code="${response[i].Code}">${response[i].PersonName}</option>`;
+            //}
+            //$('#txtSalesPersonlist').html(options);
 
+            BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })), 'FirstItemAll');
+            $('#ddlSalesPersonlist').select2({
+                // allowClear: true,
+                matcher: function (params, data) {
+                    // If there's no search term, return all data
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+
+                    // Match items that start with the search term
+                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                        return data;
+                    }
+
+                    // Return null if no match
+                    return null;
+                }
             });
+
+            //$('#txtSalesPerson').on('change', function () {
+            //    const selectedName = $(this).val();
+            //    const selectedOption = $(`#txtSalesPersonlist option[value="${selectedName}"]`);
+            //    const code = selectedOption.attr('data-code') || '0';
+            //    marketingManMaster_Code = code;
+
+            //});
+
         } else {
             $('#txtSalesPersonlist').empty();
         }
@@ -69,18 +92,37 @@ function GetSalespersonList() {
 
     });
 }
+
+function BindSelectList(element, list, FirstItem) {
+    let option = '';
+
+    option = '<option value="0">All</option>';
+
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
+
 function BindDashBoard() {
+   var marketingManMaster_Code = $('#ddlSalesPersonlist option:selected').val();
+    
     CRMDashboardService.GetCRMDashboardDatalist(DetailKey, marketingManMaster_Code, AccountDesp = "All", OnlyToday)
         .then(function (response) {
             if (response && response.length > 0) {
                 bindDashboardData(response);
-
+                $('#btnShow').prop('hidden', false);
+                $('#btnLoading').prop('hidden', true);
             } else {
                 toastr.error("No records found.");
+                $('#btnShow').prop('hidden', false);
+                $('#btnLoading').prop('hidden', true);
             }
         });
 }
 function bindDashboardDatalist() {
+  var  marketingManMaster_Code = $('#ddlSalesPersonlist  option:selected').val();
+   
 
     CRMDashboardService.GetCRMDashboardDetailDatalist(DetailKey = "Marketing Man Wise dealer wise Overdue", marketingManMaster_Code, AccountDesp = "All", OnlyToday)
         .then(function (redata) {
@@ -107,6 +149,8 @@ function bindDashboardDatalist() {
 
 }
 function bindDashboardDatalistOutstanding() {
+   var marketingManMaster_Code = $('#ddlSalesPersonlist option:selected').val();
+    
     CRMDashboardService.GetCRMDashboardDetailDatalist(DetailKey = "Marketing Man wise dealer wise current month Outstanding", marketingManMaster_Code, AccountDesp = "All", OnlyToday)
         .then(function (resdata) {
             if (resdata.length > 0) {

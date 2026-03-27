@@ -57,7 +57,7 @@ function getWarehouse() {
                 if (selectedOption) {
                     Godownmaster_Code = selectedOption.getAttribute("value");
                     getPendingRoll(Godownmaster_Code, "0");
-                    $('#tblStockReceive').hide();
+                    $('#tblStockReceive').css('visibility', 'hidden');
                     $('#fileInput').val('');
                 }
             });
@@ -127,7 +127,7 @@ function StockTransferWherehouseReceive() {
             StockTransferReceiveService.GetPendingRoll(Godownmaster_Code, obj[0].rollIdNo, G_IsReceivedPallet).then(function (res) {
                 if (res && Array.isArray(res) && res.length > 0) {
                     HideLoader();
-                    $('#tblStockReceive').hide();
+                    $('#tblStockReceive').css('visibility', 'hidden');
                     $('#myModal').modal({
                         backdrop: 'static',
                     });
@@ -166,7 +166,7 @@ function StockTransferWherehouseReceive() {
         }
         else {
             toastr.error('Please select a file to proceed');
-            $('#StockTransferReceive').hide();
+            $('#StockTransferReceive').css('visibility', 'hidden');
             return;
         }
     } else {
@@ -175,7 +175,7 @@ function StockTransferWherehouseReceive() {
             StockTransferReceiveService.StockTransferWherehouseReceive(JSON.stringify(obj)).then(function (response) {
                 if (response && response.length > 0) {
                     HideLoader();
-                    $('#tblStockReceive').show();
+                    $('#tblStockReceive').css('visibility', 'visible');
                     const stringFilterColumn = [];
                     const numericFilterColumn = [];
                     const dateFilterColumn = [];
@@ -201,7 +201,7 @@ function StockTransferWherehouseReceive() {
         }
         else {
             toastr.error('Please select a file to proceed');
-            $('#tblStockReceive').hide();
+            $('#tblStockReceive').css('visibility', 'hidden');
             return;
         }         
     }
@@ -274,7 +274,7 @@ function SaveReceivedData() {
             StockTransferReceiveService.ItemWaiseVerifyRollIdInPackingList(JSON.stringify(Data)).then(function (response) {
                 if (response.Status === 'Y') {
                     HideLoader();
-                    $('#tblStockReceive').show();
+                    $('#tblStockReceive').css('visibility', 'visible');
                     toastr.success(response.Msg);
                     let msgData = []
                     msgData.push({
@@ -349,7 +349,7 @@ function InitScanQRCodeByCameraControl(outputQRTextElementID, callBackFunctionNa
 }
 function StrockTransferWarehouse_btnScanQR() {
 
-    InitScanQRCodeByCameraControl("txtScanIdentification", "StrockTransferWarehouse_CallbackScanQRCode");
+    InitScanQRCodeByCameraControl("ddlRollIdNo", "StrockTransferWarehouse_CallbackScanQRCode");
 }
 function StrockTransferWarehouse_CallbackScanQRCode() {
     StockTransferWherehouseReceive();
@@ -366,7 +366,7 @@ function StrockTransferWarehouse_ShowPallets() {
     if (Godownmaster_Code > 0) {
         $('#ddlRollIdNo').val('');
         getPendingRoll(Godownmaster_Code, "0");
-        $('#tblStockReceive').hide();
+        $('#tblStockReceive').css('visibility', 'hidden');
         $('#fileInput').val('');
     }
     

@@ -1,0 +1,596 @@
+@{
+    Layout = "~/Views/Shared/_Layout1.cshtml";
+}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Masters/js/EnquiryMaster.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Marketing.Masters/css/EnquiryMaster.css" rel="stylesheet" />
+@* <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script> *@
+<script src="https://cdn.jsdelivr.net/gh/ankitayodhya2002/CDN@main/Filter.js"></script>
+
+@* <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"> *@
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    /* Jilva-like theme (scoped to this page) */
+    #dvEnquiry, #dvLoad, #dvFollowup {
+        font-family: 'Poppins', Arial, sans-serif;
+        color: #1f2d3d;
+    }
+    .card {
+        border: 1px solid #e6e9f0;
+        border-radius: 10px;
+        box-shadow: 0 6px 16px rgba(31,45,61,0.06);
+    }
+    .card > .card-header, .card > .ps-2.p-1 {
+        border-radius: 10px 10px 0 0;
+    }
+    /* Section headers */
+    .card.ps-2.p-1 {
+        background: linear-gradient(90deg,#275481 0%, #2f6aa6 100%) !important;
+        color:#fff !important;
+        font-weight:600 !important;
+        letter-spacing:.2px;
+    }
+    /* Tabs header strip */
+    .card-header-tabs {
+        display:flex;
+        gap:8px;
+        padding:6px 8px;
+        background:#f8fafc;
+        border:1px solid #e6e9f0;
+        border-radius:10px;
+        margin-bottom:10px;
+        align-items:center;
+    }
+    .card-header-tabs .tab {
+        border:none;
+        background:#ffffff;
+        color:#275481;
+        padding:8px 14px;
+        font-weight:600;
+        border-radius:8px;
+        box-shadow: 0 2px 6px rgba(31,45,61,0.06);
+        transition: all .2s ease;
+        white-space:nowrap;
+    }
+    .card-header-tabs .tab:hover { background:#eef3f9; }
+    .card-header-tabs .tab.active {
+        background:#275481;
+        color:#ffffff;
+    }
+    /* Inputs */
+    .box_border.form-control, .box_border.form-select {
+        border-radius:8px;
+        border-color:#d7deea;
+    }
+    .box_border.form-control:focus, .box_border.form-select:focus {
+        border-color:#275481;
+        box-shadow:0 0 0 .2rem rgba(39,84,129,.15);
+    }
+    
+    .btn-success { background:#2fb380; border-color:#28a571; }
+    .btn-danger { background:#ef476f; border-color:#e23a61; }
+    .btn-primary { background:#275481; border-color:#275481; }
+    .btn-success:hover, .btn-danger:hover, .btn-primary:hover { filter: brightness(0.95); }
+    /* Tables */
+    .fixed-width-table.table thead { background:#f3f6fb; }
+    /* .fixed-width-table.table th { color:#4a5a6a; font-weight:600; } */
+
+    /* Make tables and wrappers responsive */
+    .table-wrapper {
+        width:100%;
+        overflow-x:auto;
+    }
+    .fixed-width-table.table {
+        width:100%;
+        min-width:700px; /* keep layout on larger screens */
+    }
+    
+</style>
+
+<div id="dvLoad" style="display:block;" class="card p-2">
+    <div class="row">
+        <div class="col-md-3">
+            <label for="ddlSalesPerson" class="form-label">Sales Person <span class="text-danger">*</span></label>
+            <select id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border">
+            </select>
+        </div>
+        <div class="col-md-3" >
+            <label for="ddlStatus" class="form-label">Status <span class="text-danger">*</span></label>
+            <input list="ddlStatusList" id="ddlStatus" name="ddlStatus" class="form-control form-control-sm box_border" onclick="$(this).val('');" placeholder="" autocomplete="off" value="All">
+            <datalist id="ddlStatusList"></datalist>
+        </div>
+        <div class="col-md-6" style="margin-top:24px;text-align:right;">
+            <button class="btn btn-success btn-height" onclick="CreateNew()"><i class="fa fa-plus" aria-hidden="true"></i></button>
+        </div>
+    </div>
+    <div id="tblLeadList" class="mt-1">
+        <div class="table-wrapper fixed-height-table">
+            <table id="table" class="table table-sm table-bordered">
+                <thead id="table-header">
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-table">
+        </div>
+    </div>
+</div>
+<div class="p-2" id="dvEnquiry" style="display:none;margin-top: 20px;">
+    <div>
+        <div class="card-header-tabs">
+            <button class="tab active" onclick="HideShowTab('1',this)">Enquiry</button>
+            <button class="tab" onclick="HideShowTab('2',this)">Contact Person Details</button>
+            <button class="tab" onclick="HideShowTab('3',this)">Product Details</button>
+            <button type="button" class="btn btn-danger icon-height" onclick="BackEnquiry()">Back To List</button>
+        </div>
+        <div class="card p-2" id="dvTab1" style="display:block;">
+            <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Enquiry</div>
+            <div class="customer-type">
+                <label class="customertype"><input type="radio" name="customerType" value="Existing" checked hidden> Existing Customer</label>
+                <label class="customertype"><input type="radio" name="customerType" value="New"  hidden> New Customer</label>
+                <input type="hidden" id="hfCode" name="hfCode" value="0">
+            </div>
+            <div class="form-grid">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="ddlCompanyName" class="form-label">Customer/Company Name <span class="text-danger">*</span></label>
+                        <select id="ddlCompanyName" name="ddlCompanyName" class="form-control form-control-sm box_border" style="display:block;">
+                    </select>
+                        <input type="text" id="txtCompanyName" name="txtCompanyName" class="form-control form-control-sm box_border" style="display:none;" maxlength="50" autocomplete="off">
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlEnquiryType" class="form-label">Enquiry Type <span class="text-danger">*</span></label>
+                        <select id="ddlEnquiryType" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+                    <div class="col-md-3">
+                        <label for="txtEmail" class="form-label">Email</label>
+                        <input type="text" id="txtEmail" class="form-control form-control-sm box_border" autocomplete="off">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="txtContactNo" class="form-label">Mobile No </label>
+                        <input type="text" id="txtContactNo" class="form-control form-control-sm box_border Phone" autocomplete="off" maxlength="10">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="txtMobileNo" class="form-label">Contact No.</label>
+                        <input type="text" id="txtMobileNo" class="form-control form-control-sm box_border Phone" autocomplete="off" maxlength="15">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="txtEnquiryDate" class="form-label">Enquiry Date <span class="text-danger">*</span></label>
+                        <input type="date" id="txtEnquiryDate" class="form-control form-control-sm box_border" autocomplete="off">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="ddlLeadSource" class="form-label">Enquiry Source <span class="text-danger">*</span></label>
+                        <select id="ddlLeadSource" class="form-control form-control-sm box_border">
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="txtWebsite" class="form-label">Website</label>
+                        <input type="text" id="txtWebsite" class="form-control form-control-sm box_border" autocomplete="off" maxlength="150">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="txtReference" class="form-label">Reference </label>
+                        <input type="text" id="txtReference" class="form-control form-control-sm box_border" autocomplete="off" maxlength="50">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="txtReferenceDate" class="form-label">Reference Date </label>
+                        <input type="date" id="txtReferenceDate" class="form-control form-control-sm box_border" autocomplete="off">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="txtAddressLine1" class="form-label">Address Line 1 </label>
+                        <input type="text" id="txtAddressLine1" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="txtAddressLine2" class="form-label">Address Line 2 </label>
+                        <input type="text" id="txtAddressLine2" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
+                    </div>
+                    
+                <div class="col-md-3">
+                    <label for="ddlCountry" class="form-label">Country</label>
+                    <select id="ddlCountry" name="ddlCountry" class="form-control form-control-sm box_border"></select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlState" class="form-label">State </label>
+                    <select id="ddlState" name="ddlState" class="form-control form-control-sm box_border"></select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlCity" class="form-label">City/Town </label>
+                    <select id="ddlCity" name="ddlCity" class="form-control form-control-sm box_border"></select>
+                </div>
+                    <div class=" col-md-3">
+                        <label for="txtPinCode" class="form-label">PIN / ZIP Code </label>
+                        <input type="text" id="txtPinCode" name="txtPinCode" class="form-control form-control-sm box_border Phone" autocomplete="off" maxlength="6">
+                    </div>
+                <div class="col-md-3">
+                    <label for="txtAttachment" class="form-label">Attachment </label>
+                        <button type="button" id="txtAttachment" onclick="ViewAttachment()" class="form-control form-control-sm box_border" style="background-color:#2c639b;color:white;" autocomplete="off">Upload</button>
+                </div>
+                <div class="col-md-3">
+                    <label for="txtRemarks" class="form-label">Remarks </label>
+                        <textarea id="txtRemarks" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500"></textarea>
+                </div>
+            </div>
+        </div>
+        </div>
+        <div id="dvTab4" class="card p-2" style="display:block;">
+            <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Follow Up Details</div>
+                <div class="row">
+                    <div class="col-12">
+                         <div class="row">
+                            <div class="col-md-3">
+                            <label for="ddlAssignSalesman" class="form-label">Assign To Salesman </label>
+                                <select id="ddlAssignSalesman" class="form-control form-control-sm box_border">
+                            </select>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <label for="txtNextFollowupDate" class="form-label">Next Followup Date</label>
+                                <input type="date" id="txtNextFollowupDate" class="form-control form-control-sm box_border" autocomplete="off">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="ddlNextFollowupMode" class="form-label">Next Followup Mode </label>
+                                    <select id="ddlNextFollowupMode" class="form-control form-control-sm box_border">
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <div id="dvTab2" class="card p-2" style="display:block;">
+            <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Contact Person Details</div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="table-responsive-wrapper">
+                            <table id="ContactPersonGrid" class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="min-width:150px !important;">Name </th>
+                                        <th style="min-width:150px !important;">Department </th>
+                                        <th style="min-width:150px !important;">Designation </th>
+                                        <th style="min-width:150px !important;">Email Id </th>
+                                        <th style="min-width:150px !important;">Contact No </th>
+                                        <th style="min-width:50px !important;">Default </th>
+                                        <th style="min-width:90px !important;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ContactPersonGridBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <div id="dvTab3" class="card p-2" style="display:block;">
+           <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Product Details</div>
+                <div class="table-responsive-wrapper">
+                    <table id="ProductDetailsGrid" class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                            <th style="min-width:100px">Product Name </th>
+                            <th style="min-width:200px">Specification </th>
+                            <th style="min-width:100px">UOM </th>
+                            <th style="min-width:100px">Quantity </th>
+                            <th style="min-width:150px">Remarks </th>
+                            <th style="min-width:90px">Actions </th>
+                            </tr>
+                        </thead>
+                        <tbody id="ProductDetailsGridBody">
+                            <!-- Product rows will be rendered here by JS -->
+                        </tbody>
+                    </table>
+            </div>
+        </div>
+        <div style="text-align:right;">
+            <button type="button" class="btn btn-primary icon-height" onclick="SaveLeadEnquiryData()">Save</button>
+            @* <button type="button" class="btn btn-danger icon-height" onclick="BackEnquiry()">Back To List</button> *@
+        </div>
+    </div>
+</div>
+<div id="dvFollowup" style="display:none;">
+    @* <div id="dvFollowTab1" class="card p-2" style="display:block;">
+        <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Follow Up Details</div>
+       <div class="form-grid">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="txtEnquiryNumber" class="form-label">Enquiry Number <span class="text-danger">*</span></label>
+                    <input type="text" id="txtEnquiryNumber" disabled name="txtEnquiryNumber" class="form-control form-control-sm box_border" placeholder="" autocomplete="off" maxlength="50">
+                </div>
+                <div class="col-md-3">
+                    <label for="txtFollowupEnquiryDate" class="form-label">Enquiry Date <span class="text-danger">*</span></label>
+                    <input type="text" id="txtFollowupEnquiryDate" disabled name="txtFollowupEnquiryDate" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
+                </div>
+                <div class="col-md-3">
+                    <label for="txtFollowupCustomerName" class="form-label">Company/Customer Name <span class="text-danger">*</span></label>
+                    <input type="text" id="txtFollowupCustomerName" disabled name="txtFollowupCustomerName" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
+                </div>
+                <div class="col-md-3" style="text-align:right;margin-top:23px;">
+                    <input type="button" style="height:32px;line-height:1px;" class="btn btn-success" onclick="CreateNewFollowUp()" value="+" />
+                </div>
+            </div>
+        </div> 
+         <div id="tblFollowUp" style="display:none;">
+            <div class="table-wrapper">
+                <table id="FollowUp" class="table table-sm table-bordered">
+                    <thead id="FollowUp-header">
+                    </thead>
+                    <tbody id="FollowUp-body">
+                    </tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-FollowUp">
+            </div>
+        </div>
+        <div style="text-align:right;">
+            <button type="button" class="btn btn-danger icon-height" onclick="BackMaster()">Back To Enquiry List</button>
+        </div>
+    </div> *@
+    <div id="dvFollowTab2" class="card p-2" style="display:none;">
+        <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Follow Up Details</div>
+        <div class="form-grid">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="txtOurRemarks" class="form-label">Our Remarks<span class="text-danger">*</span></label>
+                    <textarea id="txtOurRemarks" name="txtOurRemarks" class="form-control form-control-sm box_border" placeholder="" autocomplete="off" maxlength="500"></textarea>
+                    <input type="hidden" id="hfFollowUpEnquiryMaster_Code" class="form-control form-control-sm box_border" autocomplete="off" value="0">
+                    <input type="hidden" id="hfFollowUpMaster_Code" class="form-control form-control-sm box_border" autocomplete="off" value="0">
+                </div>
+                <div class="col-md-4">
+                    <label for="txtCustomerRemarks" class="form-label">Customer Remarks<span class="text-danger">*</span></label>
+                    <textarea id="txtCustomerRemarks" name="txtCustomerRemarks" class="form-control form-control-sm box_border" placeholder="" autocomplete="off" maxlength="500"></textarea>
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlCustomerContactPersonName" class="form-label">Customer Contact Person Name<span class="text-danger">*</span></label>
+                    <select id="ddlCustomerContactPersonName" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+                <div class="col-md-1" style="margin-top:26px;">
+                    <button class="btn btn-primary icon-height" style="font-size:20px" onclick="OpenContactPersonModal()">+</button>
+                </div>
+                <div class="col-md-4">
+                    <label for="txtFollowUpDateFollowUp" class="form-label">Follow Up Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtFollowUpDateFollowUp" name="txtFollowUpDateFollowUp" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
+                </div>
+                <div class="col-md-4">
+                    <label for="ddlFollowUpModeFollowUp" class="form-label">Follow Up Mode <span class="text-danger">*</span></label>
+                    <select id="ddlFollowUpModeFollowUp" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+                <div class="col-md-4" style="margin-top:28px;">
+                    <input type="checkbox" checked id="chkFollowUpRequired" name="chkFollowUpRequired" autocomplete="off">
+                    <label for="chkFollowUpRequired" class="form-label">Next Follow-up Required</label>
+                </div>
+                <div class="col-md-4" id="dvNextFollowUpDateFollowUp" style="display:block">
+                    <label for="txtNextFollowUpDateFollowUp" class="form-label">Next Follow Up Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtNextFollowUpDateFollowUp" name="txtNextFollowUpDateFollowUp" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
+                </div>
+                <div class="col-md-4" id="dvNextFollowUpModeFollowUp" style="display:block">
+                    <label for="ddlNextFollowUpModeFollowUp" class="form-label">Next Follow Up Mode <span class="text-danger">*</span></label>
+                    <select id="ddlNextFollowUpModeFollowUp" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+                <div class="col-md-4" id="dvddlLeadStatus" style="display:block">
+                    <label for="ddlLeadStatus" class="form-label">Status<span class="text-danger">*</span></label>
+                    <select id="ddlLeadStatus" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+                <div class="col-md-4" style="margin-top: 26px;">
+                    <button type="button" id="btnFollowUpSave" class="btn btn-success icon-height" onclick="SaveEnquiryFollowUp()">Save</button>
+                    <button type="button" id="btnFollowUpReset" class="btn btn-info icon-height" onclick="ResetEnquiryFollowUp()">Reset</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="BackFolloupMaster()">Back To List</button>
+                </div>
+            </div>
+        </div>
+        <div id="tblFollowUp" style="display:none;" class="mt-2">
+            <div >
+                <table id="FollowUp" class="table table-sm table-bordered">
+                    <thead id="FollowUp-header">
+                    </thead>
+                    <tbody id="FollowUp-body">
+                    </tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-FollowUp">
+            </div>
+        </div>
+        @* <div style="text-align:right;">
+            <button type="button" class="btn btn-danger icon-height" onclick="BackMaster()">Back To List</button>
+        </div> *@
+    </div>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="deleteReason" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="DeleteModal()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="ContactModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="deleteContactReason" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtContactPersonCode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="DeleteContactPersonModal()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModalContactPerson()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="ProductModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="deleteProductReason" class="form-control" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtProductCode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="DeleteProductModal()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModalProduct()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="VerifyModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Verify/Reject</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="txtVerifyReason" class="form-label">Reason </label>
+                    <input type="text" id="txtVerifyReason" class="form-control" placeholder="Please enter reason.." autocomplete="off" />
+                    <input type="hidden" id="txtEnquiryCode" class="form-control" placeholder="" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="Verify()">Verify</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="Reject()">Reject</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseVerifyModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="AssignModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Re-Assign</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="ddlAssignTo" class="form-label">Assign To </label>
+                    <select id="ddlAssignTo" class="form-control form-control-sm box_border">
+                    </select>
+                    <input type="hidden" id="txtEnquiryAssignCode" class="form-control" placeholder="" />
+                </div>
+            
+            <div id="tblAssignDetails" style="display:none;margin-top:5px;">
+                <div class="table-wrapper">
+                    <table id="tblAssignDetails" class="table table-sm table-bordered">
+                        <thead id="AssignDetails-header">
+                        </thead>
+                        <tbody id="AssignDetails-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-tblAssignDetails">
+                </div>
+            </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary icon-height" onclick="Assign()">Assign</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseAssignModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="FollowUpModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="txtFollowUpReason" class="form-label">Reason </label>
+                    <input type="text" id="txtFollowUpReason" class="form-control" placeholder="Please enter reason.." autocomplete="off" />
+                    <input type="hidden" id="txtFollowUpMasterCode" class="form-control" placeholder="" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary icon-height" onclick="DeleteFollowModal()">Delete</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseFollowUpModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="ContactPersonModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-lg">
+            <div class="modal-header">
+                <h5 class="modal-title">New Contact Person</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="txtModalName" class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" id="txtModalName" name="txtModalName" class="form-control form-control-sm box_border" placeholder="" autocomplete="off" maxlength="50">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="ddlModalDepartment" class="form-label">Department <span class="text-danger">*</span></label>
+                            <input type="text" id="ddlModalDepartment" class="form-control form-control-sm box_border"/>
+                               
+                        </div>
+                        <div class="col-md-6">
+                            <label for="ddlModalDesignation" class="form-label">Designation <span class="text-danger">*</span></label>
+                            <input type="text" id="ddlModalDesignation" class="form-control form-control-sm box_border"/>
+                            
+                        </div>
+                        <div class="col-md-6">
+                            <label for="txtModalEmailId" class="form-label">Email Id <span class="text-danger">*</span></label>
+                            <input type="text" id="txtModalEmailId" name="txtModalEmailId" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="txtModalPersonContactNo" class="form-label">Contact No <span class="text-danger">*</span></label>
+                            <input type="text" id="txtModalPersonContactNo" name="txtModalPersonContactNo" class="form-control form-control-sm box_border Phone" autocomplete="off" maxlength="10">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary icon-height" onclick="SaveModalContactPersonDetails()">Save</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseContactPersonModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="EnquiryDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Enquiry Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">×</span></button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div class="col-md-12">
+                    <div id="EnquiryDetailsModaldv"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseEnquiryDetails()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="EnquiryMaster_AttachmentControlmodal"></div>
+

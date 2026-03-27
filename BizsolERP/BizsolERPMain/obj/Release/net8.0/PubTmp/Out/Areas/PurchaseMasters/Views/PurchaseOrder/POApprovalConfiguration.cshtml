@@ -1,0 +1,466 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Masters/js/POApprovalConfiguration.js"></script>
+
+<style>
+    /* ── PAGE HEADER ──────────────────────────────────── */
+    .pac-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 18px rgba(102,126,234,0.28);
+    }
+    .pac-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .pac-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; margin-top: 3px; }
+
+    /* ── CARDS ────────────────────────────────────────── */
+    .pac-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 14px;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease;
+    }
+    .pac-card:hover { box-shadow: 0 4px 20px rgba(102,126,234,0.13); }
+    .pac-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 18px;
+        background: #fafbff;
+        border-bottom: 1px solid #eef0f8;
+        border-left: 4px solid var(--card-clr, #667eea);
+    }
+    .pac-card-num {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: var(--card-clr, #667eea); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.72rem; flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(102,126,234,0.35);
+    }
+    .pac-card-title {
+        font-weight: 700; font-size: 0.84rem;
+        color: #1e293b; letter-spacing: 0.04em; text-transform: uppercase;
+        flex: 1;
+    }
+    .pac-card-icon { color: var(--card-clr, #667eea); font-size: 1rem; }
+    .pac-card-body { padding: 16px 18px; }
+
+    /* ── FIELD ROWS ───────────────────────────────────── */
+    .pac-field-row {
+        display: flex; align-items: center;
+        gap: 8px; margin-bottom: 10px;
+    }
+    .pac-field-lbl {
+        font-size: 0.79rem; font-weight: 600; color: #475569;
+        flex: 0 0 155px; min-width: 0;
+    }
+    .pac-field-ctrl { flex: 1; min-width: 0; }
+    .form-control, .form-select {
+        border: 1.5px solid #ddd6fe;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        background-color: #f5f3ff;
+        color: #1e1b4b;
+        transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+        outline: none;
+    }
+    .form-control[readonly] {
+        background-color: #ede9fe;
+        border-color: #c4b5fd;
+        color: #5b21b6;
+        cursor: default;
+    }
+    .form-control-sm, .form-select-sm { height: 30px; padding: 3px 8px; font-size: 0.8rem; }
+
+    /* ── LEVELS TABLE ─────────────────────────────────── */
+    .levels-table { width: 100%; border-collapse: collapse; }
+    .levels-table thead tr th {
+        background: #4f46e5;
+        color: #fff; font-size: 0.73rem; font-weight: 600;
+        text-align: center; vertical-align: middle;
+        padding: 9px 8px; white-space: nowrap;
+        border: none; letter-spacing: 0.03em;
+    }
+    .levels-table thead tr th:first-child { border-radius: 8px 0 0 0; }
+    .levels-table thead tr th:last-child  { border-radius: 0 8px 0 0; }
+    .levels-table tbody tr { transition: background 0.15s; }
+    .levels-table tbody tr:hover { background: #f5f3ff; }
+    .levels-table tbody tr td {
+        padding: 8px 9px; vertical-align: middle;
+        border: 1px solid #ede9fe; font-size: 0.8rem; color: #374151;
+    }
+
+    /* ── BADGES ───────────────────────────────────────── */
+    .level-badge {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px; border-radius: 50%;
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        color: #fff; font-weight: 800; font-size: 0.76rem;
+        box-shadow: 0 2px 8px rgba(102,126,234,0.3);
+    }
+    .type-badge-user {
+        background: linear-gradient(135deg,#10b981,#059669);
+        color: #fff; border-radius: 20px; padding: 3px 10px;
+        font-size: 0.72rem; font-weight: 700; display: inline-block;
+        white-space: nowrap;
+    }
+    .type-badge-project {
+        background: linear-gradient(135deg,#0dcaf0,#0891b2);
+        color: #fff; border-radius: 20px; padding: 3px 10px;
+        font-size: 0.72rem; font-weight: 700; display: inline-block;
+        white-space: nowrap;
+    }
+    .group-tag {
+        display: inline-block; background: #ede9fe; border: 1px solid #c4b5fd;
+        color: #5b21b6; border-radius: 6px; padding: 2px 8px;
+        font-size: 0.72rem; font-weight: 600; margin: 1px 2px;
+    }
+
+    /* ── ACTION BUTTONS ───────────────────────────────── */
+    .btn-edit-level {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px;
+        background: #eff6ff; border: 1.5px solid #bfdbfe; cursor: pointer;
+        color: #2563eb; font-size: 0.8rem; padding: 0;
+        border-radius: 7px; transition: all 0.18s;
+    }
+    .btn-edit-level:hover {
+        background: #2563eb; border-color: #2563eb; color: #fff;
+        transform: scale(1.1); box-shadow: 0 2px 8px rgba(37,99,235,0.35);
+    }
+    .btn-del-level {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px;
+        background: #fee2e2; border: 1.5px solid #fca5a5; cursor: pointer;
+        color: #dc2626; font-size: 0.8rem; padding: 0;
+        border-radius: 7px; transition: all 0.18s;
+    }
+    .btn-del-level:hover {
+        background: #dc2626; border-color: #dc2626; color: #fff;
+        transform: scale(1.1); box-shadow: 0 2px 8px rgba(220,38,38,0.35);
+    }
+    .btn-add-level {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        background: #fff; border: 2px solid rgba(255,255,255,0.65); color: #667eea;
+        border-radius: 10px; padding: 8px 18px; font-weight: 800; font-size: 0.82rem;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.18); white-space: nowrap; cursor: pointer;
+        transition: all 0.2s; line-height: 1;
+    }
+    .btn-add-level:hover {
+        background: #f0f4ff; border-color: #667eea; transform: translateY(-1px);
+        box-shadow: 0 5px 16px rgba(102,126,234,0.35);
+    }
+
+    /* ── FORM SAVE / CANCEL ───────────────────────────── */
+    .btn-pac-save {
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        border: none; color: #fff; border-radius: 10px; padding: 9px 26px;
+        font-size: 0.85rem; font-weight: 700;
+        box-shadow: 0 4px 14px rgba(102,126,234,0.4);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-pac-save:hover {
+        transform: translateY(-1px); box-shadow: 0 6px 18px rgba(102,126,234,0.5); color: #fff;
+    }
+    .btn-pac-cancel {
+        background: linear-gradient(135deg,#f59e0b,#d97706);
+        border: none; color: #fff; border-radius: 10px; padding: 9px 22px;
+        font-size: 0.85rem; font-weight: 700;
+        box-shadow: 0 4px 14px rgba(245,158,11,0.35);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-pac-cancel:hover {
+        transform: translateY(-1px); box-shadow: 0 6px 18px rgba(245,158,11,0.5); color: #fff;
+    }
+
+    /* ── EMPTY STATE ──────────────────────────────────── */
+    .empty-levels {
+        text-align: center; padding: 36px 12px; color: #94a3b8; font-size: 0.85rem;
+    }
+    .empty-levels i { font-size: 2.2rem; margin-bottom: 10px; display: block; color: #c4b5fd; }
+
+    /* ── SELECT2 THEME OVERRIDE (single select) ──────────── */
+    .select2-container--default .select2-selection--single {
+        border: 1.5px solid #ddd6fe !important;
+        border-radius: 8px !important;
+        background-color: #f5f3ff !important;
+        height: 30px !important;
+        padding: 0 8px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+    .select2-container--default.select2-container--focus .select2-selection--single,
+    .select2-container--default.select2-container--open .select2-selection--single {
+        border-color: #667eea !important;
+        background-color: #fff !important;
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.15) !important;
+        outline: none !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #1e1b4b !important;
+        font-size: 0.8rem !important;
+        line-height: 28px !important;
+        padding-left: 0 !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__placeholder {
+        color: #94a3b8 !important;
+        font-size: 0.8rem !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 28px !important;
+        right: 6px !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__clear {
+        color: #94a3b8 !important; font-size: 1rem !important;
+        margin-right: 6px !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__clear:hover {
+        color: #667eea !important;
+    }
+    .select2-dropdown {
+        border: 1.5px solid #ddd6fe !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 16px rgba(102,126,234,0.15) !important;
+        font-size: 0.8rem !important;
+    }
+    .select2-container--default .select2-search--dropdown .select2-search__field {
+        border: 1.5px solid #ddd6fe !important;
+        border-radius: 6px !important;
+        font-size: 0.8rem !important;
+        padding: 4px 8px !important;
+    }
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: #667eea !important;
+    }
+    .select2-container { width: 100% !important; }
+
+    /* ── MISC ─────────────────────────────────────────── */
+    .req { color: #ef4444; }
+    .section-entry-animation { animation: fadeSlideIn 0.3s ease both; }
+    @@keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @@media (max-width: 768px) {
+        .pac-field-lbl { flex: 0 0 110px; font-size: 0.74rem; }
+        .pac-header { border-radius: 10px; }
+    }
+    @@media (max-width: 576px) {
+        #modalDeleteLevel .modal-dialog { margin: auto 12px; }
+    }
+</style>
+
+<!-- ══════════════════════════════════════════════════
+     PAGE HEADER
+═══════════════════════════════════════════════════ -->
+<div class="pac-header section-entry-animation">
+    <div>
+        <h5><i class="fa fa-cogs me-2"></i>PO Approval Configuration</h5>
+        <small>Configure purchase order approval levels &amp; hierarchy</small>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <div id="statLevelChip"
+             style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:5px 14px;text-align:center;min-width:80px;">
+            <div style="font-size:1.1rem;font-weight:800;color:#fff;line-height:1;" id="statLevelCount">—</div>
+            <div style="font-size:0.65rem;color:rgba(255,255,255,0.8);text-transform:uppercase;letter-spacing:0.06em;">Levels</div>
+        </div>
+        <button type="button" onclick="OpenAddForm()" class="btn-add-level" id="btnAddLevel">
+            <i class="fa fa-plus-circle"></i>Add Level
+        </button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     APPROVAL LEVELS TABLE
+═══════════════════════════════════════════════════ -->
+<div class="pac-card section-entry-animation" style="--card-clr:#10b981;">
+    <div class="pac-card-header">
+        <div class="pac-card-num" style="background:linear-gradient(135deg,#10b981,#059669);">
+            <i class="fa fa-list-ol" style="font-size:0.65rem;"></i>
+        </div>
+        <span class="pac-card-title">Approval Levels</span>
+        <span id="levelCountBadge"
+              style="background:rgba(16,185,129,0.12);border:1px solid #bbf7d0;color:#059669;
+                     border-radius:20px;padding:2px 12px;font-size:0.73rem;font-weight:700;"></span>
+        <i class="fa fa-shield-alt pac-card-icon ms-2" style="color:#10b981;"></i>
+    </div>
+    <div class="pac-card-body" style="padding:10px 12px;">
+        <div class="table-responsive">
+            <table class="levels-table" id="tblLevels">
+                <thead>
+                    <tr>
+                        <th style="width:46px;">#</th>
+                        <th style="width:68px;">Level</th>
+                        <th style="min-width:160px;">Level Description</th>
+                        <th style="width:130px;">Approval Type</th>
+                        <th style="min-width:180px;">Group</th>
+                        <th style="width:88px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tblLevelsBody">
+                    <tr>
+                        <td colspan="6" class="empty-levels">
+                            <i class="fa fa-layer-group"></i>
+                            No approval levels configured yet.<br>
+                            Click <strong>Add Level</strong> to get started.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     ADD / EDIT FORM (hidden initially)
+═══════════════════════════════════════════════════ -->
+<div id="divLevelForm" class="pac-card section-entry-animation" style="display:none;--card-clr:#667eea;">
+    <div class="pac-card-header">
+        <div class="pac-card-num">
+            <i class="fa fa-edit" style="font-size:0.65rem;"></i>
+        </div>
+        <span class="pac-card-title" id="formTitle">Add New Level</span>
+        <i class="fa fa-pencil-alt pac-card-icon ms-auto"></i>
+    </div>
+    <div class="pac-card-body">
+        <div class="row g-0">
+
+            <!-- LEFT COLUMN -->
+            <div class="col-md-6 pe-md-3">
+                <div class="pac-field-row">
+                    <span class="pac-field-lbl">Level</span>
+                    <div class="pac-field-ctrl">
+                        <input type="text" id="frmLevel" class="form-control form-control-sm"
+                               readonly placeholder="Auto Generated"
+                               style="font-weight:700;color:#667eea;letter-spacing:0.05em;" />
+                        <input type="hidden" id="frmCode" value="0" />
+                    </div>
+                </div>
+                <div class="pac-field-row">
+                    <span class="pac-field-lbl">Level Description <span class="req">*</span></span>
+                    <div class="pac-field-ctrl">
+                        <input type="text" id="frmLevelDesc" class="form-control form-control-sm"
+                               placeholder="e.g. Purchase Team, Accounts..." maxlength="100" autocomplete="off" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div class="col-md-6 ps-md-3" style="border-left:1px dashed #eef2ff;">
+                <div class="pac-field-row">
+                    <span class="pac-field-lbl">Approval Type <span class="req">*</span></span>
+                    <div class="pac-field-ctrl">
+                        <select id="frmApprovalType" class="form-control form-control-sm"
+                                onchange="OnApprovalTypeChange()">
+                            <option value="">-- Select Type --</option>
+                            <option value="User">User</option>
+                            <option value="Project">Project</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="pac-field-row">
+                    <span class="pac-field-lbl">
+                        Group <span class="req" id="groupReqStar">*</span>
+                        <small id="groupOptionalHint" style="display:none;color:#94a3b8;font-weight:400;">(optional)</small>
+                    </span>
+                    <div class="pac-field-ctrl">
+                        <select id="frmGroup" class="form-control form-control-sm">
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORM INFO BAR -->
+        <div id="formInfoBar"
+             style="display:none;background:rgba(239,68,68,0.06);border:1px solid #fca5a5;
+                    border-radius:8px;padding:7px 14px;margin-top:8px;font-size:0.78rem;color:#dc2626;">
+            <i class="fa fa-info-circle me-1"></i>
+            <span id="formInfoMsg"></span>
+        </div>
+
+        <!-- FORM ACTIONS -->
+        <div class="d-flex gap-2 justify-content-end mt-3 pt-2" style="border-top:1px dashed #eef2ff;">
+            <a  onclick="SaveLevel()" class="btn-pac-save">
+                <i class="fa fa-save me-1"></i>Save Level
+            </a>
+            <a  onclick="CancelForm()" class="btn-pac-cancel">
+                <i class="fa fa-times me-1"></i>Cancel
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     DELETE CONFIRM MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalDeleteLevel" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content" style="border-radius:16px;border:none;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+            <div class="modal-header"
+                 style="background:linear-gradient(135deg,#ef4444,#dc2626);border:none;padding:14px 18px;">
+                <h6 class="modal-title text-white fw-bold mb-0">
+                    <i class="fa fa-trash me-2"></i>Delete Level
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:20px;">
+                <p style="font-size:0.85rem;color:#374151;margin:0 0 14px;" id="deleteConfirmMsg">
+                    Are you sure you want to delete this approval level?
+                </p>
+                <input type="hidden" id="deleteCode" value="0" />
+
+                <!-- Reason for Delete -->
+                <div>
+                    <label style="font-size:0.78rem;font-weight:700;color:#475569;margin-bottom:5px;display:block;">
+                        Reason for Delete <span style="color:#ef4444;">*</span>
+                    </label>
+                    <textarea id="txtDeleteReason" rows="3"
+                              class="form-control form-control-sm"
+                              placeholder="Enter reason for deleting this level..."
+                              maxlength="200"
+                              style="border:1.5px solid #fca5a5;border-radius:8px;background:#fff9f9;
+                                     font-size:0.8rem;resize:none;"></textarea>
+                    <div id="deleteReasonError"
+                         style="display:none;color:#dc2626;font-size:0.75rem;margin-top:4px;">
+                        <i class="fa fa-exclamation-circle me-1"></i>Reason is required.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:10px 18px;gap:8px;">
+                <button type="button" onclick="ConfirmDeleteLevel()"
+                        style="background:linear-gradient(135deg,#ef4444,#dc2626);border:none;color:#fff;
+                               border-radius:9px;padding:7px 20px;font-size:0.82rem;font-weight:700;cursor:pointer;
+                               box-shadow:0 3px 10px rgba(220,38,38,0.35);transition:all 0.18s;"
+                        onmouseover="this.style.transform='translateY(-1px)'"
+                        onmouseout="this.style.transform=''">
+                    <i class="fa fa-trash me-1"></i>Delete
+                </button>
+                <button type="button" data-bs-dismiss="modal"
+                        style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:9px;
+                               padding:7px 18px;font-size:0.82rem;font-weight:700;color:#475569;cursor:pointer;
+                               transition:all 0.18s;"
+                        onmouseover="this.style.background='#e2e8f0'"
+                        onmouseout="this.style.background='#f1f5f9'">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

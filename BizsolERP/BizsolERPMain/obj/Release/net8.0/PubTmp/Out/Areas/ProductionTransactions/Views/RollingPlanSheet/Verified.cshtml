@@ -1,0 +1,40 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verified</title>
+    <style>
+        body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#f3f6fb;font-family:Segoe UI,Arial}
+        .card{background:#fff;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.12);padding:36px 42px;text-align:center;max-width:420px}
+        .icon{width:72px;height:72px;border-radius:50%;background:#e7f6ee;color:#2e7d32;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:36px}
+        h1{margin:10px 0 8px;font-size:22px;color:#1f2937}
+        p{margin:0;color:#4b5563;font-size:14px}
+        .meta{margin-top:16px;font-size:12px;color:#6b7280}
+        .btn{margin-top:22px;display:inline-block;background:#3a7bd5;color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;text-decoration:none}
+        .btn:hover{background:#2f67c5}
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+    <div class="card">
+        <div class="icon"><i class="fa fa-check"></i></div>
+        <h1>Order Verified</h1>
+        <p>Your order has been verified successfully.</p>
+        <div class="meta" id="meta"></div>
+    </div>
+    <script>
+        (function(){
+            try{
+                const qs=new URLSearchParams(window.location.search);
+                const t=qs.get('token')||'';
+                if(t){ document.getElementById('meta').textContent='Token: '+t; }
+            }catch{}
+        })();
+    </script>
+</body>
+</html>
+

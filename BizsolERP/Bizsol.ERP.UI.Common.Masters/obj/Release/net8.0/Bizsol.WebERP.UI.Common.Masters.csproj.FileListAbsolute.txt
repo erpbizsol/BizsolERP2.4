@@ -1,7 +1,5 @@
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.staticwebassets.runtime.json
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.exe
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.deps.json
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.runtimeconfig.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.pdb
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.csproj.AssemblyReference.cache
@@ -323,13 +321,8 @@ D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\r
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\System.Xml.XPath.XDocument.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\WindowsBase.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.MvcApplicationPartsAssemblyInfo.cs
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.deps.json
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.runtimeconfig.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\ErrorMessages.json
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.staticwebassets.runtime.json
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.exe
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.Abstractions.dll
-D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.dll
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\System.Formats.Asn1.dll
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.csproj.AssemblyReference.cache
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.GeneratedMSBuildEditorConfig.editorconfig
@@ -355,3 +348,62 @@ D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\refint\Bizso
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.pdb
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.genruntimeconfig.cache
 D:\ERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\ref\Bizsol.WebERP.UI.Common.Masters.dll
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.csproj.AssemblyReference.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.GeneratedMSBuildEditorConfig.editorconfig
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.AssemblyInfoInputs.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.AssemblyInfo.cs
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.csproj.CoreCompileInputs.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.MvcApplicationPartsAssemblyInfo.cs
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.MvcApplicationPartsAssemblyInfo.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.RazorAssemblyInfo.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.RazorAssemblyInfo.cs
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.sourcelink.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets.build.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets.development.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Common.Masters.Microsoft.AspNetCore.StaticWebAssets.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Common.Masters.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.Common.Masters.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets\msbuild.buildTransitive.Bizsol.WebERP.UI.Common.Masters.props
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets.pack.json
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\scopedcss\bundle\Bizsol.WebERP.UI.Common.Masters.styles.css
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.W.DCC3DAA4.Up2Date
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.dll
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\refint\Bizsol.WebERP.UI.Common.Masters.dll
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.pdb
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.genruntimeconfig.cache
+D:\All Project\BizsolERP2.4\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\ref\Bizsol.WebERP.UI.Common.Masters.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.staticwebassets.endpoints.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.staticwebassets.endpoints.json
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\refs\Microsoft.Extensions.DependencyInjection.dll
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.csproj.AssemblyReference.cache
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\rpswa.dswa.cache.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.GeneratedMSBuildEditorConfig.editorconfig
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.AssemblyInfoInputs.cache
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.AssemblyInfo.cs
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.csproj.CoreCompileInputs.cache
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.RazorAssemblyInfo.cache
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.RazorAssemblyInfo.cs
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.sourcelink.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\rjimswa.dswa.cache.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\rjsmrazor.dswa.cache.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\rjsmcshtml.dswa.cache.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\scopedcss\bundle\Bizsol.WebERP.UI.Common.Masters.styles.css
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets.build.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets.build.json.cache
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets.development.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets.build.endpoints.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets.upToDateCheck.txt
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.W.DCC3DAA4.Up2Date
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.dll
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\refint\Bizsol.WebERP.UI.Common.Masters.dll
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Masters.pdb
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\ref\Bizsol.WebERP.UI.Common.Masters.dll
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\swae.build.ex.cache
+D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Properties\launchSettings.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Common.Masters.Microsoft.AspNetCore.StaticWebAssets.props
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Common.Masters.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Common.Masters.props
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.Common.Masters.props
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets\msbuild.buildTransitive.Bizsol.WebERP.UI.Common.Masters.props
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Masters\obj\Release\net8.0\staticwebassets.pack.json

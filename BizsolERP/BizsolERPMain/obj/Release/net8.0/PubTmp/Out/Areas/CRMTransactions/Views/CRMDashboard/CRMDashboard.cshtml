@@ -90,16 +90,6 @@
         background-color: #4169e2;
     }
 
-    /* .row > * { */
-    /*     position: relative; */
-    /* } */
-    /* .row > * { */
-    /*     -ms-flex-negative: 0 !important; */
-    /*     flex-shrink: 0 !important; */
-    /*     max-width: 100% !important; */
-    /*     padding-left: calc(var(--bs-gutter-x)* .9) !important; */
-    /* } */
-
     .dashboard-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -113,22 +103,6 @@
         align-items: center;
         padding: 20px;
     }
-
-    /* .card .checkmark { */
-    /*     position: absolute; */
-    /*     top: 10px; */
-    /*     left: 10px; */
-    /*     width: 30px; */
-    /*     height: 30px; */
-    /*     background-color: white; */
-    /*     color: #25aabf; */
-    /*     display: flex; */
-    /*     justify-content: center; */
-    /*     align-items: center; */
-    /*     border-radius: 90%; */
-    /*     font-size: 18px; */
-    /*     font-weight: bold;     */
-    /* } */
 
     .card .number {
         font-size: 32px;
@@ -161,28 +135,38 @@
         width: 96%
     }
 
+    @@media (min-width: 1200px) {
+        .col-xl-2{
+        width: 17.666667% !important;
+        }
+    }
 </style>
 
 <div class="card1 card-section">
     <div class="card-body">
         <div class="row">
-            <div class="col-md-3" style="padding-bottom:10px">
+            <div class="col-xl-3 col-lg-3 col-md-3 col-sm-12" style="padding-bottom:10px">
                 <label for="txtSalesPerson" class="col-form-label-sm fw-bold">Sales Person</label>
-                <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" class="form-control form-control-sm box_border" autocomplete="off" placeholder="Sales Person" value="All" maxlength="500" required onfocusout="DataListValidation('txtSalesPersonlist', this.value, 'Invalid Sales Person !', 'txtSalesPerson');">
+                <input list="txtSalesPersonlist" id="txtSalesPerson" name="txtSalesPerson" hidden class="form-control form-control-sm box_border" autocomplete="off" onclick="$(this).val('')" placeholder="Sales Person" value="All" maxlength="500" required onfocusout="DataListValidation('txtSalesPersonlist', this.value, 'Invalid Sales Person !', 'txtSalesPerson');">
                 <datalist id="txtSalesPersonlist"></datalist>
+                <select id="ddlSalesPersonlist" class="form-control form-control-sm box_border"></select>
             </div>
-            <div class="col-md-2 without-label-field">
+            <div class="col-xl-2 col-lg-3 col-md-3 col-sm-12 without-label-field">
                @*  <label for="txtSalesPerson" class="col-form-label-sm fw-bold"></label> *@
                 <input type="checkbox" id="chkShowSubordinateData" name="chkShowSubordinateData" class="box_border" checked />
                 <label for="chkShowSubordinateData">Show Subordinate Data</label> &nbsp;&nbsp;&nbsp;
             </div>
-            <div class="col-md-5 without-label-field">
+            <div class="col-xl-2 col-lg-3 col-md-3 col-sm-12 col-6 without-label-field">
                 <div class="form-group" id="txtshowhide">
                     <input type="checkbox" id="chkShowTodaysData" name="chkShowTodaysData" class="box_border" />
                     <label for="chkShowTodaysData">Show Today's Data</label>
                 </div>
-            
-                <input type="button" name="btnShow" id="btnShow" class="submit-btn btn btn-primary btn-height btn-width mb-2" value="Show" onclick="ShowDashboard();" />
+            </div>
+            <div class="col-xl-2 col-lg-2 col-md-2 col-sm-12 col-6 without-label-field">
+                <input type="button" name="btnShow" id="btnShow" class=" btn btn-primary btn-height btn-width " value="Show" onclick="ShowDashboard();" />
+                  <button type="button" class="btn btn-primary btn-height btn-width" id="btnLoading" hidden="true">
+                    <i class="bx bx-loader bx-spin font-size-14 align-middle me-2"></i>Loading
+                </button>
             </div>
             <div class="col-md-2 without-label-field">
                 <div class="form-group" id="txtshowDataAsOn">

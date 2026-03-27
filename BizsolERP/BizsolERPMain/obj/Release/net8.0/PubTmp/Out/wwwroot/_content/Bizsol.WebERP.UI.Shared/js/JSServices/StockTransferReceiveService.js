@@ -3,8 +3,8 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 
 const StockTransferReceiveService = {
-    GetPendingRoll: function GetPendingRoll(Godownmaster_Code, IdentificationNo) {
-        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPendingRoll?Godownmaster_Code=" + Godownmaster_Code + "&IdentificationNo=" + IdentificationNo + "";
+    GetPendingRoll: function GetPendingRoll(Godownmaster_Code, IdentificationNo, isReceivedPallet) {
+        var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetPendingRoll?Godownmaster_Code=" + Godownmaster_Code + "&IdentificationNo=" + IdentificationNo + "&IsReceivedPallet=" + isReceivedPallet;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -37,7 +37,16 @@ ItemWaiseVerifyRollIdInPackingList: function ItemWaiseVerifyRollIdInPackingList(
         }
     );
 },
-    PackingActualPalletIDDispatch: function PackingActualPalletIDDispatch(PalletNo, PartyName) {
+GetFixedParaMeter: function GetFixedParaMeter() {
+        
+    var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/GetFixedParaMeter";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+},
+PackingActualPalletIDDispatch: function PackingActualPalletIDDispatch(PalletNo, PartyName) {
     let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
         var URL = UrlService.API_ENDPOINT_StockTransferReceive + "/PackingActualPalletIDDispatch?PalletNo=" + PalletNo + "" + "&PartyName=" + PartyName + "" + "&UserMaster_Code=" + userCode;
     return promiseAjaxCallApi.CallAPI('POST', URL, "").then(

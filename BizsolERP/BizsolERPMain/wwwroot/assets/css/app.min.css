@@ -728,7 +728,7 @@ body[data-layout=horizontal] .footer {
     height: 100%;
     overflow: auto;
     overflow-y: hidden;*/
-    min-height: 100vh;
+    /*min-height: 100vh;*/
 }
 
     /*.PAGE {
@@ -5918,7 +5918,8 @@ table {
 }
 
 .fixed-height-table {
-    height: 450px;
+    min-height: 200px;
+    max-height: 400px;
     overflow-x: auto;
     overflow-y: auto;
     display: block;
@@ -6057,7 +6058,7 @@ button,
 
 .table > tbody > tr:nth-of-type(odd) > * {
     --bs-table-color-type: var(--bs-table-striped-color);
-    --bs-table-bg-type: var(--bs-table-striped-bg);
+    /*--bs-table-bg-type: var(--bs-table-striped-bg);*/
 }
 
 .table .form-control-sm {

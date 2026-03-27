@@ -1,0 +1,201 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Reports/Script/MillWiseProductionReport.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+    /* Hide page scrollbar and prevent page-level scrolling */
+    html {
+        overflow: hidden !important;
+        height: 100% !important;
+    }
+    
+    body {
+        overflow: hidden !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Ensure main content area fits viewport without scrolling */
+    .row {
+        margin: 0 !important;
+        height: 100% !important;
+    }
+    
+    .col-sm-12 {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden;
+    }
+
+    .filter-card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 15px;
+        margin-bottom: 2px;
+        flex-shrink: 0;
+    }
+
+    .filter-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #5c95ce;
+    }
+
+    .btn-height {
+        height: 30px;
+    }
+    
+    /* Fix for filter dropdown positioning */
+    .table-wrapper {
+        position: relative;
+        overflow: auto;
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+        /* Table wrapper takes remaining space and scrolls internally */
+    }
+    
+    .column-filter-dropdown {
+        position: fixed !important;
+        z-index: 10000 !important;
+    }
+    
+    /* Ensure table header cells with filters have proper positioning context */
+    #tblMillWiseProduction thead th {
+        position: relative;
+    }
+
+    /* Fixed header styles for main table */
+    #tblMillWiseProduction thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #fff;
+    }
+
+    #tblMillWiseProduction thead th {
+        background-color: #558bc0 !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        z-index: 11;
+        border-bottom: 2px solid #dee2e6;
+        padding-right: 15px !important;
+    }
+
+    /* Ensure table takes full width and height of wrapper */
+    #tblMillWiseProduction {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    /* Table container - uses flexbox to fill remaining space */
+    #dvTableMillWiseProduction {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        height: auto;
+    }
+
+    /* Ensure flex layout when element is shown (override inline display:none) */
+    #dvTableMillWiseProduction[style*="display: flex"],
+    #dvTableMillWiseProduction[style*="display:block"],
+    #dvTableMillWiseProduction:not([style*="display: none"]) {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* Dynamic height will be set by JavaScript based on actual screen height */
+    .table-wrapper {
+        height: 100%;
+    }
+</style>
+
+<script>
+    // Function to dynamically make the table cover all free space until bottom of screen
+    function adjustTableHeight() {
+        const tableWrapper = document.querySelector('.table-wrapper');
+        if (!tableWrapper) return;
+
+        // Distance from top of tableWrapper to bottom of viewport
+        const rect = tableWrapper.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const availableHeight = viewportHeight - rect.top - 10; // small bottom margin
+
+        if (availableHeight > 0) {
+            tableWrapper.style.height = availableHeight + 'px';
+            tableWrapper.style.maxHeight = availableHeight + 'px';
+        }
+    }
+
+    window.addEventListener('load', adjustTableHeight);
+    window.addEventListener('resize', adjustTableHeight);
+    // In case layout shifts after load
+    setTimeout(adjustTableHeight, 150);
+</script>
+<div class="row">
+    <div class="col-sm-12">
+        <div class="filter-card">
+            @* <div class="filter-title">
+                <i class="fas fa-filter"></i> Mill Wise Production Report Filters
+            </div> *@
+            <div class="row">
+                <div class="col-md-2">
+                    <label for="fromDate" class="form-label filter-label">From Date</label>
+                    <input type="date" id="txtFromDate" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-2">
+                    <label for="toDate" class="form-label filter-label">To Date</label>
+                    <input type="date" id="txtToDate" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-3">
+                    <label for="txtSizeParameter" class="form-label filter-label">Size Parameters</label>
+                    <select id="txtSizeParameter" class="form-control form-control-sm box_border" multiple style="width: 300px;" placeholder="Select..">
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlMachineNo" class="form-label filter-label">Machine No</label>
+                    <select id="ddlMachineNo" class="form-control form-control-sm box_border" multiple style="width: 300px;">
+                    </select>
+                </div>
+                <div class="col-md-1" style="margin-top: 1.6rem;">
+                    <button type="button" id="btnSearch" class="btn btn-primary btn-height">
+                        <i class="fas fa-search"></i> Show
+                    </button>
+                </div>
+                <div id="btnDownload" class="col-md-1" style="display:none;margin-top: 1.6rem;">
+                    <button type="button" style="width: 53px;font-size: 13px;" id="btnExportExcel" class="btn btn-primary btn-height" onclick="ExportExcel();">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card p-1" id="dvTableMillWiseProduction">
+            <div class="table-wrapper" id="tableWrapper">
+                <table id="tblMillWiseProduction" class="fixed-width-table table table-bordered">
+                    <thead id="table-head">
+                    </thead>
+                    <tbody id="table-body">
+                        <tr>
+                            <td colspan="100" class="text-center text-muted">
+                                <i class="fas fa-info-circle"></i> Please select filters and click "Show" to generate the report
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+

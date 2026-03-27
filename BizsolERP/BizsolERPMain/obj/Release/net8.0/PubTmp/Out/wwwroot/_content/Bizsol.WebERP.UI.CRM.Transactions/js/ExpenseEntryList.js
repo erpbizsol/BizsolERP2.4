@@ -1,4 +1,5 @@
-﻿import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
+import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
 const Indx_Tbl = {
@@ -14,8 +15,8 @@ const Indx_Tbl = {
     VerifyStatus: 9,
     Status: 10
 }
+
 $(document).ready(function () {
-    //$('#tblRoutePlan').DataTable();
     $("#ERPHeading").text("Expense Entry");
     var today = new Date();
     const yyyy = today.getFullYear();
@@ -24,8 +25,33 @@ $(document).ready(function () {
     const currentDate = `${dd}-${mm}-${yyyy}`;
     $('#txtFromDate, #txtToDate').val(currentDate);
 
+    var ObjUserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
+    if (ObjUserDetails !== undefined && ObjUserDetails[0].UserType == 'A') {
+        $('#btnExpenseEntryConfig').prop('hidden', false);
+    } else {
+        $('#btnExpenseEntryConfig').prop('hidden', true);
+    }
+
      GetNestedMarketingManList();
-     DatePicker();
+    DatePicker();
+
+    var urlParams = getUrlVars();
+
+    var SalesPersonNameSave = decodeURIComponent(urlParams['MarketingMan_Name'] || "");
+    var FromDateSave = decodeURIComponent(urlParams['FromDate'] || "");
+    var ToDateSave = decodeURIComponent(urlParams['ToDate'] || "");
+
+    if (SalesPersonNameSave) {
+        $('#ddlMarketingMan').val(SalesPersonNameSave);
+    }
+
+    if (FromDateSave) {
+        $('#txtFromDate').val(FromDateSave);
+    }
+
+    if (ToDateSave) {
+        $('#txtToDate').val(ToDateSave);
+    }
 
    $('#txtFromDate').on('keydown', function (e) {
         if (e.key === "Enter") {
@@ -62,29 +88,62 @@ $(document).ready(function () {
      $("#btnAddExpenseEntry").click(function () {
         CreateNew(0);
     });
-     var userName = JSON.parse(sessionStorage.getItem('UserDetails'))[0].UserID;
-    $("#ddlMarketingMan").val(userName);
- });
+    
+    $('#btnExpenseEntryConfig').click(function (e) {
 
+        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseHeadMaster";
+
+    });
+
+    $('#eeBtnCancelDelete').on('click', function () {
+        $('#eeDeleteConfirmBackdrop').removeClass('show');
+    });
+ });
+function getUrlVars() {
+    var vars = {};
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for (var i = 0; i < hashes.length; i++) {
+        var hash = hashes[i].split('=');
+        vars[hash[0]] = hash[1];
+    }
+    return vars;
+}
 function GetNestedMarketingManList() {
     ExpenseEntryService.GetNestedMarketingManList().then(function (response) {
-        if (response.length > 0) {
-            $('#ddlSalesPersonList option').remove();
+        if (response && response.length > 0) {
+            $('#ddlSalesPersonList').empty();
 
-            var option = '<option text="0" value="All" selected >All</option>';
+            let options = '<option value="ALL" selected>ALL</option>';
+            let matchedPersonName = null;
 
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].PersonName + '" >' + response[i].PersonName + '</option>';
+            for (let i = 0; i < response.length; i++) {
+                const person = response[i];
+                let userMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+                // Check if UserMaster_Code matches
+                if (person.Usermaster_Code == userMaster_Code) {
+                    matchedPersonName = person.PersonName;
+                }
+
+                options += `<option value="${person.PersonName}">${person.PersonName}</option>`;
             }
 
-            $('#ddlSalesPersonList')[0].innerHTML = option;
+            $('#ddlSalesPersonList').html(options);
+
+            // Set the marketing man input or dropdown value
+            var urlParams = getUrlVars();
+            if (decodeURIComponent(urlParams['MarketingMan_Name'] || "") == '') {
+                if (matchedPersonName) {
+                    $('#ddlMarketingMan').val(matchedPersonName);
+                } else {
+                    $('#ddlMarketingMan').val("ALL");
+                }
+            }
+
         } else {
             toastr.error('No Data Found');
-            return false;
         }
     });
 }
-
 function convertDateFormat(dateString) {
     const [day, month, year] = dateString.split('-');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -98,8 +157,10 @@ function GetExpenseEntryList(){
    var MarketingPersonName=$("#ddlMarketingMan").val();
 
     ExpenseEntryService.GetExpenseEntryList(fromDate,toDate,MarketingPersonName).then(function (response) {
-        $("#tblExpenseEntryList").show();
-        if (response.length > 0) {
+        var $tableCard = $("#cardExpenseEntryList");
+        $tableCard.show();
+
+        if (response && response.length > 0) {
             const StringFilterColumn = ["Person Name"];
             const NumericFilterColumn = ["Entry No"];
             const DateFilterColumn = ["Entry Date","From Date","To Date","Approved On"];
@@ -134,20 +195,38 @@ function GetExpenseEntryList(){
                     ...item,
                     Action: buttonsHTML,
                     Status: td_StatusBtn,
-                   
                 };
-                
             });
 
-
-
-            BizsolCustomFilterGrid.CreateDataTable("ExpenseEntryList-header", "ExpenseEntryList-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+            BizsolCustomFilterGrid.CreateDataTable("ExpenseEntryList-header", "ExpenseEntryList-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            $("#paginator-ExpenseEntryList").show();
+        } else {
+            ShowExpenseEntryListEmptyState();
         }
-        else {
-            toastr.error('No Data Found');
-            $("#tblExpenseEntryList").hide();
-        }
+    }).catch(function () {
+        $("#cardExpenseEntryList").show();
+        ShowExpenseEntryListEmptyState();
     });
+}
+
+function ShowExpenseEntryListEmptyState() {
+    const emptyRow = {
+        Code: 0, "Person Name": "", "Entry No": "", MarketingManMaster_Code: 0,
+        "Entry Date": "", "From Date": "", "To Date": "", "Approved By": "", "Approved On": "",
+        VerifyStatus: "", "Status": "", Action: ""
+    };
+    const StringFilterColumn = ["Person Name"];
+    const NumericFilterColumn = ["Entry No"];
+    const DateFilterColumn = ["Entry Date","From Date","To Date","Approved On"];
+    const hiddenColumns = ["Code","MarketingManMaster_Code","VerifyStatus"];
+    const ColumnAlignment = {
+        "Entry No": "right", "Entry Date": "center", "From Date": "center", "To Date": "center", "Approved On": "center"
+    };
+    renderTableHeader(hiddenColumns, "ExpenseEntryList-header", "ExpenseEntryList-body", Object.keys(emptyRow), false, StringFilterColumn, NumericFilterColumn, DateFilterColumn, []);
+    var colCount = Object.keys(emptyRow).length;
+    $("#ExpenseEntryList-body").html('<tr class="expense-entry-empty-row"><td colspan="' + colCount + '"><span>No data found</span></td></tr>');
+    $("#paginator-ExpenseEntryList").hide();
+    toastr.info('No expense entries found for the selected criteria.');
 }
 
 function EditData(Code,x){
@@ -171,7 +250,7 @@ function ViewData(Code,x){
     window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryDetail?Code=" + codes + "&Mode=" + Mode +"&MarketingMan_Name=" + MarketingPersonName;
 }
 function CreateNew(Code) {
-    if ($("#ddlMarketingMan").val() == 'undefined' || $("#ddlMarketingMan").val() == "" || $("#ddlMarketingMan").val() == "All") {
+    if ($("#ddlMarketingMan").val() == 'undefined' || $("#ddlMarketingMan").val() == "" || $("#ddlMarketingMan").val() == "ALL") {
         toastr.error('Please select a sales person name.');
         return false;
     }
@@ -182,22 +261,45 @@ function CreateNew(Code) {
     window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryDetail?Code=" + codes + "&Mode=" + Mode +"&MarketingMan_Name=" + MarketingPersonName;
 }
 
+var G_DeleteExpenseEntryCode = 0;
+
 function DeleteData(Code) {
-    
-    ExpenseEntryService.DeleteExpenseEntryMaster(Code).then(function (response) {
+    G_DeleteExpenseEntryCode = Code;
+    $('#eeReasonForDeleteInput').val('');
+    $('#eeDeleteConfirmBackdrop').addClass('show');
+    setTimeout(function () { $('#eeReasonForDeleteInput').focus(); }, 150);
+}
 
-        if (response != '') {
-            if (response.Status == 'N') {
-                toastr.error(response.Msg);
-            } else {
-
-                toastr.success(response.Msg);
-                window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
-            }
-
+function DoExpenseEntryDelete() {
+    var reason = $('#eeReasonForDeleteInput').val();
+    if (!reason || !reason.trim()) {
+        toastr.warning("Please provide a reason for deletion.");
+        $('#eeReasonForDeleteInput').focus();
+        return;
+    }
+    ExpenseEntryService.DeleteExpenseEntryMaster(G_DeleteExpenseEntryCode, reason).then(function (response) {
+        $('#eeDeleteConfirmBackdrop').removeClass('show');
+        if (response && response.Status === 'Y') {
+            GetExpenseEntryList();
+            ShowExpenseEntrySuccessModal("Deleted Successfully!", response.Msg || "The expense entry has been permanently removed.", "fa-trash-can");
+        } else {
+            toastr.error((response && response.Msg) || "Failed to delete expense entry.");
         }
-
+    }).catch(function (error) {
+        toastr.error((error && error.Msg) || "Error during delete. Please try again.");
+        $('#eeDeleteConfirmBackdrop').removeClass('show');
     });
+}
+
+function ShowExpenseEntrySuccessModal(title, text, iconClass) {
+    $('#eeSuccessModalTitle').text(title || "Done!");
+    $('#eeSuccessModalText').text(text || "Operation completed successfully.");
+    $('#eeSuccessModalIcon').removeClass().addClass('fas ' + (iconClass || 'fa-circle-check'));
+    $('#eeSuccessBackdrop').addClass('show');
+}
+
+function CloseExpenseEntrySuccessModal() {
+    $('#eeSuccessBackdrop').removeClass('show');
 }
 function setupDateInputFormatting() {
     $('#txtToDate').on('input', function () {
@@ -301,3 +403,5 @@ window.GetExpenseEntryList=GetExpenseEntryList;
 window.EditData = EditData;
 window.ViewData = ViewData;
 window.DeleteData = DeleteData;
+window.DoExpenseEntryDelete = DoExpenseEntryDelete;
+window.CloseExpenseEntrySuccessModal = CloseExpenseEntrySuccessModal;

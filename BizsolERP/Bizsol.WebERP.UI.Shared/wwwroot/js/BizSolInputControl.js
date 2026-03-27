@@ -103,17 +103,37 @@
     },
     OnChangeOnlyAlphaNumericTextBox: function OnChangeOnlyAlphaNumericTextBox(element) {
 
-        const regex = /^[a-zA-Z0-9_]*$/
+        const regex = /^[a-zA-Z0-9 ]*$/; // allows letters, numbers, and spaces
 
-        if (regex.test(element.value) == true) {
+        // Prevent invalid character typing
+        const char = event.key;
+        if (!/^[a-zA-Z0-9 ]$/.test(char) && event.key !== "Backspace" && event.key !== "Delete" && event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "Tab" && event.key !== "Enter" ) {
+            event.preventDefault();
+            element.setCustomValidity("Only alphanumeric characters and spaces are allowed.");
+            element.reportValidity();
+            return false;
+        }
 
+        // Validate current value after typing
+        if (regex.test(element.value)) {
             element.setCustomValidity("");
             BizSolhandleEnterKey(event);
         } else {
-            element.setCustomValidity("Only Alpha Numeric allowed");
+            element.setCustomValidity("Only alphanumeric characters and spaces are allowed.");
         }
-
         element.reportValidity();
+
+        //const regex = /^[a-zA-Z0-9_]*$/
+
+        //if (regex.test(element.value) == true) {
+
+        //    element.setCustomValidity("");
+        //    BizSolhandleEnterKey(event);
+        //} else {
+        //    element.setCustomValidity("Only Alpha Numeric allowed");
+        //}
+
+        //element.reportValidity();
     },
     IsMobileNumber: function IsMobileNumber(txtMobId) {
         var mob = /^[6-9]{1}[0-9]{9}$/;
@@ -130,7 +150,13 @@
 function BizSolhandleEnterKey(event) {
     if (event.key === "Enter") {
         //const inputs = document.getElementsByTagName('input')
-        const inputs = $('.BizSolFormControl')
+        //const inputs = $('.BizSolFormControl')
+        const inputs = $('.BizSolFormControl').filter(function () {
+            const $el = $(this);
+            const isHidden = $el.is(':hidden') || $el.css('display') === 'none' || $el.css('visibility') === 'hidden';
+            const isReadOnly = $el.is('[readonly]');
+            return !isHidden && !isReadOnly;
+        });
         const index = [...inputs].indexOf(event.target);
         if ((index + 1) == inputs.length) {
             inputs[0].focus();
