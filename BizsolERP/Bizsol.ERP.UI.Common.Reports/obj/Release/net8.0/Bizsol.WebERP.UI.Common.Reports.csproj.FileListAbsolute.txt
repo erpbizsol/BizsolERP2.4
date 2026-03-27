@@ -709,7 +709,6 @@ D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Reports\bin\Release\net8.0
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Reports\bin\Release\net8.0\refs\WindowsBase.dll
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Reports\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.dll
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Reports\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.pdb
-D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Reports.EmbeddedFilesManifest.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Common.Reports.Microsoft.AspNetCore.StaticWebAssets.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Common.Reports.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Reports\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Common.Reports.props

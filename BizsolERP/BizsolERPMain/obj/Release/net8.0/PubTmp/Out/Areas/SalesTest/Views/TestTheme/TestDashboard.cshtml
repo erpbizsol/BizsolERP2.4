@@ -1,0 +1,298 @@
+@{
+    ViewData["Title"] = "Sales Test Dashboard";
+    Layout = "~/Views/Shared/_LayoutTest.cshtml";
+}
+
+<style>
+    .welcome-card {
+        position: relative;
+        overflow: hidden;
+        animation: slideInDown 0.8s ease-out;
+    }
+
+    @@keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .welcome-card h3 {
+        animation: fadeIn 1s ease-out 0.3s both;
+    }
+
+    .welcome-card p {
+        animation: fadeIn 1s ease-out 0.5s both;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .notification-badge {
+        animation: bounceIn 0.8s ease-out 0.5s both;
+    }
+
+    @@keyframes bounceIn {
+        0% {
+            opacity: 0;
+            transform: scale(0.3);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+        70% {
+            transform: scale(0.9);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .stat-card {
+        animation: fadeInUp 0.6s ease-out both;
+    }
+
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<!-- Welcome Card -->
+<div class="welcome-card">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="mb-1">Welcome, Sunil Aggarwal</h3>
+            <p class="mb-0 opacity-75"><i class="fas fa-briefcase me-2"></i>Management - Sales Test Area</p>
+        </div>
+        <div class="text-end">
+            <div class="notification-badge d-inline-block">
+                <i class="fas fa-exclamation-circle me-1"></i> 1 items need your action
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="metric-label mb-2">PO Value</p>
+                    <h3 class="metric-value">₹3.17 Cr</h3>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card success">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="metric-label mb-2">Paid</p>
+                    <h3 class="metric-value">₹1.27 Cr</h3>
+                </div>
+                <div class="stat-icon success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card warning">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="metric-label mb-2">Balance</p>
+                    <h3 class="metric-value">₹1.90 Cr</h3>
+                </div>
+                <div class="stat-icon warning">
+                    <i class="fas fa-wallet"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="metric-label mb-2">Projects</p>
+                    <h3 class="metric-value">4</h3>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-project-diagram"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Actions Card -->
+<div class="dashboard-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="fas fa-bell me-2" style="color: var(--accent-orange);"></i>Pending Actions</h5>
+        <span class="notification-badge">1 POs</span>
+    </div>
+    <div class="alert-card">
+        <div class="d-flex align-items-center">
+            <div class="me-3">
+                <i class="fas fa-exclamation-triangle" style="font-size: 1.5rem; color: var(--accent-orange);"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h6 class="mb-1" style="color: var(--text-light);">2 Unmatched Bank Debit(s)</h6>
+                <p class="mb-0 text-muted small">Paid from bank but NOT approved in system — ₹26.0 L</p>
+            </div>
+            <button class="modern-button ms-3">Review</button>
+        </div>
+    </div>
+</div>
+
+<!-- Approval Workflows -->
+<div class="dashboard-card">
+    <h5 class="mb-3"><i class="fas fa-tasks me-2" style="color: var(--accent-green);"></i>Approval Workflows</h5>
+    
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted">Po Flow</span>
+            <span class="text-muted">75% Complete</span>
+        </div>
+        <div class="workflow-progress">
+            <div class="workflow-step active"></div>
+            <div class="workflow-step active"></div>
+            <div class="workflow-step active"></div>
+            <div class="workflow-step"></div>
+        </div>
+        <div class="d-flex justify-content-between mt-2">
+            <span class="small text-muted">Procurement Creates</span>
+            <span class="small text-muted">Project Mgr Approves</span>
+            <span class="small text-muted">Accounts Verifies</span>
+            <span class="small text-muted">Mgmt Final</span>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted">Exp Flow</span>
+            <span class="text-muted">50% Complete</span>
+        </div>
+        <div class="workflow-progress">
+            <div class="workflow-step active"></div>
+            <div class="workflow-step active"></div>
+            <div class="workflow-step"></div>
+            <div class="workflow-step"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <h5 class="mb-3"><i class="fas fa-clock me-2" style="color: var(--accent-primary);"></i>Recent Sales Orders</h5>
+            <div class="table-responsive">
+                <table class="table table-hover" style="color: var(--text-light);">
+                    <thead style="color: var(--text-muted);">
+                        <tr>
+                            <th>SO No.</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>SO-2025-001</td>
+                            <td>ABC Corp</td>
+                            <td>₹85,000</td>
+                            <td><span class="badge bg-success">Delivered</span></td>
+                        </tr>
+                        <tr>
+                            <td>SO-2025-002</td>
+                            <td>XYZ Ltd</td>
+                            <td>₹1,15,500</td>
+                            <td><span class="badge bg-warning">In Progress</span></td>
+                        </tr>
+                        <tr>
+                            <td>SO-2025-003</td>
+                            <td>LMN Enterprises</td>
+                            <td>₹2,25,000</td>
+                            <td><span class="badge bg-info">Processing</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <h5 class="mb-3"><i class="fas fa-chart-line me-2" style="color: var(--accent-green);"></i>Sales Performance</h5>
+            <div id="salesChart" style="height: 250px;">
+                <div class="text-center p-5">
+                    <i class="fas fa-chart-area" style="font-size: 3rem; color: var(--accent-orange); opacity: 0.3;"></i>
+                    <p class="text-muted mt-3">Sales chart will be displayed here</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="dashboard-card mt-4">
+    <h5 class="mb-3"><i class="fas fa-bolt me-2" style="color: var(--accent-orange);"></i>Quick Actions</h5>
+    <div class="row g-3">
+        <div class="col-md-3 col-sm-6">
+            <button class="modern-button w-100">
+                <i class="fas fa-plus me-2"></i>New Sales Order
+            </button>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <button class="modern-button w-100" style="background: var(--success-gradient);">
+                <i class="fas fa-file-invoice me-2"></i>New Invoice
+            </button>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <button class="modern-button w-100" style="background: var(--secondary-gradient);">
+                <i class="fas fa-user-plus me-2"></i>Add Customer
+            </button>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <button class="modern-button w-100" style="background: var(--warning-gradient); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);">
+                <i class="fas fa-chart-bar me-2"></i>View Reports
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        console.log('Sales Test Dashboard loaded from SalesTest Area');
+    </script>
+}

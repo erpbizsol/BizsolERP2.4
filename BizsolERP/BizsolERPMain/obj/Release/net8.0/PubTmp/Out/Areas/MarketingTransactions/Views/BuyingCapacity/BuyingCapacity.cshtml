@@ -1,37 +1,146 @@
-﻿@{
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BuyingCapacity.js"></script>
 <style>
-    .fixed-width-table th, .fixed-width-table td {
+    /* Aligned with Layout - Hide page scrollbar */
+    html {
+        overflow: hidden !important;
+        height: 100% !important;
+    }
+
+    body {
+        overflow: hidden !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Card - Layout style (dashboard-card) */
+    #BuyingCapacityPage .card {
+        margin: 0 0 1rem 0 !important;
+        background: var(--white-bg);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+
+    #BuyingCapacityPage .card-body {
+        margin: 0 !important;
+        padding: 1rem 1.25rem !important;
+    }
+
+    .fixed-width-table th,
+    .fixed-width-table td {
         white-space: nowrap;
         min-width: auto;
     }
-</style>
-<div class="card">
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-3">
-                <label for="userName" class="form-label">Sales Person <span class="text-danger">*</span></label>
-                <input list="ddlSalesPersonList" id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" onclick="$(this).val('');" placeholder="Sales Person" autocomplete="off" required>
-                <datalist id="ddlSalesPersonList"></datalist>
-            </div>
 
-            <div class="col-md-3 without-label-field">
-                <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+    /* Table wrapper - Layout vars, dynamic height */
+    #BuyingCapacityPage .table-wrapper {
+        position: relative;
+        overflow: auto;
+        max-height: calc(100vh - 260px);
+        min-height: 300px;
+        margin: 0 !important;
+        background: var(--white-bg);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+    }
+
+    #BuyingCapacity {
+        width: 100%;
+        margin: 0 !important;
+        margin-bottom: 0 !important;
+        color: var(--text-dark);
+    }
+
+    /* Sticky header - Different colour: Teal/Emerald gradient (Layout uses purple) */
+    #BuyingCapacity thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--white-bg);
+    }
+
+    #BuyingCapacity thead th {
+        background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%) !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        z-index: 11;
+        border-bottom: 2px solid var(--border-color);
+        padding: 0.5rem 1rem !important;
+        font-weight: 600;
+        font-size: 0.875rem;
+        letter-spacing: 0.02em;
+    }
+
+    #BuyingCapacity tbody td {
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    #BuyingCapacityPage .btn-primary {
+        background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+    }
+
+        #BuyingCapacityPage .btn-primary:hover {
+            background: linear-gradient(135deg, #0f766e 0%, #0e7490 100%);
+            box-shadow: 0 6px 16px rgba(13, 148, 136, 0.35);
+        }
+
+    #BuyingCapacityPage .form-label {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    /* Responsive height adjustments */
+    @@media (max-height: 800px) {
+        #BuyingCapacityPage .table-wrapper {
+            max-height: calc(100vh - 200px);
+            min-height: 300px;
+        }
+    }
+
+    @@media (max-height: 600px) {
+        #BuyingCapacityPage .table-wrapper {
+            max-height: calc(100vh - 180px);
+            min-height: 250px;
+        }
+    }
+</style>
+<div id="BuyingCapacityPage">
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="ddlMarketingMan" class="form-label">Sales Person <span class="text-danger">*</span></label>
+                    <select id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" autocomplete="off" required></select>
+                </div>
+
+                <div class="col-md-3 without-label-field">
+                    <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-<div class="table-wrapper ">
-    <table id="BuyingCapacity" class="fixed-width-table table">
-        <thead id="table-header-BuyingCapacity">
-        </thead>
-        <tbody id="table-body-BuyingCapacity">
-        </tbody>
-    </table>
-</div>
-<div class="paginator" id="paginator-BuyingCapacity">
+    <div class="table-wrapper">
+        <table id="BuyingCapacity" class="fixed-width-table table">
+            <thead id="table-header-BuyingCapacity">
+            </thead>
+            <tbody id="table-body-BuyingCapacity">
+            </tbody>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-BuyingCapacity">
+    </div>
 </div>

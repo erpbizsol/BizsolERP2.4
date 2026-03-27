@@ -307,3 +307,7 @@ D:\WebERP2.4Core\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Debug\net8.0\staticwebass
 D:\WebERP2.4Core\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Debug\net8.0\staticwebassets.build.json
 D:\WebERP2.4Core\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Debug\net8.0\staticwebassets.build.json
 D:\WebERP2.4Core\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Debug\net8.0\staticwebassets.build.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Debug\net8.0\staticwebassets.build.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Debug\net8.0\staticwebassets.build.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Debug\net8.0\staticwebassets.build.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Debug\net8.0\staticwebassets.build.json

@@ -50,6 +50,22 @@ const RmIndentService = {
             }
         );
     },
+    GetWidthList: function GetWidthList() {
+        var URL = UrlService.API_ENDPOINT_RmIndent + "/GetWidthList";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetMakeList: function GetMakeList() {
+        var URL = UrlService.API_ENDPOINT_RmIndent + "/GetMakeList";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { RmIndentService }

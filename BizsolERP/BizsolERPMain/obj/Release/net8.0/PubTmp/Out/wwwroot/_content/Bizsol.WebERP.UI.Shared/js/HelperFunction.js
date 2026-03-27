@@ -1,4 +1,4 @@
-﻿const BizSolHelperFunction = {
+const BizSolHelperFunction = {
     ToWithSpace: function ToWithSpace(str) {
         return str.replace(/([a-z])([A-Z])/g, '$1 $2');
     },
@@ -10,9 +10,46 @@
                 break;
             }
         }
-        $('#' + Id).select2({
+        var $element = $('#' + Id);
+        $element.select2({
             width: '-webkit-fill-available'
-        })
+        });
+        this.attachSelect2ScrollPrevention($element);
+    },
+    /**
+     * Prevents horizontal scrolling when select2 dropdown is opened (keeps vertical scroll enabled)
+     * @param {jQuery} $element - jQuery element with select2 initialized
+     */
+    attachSelect2ScrollPrevention: function attachSelect2ScrollPrevention($element) {
+        if (!$element || !$element.length) {
+            return;
+        }
+        
+        $element.on('select2:opening', function(e) {
+            $('select').not($element).each(function() {
+                if ($(this).data('select2') && $(this).data('select2').isOpen()) {
+                    $(this).select2('close');
+                }
+            });
+        });
+        
+        $element.on('select2:open', function() {
+            // Hide only horizontal scroll, keep vertical scroll
+            $('body').css('overflow-x', 'hidden');
+            
+            // Set z-index for Select2 dropdown container
+            $('.select2-container--open').css('z-index', '0009');
+            $('.select2-dropdown').css('z-index', '0009');
+        });
+        
+        $element.on('select2:close', function() {
+            // Restore horizontal scroll
+            $('body').css('overflow-x', '');
+            
+            // Reset z-index
+            $('.select2-container--open').css('z-index', '0009');
+            $('.select2-dropdown').css('z-index', '0009');
+        });
     },
     HideOrShowConfigurationSettingBtn: function HideOrShowConfigurationSettingBtn(Id) {
         let userDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
@@ -62,8 +99,13 @@
         let urlParams = this.getUrlVars();
         let value = decodeURI(urlParams[paramName] || '');
         if (value && value !== "undefined" && value !== "") {
-            $(headingSelector).text(value);
+            $(headingSelector).text(this.ToWithSpace(value));
         }
+    },
+    getCurrentDate: function getCurrentDate() {
+        let UserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
+        let ServerDate = UserDetails[0].ServerDate;
+        return ServerDate;
     }
 }
 export { BizSolHelperFunction }

@@ -5,6 +5,10 @@
       "PackagePath": "staticwebassets\\Script\\CheckInCheckOutReport.js"
     },
     {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\CustomerDashboard - Copy.js",
+      "PackagePath": "staticwebassets\\Script\\CustomerDashboard - Copy.js"
+    },
+    {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\CustomerDashboard.js",
       "PackagePath": "staticwebassets\\Script\\CustomerDashboard.js"
     },
@@ -19,6 +23,10 @@
     {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\OrderReport.js",
       "PackagePath": "staticwebassets\\Script\\OrderReport.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\SalesanalysisAST.js",
+      "PackagePath": "staticwebassets\\Script\\SalesanalysisAST.js"
     },
     {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\wwwroot\\Script\\StockReport.js",

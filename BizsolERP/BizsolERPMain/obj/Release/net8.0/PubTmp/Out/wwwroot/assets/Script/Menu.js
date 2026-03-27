@@ -1,4 +1,3 @@
-﻿
 //import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 
@@ -101,8 +100,12 @@ function getChildMenu(value, masterCode, baseUrl) {
         if (item.MasterCode === masterCode && item.NotificationApplicable==='N') {
             var subChildMenuHtml = getChildMenu(value, item.Code);
             var hasArrow = subChildMenuHtml ? 'has-arrow' : '';
+            
+            // Check if FormToOpen already contains a query parameter
+            var separator = item.FormToOpen.indexOf('?') !== -1 ? '&' : '?';
+            
             childMenuHtml += '<li>';
-            childMenuHtml += '<a href="' + baseUrl + '/' + item.FormToOpen + '?ModuleDesp=' + item.ModuleDesp +'" class="menu-toggle ' + hasArrow + '">';
+            childMenuHtml += '<a href="' + baseUrl + '/' + item.FormToOpen + separator + 'ModuleDesp=' + item.ModuleDesp +'" class="menu-toggle ' + hasArrow + '">';
             childMenuHtml += '<span>' + item.ModuleDesp + '</span>';
             // Add arrow if submenu exists (always point right initially)
             //childMenuHtml += subChildMenuHtml ? '<i class="arrow-icon" data-feather="chevron-right"></i>' : '';
@@ -116,9 +119,20 @@ function getChildMenu(value, masterCode, baseUrl) {
     return childMenuHtml;
 }
 
+function normalizeModuleDesp(value) {
+    if (value == null || value === '') return '';
+    try {
+        return decodeURIComponent(String(value)).trim();
+    } catch (e) {
+        return String(value).trim();
+    }
+}
+
 function setActiveMenu() {
     var currentUrl = window.location.pathname;
     const LastChar = currentUrl.slice(-1);
+    const currentParams = new URLSearchParams(window.location.search);
+    const currentModuleDesp = currentParams.get('ModuleDesp');
     $('#side-menu ul.sub-menu').hide();
 
     $('#side-menu li').removeClass('mm-active last-active');
@@ -126,10 +140,31 @@ function setActiveMenu() {
 
     $('#side-menu a').each(function () {
         var menuLink = $(this).attr('href');
-        if (menuLink && (currentUrl === new URL(menuLink, window.location.origin).pathname) && currentUrl !== "/" && LastChar !='/') {
+        if (!menuLink || menuLink.indexOf('javascript:') === 0) return;
+
+        try {
+            var menuUrl = new URL(menuLink, window.location.origin);
+            var pathnameMatch =
+                currentUrl === menuUrl.pathname && currentUrl !== '/' && LastChar !== '/';
+
+            if (!pathnameMatch) return;
+
+            // Same route can serve multiple screens (e.g. VendorMaster + ModuleDesp); match query when present.
+            if (currentModuleDesp) {
+                var menuModuleDesp = menuUrl.searchParams.get('ModuleDesp');
+                if (
+                    normalizeModuleDesp(menuModuleDesp) !==
+                    normalizeModuleDesp(currentModuleDesp)
+                ) {
+                    return;
+                }
+            }
+
             $(this).addClass('active');
             $(this).parents('li').last().addClass('last-active');
             $(this).parents('ul.sub-menu').show();
+        } catch (e) {
+            // ignore invalid href
         }
     });
 }

@@ -401,7 +401,6 @@ D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.HR.Masters\obj\Release\net8.0\Biz
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.HR.Masters\obj\Release\net8.0\ref\Bizsol.WebERP.UI.HR.Masters.dll
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.HR.Masters\obj\Release\net8.0\swae.build.ex.cache
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Properties\launchSettings.json
-D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.HR.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.HR.Masters.EmbeddedFilesManifest.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.HR.Masters\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.HR.Masters.Microsoft.AspNetCore.StaticWebAssets.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.HR.Masters\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.HR.Masters.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.HR.Masters\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.HR.Masters.props

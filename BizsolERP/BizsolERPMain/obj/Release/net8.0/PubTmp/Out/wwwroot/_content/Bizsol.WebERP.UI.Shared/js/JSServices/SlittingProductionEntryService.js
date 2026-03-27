@@ -95,7 +95,32 @@ const SlittingProductionEntryService = {
             }
         );
     },
-    
+    StartTimeUpdated: function StartTimeUpdated(SlittingPlanMaster_Code) {
+
+        let url = UrlService.API_ENDPOINT_SlittingEntry + "/StartTimeUpdated?SlittingPlanMaster_Code=" + SlittingPlanMaster_Code;
+
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetConfigSlittingProduction: function GetConfigSlittingProduction() {
+        let url = UrlService.API_ENDPOINT_SlittingEntry + `/getConfigSlittingProductionTest`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    UpdateConfigSlittingProduction: function UpdateConfigSlittingProduction(ParameterValue) {
+        let url = `${UrlService.API_ENDPOINT_SlittingEntry}/UpdateConfigSlittingProduction?ParameterValue=${ParameterValue}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 

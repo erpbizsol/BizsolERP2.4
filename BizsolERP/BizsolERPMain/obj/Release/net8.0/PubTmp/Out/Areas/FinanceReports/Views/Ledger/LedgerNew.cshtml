@@ -1,0 +1,240 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Shared/components/FilterSidePanelControl/FilterSidePanelControl.css" rel="stylesheet" />
+<style>
+    /* Prevent black screen overlay during zoom on mobile */
+    body {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Ensure loader is properly styled and doesn't cause black screen */
+    .loader-wrapper, #loader {
+        z-index: 9998 !important;
+    }
+
+    /* Prevent loader from showing during zoom gestures */
+    body.zooming #loader {
+        visibility: hidden !important;
+        display: none !important;
+    }
+
+    /* Prevent any modal backdrops from interfering */
+    .modal-backdrop {
+        z-index: 9997 !important;
+    }
+
+    /* Use CSS class instead of inline style to avoid linter warnings and ensure consistent behavior */
+    .chart-scroll {
+        overflow-x: auto;
+        width: 100%;
+    }
+        /* force canvas to be block so min-width applies reliably */
+        .chart-scroll canvas {
+            display: block;
+        }
+    /* sizes used by the charts (adjust min-width to your desired scroll threshold) */
+    .chart-minwide-600 {
+        min-width: 600px;
+    }
+
+    .chart-minwide-800 {
+        min-width: 800px;
+    }
+
+    /* Table container styling */
+    .table-container {
+        max-height: 300px;
+        overflow-y: auto;
+        overflow-x: auto;
+        border: 1px solid #e6e6e6;
+    }
+
+    .top-value {
+        font-size: 34px;
+        letter-spacing: 1px;
+    }
+
+    /* Mobile-friendly tabs styling */
+    #financeDashboardTabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        border-bottom: 2px solid #dee2e6;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Add padding to tab content on mobile to prevent filter button overlap */
+    @@media (max-width: 768px) {
+        .tab-content {
+            padding-bottom: 80px !important;
+        }
+    }
+    
+    @@media (max-width: 576px) {
+        .tab-content {
+            padding-bottom: 70px !important;
+        }
+    }
+
+        #financeDashboardTabs::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        #financeDashboardTabs::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+
+        #financeDashboardTabs .nav-item {
+            flex-shrink: 0;
+        }
+
+        #financeDashboardTabs .nav-link {
+            white-space: nowrap;
+            border-radius: 8px 8px 0 0;
+            padding: 12px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            margin-right: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            #financeDashboardTabs .nav-link i {
+                font-size: 16px;
+            }
+
+            #financeDashboardTabs .nav-link:not(.active) {
+                background-color: #f8f9fa;
+                color: #495057;
+            }
+
+                #financeDashboardTabs .nav-link:not(.active):hover {
+                    background-color: #e9ecef;
+                    color: #212529;
+                }
+
+            #financeDashboardTabs .nav-link.active {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+            }
+
+    /* Mobile specific styles */
+    @@media (max-width: 768px) {
+        #financeDashboardTabs .nav-link {
+            font-size: 13px;
+            padding: 10px 16px;
+            gap: 6px;
+        }
+
+            #financeDashboardTabs .nav-link i {
+                font-size: 14px;
+            }
+
+        .top-value {
+            font-size: 24px;
+        }
+
+        .card-body h3, .card-body h5 {
+            font-size: 1.1rem;
+        }
+
+        .card-body h6 {
+            font-size: 0.85rem;
+        }
+        /* Reduce chart min-width on mobile for better fit */
+        .chart-minwide-800 {
+            min-width: 600px;
+        }
+
+        .chart-minwide-600 {
+            min-width: 450px;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        #financeDashboardTabs {
+            border-bottom: 1px solid #dee2e6;
+        }
+
+            #financeDashboardTabs .nav-link {
+                font-size: 11px;
+                padding: 8px 12px;
+                margin-right: 2px;
+                gap: 4px;
+            }
+
+                #financeDashboardTabs .nav-link i {
+                    font-size: 13px;
+                }
+
+        .chart-minwide-800 {
+            min-width: 500px;
+        }
+
+        .chart-minwide-600 {
+            min-width: 400px;
+        }
+    }
+</style>
+
+<!-- FilterSidePanelControl Web Component - Provides floating button and side panel with all filters -->
+<filter-side-panel-control id="filterPanel"></filter-side-panel-control>
+
+
+<ul class="nav nav-tabs" id="financeDashboardTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">
+            <i class="fas fa-chart-line me-2"></i>Overview
+        </button>
+    </li>
+</ul>
+
+
+<!-- Report Date Range Display -->
+<div class="row mt-2 mb-2">
+    <div class="col-lg-12">
+        <div class="alert-warning text-center" role="alert" style="background-color:aquamarine; color:#fff; border:none;">
+            <h5 id="report-date-range" class="mb-0" style="font-weight:bold;"> Please select any account to see ledger from filter option </h5>
+        </div>
+    </div>
+</div>
+<div class="tab-content" id="financeDashboardTabsContent">
+    <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
+        <div class="row">
+           
+            <div class="table-wrapper mt-1">
+                <table id="tblLedgerData" class="table fixed-width-table">
+                    <thead id="tblLedgerDataHeader">
+                    </thead>
+                    <tbody id="tblLedgerDataBody">
+                    </tbody>
+                    <tfoot>
+                    </tfoot>
+                </table>
+                <div class="paginator" id="paginator-tblLedgerData">
+                </div>
+            </div>
+           
+
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Finance.Reports/Script/LedgerNew.js"></script>

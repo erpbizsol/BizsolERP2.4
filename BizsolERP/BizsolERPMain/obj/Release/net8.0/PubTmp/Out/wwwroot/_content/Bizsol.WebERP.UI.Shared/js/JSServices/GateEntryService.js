@@ -145,6 +145,14 @@ const GateEntryService = {
             }
         );
     },
+    GetGateEntryERPDocumentDetails: function GetGateEntryERPDocumentDetails(DocNo, F_GateEntryType_Desp, ShowPendingDocNo, GodownMaster_Code) {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/GetGateEntryERPDocumentDetails?DocNo=${encodeURIComponent(DocNo)}&F_GateEntryType_Desp=${encodeURIComponent(F_GateEntryType_Desp)}&ShowPendingDocNo=${encodeURIComponent(ShowPendingDocNo)}&GodownMaster_Code=${encodeURIComponent(GodownMaster_Code)}`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetUOMMasterList: function GetUOMMasterList() {
         let url = UrlService.API_ENDPOINT_UOM + `/GetUOMMasterList`
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(

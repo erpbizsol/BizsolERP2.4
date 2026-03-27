@@ -1,3 +1,5 @@
+wwwroot\Script\BalancePOCancellation.js
+wwwroot\Script\BOM.js
 wwwroot\Script\BuyingCapacity.js
 wwwroot\Script\CollectionCommitment.js
 wwwroot\Script\CollectionCommitmentReport.js

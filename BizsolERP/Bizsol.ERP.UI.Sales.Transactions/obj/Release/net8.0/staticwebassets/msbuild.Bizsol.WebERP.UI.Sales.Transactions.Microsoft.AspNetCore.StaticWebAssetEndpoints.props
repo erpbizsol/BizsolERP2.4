@@ -3,14 +3,14 @@
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Sales.Transactions/Script/VerifyDispatchPlan.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\VerifyDispatchPlan.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
-      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-bqXzA4n8NQjoT3lSOvYDA27QsMMh/FJxKwE5pv1HnBA="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"49773"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022bqXzA4n8NQjoT3lSOvYDA27QsMMh/FJxKwE5pv1HnBA=\u0022"},{"Name":"Last-Modified","Value":"Fri, 14 Nov 2025 12:38:03 GMT"}]]]></ResponseHeaders>
+      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-dNhiFkkhULYIoO2PamXHIPmv/6U/fl3f38EXayZC8ns="}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"90616"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022dNhiFkkhULYIoO2PamXHIPmv/6U/fl3f38EXayZC8ns=\u0022"},{"Name":"Last-Modified","Value":"Wed, 25 Mar 2026 05:24:19 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
-    <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Sales.Transactions/Script/VerifyDispatchPlan.mjpl296yzi.js">
+    <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Sales.Transactions/Script/VerifyDispatchPlan.oz74b7b3r8.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\VerifyDispatchPlan.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
-      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"mjpl296yzi"},{"Name":"integrity","Value":"sha256-bqXzA4n8NQjoT3lSOvYDA27QsMMh/FJxKwE5pv1HnBA="},{"Name":"label","Value":"_content/Bizsol.WebERP.UI.Sales.Transactions/Script/VerifyDispatchPlan.js"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"49773"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022bqXzA4n8NQjoT3lSOvYDA27QsMMh/FJxKwE5pv1HnBA=\u0022"},{"Name":"Last-Modified","Value":"Fri, 14 Nov 2025 12:38:03 GMT"}]]]></ResponseHeaders>
+      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"oz74b7b3r8"},{"Name":"integrity","Value":"sha256-dNhiFkkhULYIoO2PamXHIPmv/6U/fl3f38EXayZC8ns="},{"Name":"label","Value":"_content/Bizsol.WebERP.UI.Sales.Transactions/Script/VerifyDispatchPlan.js"}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"90616"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022dNhiFkkhULYIoO2PamXHIPmv/6U/fl3f38EXayZC8ns=\u0022"},{"Name":"Last-Modified","Value":"Wed, 25 Mar 2026 05:24:19 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
   </ItemGroup>
 </Project>

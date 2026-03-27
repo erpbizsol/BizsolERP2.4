@@ -400,7 +400,6 @@ D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Production.Transactions\obj\Relea
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Production.Transactions\obj\Release\net8.0\ref\Bizsol.WebERP.UI.Production.Transactions.dll
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Production.Transactions\obj\Release\net8.0\swae.build.ex.cache
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Properties\launchSettings.json
-D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Production.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Production.Transactions.EmbeddedFilesManifest.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Production.Transactions\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Production.Transactions.Microsoft.AspNetCore.StaticWebAssets.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Production.Transactions\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Production.Transactions.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Production.Transactions\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Production.Transactions.props

@@ -1,0 +1,227 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/FGOffer.js"></script>
+<style>
+    .select2-container--open .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+
+    .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+
+    .card {
+        overflow: visible !important;
+    }
+
+    .card-body {
+        overflow: visible !important;
+    }
+
+    #dvFrom {
+        overflow: visible !important;
+    }
+
+    .row {
+        overflow: visible !important;
+    }
+
+    .select2-results {
+        max-height: 200px !important;
+        overflow-y: auto !important;
+    }
+
+    .select2-dropdown {
+        position: absolute !important;
+    }
+
+    .form-control-sm {
+        position: relative;
+    }
+
+    .main-content {
+        overflow: visible !important;
+    }
+
+    .col-md-3, .col-md-2 {
+        overflow: visible !important;
+    }
+
+    /* Responsive table height based on screen height (excluding header, paginator and footer) */
+    #dvGrid .table-wrapper {
+        max-height: calc(100vh - 320px);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+    #dvFrom .table-wrapper {
+        max-height: calc(100vh - 390px);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+        /* Sticky table header */
+        #dvGrid .table-wrapper thead,
+        #dvFrom .table-wrapper thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #fff;
+        }
+
+    .paginator {
+        position: sticky;
+        bottom: 15px;
+        background-color: #fff;
+        z-index: 5;
+    }
+
+    /* Disabled state styling for verified records */
+    .opacity-50 {
+        opacity: 0.5;
+    }
+
+    .cursor-not-allowed {
+        cursor: not-allowed !important;
+    }
+
+    input:disabled {
+        background-color: #e9ecef !important;
+        cursor: not-allowed !important;
+        color: #6c757d;
+    }
+
+    button:disabled {
+        cursor: not-allowed !important;
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    button:disabled:hover {
+        background-color: inherit !important;
+        border-color: inherit !important;
+    }
+</style>
+<div class="card p-2">
+    <div id="dvGrid" style="display:block;">
+        <div class="row text-end">
+            <div class="col-md-12">
+                <button class="btn btn-success icon-height mb-1" title="Create New" onclick="CreateNew()">Create New</button>
+                @* <button class="btn btn-primary icon-height mb-1" title="Download" onclick="Download()"><i class="fa fa-download"></i></button> *@
+            </div>
+        </div>
+        <div class="table-wrapper ">
+            <table id="tblRMOffer" class="fixed-width-table table">
+                <thead id="table-header">
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tblRMOffer">
+        </div>
+    </div>
+    <div id="dvFrom" style="display:none;">
+        <div class="row g-2">
+            <div class="col-md-3">
+                <label for="ddlClientName" class="form-label fw-semibold">Client Name <span class="text-danger">*</span></label>
+                <select id="ddlClientName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlOrderNo" class="form-label fw-semibold">Order No. <span class="text-danger">*</span></label>
+                <select id="ddlOrderNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlProjectNo" class="form-label fw-semibold">Project No. <span class="text-danger">*</span></label>
+                <select id="ddlProjectNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+            </div>
+            <div class="col-md-3" style="margin-top: 34px !important;">
+                <button type="button" id="btnRMOfferShow" class="btn btn-primary btn-height mb-1">Show</button>
+                <button class="btn btn-danger icon-height mb-1" title="Edit" id="btnBack" onclick="Back()">Back</button>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-3">
+                <label for="txtTicketNo" class="form-label fw-semibold">Ticket No. <span class="text-danger">*</span></label>
+                <input type="text" id="txtTicketNo" class="form-control form-control-sm box_border" readonly />
+            </div>
+            <div class="col-md-3">
+                <label for="txtDate" class="form-label fw-semibold">Ticket Date <span class="text-danger">*</span></label>
+                <input type="date" id="txtDate" class="form-control form-control-sm box_border" readonly />
+            </div>
+            <div class="col-md-3">
+                <label for="txtInspectionDate" class="form-label fw-semibold">Inspection Date <span class="text-danger">*</span></label>
+                <input type="date" id="txtInspectionDate" class="form-control form-control-sm box_border" />
+            </div>
+            <div class="col-md-3">
+                <label for="ddlInspectionLocation" class="form-label fw-semibold">Inspection Location <span class="text-danger">*</span></label>
+                <select id="ddlInspectionLocation" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table id="tblRMOfferEditable" class="fixed-width-table table">
+                <thead id="table-headerEditable">
+                </thead>
+                <tbody id="table-bodyEditable">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tblRMOfferEditable">
+        </div>
+    </div>
+</div>
+<div class="modal fade rps-detail-modal" id="dvRemark" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Remark</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="txtRemark" class="form-label filter-label">Remark </label> <span class="text-danger">*</span>
+                    <input type="text" id="txtRemark" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" />
+                    <input type="hidden" id="hfCode" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-12 text-end">
+                    <button type="button" class="btn btn-success icon-height" onclick="DeleteFGOfferModal()">Ok</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade rps-detail-modal" id="DetailModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-modal-title">Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper" style="min-height:200px !important;">
+                    <table id="DetailTable" class="fixed-width-table table">
+                        <thead id="DetailTable-head">
+                        </thead>
+                        <tbody id="DetailTable-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-DetailTable">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveRMInspectionRequest()">Save</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

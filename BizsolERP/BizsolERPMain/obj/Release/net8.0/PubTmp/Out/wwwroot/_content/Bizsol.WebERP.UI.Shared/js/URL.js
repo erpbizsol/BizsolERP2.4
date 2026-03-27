@@ -1,4 +1,4 @@
-﻿import { environment } from './environment.js';
+import { environment } from './environment.js';
 
 let UrlService = {
     BASE_URL: environment.BASE_URL,
@@ -113,6 +113,29 @@ let UrlService = {
     API_ENDPOINT_BalancePOCancellation: `${environment.BASE_URL}/BalancePOCancellation`,
     API_ENDPOINT_CRM_SALESRETURN: `${environment.BASE_URL}/CRMSalesReturn`,
     API_ENDPOINT_SalesanalysisAST: `${environment.BASE_URL}/SalesanalysisAST`,
+    API_ENDPOINT_QCPropertyGroupMaster: `${environment.BASE_URL}/QCPropertyGroupMaster`,
+    API_ENDPOINT_QCPropertyMaster: `${environment.BASE_URL}/QCPropertyMaster`,
+    API_ENDPOINT_QCPropertyTestTypeMaster: `${environment.BASE_URL}/QCPropertyTestTypeMaster`,
+    API_ENDPOINT_RawMaterialOffer: `${environment.BASE_URL}/RawMaterialOffer`,
+    //MachineMaintenanceRequest
+    API_ENDPOINT_MachineMaintenance: `${environment.BASE_URL}/MachineMaintenance`,
+    API_ENDPOINT_FGInspectedOffer: `${environment.BASE_URL}/FGInspectedEntry`,
+    //Ledger
+    API_ENDPOINT_Ledger: `${environment.BASE_URL}/Ledger`,
+    API_ENDPOINT_InvoiceGST: `${environment.BASE_URL}/InvoiceGST`,
+    API_ENDPOINT_Reports: `${environment.BASE_URL}/Reports`,
+    API_ENDPOINT_ProjectMaster: `${environment.BASE_URL}/ProjectMaster`,
+    API_ENDPOINT_SubProjectMaster: `${environment.BASE_URL}/SubProjectMaster`,
+    API_ENDPOINT_ItemMaster: `${environment.BASE_URL}/Item`,
+    API_ENDPOINT_VendorMaster: `${environment.BASE_URL}/VendorMaster`,
+    API_ENDPOINT_BOM: `${environment.BASE_URL}/BOM`,
+    API_ENDPOINT_PurchaseOrderMaster: `${environment.BASE_URL}/PurchaseOrderMaster`,
+    API_ENDPOINT_POApprovalConfig: `${environment.BASE_URL}/POApprovalConfig`,
+    API_ENDPOINT_GRNPaymentApprovalConfig: `${environment.BASE_URL}/GRNPaymentApprovalConfiguration`,
+    API_ENDPOINT_GRNService: `${environment.BASE_URL}/GRNService`,
+    API_ENDPOINT_GRNPaymentEntry: `${environment.BASE_URL}/GRNPaymentEntry`,
+    API_ENDPOINT_POLevelsApprove: `${environment.BASE_URL}/POLevelsApproval`,
+    API_ENDPOINT_GRNPaymentLevelsApproval: `${environment.BASE_URL}/GRNPaymentLevelsApproval`
 }
 
 export { UrlService  }

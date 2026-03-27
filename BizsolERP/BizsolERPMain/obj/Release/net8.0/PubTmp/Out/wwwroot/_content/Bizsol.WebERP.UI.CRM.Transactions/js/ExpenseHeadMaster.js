@@ -1,10 +1,11 @@
-﻿import { ExpenseHeadMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseHeadMasterService.js';
+import { ExpenseHeadMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseHeadMasterService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
 let G_Date = '';
 let G_ExpenseHeadMaster = 0;
 let G_Code = 0;
+let G_ExpenseHeadMaster_Mode = 'E';
 $(document).ready(function () {
     $("#ERPHeading").text("Expense Head Master");
     
@@ -12,8 +13,9 @@ $(document).ready(function () {
  });
 function GetExpenseHeadMasterTable(){
     ExpenseHeadMasterService.GetExpenseHeadMasterList().then(function (response) {
-        $("#tblExpenseHeadMaster").show();
-        if (response.length > 0) {
+        var $tableCard = $("#cardExpenseHeadMaster");
+        if (response && response.length > 0) {
+            $tableCard.show();
             const StringFilterColumn = [];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
@@ -34,11 +36,11 @@ function GetExpenseHeadMasterTable(){
                 
             });
 
-            BizsolCustomFilterGrid.CreateDataTable("table-header-ExpenseHeadMaster", "table-body-ExpenseHeadMaster", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
-        }
-        else {
-            toastr.error('No Data Found');
-            $("#tblExpenseHeadMaster").hide();
+            BizsolCustomFilterGrid.CreateDataTable("table-header-ExpenseHeadMaster", "table-body-ExpenseHeadMaster", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            $("#paginator-ExpenseHeadMaster").show();
+        } else {
+            $tableCard.hide();
+            toastr.info('No expense heads found. Click "Create New" to add one.');
         }
     });
 }
@@ -58,6 +60,7 @@ function validateDecimalInput(input) {
 }
 function EditData(Code, desp, Mode) {
     G_ExpenseHeadMaster = Code;
+    G_ExpenseHeadMaster_Mode = Mode || 'E';
     if (Mode === 'V') {
         CreateNew_ExpenseHeadMaster();
         $('#txtExpenseDescription').val(desp);
@@ -78,8 +81,11 @@ function GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, Mode) {
         return false;
     }
     ExpenseHeadMasterService.GetExpenseHeadMasterByCode(G_ExpenseHeadMaster).then(function (response) {
-        $("#tblExpenseHeadLimitDetails").show();
-        if (response.length > 0) {
+        var $limitRow = $("#rowExpenseHeadLimitDetails");
+        var $limitCard = $("#cardExpenseHeadLimitDetails");
+        if (response && response.length > 0) {
+            $limitRow.show();
+            $limitCard.show();
             const data = response; 
             const StringFilterColumn = [];
             const NumericFilterColumn = [];
@@ -102,7 +108,8 @@ function GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, Mode) {
 
             });
 
-            BizsolCustomFilterGrid.CreateDataTable("table-header-ExpenseHeadLimitDetails", "table-body-ExpenseHeadLimitDetails", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+            BizsolCustomFilterGrid.CreateDataTable("table-header-ExpenseHeadLimitDetails", "table-body-ExpenseHeadLimitDetails", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            $("#paginator-ExpenseHeadLimitDetails").show();
             //if (data.DesignationName) {
             //    BizSolHelperFunction.SelectOptionByText('txtDesignation', data.DesignationName);
             //}
@@ -115,13 +122,11 @@ function GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, Mode) {
             //    $('#txtPerDayLimit').val(data.PerDayLimit);
             //}
             if (Mode === 'V') {
-            $('.EditButtonLimitData').prop('disabled', true);
-
-        }
+                $('.EditButtonLimitData').prop('disabled', true);
             }
-        else {
-            toastr.error('No Data Found');
-            $("#tblExpenseHeadLimitDetails").hide();
+        } else {
+            $limitRow.hide();
+            $limitCard.hide();
         }
     });
 }
@@ -137,6 +142,7 @@ function EditLimitData(desp,effectiveDate,parDayLimit) {
     $('#txtPerDayLimit').val(parDayLimit);
 }
 function CreateNew_ExpenseHeadMaster() {
+    G_ExpenseHeadMaster_Mode = 'E';
     $('#locateExpenseHeadMaster').hide();
     $('#newCreateForm').show();
     $('#newCreateFormExpenseHeadLimit').show();
@@ -156,7 +162,7 @@ function ExpenseHeadMaster_Back() {
     $('#newCreateFormExpenseHeadLimit').hide();
     ClearFormData();
     GetExpenseHeadMasterTable();
-    $("#tblExpenseHeadLimitDetails").hide();
+    $("#rowExpenseHeadLimitDetails").hide();
     $('#txtExpenseDescription').val('');
 }
 function GetDESIGNATIONAMEList() {
@@ -225,24 +231,31 @@ function submit_ExpenseHeadMaster() {
         expenseHeadLimitDetails: objExpenseHeadLimitDetails 
     };
 
-    ExpenseHeadMasterService.SaveExpenseHeadMaster(payLoadData )
+    ExpenseHeadMasterService.SaveExpenseHeadMaster(payLoadData)
         .then(function (response) {
-            if (response.Status === 'Y') {
-                toastr.success(response.Msg);
-                GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, Mode);
-
+            if (response && response.Status === 'Y') {
+                ShowExpenseHeadMasterSuccessModal("Saved Successfully!", response.Msg || "Expense head has been saved.", "fa-circle-check");
+                GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, G_ExpenseHeadMaster_Mode);
                 ClearFormData();
-            }
-            else if (response.Status === 'N') {
+            } else if (response && response.Status === 'N') {
                 toastr.warning(response.Msg);
             }
         });
 }
 $('#btnExpenseEntryListDetails').click(function (e) {
-
     window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
-
 });
+
+function ShowExpenseHeadMasterSuccessModal(title, text, iconClass) {
+    $('#eeSuccessModalTitle').text(title || "Done!");
+    $('#eeSuccessModalText').text(text || "Operation completed successfully.");
+    $('#eeSuccessModalIcon').removeClass().addClass('fas ' + (iconClass || 'fa-circle-check'));
+    $('#eeSuccessBackdrop').addClass('show');
+}
+
+function CloseExpenseHeadMasterSuccessModal() {
+    $('#eeSuccessBackdrop').removeClass('show');
+}
 
 window.GetExpenseHeadMasterTable = GetExpenseHeadMasterTable;
 window.EditData = EditData;
@@ -251,3 +264,4 @@ window.ExpenseHeadMaster_Back = ExpenseHeadMaster_Back;
 window.validateDecimalInput = validateDecimalInput;
 window.submit_ExpenseHeadMaster = submit_ExpenseHeadMaster;
 window.EditLimitData = EditLimitData;
+window.CloseExpenseHeadMasterSuccessModal = CloseExpenseHeadMasterSuccessModal;

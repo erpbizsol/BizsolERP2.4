@@ -54,7 +54,10 @@
     }
 
     function l(t) {
-        document.getElementById(t).checked = !0;
+        var element = document.getElementById(t);
+        if (element) {
+            element.checked = !0;
+        }
     }
 
     function c() {

@@ -3,6 +3,8 @@ import { SlittingProductionEntryService } from '../../Bizsol.WebERP.UI.Shared/js
 import { SizeControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_SizeControlService.js';
 import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
 import { BreakDownService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_BreakDownService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+
 $("#ERPHeading").text("Production Entry GP");
 $('#txtFromDate').val(new Date().toISOString().slice(0, 10));
 $('#txtToDate').val(new Date().toISOString().slice(0, 10));
@@ -44,6 +46,7 @@ let indxHiddenCol_tbSlittingReceivedDetails = 12;
 
 let G_SlittingPlanMaster_Code = 0;
 let G_Row = ''
+let G_NewPlanSummary = []; // holds last GetSlittingPlanOrEntrySummary response for New mode
 
 let G_UserMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
 let prevFocus;
@@ -59,29 +62,330 @@ function ChangeMode(Mode) {
         $('#DivProductionGPForm').hide();
         $('#DivProductionGPViewGrid').show();
     }
-
 }
-function SlittingProductionEntry_ShowPlanGrid() {
-    let FromDate = $('#txtFromDate').val(), Todate = $('#txtToDate').val();
+function SlittingProductionEntry_GetValue(item, keys, prefix = '', defaultValue = '') {
+    if (!item) return defaultValue;
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        if (item[key] !== undefined && item[key] !== null && item[key] !== '') {
+            return prefix + item[key];
+        }
+    }
+    return defaultValue;
+}
+function SlittingProductionEntry_IsBlank(value) {
+    return value === undefined || value === null || value === '';
+}
+function SlittingProductionEntry_GetInTimeValue(item) {
+    return SlittingProductionEntry_GetValue(item, ['InTime', 'In Time', 'In_Time', 'StartTime', 'Start Time'], '');
+}
+function SlittingProductionEntry_GetPriorityNo(item) {
+    let p = SlittingProductionEntry_GetValue(item, ['Priority', 'Priority No', 'PriorityNo', 'priority'], '');
+    if (SlittingProductionEntry_IsBlank(p)) {
+        return 999999;
+    }
+    let n = parseFloat(p);
+    if (isNaN(n)) {
+        return 999999;
+    }
+    return n;
+}
+function SlittingProductionEntry_GetPlanCode(item) {
+    return SlittingProductionEntry_GetValue(item, ['SlittingPlanMaster_Code', 'Code'], '');
+}
+function SlittingProductionEntry_FindPlanIndexByCode(list, planCode) {
+    if (!Array.isArray(list)) {
+        return -1;
+    }
+    for (let i = 0; i < list.length; i++) {
+        let code = SlittingProductionEntry_GetPlanCode(list[i]);
+        if (code !== '' && planCode !== '' && code.toString() === planCode.toString()) {
+            return i;
+        }
+    }
+    return -1;
+}
+function SlittingProductionEntry_SortPlansByPriority(list) {
+    list.sort(function (a, b) {
+        return SlittingProductionEntry_GetPriorityNo(a) - SlittingProductionEntry_GetPriorityNo(b);
+    });
+}
+
+function SlittingProductionEntry_BuildPlanCardHtml(item, isMainCard) {
+    const planNo = SlittingProductionEntry_GetValue(item, ['PlanNo', 'Plan No', 'Plan_No', 'PackingList No'], '');
+    const planDate = SlittingProductionEntry_GetValue(item, ['PlanDate', 'Plan Date', 'Date'], '');
+    const millName = SlittingProductionEntry_GetValue(item, ['Desp', 'Mill Name', 'Mill', 'MachineName', 'Machine Name'], '');
+    const processName = SlittingProductionEntry_GetValue(item, ['ProcessName', 'Process Name', 'Process', 'ProcessDesp'], '');
+    const coilId = SlittingProductionEntry_GetValue(item, ['IdentificationNo', 'Identification No', 'CoilId', 'Coil ID'], '');
+    const coilSize = SlittingProductionEntry_GetValue(item, ['CoilSize', 'SizeDesp', 'Size Desp'], '');
+    const coilWeight = SlittingProductionEntry_GetValue(item, ['CoilWeight', 'Weight', 'QtyKG', 'Qty KG'], '');
+    const output = SlittingProductionEntry_GetValue(item, ['Slitting Combination', 'OutPut', 'SlittingCombination', 'OutPutDesp'], '');
+    const planCode = SlittingProductionEntry_GetPlanCode(item);
+    const inTime = SlittingProductionEntry_GetInTimeValue(item);
+
+    let editBtn = '';
+    if (planCode) {
+        editBtn = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_EditOrView(\'Y\',\'' + planCode + '\')"> <i class="fa fa-pencil"></i></a>';
+    }
+
+    let startDisabledAttr = '';
+    let startBtnClass = 'btn-success';
+    if (!SlittingProductionEntry_IsBlank(inTime)) {
+        startDisabledAttr = ' disabled';
+        startBtnClass = 'btn-secondary';
+    }
+
+    let startBtnCssClass = 'btn-start-upcoming';
+    if (isMainCard === true) {
+        startBtnCssClass = 'btn-start-main';
+    }
+
+    let endBtnCssClass = 'btn-end-upcoming';
+    if (isMainCard === true) {
+        endBtnCssClass = 'btn-end-main';
+    }
+
+    let html = '<div class="card slit-plan-card col-12 col-sm-6 mt-3" data-plan-code="' + planCode + '">' +
+        '<div class="card-body">' +
+        '<div class="table-responsive">' +
+        '<table class="slit-plan-table">' +
+        '<tr>' +
+        '<th style="width:16%; min-width:80px;">Plan No</th>' +
+        '<td style="width:15%; min-width:100px;">' + (planNo || '') + '</td>' +
+        '<td colspan="6" class="d-none d-md-table-cell"></td>' +
+        '<th style="width:20%; min-width:80px;">Plan Date</th>' +
+        '<td style="width:25%; min-width:100px;">' + (planDate || '') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-header-main">' + (millName ? 'Machine : ' + millName : 'Machine :') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-header-sub">' + (processName ? 'Process : ' + processName : 'Process :') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-coil-id">' + (coilId ? 'Coil Id : ' + coilId : 'Coil Id :') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-coil-size">' + (coilSize ? 'Coil Size : ' + coilSize : 'Coil Size :') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-coil-weight">' + (coilWeight ? 'Coil Weight : ' + coilWeight : 'Coil Weight :') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-output">' + (output ? 'Output : ' + output : 'Output :') + '</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td colspan="10" class="slit-plan-actions-row">' +
+        '<div class="d-flex align-items-center w-100">' +
+        '<div class="d-flex align-items-center" style="flex:1; justify-content:flex-start; gap:8px;">' +
+        '<button type="button" class="btn ' + startBtnClass + ' btn-height btn-sm ' + startBtnCssClass + '" data-plan-code="' + planCode + '"' + startDisabledAttr + '>Start Time</button>' +
+        '<span class="slit-plan-actions-time">' + (inTime || '') + '</span>' +
+        '</div>' +
+        '<div style="flex:0; text-align:center;">' + editBtn + '</div>' +
+        '<div style="flex:1; display:flex; justify-content:flex-end;">' +
+        '<button type="button" class="btn btn-danger btn-height btn-sm ' + endBtnCssClass + '" disabled>End Time</button>' +
+        '</div>' +
+        '</div>' +
+        '</td>' +
+        '</tr>' +
+        '</table>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+
+    return html;
+}
+
+function SlittingProductionEntry_BindNewPlanLayout(plans) {
+    $('#mainPlanCard').empty();
+    $('#upcomingPlansContainer').empty();
+    $('#upcomingPlansSection').hide();
+    $('#runningPlanHeader').hide();
+
+    if (!plans || plans.length === 0) {
+        return;
+    }
+
+    let runningCards = [];
+    let upcomingCards = [];
+
+    // First, separate running (InTime not blank) and others
+    for (let i = 0; i < plans.length; i++) {
+        let inTime = SlittingProductionEntry_GetInTimeValue(plans[i]);
+
+        if (!SlittingProductionEntry_IsBlank(inTime)) {
+            runningCards.push(plans[i]);
+        } else {
+            upcomingCards.push(plans[i]);
+        }
+    }
+
+    // Only ONE running plan card: pick by Priority
+    let mainCard = null;
+    if (runningCards.length > 0) {
+        SlittingProductionEntry_SortPlansByPriority(runningCards);
+        mainCard = runningCards[0];
+    }
+
+    // Build upcoming list = all plans except the selected mainCard
+    let allUpcoming = [];
+    for (let i = 0; i < plans.length; i++) {
+        let planCode = SlittingProductionEntry_GetPlanCode(plans[i]);
+        let isMain = false;
+
+        if (mainCard !== null) {
+            let mainCode = SlittingProductionEntry_GetPlanCode(mainCard);
+            if (mainCode !== '' && planCode !== '' && mainCode.toString() === planCode.toString()) {
+                isMain = true;
+            }
+        }
+
+        if (!isMain) {
+            allUpcoming.push(plans[i]);
+        }
+    }
+
+    // Render single running plan card (if any)
+    if (mainCard !== null) {
+        $('#runningPlanHeader').show();
+        $('#mainPlanCard').append(SlittingProductionEntry_BuildPlanCardHtml(mainCard, true));
+    }
+
+    // Render upcoming plans
+    if (allUpcoming.length > 0) {
+        $('#upcomingPlansSection').show();
+        SlittingProductionEntry_SortPlansByPriority(allUpcoming);
+        for (let i = 0; i < allUpcoming.length; i++) {
+            $('#upcomingPlansContainer').append(SlittingProductionEntry_BuildPlanCardHtml(allUpcoming[i], false));
+        }
+    }
+}
+
+$(document).on('click', '.btn-start-main', function () {
+    let btn = $(this);
+    let planCode = btn.data('plan-code');
+
+    if (planCode && planCode !== '' && planCode !== 0 && planCode !== '0') {
+        Showloader();
+        SlittingProductionEntryService.StartTimeUpdated(planCode).then(function (resp) {
+            HideLoader();
+            if (resp && resp.Status === 'N') {
+                toastr.error(resp.Msg || 'Failed to update start time.');
+                return;
+            }
+
+            let now = new Date();
+            let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            btn.closest('.slit-plan-actions-row').find('.slit-plan-actions-time').text(timeText);
+
+            let idx = SlittingProductionEntry_FindPlanIndexByCode(G_NewPlanSummary, planCode);
+            if (idx >= 0) {
+                G_NewPlanSummary[idx].StartTime = timeText;
+                G_NewPlanSummary[idx].InTime = timeText;
+            }
+            
+            btn.prop('disabled', true);
+            btn.removeClass('btn-success').addClass('btn-secondary');
+        }).catch(function () {
+            HideLoader();
+        });
+    }
+});
+
+$(document).on('click', '.btn-end-main', function () {
+    let now = new Date();
+    let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    $('#spEndTimeCell').text(timeText);
+
+    $(this).prop('disabled', true);
+    $(this).removeClass('btn-danger').addClass('btn-secondary');
+});
+
+$(document).on('click', '.btn-start-upcoming', function () {
+    let btn = $(this);
+    let planCode = btn.data('plan-code');
+
+    if (planCode && planCode !== '' && planCode !== 0 && planCode !== '0') {
+        Showloader();
+        SlittingProductionEntryService.StartTimeUpdated(planCode).then(function (resp) {
+            HideLoader();
+            if (resp && resp.Status === 'N') {
+                toastr.error(resp.Msg || 'Failed to update start time.');
+                return;
+            }
+
+            let now = new Date();
+            let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            let idx = SlittingProductionEntry_FindPlanIndexByCode(G_NewPlanSummary, planCode);
+            if (idx >= 0) {
+                G_NewPlanSummary[idx].StartTime = timeText;
+                G_NewPlanSummary[idx].InTime = timeText;
+
+                // Rebuild layout: this will add ONE running plan card in mainPlanCard
+                // and move this plan from upcoming to main section
+                SlittingProductionEntry_BindNewPlanLayout(G_NewPlanSummary);
+            } else {
+                btn.closest('.slit-plan-actions-row').find('.slit-plan-actions-time').text(timeText);
+                btn.prop('disabled', true);
+                btn.removeClass('btn-success').addClass('btn-secondary');
+            }
+        }).catch(function () {
+            HideLoader();
+        });
+    }
+});
+$(document).on('click', '.btn-end-upcoming', function () {
+    let planIndex = $(this).data('plan-index');
+    let now = new Date();
+    let timeText = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     
+    $('.upcoming-end-time-' + planIndex).text(timeText);
+    
+    $(this).prop('disabled', true);
+    $(this).removeClass('btn-danger').addClass('btn-secondary');
+});
+function SlittingProductionEntry_ShowPlanGrid() {
+    let filterType = $('input[name="filterType"]:checked').val();
+    let FromDate = $('#txtFromDate').val(), Todate = $('#txtToDate').val();
+
     if (FromDate == "" && Todate == "") {
         return false;
     }
-    let filterType = $('input[name="filterType"]:checked').val();
+
+    let apiFilterType = filterType === 'New' ? 'Plan' : filterType;
+
     Showloader();
-    SlittingProductionEntryService.GetSlittingPlanOrEntrySummary(FromDate, Todate,filterType).then(function (response) {
+    SlittingProductionEntryService.GetSlittingPlanOrEntrySummary(FromDate, Todate, apiFilterType).then(function (response) {
         HideLoader();
+
+        if (filterType === 'New') {
+            G_NewPlanSummary = Array.isArray(response) ? response : [];
+
+            $('#NewPlanLayout').show();
+            $('.fixed-height-table').hide();
+            $('#paginator-tbProductionGPView').hide();
+
+            SlittingProductionEntry_BindNewPlanLayout(G_NewPlanSummary);
+            return;
+        } else {
+            $('#NewPlanLayout').hide();
+            $('.fixed-height-table').show();
+            $('#paginator-tbProductionGPView').show();
+        }
+
         if (filterType == 'Plan') {
             response.forEach(item => {
                 item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_EditOrView(\'Y\',\'' + item.SlittingPlanMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>'
             });
         }
         else {
-            
-                response.forEach(item => {
-                    item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_Print(\'' + item["Identification No"] + '\')"> <i class="fa fa-print"></i></a>'
-                });
-            
+
+            response.forEach(item => {
+                item.Action = '<a class="btn btn-info icon-height" onclick="SlittingProductionEntry_Print(\'' + item["Identification No"] + '\')"> <i class="fa fa-print"></i></a>'
+            });
+
         }
 
        // console.log(response);
@@ -97,7 +401,7 @@ function SlittingProductionEntry_ShowPlanGrid() {
         const Button = false;
         const showButtons = []
         const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["QtyMT", "QtyPC", "QtyMTRS","SlittingPlanMaster_Code"];
+        const hiddenColumns = ["QtyMT", "QtyPC", "QtyMTRS", "SlittingPlanMaster_Code", "Desp", "Slitting Combination","InTime"];
         const ColumnAlignment = {
             "Qty PC": 'right',
             "Qty KG": 'right',
@@ -1487,6 +1791,8 @@ SlittingProductionEntry_ShowPlanGrid();
 getPackingListFGFixedParaMeters();
 Bind_AllDLL();
 Bind_ddlIdNo('dllAllPlansOrId', G_UserMaster_Code);
+LoadConfigurationAndManageRadioButtons();
+
 //LoadFrm();
 
 //var CustomData, ResultsAdapter; 
@@ -1581,6 +1887,214 @@ Bind_ddlIdNo('dllAllPlansOrId', G_UserMaster_Code);
 //    }
 //});
 
+async function LoadConfigurationAndManageRadioButtons() {
+  let configValueResponse = await SlittingProductionEntryService.GetConfigSlittingProduction()
+    if(configValueResponse){
+        let configValue = '';
+        
+        $.each(configValueResponse[0], function (key, val) {
+            if (key === 'WebSlittingProductionAsPer') {
+                configValue = val;
+            }
+        });
+        
+        ManageRadioButtonVisibility(configValue);
+        
+        if (configValue === 'S') {
+            $('input[name="filterType"][value="New"]').prop('checked', true);
+        } else if (configValue === 'M') {
+            $('input[name="filterType"][value="Plan"]').prop('checked', true);
+        } else if (configValue === 'B') {   
+            $('input[name="filterType"][value="Plan"]').prop('checked', true);
+        }
+    }
+}
+function ShowSlittingProductionConfigurationModal() {
+    $("#SlittingProductionConfigurationModal").modal({
+        backdrop: 'static',
+        // keyboard: false
+    });
+    $("#SlittingProductionConfigurationModal").modal('show');
+        
+        InitializeConfigurationCheckboxes();
+        
+}
+function setSlittingProductionParamater(element, PerameterValue) {
+    let SetPerameterValue = 'N';
+    if (element.checked == true) {
+        SetPerameterValue = 'Y';
+    }
+    
+    let configValue = '';
+    if ($('#chkSingleValue').is(':checked')) {
+        configValue = 'S';
+    } else if ($('#chkMultipleValue').is(':checked')) {
+        configValue = 'M';
+    } else if ($('#chkBothValue').is(':checked')) {
+        configValue = 'B';
+    }
+    
+    SlittingProductionEntryService.UpdateConfigSlittingProduction(SetPerameterValue).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+            
+        }
+    });
+
+}
+function InitializeConfigurationCheckboxes() {
+    $('#chkSingleValue').off('change').on('change', function () {
+        HandleConfigurationCheckboxChange('S', $(this).is(':checked'));
+    });
+    
+    $('#chkMultipleValue').off('change').on('change', function () {
+        HandleConfigurationCheckboxChange('M', $(this).is(':checked'));
+    });
+    
+    $('#chkBothValue').off('change').on('change', function () {
+        HandleConfigurationCheckboxChange('B', $(this).is(':checked'));
+    });
+    
+    LoadConfigurationCheckboxValues();
+}
+function HandleConfigurationCheckboxChange(valueType, isChecked) {
+    if (isChecked) {
+        if (valueType === 'S') {
+            $('#chkMultipleValue').prop('checked', false);
+            $('#chkBothValue').prop('checked', false);
+        } else if (valueType === 'M') {
+            $('#chkSingleValue').prop('checked', false);
+            $('#chkBothValue').prop('checked', false);
+        } else if (valueType === 'B') {
+            $('#chkSingleValue').prop('checked', false);
+            $('#chkMultipleValue').prop('checked', false);
+        }
+    }
+    
+    let SetPerameterValue = isChecked ? valueType : '';
+    
+    SlittingProductionEntryService.UpdateConfigSlittingProduction(SetPerameterValue).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+            ManageRadioButtonVisibility(SetPerameterValue);
+            $("#SlittingProductionConfigurationModal").modal('hide');
+            if (SetPerameterValue === 'S') {
+                $('input[name="filterType"][value="New"]').prop('checked', true);
+            } else if (SetPerameterValue === 'M') {
+                $('input[name="filterType"][value="Plan"]').prop('checked', true);
+            } else if (SetPerameterValue === 'B') {
+                $('input[name="filterType"][value="Plan"]').prop('checked', true);
+            }
+            setTimeout(function () {
+                SlittingProductionEntry_ShowPlanGrid();
+            }, 1000);
+        }
+    });
+    
+    SaveConfigurationCheckboxValue(valueType, isChecked);
+}
+function SaveConfigurationCheckboxValue(valueType, isChecked) {
+    let selectedValue = '';
+    if (isChecked) {
+        selectedValue = valueType;
+    }
+    
+    sessionStorage.setItem('SlittingProductionConfigValue', selectedValue);
+    console.log('Configuration saved: ' + selectedValue);
+}
+function LoadConfigurationCheckboxValues() {
+    let savedValue = sessionStorage.getItem('SlittingProductionConfigValue');
+    
+    if (savedValue) {
+        if (savedValue === 'S') {
+            $('#chkSingleValue').prop('checked', true);
+        } else if (savedValue === 'M') {
+            $('#chkMultipleValue').prop('checked', true);
+        } else if (savedValue === 'B') {
+            $('#chkBothValue').prop('checked', true);
+        }
+    }
+}
+function GetSelectedConfigurationValue() {
+    if ($('#chkSingleValue').is(':checked')) {
+        return 'S';
+    } else if ($('#chkMultipleValue').is(':checked')) {
+        return 'M';
+    } else if ($('#chkBothValue').is(':checked')) {
+        return 'B';
+    }
+    return '';
+}
+function ManageRadioButtonVisibility(configValue) {
+    let radioButtons = $('input[name="filterType"]');
+    
+    if (configValue === 'S') {
+        radioButtons.each(function () {
+            let radioValue = $(this).val();
+            let textNode = this.nextSibling;
+            
+            if (radioValue === 'New' || radioValue === 'Entry') {
+                $(this).css('display', 'inline');
+                if (textNode && textNode.nodeType === 3) {
+                    textNode.nodeValue = textNode.nodeValue.trim() ? ' ' + radioValue : radioValue;
+                }
+            } else if (radioValue === 'Plan') {
+                $(this).css('display', 'none');
+                if (textNode && textNode.nodeType === 3) {
+                    textNode.nodeValue = '';
+                }
+            }
+        });
+        
+        if ($('input[name="filterType"]:checked').val() === 'Plan') {
+            $('input[name="filterType"][value="Entry"]').prop('checked', true);
+        }
+    } else if (configValue === 'M') {
+        radioButtons.each(function () {
+            let radioValue = $(this).val();
+            let textNode = this.nextSibling;
+            
+            if (radioValue === 'Plan' || radioValue === 'Entry') {
+                $(this).css('display', 'inline');
+                if (textNode && textNode.nodeType === 3) {
+                    textNode.nodeValue = textNode.nodeValue.trim() ? ' ' + radioValue : radioValue;
+                }
+            } else if (radioValue === 'New') {
+                $(this).css('display', 'none');
+                if (textNode && textNode.nodeType === 3) {
+                    textNode.nodeValue = '';
+                }
+            }
+        });
+        
+        if ($('input[name="filterType"]:checked').val() === 'New') {
+            $('input[name="filterType"][value="Plan"]').prop('checked', true);
+        }
+    } else if (configValue === 'B') {
+        radioButtons.each(function () {
+            let radioValue = $(this).val();
+            let textNode = this.nextSibling;
+            
+            $(this).css('display', 'inline');
+            if (textNode && textNode.nodeType === 3) {
+                textNode.nodeValue = textNode.nodeValue.trim() ? ' ' + radioValue : radioValue;
+            }
+        });
+    } else {
+        radioButtons.each(function () {
+            let radioValue = $(this).val();
+            let textNode = this.nextSibling;
+            
+            $(this).css('display', 'inline');
+            if (textNode && textNode.nodeType === 3) {
+                textNode.nodeValue = textNode.nodeValue.trim() ? ' ' + radioValue : radioValue;
+            }
+        });
+    }
+}
+
+BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnSlittingProductionConfiguration');
+
 window.SlittingProductionEntry_CreateNew = SlittingProductionEntry_CreateNew;
 window.SlittingProductionEntry_Back = SlittingProductionEntry_Back;
 window.SlittingProductionEntry_ShowPlanGrid = SlittingProductionEntry_ShowPlanGrid;
@@ -1600,5 +2114,8 @@ window.SlittingProductionEntry_OnChangeddlParantID = SlittingProductionEntry_OnC
 window.SlittingProductionEntry_CreatNewEntry = SlittingProductionEntry_CreatNewEntry;
 window.SlittingProductionEntry_GetSCaleWeight = SlittingProductionEntry_GetSCaleWeight;
 window.SlittingProductionEntry_Print = SlittingProductionEntry_Print;
-
-
+window.ShowSlittingProductionConfigurationModal = ShowSlittingProductionConfigurationModal
+window.setSlittingProductionParamater = setSlittingProductionParamater
+window.InitializeConfigurationCheckboxes = InitializeConfigurationCheckboxes
+window.GetSelectedConfigurationValue = GetSelectedConfigurationValue
+window.LoadConfigurationAndManageRadioButtons = LoadConfigurationAndManageRadioButtons

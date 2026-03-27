@@ -1,3 +1,4 @@
+wwwroot\css\ExpenseEntry.css
 wwwroot\js\CheckinOrCheckout.js
 wwwroot\js\ClosePendingOrder.js
 wwwroot\js\CRMDashboard.js
@@ -12,6 +13,7 @@ wwwroot\js\PendingOrder.js
 wwwroot\js\RoutePlanMaster - Copy.js
 wwwroot\js\RoutePlanMaster.js
 wwwroot\js\RoutePlanVerify.js
+wwwroot\js\SalesReturn.js
 wwwroot\js\UnverifiedExceededOrder.js
 wwwroot\js\VerifyOrder.js
 wwwroot\js\Visit.js

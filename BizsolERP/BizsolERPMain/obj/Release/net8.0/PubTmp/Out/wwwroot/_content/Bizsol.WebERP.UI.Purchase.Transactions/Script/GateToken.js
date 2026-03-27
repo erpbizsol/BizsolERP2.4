@@ -1,7 +1,9 @@
 ﻿import { GateEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GateEntryService.js';
 import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 $("#ERPHeading").text("Gate Token / Reporting");
 let AutoReportingDateTime = 'N';
+let G_VehicleOtherDetails = 'N';
 let GateEntryImageDetail = [{
     imgVehicle: [],
     imgMaterial: [],
@@ -9,6 +11,7 @@ let GateEntryImageDetail = [{
     ImgOther: []
 
 }];
+let GateEntryLinkedERPDocuments = [];
 //$('#txtFromDate').val(new Date().toISOString().slice(0, 10));
 //$('#txtToDate').val(new Date().toISOString().slice(0, 10));
 //window.GateToken_ShowReport = function GateToken_ShowReport() {
@@ -70,6 +73,7 @@ function GateToken_SaveData() {
     let RCExpiredDate = "";
     let DriverLicenseNo = "";
     let DriverLicenseExpiredDate = "";
+    let DriverAadharNo = "";
 
     let GateEntryMaster_Code = 0;
     
@@ -87,6 +91,7 @@ function GateToken_SaveData() {
     RCExpiredDate = $('#frmGateToken_txtRCExpiredDate').val();
     DriverLicenseNo = $('#frmGateToken_txtDriverLicenseNo').val();
     DriverLicenseExpiredDate = $('#frmGateToken_txtDriverLicenseExpiredDate').val();
+    DriverAadharNo = $('#frmGateToken_txtDriverAadharNo').val();
     
 
 
@@ -164,26 +169,31 @@ function GateToken_SaveData() {
                     rCNo: RCNo,
                     rCExpiredDate: RCExpiredDate,
                     driverLicenseNo: DriverLicenseNo,
-                    driverLicenseExpiredDate: DriverLicenseExpiredDate
-
+                    driverLicenseExpiredDate: DriverLicenseExpiredDate,
+                    driverAadharNo: DriverAadharNo
                 }
             ],
 
-            gateEntryImageDetail: GateEntryImageDetail
-
+            gateEntryImageDetail: GateEntryImageDetail,
+            gateEntryLinkedERPDocuments: GateEntryLinkedERPDocuments
         }
 
+        if (G_VehicleOtherDetails == 'Y') {
+            var rcConfirmation = getRCExpiredDateConfirm(RCExpiredDate);
 
+            if (rcConfirmation === 'N') {
+                return;
+            }
+        }
         Showloader();
         GateEntryService.SaveGateEntryMaster(JSON.stringify(GateEntryPostdata), POItemsData, 'GenerateGateToken').then(function (response) {
             if (response.Status === 'Y') {
                 HideLoader();
                 toastr.success(response.Msg);
-                if (AutoReportingDateTime=='Y') {
+                if (AutoReportingDateTime == 'Y') {
                     $('#frmGateToken_txtReportingDatetime').val(toLocalISOString(new Date()));
                     $('#frmGateToken_txtReportingDatetime').attr('readonly', 'readonly');
                 }
-                // window.location.href = sessionStorage.getItem('AppBaseURL') +'PurchaseTransactions/GateEntry/GateEntryView';
                 $('#spNote')[0].innerHTML = response.Msg;
             }
             else {
@@ -191,7 +201,6 @@ function GateToken_SaveData() {
                 HideLoader();
             }
         });
-
     }
 
 }
@@ -201,20 +210,24 @@ function ShowHideVehicleOtherDetails() {
     $('#DivGateTokenRCExpiredDate').hide();
     $('#DivGateTokenDriverLicenseNo').hide();
     $('#DivGateTokenDriverLicenseExpiredDate').hide();
+    $('#DivGateTokenDriverAadharNo').hide();
 
     GateEntryService.GetConfigGateEntry().then(function (response) {
         if (response.length > 0 && response.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
+            G_VehicleOtherDetails = 'Y';
             $('#frmGateToken_txtChassisNo').val('');
             $('#frmGateToken_txtRCNo').val('');
             $('#frmGateToken_txtRCExpiredDate').val('');
             $('#frmGateToken_txtDriverLicenseNo').val('');
             $('#frmGateToken_txtDriverLicenseExpiredDate').val('');
+            $('#frmGateToken_txtDriverAadharNo').val('');
 
             $('#DivGateTokenChassisNo').show();
             $('#DivGateTokenRCNo').show();
             $('#DivGateTokenRCExpiredDate').show();
             $('#DivGateTokenDriverLicenseNo').show();
             $('#DivGateTokenDriverLicenseExpiredDate').show();
+            $('#DivGateTokenDriverAadharNo').show();
         }
         
        
@@ -240,13 +253,14 @@ function ShowHideVehicleOtherDetails() {
                                 GateEntryService.GetDriverDetailsByVehicleNo("DRIVERDETAILS", selectedItem.Desp).then(function (RespVehicleDetails) {
                                     if (RespVehicleDetails.length > 0) {
                                         if (response.length > 0 && response.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
-                                            $('#frmGateToken_txtChassisNo').val(RespVehicleDetails[0].ChassisNo);
-                                            $('#frmGateToken_txtRCNo').val(RespVehicleDetails[0].RCNo);
-                                            $('#frmGateToken_txtRCExpiredDate').val(new Date(RespVehicleDetails[0].RCExpiredDate).toISOString().slice(0, 10));
+                                            $('#frmGateToken_txtChassisNo').val(RespVehicleDetails[0].ChassisNo || '');
+                                            $('#frmGateToken_txtRCNo').val(RespVehicleDetails[0].RCNo || '');
+                                            $('#frmGateToken_txtRCExpiredDate').val(formatDateForInput(RespVehicleDetails[0].RCExpiredDate));
 
-                                            $('#frmGateToken_txtDriverLicenseNo').val(RespVehicleDetails[0].DriverLicenseNo);
-                                            $('#frmGateToken_txtDriverLicenseExpiredDate').val(new Date(RespVehicleDetails[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
-
+                                            $('#frmGateToken_txtDriverLicenseNo').val(RespVehicleDetails[0].DriverLicenseNo || '');
+                                            $('#frmGateToken_txtDriverAadharNo').val(RespVehicleDetails[0].DriverAadharNo || '');
+                                            getRCExpiredDateAlert(RespVehicleDetails[0].RCExpiredDate);
+                                            $('#frmGateToken_txtDriverLicenseExpiredDate').val(formatDateForInput(RespVehicleDetails[0].DriverLicenseExpiredDate));
                                         }
                                         $('#frmGateToken_txtDriverName').val(RespVehicleDetails[0].DriverName);
                                         $('#frmGateToken_txtDriverNo').val(RespVehicleDetails[0].DriverMobile);
@@ -262,9 +276,7 @@ function ShowHideVehicleOtherDetails() {
                 }
             );
         });
-
-    });
-    
+    });  
 }
 function toLocalISOString(date) {
     const localDate = new Date(date - date.getTimezoneOffset() * 60000); //offset in milliseconds. Credit https://stackoverflow.com/questions/10830357/javascript-toisostring-ignores-timezone-offset
@@ -274,7 +286,6 @@ function toLocalISOString(date) {
     localDate.setMilliseconds(null);
     return localDate.toISOString().slice(0, -1);
 }
-
 function applyAlphaNumUppercase(selector) {
     document.querySelectorAll(selector).forEach(input => {
 
@@ -293,12 +304,127 @@ function applyAlphaNumUppercase(selector) {
 
     });
 }
+
 GateEntryService.GetTransportersNameList().then(function (response) {
-    
     AutoSuggestionControl.SetUpAutoSuggestion($('#frmGateToken_ddlTransporterName'), $('#frmGateToken_ddlTransporterName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
 });
+function formatDateToDDMMYYYY(dateString) {
+    if (!dateString || dateString === '') {
+        return '';
+    }
+    
+    try {
+        const date = new Date(dateString);
+        
+        if (isNaN(date.getTime())) {
+            return '';
+        }
+        
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        
+        return `${day}-${month}-${year}`;
+    } catch (error) {
+        return '';
+    }
+}
+function getRCExpiredDateAlert(RCDate) {
+    if (!RCDate || RCDate === '') {
+        return;
+    }
+    var currentDateString = BizSolHelperFunction.getCurrentDate();
+    var currentDate = new Date(currentDateString);
+    
+    var rcExpiryDate = new Date(RCDate);
+ 
+    var timeDifference = rcExpiryDate.getTime() - currentDate.getTime();
+    var daysDifference = Math.ceil(timeDifference / (1000 * 3600 * 24));
+    
+    if (daysDifference < 0) {
+        toastr.error('Your RC has expired on ' + formatDateToDDMMYYYY(RCDate));
+    } else if (daysDifference <= 15) {
+        toastr.warning('Your RC expires within ' + daysDifference + ' days');
+    }
+}
+function getRCExpiredDateConfirm(RCDate) {
+    if (!RCDate || RCDate === '') {
+        return null;
+    }
+    
+    var currentDateString = BizSolHelperFunction.getCurrentDate();
+    var currentDate = new Date(currentDateString);
+    
+    var rcExpiryDate = new Date(RCDate);
+ 
+    var timeDifference = rcExpiryDate.getTime() - currentDate.getTime();
+    var daysDifference = Math.ceil(timeDifference / (1000 * 3600 * 24));
+    
+    var message = '';
+    var shouldConfirm = false;
+    
+    if (daysDifference < 0) {
+        message = 'Your RC has expired on ' + formatDateToDDMMYYYY(RCDate) + '. Do you want to continue?';
+        shouldConfirm = true;
+    } else if (daysDifference <= 15) {
+        message = 'Your RC expires within ' + daysDifference + ' days. Do you want to continue?';
+        shouldConfirm = true;
+    }
+    
+    if (shouldConfirm) {
+        var result = confirm(message);
+        return result ? 'Y' : 'N';
+    }
+    
+    return null; 
+}
+function formatDateForInput(dateString) {
+    if (!dateString || dateString === null || dateString === '') {
+        return '';
+    }
+    
+    try {
+        // If date string is in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss), extract date parts directly
+        if (typeof dateString === 'string' && dateString.includes('-')) {
+            const datePart = dateString.split('T')[0]; // Get YYYY-MM-DD part
+            const parts = datePart.split('-');
+            
+            if (parts.length === 3) {
+                const year = parts[0];
+                const month = parts[1];
+                const day = parts[2];
+                
+                // Validate the parts
+                if (year.length === 4 && month.length === 2 && day.length === 2) {
+                    return `${year}-${month}-${day}`;
+                }
+            }
+        }
+        
+        // Fallback: Parse as date object (for other formats)
+        const date = new Date(dateString);
+        
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+            return '';
+        }
+        
+        // Format as YYYY-MM-DD for input field
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}`;
+    } catch (error) {
+        console.error('Error formatting date:', error);
+        return '';
+    }
+}
 
-// Apply to all inputs with this class
 applyAlphaNumUppercase(".alphanum-uppercase");
 ShowHideVehicleOtherDetails();
 window.GateToken_SaveData = GateToken_SaveData
+window.getRCExpiredDateAlert = getRCExpiredDateAlert
+window.getRCExpiredDateConfirm = getRCExpiredDateConfirm
+window.formatDateForInput = formatDateForInput
+window.formatDateToDDMMYYYY = formatDateToDDMMYYYY

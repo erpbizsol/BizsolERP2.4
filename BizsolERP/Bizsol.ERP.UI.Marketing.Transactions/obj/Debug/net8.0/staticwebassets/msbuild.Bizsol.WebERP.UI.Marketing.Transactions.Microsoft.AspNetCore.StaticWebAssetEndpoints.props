@@ -4,85 +4,85 @@
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\BalancePOCancellation.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"j0nzk6mjww"},{"Name":"integrity","Value":"sha256-vRScUcdpXlWguRlyO/EHeDlBfZE3HVpq68IwXvnTEzU="},{"Name":"label","Value":"_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BalancePOCancellation.js"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"23545"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022vRScUcdpXlWguRlyO/EHeDlBfZE3HVpq68IwXvnTEzU=\u0022"},{"Name":"Last-Modified","Value":"Sat, 17 Jan 2026 07:34:46 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"23545"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022vRScUcdpXlWguRlyO/EHeDlBfZE3HVpq68IwXvnTEzU=\u0022"},{"Name":"Last-Modified","Value":"Wed, 04 Feb 2026 08:01:36 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BalancePOCancellation.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\BalancePOCancellation.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-vRScUcdpXlWguRlyO/EHeDlBfZE3HVpq68IwXvnTEzU="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"23545"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022vRScUcdpXlWguRlyO/EHeDlBfZE3HVpq68IwXvnTEzU=\u0022"},{"Name":"Last-Modified","Value":"Sat, 17 Jan 2026 07:34:46 GMT"}]]]></ResponseHeaders>
-    </StaticWebAssetEndpoint>
-    <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.3e7kjf8byu.js">
-      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\BOM.js'))</AssetFile>
-      <Selectors><![CDATA[[]]]></Selectors>
-      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"3e7kjf8byu"},{"Name":"integrity","Value":"sha256-lc5bqcLhwtWxCR5gker0GRT4vFL\u002BLjMe7DYChxjFv0A="},{"Name":"label","Value":"_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"42498"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022lc5bqcLhwtWxCR5gker0GRT4vFL\u002BLjMe7DYChxjFv0A=\u0022"},{"Name":"Last-Modified","Value":"Mon, 23 Mar 2026 05:28:42 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"23545"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022vRScUcdpXlWguRlyO/EHeDlBfZE3HVpq68IwXvnTEzU=\u0022"},{"Name":"Last-Modified","Value":"Wed, 04 Feb 2026 08:01:36 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\BOM.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
-      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-lc5bqcLhwtWxCR5gker0GRT4vFL\u002BLjMe7DYChxjFv0A="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"42498"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022lc5bqcLhwtWxCR5gker0GRT4vFL\u002BLjMe7DYChxjFv0A=\u0022"},{"Name":"Last-Modified","Value":"Mon, 23 Mar 2026 05:28:42 GMT"}]]]></ResponseHeaders>
+      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-8jeykAcBzSPHxeXs60vriRIk09w606C\u002BdwPEqVsIVHY="}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"47605"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u00228jeykAcBzSPHxeXs60vriRIk09w606C\u002BdwPEqVsIVHY=\u0022"},{"Name":"Last-Modified","Value":"Thu, 26 Mar 2026 12:48:37 GMT"}]]]></ResponseHeaders>
+    </StaticWebAssetEndpoint>
+    <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.ucgh3uciom.js">
+      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\BOM.js'))</AssetFile>
+      <Selectors><![CDATA[[]]]></Selectors>
+      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"ucgh3uciom"},{"Name":"integrity","Value":"sha256-8jeykAcBzSPHxeXs60vriRIk09w606C\u002BdwPEqVsIVHY="},{"Name":"label","Value":"_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js"}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"47605"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u00228jeykAcBzSPHxeXs60vriRIk09w606C\u002BdwPEqVsIVHY=\u0022"},{"Name":"Last-Modified","Value":"Thu, 26 Mar 2026 12:48:37 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BuyingCapacity.eaxizi56u3.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\BuyingCapacity.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"eaxizi56u3"},{"Name":"integrity","Value":"sha256-BtT4lOmbl4hanfwB\u002BP53cs5de7FVVXxq/ckYhKsJpF8="},{"Name":"label","Value":"_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BuyingCapacity.js"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"21840"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022BtT4lOmbl4hanfwB\u002BP53cs5de7FVVXxq/ckYhKsJpF8=\u0022"},{"Name":"Last-Modified","Value":"Tue, 24 Mar 2026 09:12:31 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"21840"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022BtT4lOmbl4hanfwB\u002BP53cs5de7FVVXxq/ckYhKsJpF8=\u0022"},{"Name":"Last-Modified","Value":"Tue, 24 Mar 2026 10:06:27 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BuyingCapacity.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\BuyingCapacity.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-BtT4lOmbl4hanfwB\u002BP53cs5de7FVVXxq/ckYhKsJpF8="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"21840"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022BtT4lOmbl4hanfwB\u002BP53cs5de7FVVXxq/ckYhKsJpF8=\u0022"},{"Name":"Last-Modified","Value":"Tue, 24 Mar 2026 09:12:31 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"21840"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022BtT4lOmbl4hanfwB\u002BP53cs5de7FVVXxq/ckYhKsJpF8=\u0022"},{"Name":"Last-Modified","Value":"Tue, 24 Mar 2026 10:06:27 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/CollectionCommitment.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\CollectionCommitment.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-E84ufBSw\u002BApInuUTM8CLBL6Hww2jCdahbMOiuVEiUEc="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"10543"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022E84ufBSw\u002BApInuUTM8CLBL6Hww2jCdahbMOiuVEiUEc=\u0022"},{"Name":"Last-Modified","Value":"Sat, 17 Jan 2026 07:34:46 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"10543"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022E84ufBSw\u002BApInuUTM8CLBL6Hww2jCdahbMOiuVEiUEc=\u0022"},{"Name":"Last-Modified","Value":"Wed, 04 Feb 2026 08:01:36 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/CollectionCommitment.russ13soda.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\CollectionCommitment.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"russ13soda"},{"Name":"integrity","Value":"sha256-E84ufBSw\u002BApInuUTM8CLBL6Hww2jCdahbMOiuVEiUEc="},{"Name":"label","Value":"_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/CollectionCommitment.js"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"10543"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022E84ufBSw\u002BApInuUTM8CLBL6Hww2jCdahbMOiuVEiUEc=\u0022"},{"Name":"Last-Modified","Value":"Sat, 17 Jan 2026 07:34:46 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"10543"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022E84ufBSw\u002BApInuUTM8CLBL6Hww2jCdahbMOiuVEiUEc=\u0022"},{"Name":"Last-Modified","Value":"Wed, 04 Feb 2026 08:01:36 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/CollectionCommitmentReport.343vbnm9zz.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\CollectionCommitmentReport.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"343vbnm9zz"},{"Name":"integrity","Value":"sha256-fZeQQJAp2o6gwky8Hj5GkHXsPYnJbUePnLedyclUJJk="},{"Name":"label","Value":"_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/CollectionCommitmentReport.js"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"4014"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022fZeQQJAp2o6gwky8Hj5GkHXsPYnJbUePnLedyclUJJk=\u0022"},{"Name":"Last-Modified","Value":"Sat, 17 Jan 2026 07:34:46 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"4014"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022fZeQQJAp2o6gwky8Hj5GkHXsPYnJbUePnLedyclUJJk=\u0022"},{"Name":"Last-Modified","Value":"Wed, 04 Feb 2026 08:01:36 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/CollectionCommitmentReport.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\CollectionCommitmentReport.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-fZeQQJAp2o6gwky8Hj5GkHXsPYnJbUePnLedyclUJJk="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"4014"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022fZeQQJAp2o6gwky8Hj5GkHXsPYnJbUePnLedyclUJJk=\u0022"},{"Name":"Last-Modified","Value":"Sat, 17 Jan 2026 07:34:46 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"4014"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022fZeQQJAp2o6gwky8Hj5GkHXsPYnJbUePnLedyclUJJk=\u0022"},{"Name":"Last-Modified","Value":"Wed, 04 Feb 2026 08:01:36 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/ProspectiveCustomer.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\ProspectiveCustomer.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-Gdyq5xkhdCNjFZWE8LS5LNlOpeHH1psjXp52g1KEVqs="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"9377"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022Gdyq5xkhdCNjFZWE8LS5LNlOpeHH1psjXp52g1KEVqs=\u0022"},{"Name":"Last-Modified","Value":"Sat, 17 Jan 2026 07:34:46 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"9377"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022Gdyq5xkhdCNjFZWE8LS5LNlOpeHH1psjXp52g1KEVqs=\u0022"},{"Name":"Last-Modified","Value":"Wed, 04 Feb 2026 08:01:36 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/ProspectiveCustomer.xqh5vhdngb.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\ProspectiveCustomer.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"xqh5vhdngb"},{"Name":"integrity","Value":"sha256-Gdyq5xkhdCNjFZWE8LS5LNlOpeHH1psjXp52g1KEVqs="},{"Name":"label","Value":"_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/ProspectiveCustomer.js"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"9377"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022Gdyq5xkhdCNjFZWE8LS5LNlOpeHH1psjXp52g1KEVqs=\u0022"},{"Name":"Last-Modified","Value":"Sat, 17 Jan 2026 07:34:46 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"9377"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022Gdyq5xkhdCNjFZWE8LS5LNlOpeHH1psjXp52g1KEVqs=\u0022"},{"Name":"Last-Modified","Value":"Wed, 04 Feb 2026 08:01:36 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/VisitorEntry.ci0y85wq1q.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\VisitorEntry.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"ci0y85wq1q"},{"Name":"integrity","Value":"sha256-FPOH2nJXyfxHayCaHMaL7BNs9N5w1glVhsTG7eMRxww="},{"Name":"label","Value":"_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/VisitorEntry.js"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"17110"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022FPOH2nJXyfxHayCaHMaL7BNs9N5w1glVhsTG7eMRxww=\u0022"},{"Name":"Last-Modified","Value":"Tue, 06 May 2025 06:48:52 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"17110"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022FPOH2nJXyfxHayCaHMaL7BNs9N5w1glVhsTG7eMRxww=\u0022"},{"Name":"Last-Modified","Value":"Wed, 04 Feb 2026 08:01:36 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/VisitorEntry.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\VisitorEntry.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-FPOH2nJXyfxHayCaHMaL7BNs9N5w1glVhsTG7eMRxww="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"17110"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022FPOH2nJXyfxHayCaHMaL7BNs9N5w1glVhsTG7eMRxww=\u0022"},{"Name":"Last-Modified","Value":"Tue, 06 May 2025 06:48:52 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"17110"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022FPOH2nJXyfxHayCaHMaL7BNs9N5w1glVhsTG7eMRxww=\u0022"},{"Name":"Last-Modified","Value":"Wed, 04 Feb 2026 08:01:36 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
   </ItemGroup>
 </Project>

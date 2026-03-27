@@ -67,6 +67,15 @@ border-radius: 8px;
  </div>
 `;
 
+// Helper function to convert Date to YYYY-MM-DD in local timezone
+function dateToLocalISOString(date) {
+    if (!date) return null;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 class DateRangeControlHTMLElement extends HTMLElement {
  constructor() {
  super();
@@ -102,9 +111,13 @@ class DateRangeControlHTMLElement extends HTMLElement {
 
  try { this.clearBtn.style.display = 'none'; } catch (e) { }
 
+ // Clean up any orphaned overlays on component initialization
+ this._cleanupOrphanedOverlay();
+
  this._loadFlatpickr().then(() => this._initFlatpickr()).catch(() => { });
  this._syncToMin();
  window.addEventListener('resize', this._onWindowResize);
+ window.addEventListener('orientationchange', this._onWindowResize);
  }
 
  disconnectedCallback() {
@@ -112,6 +125,9 @@ class DateRangeControlHTMLElement extends HTMLElement {
  this.toInput.removeEventListener('change', this._onToChange);
  this.clearBtn.removeEventListener('click', this._onClear);
  window.removeEventListener('resize', this._onWindowResize);
+ window.removeEventListener('orientationchange', this._onWindowResize);
+ // Clean up overlay on component disconnect
+ this._cleanupOrphanedOverlay();
  if (this._fp && typeof this._fp.destroy === 'function') this._fp.destroy();
  }
 
@@ -150,6 +166,13 @@ class DateRangeControlHTMLElement extends HTMLElement {
  try {
  if (!window.flatpickr) return;
  if (this._fp && typeof this._fp.destroy === 'function') this._fp.destroy();
+ 
+ // CRITICAL FIX: Override flatpickr's mobile detection globally
+ // This forces flatpickr to NEVER use mobile mode (which creates the black overlay)
+ if (window.flatpickr && window.flatpickr.defaultConfig) {
+     window.flatpickr.defaultConfig.disableMobile = true;
+ }
+ 
  const that = this;
  const mobile = (window.innerWidth <=640);
  const options = {
@@ -159,13 +182,15 @@ class DateRangeControlHTMLElement extends HTMLElement {
  showMonths: mobile ? 1 : 2,
  position: 'auto',
  static: false,
+ disableMobile: true, // CRITICAL: Prevent mobile overlay from being created
+ inline: false, // Use popup, not inline
  positionElement: mobile ? undefined : this.fromInput,
  onChange: (selectedDates, dateStr, instance) => {
  // When both dates are selected, auto-close on mobile
  if (mobile && selectedDates && selectedDates.length === 2) {
  setTimeout(() => {
- const f = selectedDates[0] ? selectedDates[0].toISOString().slice(0,10) : null;
- const t = selectedDates[1] ? selectedDates[1].toISOString().slice(0,10) : null;
+ const f = selectedDates[0] ? dateToLocalISOString(selectedDates[0]) : null;
+ const t = selectedDates[1] ? dateToLocalISOString(selectedDates[1]) : null;
  that._setFromValue(f);
  that._setToValue(t);
  that._syncToMin();
@@ -180,8 +205,8 @@ class DateRangeControlHTMLElement extends HTMLElement {
  },
  onClose: (selectedDates, dateStr, instance) => {
  if (selectedDates && selectedDates.length >0) {
- const f = selectedDates[0] ? selectedDates[0].toISOString().slice(0,10) : null;
- const t = selectedDates[1] ? selectedDates[1].toISOString().slice(0,10) : null;
+ const f = selectedDates[0] ? dateToLocalISOString(selectedDates[0]) : null;
+ const t = selectedDates[1] ? dateToLocalISOString(selectedDates[1]) : null;
  that._setFromValue(f);
  that._setToValue(t);
  that._syncToMin();
@@ -221,7 +246,12 @@ class DateRangeControlHTMLElement extends HTMLElement {
 
  _adjustMobilePosition(instance) {
  try {
- if (window.innerWidth > 640) return;
+ if (window.innerWidth > 640) {
+ // If not mobile, ensure no overlay exists
+ const overlay = document.getElementById('flatpickr-mobile-overlay');
+ if (overlay) overlay.remove();
+ return;
+ }
  const container = instance.calendarContainer;
  if (!container) return;
  
@@ -377,8 +407,8 @@ class DateRangeControlHTMLElement extends HTMLElement {
  });
  btnApply.addEventListener('click', () => { 
    const sd = instance.selectedDates || []; 
-   const f = sd[0] ? sd[0].toISOString().slice(0,10) : null; 
-   const t = sd[1] ? sd[1].toISOString().slice(0,10) : null; 
+   const f = sd[0] ? dateToLocalISOString(sd[0]) : null; 
+   const t = sd[1] ? dateToLocalISOString(sd[1]) : null; 
    this._setFromValue(f); 
    this._setToValue(t); 
    this._syncToMin(); 
@@ -636,14 +666,43 @@ return [toIso(from), toIso(today)];
  getRange() { return { fromDate: this._from, toDate: this._to }; }
  setRange({ fromDate, toDate }) { this._setFromValue(this._normalizeDate(fromDate)); this._setToValue(this._normalizeDate(toDate)); this._syncToMin(); if (this._to && this._from && this._to < this._from) { this._setToValue(this._from); } if (this._fp && typeof this._fp.setDate === 'function') this._fp.setDate([this._from, this._to].filter(Boolean), true, 'Y-m-d'); this._emitChange(); }
 
+ // Helper method to clean up orphaned overlays
+ _cleanupOrphanedOverlay() {
+ try {
+ const overlay = document.getElementById('flatpickr-mobile-overlay');
+ if (overlay) {
+ overlay.remove();
+ document.body.style.overflow = '';
+ console.log('Cleaned up orphaned flatpickr overlay');
+ }
+ } catch (e) {
+ console.warn('Error cleaning up overlay:', e);
+ }
+ }
+
  _onWindowResize() {
  // On resize, if flatpickr is open, re-apply header/footer adjustments and consider reinitializing for month count
  try {
+ // Always clean up overlay on resize to prevent black screen
+ const overlay = document.getElementById('flatpickr-mobile-overlay');
+ const wasMobile = !!overlay;
+ 
  if (this._fp && this._fp.calendarContainer) {
  // if change between mobile and desktop sizes, re-init to change showMonths if necessary
  const mobile = (window.innerWidth <=640);
  const currentShowMonths = this._fp.config ? this._fp.config.showMonths : (this._fp.loadedPlugins && this._fp.loadedPlugins.showMonths);
+ 
+ // If transitioning from mobile to desktop, clean up overlay and close calendar
+ if (wasMobile && !mobile) {
+ if (overlay) overlay.remove();
+ document.body.style.overflow = '';
+ try { this._fp.close(); } catch (e) { }
+ }
+ 
  if ((mobile && this._fp.config.showMonths !==1) || (!mobile && this._fp.config.showMonths !==2)) {
+ // Clean up overlay before reinitializing
+ if (overlay) overlay.remove();
+ document.body.style.overflow = '';
  try { this._fp.destroy(); } catch (e) { }
  this._initFlatpickr();
  return;
@@ -651,8 +710,21 @@ return [toIso(from), toIso(today)];
  this._ensureCalendarHeader(this._fp);
  this._ensureCalendarFooter(this._fp);
  if (mobile) this._adjustMobilePosition(this._fp);
+ } else {
+ // If flatpickr is not open but overlay exists (orphaned), remove it
+ if (overlay) {
+ overlay.remove();
+ document.body.style.overflow = '';
  }
- } catch (e) { }
+ }
+ } catch (e) { 
+ // On error, ensure overlay is cleaned up
+ try {
+ const overlay = document.getElementById('flatpickr-mobile-overlay');
+ if (overlay) overlay.remove();
+ document.body.style.overflow = '';
+ } catch (cleanupErr) { }
+ }
  }
 }
 

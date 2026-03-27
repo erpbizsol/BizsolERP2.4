@@ -42,9 +42,11 @@ wwwroot\js\JSServices\FMSReportService.js
 wwwroot\js\JSServices\GateEntryService.js
 wwwroot\js\JSServices\GeneratePasswordService.js
 wwwroot\js\JSServices\GRNPaymentApprovalService.js
+wwwroot\js\JSServices\GRNPaymentEntryService.js
 wwwroot\js\JSServices\InvoiceGSTService.js
 wwwroot\js\JSServices\LeaveMasterService.js
 wwwroot\js\JSServices\LedgerService.js
+wwwroot\js\JSServices\MachineMaintenanceService.js
 wwwroot\js\JSServices\MenuServices.js
 wwwroot\js\JSServices\OrderEntryListService.js
 wwwroot\js\JSServices\PackingListFGService.js
@@ -80,6 +82,7 @@ wwwroot\js\JSServices\StockTransferReceiveService.js
 wwwroot\js\JSServices\SubProjectMasterService.js
 wwwroot\js\JSServices\Sub_DepartmentService.js
 wwwroot\js\JSServices\TransporterMasterService.js
+wwwroot\js\JSServices\VendorMasterService.js
 wwwroot\js\JSServices\VisitOrderEntryService.js
 wwwroot\js\JSServices\VisitorEntryService.js
 wwwroot\js\JSServices\WebNotificationService.js
@@ -89,6 +92,9 @@ wwwroot\js\JSServices\_BreakDownService.js
 wwwroot\js\JSServices\_CheckCreditLimitsService.js
 wwwroot\js\JSServices\_FGInspectedEntryService.js
 wwwroot\js\JSServices\_GridRowEditControlService.js
+wwwroot\js\JSServices\_GRNPaymentService.js
+wwwroot\js\JSServices\_GRNService.js
+wwwroot\js\JSServices\_ItemMasterService.js
 wwwroot\js\JSServices\_LeadMasterService.js
 wwwroot\js\JSServices\_MillWiseProductionReportService.js
 wwwroot\js\JSServices\_ObjectListControlService.js
@@ -108,6 +114,7 @@ wwwroot\js\Pages\CustomControl\_OTPAuthorization.js
 wwwroot\js\Pages\CustomControl\_SizeControlPage.js
 wwwroot\js\PromiseAjaxCallApi.js
 wwwroot\js\Shared_site.js
+wwwroot\js\URL.js
 wwwroot\js\zxing.js
 wwwroot\PrinterPRNFile\LabelInframat - Copy.txt
 wwwroot\PrinterPRNFile\LabelInframat.txt
@@ -169,4 +176,3 @@ wwwroot\Shared_lib\jquery\dist\jquery.js
 wwwroot\Shared_lib\jquery\dist\jquery.min.js
 wwwroot\Shared_lib\jquery\dist\jquery.min.map
 wwwroot\Shared_lib\jquery\LICENSE.txt
-wwwroot\js\URL.js

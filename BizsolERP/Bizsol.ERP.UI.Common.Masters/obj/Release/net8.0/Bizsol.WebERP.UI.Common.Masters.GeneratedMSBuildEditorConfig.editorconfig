@@ -34,6 +34,46 @@ build_property.EnableCodeStyleSeverity =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29tbW9uTWFzdGVyc1xWaWV3c1xDb21tb25TaW5nbGVFbnRyeVxDb21tb25TaW5nbGVFbnRyeUZvcm0uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Common.Masters/Areas/CommonMasters/Views/QualityRecordMaster/PurchaseQualityCheck.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29tbW9uTWFzdGVyc1xWaWV3c1xRdWFsaXR5UmVjb3JkTWFzdGVyXFB1cmNoYXNlUXVhbGl0eUNoZWNrLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Common.Masters/Areas/CommonMasters/Views/QualityRecordMaster/QCPropertyGroupMaster.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29tbW9uTWFzdGVyc1xWaWV3c1xRdWFsaXR5UmVjb3JkTWFzdGVyXFFDUHJvcGVydHlHcm91cE1hc3Rlci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Common.Masters/Areas/CommonMasters/Views/QualityRecordMaster/QCPropertyItemConfiguration.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29tbW9uTWFzdGVyc1xWaWV3c1xRdWFsaXR5UmVjb3JkTWFzdGVyXFFDUHJvcGVydHlJdGVtQ29uZmlndXJhdGlvbi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Common.Masters/Areas/CommonMasters/Views/QualityRecordMaster/QCPropertyMaster.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29tbW9uTWFzdGVyc1xWaWV3c1xRdWFsaXR5UmVjb3JkTWFzdGVyXFFDUHJvcGVydHlNYXN0ZXIuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Common.Masters/Areas/CommonMasters/Views/QualityRecordMaster/QCPropertyTestTypeMaster.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29tbW9uTWFzdGVyc1xWaWV3c1xRdWFsaXR5UmVjb3JkTWFzdGVyXFFDUHJvcGVydHlUZXN0VHlwZU1hc3Rlci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Common.Masters/Areas/CommonMasters/Views/RawMaterial/FGInspectedEntry.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29tbW9uTWFzdGVyc1xWaWV3c1xSYXdNYXRlcmlhbFxGR0luc3BlY3RlZEVudHJ5LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Common.Masters/Areas/CommonMasters/Views/RawMaterial/FGOffer.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29tbW9uTWFzdGVyc1xWaWV3c1xSYXdNYXRlcmlhbFxGR09mZmVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Common.Masters/Areas/CommonMasters/Views/RawMaterial/MachineMaintenanceRequest.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29tbW9uTWFzdGVyc1xWaWV3c1xSYXdNYXRlcmlhbFxNYWNoaW5lTWFpbnRlbmFuY2VSZXF1ZXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Common.Masters/Areas/CommonMasters/Views/RawMaterial/RMClearanceEntry.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29tbW9uTWFzdGVyc1xWaWV3c1xSYXdNYXRlcmlhbFxSTUNsZWFyYW5jZUVudHJ5LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Common.Masters/Areas/CommonMasters/Views/RawMaterial/RMOffer.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29tbW9uTWFzdGVyc1xWaWV3c1xSYXdNYXRlcmlhbFxSTU9mZmVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Common.Masters/Areas/CommonMasters/Views/StateMaster/StateList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ29tbW9uTWFzdGVyc1xWaWV3c1xTdGF0ZU1hc3RlclxTdGF0ZUxpc3QuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 

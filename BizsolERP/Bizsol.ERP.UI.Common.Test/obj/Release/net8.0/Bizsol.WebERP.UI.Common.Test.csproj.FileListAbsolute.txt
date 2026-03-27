@@ -714,7 +714,6 @@ D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Test\bin\Release\net8.0\re
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Test\bin\Release\net8.0\refs\WindowsBase.dll
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Test\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.dll
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Test\bin\Release\net8.0\Bizsol.WebERP.UI.Shared.pdb
-D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Test\obj\Release\net8.0\Bizsol.WebERP.UI.Common.Test.EmbeddedFilesManifest.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Test\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Common.Test.Microsoft.AspNetCore.StaticWebAssets.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Test\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Common.Test.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Common.Test\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Common.Test.props

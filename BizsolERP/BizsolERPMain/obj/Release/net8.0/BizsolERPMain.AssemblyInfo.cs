@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BizsolERPMain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fa53ebb6f472de0144d949f7a0f2c2cc3f5d611c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bc9566f678bf89b65e44fe4922c19fa2046fd570")]
 [assembly: System.Reflection.AssemblyProductAttribute("BizsolERPMain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BizsolERPMain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -400,7 +400,6 @@ D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Marketing.Masters\obj\Release\net
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Marketing.Masters\obj\Release\net8.0\ref\Bizsol.WebERP.UI.Marketing.Masters.dll
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Marketing.Masters\obj\Release\net8.0\swae.build.ex.cache
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Properties\launchSettings.json
-D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Marketing.Masters\obj\Release\net8.0\Bizsol.WebERP.UI.Marketing.Masters.EmbeddedFilesManifest.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Marketing.Masters\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Marketing.Masters.Microsoft.AspNetCore.StaticWebAssets.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Marketing.Masters\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Marketing.Masters.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Marketing.Masters\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Marketing.Masters.props

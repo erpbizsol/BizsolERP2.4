@@ -5,13 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
-    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
     <BaseOutputPath>D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin</BaseOutputPath>
   </PropertyGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="wwwroot\**\*" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="wwwroot\lib\**" />

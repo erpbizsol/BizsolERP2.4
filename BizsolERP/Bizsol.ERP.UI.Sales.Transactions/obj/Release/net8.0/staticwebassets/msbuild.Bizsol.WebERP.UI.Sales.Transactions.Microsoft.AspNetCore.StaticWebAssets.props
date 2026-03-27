@@ -12,12 +12,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>mjpl296yzi</Fingerprint>
-      <Integrity>bqXzA4n8NQjoT3lSOvYDA27QsMMh/FJxKwE5pv1HnBA=</Integrity>
+      <Fingerprint>oz74b7b3r8</Fingerprint>
+      <Integrity>dNhiFkkhULYIoO2PamXHIPmv/6U/fl3f38EXayZC8ns=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>49773</FileLength>
-      <LastWriteTime>Fri, 14 Nov 2025 12:38:03 GMT</LastWriteTime>
+      <FileLength>90616</FileLength>
+      <LastWriteTime>Wed, 25 Mar 2026 05:24:19 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\VerifyDispatchPlan.js'))</OriginalItemSpec>
     </StaticWebAsset>
   </ItemGroup>

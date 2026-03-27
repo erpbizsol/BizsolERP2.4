@@ -1233,7 +1233,7 @@ function IsValidProductionDate(ProducationDate) {
 
     let daydiff = (d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24);
 
-    if (daydiff < 0 || daydiff > AllowNewEntriesForPreviousNoOfDays) {
+    if (parseInt(daydiff) < 0 || parseInt(daydiff) > AllowNewEntriesForPreviousNoOfDays) {
         toastr.error('A production date lies within a range ' + MinDate + ' and ' + maxDate);
         valid = false;
     }

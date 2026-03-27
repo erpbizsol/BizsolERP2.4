@@ -38,6 +38,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXENSTURhc2hib2FyZFxDUk1EYXNoYm9hcmQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/CRMSalesReturn/SalesReturn.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXENSTVNhbGVzUmV0dXJuXFNhbGVzUmV0dXJuLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/BizSolERP24_APPCore/BizsolERP/Bizsol.WebERP.UI.CRM.Transactions/Areas/CRMTransactions/Views/DailyCheckinOrCheckout/CheckinOrCheckout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQ1JNVHJhbnNhY3Rpb25zXFZpZXdzXERhaWx5Q2hlY2tpbk9yQ2hlY2tvdXRcQ2hlY2tpbk9yQ2hlY2tvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 

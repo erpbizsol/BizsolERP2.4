@@ -1,6 +1,10 @@
 {
   "Files": [
     {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Transactions\\wwwroot\\css\\ExpenseEntry.css",
+      "PackagePath": "staticwebassets\\css\\ExpenseEntry.css"
+    },
+    {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Transactions\\wwwroot\\js\\CRMDashboard.js",
       "PackagePath": "staticwebassets\\js\\CRMDashboard.js"
     },
@@ -55,6 +59,10 @@
     {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Transactions\\wwwroot\\js\\RoutePlanVerify.js",
       "PackagePath": "staticwebassets\\js\\RoutePlanVerify.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Transactions\\wwwroot\\js\\SalesReturn.js",
+      "PackagePath": "staticwebassets\\js\\SalesReturn.js"
     },
     {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Transactions\\wwwroot\\js\\UnverifiedExceededOrder.js",
