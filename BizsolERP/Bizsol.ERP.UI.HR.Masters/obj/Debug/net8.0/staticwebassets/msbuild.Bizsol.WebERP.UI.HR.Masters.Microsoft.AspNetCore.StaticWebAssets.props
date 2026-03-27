@@ -17,7 +17,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>10201</FileLength>
-      <LastWriteTime>Tue, 06 May 2025 06:48:52 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:35 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\AllowanceMaster.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\Department.js'))">
@@ -37,7 +37,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>22105</FileLength>
-      <LastWriteTime>Tue, 06 May 2025 06:48:52 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:35 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\Department.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\DesignationMaster.js'))">
@@ -57,7 +57,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>13619</FileLength>
-      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:35 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\DesignationMaster.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\EmployeeConfiguration.js'))">
@@ -77,7 +77,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>14714</FileLength>
-      <LastWriteTime>Tue, 06 May 2025 06:48:52 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:35 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\EmployeeConfiguration.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\EmployeeDeductionMaster.js'))">
@@ -97,7 +97,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>12428</FileLength>
-      <LastWriteTime>Tue, 06 May 2025 06:48:52 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:35 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\EmployeeDeductionMaster.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\EmployeeList.js'))">
@@ -117,7 +117,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>10612</FileLength>
-      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:35 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\EmployeeList.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\EmployeeMaster.js'))">
@@ -137,7 +137,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>116767</FileLength>
-      <LastWriteTime>Tue, 06 May 2025 06:48:52 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:35 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\EmployeeMaster.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\LeaveMaster.js'))">
@@ -157,7 +157,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>11593</FileLength>
-      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:35 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\LeaveMaster.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\Sub_Department.js'))">
@@ -177,7 +177,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>17273</FileLength>
-      <LastWriteTime>Tue, 06 May 2025 06:48:52 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:35 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\Sub_Department.js'))</OriginalItemSpec>
     </StaticWebAsset>
   </ItemGroup>

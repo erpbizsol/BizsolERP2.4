@@ -25,6 +25,10 @@
       "PackagePath": "staticwebassets\\Script\\RollingPlanSheet.js"
     },
     {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Production.Transactions\\wwwroot\\Script\\StockAgeingReport.js",
+      "PackagePath": "staticwebassets\\Script\\StockAgeingReport.js"
+    },
+    {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Production.Transactions\\wwwroot\\Script\\StockTransferWarehouse.js",
       "PackagePath": "staticwebassets\\Script\\StockTransferWarehouse.js"
     },

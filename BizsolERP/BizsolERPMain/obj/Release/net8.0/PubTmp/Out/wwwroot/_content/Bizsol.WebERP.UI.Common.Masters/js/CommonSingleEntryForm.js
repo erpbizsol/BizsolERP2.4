@@ -1,7 +1,9 @@
-﻿import { CommonSingleEntryFormService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CommonSingleEntryFormService.js';
+import { CommonSingleEntryFormService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CommonSingleEntryFormService.js';
 
 let G_CommonSingleEntry = 0;
 let G_Code = 0;
+let G_DeleteCode = 0;
+let G_DeleteConfig = 0;
 let menuValue = '';
 $(document).ready(function () {
     var urlParams = getUrlVars();
@@ -14,7 +16,10 @@ $(document).ready(function () {
     $("#ERPHeading").text("Common Single Entry Form");
     }
     GetCommonMastersConfiguration_Code(menuValue);
-    
+
+    $("#cseBtnCancelDelete").on("click", function () {
+        $("#cseDeleteConfirmBackdrop").removeClass("show");
+    });
 });
 function GetCommonSingleEntryTable(G_CommonSingleEntry) {
     CommonSingleEntryFormService.GetCommonSingleEntry(G_CommonSingleEntry).then(function (response) {
@@ -65,34 +70,61 @@ function submit_CommonSingleEntry() {
 
     CommonSingleEntryFormService.SaveCommonSingleEntry(G_Code, G_CommonSingleEntry, FieldValue)
         .then(function (response) {
-            if (response.Status === 'Y') {
-                toastr.success(response.Msg);
+            if (response && response.Status === 'Y') {
                 $('#txtDescription').val('');
                 GetCommonSingleEntryTable(G_CommonSingleEntry);
                 G_Code = 0;
-            }
-            else if (response.Status === 'N') {
+                ShowCseSuccessModal(
+                    "Saved Successfully!",
+                    (response.Msg || "Record has been saved."),
+                    "fa-circle-check"
+                );
+            } else if (response && response.Status === 'N') {
                 toastr.warning(response.Msg);
             }
         });
 }
-function SingleEntry_Delete(Code, G_CommonSingleEntry) {
-    if (confirm("Are you sure you want to delete this record?")) {
-        CommonSingleEntryFormService.DeleteCommonSingleEntryForm(Code, G_CommonSingleEntry).then(function (response) {
-                if (response.Status === 'Y') {
-                    toastr.success(response.Msg);
-                    GetCommonSingleEntryTable(G_CommonSingleEntry);
-                } else {
-                    toastr.warning(response.Msg || 'Error during deletion');
-                }
-            })
-            .catch(function (error) {
-                toastr.error(error.Msg || 'Error during delete');
-            });
-    } else {
-        toastr.info('Deletion cancelled by user.');
-    }
+function ConfirmSingleEntryDelete(Code, G_CommonSingleEntry) {
+    G_DeleteCode = Code;
+    G_DeleteConfig = G_CommonSingleEntry;
+    $("#cseDeleteConfirmBackdrop").addClass("show");
 }
+
+function DoSingleEntryDelete() {
+    CommonSingleEntryFormService.DeleteCommonSingleEntryForm(G_DeleteCode, G_DeleteConfig)
+        .then(function (response) {
+            $("#cseDeleteConfirmBackdrop").removeClass("show");
+            if (response && response.Status === 'Y') {
+                GetCommonSingleEntryTable(G_DeleteConfig);
+                ShowCseSuccessModal(
+                    "Deleted Successfully!",
+                    (response.Msg || "The record has been permanently removed."),
+                    "fa-trash-can"
+                );
+            } else {
+                toastr.error((response && response.Msg) || "Failed to delete record.");
+            }
+        })
+        .catch(function (error) {
+            toastr.error((error && error.Msg) || "Error during delete. Please try again.");
+            $("#cseDeleteConfirmBackdrop").removeClass("show");
+        });
+}
+
+function SingleEntry_Delete(Code, G_CommonSingleEntry) {
+    ConfirmSingleEntryDelete(Code, G_CommonSingleEntry);
+}
+function ShowCseSuccessModal(title, text, iconClass) {
+    $("#cseSuccessModalTitle").text(title || "Done!");
+    $("#cseSuccessModalText").text(text || "Operation completed successfully.");
+    $("#cseSuccessModalIcon").removeClass().addClass("fas " + (iconClass || "fa-circle-check"));
+    $("#cseSuccessBackdrop").addClass("show");
+}
+
+function CloseCseSuccessModal() {
+    $("#cseSuccessBackdrop").removeClass("show");
+}
+
 function GetCommonMastersConfiguration_Code(menuValue) {
     CommonSingleEntryFormService.GetCommonMastersConfiguration_Code(menuValue).then(function (response) {
         if (response.length > 0) {
@@ -118,3 +150,6 @@ window.GetCommonSingleEntryTable = GetCommonSingleEntryTable;
 window.SingleEntry_EditData = SingleEntry_EditData;
 window.submit_CommonSingleEntry = submit_CommonSingleEntry;
 window.SingleEntry_Delete = SingleEntry_Delete;
+window.ConfirmSingleEntryDelete = ConfirmSingleEntryDelete;
+window.DoSingleEntryDelete = DoSingleEntryDelete;
+window.CloseCseSuccessModal = CloseCseSuccessModal;

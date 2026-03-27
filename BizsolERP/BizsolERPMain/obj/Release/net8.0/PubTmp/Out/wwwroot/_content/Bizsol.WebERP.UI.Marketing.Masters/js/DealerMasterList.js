@@ -1,22 +1,7 @@
 ﻿import { DealerMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/DealerMasterService.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
-const Indx_Tbl = {
-	Code: 0,
-	DealerName: 1,
-	AccountMaster_Code: 2,
-	CityName: 3,
-	StateName: 4,
-	Address: 5,
-	CityMaster_Code: 6,
-	StateMaster_Code: 7,
-	MobileNo: 8,
-	EmailId: 9,
-	CreatedBy: 10,
-	CreatedDate: 11,
-	UpdatedBy: 12,
-	UpdatedDate: 13
-}
+
 
 $(document).ready(function () {
 
@@ -87,7 +72,7 @@ function normalizeText(text) {
 function GetDealerList() {
 	var Distributor_Name = $("#txtDistributor").val();
 	Distributor_Name = normalizeText(Distributor_Name);
-	DealerMasterService.GetDealerList(Distributor_Name).then(function (response) {
+	DealerMasterService.GetDealerLocate(Distributor_Name).then(function (response) {
 		$("#tblDealerMasterList").show();
 		if (response.length > 0) {
 			const StringFilterColumn = ["DealerName","CityName","StateName"];
@@ -96,7 +81,7 @@ function GetDealerList() {
 			const Button = false;
 			const showButtons = [];
 			const StringdoubleFilterColumn = [];
-			const hiddenColumns = ["Code", "AccountMaster_Code", "CityMaster_Code", "StateMaster_Code","CreatedBy","CreatedDate","UpdatedBy","UpdatedDate"]
+			const hiddenColumns = ["Code", "AccountMaster_Code", "CityMaster_Code", "StateMaster_Code", "CreatedBy", "CreatedDate", "UpdatedBy", "UpdatedDate","ColorRow"]
 			const ColumnAlignment = {
 			};
 
@@ -108,6 +93,7 @@ function GetDealerList() {
 			
 				return {
 					...item,
+					"ColorRow": item.Status == 'De-active' ? `<span class="LightRed">` : '',
 					Action: buttonsHTML,
 				};
 
@@ -116,6 +102,10 @@ function GetDealerList() {
 
 
 			BizsolCustomFilterGrid.CreateDataTable("DealerMasterList-header", "DealerMasterList-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+			$('.LightRed').each(function (inx, val) {
+
+				val.closest('tr').style["backgroundColor"] = '#e90c0c5e'
+			});
 		}
 		else {
 			toastr.error('No Data Found');

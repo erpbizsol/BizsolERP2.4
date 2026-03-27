@@ -17,7 +17,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>22250</FileLength>
-      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:36 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\ActualDispatch.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\BreakDown.js'))">
@@ -37,7 +37,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>5013</FileLength>
-      <LastWriteTime>Tue, 06 May 2025 06:48:52 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:36 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\BreakDown.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\PackingListFG.js'))">
@@ -57,7 +57,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>89672</FileLength>
-      <LastWriteTime>Mon, 23 Mar 2026 05:28:42 GMT</LastWriteTime>
+      <LastWriteTime>Fri, 20 Mar 2026 05:17:42 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\PackingListFG.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\PalletPacking.js'))">
@@ -77,7 +77,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>55787</FileLength>
-      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:36 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\PalletPacking.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\PhysicalStockTaking.js'))">
@@ -97,7 +97,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>31482</FileLength>
-      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:36 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\PhysicalStockTaking.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\RollingPlanSheet.js'))">
@@ -117,7 +117,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>80191</FileLength>
-      <LastWriteTime>Fri, 27 Feb 2026 08:43:59 GMT</LastWriteTime>
+      <LastWriteTime>Thu, 26 Feb 2026 10:40:55 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\RollingPlanSheet.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\StockAgeingReport.js'))">
@@ -137,7 +137,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>24543</FileLength>
-      <LastWriteTime>Mon, 23 Mar 2026 05:28:42 GMT</LastWriteTime>
+      <LastWriteTime>Fri, 20 Mar 2026 05:17:42 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\StockAgeingReport.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\StockTransferWarehouse.js'))">
@@ -157,7 +157,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>16427</FileLength>
-      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:36 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\StockTransferWarehouse.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\Test.js'))">
@@ -177,7 +177,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>16469</FileLength>
-      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:36 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\Test.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\TestView.js'))">
@@ -197,7 +197,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>2125</FileLength>
-      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:36 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\TestView.js'))</OriginalItemSpec>
     </StaticWebAsset>
   </ItemGroup>

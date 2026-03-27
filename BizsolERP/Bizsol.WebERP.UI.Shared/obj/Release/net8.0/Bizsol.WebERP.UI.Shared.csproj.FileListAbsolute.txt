@@ -1061,7 +1061,6 @@ D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Release\net8.0\rjsm
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Release\net8.0\staticwebassets.build.json.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Release\net8.0\swae.build.ex.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.Shared\bin\Release\net8.0\Properties\launchSettings.json
-D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Release\net8.0\Bizsol.WebERP.UI.Shared.EmbeddedFilesManifest.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Shared.Microsoft.AspNetCore.StaticWebAssets.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Shared.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.Shared\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Shared.props

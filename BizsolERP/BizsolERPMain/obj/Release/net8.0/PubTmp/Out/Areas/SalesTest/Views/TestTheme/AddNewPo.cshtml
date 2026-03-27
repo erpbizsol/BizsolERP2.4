@@ -1,0 +1,776 @@
+@{
+    ViewData["Title"] = "Add New Purchase Order";
+    Layout = "~/Views/Shared/_LayoutTest.cshtml";
+}
+
+<style>
+    .form-header-card {
+        background: var(--primary-gradient);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        color: white;
+        box-shadow: var(--shadow-orange);
+        position: relative;
+        overflow: hidden;
+        animation: slideInDown 0.6s ease-out;
+    }
+
+    @@keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .form-header-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+        animation: float 6s ease-in-out infinite;
+    }
+
+    .form-header-card::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: -10%;
+        width: 250px;
+        height: 250px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+        animation: float 8s ease-in-out infinite reverse;
+    }
+
+    @@keyframes float {
+        0%, 100% {
+            transform: translate(0, 0) rotate(0deg);
+        }
+        25% {
+            transform: translate(10px, -10px) rotate(5deg);
+        }
+        50% {
+            transform: translate(-10px, 10px) rotate(-5deg);
+        }
+        75% {
+            transform: translate(10px, 10px) rotate(3deg);
+        }
+    }
+
+    .form-section-card {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        animation: fadeInUp 0.6s ease-out;
+        animation-fill-mode: both;
+    }
+
+    .form-section-card:nth-child(2) {
+        animation-delay: 0.1s;
+    }
+
+    .form-section-card:nth-child(3) {
+        animation-delay: 0.2s;
+    }
+
+    .form-section-card:nth-child(4) {
+        animation-delay: 0.3s;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .form-section-card:hover {
+        border-color: var(--accent-orange);
+        box-shadow: var(--shadow-orange);
+        transform: translateY(-5px);
+    }
+
+    .section-title {
+        color: var(--accent-orange);
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .section-title i {
+        background: var(--accent-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 1.5rem;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+    }
+
+    .modern-input {
+        background: #ffffff;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        color: var(--text-dark);
+        transition: all 0.3s ease;
+        width: 100%;
+        font-weight: 500;
+    }
+
+    .modern-input:focus {
+        outline: none;
+        border-color: var(--accent-orange);
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.15);
+    }
+
+    .modern-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .modern-select {
+        background: #ffffff;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        color: var(--text-dark);
+        transition: all 0.3s ease;
+        width: 100%;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ff8c42' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        padding-right: 3rem;
+        font-weight: 500;
+    }
+
+    .modern-select:focus {
+        outline: none;
+        border-color: var(--accent-orange);
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.15);
+    }
+
+    .modern-label {
+        color: var(--text-light);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .input-group-modern {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--accent-primary);
+        pointer-events: none;
+    }
+
+    .modern-input.with-icon {
+        padding-left: 3rem;
+    }
+
+    .items-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-top: 1rem;
+    }
+
+    .items-table thead {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+    }
+
+    .items-table th {
+        padding: 1rem;
+        text-align: left;
+        color: var(--accent-primary);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.875rem;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid var(--accent-primary);
+    }
+
+    .items-table th:first-child {
+        border-top-left-radius: 12px;
+    }
+
+    .items-table th:last-child {
+        border-top-right-radius: 12px;
+    }
+
+    .items-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-light);
+    }
+
+    .items-table tbody tr {
+        transition: all 0.3s ease;
+    }
+
+    .items-table tbody tr:hover {
+        background: rgba(139, 92, 246, 0.1);
+    }
+
+    .add-item-btn {
+        background: var(--secondary-gradient);
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        color: white;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-green);
+        margin-top: 1rem;
+    }
+
+    .add-item-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+    }
+
+    .remove-item-btn {
+        background: linear-gradient(135deg, #f44336 0%, #e91e63 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+    }
+
+    .remove-item-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+
+    .btn-save {
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 12px;
+        padding: 1rem 3rem;
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-orange);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-save::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 12px 32px rgba(255, 140, 66, 0.4);
+    }
+
+    .btn-save:hover::before {
+        left: 100%;
+    }
+
+    .btn-cancel {
+        background: transparent;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1rem 2rem;
+        color: var(--text-dark);
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-cancel:hover {
+        border-color: var(--accent-orange);
+        color: var(--accent-orange);
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-orange);
+    }
+
+    .summary-card {
+        background: linear-gradient(135deg, rgba(255, 140, 66, 0.08) 0%, rgba(76, 175, 80, 0.08) 100%);
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 1px solid var(--accent-orange);
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .summary-row:last-child {
+        border-bottom: none;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--accent-orange);
+        padding-top: 1rem;
+    }
+
+    .summary-label {
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .summary-value {
+        color: var(--text-light);
+        font-weight: 700;
+    }
+
+    .badge-status {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        background: var(--info-gradient);
+        color: white;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .info-box {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%);
+        border-left: 4px solid var(--accent-success);
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        margin-top: 1rem;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .info-box i {
+        color: var(--accent-success);
+        font-size: 1.5rem;
+    }
+
+    .textarea-modern {
+        background: #ffffff;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        color: var(--text-dark);
+        transition: all 0.3s ease;
+        width: 100%;
+        resize: vertical;
+        min-height: 100px;
+        font-weight: 500;
+    }
+
+    .textarea-modern:focus {
+        outline: none;
+        border-color: var(--accent-orange);
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.15);
+    }
+
+    .summary-value {
+        color: var(--text-dark);
+        font-weight: 700;
+    }
+
+    .info-box {
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.08) 0%, rgba(38, 222, 129, 0.08) 100%);
+        border-left: 4px solid var(--accent-green);
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        margin-top: 1rem;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        animation: slideInLeft 0.6s ease-out;
+    }
+
+    @@keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .info-box i {
+        color: var(--accent-green);
+        font-size: 1.5rem;
+        animation: bounce 2s ease-in-out infinite;
+    }
+
+    @@keyframes bounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+</style>
+
+<!-- Form Header -->
+<div class="form-header-card">
+    <div class="d-flex justify-content-between align-items-center position-relative">
+        <div>
+            <button type="button"
+                    onclick="window.location.href='@Url.Action("Index","TestTheme",new{area="SalesTest"})'"
+                    style="background:none;border:none;padding:0;margin-bottom:0.6rem;
+                           display:inline-flex;align-items:center;gap:5px;
+                           color:rgba(255,255,255,0.75);font-size:0.82rem;font-weight:600;
+                           cursor:pointer;transition:color 0.2s;"
+                    onmouseover="this.style.color='#fff'"
+                    onmouseout="this.style.color='rgba(255,255,255,0.75)'">
+                <i class="fas fa-arrow-left" style="font-size:0.75rem;"></i> Back to Dashboard
+            </button>
+            <h2 class="mb-2">Create Purchase Order</h2>
+            <p class="mb-0 opacity-75">Fill in the details to create a new purchase order</p>
+        </div>
+        <div class="text-end">
+            <div class="badge-status">
+                <i class="fas fa-file-invoice me-2"></i>Draft
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PO Basic Information -->
+<div class="form-section-card">
+    <h4 class="section-title">
+        <i class="fas fa-info-circle"></i>
+        Basic Information
+    </h4>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="input-group-modern">
+                <label class="modern-label">PO Number</label>
+                <input type="text" class="modern-input" value="PO-2025-0054" readonly>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="input-group-modern">
+                <label class="modern-label">PO Date</label>
+                <input type="date" class="modern-input" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="input-group-modern">
+                <label class="modern-label">Expected Delivery Date</label>
+                <input type="date" class="modern-input">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vendor Information -->
+<div class="form-section-card">
+    <h4 class="section-title">
+        <i class="fas fa-building"></i>
+        Vendor Information
+    </h4>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="input-group-modern">
+                <label class="modern-label">Vendor Name</label>
+                <select class="modern-select">
+                    <option value="">Select Vendor</option>
+                    <option value="1">ABC Suppliers Ltd.</option>
+                    <option value="2">XYZ Traders Pvt. Ltd.</option>
+                    <option value="3">LMN Industries</option>
+                    <option value="4">Global Imports Inc.</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="input-group-modern">
+                <label class="modern-label">Contact Person</label>
+                <input type="text" class="modern-input" placeholder="Enter contact person name">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="input-group-modern">
+                <label class="modern-label">Email</label>
+                <div class="position-relative">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email" class="modern-input with-icon" placeholder="vendor@example.com">
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="input-group-modern">
+                <label class="modern-label">Phone</label>
+                <div class="position-relative">
+                    <i class="fas fa-phone input-icon"></i>
+                    <input type="tel" class="modern-input with-icon" placeholder="+91 98765 43210">
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="input-group-modern">
+                <label class="modern-label">GSTIN</label>
+                <input type="text" class="modern-input" placeholder="Enter GST Number">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Items Section -->
+<div class="form-section-card">
+    <h4 class="section-title">
+        <i class="fas fa-box-open"></i>
+        Order Items
+    </h4>
+    <div class="table-responsive">
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 30%;">Item Name</th>
+                    <th style="width: 15%;">HSN/SAC Code</th>
+                    <th style="width: 10%;">Quantity</th>
+                    <th style="width: 10%;">Unit</th>
+                    <th style="width: 12%;">Rate (₹)</th>
+                    <th style="width: 12%;">Amount (₹)</th>
+                    <th style="width: 6%;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>
+                        <select class="modern-select">
+                            <option>Select Item</option>
+                            <option selected>Raw Material - Steel Rods</option>
+                            <option>Packaging Material</option>
+                            <option>Office Supplies</option>
+                        </select>
+                    </td>
+                    <td><input type="text" class="modern-input" value="7214"></td>
+                    <td><input type="number" class="modern-input" value="100"></td>
+                    <td>
+                        <select class="modern-select">
+                            <option>Kg</option>
+                            <option selected>Pcs</option>
+                            <option>Mtr</option>
+                        </select>
+                    </td>
+                    <td><input type="number" class="modern-input" value="450.00"></td>
+                    <td><strong>45,000.00</strong></td>
+                    <td>
+                        <button class="remove-item-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>
+                        <select class="modern-select">
+                            <option>Select Item</option>
+                            <option>Raw Material - Steel Rods</option>
+                            <option selected>Packaging Material</option>
+                            <option>Office Supplies</option>
+                        </select>
+                    </td>
+                    <td><input type="text" class="modern-input" value="4819"></td>
+                    <td><input type="number" class="modern-input" value="500"></td>
+                    <td>
+                        <select class="modern-select">
+                            <option>Kg</option>
+                            <option selected>Pcs</option>
+                            <option>Mtr</option>
+                        </select>
+                    </td>
+                    <td><input type="number" class="modern-input" value="25.00"></td>
+                    <td><strong>12,500.00</strong></td>
+                    <td>
+                        <button class="remove-item-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <button class="add-item-btn">
+        <i class="fas fa-plus-circle"></i>
+        Add New Item
+    </button>
+</div>
+
+<!-- Tax & Summary -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="form-section-card">
+            <h4 class="section-title">
+                <i class="fas fa-file-alt"></i>
+                Terms & Conditions
+            </h4>
+            <div class="input-group-modern">
+                <label class="modern-label">Payment Terms</label>
+                <select class="modern-select">
+                    <option>Select Payment Terms</option>
+                    <option selected>Net 30 Days</option>
+                    <option>Net 45 Days</option>
+                    <option>Net 60 Days</option>
+                    <option>Advance Payment</option>
+                    <option>50% Advance, 50% on Delivery</option>
+                </select>
+            </div>
+            <div class="input-group-modern">
+                <label class="modern-label">Delivery Terms</label>
+                <select class="modern-select">
+                    <option>Select Delivery Terms</option>
+                    <option selected>FOB (Free on Board)</option>
+                    <option>CIF (Cost, Insurance & Freight)</option>
+                    <option>Ex-Works</option>
+                    <option>Door Delivery</option>
+                </select>
+            </div>
+            <div class="input-group-modern">
+                <label class="modern-label">Special Instructions / Notes</label>
+                <textarea class="textarea-modern" placeholder="Enter any special instructions or notes..."></textarea>
+            </div>
+            <div class="info-box">
+                <i class="fas fa-lightbulb"></i>
+                <div>
+                    <strong>Tip:</strong> Add specific delivery instructions, quality requirements, or packaging preferences in the notes section.
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="form-section-card">
+            <h4 class="section-title">
+                <i class="fas fa-calculator"></i>
+                Order Summary
+            </h4>
+            <div class="summary-card">
+                <div class="summary-row">
+                    <span class="summary-label">Subtotal:</span>
+                    <span class="summary-value">₹ 57,500.00</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">CGST (9%):</span>
+                    <span class="summary-value">₹ 5,175.00</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">SGST (9%):</span>
+                    <span class="summary-value">₹ 5,175.00</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Discount:</span>
+                    <span class="summary-value">- ₹ 0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Total Amount:</span>
+                    <span class="summary-value">₹ 67,850.00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form Actions -->
+<div class="form-actions">
+    <button class="btn-cancel">
+        <i class="fas fa-times me-2"></i>Cancel
+    </button>
+    <button class="btn-save">
+        <i class="fas fa-save me-2"></i>Save Purchase Order
+    </button>
+</div>
+
+@section Scripts {
+    <script>
+        console.log('Add New PO page loaded with modern theme');
+        
+        // Add item functionality
+        document.querySelector('.add-item-btn').addEventListener('click', function() {
+            console.log('Add new item row');
+            // Add logic to add new row
+        });
+
+        // Remove item functionality
+        document.querySelectorAll('.remove-item-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if(confirm('Are you sure you want to remove this item?')) {
+                    this.closest('tr').remove();
+                    console.log('Item removed');
+                }
+            });
+        });
+
+        // Calculate totals on input change
+        document.querySelectorAll('.items-table input[type="number"]').forEach(input => {
+            input.addEventListener('input', function() {
+                const row = this.closest('tr');
+                const qty = parseFloat(row.querySelector('td:nth-child(4) input').value) || 0;
+                const rate = parseFloat(row.querySelector('td:nth-child(6) input').value) || 0;
+                const amount = qty * rate;
+                row.querySelector('td:nth-child(7) strong').textContent = amount.toFixed(2);
+                console.log('Amount updated:', amount);
+            });
+        });
+    </script>
+}

@@ -13,8 +13,48 @@
       "PackagePath": "staticwebassets\\js\\CommonSingleEntryForm.js"
     },
     {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\wwwroot\\js\\FGInspectedEntry.js",
+      "PackagePath": "staticwebassets\\js\\FGInspectedEntry.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\wwwroot\\js\\FGOffer.js",
+      "PackagePath": "staticwebassets\\js\\FGOffer.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\wwwroot\\js\\MachineMaintenance.js",
+      "PackagePath": "staticwebassets\\js\\MachineMaintenance.js"
+    },
+    {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\wwwroot\\js\\Master_site.js",
       "PackagePath": "staticwebassets\\js\\Master_site.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\wwwroot\\js\\PurchaseQualityCheck.js",
+      "PackagePath": "staticwebassets\\js\\PurchaseQualityCheck.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\wwwroot\\js\\QCPropertyGroupMaster.js",
+      "PackagePath": "staticwebassets\\js\\QCPropertyGroupMaster.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\wwwroot\\js\\QCPropertyItemConfiguration.js",
+      "PackagePath": "staticwebassets\\js\\QCPropertyItemConfiguration.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\wwwroot\\js\\QCPropertyMaster.js",
+      "PackagePath": "staticwebassets\\js\\QCPropertyMaster.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\wwwroot\\js\\QCPropertyTestTypeMaster.js",
+      "PackagePath": "staticwebassets\\js\\QCPropertyTestTypeMaster.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\wwwroot\\js\\RMClearanceEntry.js",
+      "PackagePath": "staticwebassets\\js\\RMClearanceEntry.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\wwwroot\\js\\RMOffer.js",
+      "PackagePath": "staticwebassets\\js\\RMOffer.js"
     },
     {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Common.Masters\\wwwroot\\js\\StateMaster.js",

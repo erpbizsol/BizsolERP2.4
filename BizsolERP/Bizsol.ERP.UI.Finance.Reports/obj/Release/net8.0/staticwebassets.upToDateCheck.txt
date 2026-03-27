@@ -1,1 +1,1 @@
-wwwroot\favicon.ico
+wwwroot\Script\LedgerNew.js

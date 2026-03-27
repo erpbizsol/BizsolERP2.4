@@ -2,6 +2,8 @@ wwwroot\css\EnquiryMaster.css
 wwwroot\js\DealerMaster.js
 wwwroot\js\DealerMasterList.js
 wwwroot\js\EnquiryMaster.js
+wwwroot\js\ItemMaster.js
 wwwroot\js\LeadMaster.js
 wwwroot\js\Ledger.js
 wwwroot\js\TransporterMaster.js
+wwwroot\js\VendorMaster.js

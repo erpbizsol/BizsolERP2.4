@@ -17,7 +17,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>9095</FileLength>
-      <LastWriteTime>Mon, 16 Jun 2025 05:07:32 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\GeneratePassword.js'))</OriginalItemSpec>
     </StaticWebAsset>
   </ItemGroup>

@@ -66,6 +66,42 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHVyY2hhc2VUcmFuc2FjdGlvbnNcVmlld3NcR2F0ZUVudHJ5XFZlaGljbGVTdGF0dXMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Purchase.Transactions/Areas/PurchaseTransactions/Views/GRNPaymentApproval/GRNPaymentApproval.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHVyY2hhc2VUcmFuc2FjdGlvbnNcVmlld3NcR1JOUGF5bWVudEFwcHJvdmFsXEdSTlBheW1lbnRBcHByb3ZhbC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Purchase.Transactions/Areas/PurchaseTransactions/Views/GRNPayment/GRNPaymentApprovalConfiguration.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHVyY2hhc2VUcmFuc2FjdGlvbnNcVmlld3NcR1JOUGF5bWVudFxHUk5QYXltZW50QXBwcm92YWxDb25maWd1cmF0aW9uLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Purchase.Transactions/Areas/PurchaseTransactions/Views/GRNService/GRNPaymentApproval.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHVyY2hhc2VUcmFuc2FjdGlvbnNcVmlld3NcR1JOU2VydmljZVxHUk5QYXltZW50QXBwcm92YWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Purchase.Transactions/Areas/PurchaseTransactions/Views/GRNService/GRNService.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHVyY2hhc2VUcmFuc2FjdGlvbnNcVmlld3NcR1JOU2VydmljZVxHUk5TZXJ2aWNlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Purchase.Transactions/Areas/PurchaseTransactions/Views/InvoiceGST/InvoiceGST.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHVyY2hhc2VUcmFuc2FjdGlvbnNcVmlld3NcSW52b2ljZUdTVFxJbnZvaWNlR1NULmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Purchase.Transactions/Areas/PurchaseTransactions/Views/Project/ProjectMaster.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHVyY2hhc2VUcmFuc2FjdGlvbnNcVmlld3NcUHJvamVjdFxQcm9qZWN0TWFzdGVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Purchase.Transactions/Areas/PurchaseTransactions/Views/Project/SubProjectMaster.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHVyY2hhc2VUcmFuc2FjdGlvbnNcVmlld3NcUHJvamVjdFxTdWJQcm9qZWN0TWFzdGVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Purchase.Transactions/Areas/PurchaseTransactions/Views/PurchaseOrder/POLevelsApprove.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHVyY2hhc2VUcmFuc2FjdGlvbnNcVmlld3NcUHVyY2hhc2VPcmRlclxQT0xldmVsc0FwcHJvdmUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Purchase.Transactions/Areas/PurchaseTransactions/Views/PurchaseOrder/PurchaseOrderStore.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHVyY2hhc2VUcmFuc2FjdGlvbnNcVmlld3NcUHVyY2hhc2VPcmRlclxQdXJjaGFzZU9yZGVyU3RvcmUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Purchase.Transactions/Areas/PurchaseTransactions/Views/QualityCheck/QRQualityCheck.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHVyY2hhc2VUcmFuc2FjdGlvbnNcVmlld3NcUXVhbGl0eUNoZWNrXFFSUXVhbGl0eUNoZWNrLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 

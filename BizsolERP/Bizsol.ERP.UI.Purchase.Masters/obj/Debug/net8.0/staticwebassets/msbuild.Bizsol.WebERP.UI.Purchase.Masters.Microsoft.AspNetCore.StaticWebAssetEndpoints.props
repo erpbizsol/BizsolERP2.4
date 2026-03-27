@@ -4,13 +4,13 @@
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\POApprovalConfiguration.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"fp5jcn61bt"},{"Name":"integrity","Value":"sha256-XXRi5OivEpbTtgo4UWez3ZpE/y2UZFtwFU0BZ\u002Brh1RA="},{"Name":"label","Value":"_content/Bizsol.WebERP.UI.Purchase.Masters/js/POApprovalConfiguration.js"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"16477"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022XXRi5OivEpbTtgo4UWez3ZpE/y2UZFtwFU0BZ\u002Brh1RA=\u0022"},{"Name":"Last-Modified","Value":"Thu, 12 Mar 2026 12:54:25 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"16477"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022XXRi5OivEpbTtgo4UWez3ZpE/y2UZFtwFU0BZ\u002Brh1RA=\u0022"},{"Name":"Last-Modified","Value":"Thu, 12 Mar 2026 05:16:13 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Bizsol.WebERP.UI.Purchase.Masters/js/POApprovalConfiguration.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\POApprovalConfiguration.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-XXRi5OivEpbTtgo4UWez3ZpE/y2UZFtwFU0BZ\u002Brh1RA="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"16477"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022XXRi5OivEpbTtgo4UWez3ZpE/y2UZFtwFU0BZ\u002Brh1RA=\u0022"},{"Name":"Last-Modified","Value":"Thu, 12 Mar 2026 12:54:25 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"16477"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022XXRi5OivEpbTtgo4UWez3ZpE/y2UZFtwFU0BZ\u002Brh1RA=\u0022"},{"Name":"Last-Modified","Value":"Thu, 12 Mar 2026 05:16:13 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
   </ItemGroup>
 </Project>

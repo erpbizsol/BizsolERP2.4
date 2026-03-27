@@ -1,6 +1,10 @@
 wwwroot\Script\FMSReport.js
 wwwroot\Script\GateEntry.js
 wwwroot\Script\GateToken.js
+wwwroot\Script\GRNPayment.js
+wwwroot\Script\GRNPaymentApproval.js
+wwwroot\Script\GRNPaymentEntry.js
+wwwroot\Script\GRNService.js
 wwwroot\Script\InvoiceGST.js
 wwwroot\Script\PDI.js
 wwwroot\Script\POApproval.js

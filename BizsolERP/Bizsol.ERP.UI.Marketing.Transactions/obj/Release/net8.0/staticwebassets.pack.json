@@ -1,6 +1,14 @@
 {
   "Files": [
     {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Marketing.Transactions\\wwwroot\\Script\\BOM.js",
+      "PackagePath": "staticwebassets\\Script\\BOM.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Marketing.Transactions\\wwwroot\\Script\\BalancePOCancellation.js",
+      "PackagePath": "staticwebassets\\Script\\BalancePOCancellation.js"
+    },
+    {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Marketing.Transactions\\wwwroot\\Script\\BuyingCapacity.js",
       "PackagePath": "staticwebassets\\Script\\BuyingCapacity.js"
     },

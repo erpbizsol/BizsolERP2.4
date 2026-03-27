@@ -1,5 +1,57 @@
 ﻿import { DealerMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/DealerMasterService.js';
+import { CRMReportsServices } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CRMReportsService.js';
+
 var baseUrl = sessionStorage.getItem('AppBaseURL');
+
+CRMReportsServices.GetSalespersonList().then(function (response) {
+    if (response && response.length > 0) {
+        BindSelectList($('#ddlSalePerson'), response.map((item) => ({ Code: item.Code, Desp: item.PersonName })));
+    } 
+}).catch(function (error) {
+    console.error('Error fetching salesperson list:', error);
+});
+
+function BindSelectList(element, arrayList) {
+    element.empty();
+
+    
+   element.append(new Option("Select", "0"));
+    
+
+
+    // Get the options from the datalist and append them to Select2
+    $.each(arrayList, function (index, item) {
+        // Append new option elements (key as value and value as text)
+        element.append(new Option(item.Desp, item.Code));
+    });
+
+    if (param_Mode == 'View' && param_DealerMaster_Code > 0) {
+        $('#ddlSalePerson').prop('disabled', true);
+        $('#chkIsActive').prop('disabled', true);
+    }
+    // Trigger a change event to update Select2 UI
+    // element.trigger('change');
+
+    element.select2({
+        //// allowClear: true,
+        width: 'resolve',
+        matcher: function (params, data) {
+            // If there's no search term, return all data
+            if ($.trim(params.term) === '') {
+                return data;
+            }
+
+            // Match items that start with the search term
+            if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
+                return data;
+            }
+
+            // Return null if no match
+            return null;
+        }
+    });
+}
+
 $(document).ready(function () {
 	
 	$("#ERPHeading").text("Dealer Master");
@@ -37,7 +89,7 @@ $(document).ready(function () {
     if (param_DealerMaster_Code > 0) {
         GetEditDealerMasterDetails(param_DealerMaster_Code);
     }
-    DisableControls();
+    //DisableControls();
 });
 function GetCityList(CountryName, StateName) {
     DealerMasterService.GetCityList(CountryName, StateName).then(function (response) {
@@ -80,20 +132,25 @@ function SaveData() {
         return false;
     }
 
-    var DealerMasterData = [];
+    let DealerMasterData = [];
 
-    var DealerMasterRow = {};
+    let DealerMasterRow = {};
 
-    var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-    var UserMaster_Code = authKeyData.UserMaster_Code;
+    let authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+    let UserMaster_Code = authKeyData.UserMaster_Code;
 
-    var AccountDesp = $("#txtDistributor").val();
-    var DealerName = $("#txtName").val();
-    var Address = $("#txtAddress").val();
-    var CityName = $("#txtCity").val();
-    var StateName = $("#txtState").val();
-    var MobileNo = $("#txtMobileNo").val();
-    var Email = $("#txtEmail").val();
+    let AccountDesp = $("#txtDistributor").val();
+    let DealerName = $("#txtName").val();
+    let Address = $("#txtAddress").val();
+    let CityName = $("#txtCity").val();
+    let StateName = $("#txtState").val();
+    let MobileNo = $("#txtMobileNo").val();
+    let Email = $("#txtEmail").val();
+    let ddlSalePerson = $("#ddlSalePerson").val();
+    let IsActive = 'N';
+    if ($('#chkIsActive').is(':checked')) {
+        IsActive = 'Y';
+    }
 
     DealerMasterRow["Code"] = param_DealerMaster_Code;
     DealerMasterRow["DealerName"] = DealerName;
@@ -107,6 +164,8 @@ function SaveData() {
     DealerMasterRow["CreatedDate"] = new Date().toISOString().split("T")[0];
     DealerMasterRow["UpdatedBy"] = UserMaster_Code;
     DealerMasterRow["UpdatedDate"] = new Date().toISOString().split("T")[0];
+    DealerMasterRow["MarketingManMaster_Code"] = ddlSalePerson;
+    DealerMasterRow["IsActive"] = IsActive;
 
 
     DealerMasterData.push(DealerMasterRow);
@@ -143,6 +202,7 @@ function ValidateData() {
     var StateName  =$("#txtState").val();
     var MobileNo = $("#txtMobileNo").val();
     var Email = $("#txtEmail").val();
+    var ddlSalePerson = $("#ddlSalePerson").val();
 
     if (AccountDesp == "") {
 
@@ -177,6 +237,11 @@ function ValidateData() {
             Valid = false;
         }
     }
+    if (ddlSalePerson == "0") {
+        MsgStr += "* Please Select Sales Person!" + newLine;
+        Valid = false;
+    }
+
     if (Valid == false) {
         toastr.error(MsgStr);
         return false;
@@ -199,6 +264,15 @@ function GetEditDealerMasterDetails(param_DealerMaster_Code) {
             $("#txtEmail").val(response.EmailId);
             $("#hdntxtCity").val(response.CityMaster_Code);
             $("#hdntxtState").val(response.StateMaster_Code);
+            $("#ddlSalePerson").val(response.MarketingManMaster_Code);
+            $("#ddlSalePerson").select2();
+
+            if (response.IsActive == 'Y') {
+                $("#chkIsActive")[0].checked = true;
+            } else {
+                $("#chkIsActive")[0].checked = false;
+            }
+            DisableControls();
         }
 
     });

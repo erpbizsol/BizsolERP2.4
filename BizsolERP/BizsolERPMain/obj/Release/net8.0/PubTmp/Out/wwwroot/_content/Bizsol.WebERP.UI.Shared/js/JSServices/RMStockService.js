@@ -18,8 +18,8 @@ const RMStockService = {
             }
         );
     },
-    GetRMStockItemName: function GetRMStockItemName() {
-        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockItemName";
+    GetRMStockItemName: function GetRMStockItemName(ItemMaster_CodeOnlyIssue) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockItemName?ItemMaster_CodeOnlyIssue=" + ItemMaster_CodeOnlyIssue;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -134,6 +134,46 @@ const RMStockService = {
     },
     GetSlittedCoilStockData: function GetSlittedCoilStockData(FromDate, ToDate) {
         var URL = UrlService.API_ENDPOINT_RMStock + "/GetSlittedCoilStockData?FromDate=" + FromDate + "&ToDate=" + ToDate;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    VerifySlittingPlan: function VerifySlittingPlan(Code, Level) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/VerifySlittingPlan?Code=" + encodeURIComponent(Code) + "&VerifyLevel=" + encodeURIComponent(Level);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRMStockODSize: function GetRMStockODSize() {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockODSize";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRMStockCheckODSizeApplicable: function GetRMStockCheckODSizeApplicable(ItemMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockCheckODSizeApplicable?ItemMaster_Code=" + ItemMaster_Code;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRMStockODSizeWidthSelection: function GetRMStockODSizeWidthSelection(ItemParameterMaster_Code_Width, MachineMaster_Code, ItemParameterMaster_Code_Thk) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockODSizeWidthSelection?ItemParameterMaster_Code_Width=" + ItemParameterMaster_Code_Width + "&MachineMaster_Code=" + MachineMaster_Code + "&ItemParameterMaster_Code_Thk=" + ItemParameterMaster_Code_Thk;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRMStockSlittedCoilsStockSummary: function GetRMStockSlittedCoilsStockSummary() {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockSlittedCoilsStockSummary";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

@@ -1402,7 +1402,6 @@ D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Transactions\obj\Release\n
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Transactions\obj\Release\net8.0\staticwebassets.build.json.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Transactions\obj\Release\net8.0\swae.build.ex.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Transactions\bin\Release\net8.0\Properties\launchSettings.json
-D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.CRM.Transactions.EmbeddedFilesManifest.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Transactions\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.CRM.Transactions.Microsoft.AspNetCore.StaticWebAssets.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Transactions\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.CRM.Transactions.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Transactions\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.CRM.Transactions.props

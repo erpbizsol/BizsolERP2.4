@@ -5796,23 +5796,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\BizSol\\.nuget\\packages\\": {},
+    "C:\\Users\\manoj\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\Bizsol.WebERP.UI.CRM.Reports.csproj",
+      "projectUniqueName": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\Bizsol.WebERP.UI.CRM.Reports.csproj",
       "projectName": "Bizsol.WebERP.UI.CRM.Reports",
-      "projectPath": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\Bizsol.WebERP.UI.CRM.Reports.csproj",
-      "packagesPath": "C:\\Users\\BizSol\\.nuget\\packages\\",
-      "outputPath": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\obj\\",
+      "projectPath": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\Bizsol.WebERP.UI.CRM.Reports.csproj",
+      "packagesPath": "C:\\Users\\manoj\\.nuget\\packages\\",
+      "outputPath": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.CRM.Reports\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\BizSol\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\manoj\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -5820,15 +5820,15 @@
         "net8.0"
       ],
       "sources": {
-        "C:\\Program Files\\dotnet\\library-packs": {},
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
-              "projectPath": "D:\\WebERP2.4Core\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
+            "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj": {
+              "projectPath": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.WebERP.UI.Shared\\Bizsol.WebERP.UI.Shared.csproj"
             }
           }
         }
@@ -5843,7 +5843,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.300"
+      "SdkAnalysisLevel": "10.0.200"
     },
     "frameworks": {
       "net8.0": {
@@ -5874,7 +5874,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

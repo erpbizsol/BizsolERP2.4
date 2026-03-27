@@ -17,7 +17,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>362</FileLength>
-      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:35 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\Test_site.css'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\favicon.ico'))">
@@ -37,7 +37,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>5430</FileLength>
-      <LastWriteTime>Tue, 22 Oct 2024 10:03:18 GMT</LastWriteTime>
+      <LastWriteTime>Fri, 25 Oct 2024 06:49:09 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\favicon.ico'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\test_site.js'))">
@@ -57,7 +57,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>231</FileLength>
-      <LastWriteTime>Sat, 17 Jan 2026 07:34:46 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:35 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\test_site.js'))</OriginalItemSpec>
     </StaticWebAsset>
   </ItemGroup>

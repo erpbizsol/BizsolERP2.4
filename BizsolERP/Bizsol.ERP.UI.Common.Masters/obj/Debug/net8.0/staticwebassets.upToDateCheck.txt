@@ -2,6 +2,7 @@ wwwroot\css\Masters_site.css
 wwwroot\js\CommonSingleEntryForm.js
 wwwroot\js\FGInspectedEntry.js
 wwwroot\js\FGOffer.js
+wwwroot\js\MachineMaintenance.js
 wwwroot\js\Master_site.js
 wwwroot\js\PurchaseQualityCheck.js
 wwwroot\js\QCPropertyGroupMaster.js

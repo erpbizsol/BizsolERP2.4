@@ -1608,7 +1608,6 @@ D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\bin\Debug\net8.0\B
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\bin\Debug\net8.0\Bizsol.WebERP.UI.Shared.pdb
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\Bizsol.WebERP.UI.CRM.Reports.csproj.AssemblyReference.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\rpswa.dswa.cache.json
-D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\Bizsol.WebERP.UI.CRM.Reports.EmbeddedFilesManifest.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\Bizsol.WebERP.UI.CRM.Reports.GeneratedMSBuildEditorConfig.editorconfig
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\Bizsol.WebERP.UI.CRM.Reports.AssemblyInfoInputs.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\Bizsol.WebERP.UI.CRM.Reports.AssemblyInfo.cs
@@ -1631,7 +1630,6 @@ D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\s
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\staticwebassets\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.CRM.Reports.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\staticwebassets\msbuild.buildTransitive.Bizsol.WebERP.UI.CRM.Reports.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\staticwebassets.pack.json
-D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\Bizsol.W.0086D3B4.Up2Date
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\Bizsol.WebERP.UI.CRM.Reports.dll
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\refint\Bizsol.WebERP.UI.CRM.Reports.dll
@@ -1979,3 +1977,4 @@ D:\WebERP2.4Core\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\Bizsol.
 D:\WebERP2.4Core\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\refint\Bizsol.WebERP.UI.CRM.Reports.dll
 D:\WebERP2.4Core\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\Bizsol.WebERP.UI.CRM.Reports.pdb
 D:\WebERP2.4Core\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\ref\Bizsol.WebERP.UI.CRM.Reports.dll
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.WebERP.UI.CRM.Reports\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
