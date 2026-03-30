@@ -39,6 +39,10 @@ $(document).ready(function () {
         const $tr = $(this).closest('tr');
         deleteBOMFromList($tr.data('id'), $tr.data('sub-id') || 0);
     });
+    $('#tblBOMList').on('click', '.js-bom-history', function () {
+        const $tr = $(this).closest('tr');
+        openBomAmendmentHistoryModal($tr.data('id'), $tr.data('sub-id') || 0);
+    });
 
     $('#bomSearch').on('input', function () {
         filterBOMs($(this).val().toLowerCase().trim());
@@ -121,7 +125,7 @@ function bindBOMGrid(list) {
                     <div class="pm-empty">
                         <div class="pm-empty-icon"><i class="fas fa-folder-open"></i></div>
                         <div class="pm-empty-title">No BOM records found</div>
-                        <div class="pm-empty-sub">Click "New BOM" to create your first BOM.</div>
+                        <div class="pm-empty-sub">Click &quot;New BOM&quot; to create your first BOM.</div>
                     </div>
                 </td>
             </tr>`);
@@ -156,6 +160,9 @@ function bindBOMGrid(list) {
                         <button type="button" class="bom-btn icon edit js-bom-edit" title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
+                        <button type="button" class="bom-btn icon history js-bom-history" title="Amendment history">
+                            <i class="fas fa-history"></i>
+                        </button>
                         <button type="button" class="bom-btn icon del js-bom-delete" title="Delete">
                             <i class="fas fa-trash-alt"></i>
                         </button>
@@ -173,6 +180,204 @@ function filterBOMs(query) {
     });
     bindBOMGrid(filtered);
 }
+
+function normalizeAmendmentHistoryResponse(resp) {
+    if (Array.isArray(resp)) return resp;
+    if (resp && Array.isArray(resp.data)) return resp.data;
+    if (resp && Array.isArray(resp.Data)) return resp.Data;
+    return [];
+}
+
+/** Map API / serializer variants to stable column names used by USP_GetCommonAmendmentDetails. */
+function amendmentCanonicalColumnName(key) {
+    if (key == null) return key;
+    const t = String(key).trim();
+    const compact = t.replace(/\s+/g, '').toLowerCase();
+    const aliases = {
+        trancode: 'TranCode',
+        type: 'Type',
+        amendmentno: 'Amendment No',
+        amendmentdate: 'Amendment Date',
+        amendmenttime: 'Amendment Time',
+        amendmentby: 'Amendment By'
+    };
+    return aliases[compact] || t;
+}
+
+function formatAmendmentHistoryDate(val) {
+    if (val == null || val === '') return '';
+    try {
+        const d = new Date(val);
+        if (isNaN(d.getTime())) return String(val);
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch (e) {
+        return String(val);
+    }
+}
+
+function orderAmendmentHistoryColumns(allKeys) {
+    const priority = ['Type', 'Amendment No', 'Amendment Date', 'Amendment Time', 'Amendment By'];
+    const head = priority.filter(function (k) { return allKeys.indexOf(k) >= 0; });
+    const rest = allKeys.filter(function (k) { return priority.indexOf(k) < 0; }).sort(function (a, b) {
+        return String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
+    });
+    return head.concat(rest);
+}
+
+/** Build rows with same keys (pivot columns may differ per amendment), format dates, show nulls as — for numeric pivots. */
+function prepareAmendmentHistoryGridRows(rawRows) {
+    const list = Array.isArray(rawRows) ? rawRows : [];
+    const canonicalRows = list.map(function (row) {
+        const o = {};
+        Object.keys(row).forEach(function (k) {
+            o[amendmentCanonicalColumnName(k)] = row[k];
+        });
+        return o;
+    });
+
+    const keySet = new Set();
+    canonicalRows.forEach(function (r) {
+        Object.keys(r).forEach(function (k) { keySet.add(k); });
+    });
+    const orderedKeys = orderAmendmentHistoryColumns(Array.from(keySet));
+
+    const numericPivotNames = ['Amount', 'Qty Required', 'Rate', 'Tolerance', 'Rate Tolerance'];
+
+    return canonicalRows.map(function (r) {
+        const out = {};
+        orderedKeys.forEach(function (k) {
+            let v = r.hasOwnProperty(k) ? r[k] : '';
+            if (k === 'Amendment Date' && v !== '' && v != null) {
+                out[k] = formatAmendmentHistoryDate(v);
+                return;
+            }
+            if (v === null || v === undefined) {
+                v = '';
+            }
+            if (v === '' && numericPivotNames.indexOf(k) >= 0) {
+                out[k] = '—';
+            } else {
+                out[k] = v;
+            }
+        });
+        return out;
+    });
+}
+
+function sortAmendmentHistoryRows(rows) {
+    return rows.slice().sort(function (a, b) {
+        const noA = parseInt(a['Amendment No'], 10) || 0;
+        const noB = parseInt(b['Amendment No'], 10) || 0;
+        if (noA !== noB) return noB - noA;
+        const tcA = parseInt(a.TranCode, 10) || 0;
+        const tcB = parseInt(b.TranCode, 10) || 0;
+        if (tcA !== tcB) return tcA - tcB;
+        const timeA = String(a['Amendment Time'] || '');
+        const timeB = String(b['Amendment Time'] || '');
+        if (timeA !== timeB) return timeB.localeCompare(timeA);
+        const rank = { OldValue: 0, NewValue: 1 };
+        const ra = rank.hasOwnProperty(a.Type) ? rank[a.Type] : 9;
+        const rb = rank.hasOwnProperty(b.Type) ? rank[b.Type] : 9;
+        return ra - rb;
+    });
+}
+
+/**
+ * Opens modal and binds amendment grid (BizsolCustomFilterGrid — same pattern as Buying Capacity).
+ */
+function openBomAmendmentHistoryModal(projectMasterCode, subProjectMasterCode) {
+    const code = parseInt(projectMasterCode || '0', 10) || 0;
+    const sub  = parseInt(subProjectMasterCode || '0', 10) || 0;
+    if (!code) {
+        toastr.warning('Invalid project for this BOM row.');
+        return;
+    }
+
+    const Grid = window.BizsolCustomFilterGrid;
+    if (!Grid || typeof Grid.CreateDataTable !== 'function') {
+        toastr.error('Grid component not loaded. Ensure filter.js is included on the page.');
+        return;
+    }
+
+    const row = (G_BOMList || []).find(function (x) {
+        return String(x.ProjectMaster_Code || x.Code || 0) === String(code)
+            && String(x.SubProjectMaster_Code || 0) === String(sub);
+    });
+    const proj = row ? (row.ProjectName || row.ProjectDesp || '') : '';
+    const subn = row ? (row.SubProjectName || row.SubProjectDesp || '') : '';
+    $('#bomAmendmentHistorySubtitle').text((proj || '—') + (subn ? ' · ' + subn : ''));
+
+    $('#table-header-BomAmendmentHistory').empty();
+    $('#table-body-BomAmendmentHistory').empty();
+    $('#paginator-tblBomAmendmentHistory').empty();
+
+    showModal('dvBomAmendmentHistoryModal');
+
+    Showloader && Showloader();
+    BOMService.GetBOMAmendmentDetails(sub)
+        .then(function (response) {
+            HideLoader && HideLoader();
+            const raw = normalizeAmendmentHistoryResponse(response);
+            if (!raw.length) {
+                $('#table-body-BomAmendmentHistory').html(
+                    '<tr><td colspan="99" style="text-align:center;padding:24px;color:var(--text-muted);">No amendment history found.</td></tr>'
+                );
+                return;
+            }
+
+            let rows = prepareAmendmentHistoryGridRows(raw);
+            rows = sortAmendmentHistoryRows(rows);
+
+            const keys = Object.keys(rows[0]);
+            /* Must not appear in String/Numeric/Date filter lists, or Filter.js renders a visible header for them. */
+            const AMENDMENT_HIDDEN_COLUMNS = ['TranCode'];
+            const hiddenColumns = AMENDMENT_HIDDEN_COLUMNS.filter(function (k) {
+                return keys.indexOf(k) >= 0;
+            });
+            const DateFilterColumn = keys.indexOf('Amendment Date') >= 0 ? ['Amendment Date'] : [];
+            const numericCandidates = ['Amendment No'];
+            const pivotNumeric = keys.filter(function (k) {
+                return ['Amount', 'Rate', 'Qty Required', 'Tolerance', 'Rate Tolerance'].indexOf(k) >= 0;
+            });
+            const NumericFilterColumn = numericCandidates.concat(pivotNumeric).filter(function (k) {
+                return keys.indexOf(k) >= 0 && hiddenColumns.indexOf(k) < 0;
+            });
+            const StringFilterColumn = keys.filter(function (k) {
+                return hiddenColumns.indexOf(k) < 0
+                    && DateFilterColumn.indexOf(k) < 0
+                    && NumericFilterColumn.indexOf(k) < 0;
+            });
+            const StringdoubleFilterColumn = [];
+            const ColumnAlignment = {};
+            keys.forEach(function (k) {
+                if (NumericFilterColumn.indexOf(k) >= 0) {
+                    ColumnAlignment[k] = 'right';
+                } else if (k === 'Type') {
+                    ColumnAlignment[k] = 'center';
+                }
+            });
+
+            Grid.CreateDataTable(
+                'table-header-BomAmendmentHistory',
+                'table-body-BomAmendmentHistory',
+                rows,
+                false,
+                [],
+                StringFilterColumn,
+                NumericFilterColumn,
+                DateFilterColumn,
+                StringdoubleFilterColumn,
+                hiddenColumns,
+                ColumnAlignment,
+                true
+            );
+        })
+        .catch(function (err) {
+            HideLoader && HideLoader();
+            toastr.error((err && err.Msg) || 'Could not load amendment history.');
+        });
+}
+
 function viewBOM(id, subId) {
     if (!G_BOMList || !G_BOMList.length) return;
     const row = G_BOMList.find(function (x) {
@@ -878,7 +1083,7 @@ function saveAllRows() {
             Code                             : p.DetailCode || 0,
             ProjectMaster_Code               : projectMaster_Code,
             ProjectCategory_Code             : p.CategoryCode || 0,
-            ProjectSubCategory_Code          : subProjectCode,
+            ProjectSubCategory_Code          : 0,
             F_CommonValues_WorkType_Code     : 0,
             WorkTypeMaster_Code              : p.WorkTypeCode || 0,
             UOMMaster_Code                   : p.UOMMaster_Code || 0,

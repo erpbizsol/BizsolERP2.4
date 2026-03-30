@@ -67,6 +67,19 @@ const BOMService = {
         return promiseAjaxCallApi.CallAPI('POST', URL, "").then(function (value) {
             return value;
         });
+    },
+
+    /**
+     * Amendment history (USP_GetCommonAmendmentDetails).
+     * Code = ProjectMaster_Code (for validation / display); SubProjectMaster_Code = master key used in CommonAmendmentDetails.
+     * Backend should map to SP: MasterTableName='SubProjectMaster', MasterTableCode=@SubProjectMaster_Code,
+     * TransactionTableName='', TransactionTableCode=0, AmendmentNo=0 (or pass filters as needed).
+     */
+    GetBOMAmendmentDetails: function GetBOMAmendmentDetails(subProjectMaster_Code) {
+        const URL = UrlService.API_ENDPOINT_BOM + "/GetBOMAmendmentDetails?SubProjectMaster_Code=" + (subProjectMaster_Code || 0);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) {
+            return value;
+        });
     }
 };
 
