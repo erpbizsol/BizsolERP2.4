@@ -1,5 +1,5 @@
 @{
-    Layout = "~/Views/Shared/_Layout1.cshtml";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Masters/js/EnquiryMaster.js"></script>
@@ -7,108 +7,1040 @@
 <script src="~/assets/js/jquery-3.6.0.min.js"></script>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <link href="~/_content/Bizsol.WebERP.UI.Marketing.Masters/css/EnquiryMaster.css" rel="stylesheet" />
-@* <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script> *@
 <script src="https://cdn.jsdelivr.net/gh/ankitayodhya2002/CDN@main/Filter.js"></script>
 
-@* <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"> *@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-    /* Jilva-like theme (scoped to this page) */
+    /* Enquiry — Rolling Plan Sheet palette (#558bc0) */
+    #dvEnquiry {
+        --enq-accent: #558bc0;
+        --enq-accent-hover: #4378b0;
+        --enq-accent-soft: #e8f4fd;
+        --enq-surface: #f8fafc;
+        --enq-border: #e2e8f0;
+        --enq-text: #0f172a;
+        --enq-muted: #64748b;
+    }
     #dvEnquiry, #dvLoad, #dvFollowup {
-        font-family: 'Poppins', Arial, sans-serif;
-        color: #1f2d3d;
+        color: var(--enq-text, #0f172a);
     }
-    .card {
-        border: 1px solid #e6e9f0;
-        border-radius: 10px;
-        box-shadow: 0 6px 16px rgba(31,45,61,0.06);
-    }
-    .card > .card-header, .card > .ps-2.p-1 {
-        border-radius: 10px 10px 0 0;
-    }
-    /* Section headers */
-    .card.ps-2.p-1 {
-        background: linear-gradient(90deg,#275481 0%, #2f6aa6 100%) !important;
-        color:#fff !important;
-        font-weight:600 !important;
-        letter-spacing:.2px;
-    }
-    /* Tabs header strip */
-    .card-header-tabs {
-        display:flex;
-        gap:8px;
-        padding:6px 8px;
-        background:#f8fafc;
-        border:1px solid #e6e9f0;
-        border-radius:10px;
-        margin-bottom:10px;
-        align-items:center;
-    }
-    .card-header-tabs .tab {
-        border:none;
-        background:#ffffff;
-        color:#275481;
-        padding:8px 14px;
-        font-weight:600;
-        border-radius:8px;
-        box-shadow: 0 2px 6px rgba(31,45,61,0.06);
-        transition: all .2s ease;
-        white-space:nowrap;
-    }
-    .card-header-tabs .tab:hover { background:#eef3f9; }
-    .card-header-tabs .tab.active {
-        background:#275481;
-        color:#ffffff;
-    }
-    /* Inputs */
-    .box_border.form-control, .box_border.form-select {
-        border-radius:8px;
-        border-color:#d7deea;
-    }
-    .box_border.form-control:focus, .box_border.form-select:focus {
-        border-color:#275481;
-        box-shadow:0 0 0 .2rem rgba(39,84,129,.15);
-    }
-    
-    .btn-success { background:#2fb380; border-color:#28a571; }
-    .btn-danger { background:#ef476f; border-color:#e23a61; }
-    .btn-primary { background:#275481; border-color:#275481; }
-    .btn-success:hover, .btn-danger:hover, .btn-primary:hover { filter: brightness(0.95); }
-    /* Tables */
-    .fixed-width-table.table thead { background:#f3f6fb; }
-    /* .fixed-width-table.table th { color:#4a5a6a; font-weight:600; } */
+    .req { color: #dc2626; }
 
-    /* Make tables and wrappers responsive */
-    .table-wrapper {
-        width:100%;
-        overflow-x:auto;
+    #dvLoad {
+        background: transparent;
     }
-    .fixed-width-table.table {
-        width:100%;
-        min-width:700px; /* keep layout on larger screens */
+
+    .enq-list-header {
+        background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        border-radius: 12px 12px 0 0;
+        padding: 18px 24px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
-    
+    .enq-list-header h5 { margin: 0; color: #fff; font-weight: 650; font-size: 1.05rem; letter-spacing: -0.02em; }
+    .enq-list-header small { color: rgba(255,255,255,0.72); font-size: 0.8125rem; display: block; line-height: 1.4; }
+    .enq-header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    /* Primary actions: New enquiry, Save, Back */
+    .btn-enq-new {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        background: linear-gradient(180deg, #6a9ccd 0%, #558bc0 100%);
+        color: #fff !important;
+        border-radius: 10px;
+        padding: 7px 16px;
+        font-weight: 600;
+        font-size: 0.8125rem;
+        border: none;
+        box-shadow: 0 2px 8px rgba(85, 139, 192, 0.4);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: box-shadow 0.2s, transform 0.15s, filter 0.15s;
+        line-height: 1.25;
+    }
+    .btn-enq-new:hover {
+        filter: brightness(1.05);
+        box-shadow: 0 4px 14px rgba(85, 139, 192, 0.5);
+        transform: translateY(-1px);
+        color: #fff !important;
+    }
+
+    .enq-filter-bar {
+        background: #fff;
+        border: 1px solid var(--enq-border, #e2e8f0);
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        padding: 14px 18px 14px;
+        margin-bottom: 16px;
+        position: relative;
+        z-index: 2;
+    }
+    /* Select2 next to native Status: keep widget in flow (avoids jumping to viewport top after grid refresh) */
+    .enq-filter-bar .row > [class*="col-"] {
+        min-width: 0;
+    }
+    .enq-filter-bar .select2-container {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100%;
+        position: relative !important;
+        vertical-align: top;
+    }
+    .enq-filter-bar .select2-container .select2-selection--single {
+        height: calc(1.5em + 0.5rem + 2px);
+    }
+    .enq-grid-wrap {
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid var(--enq-border, #e2e8f0);
+        box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+    .table-wrapper.enq-table-scroll { max-height: 440px; overflow-y: auto; }
+    .enq-grid-wrap #table.table { margin-bottom: 0; }
+
+    /* List grid — Rolling Plan Sheet style (#tblTable) */
+    .enq-grid-wrap .table-wrapper.enq-table-scroll {
+        position: relative;
+        overflow: auto;
+    }
+    #table.enq-list-table {
+        width: 100%;
+        margin-bottom: 0;
+        border-collapse: collapse;
+    }
+    #table.enq-list-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 06;
+        background-color: #fff;
+    }
+    #table.enq-list-table thead th {
+        background-color: #558bc0 !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        border-bottom: 2px solid #dee2e6 !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: 1px solid rgba(255,255,255,0.25) !important;
+        padding: 6px 10px !important;
+        padding-right: 15px !important;
+        font-size: 8pt !important;
+        font-weight: 600 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        vertical-align: middle !important;
+        white-space: nowrap;
+    }
+    #table.enq-list-table thead th:last-child {
+        border-right: none !important;
+    }
+    /* List filters live in #dvLoad — stack above sticky thead; dropdown is on body */
+    #dvLoad .select2-container--open {
+        z-index: 10050 !important;
+    }
+    .select2-dropdown {
+        z-index: 10050 !important;
+    }
+    #table.enq-list-table tbody td {
+        padding: 4px 8px !important;
+        border: 1px solid #ddd !important;
+        font-size: 9pt !important;
+        vertical-align: middle !important;
+        color: #212529;
+    }
+    #table.enq-list-table.table-hover tbody tr:hover {
+        background-color: #e8f4fd !important;
+    }
+    /* Action column: flex cell + display:contents wrapper = all buttons one row, centered */
+    #dvLoad #table.enq-list-table thead th:last-child {
+        min-width: 270px;
+        text-align: center !important;
+        vertical-align: middle !important;
+    }
+    #dvLoad #table.enq-list-table tbody td:last-child {
+        min-width: 270px;
+        width: 1%;
+        white-space: nowrap;
+        text-align: center !important;
+        vertical-align: middle !important;
+        flex-wrap: nowrap !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 5px;
+        padding: 6px 8px !important;
+        /* Collapse &nbsp; text nodes between buttons (legacy string concat) */
+        font-size: 0;
+        line-height: 0;
+    }
+    #dvLoad #table.enq-list-table tbody td:last-child .btn,
+    #dvLoad #table.enq-list-table tbody td:last-child .btn-group {
+        font-size: 0.875rem;
+        line-height: 1.25;
+    }
+    /* Unwrap inner div so buttons lay out in the <td> flex row */
+    #dvLoad #table.enq-list-table tbody td:last-child .enq-action-wrap {
+        display: contents;
+    }
+    #dvLoad #table.enq-list-table tbody td:last-child .btn,
+    #dvLoad #table.enq-list-table tbody td:last-child .btn-group {
+        margin: 0 !important;
+        flex: 0 0 auto;
+        align-self: center !important;
+    }
+    /* Bootstrap .btn-group > .btn { flex: 1 1 auto } + default align-items:stretch — kills tall rows */
+    #dvLoad #table.enq-list-table tbody td:last-child .btn-group {
+        display: inline-flex !important;
+        flex-direction: row;
+        align-items: center !important;
+        align-self: center !important;
+        height: auto !important;
+        min-height: 0 !important;
+    }
+    #dvLoad #table.enq-list-table tbody td:last-child .btn-group > .btn {
+        flex: 0 0 auto !important;
+        align-self: center !important;
+        height: 28px !important;
+        min-height: 28px !important;
+        max-height: 28px !important;
+    }
+    #dvLoad #table.enq-list-table tbody td:last-child .btn.icon-height {
+        min-width: 26px;
+        width: 28px;
+        height: 28px !important;
+        min-height: 28px !important;
+        max-height: 28px !important;
+        padding: 0 !important;
+        font-size: 11px !important;
+        line-height: 1 !important;
+        border-radius: 5px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+    #dvLoad #table.enq-list-table tbody td:last-child .btn-group > .btn.dropdown-toggle {
+        margin-top: 0 !important;
+        min-width: 28px;
+        width: 28px;
+        height: 28px !important;
+        min-height: 28px !important;
+        max-height: 28px !important;
+        padding: 0 !important;
+    }
+    #dvLoad #table.enq-list-table tbody td:last-child .dropdown-menu {
+        font-size: 9pt;
+    }
+
+    .enq-form-wrap {
+        padding-bottom: 28px;
+        max-width: 1320px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Tabs left; Back right — no empty “balance” column (avoids large left gap) */
+    .enq-section-nav {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px 16px;
+        padding: 8px 12px;
+        background: #fff;
+        border: 1px solid var(--enq-border, #e2e8f0);
+        border-radius: 12px;
+        margin-bottom: 16px;
+        position: sticky;
+        top: 62px;
+        z-index: 1020;
+        box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+    }
+    .enq-nav-tabs-wrap {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .enq-nav-back {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    .enq-section-nav .tab {
+        border: 1px solid #dee2e6;
+        background: #f8f9fa;
+        color: #495057;
+        padding: 0 0.75rem;
+        height: 28px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        border-radius: 5px;
+        transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+        white-space: nowrap;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    .enq-section-nav .tab:hover:not(.active) {
+        background: #eceaff;
+        color: #2d2a52;
+        border-color: #c9c5ff;
+    }
+    .enq-section-nav .tab.active {
+        background: #558bc0;
+        color: #fff !important;
+        border-color: #578dc3;
+        box-shadow: 0 2px 6px rgba(83, 135, 188, 0.45);
+    }
+    .enq-section-nav .btn-enq-secondary {
+        background: #fff;
+        color: #475569 !important;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 6px 12px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        box-shadow: none;
+        line-height: 1.35 !important;
+        height: auto !important;
+    }
+    .enq-section-nav .btn-enq-secondary:hover {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+        color: #0f172a !important;
+    }
+
+    .enq-step-card {
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid var(--enq-border, #e2e8f0);
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    .enq-step-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        background: linear-gradient(90deg, var(--enq-accent-soft, #e8f4fd) 0%, #f0f7fc 55%, #fff 100%);
+        border-bottom: 1px solid #d6e8f5;
+        border-left: 4px solid var(--enq-accent, #558bc0);
+    }
+    .enq-step-num {
+        width: 26px; height: 26px; border-radius: 7px;
+        background: var(--enq-accent, #558bc0);
+        color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.8rem; flex-shrink: 0;
+        border: none;
+        box-shadow: 0 2px 6px rgba(85, 139, 192, 0.35);
+    }
+    .enq-step-title {
+        font-weight: 700; font-size: 0.8125rem;
+        color: #1e4a6e;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        flex: 1;
+    }
+    .enq-step-icon { color: #558bc0; font-size: 1.05rem; opacity: 0.9; }
+    .enq-step-body {
+        padding: 18px 18px 22px;
+        background: #fafcfd;
+    }
+    /* Customer type toggle — align with form grid (no centered dead space) */
+    .enq-customer-type-row {
+        display: flex;
+        justify-content: flex-start;
+        width: 100%;
+        margin-bottom: 1.25rem;
+    }
+
+    #dvEnquiry .form-label,
+    #dvFollowup .form-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 4px;
+        letter-spacing: 0.01em;
+    }
+
+    #dvEnquiry .box_border.form-control:not(textarea),
+    #dvEnquiry .box_border.form-select,
+    #dvEnquiry #txtAttachment {
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.8125rem;
+        background-color: #fff;
+        color: #0f172a;
+        min-height: 32px;
+        padding-top: 0.3rem;
+        padding-bottom: 0.3rem;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    #dvEnquiry .box_border.form-control:focus,
+    #dvEnquiry .box_border.form-select:focus {
+        border-color: var(--enq-accent, #558bc0);
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(85, 139, 192, 0.18);
+    }
+    #dvEnquiry .enq-upload-btn {
+        background: #fff !important;
+        color: #558bc0 !important;
+        border: 1px dashed #7eb0db !important;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    #dvEnquiry .enq-upload-btn:hover {
+        background: var(--enq-accent-soft, #e8f4fd) !important;
+        border-color: #558bc0 !important;
+        border-style: solid !important;
+    }
+    #dvFollowup .box_border.form-control:not(textarea),
+    #dvFollowup .box_border.form-select {
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background-color: #fff;
+        min-height: 32px;
+        padding-top: 0.3rem;
+        padding-bottom: 0.3rem;
+        font-size: 0.8125rem;
+    }
+    #dvFollowup .box_border.form-control:focus,
+    #dvFollowup .box_border.form-select:focus {
+        border-color: #558bc0;
+        box-shadow: 0 0 0 3px rgba(85, 139, 192, 0.18);
+    }
+    #dvLoad .form-control:not(textarea),
+    #dvLoad .form-select {
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.8125rem;
+        background-color: #fff;
+        min-height: 32px;
+        padding-top: 0.3rem;
+        padding-bottom: 0.3rem;
+    }
+    #dvLoad .form-control:focus, #dvLoad .form-select:focus {
+        border-color: #558bc0;
+        box-shadow: 0 0 0 3px rgba(85, 139, 192, 0.18);
+    }
+
+    /* Segmented customer type — pill group */
+    #dvEnquiry .customer-type.enq-segment-wrap {
+        display: inline-flex;
+        padding: 4px;
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid #cfe2f3;
+        gap: 6px;
+        box-shadow: 0 1px 3px rgba(85, 139, 192, 0.12);
+    }
+    #dvEnquiry .customer-type label.customertype:has(input[type="radio"]:checked) {
+        background: linear-gradient(180deg, #6a9ccd 0%, #558bc0 100%);
+        color: #fff !important;
+        box-shadow: 0 2px 6px rgba(85, 139, 192, 0.35);
+        border: 1px solid #4a7eb0;
+    }
+    #dvEnquiry .customer-type label.customertype:has(input[type="radio"]) {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 6px 16px;
+        font-weight: 600;
+        font-size: 0.78rem;
+    }
+
+    /* Contact / Product line grids — header */
+    .enq-grid-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .enq-grid-table thead tr th {
+        background: #558bc0;
+        color: #fff;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        text-align: center;
+        vertical-align: middle;
+        padding: 11px 10px;
+        white-space: nowrap;
+        border: none;
+        border-right: 1px solid rgba(255,255,255,0.15);
+    }
+    .enq-grid-table thead tr th:last-child { border-right: none; }
+    .enq-grid-table thead tr th:first-child { border-radius: 8px 0 0 0; }
+    .enq-grid-table thead tr th:last-child { border-radius: 0 8px 0 0; }
+    .enq-grid-table tbody tr { transition: background 0.12s; }
+    .enq-grid-table tbody tr:hover { background: #e8f4fd; }
+    .enq-grid-table tbody tr td {
+        padding: 8px 10px;
+        vertical-align: middle;
+        border: 1px solid #e2e8f0;
+        font-size: 0.8125rem;
+    }
+
+    .enq-form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 8px;
+        padding: 14px 18px;
+        background: #f8fafc;
+        border: 1px solid var(--enq-border, #e2e8f0);
+        border-radius: 12px;
+        box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+    }
+    .enq-form-actions .enq-actions-hint {
+        margin-right: auto;
+        font-size: 0.8125rem;
+        color: #64748b;
+    }
+    .btn-enq-primary {
+        background: linear-gradient(180deg, #6a9ccd 0%, #558bc0 100%);
+        border: none;
+        color: #fff !important;
+        border-radius: 10px;
+        padding: 8px 22px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        box-shadow: 0 2px 10px rgba(85, 139, 192, 0.4);
+        transition: filter 0.15s, transform 0.15s, box-shadow 0.15s;
+        height: auto !important;
+        line-height: 1.4 !important;
+    }
+    .btn-enq-primary:hover {
+        filter: brightness(1.05);
+        color: #fff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(85, 139, 192, 0.5);
+    }
+
+    /* Follow-up form: secondary / ghost actions (match main enquiry toolbar) */
+    .btn-enq-outline {
+        background: #fff !important;
+        color: #475569 !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.8125rem;
+        box-shadow: none;
+        height: auto !important;
+        line-height: 1.35 !important;
+    }
+    .btn-enq-outline:hover {
+        background: #f8fafc !important;
+        border-color: #94a3b8 !important;
+        color: #0f172a !important;
+    }
+    .btn-enq-outline-danger {
+        background: #fff !important;
+        color: #b91c1c !important;
+        border: 1px solid #fecaca !important;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.8125rem;
+        height: auto !important;
+        line-height: 1.35 !important;
+    }
+    .btn-enq-outline-danger:hover {
+        background: #fef2f2 !important;
+        border-color: #f87171 !important;
+        color: #991b1b !important;
+    }
+    /* + Add contact — same height as inputs, enquiry accent */
+    #dvFollowup .btn-enq-icon-add {
+        background: linear-gradient(180deg, #6a9ccd 0%, #558bc0 100%);
+        border: none !important;
+        color: #fff !important;
+        min-height: 32px;
+        height: 32px;
+        max-height: 32px;
+        padding: 0 !important;
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(85, 139, 192, 0.35);
+    }
+    #dvFollowup .btn-enq-icon-add:hover {
+        filter: brightness(1.06);
+        color: #fff !important;
+    }
+
+    /* Follow-up grid block — same card feel as main list */
+    #dvFollowup .enq-follow-grid-wrap {
+        background: #fff;
+        border: 1px solid var(--enq-border, #e2e8f0);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+    }
+    #dvFollowup .enq-follow-grid-wrap .table-wrapper {
+        max-height: 440px;
+        overflow: auto;
+    }
+    /* JS-built grids: beat Bootstrap .table thead defaults */
+    #dvFollowup table.enq-grid-table thead th,
+    #dvEnquiry table.enq-grid-table thead th {
+        background-color: #558bc0 !important;
+        color: #fff !important;
+        border-color: rgba(255,255,255,0.2) !important;
+    }
+    #dvFollowup #FollowUp tbody td .btn-primary,
+    #dvFollowup #FollowUp tbody td .btn.btn-primary {
+        background: linear-gradient(180deg, #6a9ccd 0%, #558bc0 100%) !important;
+        border: none !important;
+        color: #fff !important;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(85, 139, 192, 0.35);
+    }
+    #dvFollowup #FollowUp tbody td .btn-danger,
+    #dvFollowup #FollowUp tbody td .btn.btn-danger {
+        background: #fff !important;
+        color: #dc2626 !important;
+        border: 1px solid #fecaca !important;
+        border-radius: 6px;
+    }
+    #dvFollowup #FollowUp tbody td .btn-danger:hover {
+        background: #fef2f2 !important;
+    }
+    /* Same as main list: Filter.css .fixed-width-table uses white-space:nowrap — text stays on one line; scroll horizontally */
+    #dvFollowup #FollowUp.fixed-width-table td,
+    #dvFollowup #FollowUp.fixed-width-table th {
+        vertical-align: middle;
+    }
+    #dvFollowup #FollowUp .enq-fu-row-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    /* Paginator — match enquiry accent (Filter.js buttons); compact height */
+    #dvFollowup .paginator,
+    #dvLoad .paginator,
+    #AssignModal .paginator {
+        margin-top: 0;
+        padding: 6px 10px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        font-size: 0.72rem;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+    }
+    #dvFollowup .enq-follow-grid-wrap .paginator,
+    #dvLoad .enq-grid-wrap .paginator,
+    #AssignModal .paginator {
+        border-radius: 0 0 12px 12px;
+        border-top: 1px solid #e2e8f0;
+    }
+    #dvFollowup .paginator button.paginator-btn,
+    #dvLoad .paginator button.paginator-btn,
+    #AssignModal .paginator button.paginator-btn {
+        background: linear-gradient(180deg, #6a9ccd 0%, #558bc0 100%) !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 6px;
+        padding: 2px 6px !important;
+        font-size: 0.7rem;
+        font-weight: 600;
+        min-height: 26px !important;
+        height: 26px !important;
+        max-height: 26px !important;
+        margin: 0 3px 0 0;
+        box-shadow: 0 1px 2px rgba(85, 139, 192, 0.22);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #dvFollowup .paginator button.paginator-btn .svg-icon,
+    #dvLoad .paginator button.paginator-btn .svg-icon,
+    #AssignModal .paginator button.paginator-btn .svg-icon {
+        fill: #fff !important;
+        width: 16px !important;
+        height: 16px !important;
+    }
+    #dvFollowup .paginator button:hover,
+    #dvLoad .paginator button:hover,
+    #AssignModal .paginator button:hover {
+        filter: brightness(1.06);
+        color: #fff !important;
+    }
+    #dvFollowup .paginator button:disabled,
+    #dvLoad .paginator button:disabled,
+    #AssignModal .paginator button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        filter: none;
+    }
+    #dvFollowup .paginator .page-size-select select,
+    #dvFollowup .paginator select,
+    #dvLoad .paginator .page-size-select select,
+    #dvLoad .paginator select,
+    #AssignModal .paginator .page-size-select select,
+    #AssignModal .paginator select {
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        padding: 2px 6px;
+        font-size: 0.72rem;
+        min-height: 26px !important;
+        height: 26px !important;
+        line-height: 1.2;
+        background: #fff;
+    }
+    #dvFollowup .paginator .page-info,
+    #dvLoad .paginator .page-info,
+    #AssignModal .paginator .page-info {
+        color: #475569;
+        font-weight: 600;
+    }
+
+    /* —— View: Enquiry Details modal (unified with enquiry / grid theme) —— */
+    .enq-details-modal .modal-content {
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+    }
+    .enq-details-modal .modal-header {
+        background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        border-bottom: none;
+        padding: 12px 18px;
+        align-items: center;
+    }
+    .enq-details-modal .modal-title {
+        color: #fff;
+        font-weight: 650;
+        font-size: 1.05rem;
+        letter-spacing: -0.02em;
+    }
+    .enq-details-modal .modal-header .btn-close {
+        opacity: 1;
+        padding: 0.55rem;
+        margin: -0.25rem -0.35rem -0.25rem auto;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.15);
+        box-shadow: none;
+    }
+    .enq-details-modal .modal-header .btn-close:hover {
+        background: rgba(255, 255, 255, 0.28);
+    }
+    .enq-details-modal .modal-header .btn-close:focus {
+        box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.35);
+    }
+    .enq-details-modal .modal-body {
+        padding: 12px 14px 14px;
+        background: #eef2f7;
+        max-height: min(70vh, 720px);
+        overflow-y: auto;
+    }
+    .enq-details-modal .modal-footer {
+        padding: 10px 14px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+    }
+    .enq-details-modal .btn-enq-modal-close,
+    .enq-assign-modal .btn-enq-modal-close {
+        background: #fff !important;
+        color: #475569 !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.8125rem;
+        padding: 7px 18px;
+        height: auto !important;
+        line-height: 1.35 !important;
+    }
+    .enq-details-modal .btn-enq-modal-close:hover,
+    .enq-assign-modal .btn-enq-modal-close:hover {
+        background: #f1f5f9 !important;
+        border-color: #94a3b8 !important;
+        color: #0f172a !important;
+    }
+
+    /* Re-Assign modal — same visual language; overflow visible so Select2 isn’t clipped */
+    .enq-assign-modal .modal-content {
+        border: none;
+        border-radius: 12px;
+        overflow: visible;
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+    }
+    .enq-assign-modal .modal-dialog {
+        max-width: 520px;
+    }
+    .enq-assign-modal .modal-header {
+        background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        border-bottom: none;
+        padding: 10px 14px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        width: 100%;
+        position: relative;
+        z-index: 2;
+    }
+    .enq-assign-modal .modal-title {
+        color: #fff;
+        font-weight: 650;
+        font-size: 1rem;
+        letter-spacing: -0.02em;
+    }
+    /* Visible close (FA) — Bootstrap .btn-close SVG was hard to see / covered; icon always shows */
+    .enq-assign-modal .modal-header .enq-assign-close-btn {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        margin: 0;
+        padding: 0;
+        border: none;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff !important;
+        font-size: 1.05rem;
+        line-height: 1;
+        cursor: pointer;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 3;
+    }
+    .enq-assign-modal .modal-header .enq-assign-close-btn:hover {
+        background: rgba(255, 255, 255, 0.35);
+        color: #fff !important;
+    }
+    .enq-assign-modal .modal-header .enq-assign-close-btn:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+    }
+    .enq-assign-modal .modal-body {
+        padding: 12px 14px 8px;
+        background: #eef2f7;
+        overflow: visible !important;
+        max-height: none;
+    }
+    .enq-assign-modal .modal-footer {
+        padding: 8px 14px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+    }
+    .enq-assign-modal .modal-footer .btn-enq-primary.enq-assign-footer-btn {
+        padding: 5px 14px !important;
+        font-size: 0.8125rem !important;
+        font-weight: 600;
+        line-height: 1.35 !important;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(85, 139, 192, 0.35);
+    }
+    .enq-assign-modal .modal-footer .btn-enq-modal-close.enq-assign-footer-btn {
+        padding: 5px 14px !important;
+        font-size: 0.8125rem !important;
+        line-height: 1.35 !important;
+        border-radius: 8px;
+    }
+    .enq-assign-modal #dvAssignDetailsWrap {
+        margin-top: 0.65rem !important;
+    }
+    .enq-assign-modal #dvAssignDetailsWrap .paginator {
+        margin-top: 4px !important;
+        padding-top: 6px !important;
+        padding-bottom: 4px !important;
+    }
+    .enq-assign-modal .enq-assign-select-wrap {
+        position: relative;
+        z-index: 2;
+    }
+    /* Select2 inside Bootstrap modal (dropdown appended to modal via JS dropdownParent) */
+    .enq-assign-modal .select2-container {
+        z-index: 2;
+    }
+    .enq-assign-modal .select2-dropdown {
+        z-index: 1060 !important;
+        border-color: #cbd5e1;
+        border-radius: 8px;
+    }
+    /* Bootstrap .modal can clip absolutely positioned dropdowns */
+    #AssignModal.enq-assign-modal {
+        overflow: visible !important;
+    }
+    .enq-assign-modal .enq-details-table thead th {
+        background: #558bc0 !important;
+        color: #fff !important;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 8px 10px;
+        border-color: rgba(255,255,255,0.2) !important;
+    }
+    .enq-assign-modal .enq-details-table tbody td {
+        padding: 7px 10px;
+        background: #fff;
+        border-color: #e2e8f0;
+    }
+    .enq-assign-modal #dvAssignDetailsWrap .table-wrapper {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: auto;
+        max-height: 240px;
+    }
+    .enq-details-section {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        overflow: hidden;
+        box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+    }
+    .enq-details-section:last-child { margin-bottom: 0; }
+    .enq-details-section-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        background: linear-gradient(90deg, #558bc0 0%, #6a9ccd 100%);
+        color: #fff;
+    }
+    .enq-details-section-head h6 {
+        margin: 0;
+        color: #fff;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+    .enq-details-section-body {
+        padding: 8px 10px 10px;
+    }
+    .enq-details-modal .enq-details-table {
+        margin-bottom: 0;
+        font-size: 0.8125rem;
+        border-color: #e2e8f0;
+    }
+    .enq-details-modal .enq-details-table thead th {
+        background: #558bc0 !important;
+        color: #fff !important;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 8px 10px;
+        border-color: rgba(255,255,255,0.2) !important;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    .enq-details-modal .enq-details-table tbody td {
+        padding: 7px 10px;
+        vertical-align: top;
+        border-color: #e2e8f0;
+        color: #1e293b;
+    }
+    .enq-details-modal .enq-details-table tbody tr:hover {
+        background: #f8fafc;
+    }
+    .enq-details-kv {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px 20px;
+    }
+    .enq-details-kv .enq-kv-item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+    .enq-details-kv .enq-kv-item.enq-kv-full {
+        grid-column: 1 / -1;
+    }
+    .enq-kv-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .enq-kv-val {
+        font-size: 0.875rem;
+        color: #0f172a;
+        word-break: break-word;
+    }
+    @@media (max-width: 576px) {
+        .enq-details-kv {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .section-entry-animation { animation: enqFadeIn 0.28s ease both; }
+    @@keyframes enqFadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .table-wrapper { width: 100%; overflow-x: auto; }
+    .fixed-width-table.table { width: 100%; min-width: 700px; }
+
+    @@media (max-width: 768px) {
+        .enq-form-wrap { padding-bottom: 24px; }
+        .enq-section-nav {
+            top: 58px;
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .enq-nav-tabs-wrap {
+            justify-content: flex-start;
+        }
+        .enq-nav-back {
+            margin-left: 0;
+        }
+        .enq-nav-back .btn-enq-secondary {
+            width: 100%;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+        .enq-step-body { padding: 16px 14px 20px; }
+    }
 </style>
 
-<div id="dvLoad" style="display:block;" class="card p-2">
-    <div class="row">
-        <div class="col-md-3">
-            <label for="ddlSalesPerson" class="form-label">Sales Person <span class="text-danger">*</span></label>
-            <select id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border">
-            </select>
-        </div>
-        <div class="col-md-3" >
-            <label for="ddlStatus" class="form-label">Status <span class="text-danger">*</span></label>
-            <input list="ddlStatusList" id="ddlStatus" name="ddlStatus" class="form-control form-control-sm box_border" onclick="$(this).val('');" placeholder="" autocomplete="off" value="All">
-            <datalist id="ddlStatusList"></datalist>
-        </div>
-        <div class="col-md-6" style="margin-top:24px;text-align:right;">
-            <button class="btn btn-success btn-height" onclick="CreateNew()"><i class="fa fa-plus" aria-hidden="true"></i></button>
+<div id="dvLoad" style="display:block;">
+    <div class="enq-list-header">
+        <div class="enq-header-top">
+            <div>
+                <h5><i class="fa fa-clipboard-list me-2"></i>Enquiries</h5>
+                <small>View, filter, and manage sales enquiries</small>
+            </div>
+            <button type="button" class="btn-enq-new" onclick="CreateNew()">
+                <i class="fa fa-plus-circle"></i>
+                <span class="ms-1">New Enquiry</span>
+            </button>
         </div>
     </div>
-    <div id="tblLeadList" class="mt-1">
-        <div class="table-wrapper fixed-height-table">
-            <table id="table" class="table table-sm table-bordered">
+    <div class="enq-filter-bar">
+        <div class="row">
+            <div class="col-12 col-md-4">
+                <label for="ddlSalesPerson" class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Sales Person <span class="req">*</span></label>
+                <select id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border"></select>
+            </div>
+            <div class="col-12 col-md-4">
+                <label for="ddlStatus" class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Status <span class="req">*</span></label>
+                <input list="ddlStatusList" id="ddlStatus" name="ddlStatus" class="form-control form-control-sm box_border" placeholder="" autocomplete="off" value="All">
+                <datalist id="ddlStatusList"></datalist>
+            </div>
+        </div>
+    </div>
+    <div id="tblLeadList" class="enq-grid-wrap">
+        <div class="table-wrapper enq-table-scroll">
+            <table id="table" class="table table-sm table-hover table-bordered mb-0 enq-list-table fixed-width-table">
                 <thead id="table-header">
                 </thead>
                 <tbody id="table-body">
@@ -119,134 +1051,153 @@
         </div>
     </div>
 </div>
-<div class="p-2" id="dvEnquiry" style="display:none;margin-top: 20px;">
-    <div>
-        <div class="card-header-tabs">
-            <button class="tab active" onclick="HideShowTab('1',this)">Enquiry</button>
-            <button class="tab" onclick="HideShowTab('2',this)">Contact Person Details</button>
-            <button class="tab" onclick="HideShowTab('3',this)">Product Details</button>
-            <button type="button" class="btn btn-danger icon-height" onclick="BackEnquiry()">Back To List</button>
+<div class="p-2 px-md-3" id="dvEnquiry" style="display:none;margin-top: 4px;">
+    <div class="enq-form-wrap">
+        <div class="enq-section-nav">
+            <nav class="enq-nav-tabs-wrap" aria-label="Enquiry sections">
+                <button type="button" class="tab active" onclick="HideShowTab('1',this)">Enquiry</button>
+                <button type="button" class="tab" onclick="HideShowTab('4',this)">Follow Up</button>
+                <button type="button" class="tab" onclick="HideShowTab('2',this)">Contact Person</button>
+                <button type="button" class="tab" onclick="HideShowTab('3',this)">Product Details</button>
+            </nav>
+            <div class="enq-nav-back">
+                <button type="button" class="btn btn-enq-secondary" onclick="BackEnquiry()"><i class="fa fa-arrow-left me-1"></i>Back To List</button>
+            </div>
         </div>
-        <div class="card p-2" id="dvTab1" style="display:block;">
-            <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Enquiry</div>
-            <div class="customer-type">
-                <label class="customertype"><input type="radio" name="customerType" value="Existing" checked hidden> Existing Customer</label>
-                <label class="customertype"><input type="radio" name="customerType" value="New"  hidden> New Customer</label>
-                <input type="hidden" id="hfCode" name="hfCode" value="0">
+        <div class="enq-step-card section-entry-animation" id="dvTab1" style="display:block;">
+            <div class="enq-step-header">
+                <div class="enq-step-num">1</div>
+                <span class="enq-step-title">Enquiry</span>
+                <i class="fa fa-file-alt enq-step-icon ms-auto"></i>
+            </div>
+            <div class="enq-step-body">
+            <div class="enq-customer-type-row">
+                <div class="customer-type enq-segment-wrap">
+                    <label class="customertype"><input type="radio" name="customerType" value="Existing" checked hidden> Existing Customer</label>
+                    <label class="customertype"><input type="radio" name="customerType" value="New"  hidden> New Customer</label>
+                    <input type="hidden" id="hfCode" name="hfCode" value="0">
+                </div>
             </div>
             <div class="form-grid">
-            <div class="row">
-                <div class="col-md-3">
+            <div class="row g-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <label for="ddlCompanyName" class="form-label">Customer/Company Name <span class="text-danger">*</span></label>
                         <select id="ddlCompanyName" name="ddlCompanyName" class="form-control form-control-sm box_border" style="display:block;">
                     </select>
                         <input type="text" id="txtCompanyName" name="txtCompanyName" class="form-control form-control-sm box_border" style="display:none;" maxlength="50" autocomplete="off">
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <label for="ddlEnquiryType" class="form-label">Enquiry Type <span class="text-danger">*</span></label>
                         <select id="ddlEnquiryType" class="form-control form-control-sm box_border">
                     </select>
                 </div>
-                    <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                         <label for="txtEmail" class="form-label">Email</label>
                         <input type="text" id="txtEmail" class="form-control form-control-sm box_border" autocomplete="off">
                     </div>
-                    <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                         <label for="txtContactNo" class="form-label">Mobile No </label>
                         <input type="text" id="txtContactNo" class="form-control form-control-sm box_border Phone" autocomplete="off" maxlength="10">
                     </div>
-                    <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                         <label for="txtMobileNo" class="form-label">Contact No.</label>
                         <input type="text" id="txtMobileNo" class="form-control form-control-sm box_border Phone" autocomplete="off" maxlength="15">
                     </div>
-                    <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                         <label for="txtEnquiryDate" class="form-label">Enquiry Date <span class="text-danger">*</span></label>
                         <input type="date" id="txtEnquiryDate" class="form-control form-control-sm box_border" autocomplete="off">
                     </div>
-                    <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                         <label for="ddlLeadSource" class="form-label">Enquiry Source <span class="text-danger">*</span></label>
                         <select id="ddlLeadSource" class="form-control form-control-sm box_border">
                         </select>
                     </div>
-                    <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                         <label for="txtWebsite" class="form-label">Website</label>
                         <input type="text" id="txtWebsite" class="form-control form-control-sm box_border" autocomplete="off" maxlength="150">
                     </div>
-                    <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                         <label for="txtReference" class="form-label">Reference </label>
                         <input type="text" id="txtReference" class="form-control form-control-sm box_border" autocomplete="off" maxlength="50">
                     </div>
-                    <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                         <label for="txtReferenceDate" class="form-label">Reference Date </label>
                         <input type="date" id="txtReferenceDate" class="form-control form-control-sm box_border" autocomplete="off">
                     </div>
-                    <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                         <label for="txtAddressLine1" class="form-label">Address Line 1 </label>
                         <input type="text" id="txtAddressLine1" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
                     </div>
-                    <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                         <label for="txtAddressLine2" class="form-label">Address Line 2 </label>
                         <input type="text" id="txtAddressLine2" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
                     </div>
                     
-                <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <label for="ddlCountry" class="form-label">Country</label>
                     <select id="ddlCountry" name="ddlCountry" class="form-control form-control-sm box_border"></select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <label for="ddlState" class="form-label">State </label>
                     <select id="ddlState" name="ddlState" class="form-control form-control-sm box_border"></select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <label for="ddlCity" class="form-label">City/Town </label>
                     <select id="ddlCity" name="ddlCity" class="form-control form-control-sm box_border"></select>
                 </div>
-                    <div class=" col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                         <label for="txtPinCode" class="form-label">PIN / ZIP Code </label>
                         <input type="text" id="txtPinCode" name="txtPinCode" class="form-control form-control-sm box_border Phone" autocomplete="off" maxlength="6">
                     </div>
-                <div class="col-md-3">
+                <div class="col-12 col-md-6 col-xl-4">
                     <label for="txtAttachment" class="form-label">Attachment </label>
-                        <button type="button" id="txtAttachment" onclick="ViewAttachment()" class="form-control form-control-sm box_border" style="background-color:#2c639b;color:white;" autocomplete="off">Upload</button>
+                        <button type="button" id="txtAttachment" onclick="ViewAttachment()" class="form-control form-control-sm box_border enq-upload-btn" autocomplete="off">Upload</button>
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-md-6">
                     <label for="txtRemarks" class="form-label">Remarks </label>
-                        <textarea id="txtRemarks" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500"></textarea>
+                        <textarea id="txtRemarks" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" rows="3"></textarea>
                 </div>
             </div>
         </div>
+            </div>
         </div>
-        <div id="dvTab4" class="card p-2" style="display:block;">
-            <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Follow Up Details</div>
-                <div class="row">
-                    <div class="col-12">
-                         <div class="row">
-                            <div class="col-md-3">
+        <div id="dvTab4" class="enq-step-card section-entry-animation" style="display:block;">
+            <div class="enq-step-header">
+                <div class="enq-step-num">2</div>
+                <span class="enq-step-title">Follow Up Details</span>
+                <i class="fa fa-phone-volume enq-step-icon ms-auto"></i>
+            </div>
+            <div class="enq-step-body">
+                <div class="row g-3">
+                            <div class="col-12 col-md-6 col-lg-4">
                             <label for="ddlAssignSalesman" class="form-label">Assign To Salesman </label>
                                 <select id="ddlAssignSalesman" class="form-control form-control-sm box_border">
                             </select>
                             </div>
-                            
-                            <div class="col-md-3">
+                            <div class="col-12 col-md-6 col-lg-4">
                                 <label for="txtNextFollowupDate" class="form-label">Next Followup Date</label>
                                 <input type="date" id="txtNextFollowupDate" class="form-control form-control-sm box_border" autocomplete="off">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-12 col-md-6 col-lg-4">
                                 <label for="ddlNextFollowupMode" class="form-label">Next Followup Mode </label>
                                     <select id="ddlNextFollowupMode" class="form-control form-control-sm box_border">
                                 </select>
                             </div>
-                        </div>
-                    </div>
                 </div>
             </div>
-        <div id="dvTab2" class="card p-2" style="display:block;">
-            <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Contact Person Details</div>
+        </div>
+        <div id="dvTab2" class="enq-step-card section-entry-animation" style="display:block;">
+            <div class="enq-step-header">
+                <div class="enq-step-num">3</div>
+                <span class="enq-step-title">Contact Person Details</span>
+                <i class="fa fa-users enq-step-icon ms-auto"></i>
+            </div>
+            <div class="enq-step-body">
                 <div class="row">
                     <div class="col-12">
                         <div class="table-responsive-wrapper">
-                            <table id="ContactPersonGrid" class="table table-sm table-bordered">
-                                <thead class="table-light">
+                            <table id="ContactPersonGrid" class="table table-sm enq-grid-table mb-0">
+                                <thead>
                                     <tr>
                                         <th style="min-width:150px !important;">Name </th>
                                         <th style="min-width:150px !important;">Department </th>
@@ -263,11 +1214,17 @@
                     </div>
                 </div>
             </div>
-        <div id="dvTab3" class="card p-2" style="display:block;">
-           <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Product Details</div>
+        </div>
+        <div id="dvTab3" class="enq-step-card section-entry-animation" style="display:block;">
+            <div class="enq-step-header">
+                <div class="enq-step-num">4</div>
+                <span class="enq-step-title">Product Details</span>
+                <i class="fa fa-boxes enq-step-icon ms-auto"></i>
+            </div>
+            <div class="enq-step-body">
                 <div class="table-responsive-wrapper">
-                    <table id="ProductDetailsGrid" class="table table-sm table-bordered">
-                        <thead class="table-light">
+                    <table id="ProductDetailsGrid" class="table table-sm enq-grid-table mb-0">
+                        <thead>
                             <tr>
                             <th style="min-width:100px">Product Name </th>
                             <th style="min-width:200px">Specification </th>
@@ -281,15 +1238,16 @@
                             <!-- Product rows will be rendered here by JS -->
                         </tbody>
                     </table>
+                </div>
             </div>
         </div>
-        <div style="text-align:right;">
-            <button type="button" class="btn btn-primary icon-height" onclick="SaveLeadEnquiryData()">Save</button>
-            @* <button type="button" class="btn btn-danger icon-height" onclick="BackEnquiry()">Back To List</button> *@
+        <div class="enq-form-actions" id="enqSaveBar">
+            <span class="enq-actions-hint d-none d-md-inline">Review all sections, then save.</span>
+            <button type="button" class="btn btn-enq-primary" onclick="SaveLeadEnquiryData()"><i class="fa fa-check me-2"></i>Save enquiry</button>
         </div>
     </div>
 </div>
-<div id="dvFollowup" style="display:none;">
+<div id="dvFollowup" style="display:none;--enq-accent:#558bc0;--enq-border:#e2e8f0;">
     @* <div id="dvFollowTab1" class="card p-2" style="display:block;">
         <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Follow Up Details</div>
        <div class="form-grid">
@@ -307,13 +1265,13 @@
                     <input type="text" id="txtFollowupCustomerName" disabled name="txtFollowupCustomerName" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
                 </div>
                 <div class="col-md-3" style="text-align:right;margin-top:23px;">
-                    <input type="button" style="height:32px;line-height:1px;" class="btn btn-success" onclick="CreateNewFollowUp()" value="+" />
+                    <input type="button" style="height:28px;line-height:1px;padding:0 10px;font-size:0.875rem;" class="btn btn-success" onclick="CreateNewFollowUp()" value="+" />
                 </div>
             </div>
         </div> 
          <div id="tblFollowUp" style="display:none;">
             <div class="table-wrapper">
-                <table id="FollowUp" class="table table-sm table-bordered">
+                <table id="FollowUp" class="table table-sm table-bordered enq-grid-table">
                     <thead id="FollowUp-header">
                     </thead>
                     <tbody id="FollowUp-body">
@@ -327,65 +1285,71 @@
             <button type="button" class="btn btn-danger icon-height" onclick="BackMaster()">Back To Enquiry List</button>
         </div>
     </div> *@
-    <div id="dvFollowTab2" class="card p-2" style="display:none;">
-        <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Follow Up Details</div>
+    <div id="dvFollowTab2" class="enq-step-card section-entry-animation" style="display:none;">
+        <div class="enq-step-header">
+            <div class="enq-step-num">1</div>
+            <span class="enq-step-title">Follow Up Entry</span>
+            <i class="fa fa-comments enq-step-icon ms-auto"></i>
+        </div>
+        <div class="enq-step-body">
         <div class="form-grid">
-            <div class="row">
-                <div class="col-md-4">
+            <div class="row g-2">
+                <div class="col-12 col-md-6">
                     <label for="txtOurRemarks" class="form-label">Our Remarks<span class="text-danger">*</span></label>
                     <textarea id="txtOurRemarks" name="txtOurRemarks" class="form-control form-control-sm box_border" placeholder="" autocomplete="off" maxlength="500"></textarea>
                     <input type="hidden" id="hfFollowUpEnquiryMaster_Code" class="form-control form-control-sm box_border" autocomplete="off" value="0">
                     <input type="hidden" id="hfFollowUpMaster_Code" class="form-control form-control-sm box_border" autocomplete="off" value="0">
                 </div>
-                <div class="col-md-4">
+                <div class="col-12 col-md-6">
                     <label for="txtCustomerRemarks" class="form-label">Customer Remarks<span class="text-danger">*</span></label>
                     <textarea id="txtCustomerRemarks" name="txtCustomerRemarks" class="form-control form-control-sm box_border" placeholder="" autocomplete="off" maxlength="500"></textarea>
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-md-6 col-lg-5">
                     <label for="ddlCustomerContactPersonName" class="form-label">Customer Contact Person Name<span class="text-danger">*</span></label>
                     <select id="ddlCustomerContactPersonName" class="form-control form-control-sm box_border">
                     </select>
                 </div>
-                <div class="col-md-1" style="margin-top:26px;">
-                    <button class="btn btn-primary icon-height" style="font-size:20px" onclick="OpenContactPersonModal()">+</button>
+                <div class="col-12 col-md-6 col-lg-2 d-flex align-items-end pb-1">
+                    <button type="button" class="btn btn-enq-icon-add w-100" onclick="OpenContactPersonModal()" title="Add contact">+</button>
                 </div>
-                <div class="col-md-4">
+                <div class="col-12 col-md-6 col-lg-4">
                     <label for="txtFollowUpDateFollowUp" class="form-label">Follow Up Date <span class="text-danger">*</span></label>
                     <input type="date" id="txtFollowUpDateFollowUp" name="txtFollowUpDateFollowUp" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
                 </div>
-                <div class="col-md-4">
+                <div class="col-12 col-md-6 col-lg-4">
                     <label for="ddlFollowUpModeFollowUp" class="form-label">Follow Up Mode <span class="text-danger">*</span></label>
                     <select id="ddlFollowUpModeFollowUp" class="form-control form-control-sm box_border">
                     </select>
                 </div>
-                <div class="col-md-4" style="margin-top:28px;">
-                    <input type="checkbox" checked id="chkFollowUpRequired" name="chkFollowUpRequired" autocomplete="off">
-                    <label for="chkFollowUpRequired" class="form-label">Next Follow-up Required</label>
+                <div class="col-12 col-md-6 col-lg-4 d-flex align-items-center" style="margin-top:0;padding-top:1.1rem;">
+                    <input type="checkbox" checked id="chkFollowUpRequired" name="chkFollowUpRequired" autocomplete="off" class="me-2">
+                    <label for="chkFollowUpRequired" class="form-label mb-0">Next Follow-up Required</label>
                 </div>
-                <div class="col-md-4" id="dvNextFollowUpDateFollowUp" style="display:block">
+                <div class="col-12 col-md-6 col-lg-4" id="dvNextFollowUpDateFollowUp" style="display:block">
                     <label for="txtNextFollowUpDateFollowUp" class="form-label">Next Follow Up Date <span class="text-danger">*</span></label>
                     <input type="date" id="txtNextFollowUpDateFollowUp" name="txtNextFollowUpDateFollowUp" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
                 </div>
-                <div class="col-md-4" id="dvNextFollowUpModeFollowUp" style="display:block">
+                <div class="col-12 col-md-6 col-lg-4" id="dvNextFollowUpModeFollowUp" style="display:block">
                     <label for="ddlNextFollowUpModeFollowUp" class="form-label">Next Follow Up Mode <span class="text-danger">*</span></label>
                     <select id="ddlNextFollowUpModeFollowUp" class="form-control form-control-sm box_border">
                     </select>
                 </div>
-                <div class="col-md-4" id="dvddlLeadStatus" style="display:block">
+                <div class="col-12 col-md-6 col-lg-4" id="dvddlLeadStatus" style="display:block">
                     <label for="ddlLeadStatus" class="form-label">Status<span class="text-danger">*</span></label>
                     <select id="ddlLeadStatus" class="form-control form-control-sm box_border">
                     </select>
                 </div>
-                <div class="col-md-4" style="margin-top: 26px;">
-                    <button type="button" id="btnFollowUpSave" class="btn btn-success icon-height" onclick="SaveEnquiryFollowUp()">Save</button>
-                    <button type="button" id="btnFollowUpReset" class="btn btn-info icon-height" onclick="ResetEnquiryFollowUp()">Reset</button>
-                    <button type="button" class="btn btn-danger icon-height" onclick="BackFolloupMaster()">Back To List</button>
+                <div class="col-12 pt-1 mt-1 d-flex flex-wrap gap-2 justify-content-end align-items-center enq-follow-actions">
+                    <button type="button" id="btnFollowUpSave" class="btn btn-enq-primary px-3 py-1" onclick="SaveEnquiryFollowUp()"><i class="fa fa-check me-1"></i>Save</button>
+                    <button type="button" id="btnFollowUpReset" class="btn btn-enq-outline px-3 py-1" onclick="ResetEnquiryFollowUp()">Reset</button>
+                    <button type="button" class="btn btn-enq-outline-danger px-3 py-1" onclick="BackFolloupMaster()"><i class="fa fa-arrow-left me-1"></i>Back To List</button>
                 </div>
             </div>
         </div>
-        <div id="tblFollowUp" style="display:none;" class="mt-2">
-            <div >
-                <table id="FollowUp" class="table table-sm table-bordered">
+        </div>
+        <div id="tblFollowUp" style="display:none;" class="enq-follow-grid-wrap mt-2 mx-0">
+            <div class="table-wrapper">
+                <table id="FollowUp" class="table table-sm table-bordered enq-grid-table mb-0 fixed-width-table">
                     <thead id="FollowUp-header">
                     </thead>
                     <tbody id="FollowUp-body">
@@ -476,37 +1440,36 @@
         </div>
     </div>
 </div>
-<div class="modal fade" id="AssignModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
+<div class="modal fade enq-assign-modal" id="AssignModal" tabindex="-1" role="dialog" aria-hidden="true" aria-labelledby="AssignModalTitle">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-content-width-sm">
             <div class="modal-header">
-                <h5 class="modal-title">Re-Assign</h5>
-                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+                <h5 class="modal-title" id="AssignModalTitle"><i class="fa fa-user-tag me-2 opacity-90"></i>Re-Assign</h5>
+                <button type="button" class="enq-assign-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <div class="modal-body">
-                <div class="col-md-12">
-                    <label for="ddlAssignTo" class="form-label">Assign To </label>
-                    <select id="ddlAssignTo" class="form-control form-control-sm box_border">
+                <label for="ddlAssignTo" class="form-label mb-1" style="font-size:0.78rem;font-weight:700;color:#475569;">Assign To</label>
+                <div class="enq-assign-select-wrap">
+                    <select id="ddlAssignTo" class="form-control form-control-sm box_border w-100">
                     </select>
-                    <input type="hidden" id="txtEnquiryAssignCode" class="form-control" placeholder="" />
                 </div>
-            
-            <div id="tblAssignDetails" style="display:none;margin-top:5px;">
-                <div class="table-wrapper">
-                    <table id="tblAssignDetails" class="table table-sm table-bordered">
-                        <thead id="AssignDetails-header">
-                        </thead>
-                        <tbody id="AssignDetails-body">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="paginator" id="paginator-tblAssignDetails">
+                <input type="hidden" id="txtEnquiryAssignCode" value="" />
+                <div id="dvAssignDetailsWrap" style="display:none;">
+                    <div class="table-wrapper">
+                        <table id="tblAssignDetails" class="table table-sm table-bordered enq-details-table mb-0">
+                            <thead id="AssignDetails-header">
+                            </thead>
+                            <tbody id="AssignDetails-body">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="paginator" id="paginator-tblAssignDetails">
+                    </div>
                 </div>
             </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary icon-height" onclick="Assign()">Assign</button>
-                <button type="button" class="btn btn-danger icon-height" onclick="CloseAssignModal()">Cancel</button>
+            <div class="modal-footer d-flex flex-wrap justify-content-end align-items-center gap-2">
+                <button type="button" class="btn btn-enq-primary enq-assign-footer-btn" onclick="Assign()"><i class="fa fa-check me-1"></i>Assign</button>
+                <button type="button" class="btn btn-enq-modal-close enq-assign-footer-btn" onclick="CloseAssignModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -574,20 +1537,18 @@
         </div>
     </div>
 </div>
-<div class="modal fade" id="EnquiryDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade enq-details-modal" id="EnquiryDetailsModal" tabindex="-1" role="dialog" aria-hidden="true" aria-labelledby="EnquiryDetailsModalTitle">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Enquiry Details</h5>
-                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">×</span></button>
+                <h5 class="modal-title" id="EnquiryDetailsModalTitle"><i class="fa fa-file-lines me-2 opacity-90"></i>Enquiry Details</h5>
+                <button type="button" class="btn-close btn-close-white" aria-label="Close" onclick="CloseEnquiryDetails()"></button>
             </div>
-            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
-                <div class="col-md-12">
-                    <div id="EnquiryDetailsModaldv"></div>
-                </div>
+            <div class="modal-body">
+                <div id="EnquiryDetailsModaldv"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-danger icon-height" onclick="CloseEnquiryDetails()">Close</button>
+                <button type="button" class="btn btn-enq-modal-close" onclick="CloseEnquiryDetails()">Close</button>
             </div>
         </div>
     </div>
