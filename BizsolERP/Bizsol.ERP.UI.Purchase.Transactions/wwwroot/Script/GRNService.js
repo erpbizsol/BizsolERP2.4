@@ -1,6 +1,7 @@
 import { GRNService }          from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_GRNService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService }          from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { VendorMasterService }  from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VendorMasterService.js';
 
 // ── Numeric input helpers ────────────────────────────────────────────────────
 // Block e, E, +, - keys that browsers allow in type="number"
@@ -16,28 +17,378 @@ function stripNonNumeric(el) {
 }
 
 // ── App-level state ─────────────────────────────────────────────────────────
-let files             = [];
-let fileName          = '';
-let imageBase64Data   = [];
-let existingImageData = [];
-let existingFileName  = '';
 let rowIndex          = 0;
 let poList            = [];
 let projectItemsCache = [];
 let editMode          = false;
 let editCode          = 0;
+
+window.G_PartyVerificationBeforeOrderY = false;
+window.G_GRNHasVerifyRight = false;
+let G_GRNVerifyCode = 0;
+window.G_GRNStatFilter = "all";
+window.G_GRNMasterSourceRows = [];
+
+function extractPartyVerificationBeforeOrderY(res) {
+    var row = null;
+    if (Array.isArray(res) && res.length > 0) row = res[0];
+    else if (res && Array.isArray(res.data) && res.data.length > 0) row = res.data[0];
+    else if (res && Array.isArray(res.Data) && res.Data.length > 0) row = res.Data[0];
+    else if (res && typeof res === "object" && !Array.isArray(res)) row = res;
+    if (!row || typeof row !== "object") return false;
+    var v = row.PartyVerificationBeforeOrder;
+    if (v === undefined || v === null) v = row.partyVerificationBeforeOrder;
+    if (v === undefined || v === null) return false;
+    var s = String(v).trim().toUpperCase();
+    return s === "Y" || s === "YES" || s === "1";
+}
+
+function applyGRNPartyVerificationUi() {
+    var strip = document.getElementById("grnMasterStatsStrip");
+    if (!strip) return;
+    strip.style.display = window.G_PartyVerificationBeforeOrderY ? "flex" : "none";
+    if (!window.G_PartyVerificationBeforeOrderY) window.G_GRNStatFilter = "all";
+}
+
+function shouldShowGRNPartyVerifyColumn() {
+    return !!(window.G_PartyVerificationBeforeOrderY && window.G_GRNHasVerifyRight);
+}
+
+function resolveGRNVerifyRight() {
+    var FinYear = getFinancialYear();
+    return MenuService.CheckModuleOptionRight("GRN Services", "Verify", "N", FinYear)
+        .then(function (response) {
+            window.G_GRNHasVerifyRight = response && response.CheckModuleOptionRight === "Y";
+        })
+        .catch(function () {
+            window.G_GRNHasVerifyRight = false;
+        });
+}
+
+function rowIsVerifiedGrn(item) {
+    var v = item && item.Verified;
+    if (v === undefined || v === null) return false;
+    if (typeof v === "string") {
+        var u = v.toUpperCase();
+        return u === "Y" || u === "YES" || v === "1";
+    }
+    return v === true || v === 1;
+}
+
+function escapeGrnAttr(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+function getGrnVerifiedByDisplay(item) {
+    if (!item) return "";
+    var v =
+        item.VerifiedByName ||
+        item.VerifiedByDesp ||
+        item.VerifiedBy ||
+        item["Verify By"] ||
+        item["Verified By"] ||
+        item.UserVerifiedBy;
+    if (v === undefined || v === null || v === "") return "";
+    if (typeof v === "number" && v === 0) return "";
+    return String(v).trim();
+}
+
+function getGrnVerifiedOnRaw(item) {
+    if (!item) return null;
+    var d =
+        item.VerifiedON !== undefined && item.VerifiedON !== null
+            ? item.VerifiedON
+            : item.VerifiedOn !== undefined && item.VerifiedOn !== null
+              ? item.VerifiedOn
+              : item["Verified ON"] !== undefined && item["Verified ON"] !== null
+                ? item["Verified ON"]
+                : item["Verified On"];
+    return d === undefined ? null : d;
+}
+
+function pad2GrnDate(n) {
+    return n < 10 ? "0" + n : String(n);
+}
+
+function formatDateDdMmYyyyGrn(d) {
+    if (!(d instanceof Date) || isNaN(d.getTime())) return "";
+    return pad2GrnDate(d.getDate()) + "/" + pad2GrnDate(d.getMonth() + 1) + "/" + d.getFullYear();
+}
+
+function formatGrnVerifiedOnDisplay(val) {
+    if (val === null || val === undefined || val === "") return "";
+    if (typeof val === "number" && isFinite(val)) {
+        return formatDateDdMmYyyyGrn(new Date(val));
+    }
+    if (typeof val === "string") {
+        var t = val.trim();
+        if (!t) return "";
+        var parsed = Date.parse(t);
+        if (!isNaN(parsed)) return formatDateDdMmYyyyGrn(new Date(parsed));
+        return t;
+    }
+    if (val instanceof Date) return formatDateDdMmYyyyGrn(val);
+    return String(val);
+}
+
+function showGrnVerifyDetailFromBadge(el) {
+    var enc = el.getAttribute("data-grn-verify-info");
+    if (!enc) return;
+    var txt = decodeURIComponent(enc);
+    var oneLine = txt.replace(/\s*\n+\s*/g, " · ");
+    if (typeof toastr !== "undefined") {
+        toastr.info(oneLine, "Verification", { timeOut: 5500 });
+    } else {
+        window.alert(txt);
+    }
+}
+
+function buildGrnVerifiedBadgeHtml(item) {
+    var by = getGrnVerifiedByDisplay(item);
+    var on = formatGrnVerifiedOnDisplay(getGrnVerifiedOnRaw(item));
+    var parts = [];
+    if (by) parts.push("Verify By: " + by);
+    if (on) parts.push("Verified ON: " + on);
+    var titleAttr = parts.length ? ' title="' + escapeGrnAttr(parts.join(" · ")) + '"' : "";
+    var dataAttr = "";
+    var a11y = "";
+    var extraClass = "";
+    if (parts.length) {
+        extraClass = " grn-verify-status--with-detail";
+        dataAttr = ' data-grn-verify-info="' + encodeURIComponent(parts.join("\n")) + '"';
+        a11y =
+            ' role="button" tabindex="0" aria-label="' +
+            escapeGrnAttr(parts.join(". ")) +
+            '"';
+    }
+    return (
+        '<span class="grn-verify-status grn-verify-status--done' +
+        extraClass +
+        '"' +
+        titleAttr +
+        dataAttr +
+        a11y +
+        ">Verified</span>"
+    );
+}
+
+function updateGRNMasterStats(rows) {
+    var list = Array.isArray(rows) ? rows : [];
+    var total = list.length;
+    var verified = 0;
+    for (var i = 0; i < list.length; i++) {
+        if (rowIsVerifiedGrn(list[i])) verified++;
+    }
+    var pending = total - verified;
+    var elT = document.getElementById("grnStatTotal");
+    var elV = document.getElementById("grnStatVerified");
+    var elP = document.getElementById("grnStatPending");
+    if (elT) elT.textContent = String(total);
+    if (elV) elV.textContent = String(verified);
+    if (elP) elP.textContent = String(pending);
+}
+
+function filterGRNRowsByStat(rows, mode) {
+    var list = Array.isArray(rows) ? rows : [];
+    if (!window.G_PartyVerificationBeforeOrderY) return list.slice();
+    if (mode === "verified") return list.filter(function (r) { return rowIsVerifiedGrn(r); });
+    if (mode === "pending") return list.filter(function (r) { return !rowIsVerifiedGrn(r); });
+    return list.slice();
+}
+
+function mapGRNRowsToGrid(rows) {
+    return rows.map(function (item) {
+        const code = item.Code ?? item.code ?? 0;
+        const mrnRaw = item.MRNNo ?? item.mRNNo ?? item.GRNo ?? item.grnNo ?? 0;
+        const enNum = parseInt(mrnRaw, 10) || 0;
+        const rd = item.ReceiveDate ?? item.receiveDate ?? '';
+        const rawRdStr = rd ? String(rd).substring(0, 10) : '';
+        var btns =
+            '<button class="im-btn-edit" title="Edit" onclick="editGRN(' + code + ')">' +
+            '<i class="fas fa-pen"></i></button>' +
+            '<button type="button" class="im-btn-attach" title="Attachment" onclick="openGrnServiceListAttachmentControl(' + code + ',' + enNum + ',\'' + rawRdStr + '\')">' +
+            '<i class="fas fa-paperclip"></i></button>' +
+            '<button class="im-btn-delete" title="Delete" onclick="confirmDeleteGRN(' + code + ', \'' + (item.GRNo ?? item.MRNNo ?? '') + '\')">' +
+            '<i class="fas fa-trash-can"></i></button>';
+        var verifyCell = "";
+        if (shouldShowGRNPartyVerifyColumn()) {
+            verifyCell = rowIsVerifiedGrn(item)
+                ? buildGrnVerifiedBadgeHtml(item)
+                : '<button type="button" class="grn-btn-verify" onclick="VerifyGRN(' + code + ')"><i class="fas fa-check"></i></button>';
+        }
+        var patch = { Action: btns };
+        if (shouldShowGRNPartyVerifyColumn()) patch.Verify = verifyCell;
+        return Object.assign({}, item, patch);
+    });
+}
+
+function getGRNListHiddenColumns() {
+    var cols = [
+        "PartyMaster_Code",
+        "Code",
+        "Verified",
+        "VerifiedBy",
+        "VerifiedByName",
+        "VerifiedByDesp",
+        "VerifiedON",
+        "VerifiedOn",
+        "Verify By",
+        "Verified By",
+        "Verified ON",
+        "Verified On",
+    ];
+    if (!window.G_PartyVerificationBeforeOrderY) {
+        cols.push("Verify");
+    }
+    return cols;
+}
+
+function getGRNListColumnAlignment() {
+    var ca = {
+        Action: "center;width:168px;",
+    };
+    if (shouldShowGRNPartyVerifyColumn()) {
+        ca.Verify = "center;min-width:96px;white-space:nowrap;";
+    }
+    return ca;
+}
+
+function syncGRNStatChipClasses() {
+    if (!window.G_PartyVerificationBeforeOrderY) return;
+    var mode = window.G_GRNStatFilter || "all";
+    $("#grnMasterStatsStrip .grn-stat-chip[data-grn-filter]")
+        .removeClass("vm-stat-chip--active")
+        .attr("aria-pressed", "false");
+    $('#grnMasterStatsStrip .grn-stat-chip[data-grn-filter="' + mode + '"]')
+        .addClass("vm-stat-chip--active")
+        .attr("aria-pressed", "true");
+}
+
+function refreshGRNListGrid() {
+    var source = window.G_GRNMasterSourceRows || [];
+    var mode = window.G_GRNStatFilter || "all";
+    if (source.length === 0) return;
+
+    var filtered = filterGRNRowsByStat(source, mode);
+    var mapped = mapGRNRowsToGrid(filtered);
+
+    const StringFilterColumn = ["Bill No", "Party Name", "Sub Project", "Project"];
+    const NumericFilterColumn = ["MRN No"];
+    const DateFilterColumn = ["Bill Date", "Receive Date"];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = getGRNListHiddenColumns();
+    const ColumnAlignment = getGRNListColumnAlignment();
+
+    if (typeof window.columnFilters === "object" && window.columnFilters !== null) {
+        window.columnFilters = {};
+    }
+
+    if (mapped.length === 0) {
+        window.filteredData_grnListTable = [];
+        window.filteredDataTemp_grnListTable = [];
+        window.currentPage_grnListTable = 1;
+        var colCount = $("#grnListTable-hader th:visible").length;
+        if (!colCount) colCount = 1;
+        $("#grnListTbody-body").html(
+            '<tr><td colspan="' +
+                colCount +
+                '" style="text-align:center;padding:28px;color:#6b7280;">No data found</td></tr>'
+        );
+        $("#grnListTable-hader").find("th span.filter-table-heading .fa-filter").remove();
+        if (typeof window.updatePageInfo === "function") window.updatePageInfo("grnListTable");
+        if (typeof window.updateButtons === "function") window.updateButtons("grnListTable");
+        if (typeof window.updateFilteredClass === "function") window.updateFilteredClass("grnListTbody-body");
+        syncGRNStatChipClasses();
+        return;
+    }
+
+    BizsolCustomFilterGrid.CreateDataTable(
+        "grnListTable-hader",
+        "grnListTbody-body",
+        mapped,
+        Button,
+        showButtons,
+        StringFilterColumn,
+        NumericFilterColumn,
+        DateFilterColumn,
+        StringdoubleFilterColumn,
+        hiddenColumns,
+        ColumnAlignment
+    );
+    syncGRNStatChipClasses();
+}
+
 $(document).ready(async function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 }); 
 // ── DOM ready ────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+    window.AttachmentControl_onQueueChange = function (count) {
+        const badge = document.getElementById('grnTempAttachBadge');
+        if (!badge) return;
+        badge.textContent = String(count);
+        badge.style.display = count > 0 ? 'inline-flex' : 'none';
+    };
+
     await Promise.all([
         loadVendorList(),
         loadProjectList(),
         loadAllPOs(),
     ]);
-    await loadGRNList();
+    await new Promise(function (resolve) {
+        window.G_PartyVerificationBeforeOrderY = false;
+        VendorMasterService.GetFixedParameterDetails()
+            .then(function (res) {
+                window.G_PartyVerificationBeforeOrderY = extractPartyVerificationBeforeOrderY(res);
+            })
+            .catch(function () {
+                window.G_PartyVerificationBeforeOrderY = false;
+            })
+            .finally(function () {
+                applyGRNPartyVerificationUi();
+                resolveGRNVerifyRight()
+                    .then(function () {
+                        return loadGRNList();
+                    })
+                    .finally(function () {
+                        resolve();
+                    });
+            });
+    });
     showListView();
+
+    if (typeof jQuery !== "undefined") {
+        jQuery(document).on("click", ".grn-stat-chip[data-grn-filter]", function () {
+            var mode = jQuery(this).attr("data-grn-filter");
+            window.G_GRNStatFilter = mode;
+            if (window.G_GRNMasterSourceRows && window.G_GRNMasterSourceRows.length > 0) {
+                refreshGRNListGrid();
+            }
+        });
+        jQuery(document).on("keydown", ".grn-stat-chip[data-grn-filter]", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                jQuery(this).trigger("click");
+            }
+        });
+        jQuery(document).on("click", ".grn-verify-status--done[data-grn-verify-info]", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            showGrnVerifyDetailFromBadge(this);
+        });
+        jQuery(document).on("keydown", ".grn-verify-status--done[data-grn-verify-info]", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                showGrnVerifyDetailFromBadge(this);
+            }
+        });
+    }
 
     // Allow only positive numbers with decimals in amount fields
     ['txtTotalBillAmountManual', 'txtDedution'].forEach(id => {
@@ -1119,43 +1470,85 @@ function calcNetPayable() {
 // GRN LIST VIEW
 // ══════════════════════════════════════════════════════════════════════════════
 function loadGRNList() {
-    GRNService.GetGRNList().then(function (response) {
+    return GRNService.GetGRNList().then(function (response) {
         var rows = [];
         if (Array.isArray(response)) rows = response;
         else if (Array.isArray(response.data)) rows = response.data;
         else if (Array.isArray(response.Data)) rows = response.Data;
+        window.G_GRNMasterSourceRows = rows;
+        updateGRNMasterStats(rows);
         if (rows.length > 0) {
             $("#grnListTable").show();
-            const StringFilterColumn = ["Bill No", "Party Name","Sub Project","Project"];
-            const NumericFilterColumn = ["MRN No"];
-            const DateFilterColumn = ["Bill Date","Receive Date"];
-            const Button = false;
-            const showButtons = [];
-            const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["PartyMaster_Code","Code"];
-            const ColumnAlignment = {
-
-                "Action": "center;width:118px;",
-            };
-            var updatedResponse = rows.map(function (item) {
-                var btns =
-                    '<button class="im-btn-edit" title="Edit" onclick="editGRN(' + item.Code + ')">' +
-                    '<i class="fas fa-pen"></i></button>' +
-                    '<button class="im-btn-delete" title="Delete" onclick="confirmDeleteGRN(' + item.Code + ', \'' + (item.GRNo ?? item.MRNNo ?? '') + '\')">' +
-                    '<i class="fas fa-trash-can"></i></button>';
-                return Object.assign({}, item, { Action: btns });
-            });
-
-            BizsolCustomFilterGrid.CreateDataTable(
-                "grnListTable-hader", "grnListTbody-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment
-            );
-
+            refreshGRNListGrid();
         } else {
             toastr.warning("No items found. Add your first item!");
             $("#grnListTable").hide();
         }
     }).catch(function () {
         toastr.error("Failed to load item list.");
+    });
+}
+
+function VerifyGRN(code) {
+    if (!window.G_PartyVerificationBeforeOrderY) {
+        toastr.warning("Party verification is not enabled in fixed parameters.");
+        return;
+    }
+    if (!window.G_GRNHasVerifyRight) {
+        toastr.warning("You do not have Verify permission.");
+        return;
+    }
+    G_GRNVerifyCode = code;
+    $("#grnVerifyConfirmTitle").text("Verify this GRN?");
+    $("#grnVerifyConfirmText").text("This will mark the GRN as verified.");
+    $("#grnVerifyConfirmBackdrop").addClass("show");
+}
+
+function CloseGRNVerifyModal() {
+    G_GRNVerifyCode = 0;
+    $("#grnVerifyConfirmBackdrop").removeClass("show");
+}
+
+function DoGRNVerify() {
+    var code = G_GRNVerifyCode;
+    if (!code) {
+        CloseGRNVerifyModal();
+        return;
+    }
+    if (!window.G_PartyVerificationBeforeOrderY) {
+        toastr.warning("Party verification is not enabled in fixed parameters.");
+        CloseGRNVerifyModal();
+        return;
+    }
+    var ModuleName = "GRN Services",
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight === "N") {
+            toastr.error(response.Msg);
+            CloseGRNVerifyModal();
+            return;
+        }
+        GRNService.VerifyGRNService(code)
+            .then(function (res) {
+                var ok = res && (res.Status === "Y" || res.status === "Y");
+                if (ok) {
+                    CloseGRNVerifyModal();
+                    toastr.success(res.Msg || "Verified successfully.");
+                    loadGRNList();
+                } else {
+                    toastr.error((res && (res.Msg || res.message)) || "Verify failed.");
+                }
+            })
+            .catch(function () {
+                toastr.error("Verify failed. Please try again.");
+            });
+    }).catch(function (err) {
+        console.error("DoGRNVerify permission check error:", err);
+        toastr.error("Permission check failed.");
+        CloseGRNVerifyModal();
     });
 }
 function formatDate(d) {
@@ -1210,6 +1603,8 @@ async function editGRN(code) {
 
                 editMode = true;
                 editCode = code;
+                const hdnMrn = document.getElementById('hdnMRNMasterCode');
+                if (hdnMrn) hdnMrn.value = String(code);
 
                 showFillGridCheckbox(false);
                 setAddItemBtnState(true);
@@ -1228,6 +1623,7 @@ async function editGRN(code) {
                 };
                 set('txtTotalBillAmountManual', amtStr(master.TotalBillAmountManual));
                 set('txtDedution', amtStr(master.Dedution));
+                set('txtDedutionRemark', master.DedutionRemark ?? master.dedutionRemark ?? master.DeductionRemark ?? '');
                 calcNetPayable();
 
                 // Party dropdown (SP: PartyMaster_Code)
@@ -1248,31 +1644,6 @@ async function editGRN(code) {
                     }
                     if (subProjectCode) {
                         document.getElementById('frmDdlSubProject').value = subProjectCode;
-                    }
-                }
-
-                // ── Attachment ────────────────────────────────────────────────────────
-                // SP SHOWDATA 3rd result set: AttachInfo → AttachFileName + AttachData
-                // (from DocumentMaster LEFT JOIN via dynamic SQL in SHOWDATA mode)
-                const attachInfo = (resp.AttachInfo ?? resp.attachInfo)?.[0] ?? null;
-
-                existingFileName = attachInfo?.AttachFileName ?? master.AttachFileName ?? '';
-                existingImageData = attachInfo?.AttachData ?? master.AttachData ?? [];
-
-                // Reset file input so user can select new file if needed
-                const fileInput = document.getElementById('fileAttachment');
-                if (fileInput) fileInput.value = '';
-                imageBase64Data = [];
-                fileName = '';
-
-                const viewBtn = document.getElementById('viewImageBtn');
-                if (viewBtn) {
-                    if (existingFileName) {
-                        viewBtn.style.removeProperty('display');   // remove inline display:none
-                        viewBtn.style.display = 'inline-flex';
-                        viewBtn.title = existingFileName;
-                    } else {
-                        viewBtn.style.setProperty('display', 'none', 'important');
                     }
                 }
 
@@ -1584,7 +1955,8 @@ function saveGRN() {
             });
 
             // ── GRNServiceList — maps to TY_GRNMaster TVP ────────────────────────────
-            // SP TVP columns: Code, BillNo, BillDate, ReceiveDate, PartyMaster_Code, TransporterName, Remarks
+            // SP TVP columns: Code, BillNo, BillDate, ReceiveDate, PartyMaster_Code, TransporterName, Remarks,
+            //                 TotalBillAmountManual, Dedution, DedutionRemark, NetPayable, Attach*, ...
             const GRNServiceList = [{
                 Code: editMode ? editCode : 0,
                 MRNNo: 0,
@@ -1594,10 +1966,11 @@ function saveGRN() {
                 PartyMaster_Code: parseInt(document.getElementById('ddlPartyName')?.value) || 0,
                 TransporterName: '',
                 Remarks: document.getElementById('txtRemark')?.value || '',
-                AttachFileName: fileName || existingFileName || '',
-                AttachData: imageBase64Data.length > 0 ? imageBase64Data : existingImageData.length > 0 ? existingImageData : [],
+                AttachFileName: '',
+                AttachData: [],
                 TotalBillAmountManual: parseFloat(document.getElementById('txtTotalBillAmountManual')?.value) || 0,
                 Dedution: parseFloat(document.getElementById('txtDedution')?.value) || 0,
+                DedutionRemark: document.getElementById('txtDedutionRemark')?.value || '',
                 NetPayable: parseFloat(document.getElementById('txtNetPayable')?.value) || 0,
 
             }];
@@ -1615,6 +1988,20 @@ function saveGRN() {
                             document.getElementById('txtGRNNo').value = newNo;
                             updateFloatBar();
                         }
+                        const savedPk = parseInt(data.Code ?? data.code ?? (editMode ? editCode : 0), 10) || 0;
+                        const mrnNoNum = parseInt(String(document.getElementById('txtGRNNo')?.value ?? '').trim(), 10) || parseInt(String(newNo ?? '').trim(), 10) || 0;
+                        const recvDate = document.getElementById('dtRecvDate')?.value ?? '';
+                        if (savedPk > 0 && typeof window.FlushPendingAttachments === 'function') {
+                            const flush = await window.FlushPendingAttachments(savedPk, 'MRNMaster', mrnNoNum, recvDate);
+                            if (flush && flush.failed > 0) {
+                                showToast(flush.uploaded + ' attachment(s) uploaded, ' + flush.failed + ' failed.', 'warning');
+                            } else if (flush && flush.uploaded > 0) {
+                                showToast(flush.uploaded + ' pending attachment(s) uploaded.', 'success');
+                            }
+                        }
+                        const hdnMrn = document.getElementById('hdnMRNMasterCode');
+                        if (hdnMrn && savedPk > 0) hdnMrn.value = String(savedPk);
+
                         const msg = editMode ? 'GRN updated successfully!' : 'GRN saved successfully!';
                         showToast(msg, 'success');
 
@@ -1646,11 +2033,15 @@ function cancelGRN() {
 }
 
 function resetForm() {
-    ['txtGRNNo', 'txtBillNo', 'dtBillDate', 'dtRecvDate', 'txtRemark']
+    ['txtGRNNo', 'txtBillNo', 'dtBillDate', 'dtRecvDate', 'txtRemark', 'txtDedutionRemark']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 
     document.getElementById('ddlPartyName').value             = '';
-    document.getElementById('fileAttachment').value           = '';
+    const hdnMrn = document.getElementById('hdnMRNMasterCode');
+    if (hdnMrn) hdnMrn.value = '0';
+    if (typeof window.ClearPendingAttachments_AttachmentControl === 'function') {
+        window.ClearPendingAttachments_AttachmentControl();
+    }
     document.getElementById('chkAgainstProject').checked      = true;  // Create: Against Project always ON
     document.getElementById('divProjectFields').style.display = 'block';
     document.getElementById('frmDdlProject').value            = '';
@@ -1664,11 +2055,8 @@ function resetForm() {
     if (chkFill) chkFill.checked = true;
     showFillGridCheckbox(true);
 
-    rowIndex = 0; files = []; fileName = '';
-    imageBase64Data = []; existingImageData = []; existingFileName = '';
+    rowIndex = 0;
     editMode = false; editCode = 0;
-
-    document.getElementById('viewImageBtn').style.setProperty('display', 'none', 'important');
     // Against Project ON by default in Create → hide hint, show project fields, show grid hint
     const hint = document.getElementById('divProjectHint');
     if (hint) hint.style.display = 'none';
@@ -1748,104 +2136,36 @@ function updateFloatBar() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// VIEW ATTACHMENT — lightbox for image / new tab for PDF
+// ATTACHMENT CONTROL (same pattern as Payment Entry — DocumentMaster / MRNMaster)
 // ══════════════════════════════════════════════════════════════════════════════
-function viewAttachment() {
-    // Priority: newly selected file > existing file from DB
-    const data = imageBase64Data.length > 0 ? imageBase64Data : existingImageData;
-    const name = fileName || existingFileName || 'attachment';
+function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode, sourceDownloadFileName) {
+    var url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
+    $('#GRNService_AttachmentControlmodal').load(url, {
+        MasterTableName: masterTableName,
+        MasterTableCode: masterTableCode,
+        DetailTableName: detailTableName,
+        DetailTableCode: detailTableCode,
+        EntryNo: entryNo,
+        EntryDate: entryDate,
+        Mode: mode,
+        SourceDownloadFileName: sourceDownloadFileName || ''
+    });
+}
 
-    if (!data || (Array.isArray(data) && data.length === 0) && typeof data !== 'string') {
-        showToast('No attachment to view.', 'info');
+function openGrnServiceAttachmentControl() {
+    const masterCode = parseInt(document.getElementById('hdnMRNMasterCode')?.value ?? '0', 10) || 0;
+    const mrnNo = parseInt(document.getElementById('txtGRNNo')?.value?.trim() ?? '0', 10) || 0;
+    const entryDate = document.getElementById('dtRecvDate')?.value ?? '';
+    InitAttachmentControl('MRNMaster', masterCode, '', 0, mrnNo, entryDate, 'all', '');
+}
+
+function openGrnServiceListAttachmentControl(code, entryNo, entryDate) {
+    const masterCode = parseInt(code, 10) || 0;
+    if (masterCode <= 0) {
+        showToast('Invalid record. Cannot open attachments.', 'warning');
         return;
     }
-
-    // Build data-URL from byte-array or base64 string
-    let src = '';
-    if (typeof data === 'string') {
-        src = data.startsWith('data:') ? data : `data:image/jpeg;base64,${data}`;
-    } else if (Array.isArray(data) && data.length > 0) {
-        const bytes  = new Uint8Array(data);
-        let binary   = '';
-        bytes.forEach(b => binary += String.fromCharCode(b));
-        const b64    = btoa(binary);
-        const ext    = name.split('.').pop()?.toLowerCase() || 'jpeg';
-        const mime   = ext === 'pdf'
-                        ? 'application/pdf'
-                        : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-        src = `data:${mime};base64,${b64}`;
-    }
-
-    if (!src) { showToast('Cannot display attachment.', 'warning'); return; }
-
-    const ext = name.split('.').pop()?.toLowerCase();
-
-    if (ext === 'pdf') {
-        // Open PDF in new tab
-        const win = window.open('', '_blank');
-        win.document.write(
-            `<title>${name}</title>
-             <style>body{margin:0}</style>
-             <iframe src="${src}" style="width:100%;height:100vh;border:none;"></iframe>`
-        );
-    } else {
-        // Image — show in lightbox overlay
-        let lb = document.getElementById('grnImgLightbox');
-        if (!lb) {
-            lb = document.createElement('div');
-            lb.id = 'grnImgLightbox';
-            lb.style.cssText = `
-                position:fixed;inset:0;background:rgba(0,0,0,0.88);
-                z-index:99999;display:flex;align-items:center;justify-content:center;
-                cursor:pointer;animation:fadeIn .2s ease;`;
-            lb.innerHTML = `
-                <img id="grnLbImg"
-                     style="max-width:90vw;max-height:88vh;border-radius:10px;
-                            box-shadow:0 8px 40px rgba(0,0,0,0.6);object-fit:contain;" />
-                <div style="position:absolute;top:16px;right:20px;display:flex;gap:8px;">
-                    <span id="grnLbName"
-                          style="color:#fff;font-size:0.8rem;opacity:0.8;align-self:center;"></span>
-                    <button onclick="document.getElementById('grnImgLightbox').style.display='none'"
-                            style="background:#fff;border:none;border-radius:50%;
-                                   width:34px;height:34px;font-size:1.1rem;
-                                   cursor:pointer;line-height:1;">✕</button>
-                </div>`;
-            lb.onclick = e => { if (e.target === lb) lb.style.display = 'none'; };
-            document.body.appendChild(lb);
-        }
-        document.getElementById('grnLbImg').src  = src;
-        document.getElementById('grnLbName').textContent = name;
-        lb.style.display = 'flex';
-    }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// FILE UPLOAD
-// ══════════════════════════════════════════════════════════════════════════════
-function fileUploadChange(event) {
-    files    = event.target.files;
-    fileName = files?.[0]?.name || '';
-    if (files && files.length > 0) {
-        convertFileToByteArray(files[0]).then(b => {
-            imageBase64Data = b;
-            document.getElementById('viewImageBtn').style.setProperty('display', 'flex', 'important');
-        });
-    } else {
-        imageBase64Data = [];
-        document.getElementById('viewImageBtn').style.setProperty('display', 'none', 'important');
-    }
-}
-
-function convertFileToByteArray(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsArrayBuffer(file);
-        reader.onloadend = e => {
-            if (e.target.readyState === FileReader.DONE)
-                resolve(Array.from(new Uint8Array(e.target.result)));
-        };
-        reader.onerror = reject;
-    });
+    InitAttachmentControl('MRNMaster', masterCode, '', 0, parseInt(entryNo, 10) || 0, entryDate || '', 'all', '');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1916,8 +2236,12 @@ window.loadSubProjects        = loadSubProjects;
 window.onSubProjectChange     = onSubProjectChange;
 window.onProjectFieldFocus    = onProjectFieldFocus;
 window.loadGRNList          = loadGRNList;
-window.fileUploadChange     = fileUploadChange;
-window.viewAttachment       = viewAttachment;
+window.VerifyGRN            = VerifyGRN;
+window.CloseGRNVerifyModal  = CloseGRNVerifyModal;
+window.DoGRNVerify          = DoGRNVerify;
+window.InitAttachmentControl = InitAttachmentControl;
+window.openGrnServiceAttachmentControl = openGrnServiceAttachmentControl;
+window.openGrnServiceListAttachmentControl = openGrnServiceListAttachmentControl;
 window.showAllItems         = showAllItems;
 window.onAddItemClick       = onAddItemClick;
 window.onPartyChange        = onPartyChange;
@@ -1926,3 +2250,4 @@ window.calcAddItemModalAmount   = calcAddItemModalAmount;
 window.onAddItemModalPOChange   = onAddItemModalPOChange;
 window.onAddItemModalItemChange = onAddItemModalItemChange;
 window.saveAddItemModalToGrid   = saveAddItemModalToGrid;
+

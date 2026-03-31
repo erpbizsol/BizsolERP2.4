@@ -89,6 +89,15 @@ const GRNService = {
             });
     },
 
+    /** Marks GRN/MRN as verified (same contract as VerifySolarVendorMaster). */
+    VerifyGRNService: function VerifyGRNService(Code) {
+        let url = UrlService.API_ENDPOINT_GRNService + `/VerifyGRNServiceMaster?Code=${Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
     GetPendingPOByProject: function GetPendingPOByProject(ProjectCode) {
         let url = UrlService.API_ENDPOINT_GRNService + `/GetPendingPOByProject?ProjectCode=${ProjectCode}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)

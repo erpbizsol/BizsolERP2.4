@@ -656,6 +656,9 @@ function billRowTemplate() {
         <input type="hidden" class="inp-mrn-code" value="">
         <input type="text" class="form-control form-control-sm inp-bill-no" maxlength="64" autocomplete="off" placeholder="Bill no">
     </td>
+    <td><input type="text" class="form-control form-control-sm inp-deduction" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;min-width:72px;"></td>
+    <td><input type="text" class="form-control form-control-sm inp-project" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;min-width:120px;"></td>
+    <td><input type="text" class="form-control form-control-sm inp-subproject" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;min-width:120px;"></td>
     <td><input type="date" class="form-control form-control-sm inp-bill-date" autocomplete="off"></td>
     <td><input type="number" class="form-control form-control-sm inp-bill-amt" min="0" step="0.01" placeholder="0" onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this)"></td>
     <td><input type="number" class="form-control form-control-sm inp-payable" min="0" step="0.01" placeholder="0" readonly style="background:#ede9fe;border-color:#c4b5fd;"></td>
@@ -730,7 +733,7 @@ function showGpaPartyHint() {
     removeGpaPartyHint();
     tbody.insertAdjacentHTML('beforeend', `
 <tr id="trGpaPartyHint" class="gpa-party-hint-row">
-    <td colspan="6" style="text-align:center;padding:18px 12px;background:linear-gradient(135deg,rgba(102,126,234,0.06),rgba(99,102,241,0.05));border-top:1px dashed #c4b5fd;">
+    <td colspan="9" style="text-align:center;padding:18px 12px;background:linear-gradient(135deg,rgba(102,126,234,0.06),rgba(99,102,241,0.05));border-top:1px dashed #c4b5fd;">
         <div style="display:inline-flex;align-items:center;gap:10px;max-width:520px;">
             <i class="fa fa-info-circle" style="color:#667eea;font-size:1.1rem;"></i>
             <span style="font-size:0.82rem;color:#475569;">
@@ -1132,7 +1135,7 @@ function saveGpaAddBillModalToGrid() {
     const tr = tbody?.querySelector('tr.bill-row:last-child');
     if (!tr) return;
 
-    const rowObj = {
+    let rowObj = {
         MRNMaster_Code: mrn > 0 ? mrn : undefined,
         BillNo: billNo,
         BillDate: document.getElementById('gpaAddBillModalBillDate')?.value ?? '',
@@ -1140,6 +1143,10 @@ function saveGpaAddBillModalToGrid() {
         PayableAmount: document.getElementById('gpaAddBillModalPayable')?.value ?? '',
         PaymentAmount: document.getElementById('gpaAddBillModalPayment')?.value ?? '',
     };
+    if (mrn > 0 && Array.isArray(gpaAddBillModalBillRowsCache) && gpaAddBillModalBillRowsCache.length) {
+        const hit = gpaAddBillModalBillRowsCache.find(x => resolveMrnFromRow(x) === mrn);
+        if (hit) rowObj = { ...hit, ...rowObj };
+    }
     applyBillDetailRow(tr, rowObj);
     const dc = tr.querySelector('.inp-detail-code');
     if (dc) dc.value = '0';
@@ -1192,6 +1199,21 @@ function applyBillDetailRow(tr, r) {
         } else {
             pm.value = '';
         }
+    }
+    const ded = tr.querySelector('.inp-deduction');
+    const pj = tr.querySelector('.inp-project');
+    const sp = tr.querySelector('.inp-subproject');
+    if (ded) {
+        const dv = r.Dedution ?? r.dedution ?? r.Deduction ?? r.deduction;
+        ded.value = dv !== undefined && dv !== null && `${dv}`.trim() !== '' ? String(dv) : '';
+    }
+    if (pj) {
+        const pv = r.ProjectDesp ?? r.projectDesp ?? r.Project ?? r.project ?? '';
+        pj.value = pv !== undefined && pv !== null ? String(pv) : '';
+    }
+    if (sp) {
+        const sv = r.SubProjectDesp ?? r.subProjectDesp ?? r.SubProject ?? r.subProject ?? '';
+        sp.value = sv !== undefined && sv !== null ? String(sv) : '';
     }
 }
 
@@ -1432,6 +1454,20 @@ function validateGRNPaymentApproval() {
             return false;
         }
     }
+    const billRows = document.querySelectorAll('#billTbody tr.bill-row');
+    if (!billRows.length) {
+        showToast('Bill allocation: add at least one row and fill bill details before save.', 'warning');
+        return false;
+    }
+    let hasMrnLine = false;
+    billRows.forEach(tr => {
+        const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+        if (mrn > 0) hasMrnLine = true;
+    });
+    if (!hasMrnLine) {
+        showToast('Bill allocation: fill at least one row with a valid bill (MRN). Use Fill Grid or Add row to load bills for the party.', 'warning');
+        return false;
+    }
     let badMrn = false;
     document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
         const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
@@ -1460,6 +1496,15 @@ function validateGRNPaymentApproval() {
     const adv = parseNum(document.getElementById('txtFooterAdvance'));
     const allocated = sumPay + adv;
     const EPS = 0.005;
+    // When Advance is auto (Amount − total payment), allocated always equals Amount, so the
+    // check below never fires; block over-allocation and negative Advance explicitly.
+    if (sumPay > headerAmt + EPS || adv < -EPS) {
+        showToast(
+            `Total payment (${formatMoney(sumPay)}) cannot exceed Amount (${formatMoney(headerAmt)}). Advance / On account cannot be negative.`,
+            'warning'
+        );
+        return false;
+    }
     if (allocated > headerAmt + EPS) {
         showToast(
             `Total payment (${formatMoney(sumPay)}) + Advance / On account (${formatMoney(adv)}) must not exceed Amount (${formatMoney(headerAmt)}). Current total: ${formatMoney(allocated)}.`,
