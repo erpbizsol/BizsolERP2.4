@@ -74,7 +74,7 @@ function GetItemMasterList() {
             const StringdoubleFilterColumn = [];
             const hiddenColumns = ["CurrentStatus", "MaintenanceType", "Priority", "NatureofBreakdown", "DescriptionofBreakdown", "SpareConsumed", "JobAssignedTo", "MobileNo", "RequestTime", "ConcernedPerson", "ConcenedPersonMobileNo", "Code", "Job Assigned", "Request Date", "Work Start Date", "Machine Failed Date", "Failed Remark", "Start Remark", "Description"];
             const ColumnAlignment = {
-                
+
                 "Action": "center;width:118px;",
             };
             var updatedResponse = rows.map(function (item) {
@@ -92,7 +92,7 @@ function GetItemMasterList() {
             });
 
             BizsolCustomFilterGrid.CreateDataTable(
-                "ItemMaster-header", "ItemMaster-body", updatedResponse,Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment
+                "ItemMaster-header", "ItemMaster-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment
             );
 
         } else {
@@ -106,12 +106,23 @@ function GetItemMasterList() {
 
 // ── Open New Form ───────────────────────────────────────────
 function OpenNewItem() {
-    G_EditCode = 0;
-    ClearForm();
-    $("#formModalTitle").text("Add New Item");
-    $("#btnSaveText").text("Save Item");
-    $("#itemDialogBackdrop").addClass("show");
-    setTimeout(function () { $("#ItemName").focus(); }, 140);
+    var ModuleName = "Item Master",
+        OptionName = "New",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            G_EditCode = 0;
+            ClearForm();
+            $("#formModalTitle").text("Add New Item");
+            $("#btnSaveText").text("Save Item");
+            $("#itemDialogBackdrop").addClass("show");
+            setTimeout(function () { $("#ItemName").focus(); }, 140);
+        }
+    });
 };
 
 // ── Open Edit Form ──────────────────────────────────────────
@@ -183,7 +194,7 @@ function ViewItem(code) {
 
                 // Badges
                 var natureVal = item.ItemNature || "";
-                var typeText  = natureVal === 'G' ? 'Good' : natureVal === 'S' ? 'Services' : '';
+                var typeText = natureVal === 'G' ? 'Good' : natureVal === 'S' ? 'Services' : '';
                 if (typeText) {
                     $("#viewItemTypeBadge").html('<i class="fas fa-cubes" style="margin-right:5px;font-size:10px;"></i>Type: ' + typeText).show();
                 } else {
@@ -237,7 +248,7 @@ function DoDelete() {
         OptionName = "Delete",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
-        MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
         if (response.CheckModuleOptionRight == 'N') {
             toastr.error(response.Msg);
             return false;
@@ -272,58 +283,47 @@ function DoDelete() {
 
 // ── Save / Update (single function) ────────────────────────
 function SaveItem() {
-    var ModuleName = "Item Master",
-        OptionName = "New",
-        ShowMsg = "Y",
-        FinYear = getFinancialYear();
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
-        if (response.CheckModuleOptionRight == 'N') {
-            toastr.error(response.Msg);
-            return false;
+    if (!ValidateForm()) return;
+    var isEdit = G_EditCode > 0;
+    var payload = BuildPayload();
+    var btnSave = $("#btnSaveItem");
+    var origLabel = $("#btnSaveText").text();
+
+    btnSave.prop("disabled", true);
+    $("#btnSaveText").text(isEdit ? "Updating…" : "Saving…");
+
+    var serviceCall = isEdit
+        ? ItemMasterService.SaveItemMaster(payload)
+        : ItemMasterService.SaveItemMaster(payload);
+
+    serviceCall.then(function (response) {
+        if (response && response.Status === 'Y') {
+            CloseForm();
+            GetItemMasterList();
+            if (isEdit) {
+                ShowSuccessModal(
+                    "Updated Successfully!",
+                    response.Msg || "Item details have been saved successfully.",
+                    "fa-pen-to-square"
+                );
+            } else {
+                ShowSuccessModal(
+                    "Saved Successfully!",
+                    response.Msg || "New item has been added to the catalogue.",
+                    "fa-circle-check"
+                );
+            }
         } else {
-            if (!ValidateForm()) return;
-            var isEdit = G_EditCode > 0;
-            var payload = BuildPayload();
-            var btnSave = $("#btnSaveItem");
-            var origLabel = $("#btnSaveText").text();
-
-            btnSave.prop("disabled", true);
-            $("#btnSaveText").text(isEdit ? "Updating…" : "Saving…");
-
-            var serviceCall = isEdit
-                ? ItemMasterService.SaveItemMaster(payload)
-                : ItemMasterService.SaveItemMaster(payload);
-
-            serviceCall.then(function (response) {
-                if (response && response.Status === 'Y') {
-                    CloseForm();
-                    GetItemMasterList();
-                    if (isEdit) {
-                        ShowSuccessModal(
-                            "Updated Successfully!",
-                            response.Msg || "Item details have been saved successfully.",
-                            "fa-pen-to-square"
-                        );
-                    } else {
-                        ShowSuccessModal(
-                            "Saved Successfully!",
-                            response.Msg || "New item has been added to the catalogue.",
-                            "fa-circle-check"
-                        );
-                    }
-                } else {
-                    toastr.error(
-                        (response && response.Msg) ||
-                        (isEdit ? "Failed to update item." : "Failed to save item.")
-                    );
-                }
-            }).catch(function () {
-                toastr.error("An error occurred. Please try again.");
-            }).finally(function () {
-                btnSave.prop("disabled", false);
-                $("#btnSaveText").text(origLabel);
-            });
+            toastr.error(
+                (response && response.Msg) ||
+                (isEdit ? "Failed to update item." : "Failed to save item.")
+            );
         }
+    }).catch(function () {
+        toastr.error("An error occurred. Please try again.");
+    }).finally(function () {
+        btnSave.prop("disabled", false);
+        $("#btnSaveText").text(origLabel);
     });
 }
 
@@ -375,7 +375,7 @@ function BuildPayload() {
                 DecimalPoints: 0,
                 DutyValue: parseFloat($("#GSTRate").val()) || 0,
                 ItemSpecification: $("#ItemSpecification").val().trim(),
-               // UserMasterCode: G_UserMasterCode,
+                // UserMasterCode: G_UserMasterCode,
             }
         ],
         ItemMasterOtherDetail: [
@@ -404,7 +404,7 @@ function BuildPayload() {
                 RequirementPerMonth: parseFloat(0)
             }
         ],
-        
+
     };
 }
 
@@ -427,7 +427,7 @@ function ValidateForm() {
     // UOM — select2 validation
     var uomVal = $("#UOM").val();
     var uomSelect2 = $("#UOM").nextAll(".select2-container").first()
-                              .find(".select2-selection--single");
+        .find(".select2-selection--single");
     if (!uomVal || uomVal.trim() === "") {
         $("#err_UOM").css("display", "flex");
         uomSelect2.css({ "border-color": "#ef4444", "box-shadow": "0 0 0 3px rgba(239,68,68,0.10)" });

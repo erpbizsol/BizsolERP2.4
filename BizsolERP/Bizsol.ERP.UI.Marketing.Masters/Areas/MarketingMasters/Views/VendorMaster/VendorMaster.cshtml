@@ -1838,6 +1838,11 @@
                     <span class="vm-err-text" id="err_GSTNNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid GST format.</span>
                 </div>
                 <div class="vm-form-group">
+                    <label for="PANNo">PAN Number <span id="vm_pan_required_mark" class="text-danger">*</span></label>
+                    <input type="text" id="PANNo" class="vm-input" placeholder="e.g. AAAAA0000A" autocomplete="off" maxlength="10" style="text-transform:uppercase;" />
+                    <span class="vm-err-text" id="err_PANNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Enter a valid PAN. Required when GST is not entered.</span>
+                </div>
+                <div class="vm-form-group">
                     <label for="Address1">Address1</label>
                     <input type="text" id="Address1" class="vm-input" placeholder="e.g. Address1" autocomplete="off" maxlength="100" />
                 </div>
@@ -1871,15 +1876,7 @@
                 <i class="fas fa-location-dot"></i> Address Details
             </div>
             <div class="vm-form-grid">
-                <div class="vm-form-group">
-                    <label for="Nation">Nation / Country <span class="text-danger">*</span></label>
-                    <div class="vm-ac-wrap">
-                        @* <input type="text" id="Nation" class="vm-input" placeholder="Type to search country…" autocomplete="off" /> *@
-                        <select id="Nation" class="vm-input" autocomplete="off" tabindex="1" maxlength="50"> </select>
-                        <ul class="vm-ac-dropdown" id="ac_Nation"></ul>
-                    </div>
-                    <span class="vm-err-text" id="err_Nation" style="display:none;"><i class="fas fa-circle-exclamation"></i> Please select country.</span>
-                </div>
+                
                 <div class="vm-form-group">
                     <label for="City">City <span class="text-danger">*</span></label>
                     <div class="vm-ac-wrap">
@@ -1900,10 +1897,32 @@
                     <span class="vm-err-text" id="err_State" style="display:none;"><i class="fas fa-circle-exclamation"></i> Please select state.</span>
                 </div>
                 <div class="vm-form-group">
+                    <label for="Nation">Nation / Country <span class="text-danger">*</span></label>
+                    <div class="vm-ac-wrap">
+                        @* <input type="text" id="Nation" class="vm-input" placeholder="Type to search country…" autocomplete="off" /> *@
+                        <select id="Nation" class="vm-input" autocomplete="off" tabindex="1" maxlength="50"> </select>
+                        <ul class="vm-ac-dropdown" id="ac_Nation"></ul>
+                    </div>
+                    <span class="vm-err-text" id="err_Nation" style="display:none;"><i class="fas fa-circle-exclamation"></i> Please select country.</span>
+                </div>
+                <div class="vm-form-group">
                     <label for="PinCode">Pincode</label>
                     <input type="text" id="PinCode" class="vm-input" tabindex="1" autocomplete="off" inputmode="numeric" maxlength="6" />
                     <span class="vm-pin-hint" id="pin_hint"><i class="fas fa-circle-check"></i> <span id="pin_hint_text"></span></span>
                     <span class="vm-err-text" id="err_PinCode" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid pincode.</span>
+                </div>
+
+                <div class="vm-form-group" style="grid-column:1/-1;">
+                    <label for="vmFileAttachment">Attachment</label>
+                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <input type="file" id="vmFileAttachment" class="vm-input" style="max-width:min(100%,360px);padding:6px 8px;"
+                               onchange="vmFileUploadChange(event)" accept="image/*,.pdf" />
+                        <button type="button" id="vmViewAttachmentBtn" onclick="vmViewAttachment()"
+                                style="display:none!important;white-space:nowrap;padding:8px 14px;border-radius:8px;
+                                       background:#ede9fe;color:#4f46e5;border:1px solid #c4b5fd;font-size:0.8rem;font-weight:600;cursor:pointer;">
+                            <i class="fas fa-eye" style="margin-right:6px;"></i>View
+                        </button>
+                    </div>
                 </div>
 
             </div>
@@ -2077,6 +2096,14 @@
                 </div>
 
                 <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-id-card"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">PAN Number</div>
+                        <div class="vm-view-field-value" id="vf_PANNo">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field">
                     <div class="vm-view-field-icon"><i class="fas fa-envelope"></i></div>
                     <div class="vm-view-field-info">
                         <div class="vm-view-field-label">Email</div>
@@ -2089,6 +2116,24 @@
                     <div class="vm-view-field-info">
                         <div class="vm-view-field-label">Phone No</div>
                         <div class="vm-view-field-value" id="vf_PhoneNo">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field" id="vmViewAttachRow" style="display:none;">
+                    <div class="vm-view-field-icon"><i class="fas fa-paperclip"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Attachment</div>
+                        <div class="vm-view-field-value" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <span id="vf_AttachmentName">—</span>
+                            <button type="button" id="vmBtnViewVendorAttachment" onclick="vmViewVendorAttachmentFromModal()"
+                                    style="padding:6px 12px;border-radius:8px;background:#ede9fe;color:#4f46e5;border:1px solid #c4b5fd;font-size:0.78rem;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-eye" style="margin-right:5px;"></i>View
+                            </button>
+                            <button type="button" onclick="vmDownloadVendorAttachmentFromViewModal()"
+                                    style="padding:6px 12px;border-radius:8px;background:#ecfdf5;color:#047857;border:1px solid #6ee7b7;font-size:0.78rem;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-download" style="margin-right:5px;"></i>Download
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -2162,6 +2207,14 @@
         <div class="vm-view-footer">
             <button type="button" class="vm-btn-view-close" onclick="CloseVendorViewModal()">
                 <i class="fas fa-times"></i> Close
+            </button>
+            <button type="button" class="vm-btn-view-close" onclick="PrintVendorFromView('preview')" title="Print Preview"
+                    style="background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;border:none;">
+                <i class="fas fa-search-plus"></i> Print Preview
+            </button>
+            <button type="button" class="vm-btn-view-close" onclick="PrintVendorFromView('print')" title="Print"
+                    style="background:linear-gradient(135deg,#1e293b,#334155);color:#fff;border:none;">
+                <i class="fas fa-print"></i> Print
             </button>
             <button type="button" class="vm-btn-view-edit" onclick="EditFromVendorView()">
                 <i class="fas fa-pen"></i> Edit Vendor

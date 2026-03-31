@@ -9,9 +9,583 @@ var G_ViewCode = 0;
 var G_VendorVerifyCode = 0;
 let G_IsClientOrVendor = 'N';
 let G_ModuleName = "Vendor Master";
+/** When true, BillName (Display Name) follows AccountDesp (Vendor Name) on input. */
+let G_BillNameSyncedWithVendorName = true;
 window.G_VendorHasVerifyRight = false;
 /** From GetFixedParameterDetails; when Y, show stats strip + Verify column (with menu Verify right). */
 window.G_PartyVerificationBeforeOrderY = false;
+/** Raw rows from VendorMaster GetCityList (may include state/country/pin per city). */
+let G_VendorCityMasterList = [];
+/** When true, skip auto-fill of Nation/State/Pin from City (e.g. Edit load). */
+let G_VendorSuppressCityAddressFill = false;
+/** When true, Nation/State change must not cascade-clear City/State (edit load / city-driven fill). */
+let G_VendorProgrammaticNationStateCity = false;
+
+/** Attachment (same pattern as GRNService: byte[] + file name). */
+let vmVendorFileName = "";
+let vmVendorImageBase64Data = [];
+let vmVendorExistingImageData = [];
+let vmVendorExistingFileName = "";
+/** View modal — attachment from SHOWDATA (optional 4th result AttachInfo). */
+let G_VendorViewAttachData = null;
+let G_VendorViewAttachFileName = "";
+
+function vmVendorAttachmentHasData(data) {
+    if (data == null) return false;
+    if (typeof data === "string" && data.length > 0) return true;
+    if (Array.isArray(data) && data.length > 0) return true;
+    return false;
+}
+
+function vmConvertFileToByteArray(file) {
+    return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.readAsArrayBuffer(file);
+        reader.onloadend = function (e) {
+            if (e.target.readyState === FileReader.DONE) {
+                resolve(Array.from(new Uint8Array(e.target.result)));
+            }
+        };
+        reader.onerror = reject;
+    });
+}
+
+function vmResetVendorAttachment() {
+    vmVendorFileName = "";
+    vmVendorImageBase64Data = [];
+    vmVendorExistingImageData = [];
+    vmVendorExistingFileName = "";
+    var fin = document.getElementById("vmFileAttachment");
+    if (fin) fin.value = "";
+    var vbtn = document.getElementById("vmViewAttachmentBtn");
+    if (vbtn) vbtn.style.setProperty("display", "none", "important");
+}
+
+function vmParseVendorAttachmentFromApiResponse(raw, item) {
+    var attachList = raw && (raw.AttachInfo || raw.attachInfo);
+    var attachInfo = Array.isArray(attachList) && attachList.length > 0 ? attachList[0] : null;
+    var fileName =
+        (attachInfo && (attachInfo.AttachFileName || attachInfo.attachFileName)) ||
+        (item && (item.AttachFileName || item.attachFileName)) ||
+        "";
+    var fromAttach = attachInfo && (attachInfo.AttachData != null ? attachInfo.AttachData : attachInfo.attachData);
+    var fromItem = item && (item.AttachData != null ? item.AttachData : item.attachData);
+    var data = fromAttach != null ? fromAttach : fromItem != null ? fromItem : [];
+    return { fileName: fileName, data: data };
+}
+
+function vmApplyVendorAttachmentFromApi(raw, item) {
+    var p = vmParseVendorAttachmentFromApiResponse(raw, item);
+    vmVendorExistingFileName = p.fileName;
+    vmVendorExistingImageData = p.data;
+    vmVendorImageBase64Data = [];
+    vmVendorFileName = "";
+    var fin = document.getElementById("vmFileAttachment");
+    if (fin) fin.value = "";
+    var vbtn = document.getElementById("vmViewAttachmentBtn");
+    if (vbtn) {
+        if (vmVendorAttachmentHasData(vmVendorExistingImageData)) {
+            vbtn.style.setProperty("display", "flex", "important");
+            if (vmVendorExistingFileName) vbtn.title = vmVendorExistingFileName;
+        } else {
+            vbtn.style.setProperty("display", "none", "important");
+        }
+    }
+}
+
+function vmFileUploadChange(event) {
+    var files = event.target.files;
+    vmVendorFileName = files && files[0] ? files[0].name : "";
+    var vbtn = document.getElementById("vmViewAttachmentBtn");
+    if (files && files.length > 0) {
+        vmConvertFileToByteArray(files[0]).then(function (b) {
+            vmVendorImageBase64Data = b;
+            if (vbtn) vbtn.style.setProperty("display", "flex", "important");
+        });
+    } else {
+        vmVendorImageBase64Data = [];
+        if (vbtn) {
+            if (vmVendorAttachmentHasData(vmVendorExistingImageData)) {
+                vbtn.style.setProperty("display", "flex", "important");
+            } else {
+                vbtn.style.setProperty("display", "none", "important");
+            }
+        }
+    }
+}
+
+function vmViewAttachment() {
+    var data =
+        vmVendorImageBase64Data.length > 0 ? vmVendorImageBase64Data : vmVendorExistingImageData;
+    var name = vmVendorFileName || vmVendorExistingFileName || "attachment";
+    vmOpenAttachmentPreview(data, name);
+}
+
+function vmViewVendorAttachmentFromModal() {
+    vmOpenAttachmentPreview(G_VendorViewAttachData, G_VendorViewAttachFileName);
+}
+
+function vmEscapeHtml(s) {
+    if (s == null || s === undefined) return "";
+    return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function vmGetSessionCompanyInfo() {
+    var companyName = "",
+        companyAddr = "",
+        companyPhone = "",
+        companyEmail = "",
+        companyWeb = "",
+        companyGST = "";
+    try {
+        var ud = JSON.parse(sessionStorage.getItem("UserDetails") || "[]");
+        if (ud && ud[0]) {
+            companyName = ud[0].CompanyName || ud[0].CompanyNameForShow || "";
+            companyAddr = ud[0].CompanyAddress || "";
+            companyPhone = ud[0].PhoneNo || ud[0].CompanyPhone || "";
+            companyEmail = ud[0].Email || ud[0].CompanyEmail || "";
+            companyWeb = ud[0].Website || ud[0].CompanyWebsite || "";
+            companyGST = ud[0].GSTIN || ud[0].CompanyGSTIN || "";
+        }
+    } catch (e) {}
+    return {
+        companyName: companyName,
+        companyAddr: companyAddr,
+        companyPhone: companyPhone,
+        companyEmail: companyEmail,
+        companyWeb: companyWeb,
+        companyGST: companyGST,
+    };
+}
+
+/** Build data URL for attachment bytes or base64 string (same rules as preview). */
+function vmBuildDataUrlFromAttachment(data, fileName) {
+    var name = fileName || "attachment";
+    if (!vmVendorAttachmentHasData(data)) return "";
+    if (typeof data === "string") {
+        return data.indexOf("data:") === 0 ? data : "data:image/jpeg;base64," + data;
+    }
+    if (Array.isArray(data) && data.length > 0) {
+        var bytes = new Uint8Array(data);
+        var binary = "";
+        bytes.forEach(function (b) {
+            binary += String.fromCharCode(b);
+        });
+        var b64 = btoa(binary);
+        var ext = (name.split(".").pop() || "jpeg").toLowerCase();
+        var mime = ext === "pdf" ? "application/pdf" : "image/" + (ext === "jpg" ? "jpeg" : ext);
+        return "data:" + mime + ";base64," + b64;
+    }
+    return "";
+}
+
+function vmDownloadVendorAttachment(data, fileName) {
+    if (!vmVendorAttachmentHasData(data)) {
+        toastr.info("No attachment to download.");
+        return;
+    }
+    var src = vmBuildDataUrlFromAttachment(data, fileName);
+    if (!src) {
+        toastr.warning("Cannot prepare download.");
+        return;
+    }
+    var a = document.createElement("a");
+    a.href = src;
+    a.download = fileName || "attachment";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+/** Last attachment shown in preview (for Download from child window). */
+window.vmLastVendorAttachmentForDownload = { data: null, fileName: "" };
+
+function vmOpenVendorAttachmentPrintWindow(data, fileName, autoPrint) {
+    var src = vmBuildDataUrlFromAttachment(data, fileName);
+    if (!src) {
+        toastr.warning("Cannot print this attachment.");
+        return;
+    }
+    var extLower = ((fileName || "").split(".").pop() || "").toLowerCase();
+    var isPdf = extLower === "pdf";
+    var win = window.open("", "_blank", "width=920,height=760,scrollbars=yes,resizable=yes");
+    if (!win) {
+        toastr.warning("Please allow popups for print.");
+        return;
+    }
+    var safeTitle = vmEscapeHtml(fileName || "attachment");
+    var css =
+        "@page{size:A4 portrait;margin:10mm;}" +
+        "*{box-sizing:border-box;margin:0;padding:0;}" +
+        "body{font-family:Arial,Helvetica,sans-serif;font-size:10pt;background:#fff;}" +
+        ".no-print{margin-bottom:8px;display:flex;gap:8px;}" +
+        "@media print{.no-print{display:none!important;}}" +
+        ".wrap{padding:8px;}" +
+        "img{max-width:100%;height:auto;display:block;margin:0 auto;}" +
+        "iframe{width:100%;min-height:85vh;border:none;}";
+    var bodyInner = isPdf
+        ? '<iframe src="' + src.replace(/"/g, "&quot;") + '"></iframe>'
+        : '<img alt="' + safeTitle + '" src="' + src.replace(/"/g, "&quot;") + '" />';
+    var html =
+        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>" +
+        safeTitle +
+        "</title><style>" +
+        css +
+        "</style></head><body><div class=\"no-print\">" +
+        '<button type="button" onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:6px 16px;border-radius:5px;cursor:pointer;">Print</button>' +
+        '<button type="button" onclick="window.close()" style="background:#666;color:#fff;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;">Close</button>' +
+        "</div><div class=\"wrap\">" +
+        bodyInner +
+        "</div></body></html>";
+    win.document.write(html);
+    win.document.close();
+    if (autoPrint) {
+        setTimeout(function () {
+            win.focus();
+            win.print();
+        }, 600);
+    }
+}
+
+/** Image lightbox + PDF window: register attachment for Download / print helpers. */
+function vmRegisterLastAttachmentForActions(data, fileName) {
+    window.vmLastVendorAttachmentForDownload = { data: data, fileName: fileName || "attachment" };
+}
+
+/** Image lightbox / PDF — open with toolbar: Download, Print preview, Print, Close. */
+function vmOpenAttachmentPreview(data, name) {
+    var fileName = name || "attachment";
+    vmRegisterLastAttachmentForActions(data, fileName);
+    if (!vmVendorAttachmentHasData(data)) {
+        toastr.info("No attachment to view.");
+        return;
+    }
+    var src = "";
+    if (typeof data === "string") {
+        src = data.indexOf("data:") === 0 ? data : "data:image/jpeg;base64," + data;
+    } else if (Array.isArray(data) && data.length > 0) {
+        var bytes = new Uint8Array(data);
+        var binary = "";
+        bytes.forEach(function (b) {
+            binary += String.fromCharCode(b);
+        });
+        var b64 = btoa(binary);
+        var ext = (fileName.split(".").pop() || "jpeg").toLowerCase();
+        var mime = ext === "pdf" ? "application/pdf" : "image/" + (ext === "jpg" ? "jpeg" : ext);
+        src = "data:" + mime + ";base64," + b64;
+    }
+    if (!src) {
+        toastr.warning("Cannot display attachment.");
+        return;
+    }
+    var extLower = (fileName.split(".").pop() || "").toLowerCase();
+    if (extLower === "pdf") {
+        var winPdf = window.open("", "_blank", "width=920,height=760,scrollbars=yes,resizable=yes");
+        if (!winPdf) {
+            toastr.warning("Please allow popups for this site.");
+            return;
+        }
+        var safeName = vmEscapeHtml(fileName);
+        var escSrc = src.replace(/"/g, "&quot;");
+        winPdf.document.write(
+            "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>" +
+                safeName +
+                "</title><style>body{margin:0;font-family:Arial,sans-serif;}" +
+                ".vm-att-toolbar{display:flex;gap:8px;align-items:center;padding:8px;background:#f3f4f6;border-bottom:1px solid #ccc;}" +
+                "@media print{.vm-att-toolbar{display:none!important;}}" +
+                "iframe{width:100%;height:calc(100vh - 52px);border:none;}</style></head><body>" +
+                '<div class="vm-att-toolbar">' +
+                '<button type="button" onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;">Print</button>' +
+                '<button type="button" onclick="(function(){var x=window.opener&&window.opener.vmLastVendorAttachmentForDownload;if(x&&x.data)window.opener.vmDownloadVendorAttachment(x.data,x.fileName);})()" style="background:#059669;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;">Download</button>' +
+                '<button type="button" onclick="window.close()" style="background:#666;color:#fff;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;">Close</button>' +
+                "</div>" +
+                '<iframe src="' +
+                escSrc +
+                '"></iframe></body></html>'
+        );
+        winPdf.document.close();
+        return;
+    }
+    var lb = document.getElementById("vmImgLightbox");
+    if (lb && !document.getElementById("vmLbToolbar")) {
+        lb.parentNode.removeChild(lb);
+        lb = null;
+    }
+    if (!lb) {
+        lb = document.createElement("div");
+        lb.id = "vmImgLightbox";
+        lb.style.cssText =
+            "position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:100000;display:flex;" +
+            "flex-direction:column;align-items:center;justify-content:center;cursor:pointer;";
+        lb.innerHTML =
+            '<div id="vmLbToolbar" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;z-index:100001;" onclick="event.stopPropagation();">' +
+            '<button type="button" id="vmLbDl" style="background:#059669;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;">Download</button>' +
+            '<button type="button" id="vmLbPrintPrev" style="background:#1a2a6c;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;">Print preview</button>' +
+            '<button type="button" id="vmLbPrint" style="background:#374151;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;">Print</button>' +
+            '<span id="vmLbName" style="color:#fff;font-size:0.8rem;opacity:0.85;max-width:40vw;overflow:hidden;text-overflow:ellipsis;"></span>' +
+            '<button type="button" id="vmLbClose" style="background:#fff;border:none;border-radius:50%;width:34px;height:34px;font-size:1.1rem;cursor:pointer;line-height:1;">✕</button></div>' +
+            '<img id="vmLbImg" style="max-width:90vw;max-height:78vh;border-radius:10px;margin-top:48px;' +
+            'box-shadow:0 8px 40px rgba(0,0,0,0.6);object-fit:contain;cursor:default;" onclick="event.stopPropagation();" />';
+        lb.onclick = function (e) {
+            if (e.target === lb) lb.style.display = "none";
+        };
+        document.body.appendChild(lb);
+        document.getElementById("vmLbClose").onclick = function (ev) {
+            ev.stopPropagation();
+            lb.style.display = "none";
+        };
+    }
+    var imgEl = document.getElementById("vmLbImg");
+    var nameEl = document.getElementById("vmLbName");
+    if (nameEl) nameEl.textContent = fileName;
+    if (imgEl) imgEl.src = src;
+    var bindBtn = function (id, fn) {
+        var b = document.getElementById(id);
+        if (b) {
+            b.onclick = function (ev) {
+                ev.stopPropagation();
+                fn();
+            };
+        }
+    };
+    bindBtn("vmLbDl", function () {
+        var x = window.vmLastVendorAttachmentForDownload;
+        if (x && x.data) vmDownloadVendorAttachment(x.data, x.fileName);
+    });
+    bindBtn("vmLbPrintPrev", function () {
+        var x = window.vmLastVendorAttachmentForDownload;
+        if (x && x.data) vmOpenVendorAttachmentPrintWindow(x.data, x.fileName, false);
+    });
+    bindBtn("vmLbPrint", function () {
+        var x = window.vmLastVendorAttachmentForDownload;
+        if (x && x.data) vmOpenVendorAttachmentPrintWindow(x.data, x.fileName, true);
+    });
+    lb.style.display = "flex";
+}
+
+function vmDownloadVendorAttachmentFromViewModal() {
+    vmDownloadVendorAttachment(G_VendorViewAttachData, G_VendorViewAttachFileName);
+}
+
+function vmParseVendorPrintPayload(raw) {
+    var list = raw && (raw.VendorMaster || raw.VendorMasterList);
+    var item =
+        list && list.length > 0
+            ? list[0]
+            : Array.isArray(raw) && raw[0] && !Array.isArray(raw[0])
+            ? raw[0]
+            : Array.isArray(raw) && raw.length > 0 && Array.isArray(raw[0]) && raw[0][0]
+            ? raw[0][0]
+            : raw;
+    if (Array.isArray(item) && item.length > 0) {
+        item = item[0];
+    }
+    if (!item || typeof item !== "object") return null;
+    var cpList = raw.AccountContactPersonDetail || raw.accountContactPersonDetail || raw.Table3 || (Array.isArray(raw) && raw[2]);
+    var cp = Array.isArray(cpList) && cpList.length > 0 ? cpList[0] : null;
+    var bkList = raw.BankAccountDetail || raw.bankAccountDetail || raw.Table2 || (Array.isArray(raw) && raw[1]);
+    var bk = Array.isArray(bkList) && bkList.length > 0 ? bkList[0] : null;
+    var vAtt = vmParseVendorAttachmentFromApiResponse(raw, item);
+    return { item: item, cp: cp, bk: bk, attach: vAtt };
+}
+
+function vmBuildVendorMasterPrintHtml(payload) {
+    var item = payload.item;
+    var cp = payload.cp;
+    var bk = payload.bk;
+    var att = payload.attach || { fileName: "", data: null };
+    var co = vmGetSessionCompanyInfo();
+    var hdrContact = "";
+    if (co.companyPhone) hdrContact += "&#9990;&nbsp;" + vmEscapeHtml(co.companyPhone) + "<br>";
+    if (co.companyEmail) hdrContact += "&#9993;&nbsp;" + vmEscapeHtml(co.companyEmail) + "<br>";
+    if (co.companyWeb) hdrContact += "&#127760;&nbsp;" + vmEscapeHtml(co.companyWeb) + "<br>";
+    if (co.companyGST) hdrContact += "GSTIN:&nbsp;" + vmEscapeHtml(co.companyGST);
+
+    var panView = item.PANNo || "";
+    if (!panView && item.GSTNNo) {
+        var gV = (item.GSTNNo || "").trim().toUpperCase();
+        if (gV.length === 15 && isValidGstinFormat(gV)) {
+            panView = gV.substring(2, 12);
+        }
+    }
+
+    function row(label, val) {
+        var v = "—";
+        if (val != null && String(val).trim() !== "") {
+            v = String(val);
+        }
+        return (
+            '<tr><td class="lbl">' +
+            vmEscapeHtml(label) +
+            '</td><td class="val">' +
+            vmEscapeHtml(v) +
+            "</td></tr>"
+        );
+    }
+
+    var attachBlock = "";
+    if (vmVendorAttachmentHasData(att.data)) {
+        var ext = ((att.fileName || "").split(".").pop() || "").toLowerCase();
+        var srcAtt = vmBuildDataUrlFromAttachment(att.data, att.fileName);
+        if (ext === "pdf") {
+            attachBlock =
+                '<div class="att-note"><b>Attachment : </b>' +
+                vmEscapeHtml(att.fileName || "file") +
+                " (PDF) — use Download from screen to save.</div>";
+        } else if (srcAtt) {
+            attachBlock =
+                '<div class="att-wrap"><div class="sec-sub">Logo / Attachment</div><img class="att-img" src="' +
+                srcAtt.replace(/"/g, "&quot;") +
+                '" alt="attachment" /></div>';
+        }
+    }
+
+    var css =
+        "@page{size:A4 portrait;margin:10mm 14mm 22mm 14mm;}" +
+        "*{box-sizing:border-box;margin:0;padding:0;}" +
+        "body{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#000;background:#fff;padding:0;}" +
+        ".no-print{margin-bottom:5mm;}" +
+        "@media print{.no-print{display:none!important;}}" +
+        ".po-hdr{display:flex;align-items:flex-start;padding:8px 4px 10px 4px;border-bottom:2px solid #000;margin-bottom:10px;}" +
+        ".hdr-name{font-size:13pt;font-weight:800;padding-left:2px;}" +
+        ".hdr-tag{font-size:8pt;margin-top:4px;font-weight:600;padding-left:2px;}" +
+        ".hdr-contact{text-align:right;font-size:8pt;line-height:1.65;min-width:150px;padding-right:2px;}" +
+        ".doc-title{text-align:center;font-size:12pt;font-weight:800;letter-spacing:0.12em;border:2px solid #000;padding:12px 20px;margin:10px 0 16px 0;background:#fafafa;}" +
+        ".sec{margin-top:14px;padding:0 2px;}" +
+        ".sec:first-of-type{margin-top:4px;}" +
+        ".sec-h{font-weight:800;font-size:10pt;padding:10px 14px;margin:0 0 10px 0;background:#eef2f7;border:1px solid #cfd8e3;border-left:4px solid #1a2a6c;color:#111;}" +
+        ".sec-sub{font-weight:700;font-size:9pt;margin:8px 0 6px 0;padding:0 4px;}" +
+        "table.fld{width:100%;border-collapse:collapse;table-layout:fixed;}" +
+        "table.fld td{padding:10px 14px;border:1px solid #666;font-size:9.2pt;vertical-align:top;line-height:1.45;}" +
+        "table.fld .lbl{width:34%;font-weight:700;background:#f4f6f8;padding-left:16px;}" +
+        "table.fld .val{font-weight:600;padding-right:16px;word-wrap:break-word;}" +
+        ".att-wrap{margin-top:10px;text-align:center;padding:8px 4px;}" +
+        ".att-img{max-height:140px;max-width:100%;object-fit:contain;}" +
+        ".att-note{font-size:9pt;margin-top:8px;padding:12px 14px;border:1px dashed #555;}" +
+        ".footer-bar{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:9pt;padding:8px 12px;border-top:2px solid #000;background:#fff;}";
+
+    var title = G_ModuleName === "Vendor Master" ? "VENDOR" : "CLIENT";
+    var partyInfoHeading = G_ModuleName === "Vendor Master" ? "Vendor / Party Information" : "Client / Party Information";
+
+    var html =
+        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>" +
+        title +
+        " — " +
+        vmEscapeHtml(item.AccountDesp || "") +
+        "</title><style>" +
+        css +
+        "</style></head><body>" +
+        '<div class="no-print" style="display:flex;gap:8px;padding:4px 0 8px;">' +
+        '<button type="button" onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:5px 16px;border-radius:5px;font-size:9pt;cursor:pointer;">Print</button>' +
+        '<button type="button" onclick="window.close()" style="background:#666;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:9pt;cursor:pointer;">Close</button>' +
+        "</div>" +
+        '<div class="po-hdr"><div style="flex:1;"><div class="hdr-name">' +
+        vmEscapeHtml(co.companyName || "COMPANY NAME") +
+        '</div><div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div>' +
+        '<div class="hdr-contact">' +
+        hdrContact +
+        "</div></div>" +
+        '<div class="doc-title">' +
+        title +
+        "</div>" +
+        '<div class="sec"><div class="sec-h">' +
+        vmEscapeHtml(partyInfoHeading) +
+        '</div><table class="fld"><tbody>' +
+        row("Vendor Name", item.AccountDesp) +
+        row("Display Name", item.BillName) +
+        row("Address", [item.Address1, item.Address2].filter(Boolean).join(", ") || "—") +
+        row("Country", item.Nation) +
+        row("City", item.City) +
+        row("State", item.State) +
+        row("Pincode", item.PinCode) +
+        row("GST Number", item.GSTNNo) +
+        row("PAN Number", panView) +
+        row("Email", item.EMail) +
+        row("Phone No", item.PhoneNo) +
+        "</tbody></table></div>";
+
+    html +=
+        '<div class="sec"><div class="sec-h">Contact Person</div><table class="fld"><tbody>' +
+        row("Contact Name", cp && cp.ContactPersonName) +
+        row("Designation", cp && cp.ContactPersonDesignation) +
+        row("Contact Mobile", cp && cp.ContactPersonMobile) +
+        row("Contact Email", cp && cp.ContactPersonEMail) +
+        "</tbody></table></div>";
+
+    html +=
+        '<div class="sec"><div class="sec-h">Bank Details</div><table class="fld"><tbody>' +
+        row("Bank Name", bk && (bk.BankName || bk.bankName)) +
+        row("Bank Address", bk && (bk.Address || bk.address)) +
+        row("Account No", bk && (bk.AccountNo || bk.accountNo)) +
+        row("IFSC Code", bk && (bk.IFSCCode || bk.ifscCode)) +
+        "</tbody></table></div>";
+
+    if (attachBlock) {
+        html += '<div class="sec">' + attachBlock + "</div>";
+    }
+
+    if (co.companyAddr) {
+        html +=
+            '<div class="footer-bar">&#9679;&nbsp;' + vmEscapeHtml(co.companyAddr) + "</div>";
+    }
+
+    html += "</body></html>";
+    return html;
+}
+
+function PrintVendor(code, mode) {
+    var c = parseInt(code, 10);
+    if (!c) {
+        toastr.warning("Invalid vendor.");
+        return;
+    }
+    VendorMasterService.GetSolarVendorMasterByCode(c)
+        .then(function (res) {
+            var raw = res && (res.data || res.Data || res);
+            var payload = vmParseVendorPrintPayload(raw);
+            if (!payload || !payload.item) {
+                toastr.error("Failed to load vendor for print.");
+                return;
+            }
+            var html = vmBuildVendorMasterPrintHtml({
+                item: payload.item,
+                cp: payload.cp,
+                bk: payload.bk,
+                attach: { data: payload.attach.data, fileName: payload.attach.fileName },
+            });
+            var win = window.open("", "_blank", "width=920,height=760,scrollbars=yes,resizable=yes");
+            if (!win) {
+                toastr.warning("Please allow popups for this site to use print.");
+                return;
+            }
+            win.document.write(html);
+            win.document.close();
+            if (mode === "print") {
+                setTimeout(function () {
+                    win.focus();
+                    win.print();
+                }, 600);
+            }
+        })
+        .catch(function (err) {
+            toastr.error("Error loading vendor for print.");
+            console.error(err);
+        });
+}
+
+function PrintVendorFromView(mode) {
+    var c = window.G_VendorViewCode;
+    if (!c) {
+        toastr.warning("Open a vendor view first.");
+        return;
+    }
+    PrintVendor(c, mode);
+}
 
 function syncVendorModuleContextFromHeading() {
     var raw = ($("#ERPHeading").text() || "").trim();
@@ -80,9 +654,27 @@ $(document).ready(function () {
     $("#vmBtnCancelVerify").on("click", CloseVendorVerifyModal);
 
     $("#AccountDesp").on("input", function () {
-        if ($(this).val()) {
+        var v = ($(this).val() || "").trim();
+        if (v) {
             $("#err_AccountDesp").hide();
             $(this).removeClass("vm-input-error");
+            $(this).data("vm-had-chars", true);
+        } else if ($(this).data("vm-had-chars")) {
+            $("#err_AccountDesp").css("display", "flex");
+            $(this).addClass("vm-input-error");
+        }
+        if (G_BillNameSyncedWithVendorName) {
+            $("#BillName").val($(this).val());
+        }
+    });
+
+    $("#BillName").on("input", function () {
+        var acc = ($("#AccountDesp").val() || "").trim();
+        var bill = ($(this).val() || "").trim();
+        if (!bill) {
+            G_BillNameSyncedWithVendorName = true;
+        } else {
+            G_BillNameSyncedWithVendorName = acc === bill;
         }
     });
 
@@ -92,59 +684,58 @@ $(document).ready(function () {
         if (!val) {
             $("#err_GSTNNo").hide();
             $(this).removeClass("vm-input-error");
-        } else if (val.length === 15) {
-            validateGST(true);
+            $("#PANNo").val("");
         } else {
-            $("#err_GSTNNo").hide();
-            $(this).removeClass("vm-input-error");
+            validateGST(true);
+            if (val.length === 15 && isValidGstinFormat(val)) {
+                $("#PANNo").val(val.substring(2, 12));
+            }
+        }
+        updatePanRequiredUi();
+    });
+
+    $("#PANNo").on("input", function () {
+        $(this).val(($(this).val() || "").toUpperCase().replace(/[^A-Z0-9]/g, ""));
+        var gst = ($("#GSTNNo").val() || "").trim();
+        if (!gst) {
+            validatePAN(true, true);
+        } else {
+            $("#err_PANNo").hide();
+            $("#PANNo").removeClass("vm-input-error");
         }
     });
 
     $("#PinCode").on("input", function () {
         $(this).val($(this).val().replace(/\D/g, ''));
-        $("#err_PinCode").hide();
+        var pinVal = $(this).val();
+        if (!pinVal) {
+            $("#err_PinCode").hide();
+            $(this).removeClass("vm-input-error");
+        } else if (/^\d{6}$/.test(pinVal)) {
+            $("#err_PinCode").hide();
+            $(this).removeClass("vm-input-error");
+        } else {
+            $("#err_PinCode").css("display", "flex");
+            $(this).addClass("vm-input-error");
+        }
     });
 
     $("#EMail").on("input", function () {
-        var val = $(this).val();
-        if (!val) {
-            $("#err_EMail").hide();
-            $(this).removeClass("vm-input-error");
-        } else {
-            validateEmail(false);
-        }
+        validateEmail(true, true);
     });
 
     $("#PhoneNo").on("input", function () {
         $(this).val($(this).val().replace(/\D/g, ''));
-        var val = $(this).val();
-        if (!val) {
-            $("#err_PhoneNo").hide();
-            $(this).removeClass("vm-input-error");
-        } else {
-            validatePhone(false);
-        }
+        validatePhone(true, true);
     });
 
     $("#ContactPersonMobile").on("input", function () {
         $(this).val($(this).val().replace(/\D/g, ''));
-        var val = $(this).val();
-        if (!val) {
-            $("#err_ContactPersonMobile").hide();
-            $(this).removeClass("vm-input-error");
-        } else {
-            validateCPMobile(false);
-        }
+        validateCPMobile(true);
     });
 
     $("#ContactPersonEMail").on("input", function () {
-        var val = $(this).val();
-        if (!val) {
-            $("#err_ContactPersonEMail").hide();
-            $(this).removeClass("vm-input-error");
-        } else {
-            validateCPEmail(false);
-        }
+        validateCPEmail(true);
     });
 
     $("#Nation, #State, #City").on("change", function () {
@@ -154,16 +745,20 @@ $(document).ready(function () {
         $("#" + sid).next(".select2-container").removeClass("vm-select-error");
     });
 
-    //// Country change → State/City reset (user ko dobara select karna hoga)
-    //$("#Nation").on("change", function () {
-    //    $("#State").val("").trigger("change");
-    //    $("#City").val("").trigger("change");
-    //});
+    $("#City").on("change", function () {
+        vmVendorApplyAddressFromCity($(this).val());
+    });
 
-    //// State change → City reset
-    //$("#State").on("change", function () {
-    //    $("#City").val("").trigger("change");
-    //});
+    $("#Nation").on("change", function () {
+        if (G_VendorProgrammaticNationStateCity || G_VendorSuppressCityAddressFill) return;
+        $("#City").val("").trigger("change");
+        $("#State").val("").trigger("change");
+    });
+
+    $("#State").on("change", function () {
+        if (G_VendorProgrammaticNationStateCity || G_VendorSuppressCityAddressFill) return;
+        $("#City").val("").trigger("change");
+    });
 
     // Summary chips: filter grid by All / Verified / Pending
     $(document).on("click", ".vm-stat-chip[data-vm-filter]", function () {
@@ -363,6 +958,16 @@ function mapVendorRowsToGrid(rows) {
             '<button class="vm-btn-view" title="View" onclick="ViewVendor(' + item.Code + ')">' +
             '<i class="fas fa-eye"></i>' +
             "</button>" +
+            '<button class="vm-btn-view" title="Print Preview" onclick="PrintVendor(' +
+            item.Code +
+            ',\'preview\')">' +
+            '<i class="fas fa-search-plus"></i>' +
+            "</button>" +
+            '<button class="vm-btn-view" title="Print" onclick="PrintVendor(' +
+            item.Code +
+            ',\'print\')">' +
+            '<i class="fas fa-print"></i>' +
+            "</button>" +
             '<button class="vm-btn-edit" title="Edit" onclick="EditVendor(' + item.Code + ')">' +
             '<i class="fas fa-pen"></i>' +
             "</button>" +
@@ -392,7 +997,6 @@ function getVendorMasterHiddenColumns() {
         "Short Code",
         "Category",
         "Active",
-        "PAN No",
         "Verified",
         "CityMaster_Code",
         "StateMaster_Code",
@@ -516,12 +1120,27 @@ function GetVendorMasterList() {
     });
 }
 function OpenNewVendor() {
-    G_EditCode = 0;
-    ClearVendorForm();
-    $("#vmFormModalTitle").text("Add New Vendor");
-    $("#vmBtnSaveText").text("Save Vendor");
-    $("#vendorDialogBackdrop").addClass("show");
-    setTimeout(function () { $("#AccountDesp").focus(); }, 140);
+    var isEdit = G_EditCode > 0;
+    var ModuleName = G_ModuleName;
+    var OptionName = isEdit ? "Edit" : "New";  
+    var ShowMsg = "Y";
+    var FinYear = getFinancialYear();
+
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear)
+        .then(function (response) {
+            if (!response || response.CheckModuleOptionRight === 'N') {
+                toastr.error((response && response.Msg) || "You do not have permission to perform this action.");
+                return;
+            } else {
+                G_EditCode = 0;
+                ClearVendorForm();
+                $("#vmFormModalTitle").text("Add New Vendor");
+                $("#vmBtnSaveText").text("Save Vendor");
+                $("#vendorDialogBackdrop").addClass("show");
+                setTimeout(function () { $("#AccountDesp").focus(); }, 140);
+            }
+        });
+   
 }
 function EditVendor(code) {
     var ModuleName = G_ModuleName,
@@ -593,10 +1212,25 @@ function EditVendor(code) {
 
             console.log("EditVendor: BankDetail count=" + (bkList ? bkList.length : 0) + ", ContactDetail count=" + (cpList ? cpList.length : 0));
 
+            vmApplyVendorAttachmentFromApi(raw, item);
+
             // ── VendorMaster fields ──────────────────────────────────
             $("#AccountDesp").val(item.AccountDesp || "");
             $("#BillName").val(item.BillName || "");
+            if ((item.AccountDesp || "").trim()) {
+                $("#AccountDesp").data("vm-had-chars", true);
+            }
+            var accTrim = (item.AccountDesp || "").trim();
+            var billTrim = (item.BillName || "").trim();
+            G_BillNameSyncedWithVendorName = accTrim === billTrim;
             $("#GSTNNo").val(item.GSTNNo || "");
+            var gLoad = (item.GSTNNo || "").trim().toUpperCase();
+            if (gLoad.length === 15 && isValidGstinFormat(gLoad)) {
+                $("#PANNo").val(gLoad.substring(2, 12));
+            } else {
+                $("#PANNo").val(item.PANNo || "");
+            }
+            updatePanRequiredUi();
             $("#EMail").val(item.EMail || "");
             $("#PhoneNo").val(item.PhoneNo || "");
             $("#Address1").val(item.Address1 || "");
@@ -612,13 +1246,19 @@ function EditVendor(code) {
             $("#vendorDialogBackdrop").addClass("show");
 
             // ── Set dropdowns (Nation → State → City) ────────────────────
+            G_VendorSuppressCityAddressFill = true;
+            G_VendorProgrammaticNationStateCity = true;
             setTimeout(function () {
                 if (nationCode) $("#Nation").val(nationCode).trigger("change");
                 setTimeout(function () {
                     if (stateCode) $("#State").val(stateCode).trigger("change");
                     setTimeout(function () {
                         if (cityCode) $("#City").val(cityCode).trigger("change");
-                        setTimeout(function () { $("#AccountDesp").focus(); }, 100);
+                        setTimeout(function () {
+                            G_VendorSuppressCityAddressFill = false;
+                            G_VendorProgrammaticNationStateCity = false;
+                            $("#AccountDesp").focus();
+                        }, 120);
                     }, 100);
                 }, 100);
             }, 50);
@@ -645,6 +1285,7 @@ function ViewVendor(code) {
         else {
 
             G_ViewCode = code;
+            window.G_VendorViewCode = code;
 
             VendorMasterService.GetSolarVendorMasterByCode(code).then(function (res) {
                 var raw = res && (res.data || res.Data || res);
@@ -674,6 +1315,14 @@ function ViewVendor(code) {
                 $("#vf_Address2").text(item.Address2 || "—");
                 $("#vf_Pincode").text(item.PinCode || "—");
                 $("#vf_GSTNo").text(item.GSTNNo || "—");
+                var panView = item.PANNo || "";
+                if (!panView && item.GSTNNo) {
+                    var gV = (item.GSTNNo || "").trim().toUpperCase();
+                    if (gV.length === 15 && isValidGstinFormat(gV)) {
+                        panView = gV.substring(2, 12);
+                    }
+                }
+                $("#vf_PANNo").text(panView || "—");
                 $("#vf_EMail").text(item.EMail || "—");
                 $("#vf_PhoneNo").text(item.PhoneNo || "—");
                 $("#vf_State").text(item.State || "—");
@@ -695,6 +1344,16 @@ function ViewVendor(code) {
                 $("#vf_BankAddress").text(bk && (bk.Address || bk.address) ? (bk.Address || bk.address) : "—");
                 $("#vf_AccountNo").text(bk && (bk.AccountNo || bk.accountNo) ? (bk.AccountNo || bk.accountNo) : "—");
                 $("#vf_IFSCCode").text(bk && (bk.IFSCCode || bk.ifscCode) ? (bk.IFSCCode || bk.ifscCode) : "—");
+
+                var vAtt = vmParseVendorAttachmentFromApiResponse(raw, item);
+                G_VendorViewAttachData = vAtt.data;
+                G_VendorViewAttachFileName = vAtt.fileName;
+                if (vmVendorAttachmentHasData(G_VendorViewAttachData)) {
+                    $("#vmViewAttachRow").show();
+                    $("#vf_AttachmentName").text(G_VendorViewAttachFileName || "File");
+                } else {
+                    $("#vmViewAttachRow").hide();
+                }
 
                 //$('#State').select2({
                 //    width: '-webkit-fill-available'
@@ -782,6 +1441,7 @@ function DoVendorVerify() {
 
 function CloseVendorViewModal() {
     G_ViewCode = 0;
+    window.G_VendorViewCode = 0;
     $("#viewVendorBackdrop").removeClass("show");
 }
 function EditFromVendorView() {
@@ -849,45 +1509,42 @@ function friendlyValidationLine(fieldKey, apiMsg) {
 }
 
 function SaveVendor() {
-    var isEdit     = G_EditCode > 0;
+    var isEdit = G_EditCode > 0;
     var ModuleName = G_ModuleName;
     var OptionName = isEdit ? "Edit" : "New";   // ✔ correct option per mode
-    var ShowMsg    = "Y";
-    var FinYear    = getFinancialYear();
+    var ShowMsg = "Y";
+    var FinYear = getFinancialYear();
 
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear)
-        .then(function (response) {
-            if (!response || response.CheckModuleOptionRight === 'N') {
-                toastr.error((response && response.Msg) || "You do not have permission to perform this action.");
-                return;
-            }
-
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (!response || response.CheckModuleOptionRight === 'N') {
+            toastr.error((response && response.Msg) || "You do not have permission to perform this action.");
+            return;
+        } else {
             if (!ValidateVendorForm()) return;
 
-            var payload   = BuildVendorPayload();
-            var btnSave   = $("#vmBtnSaveVendor");
+            var payload = BuildVendorPayload();
+            var btnSave = $("#vmBtnSaveVendor");
             var origLabel = $("#vmBtnSaveText").text();
 
             btnSave.prop("disabled", true);
             $("#vmBtnSaveText").text(isEdit ? "Updating…" : "Saving…");
 
-            VendorMasterService.SaveVendorMaster(payload)
-                .then(function (res) {
-                    if (res && res.Status === 'Y') {
-                        CloseVendorForm();
-                        GetVendorMasterList();
-                        ShowVendorSuccessModal(
-                            isEdit ? "Updated Successfully!" : "Saved Successfully!",
-                            res.Msg || (isEdit ? "Vendor details have been updated." : "New vendor has been added."),
-                            isEdit ? "fa-pen-to-square" : "fa-circle-check"
-                        );
-                    } else {
-                        var rawSaveMsg = (res && res.Msg) || "";
-                        var fallbackSave = isEdit ? "Failed to update vendor." : "Failed to save vendor.";
-                        var friendlySave = friendlyValidationLine("", rawSaveMsg);
-                        toastr.error(friendlySave || fallbackSave);
-                    }
-                })
+            VendorMasterService.SaveVendorMaster(payload).then(function (res) {
+                if (res && res.Status === 'Y') {
+                    CloseVendorForm();
+                    GetVendorMasterList();
+                    ShowVendorSuccessModal(
+                        isEdit ? "Updated Successfully!" : "Saved Successfully!",
+                        res.Msg || (isEdit ? "Vendor details have been updated." : "New vendor has been added."),
+                        isEdit ? "fa-pen-to-square" : "fa-circle-check"
+                    );
+                } else {
+                    var rawSaveMsg = (res && res.Msg) || "";
+                    var fallbackSave = isEdit ? "Failed to update vendor." : "Failed to save vendor.";
+                    var friendlySave = friendlyValidationLine("", rawSaveMsg);
+                    toastr.error(friendlySave || fallbackSave);
+                }
+            })
                 .catch(function (err) {
                     console.error("SaveVendorMaster error:", err);
                     // Friendly / technical message already shown by promiseAjaxCallApi (toastr)
@@ -896,8 +1553,8 @@ function SaveVendor() {
                     btnSave.prop("disabled", false);
                     $("#vmBtnSaveText").text(origLabel);
                 });
-        })
-        .catch(function (err) {
+            }
+        }).catch(function (err) {
             console.error("CheckModuleOptionRight error:", err);
             toastr.error("Permission check failed. Please refresh and try again.");
         });
@@ -944,7 +1601,13 @@ function BuildVendorPayload() {
                 RangeDivision: "",
                 VatNo: "",
                 ServiceTaxNo: "",
-                PANNo: "",
+                PANNo: (function () {
+                    var g = ($("#GSTNNo").val() || "").trim().toUpperCase();
+                    if (g && isValidGstinFormat(g)) {
+                        return g.substring(2, 12);
+                    }
+                    return ($("#PANNo").val() || "").trim().toUpperCase();
+                })(),
                 TANNo: "",
                 AadhaarNo: "",
                 EXIMCode: "",
@@ -1097,7 +1760,14 @@ function BuildVendorPayload() {
                 CRNNo_ByThirdParty: "",
                 ACNo_ByThirdParty: "",
                 TransNo_ByThirdParty: "",
-                OtherStatus: ""
+                OtherStatus: "",
+                AttachFileName: vmVendorFileName || vmVendorExistingFileName || "",
+                AttachData:
+                    vmVendorImageBase64Data.length > 0
+                        ? vmVendorImageBase64Data
+                        : vmVendorExistingImageData.length > 0
+                          ? vmVendorExistingImageData
+                          : []
             }
         ],
 
@@ -1183,6 +1853,7 @@ function ValidateVendorForm() {
     }
 
     if (!validateGST(true))      { valid = false; console.warn("Validation failed: GSTNNo"); }
+    if (!validatePAN(true))      { valid = false; console.warn("Validation failed: PANNo"); }
     if (!validateEmail(true))    { valid = false; console.warn("Validation failed: EMail"); }
     if (!validatePhone(true))    { valid = false; console.warn("Validation failed: PhoneNo"); }
     if (!validateCPMobile(true)) { valid = false; console.warn("Validation failed: ContactPersonMobile"); }
@@ -1209,6 +1880,52 @@ function vmValidateRequiredSelect(selectId) {
     if ($c.length) $c.removeClass("vm-select-error");
     return true;
 }
+/** Valid 15-character Indian GSTIN format (PAN is embedded at positions 3–12). */
+function isValidGstinFormat(gstVal) {
+    if (!gstVal) return false;
+    var gstPattern = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+    return gstPattern.test(gstVal);
+}
+/** Show * on PAN label only when GST is empty (PAN mandatory then). */
+function updatePanRequiredUi() {
+    var gst = ($("#GSTNNo").val() || "").trim();
+    var $m = $("#vm_pan_required_mark");
+    if ($m.length) {
+        if (gst) {
+            $m.hide();
+        } else {
+            $m.show();
+        }
+    }
+}
+/** When GST is empty, PAN is required and must match standard PAN format. */
+function validatePAN(showError, treatEmptyAsOk) {
+    var gst = ($("#GSTNNo").val() || "").trim().toUpperCase();
+    var pan = ($("#PANNo").val() || "").trim().toUpperCase();
+    if (gst) {
+        $("#err_PANNo").hide();
+        $("#PANNo").removeClass("vm-input-error");
+        return true;
+    }
+    if (!pan) {
+        if (showError && !treatEmptyAsOk) {
+            $("#err_PANNo").css("display", "flex");
+            $("#PANNo").addClass("vm-input-error");
+        }
+        return treatEmptyAsOk ? true : false;
+    }
+    var panPattern = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    if (!panPattern.test(pan)) {
+        if (showError) {
+            $("#err_PANNo").css("display", "flex");
+            $("#PANNo").addClass("vm-input-error");
+        }
+        return false;
+    }
+    $("#err_PANNo").hide();
+    $("#PANNo").removeClass("vm-input-error");
+    return true;
+}
 function validateGST(showError) {
     var gstVal = $("#GSTNNo").val();
     if (!gstVal) {
@@ -1216,8 +1933,7 @@ function validateGST(showError) {
         $("#GSTNNo").removeClass("vm-input-error");
         return true;
     }
-    var gstPattern = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
-    if (!gstPattern.test(gstVal)) {
+    if (!isValidGstinFormat(gstVal)) {
         if (showError) {
             $("#err_GSTNNo").css("display", "flex");
             $("#GSTNNo").addClass("vm-input-error");
@@ -1228,11 +1944,11 @@ function validateGST(showError) {
     $("#GSTNNo").removeClass("vm-input-error");
     return true;
 }
-/** Main vendor email — required + format (save uses validateEmail(true)). */
-function validateEmail(showError) {
+/** Main vendor email — required + format on save; treatEmptyAsOk for live input (format only when non-empty). */
+function validateEmail(showError, treatEmptyAsOk) {
     var val = ($("#EMail").val() || "").trim();
     if (!val) {
-        if (showError) {
+        if (showError && !treatEmptyAsOk) {
             $("#err_EMail").css("display", "flex");
             $("#EMail").addClass("vm-input-error");
             return false;
@@ -1253,11 +1969,11 @@ function validateEmail(showError) {
     $("#EMail").removeClass("vm-input-error");
     return true;
 }
-/** India mobile: required on save, 10 digits starting with 6–9. */
-function validatePhone(showError) {
+/** India mobile: required on save, 10 digits starting with 6–9; treatEmptyAsOk for live input. */
+function validatePhone(showError, treatEmptyAsOk) {
     var phoneVal = ($("#PhoneNo").val() || "").trim();
     if (!phoneVal) {
-        if (showError) {
+        if (showError && !treatEmptyAsOk) {
             $("#err_PhoneNo").css("display", "flex");
             $("#PhoneNo").addClass("vm-input-error");
             return false;
@@ -1282,7 +1998,6 @@ function validateCPMobile(showError) {
     var val = $("#ContactPersonMobile").val();
     if (!val) {
         $("#err_ContactPersonMobile").hide();
-        $("#err_PhoneNo").hide();
         $("#ContactPersonMobile").removeClass("vm-input-error");
         return true;
     }
@@ -1290,16 +2005,12 @@ function validateCPMobile(showError) {
     if (!pattern.test(val)) {
         if (showError) {
             $("#err_ContactPersonMobile").css("display", "flex");
-            $("#err_PhoneNo").css("display", "flex");
             $("#ContactPersonMobile").addClass("vm-input-error");
-            $("#PhoneNo").addClass("vm-input-error");
         }
         return false;
     }
     $("#err_ContactPersonMobile").hide();
-    $("#err_PhoneNo").hide();
     $("#ContactPersonMobile").removeClass("vm-input-error");
-    $("#PhoneNo").removeClass("vm-input-error");
     return true;
 }
 function validateCPEmail(showError) {
@@ -1322,8 +2033,12 @@ function validateCPEmail(showError) {
     return true;
 }
 function ClearVendorForm() {
+    G_VendorSuppressCityAddressFill = false;
+    G_BillNameSyncedWithVendorName = true;
+    vmResetVendorAttachment();
+    $("#AccountDesp").removeData("vm-had-chars");
     // VendorMaster fields
-    ["AccountDesp", "BillName", "GSTNNo", "EMail", "PhoneNo", "Address1","Address2", "City", "State", "Nation", "PinCode"].forEach(function (id) {
+    ["AccountDesp", "BillName", "GSTNNo", "PANNo", "EMail", "PhoneNo", "Address1","Address2", "City", "State", "Nation", "Pin"].forEach(function (id) {
         $("#" + id)
             .val("")
             .removeClass("vm-input-error")
@@ -1364,6 +2079,7 @@ function ClearVendorForm() {
 
     $("#vmBtnSaveVendor").show().prop("disabled", false);
     $("#vmBtnCancelVendor").html('<i class="fas fa-times"></i> Cancel');
+    updatePanRequiredUi();
 }
 function CloseVendorForm() {
     ClearVendorForm();
@@ -1389,9 +2105,121 @@ function getFinancialYear() {
     if (month < 3) year = year - 1;
     return year + "-" + (year + 1);
 }
+function vmVendorPickFirst(obj, keys) {
+    if (!obj) return undefined;
+    for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (obj[k] !== undefined && obj[k] !== null && obj[k] !== "") return obj[k];
+    }
+    return undefined;
+}
+function vmVendorNormalizeCityApiResponse(res) {
+    if (!res) return null;
+    if (Array.isArray(res) && res.length) return res[0];
+    return res;
+}
+function vmVendorSetNationStatePin(countryCode, stateCode, Pin, stateName, countryName) {
+    G_VendorProgrammaticNationStateCity = true;
+    var setPin = function () {
+        if (Pin !== undefined && Pin !== null && String(Pin) !== "") {
+            $("#PinCode").val(String(Pin).replace(/\D/g, "").slice(0, 6));
+            $("#err_PinCode").hide();
+            $("#PinCode").removeClass("vm-input-error");
+        }
+    };
+    var endProg = function () {
+        G_VendorProgrammaticNationStateCity = false;
+    };
+    if (countryCode) {
+        $("#Nation").val(String(countryCode)).trigger("change");
+        setTimeout(function () {
+            if (stateCode) {
+                $("#State").val(String(stateCode)).trigger("change");
+            } else if (stateName) {
+                SelectOptionByText("State", stateName);
+            }
+            setTimeout(function () {
+                setPin();
+                endProg();
+            }, 50);
+        }, 80);
+    } else if (countryName) {
+        SelectOptionByText("Nation", countryName);
+        setTimeout(function () {
+            if (stateCode) {
+                $("#State").val(String(stateCode)).trigger("change");
+            } else if (stateName) {
+                SelectOptionByText("State", stateName);
+            }
+            setTimeout(function () {
+                setPin();
+                endProg();
+            }, 50);
+        }, 80);
+    } else {
+        if (stateCode) {
+            $("#State").val(String(stateCode)).trigger("change");
+        } else if (stateName) {
+            SelectOptionByText("State", stateName);
+        }
+        setPin();
+        endProg();
+    }
+}
+function vmVendorApplyAddressFromCity(cityCode) {
+    if (G_VendorSuppressCityAddressFill) return;
+    if (!cityCode) return;
+    var row = null;
+    for (var i = 0; i < G_VendorCityMasterList.length; i++) {
+        var r = G_VendorCityMasterList[i];
+        if (r && String(r.Code) === String(cityCode)) {
+            row = r;
+            break;
+        }
+    }
+    var countryCode = row ? vmVendorPickFirst(row, ["CountryMaster_Code", "countryMaster_Code", "Country_Code"]) : undefined;
+    var stateCode = row ? vmVendorPickFirst(row, ["StateMaster_Code", "stateMaster_Code"]) : undefined;
+    var pin = row ? vmVendorPickFirst(row, ["Pin", "Pin", "Pin", "Pin"]) : undefined;
+    var stateName = row ? vmVendorPickFirst(row, ["StateName", "stateName"]) : undefined;
+    var countryName = row ? vmVendorPickFirst(row, ["CountryName", "countryName", "NationName"]) : undefined;
+
+    function applyAll() {
+        vmVendorSetNationStatePin(countryCode, stateCode, pin, stateName, countryName);
+    }
+
+    if (countryCode && stateCode) {
+        applyAll();
+        return;
+    }
+
+    var cityName = $("#City option:selected").text();
+    if (!cityName || cityName === "select") {
+        if (countryCode || stateCode || pin !== undefined) applyAll();
+        return;
+    }
+
+    VendorMasterService.GetCityMasterByName(cityName, "CityMasterByName")
+        .then(function (res) {
+            if (G_VendorSuppressCityAddressFill) return;
+            var apiRow = vmVendorNormalizeCityApiResponse(res);
+            if (apiRow) {
+                if (!countryCode) countryCode = vmVendorPickFirst(apiRow, ["CountryMaster_Code", "countryMaster_Code"]);
+                if (!stateCode) stateCode = vmVendorPickFirst(apiRow, ["StateMaster_Code", "stateMaster_Code"]);
+                if (!stateName) stateName = vmVendorPickFirst(apiRow, ["StateName", "stateName"]);
+                if (!countryName) countryName = vmVendorPickFirst(apiRow, ["CountryName", "countryName"]);
+                if (pin === undefined || pin === null || pin === "")
+                    pin = vmVendorPickFirst(apiRow, ["Pin", "Pin", "Pin"]);
+            }
+            applyAll();
+        })
+        .catch(function () {
+            if (countryCode || stateCode || pin !== undefined) applyAll();
+        });
+}
 function GetCityList() {
 
     VendorMasterService.GetCityList().then(function (resObj) {
+        G_VendorCityMasterList = Array.isArray(resObj) ? resObj : [];
         BindSelectList($('#City')[0], resObj.map((item) => ({ Code: item.Code, Desp: item.CityName })));
         $('#City').select2({
             width: '-webkit-fill-available'
@@ -1448,3 +2276,10 @@ window.ConfirmVendorDelete = ConfirmVendorDelete;
 window.DoVendorDelete = DoVendorDelete;
 window.SaveVendor = SaveVendor;
 window.CloseVendorSuccessModal = CloseVendorSuccessModal;
+window.vmFileUploadChange = vmFileUploadChange;
+window.vmViewAttachment = vmViewAttachment;
+window.vmViewVendorAttachmentFromModal = vmViewVendorAttachmentFromModal;
+window.vmDownloadVendorAttachment = vmDownloadVendorAttachment;
+window.vmDownloadVendorAttachmentFromViewModal = vmDownloadVendorAttachmentFromViewModal;
+window.PrintVendor = PrintVendor;
+window.PrintVendorFromView = PrintVendorFromView;
