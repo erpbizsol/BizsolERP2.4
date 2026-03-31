@@ -1,41 +1,35 @@
+/* Legacy tab strip (only if .tabs wrapper is used elsewhere) */
 .tabs {
     display: flex;
     margin-bottom: 15px;
 }
 
-.tab {
+.tabs > .tab {
     padding: 18px 20px;
     border: none;
-    background: #6f42c1; /* new primary */
+    background: #6f42c1;
     color: #ffffff;
     margin-right: 5px;
     cursor: pointer;
     border-radius: 4px 4px 0 0;
     font-weight: bold;
     line-height: 0px;
-    font-size:12px;
+    font-size: 12px;
 }
 
-.tab.active {
-    background: #59359a; /* darker active */
+.tabs > .tab.active {
+    background: #59359a;
 }
 
-#dvTab1, #dvTab2, #dvTab3 {
-    scroll-margin-top: 90px;
+#dvTab1, #dvTab2, #dvTab3, #dvTab4 {
+    scroll-margin-top: 100px;
 }
 
-.card-header-tabs {
-    position: fixed;
-    top: 72px;
-    z-index: 1000;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-    background: #f5f0ff; /* subtle header background */
-    width:95%;
-    padding-top:10px;
-}
+/* Section nav is sticky in EnquiryMaster.cshtml (.enq-section-nav); legacy .card-header-tabs unused */
 
+/* Customer type — fallbacks; detailed styling in EnquiryMaster.cshtml */
 .customertype:has(input[type="radio"]:checked) {
-    background-color: #6f42c1;
+    background-color: #558bc0;
     color: #fff;
     border-radius: 5px;
     padding: 5px 10px;
@@ -43,8 +37,8 @@
 }
 
 .customertype:has(input[type="radio"]) {
-    background-color: #e6dbff;
-    color:#2b2b2b;
+    background-color: #f1f5f9;
+    color: #334155;
     border-radius: 5px;
     padding: 5px 10px;
     display: inline-block;
@@ -102,7 +96,9 @@
     height: 15px;
     font-size: 14px;
 }
-button, .icon-height {
+/* Dense toolbar buttons — exclude enquiry primary actions (styled in view) */
+button.icon-height:not(.btn-enq-primary):not(.btn-enq-secondary):not(.btn-enq-new),
+.icon-height:not(.btn-enq-primary):not(.btn-enq-secondary):not(.btn-enq-new) {
     border-radius: 4px;
     height: 22px;
     font-size: 7pt;
@@ -125,26 +121,29 @@ button, .icon-height {
 
 /* Mobile responsive adjustments */
 @media (max-width: 991.98px) {
-    .card-header-tabs {
+    .enq-section-nav {
         gap: 6px;
-        padding: 6px;
+        padding: 8px;
+    }
+    .enq-nav-tabs-wrap {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         flex-wrap: nowrap;
+        justify-content: flex-start;
+        max-width: 100%;
     }
-
-    .card-header-tabs .tab {
+    .enq-section-nav .tab {
         padding: 8px 12px;
-        font-size: 13px;
+        font-size: 12px;
         white-space: nowrap;
         flex-shrink: 0;
     }
 
-    .card-header-tabs .btn-danger {
+    .enq-section-nav .btn-enq-secondary {
         white-space: nowrap;
         flex-shrink: 0;
         padding: 8px 12px;
-        font-size: 13px;
+        font-size: 12px;
     }
 
     .form-grid .row > [class*='col-'] {
@@ -175,44 +174,45 @@ button, .icon-height {
 }
 
 @media (max-width: 575.98px) {
-    .card-header-tabs {
+    .enq-section-nav {
         font-size: 11px;
         padding: 8px 6px;
         gap: 4px;
+    }
+    .enq-nav-tabs-wrap {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: thin;
     }
-
-    .card-header-tabs::-webkit-scrollbar {
+    .enq-nav-tabs-wrap::-webkit-scrollbar {
         height: 4px;
     }
 
-    .card-header-tabs::-webkit-scrollbar-track {
+    .enq-nav-tabs-wrap::-webkit-scrollbar-track {
         background: #f1f1f1;
         border-radius: 10px;
     }
 
-    .card-header-tabs::-webkit-scrollbar-thumb {
+    .enq-nav-tabs-wrap::-webkit-scrollbar-thumb {
         background: #888;
         border-radius: 10px;
     }
 
-    .card-header-tabs::-webkit-scrollbar-thumb:hover {
+    .enq-nav-tabs-wrap::-webkit-scrollbar-thumb:hover {
         background: #555;
     }
 
-    .card-header-tabs .tab {
-        padding: 10px 14px;
-        font-size: 12px;
+    .enq-section-nav .tab {
+        padding: 8px 10px;
+        font-size: 11px;
         white-space: nowrap;
         flex-shrink: 0;
         min-width: auto;
     }
 
-    .card-header-tabs .btn-danger {
-        padding: 10px 14px;
-        font-size: 12px;
+    .enq-section-nav .btn-enq-secondary {
+        padding: 8px 10px;
+        font-size: 11px;
         white-space: nowrap;
         flex-shrink: 0;
     }
