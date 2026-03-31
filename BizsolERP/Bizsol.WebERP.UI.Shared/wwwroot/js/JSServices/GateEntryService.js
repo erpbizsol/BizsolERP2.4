@@ -192,8 +192,15 @@ const GateEntryService = {
                 return value;
             }
         );
+    },
+    GetTransportMode: function GetTransportMode() {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/GetTransportMode`
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
     }
-
 }
 
 

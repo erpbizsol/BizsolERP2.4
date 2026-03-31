@@ -622,6 +622,10 @@ window.AddItemRow = function (silent) {
         <td><input type="number" id="frmTxtValue_${rowId}" class="form-control form-control-sm" value="0" readonly /></td>
         <td class="text-center">
             <input type="hidden" id="frmHfDetailCode_${rowId}" value="0" />
+            <input type="hidden" id="frmHfBaseQty_${rowId}" value="0" />
+            <input type="hidden" id="frmHfQtyTolerance_${rowId}" value="0" />
+            <input type="hidden" id="frmHfBaseRate_${rowId}" value="0" />
+            <input type="hidden" id="frmHfRateTolerance_${rowId}" value="0" />
             <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
         </td>
     </tr>`;
@@ -646,6 +650,44 @@ function RenumberRows() {
     });
 }
 
+// ─── TOLERANCE HELPERS ───────────────────────────────────────────────────────
+
+function GetRowToleranceInfo(rowId) {
+    const baseQty  = parseFloat($(`#frmHfBaseQty_${rowId}`).val())       || 0;
+    const qtyTol   = parseFloat($(`#frmHfQtyTolerance_${rowId}`).val())  || 0;
+    const baseRate = parseFloat($(`#frmHfBaseRate_${rowId}`).val())      || 0;
+    const rateTol  = parseFloat($(`#frmHfRateTolerance_${rowId}`).val()) || 0;
+    const maxQty   = (baseQty  > 0 && qtyTol  > 0) ? parseFloat((baseQty  * (1 + qtyTol  / 100)).toFixed(3)) : 0;
+    const maxRate  = (baseRate > 0 && rateTol > 0) ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2)) : 0;
+    return { baseQty, qtyTol, baseRate, rateTol, maxQty, maxRate };
+}
+
+function ApplyToleranceToRow(rowId, item) {
+    const baseQty  = item ? (parseFloat(item.QtyRequired  || item.Qty          || 0)) : 0;
+    const qtyTol   = item ? (parseFloat(item.QtyTolerance || item.Tolerance     || 0)) : 0;
+    const baseRate = item ? (parseFloat(item.Rate         || item.EstimatedRate || 0)) : 0;
+    const rateTol  = item ? (parseFloat(item.RateTolerance                      || 0)) : 0;
+
+    $(`#frmHfBaseQty_${rowId}`).val(baseQty);
+    $(`#frmHfQtyTolerance_${rowId}`).val(qtyTol);
+    $(`#frmHfBaseRate_${rowId}`).val(baseRate);
+    $(`#frmHfRateTolerance_${rowId}`).val(rateTol);
+
+    const maxQty  = (baseQty  > 0 && qtyTol  > 0) ? parseFloat((baseQty  * (1 + qtyTol  / 100)).toFixed(3)) : 0;
+    const maxRate = (baseRate > 0 && rateTol > 0) ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2)) : 0;
+
+    if (maxQty  > 0) {
+        $(`#frmTxtQty_${rowId}`).attr('title', `Max Qty (${qtyTol}% tolerance): ${maxQty}`);
+    } else {
+        $(`#frmTxtQty_${rowId}`).removeAttr('title');
+    }
+    if (maxRate > 0) {
+        $(`#frmTxtRate_${rowId}`).attr('title', `Max Rate (${rateTol}% tolerance): ${maxRate}`);
+    } else {
+        $(`#frmTxtRate_${rowId}`).removeAttr('title');
+    }
+}
+
 window.OnItemChange = function (rowId) {
     const selectedCode = $(`#frmDdlItem_${rowId}`).val();
     const item = G_ItemMasterList.find(i => String(i.Code) === String(selectedCode));
@@ -656,12 +698,26 @@ window.OnItemChange = function (rowId) {
         $(`#frmTxtGSTRate_${rowId}`).val(item.GSTRate || 0);
     }
     $(`#frmTxtSpecification_${rowId}`).val(item ? (item.ItemSpecificationDesp || '') : '');
+    ApplyToleranceToRow(rowId, item || null);
     CalcRowValue(rowId);
 };
 
 window.CalcRowValue = function (rowId) {
-    const qty = parseFloat($(`#frmTxtQty_${rowId}`).val()) || 0;
-    const rate = parseFloat($(`#frmTxtRate_${rowId}`).val()) || 0;
+    const tol = GetRowToleranceInfo(rowId);
+    let qty    = parseFloat($(`#frmTxtQty_${rowId}`).val())  || 0;
+    let rate   = parseFloat($(`#frmTxtRate_${rowId}`).val()) || 0;
+
+    if (tol.maxQty > 0 && qty > tol.maxQty) {
+        toastr.warning(`Qty exceeds the ${tol.qtyTol}% tolerance. Maximum allowed Qty is ${tol.maxQty}.`);
+        qty = tol.maxQty;
+        $(`#frmTxtQty_${rowId}`).val(qty);
+    }
+    if (tol.maxRate > 0 && rate > tol.maxRate) {
+        toastr.warning(`Rate exceeds the ${tol.rateTol}% tolerance. Maximum allowed Rate is ${tol.maxRate}.`);
+        rate = tol.maxRate;
+        $(`#frmTxtRate_${rowId}`).val(rate);
+    }
+
     const value = qty * rate;
     $(`#frmTxtValue_${rowId}`).val(value.toFixed(2));
     CalcTotals();
@@ -739,6 +795,15 @@ window.SavePO = function () {
 
         if (!itemCode) { toastr.warning('Please select item in all rows.'); itemValid = false; return false; }
         if (qty <= 0) { toastr.warning('Qty must be greater than 0 for all items.'); itemValid = false; return false; }
+        const saveTol = GetRowToleranceInfo(rowId);
+        if (saveTol.maxQty > 0 && qty > saveTol.maxQty) {
+            toastr.warning(`Row ${rowId}: Qty ${qty} exceeds the ${saveTol.qtyTol}% tolerance. Maximum allowed: ${saveTol.maxQty}.`);
+            itemValid = false; return false;
+        }
+        if (saveTol.maxRate > 0 && rate > saveTol.maxRate) {
+            toastr.warning(`Row ${rowId}: Rate ${rate} exceeds the ${saveTol.rateTol}% tolerance. Maximum allowed: ${saveTol.maxRate}.`);
+            itemValid = false; return false;
+        }
 
         transactions.push({
             code: detailCode,
@@ -908,10 +973,16 @@ function LoadPOForEdit(code) {
                 <td><input type="number" id="frmTxtValue_${rowId}" class="form-control form-control-sm" value="${det.Amount || 0}" readonly /></td>
                 <td class="text-center">
                     <input type="hidden" id="frmHfDetailCode_${rowId}" value="${det.Code || 0}" />
+                    <input type="hidden" id="frmHfBaseQty_${rowId}" value="0" />
+                    <input type="hidden" id="frmHfQtyTolerance_${rowId}" value="0" />
+                    <input type="hidden" id="frmHfBaseRate_${rowId}" value="0" />
+                    <input type="hidden" id="frmHfRateTolerance_${rowId}" value="0" />
                     <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
                 </td>
             </tr>`;
             $('#tblPOItemsBody').append(row);
+            const tolItem = G_ItemMasterList.find(i => String(i.Code) === String(det.ItemMaster_Code));
+            ApplyToleranceToRow(rowId, tolItem || null);
         });
 
         if (details.length === 0) AddItemRow(true);
@@ -1263,6 +1334,30 @@ function MobileItemModalConfirm() {
     if (!itemCode) { toastr.warning('Please select an item.'); return; }
     if (qty <= 0) { toastr.warning('Qty must be greater than 0.'); return; }
 
+    // ── Tolerance validation ───────────────────────────────────────────────────
+    const mobileItem   = G_ItemMasterList.find(i => String(i.Code) === String(itemCode));
+    if (mobileItem) {
+        const mbBaseQty  = parseFloat(mobileItem.QtyRequired  || mobileItem.Qty          || 0);
+        const mbQtyTol   = parseFloat(mobileItem.QtyTolerance || mobileItem.Tolerance     || 0);
+        const mbBaseRate = parseFloat(mobileItem.Rate         || mobileItem.EstimatedRate || 0);
+        const mbRateTol  = parseFloat(mobileItem.RateTolerance                             || 0);
+        const mobileRate = parseFloat($('#mobileItemTxtRate').val()) || 0;
+        const mbMaxQty   = (mbBaseQty  > 0 && mbQtyTol  > 0) ? parseFloat((mbBaseQty  * (1 + mbQtyTol  / 100)).toFixed(3)) : 0;
+        const mbMaxRate  = (mbBaseRate > 0 && mbRateTol > 0) ? parseFloat((mbBaseRate * (1 + mbRateTol / 100)).toFixed(2)) : 0;
+        if (mbMaxQty > 0 && qty > mbMaxQty) {
+            toastr.warning(`Qty exceeds the ${mbQtyTol}% tolerance. Maximum allowed Qty is ${mbMaxQty}.`);
+            $('#mobileItemTxtQty').val(mbMaxQty);
+            MobileCalcValue();
+            return;
+        }
+        if (mbMaxRate > 0 && mobileRate > mbMaxRate) {
+            toastr.warning(`Rate exceeds the ${mbRateTol}% tolerance. Maximum allowed Rate is ${mbMaxRate}.`);
+            $('#mobileItemTxtRate').val(mbMaxRate);
+            MobileCalcValue();
+            return;
+        }
+    }
+
     const uomCode = $('#mobileItemDdlUOM').val();
     const gst = parseFloat($('#mobileItemTxtGST').val()) || 0;
     const rate = parseFloat($('#mobileItemTxtRate').val()) || 0;
@@ -1286,10 +1381,16 @@ function MobileItemModalConfirm() {
             <td><input type="number" id="frmTxtValue_${rowId}" class="form-control form-control-sm" value="${value}" readonly /></td>
             <td class="text-center">
                 <input type="hidden" id="frmHfDetailCode_${rowId}" value="0" />
+                <input type="hidden" id="frmHfBaseQty_${rowId}" value="0" />
+                <input type="hidden" id="frmHfQtyTolerance_${rowId}" value="0" />
+                <input type="hidden" id="frmHfBaseRate_${rowId}" value="0" />
+                <input type="hidden" id="frmHfRateTolerance_${rowId}" value="0" />
                 <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
             </td>
         </tr>`;
         $('#tblPOItemsBody').append(row);
+        const newTolItem = G_ItemMasterList.find(i => String(i.Code) === String(itemCode));
+        ApplyToleranceToRow(rowId, newTolItem || null);
         RenumberRows();
     } else {
         // Update existing row in the hidden table

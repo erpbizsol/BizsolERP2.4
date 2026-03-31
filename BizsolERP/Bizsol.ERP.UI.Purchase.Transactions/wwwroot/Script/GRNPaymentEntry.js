@@ -5,6 +5,12 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 
 $(document).ready(async function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+    window.AttachmentControl_onQueueChange = function (count) {
+        const badge = document.getElementById('gpaTempAttachBadge');
+        if (!badge) return;
+        badge.textContent = String(count);
+        badge.style.display = count > 0 ? 'inline-flex' : 'none';
+    };
 });
 
 // ── Numeric input helpers ────────────────────────────────────────────────────
@@ -79,9 +85,13 @@ function mapGpaListRow(item) {
     const amt = rawAmt !== undefined && rawAmt !== null && rawAmt !== '' ? Number(rawAmt) : '';
     const ref = item.RefNo ?? item.refNo ?? '';
     const label = String(entryNo || code || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const rawEdStr = ed ? String(ed).substring(0, 10) : '';
+    const enNum = parseInt(entryNo, 10) || 0;
     const btns =
         '<button type="button" class="im-btn-edit" title="Edit" onclick="editGRNPaymentApproval(' + code + ')">' +
         '<i class="fas fa-pen"></i></button>' +
+        '<button type="button" class="im-btn-attach" title="Attachment" onclick="openGpaListAttachmentControl(' + code + ',' + enNum + ',\'' + rawEdStr + '\')">' +
+        '<i class="fas fa-paperclip"></i></button>' +
         '<button type="button" class="im-btn-delete" title="Delete" onclick="confirmDeleteGRNPaymentApproval(' + code + ', \'' + label + '\')">' +
         '<i class="fas fa-trash-can"></i></button>';
     return {
@@ -157,7 +167,7 @@ function renderGpaListGridForActiveTab() {
     const showButtons = [];
     const StringdoubleFilterColumn = [];
     const hiddenColumns = ['Code', 'StatusCode'];
-    const ColumnAlignment = { Action: 'center;width:118px;' };
+    const ColumnAlignment = { Action: 'center;width:172px;' };
 
     updateGpaStatusTabStrip();
 
@@ -646,6 +656,9 @@ function billRowTemplate() {
         <input type="hidden" class="inp-mrn-code" value="">
         <input type="text" class="form-control form-control-sm inp-bill-no" maxlength="64" autocomplete="off" placeholder="Bill no">
     </td>
+    <td><input type="text" class="form-control form-control-sm inp-deduction" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;min-width:72px;"></td>
+    <td><input type="text" class="form-control form-control-sm inp-project" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;min-width:120px;"></td>
+    <td><input type="text" class="form-control form-control-sm inp-subproject" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;min-width:120px;"></td>
     <td><input type="date" class="form-control form-control-sm inp-bill-date" autocomplete="off"></td>
     <td><input type="number" class="form-control form-control-sm inp-bill-amt" min="0" step="0.01" placeholder="0" onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this)"></td>
     <td><input type="number" class="form-control form-control-sm inp-payable" min="0" step="0.01" placeholder="0" readonly style="background:#ede9fe;border-color:#c4b5fd;"></td>
@@ -720,7 +733,7 @@ function showGpaPartyHint() {
     removeGpaPartyHint();
     tbody.insertAdjacentHTML('beforeend', `
 <tr id="trGpaPartyHint" class="gpa-party-hint-row">
-    <td colspan="6" style="text-align:center;padding:18px 12px;background:linear-gradient(135deg,rgba(102,126,234,0.06),rgba(99,102,241,0.05));border-top:1px dashed #c4b5fd;">
+    <td colspan="9" style="text-align:center;padding:18px 12px;background:linear-gradient(135deg,rgba(102,126,234,0.06),rgba(99,102,241,0.05));border-top:1px dashed #c4b5fd;">
         <div style="display:inline-flex;align-items:center;gap:10px;max-width:520px;">
             <i class="fa fa-info-circle" style="color:#667eea;font-size:1.1rem;"></i>
             <span style="font-size:0.82rem;color:#475569;">
@@ -1122,7 +1135,7 @@ function saveGpaAddBillModalToGrid() {
     const tr = tbody?.querySelector('tr.bill-row:last-child');
     if (!tr) return;
 
-    const rowObj = {
+    let rowObj = {
         MRNMaster_Code: mrn > 0 ? mrn : undefined,
         BillNo: billNo,
         BillDate: document.getElementById('gpaAddBillModalBillDate')?.value ?? '',
@@ -1130,6 +1143,10 @@ function saveGpaAddBillModalToGrid() {
         PayableAmount: document.getElementById('gpaAddBillModalPayable')?.value ?? '',
         PaymentAmount: document.getElementById('gpaAddBillModalPayment')?.value ?? '',
     };
+    if (mrn > 0 && Array.isArray(gpaAddBillModalBillRowsCache) && gpaAddBillModalBillRowsCache.length) {
+        const hit = gpaAddBillModalBillRowsCache.find(x => resolveMrnFromRow(x) === mrn);
+        if (hit) rowObj = { ...hit, ...rowObj };
+    }
     applyBillDetailRow(tr, rowObj);
     const dc = tr.querySelector('.inp-detail-code');
     if (dc) dc.value = '0';
@@ -1182,6 +1199,21 @@ function applyBillDetailRow(tr, r) {
         } else {
             pm.value = '';
         }
+    }
+    const ded = tr.querySelector('.inp-deduction');
+    const pj = tr.querySelector('.inp-project');
+    const sp = tr.querySelector('.inp-subproject');
+    if (ded) {
+        const dv = r.Dedution ?? r.dedution ?? r.Deduction ?? r.deduction;
+        ded.value = dv !== undefined && dv !== null && `${dv}`.trim() !== '' ? String(dv) : '';
+    }
+    if (pj) {
+        const pv = r.ProjectDesp ?? r.projectDesp ?? r.Project ?? r.project ?? '';
+        pj.value = pv !== undefined && pv !== null ? String(pv) : '';
+    }
+    if (sp) {
+        const sv = r.SubProjectDesp ?? r.subProjectDesp ?? r.SubProject ?? r.subProject ?? '';
+        sp.value = sv !== undefined && sv !== null ? String(sv) : '';
     }
 }
 
@@ -1422,6 +1454,20 @@ function validateGRNPaymentApproval() {
             return false;
         }
     }
+    const billRows = document.querySelectorAll('#billTbody tr.bill-row');
+    if (!billRows.length) {
+        showToast('Bill allocation: add at least one row and fill bill details before save.', 'warning');
+        return false;
+    }
+    let hasMrnLine = false;
+    billRows.forEach(tr => {
+        const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+        if (mrn > 0) hasMrnLine = true;
+    });
+    if (!hasMrnLine) {
+        showToast('Bill allocation: fill at least one row with a valid bill (MRN). Use Fill Grid or Add row to load bills for the party.', 'warning');
+        return false;
+    }
     let badMrn = false;
     document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
         const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
@@ -1450,6 +1496,15 @@ function validateGRNPaymentApproval() {
     const adv = parseNum(document.getElementById('txtFooterAdvance'));
     const allocated = sumPay + adv;
     const EPS = 0.005;
+    // When Advance is auto (Amount − total payment), allocated always equals Amount, so the
+    // check below never fires; block over-allocation and negative Advance explicitly.
+    if (sumPay > headerAmt + EPS || adv < -EPS) {
+        showToast(
+            `Total payment (${formatMoney(sumPay)}) cannot exceed Amount (${formatMoney(headerAmt)}). Advance / On account cannot be negative.`,
+            'warning'
+        );
+        return false;
+    }
     if (allocated > headerAmt + EPS) {
         showToast(
             `Total payment (${formatMoney(sumPay)}) + Advance / On account (${formatMoney(adv)}) must not exceed Amount (${formatMoney(headerAmt)}). Current total: ${formatMoney(allocated)}.`,
@@ -1490,6 +1545,17 @@ function saveGRNPaymentApproval() {
             );
             if (ok) {
                 applyEntryNoFromResponse(data);
+                const newMasterCode = parseInt(data.Code ?? data.code ?? 0, 10) || 0;
+                const entryDate = document.getElementById('dtPaymentDate')?.value ?? '';
+                const entryNo = parseInt(document.getElementById('txtEntryNo')?.value?.trim() ?? '0', 10) || 0;
+                if (newMasterCode > 0 && typeof window.FlushPendingAttachments === 'function') {
+                    const flush = await window.FlushPendingAttachments(newMasterCode, 'GRNPaymentMaster', entryNo, entryDate);
+                    if (flush && flush.failed > 0) {
+                        showToast(flush.uploaded + ' attachment(s) uploaded, ' + flush.failed + ' failed.', 'warning');
+                    } else if (flush && flush.uploaded > 0) {
+                        showToast(flush.uploaded + ' pending attachment(s) uploaded.', 'success');
+                    }
+                }
                 showToast(editMode ? 'Payment entry updated successfully.' : 'Payment entry saved successfully.', 'success');
                 editMode = false;
                 setTimeout(async () => {
@@ -1545,6 +1611,43 @@ function resetGRNPaymentApprovalForm() {
     showGpaPartyHint();
     recalcFooter();
     hideGpaAddBillModalAndReset();
+    if (typeof window.ClearPendingAttachments_AttachmentControl === 'function') {
+        window.ClearPendingAttachments_AttachmentControl();
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ATTACHMENT CONTROL
+// ══════════════════════════════════════════════════════════════════════════════
+function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode, sourceDownloadFileName) {
+    var url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
+    $('#GRNPaymentEntry_AttachmentControlmodal').load(url, {
+        MasterTableName: masterTableName,
+        MasterTableCode: masterTableCode,
+        DetailTableName: detailTableName,
+        DetailTableCode: detailTableCode,
+        EntryNo: entryNo,
+        EntryDate: entryDate,
+        Mode: mode,
+        SourceDownloadFileName: sourceDownloadFileName || ''
+    });
+}
+
+function openGpaAttachmentControl() {
+    const masterCode = parseInt(document.getElementById('hdnGRNPaymentMasterCode')?.value ?? '0', 10) || 0;
+    const entryNo = parseInt(document.getElementById('txtEntryNo')?.value?.trim() ?? '0', 10) || 0;
+    const entryDate = document.getElementById('dtPaymentDate')?.value ?? '';
+    // masterCode=0 → temp mode handled generically inside the shared control
+    InitAttachmentControl('GRNPaymentMaster', masterCode, '', 0, entryNo, entryDate, 'all', '');
+}
+
+function openGpaListAttachmentControl(code, entryNo, entryDate) {
+    const masterCode = parseInt(code, 10) || 0;
+    if (masterCode <= 0) {
+        showToast('Invalid record. Cannot open attachments.', 'warning');
+        return;
+    }
+    InitAttachmentControl('GRNPaymentMaster', masterCode, '', 0, parseInt(entryNo, 10) || 0, entryDate || '', 'all', '');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1593,6 +1696,9 @@ function getFinancialYear() {
     return year + "-" + (year + 1);
 }
 
+window.InitAttachmentControl = InitAttachmentControl;
+window.openGpaAttachmentControl = openGpaAttachmentControl;
+window.openGpaListAttachmentControl = openGpaListAttachmentControl;
 window.blockNonNumeric = blockNonNumeric;
 window.stripNonNumeric = stripNonNumeric;
 window.markFooterAdvanceManual = markFooterAdvanceManual;
