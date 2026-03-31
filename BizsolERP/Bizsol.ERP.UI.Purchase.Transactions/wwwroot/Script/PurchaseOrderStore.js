@@ -657,8 +657,9 @@ function GetRowToleranceInfo(rowId) {
     const qtyTol   = parseFloat($(`#frmHfQtyTolerance_${rowId}`).val())  || 0;
     const baseRate = parseFloat($(`#frmHfBaseRate_${rowId}`).val())      || 0;
     const rateTol  = parseFloat($(`#frmHfRateTolerance_${rowId}`).val()) || 0;
-    const maxQty   = (baseQty  > 0 && qtyTol  > 0) ? parseFloat((baseQty  * (1 + qtyTol  / 100)).toFixed(3)) : 0;
-    const maxRate  = (baseRate > 0 && rateTol > 0) ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2)) : 0;
+    // When baseQty > 0 and tolerance is 0, cap equals baseQty (no excess allowed)
+    const maxQty   = baseQty  > 0 ? parseFloat((baseQty  * (1 + qtyTol  / 100)).toFixed(3)) : 0;
+    const maxRate  = baseRate > 0 ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2)) : 0;
     return { baseQty, qtyTol, baseRate, rateTol, maxQty, maxRate };
 }
 
@@ -673,16 +674,19 @@ function ApplyToleranceToRow(rowId, item) {
     $(`#frmHfBaseRate_${rowId}`).val(baseRate);
     $(`#frmHfRateTolerance_${rowId}`).val(rateTol);
 
-    const maxQty  = (baseQty  > 0 && qtyTol  > 0) ? parseFloat((baseQty  * (1 + qtyTol  / 100)).toFixed(3)) : 0;
-    const maxRate = (baseRate > 0 && rateTol > 0) ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2)) : 0;
+    // When base value > 0 and tolerance is 0, cap equals base value (no excess allowed)
+    const maxQty  = baseQty  > 0 ? parseFloat((baseQty  * (1 + qtyTol  / 100)).toFixed(3)) : 0;
+    const maxRate = baseRate > 0 ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2)) : 0;
 
     if (maxQty  > 0) {
-        $(`#frmTxtQty_${rowId}`).attr('title', `Max Qty (${qtyTol}% tolerance): ${maxQty}`);
+        const qtyTitle = qtyTol > 0 ? `Max Qty (${qtyTol}% tolerance): ${maxQty}` : `Max Qty (no tolerance): ${maxQty}`;
+        $(`#frmTxtQty_${rowId}`).attr('title', qtyTitle);
     } else {
         $(`#frmTxtQty_${rowId}`).removeAttr('title');
     }
     if (maxRate > 0) {
-        $(`#frmTxtRate_${rowId}`).attr('title', `Max Rate (${rateTol}% tolerance): ${maxRate}`);
+        const rateTitle = rateTol > 0 ? `Max Rate (${rateTol}% tolerance): ${maxRate}` : `Max Rate (no tolerance): ${maxRate}`;
+        $(`#frmTxtRate_${rowId}`).attr('title', rateTitle);
     } else {
         $(`#frmTxtRate_${rowId}`).removeAttr('title');
     }
@@ -708,12 +712,18 @@ window.CalcRowValue = function (rowId) {
     let rate   = parseFloat($(`#frmTxtRate_${rowId}`).val()) || 0;
 
     if (tol.maxQty > 0 && qty > tol.maxQty) {
-        toastr.warning(`Qty exceeds the ${tol.qtyTol}% tolerance. Maximum allowed Qty is ${tol.maxQty}.`);
+        const qtyMsg = tol.qtyTol > 0
+            ? `Qty exceeds the ${tol.qtyTol}% tolerance. Maximum allowed Qty is ${tol.maxQty}.`
+            : `Qty cannot exceed the required Qty of ${tol.maxQty} (no tolerance allowed).`;
+        toastr.warning(qtyMsg);
         qty = tol.maxQty;
         $(`#frmTxtQty_${rowId}`).val(qty);
     }
     if (tol.maxRate > 0 && rate > tol.maxRate) {
-        toastr.warning(`Rate exceeds the ${tol.rateTol}% tolerance. Maximum allowed Rate is ${tol.maxRate}.`);
+        const rateMsg = tol.rateTol > 0
+            ? `Rate exceeds the ${tol.rateTol}% tolerance. Maximum allowed Rate is ${tol.maxRate}.`
+            : `Rate cannot exceed the required Rate of ${tol.maxRate} (no tolerance allowed).`;
+        toastr.warning(rateMsg);
         rate = tol.maxRate;
         $(`#frmTxtRate_${rowId}`).val(rate);
     }
@@ -797,11 +807,17 @@ window.SavePO = function () {
         if (qty <= 0) { toastr.warning('Qty must be greater than 0 for all items.'); itemValid = false; return false; }
         const saveTol = GetRowToleranceInfo(rowId);
         if (saveTol.maxQty > 0 && qty > saveTol.maxQty) {
-            toastr.warning(`Row ${rowId}: Qty ${qty} exceeds the ${saveTol.qtyTol}% tolerance. Maximum allowed: ${saveTol.maxQty}.`);
+            const saveQtyMsg = saveTol.qtyTol > 0
+                ? `Row ${rowId}: Qty ${qty} exceeds the ${saveTol.qtyTol}% tolerance. Maximum allowed: ${saveTol.maxQty}.`
+                : `Row ${rowId}: Qty ${qty} cannot exceed the required Qty of ${saveTol.maxQty} (no tolerance allowed).`;
+            toastr.warning(saveQtyMsg);
             itemValid = false; return false;
         }
         if (saveTol.maxRate > 0 && rate > saveTol.maxRate) {
-            toastr.warning(`Row ${rowId}: Rate ${rate} exceeds the ${saveTol.rateTol}% tolerance. Maximum allowed: ${saveTol.maxRate}.`);
+            const saveRateMsg = saveTol.rateTol > 0
+                ? `Row ${rowId}: Rate ${rate} exceeds the ${saveTol.rateTol}% tolerance. Maximum allowed: ${saveTol.maxRate}.`
+                : `Row ${rowId}: Rate ${rate} cannot exceed the required Rate of ${saveTol.maxRate} (no tolerance allowed).`;
+            toastr.warning(saveRateMsg);
             itemValid = false; return false;
         }
 
@@ -1679,6 +1695,8 @@ function PrintPO(code, mode) {
             : 'ITEM DETAILS';
 
         // ── Compose full print document ──────────────────────────────────────────
+        //const logoUrl = ((sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/')) + 'assets/images/logo-full.jpeg';
+        const logoUrl = ((sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/')) + 'assets/images/pppllog.jpeg';
         const css = '@page{size:A4 portrait;margin:8mm 10mm 22mm 10mm;}'
             + '*{box-sizing:border-box;margin:0;padding:0;}'
             + 'body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;color:#000;background:#fff;}'
@@ -1717,6 +1735,9 @@ function PrintPO(code, mode) {
             + '.sig-line{border-top:1px solid #000;margin:0 4px 3px;}'
             + '.sig-name{font-size:7.5pt;color:#000;font-weight:600;}'
             + '.footer-bar{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:10.5pt;padding:5px 10px;border-top:2.5px solid #000;color:#000;font-weight:700;background:#fff;letter-spacing:0.02em;}'
+            + '.hdr-logo{width:65px;height:65px;object-fit:contain;margin-right:14px;flex-shrink:0;}'
+            + '.hdr-left{display:flex;align-items:center;flex:1;}'
+            + '.wm-logo{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:320px;background:url(' + logoUrl + ') no-repeat center;background-size:contain;opacity:0.07;pointer-events:none;z-index:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
 
         const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + docTitle + ' - '
             + (header.PONo || '') + '</title><style>' + css + '</style></head><body>'
@@ -1725,9 +1746,11 @@ function PrintPO(code, mode) {
             + '<button onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:5px 16px;border-radius:5px;font-size:9pt;cursor:pointer;">&#128438;&nbsp;Print</button>'
             + '<button onclick="window.close()" style="background:#666;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:9pt;cursor:pointer;">&#10005;&nbsp;Close</button>'
             + '</div>'
+            // Watermark logo (visible on screen and print)
+            + '<div class="wm-logo"></div>'
             // Header
             + '<div class="po-hdr">'
-            + '<div class="hdr-co"><div class="hdr-name">' + (companyName || 'COMPANY NAME') + '</div><div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div>'
+            + '<div class="hdr-left"><img class="hdr-logo" src="' + logoUrl + '" alt="Logo"><div class="hdr-co"><div class="hdr-name">' + (companyName || 'COMPANY NAME') + '</div><div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div></div>'
             + '<div class="hdr-contact">' + hdrContact + '</div>'
             + '</div>'
             // PO title bar
