@@ -1,0 +1,725 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Masters/js/MarketingManMaster.js"></script>
+
+<style>
+    .mmm-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        padding: 4px 0 32px;
+    }
+
+    .mmm-hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .mmm-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .mmm-hero-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        background: var(--primary-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 22px;
+        box-shadow: var(--shadow-primary);
+        flex-shrink: 0;
+    }
+
+    .mmm-hero-title {
+        font-size: 21px;
+        font-weight: 800;
+        color: var(--text-dark);
+        letter-spacing: -.025em;
+        line-height: 1.2;
+    }
+
+    .mmm-card {
+        background: var(--white-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        position: relative;
+        margin-bottom: 18px;
+    }
+
+    .mmm-card::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: var(--primary-gradient);
+        border-radius: 20px 20px 0 0;
+    }
+
+    .mmm-card-hdr {
+        padding: 16px 22px 0;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--accent-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mmm-card-body {
+        padding: 12px 22px 22px;
+    }
+
+    .mmm-form-section {
+        background: var(--white-bg);
+        border-radius: 14px;
+        border: 1px solid var(--border-color);
+        padding: 18px 18px 8px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .mmm-form-section-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--accent-primary);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .mmm-form-section-title::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border-color);
+    }
+
+    .mmm-form-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px 18px;
+        margin-bottom: 14px;
+    }
+
+    .mmm-fg {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .mmm-fg.span2 { grid-column: span 2; }
+    .mmm-fg.span3 { grid-column: span 3; }
+
+    .mmm-fg label {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .mmm-fg input[type="text"],
+    .mmm-fg input[type="email"],
+    .mmm-fg input[type="date"],
+    .mmm-fg input[type="tel"],
+    .mmm-fg select,
+    .mmm-fg textarea {
+        padding: 10px 13px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        outline: none;
+        background: var(--white-bg);
+        color: var(--text-dark);
+        transition: border-color .2s, box-shadow .2s;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .mmm-fg input:focus,
+    .mmm-fg select:focus,
+    .mmm-fg textarea:focus {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+    }
+
+    .mmm-options-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 18px 28px;
+        padding: 4px 0 8px;
+    }
+
+    .mmm-check label,
+    .mmm-radio-inline label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-left: 6px;
+        cursor: pointer;
+    }
+
+    .mmm-radio-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .mmm-radio-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .mmm-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+        padding: 0 22px 18px;
+    }
+
+    .mmm-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: none;
+        outline: none;
+        padding: 10px 22px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform .14s, box-shadow .14s;
+        min-height: 40px;
+    }
+
+    .mmm-btn:hover { transform: translateY(-1px); }
+    .mmm-btn:active { transform: translateY(0); }
+
+    .mmm-btn.primary {
+        background: var(--primary-gradient);
+        color: #fff;
+        box-shadow: var(--shadow-primary);
+    }
+
+    .mmm-btn.secondary {
+        background: var(--light-bg);
+        color: var(--text-muted);
+        border: 1.5px solid var(--border-color);
+    }
+
+    .mmm-table-wrap {
+        overflow: auto;
+        max-height: min(420px, calc(100vh - 420px));
+    }
+
+    .mmm-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+        min-width: 400px;
+    }
+
+    .mmm-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+
+    .mmm-table thead th {
+        color: #fff !important;
+        font-weight: 700;
+        padding: 12px 14px;
+        text-align: left;
+        border: none !important;
+        font-size: 12px;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .mmm-table tbody tr:nth-child(even) { background: var(--light-bg) !important; }
+    .mmm-table tbody tr:nth-child(odd) { background: #fff !important; }
+    .mmm-table tbody tr:hover { background: rgba(102,126,234,.07) !important; }
+
+    .mmm-table td {
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--border-light) !important;
+        color: var(--text-dark) !important;
+        vertical-align: middle;
+    }
+
+    .mmm-table td.center { text-align: center; }
+
+    .pm-sno {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--primary-gradient);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* ── List grid (Project Master + BuyingCapacity-style wrapper) ── */
+    #MarketingManMasterPage .pm-card-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 18px 22px 16px;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .pm-search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+        max-width: 340px;
+    }
+
+    .pm-search-wrap i {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 13px;
+        pointer-events: none;
+    }
+
+    #mmmSearch {
+        width: 100%;
+        padding: 9px 14px 9px 38px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        outline: none;
+        background: var(--light-bg);
+        color: var(--text-dark);
+        transition: border-color .2s, box-shadow .2s, background .2s;
+        box-sizing: border-box;
+    }
+
+    #mmmSearch:focus {
+        border-color: var(--accent-primary);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+    }
+
+    .pm-btn-new {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        outline: none;
+        padding: 10px 22px;
+        border-radius: 12px;
+        background: var(--primary-gradient);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: var(--shadow-primary);
+        transition: transform .15s, box-shadow .15s;
+        white-space: nowrap;
+    }
+
+    .pm-btn-new:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(102,126,234,.45); }
+    .pm-btn-new:active { transform: translateY(0); }
+
+    .pm-btn-new .pm-plus {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: rgba(255,255,255,.22);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .pm-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: calc(100vh - 320px);
+        overflow-y: auto;
+    }
+
+    .pm-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+        min-width: 720px;
+    }
+
+    .pm-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+
+    .pm-table thead th {
+        color: #fff !important;
+        background: transparent !important;
+        font-weight: 700;
+        padding: 13px 16px;
+        text-align: left;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 12px;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .pm-table thead th.center { text-align: center; }
+
+    .pm-table tbody tr { transition: background .12s; }
+    .pm-table tbody tr:nth-child(even) { background: var(--light-bg) !important; }
+    .pm-table tbody tr:nth-child(odd) { background: #fff !important; }
+    .pm-table tbody tr:hover { background: rgba(102,126,234,.07) !important; }
+
+    .pm-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-light) !important;
+        color: var(--text-dark) !important;
+        vertical-align: middle;
+    }
+
+    .pm-table td.center { text-align: center; }
+
+    .pm-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pm-icon-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: transform .14s, box-shadow .14s;
+        outline: none;
+    }
+
+    .pm-icon-btn:hover { transform: translateY(-2px); }
+    .pm-icon-btn:active { transform: translateY(0); }
+
+    .pm-icon-btn.view {
+        background: rgba(6,182,212,.12);
+        color: var(--accent-info);
+        border: 1px solid rgba(6,182,212,.25);
+    }
+
+    .pm-icon-btn.edit {
+        background: rgba(102,126,234,.12);
+        color: var(--accent-primary);
+        border: 1px solid rgba(102,126,234,.25);
+    }
+
+    .pm-icon-btn.del {
+        background: rgba(239,68,68,.1);
+        color: #ef4444;
+        border: 1px solid rgba(239,68,68,.2);
+    }
+
+    .pm-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: none;
+        outline: none;
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform .14s, box-shadow .14s;
+        min-height: 40px;
+    }
+
+    .pm-btn.secondary {
+        background: var(--light-bg);
+        color: var(--text-muted);
+        border: 1.5px solid var(--border-color);
+    }
+
+    .pm-btn.secondary:hover { background: var(--border-color); }
+
+    .mmm-detail-back {
+        margin-bottom: 16px;
+    }
+
+    #mmmDetailPanel.mmm-readonly .mmm-fg input,
+    #mmmDetailPanel.mmm-readonly .mmm-fg select,
+    #mmmDetailPanel.mmm-readonly .mmm-fg textarea {
+        background: var(--light-bg);
+        cursor: default;
+    }
+
+    #mmmDetailPanel.mmm-readonly .mmm-options-row input { pointer-events: none; }
+
+    .pm-modal .modal-content {
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+    }
+
+    .pm-modal .modal-header {
+        background: linear-gradient(135deg,#dc2626,#ef4444);
+        color: #fff;
+        border-bottom: none;
+        padding: 18px 22px;
+    }
+
+    .pm-modal .modal-title { color: #fff; font-weight: 700; }
+
+    .pm-close-btn {
+        background: rgba(255,255,255,.15);
+        border: none;
+        color: #fff;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    @@media (max-width: 992px) {
+        .mmm-form-grid { grid-template-columns: repeat(2, 1fr); }
+        .mmm-fg.span2 { grid-column: span 2; }
+    }
+
+    @@media (max-width: 600px) {
+        .mmm-form-grid { grid-template-columns: 1fr; }
+        .mmm-fg.span2, .mmm-fg.span3 { grid-column: span 1; }
+        .mmm-toolbar { justify-content: stretch; }
+        .mmm-toolbar .mmm-btn { flex: 1; justify-content: center; }
+    }
+</style>
+
+<div class="mmm-page" id="MarketingManMasterPage">
+
+    <div id="mmmListPanel">
+        <div class="mmm-hero">
+            <div class="mmm-hero-left">
+                <div class="mmm-hero-icon">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div>
+                    <div class="mmm-hero-title">Marketing Man Master</div>
+                </div>
+            </div>
+            <button type="button" class="pm-btn-new" id="btnCreateMarketingMan">
+                <span class="pm-plus">+</span>
+                <span>Create New</span>
+            </button>
+        </div>
+
+        <div class="mmm-card">
+            <div class="pm-card-toolbar">
+                <div class="pm-search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="mmmSearch" placeholder="Search by name, mobile or email…" autocomplete="off" />
+                </div>
+            </div>
+            <div class="pm-table-wrap table-wrapper">
+                <table class="pm-table" id="MarketingManMaster">
+                    <thead id="table-header-MarketingManMaster"></thead>
+                    <tbody id="table-body-MarketingManMaster"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-MarketingManMaster"></div>
+        </div>
+    </div>
+
+    <div id="mmmDetailPanel" style="display:none;">
+        <div class="mmm-detail-back">
+            <button type="button" class="pm-btn secondary" id="btnBackToMarketingManList">
+                <i class="fas fa-arrow-left"></i> Back to list
+            </button>
+        </div>
+
+        <input type="hidden" id="hfMarketingManMaster_Code" value="0" />
+
+    <div class="mmm-card">
+        <div class="mmm-card-hdr">
+            <i class="fas fa-id-card"></i> Details
+        </div>
+        <div class="mmm-card-body">
+            <div class="mmm-form-section">
+                <div class="mmm-form-section-title">
+                    <i class="fas fa-info-circle"></i> Marketing person
+                </div>
+
+                <div class="mmm-form-grid">
+                    <div class="mmm-fg">
+                        <label for="ddlUserId">User ID</label>
+                        <select id="ddlUserId"></select>
+                    </div>
+                    <div class="mmm-fg">
+                        <label for="txtPersonName">Person Name</label>
+                        <input type="text" id="txtPersonName" autocomplete="off" maxlength="120" placeholder="Person name" />
+                    </div>
+                    <div class="mmm-fg">
+                        <label for="txtDesignation">Designation</label>
+                        <input type="text" id="txtDesignation" autocomplete="off" maxlength="80" placeholder="Designation" />
+                    </div>
+                    <div class="mmm-fg">
+                        <label for="txtMobile">Mobile</label>
+                        <input type="tel" id="txtMobile" autocomplete="off" maxlength="15" placeholder="Mobile" />
+                    </div>
+                    <div class="mmm-fg span2">
+                        <label for="txtEMail">E-Mail</label>
+                        <input type="email" id="txtEMail" autocomplete="off" maxlength="120" placeholder="email@company.com" />
+                    </div>
+                </div>
+
+                <div class="mmm-options-row">
+                    <div class="mmm-check">
+                        <input type="checkbox" id="chkEmailInvoiceCopy" />
+                        <label for="chkEmailInvoiceCopy">Email Invoice Copy</label>
+                    </div>
+                    <div class="mmm-radio-group" role="radiogroup" aria-label="Senior or Junior">
+                        <span style="font-size:12.5px;font-weight:700;color:var(--text-primary);">Level</span>
+                        <div class="mmm-radio-inline">
+                            <input type="radio" name="radSeniority" id="radSenior" value="S" checked />
+                            <label for="radSenior">Senior</label>
+                        </div>
+                        <div class="mmm-radio-inline">
+                            <input type="radio" name="radSeniority" id="radJunior" value="J" />
+                            <label for="radJunior">Junior</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mmm-form-grid">
+                    <div class="mmm-fg">
+                        <label for="ddlSeniorName">Senior Name</label>
+                        <select id="ddlSeniorName"></select>
+                    </div>
+                    <div class="mmm-fg">
+                        <label for="ddlEmployeeName">Employee Name</label>
+                        <select id="ddlEmployeeName"></select>
+                    </div>
+                    <div class="mmm-fg">
+                        <label for="ddlCostCenter">Cost Center ID</label>
+                        <select id="ddlCostCenter"></select>
+                    </div>
+                    <div class="mmm-fg">
+                        <label for="txtEmployeeLeaveDate">Employee Leave Date</label>
+                        <input type="date" id="txtEmployeeLeaveDate" />
+                    </div>
+                    <div class="mmm-fg span2">
+                        <label for="ddlZone">Zone</label>
+                        <select id="ddlZone"></select>
+                    </div>
+                </div>
+
+                <div class="mmm-options-row">
+                    <div class="mmm-radio-group" role="radiogroup" aria-label="Status">
+                        <span style="font-size:12.5px;font-weight:700;color:var(--text-primary);">Status</span>
+                        <div class="mmm-radio-inline">
+                            <input type="radio" name="radStatus" id="radActive" value="Y" checked />
+                            <label for="radActive">Active</label>
+                        </div>
+                        <div class="mmm-radio-inline">
+                            <input type="radio" name="radStatus" id="radInactive" value="N" />
+                            <label for="radInactive">Inactive</label>
+                        </div>
+                    </div>
+                    <div class="mmm-check">
+                        <input type="checkbox" id="chkShowAllParty" />
+                        <label for="chkShowAllParty">Show All Party</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mmm-toolbar">
+            <button type="button" class="mmm-btn secondary" id="btnClearMarketingMan">
+                <i class="fas fa-eraser"></i> Clear
+            </button>
+            <button type="button" class="mmm-btn primary" id="btnSaveMarketingMan">
+                <i class="fas fa-save"></i> Save
+            </button>
+        </div>
+    </div>
+
+    <div class="mmm-card" id="dvClientCard">
+        <div class="mmm-card-hdr">
+            <i class="fas fa-building"></i> Client
+        </div>
+        <div class="mmm-card-body" style="padding-top:0;">
+            <div class="mmm-table-wrap">
+                <table class="mmm-table" id="tblClient">
+                    <thead>
+                        <tr>
+                            <th class="center" style="width:64px;">#</th>
+                            <th>Client</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tblClientBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+</div>
+
+<div class="modal fade pm-modal" id="dvMMMDeleteModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i>Confirm Delete</h5>
+                <button type="button" class="pm-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="background:#fff; padding:22px 24px 18px;">
+                <p class="mb-3" style="color:var(--text-dark); font-size:14px;">Delete this marketing man record?</p>
+                <label for="mmmReasonForDelete" class="form-label" style="font-size:12.5px;font-weight:700;">Reason for deletion <span class="text-danger">*</span></label>
+                <input type="text" id="mmmReasonForDelete" class="form-control" autocomplete="off" placeholder="Enter reason" />
+                <input type="hidden" id="hfMMMDeleteCode" value="0" />
+            </div>
+            <div class="modal-footer" style="border-top:1px solid var(--border-color);">
+                <button type="button" class="pm-btn secondary" data-bs-dismiss="modal"><i class="fas fa-ban"></i> Cancel</button>
+                <button type="button" class="btn btn-danger" id="btnMMMConfirmDelete"><i class="fas fa-trash-alt"></i> Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
