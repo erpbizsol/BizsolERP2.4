@@ -34,6 +34,10 @@ let editMode = false;
 let gpaAddBillModalBillRowsCache = [];
 /** Full list rows (all statuses); tabs filter client-side. Matches DDL: U Pending, P Approved, R Rejected. */
 let gpaListFullRows = [];
+/** Cached from GetVendor — used for print voucher party lookup. */
+let gpaVendorListCache = [];
+/** Cached from GetBankPayment — used for print voucher payment mode label. */
+let gpaBankPaymentListCache = [];
 /** Active list tab: 'U' | 'P' | 'R' */
 let gpaListActiveStatusTab = 'U';
 
@@ -88,6 +92,10 @@ function mapGpaListRow(item) {
     const rawEdStr = ed ? String(ed).substring(0, 10) : '';
     const enNum = parseInt(entryNo, 10) || 0;
     const btns =
+        '<button type="button" class="im-btn-print-preview" title="Print Preview" onclick="PrintGRNPaymentVoucher(' + code + ',\'preview\')">' +
+        '<i class="fa fa-search-plus"></i></button>' +
+        '<button type="button" class="im-btn-print" title="Print" onclick="PrintGRNPaymentVoucher(' + code + ',\'print\')">' +
+        '<i class="fa fa-print"></i></button>' +
         '<button type="button" class="im-btn-edit" title="Edit" onclick="editGRNPaymentApproval(' + code + ')">' +
         '<i class="fas fa-pen"></i></button>' +
         '<button type="button" class="im-btn-attach" title="Attachment" onclick="openGpaListAttachmentControl(' + code + ',' + enNum + ',\'' + rawEdStr + '\')">' +
@@ -167,7 +175,7 @@ function renderGpaListGridForActiveTab() {
     const showButtons = [];
     const StringdoubleFilterColumn = [];
     const hiddenColumns = ['Code', 'StatusCode'];
-    const ColumnAlignment = { Action: 'center;width:172px;' };
+    const ColumnAlignment = { Action: 'center;width:268px;' };
 
     updateGpaStatusTabStrip();
 
@@ -514,6 +522,7 @@ async function loadBankPaymentList() {
     try {
         const result = await GRNPaymentApprovalService.GetBankPayment();
         const rows = normalizeApiRows(result);
+        gpaBankPaymentListCache = rows;
         ddl.innerHTML = '<option value="">-- Select --</option>';
         rows.forEach(row => {
             const opt = document.createElement('option');
@@ -542,6 +551,7 @@ async function loadVendorList() {
     try {
         const result = await GRNPaymentApprovalService.GetVendor();
         const rows = normalizeApiRows(result);
+        gpaVendorListCache = rows;
         ddl.innerHTML = '<option value="">-- Select Party --</option>';
         rows.forEach(v => {
             const opt = document.createElement('option');
@@ -1696,6 +1706,274 @@ function getFinancialYear() {
     return year + "-" + (year + 1);
 }
 
+// ─── PAYMENT VOUCHER PRINT (same flow as PurchaseOrderStore PrintPO) ───────────
+
+function gpaEscapeHtml(s) {
+    if (s === undefined || s === null) return '';
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function gpaSessionCompanyInfo() {
+    let companyName = '';
+    let companyAddr = '';
+    let companyGST = '';
+    let companyTag = '';
+    try {
+        const ud = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
+        if (ud && ud[0]) {
+            companyName = ud[0].CompanyName || ud[0].CompanyNameForShow || '';
+            companyAddr = ud[0].CompanyAddress || '';
+            companyGST = ud[0].GSTIN || ud[0].CompanyGSTIN || '';
+            companyTag = ud[0].BranchName || ud[0].CompanyTagLine || ud[0].TagLine || '';
+        }
+    } catch (e) { /* optional */ }
+    return { companyName, companyAddr, companyGST, companyTag };
+}
+
+function gpaNumberToWords(amount) {
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+        'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+        'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    function twoD(n) {
+        if (n < 20) return ones[n];
+        return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+    }
+    function threeD(n) {
+        if (n >= 100) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + twoD(n % 100) : '');
+        return twoD(n);
+    }
+    let n = Math.floor(Math.abs(amount));
+    if (n === 0) return 'Zero Rupees Only';
+    let w = '';
+    if (n >= 10000000) { w += threeD(Math.floor(n / 10000000)) + ' Crore '; n %= 10000000; }
+    if (n >= 100000) { w += twoD(Math.floor(n / 100000)) + ' Lakh '; n %= 100000; }
+    if (n >= 1000) { w += twoD(Math.floor(n / 1000)) + ' Thousand '; n %= 1000; }
+    if (n >= 100) { w += ones[Math.floor(n / 100)] + ' Hundred '; n %= 100; }
+    if (n > 0) { w += twoD(n); }
+    return w.trim() + ' Rupees Only';
+}
+
+function gpaFormatIndianCurrency(num) {
+    const n = parseFloat(num || 0);
+    if (isNaN(n)) return '0.00';
+    const parts = n.toFixed(2).split('.');
+    const intPart = parts[0];
+    const decPart = parts[1];
+    const lastThree = intPart.slice(-3);
+    const remaining = intPart.slice(0, -3);
+    const formatted = remaining.length > 0
+        ? remaining.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree
+        : lastThree;
+    return formatted + '.' + decPart;
+}
+
+function gpaLookupVendorName(master) {
+    const vCode = master?.VendorMaster_Code ?? master?.vendorMaster_Code;
+    const accCode = master?.AccountMaster_Code ?? master?.accountMaster_Code;
+    const list = gpaVendorListCache || [];
+    for (let i = 0; i < list.length; i++) {
+        const v = list[i];
+        const vc = v.VendorMaster_Code ?? v.vendorMaster_Code ?? v.Code;
+        const ac = v.AccountMaster_Code ?? v.accountMaster_Code;
+        if (vCode != null && `${vc}` === `${vCode}`) {
+            return v.VendorName ?? v.vendorName ?? v.Name ?? '';
+        }
+        if (accCode != null && ac != null && `${ac}` === `${accCode}`) {
+            return v.VendorName ?? v.vendorName ?? v.Name ?? '';
+        }
+    }
+    return '';
+}
+
+function gpaLookupBankPaymentLabel(code) {
+    if (code === undefined || code === null || `${code}`.trim() === '') return '';
+    const list = gpaBankPaymentListCache || [];
+    for (let i = 0; i < list.length; i++) {
+        const row = list[i];
+        const c = row.F_BankPaymentTypeMaster_Code ?? row.f_BankPaymentTypeMaster_Code
+            ?? row.Code ?? row.code;
+        if (`${c}` === `${code}`) {
+            return row.BankPaymentTypeName ?? row.bankPaymentTypeName
+                ?? row.BankPaymentType ?? row.bankPaymentType
+                ?? row.Description ?? row.description
+                ?? row.Name ?? row.name ?? '';
+        }
+    }
+    return '';
+}
+
+function gpaPickPoFromMergedRows(rows) {
+    let poNo = '';
+    let poDate = '';
+    for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        const p = r.PONo ?? r.pONo ?? r.PO_No ?? r.poNo ?? r.PurchaseOrderNo ?? r.purchaseOrderNo ?? '';
+        const d = r.PODate ?? r.pODate ?? r.PO_Date ?? r.poDate ?? r.PurchaseOrderDate ?? '';
+        if (p || d) {
+            poNo = p ? String(p) : '';
+            poDate = d ? String(d) : '';
+            break;
+        }
+    }
+    return { poNo, poDate };
+}
+
+function gpaPickSiteBundleFromRow(r) {
+    if (!r || typeof r !== 'object') {
+        return { project: '', site: '', siteType: '', vendorType: '', contact: '' };
+    }
+    return {
+        project: r.ProjectDesp ?? r.projectDesp ?? r.ProjectName ?? r.projectName ?? r.Project ?? '',
+        site: r.SiteName ?? r.siteName ?? r.SiteDesp ?? r.SubProjectDesp ?? r.subProjectDesp ?? r.SubProject ?? '',
+        siteType: r.SiteType ?? r.siteType ?? r.SiteTypeName ?? '',
+        vendorType: r.VendorType ?? r.vendorType ?? r.PartyType ?? '',
+        contact: r.ContactNo ?? r.contactNo ?? r.Mobile ?? r.mobile ?? r.Phone ?? r.phone ?? '',
+    };
+}
+
+function PrintGRNPaymentVoucher(code, mode) {
+    const codeNum = parseInt(code, 10);
+    if (!Number.isFinite(codeNum) || codeNum <= 0) {
+        if (typeof toastr !== 'undefined') toastr.warning('Invalid payment entry.');
+        return;
+    }
+    GRNPaymentApprovalService.GetGRNPaymentApprovalByCode(codeNum).then(async function (res) {
+        const root = peelGrnPaymentApiRoot(res);
+        const master = firstMasterFromApi(root);
+        let details = extractGRNPaymentDetailsArray(root, master);
+        if (!master) {
+            if (typeof toastr !== 'undefined') toastr.error('Payment entry not found.');
+            return;
+        }
+
+        const partyKey = master.AccountMaster_Code ?? master.accountMaster_Code
+            ?? master.VendorMaster_Code ?? master.vendorMaster_Code ?? '';
+        let billLookup = [];
+        if (partyKey !== undefined && partyKey !== null && `${partyKey}`.trim() !== '') {
+            try {
+                const br = await GRNPaymentApprovalService.GetBillDetails(String(partyKey));
+                billLookup = normalizeApiRows(br);
+            } catch (e) {
+                console.warn('PrintGRNPaymentVoucher bill lookup', e);
+            }
+        }
+
+        const mergedDetails = (details || []).map(function (d) {
+            return mergeEditDetailWithBillLookup(d, billLookup);
+        });
+
+        const { companyName, companyAddr, companyGST, companyTag } = gpaSessionCompanyInfo();
+        let creditTo = gpaLookupVendorName(master);
+        if (!creditTo && Array.isArray(gpaListFullRows)) {
+            const hit = gpaListFullRows.find(function (r) { return r.Code == codeNum; });
+            if (hit && hit['Party Name']) creditTo = String(hit['Party Name']);
+        }
+        creditTo = creditTo || '';
+
+        const refNo = master.RefNo ?? master.refNo ?? '';
+        const entryDateRaw = master.EntryDate ?? master.entryDate ?? master.PaymentDate ?? master.paymentDate;
+        const voucherDate = formatGpaListDate(entryDateRaw);
+
+        const bankCode = master.F_BankPaymentTypeMaster_Code ?? master.f_BankPaymentTypeMaster_Code;
+        const payModeLabel = gpaLookupBankPaymentLabel(bankCode) || '—';
+
+        const amt = parseFloat(master.Amount ?? master.amount ?? 0) || 0;
+        const narration = master.Narration ?? master.narration ?? '';
+        const advance = parseFloat(master.AdvanceAmount ?? master.advanceAmount ?? 0) || 0;
+
+        const poPair = gpaPickPoFromMergedRows(mergedDetails);
+        const poDateDisp = poPair.poDate ? formatGpaListDate(poPair.poDate) : '';
+        const site0 = mergedDetails.length ? gpaPickSiteBundleFromRow(mergedDetails[0]) : gpaPickSiteBundleFromRow({});
+
+        let detailsLines = '';
+        mergedDetails.forEach(function (row, idx) {
+            const sb = gpaPickSiteBundleFromRow(row);
+            const billNo = row.BillNo ?? row.billNo ?? row.Name ?? row.name ?? '';
+            const pay = row.PaymentAmount ?? row.paymentAmount ?? '';
+            detailsLines += '<div style="margin-bottom:6px;">'
+                + '<b>Line ' + (idx + 1) + '</b>'
+                + (billNo ? ' &mdash; Bill: ' + gpaEscapeHtml(String(billNo)) : '')
+                + (pay !== '' && pay != null ? ' &mdash; Paid: &#8377;' + gpaFormatIndianCurrency(pay) : '')
+                + (sb.project ? '<br><span>Project: ' + gpaEscapeHtml(String(sb.project)) + '</span>' : '')
+                + (sb.site ? '<br><span>Site: ' + gpaEscapeHtml(String(sb.site)) + '</span>' : '')
+                + '</div>';
+        });
+        const detailsBlock = ''
+            + (narration ? '<div style="margin-bottom:8px;"><b>Narration:</b><br>' + gpaEscapeHtml(String(narration)) + '</div>' : '')
+            + (detailsLines || '<span style="color:#666;">—</span>')
+            + '<div style="margin-top:10px;font-weight:700;">Amount (figures): &#8377; ' + gpaFormatIndianCurrency(amt)
+            + '</div><div style="margin-top:4px;font-size:9pt;">Amount (words): ' + gpaNumberToWords(Math.round(amt)) + '</div>'
+            + (advance > 0.005 ? '<div style="margin-top:4px;">Advance / adjustment: &#8377; ' + gpaFormatIndianCurrency(advance) + '</div>' : '');
+
+        const css = '@page{size:A4 portrait;margin:10mm 12mm 14mm 12mm;}'
+            + '*{box-sizing:border-box;margin:0;padding:0;}'
+            + 'body{font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#000;background:#fff;}'
+            + '.no-print{margin-bottom:5mm;}'
+            + '@media print{.no-print{display:none!important;}}'
+            + '.pv-wrap{max-width:780px;margin:0 auto;border:2px solid #000;padding:12px 14px;}'
+            + '.pv-co{text-align:center;font-size:14pt;font-weight:800;margin-bottom:2px;}'
+            + '.pv-tag{text-align:center;font-size:8.5pt;margin-bottom:4px;color:#222;}'
+            + '.pv-addr{text-align:center;font-size:9pt;margin-bottom:3px;line-height:1.35;}'
+            + '.pv-gst{text-align:center;font-size:9pt;margin-bottom:10px;}'
+            + '.pv-title{text-align:center;font-weight:800;font-size:11pt;border:1px solid #000;padding:5px;margin:10px 0 12px;letter-spacing:0.04em;}'
+            + 'table.pv-t{width:100%;border-collapse:collapse;margin-bottom:0;}'
+            + 'table.pv-t td{border:1px solid #000;padding:6px 8px;font-size:9.5pt;vertical-align:top;}'
+            + 'table.pv-t td.lbl{font-weight:700;width:22%;background:#fafafa;}'
+            + '.pv-details{min-height:120px;border:1px solid #000;border-top:none;padding:8px;font-size:9.5pt;}'
+            + '.pv-sig{display:flex;margin-top:14px;gap:8px;}'
+            + '.pv-sig > div{flex:1;border:1px solid #000;min-height:72px;padding:6px;text-align:center;font-weight:700;font-size:9pt;}';
+
+        const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Payment Voucher</title><style>' + css + '</style></head><body>'
+            + '<div class="no-print" style="display:flex;gap:8px;padding:3px 0 8px;">'
+            + '<button type="button" onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:5px 16px;border-radius:5px;font-size:9pt;cursor:pointer;">&#128438;&nbsp;Print</button>'
+            + '<button type="button" onclick="window.close()" style="background:#666;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:9pt;cursor:pointer;">&#10005;&nbsp;Close</button>'
+            + '</div>'
+            + '<div class="pv-wrap">'
+            + '<div class="pv-co">' + gpaEscapeHtml(companyName || 'Company Name') + '</div>'
+            + (companyTag ? '<div class="pv-tag">' + gpaEscapeHtml(companyTag) + '</div>' : '')
+            + (companyAddr ? '<div class="pv-addr">Address: ' + gpaEscapeHtml(companyAddr) + '</div>' : '')
+            + '<div class="pv-gst">GSTIN: ' + gpaEscapeHtml(companyGST || '') + '</div>'
+            + '<div class="pv-title">Payment Voucher</div>'
+            + '<table class="pv-t" role="presentation">'
+            + '<tr><td class="lbl">Reference No</td><td>' + gpaEscapeHtml(String(refNo || '')) + '</td>'
+            + '<td class="lbl" style="width:18%;">Voucher Date</td><td style="width:22%;">' + gpaEscapeHtml(voucherDate) + '</td></tr>'
+            + '<tr><td class="lbl">PO No</td><td>' + gpaEscapeHtml(poPair.poNo) + '</td>'
+            + '<td class="lbl">PO Date</td><td>' + gpaEscapeHtml(poDateDisp) + '</td></tr>'
+            + '<tr><td class="lbl">NEFT / Cheque / RTGS</td><td colspan="3">' + gpaEscapeHtml(payModeLabel) + '</td></tr>'
+            + '<tr><td class="lbl">Credit to</td><td colspan="3">' + gpaEscapeHtml(creditTo) + '</td></tr>'
+            + '<tr><td class="lbl">Project Name</td><td colspan="3">' + gpaEscapeHtml(String(site0.project || '')) + '</td></tr>'
+            + '<tr><td class="lbl">Site Name</td><td colspan="3">' + gpaEscapeHtml(String(site0.site || '')) + '</td></tr>'
+            + '<tr><td class="lbl">Site Type</td><td colspan="3">' + gpaEscapeHtml(String(site0.siteType || '')) + '</td></tr>'
+            + '<tr><td class="lbl">Vendor Type</td><td colspan="3">' + gpaEscapeHtml(String(site0.vendorType || '')) + '</td></tr>'
+            + '<tr><td class="lbl">Contact No</td><td colspan="3">' + gpaEscapeHtml(String(site0.contact || '')) + '</td></tr>'
+            + '<tr><td class="lbl">Payment for</td><td colspan="3">GRN / Bill payment against pending invoices</td></tr>'
+            + '</table>'
+            + '<div style="border:1px solid #000;border-top:none;padding:4px 8px;font-weight:700;font-size:9.5pt;">Details</div>'
+            + '<div class="pv-details">' + detailsBlock + '</div>'
+            + '<div class="pv-sig"><div>Made By</div><div>Approved By</div></div>'
+            + '</div></body></html>';
+
+        const win = window.open('', '_blank', 'width=920,height=760,scrollbars=yes,resizable=yes');
+        if (!win) {
+            if (typeof toastr !== 'undefined') toastr.warning('Please allow popups for this site to use the print feature.');
+            return;
+        }
+        win.document.write(html);
+        win.document.close();
+        if (mode === 'print') {
+            setTimeout(function () { win.focus(); win.print(); }, 600);
+        }
+    }).catch(function (err) {
+        if (typeof toastr !== 'undefined') toastr.error('Error loading payment entry for print.');
+        console.error(err);
+    });
+}
+
 window.InitAttachmentControl = InitAttachmentControl;
 window.openGpaAttachmentControl = openGpaAttachmentControl;
 window.openGpaListAttachmentControl = openGpaListAttachmentControl;
@@ -1718,3 +1996,4 @@ window.cancelGRNPaymentApproval = cancelGRNPaymentApproval;
 window.editGRNPaymentApproval = editGRNPaymentApproval;
 window.confirmDeleteGRNPaymentApproval = confirmDeleteGRNPaymentApproval;
 window.onGpaListStatusTabClick = onGpaListStatusTabClick;
+window.PrintGRNPaymentVoucher = PrintGRNPaymentVoucher;
