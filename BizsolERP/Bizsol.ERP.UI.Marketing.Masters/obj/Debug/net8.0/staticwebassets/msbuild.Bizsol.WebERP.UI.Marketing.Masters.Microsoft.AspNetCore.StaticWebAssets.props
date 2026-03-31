@@ -12,12 +12,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>eq9agmlgui</Fingerprint>
-      <Integrity>xseB72B9yLYazxjrKaMnRNFoolBBPrPcAn09djC7x+w=</Integrity>
+      <Fingerprint>swt5i5fi0u</Fingerprint>
+      <Integrity>rByBbWwsGcMH2ibi31IbAJe9czigdMLHHEwzQc74MtU=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>5603</FileLength>
-      <LastWriteTime>Mon, 06 Oct 2025 09:31:36 GMT</LastWriteTime>
+      <FileLength>8580</FileLength>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:36 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\EnquiryMaster.css'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\DealerMaster.js'))">
@@ -32,12 +32,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>295rp38ukh</Fingerprint>
-      <Integrity>Vvhfn+kQ5R9F2ta8+EAToyvit5Q/3I8DWc3OJDfUefA=</Integrity>
+      <Fingerprint>pr3ylr299c</Fingerprint>
+      <Integrity>a9cW+F0fxIScAUaS0/HvrJp2DtNVQ4bePC9bgN/bnqY=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>7014</FileLength>
-      <LastWriteTime>Tue, 14 Jan 2025 09:26:14 GMT</LastWriteTime>
+      <FileLength>9460</FileLength>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:36 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\DealerMaster.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\DealerMasterList.js'))">
@@ -52,12 +52,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>0cj8d006wd</Fingerprint>
-      <Integrity>ID/jeUt+Hk2oGZ9uxXE7dCVYlyfjZD28aKfaUibQLYc=</Integrity>
+      <Fingerprint>omfx5jktsz</Fingerprint>
+      <Integrity>oGFL33ESnEHzgJj6UgW6w/NcDbA8w23819TH8jLx9aw=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>7553</FileLength>
-      <LastWriteTime>Tue, 14 Jan 2025 09:26:14 GMT</LastWriteTime>
+      <FileLength>7503</FileLength>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:36 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\DealerMasterList.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\EnquiryMaster.js'))">
@@ -72,13 +72,33 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>kact89yix3</Fingerprint>
-      <Integrity>fE+PQYRsz90/q/47OFCxiqIqV6UmNYyhR2WywzhnHVE=</Integrity>
+      <Fingerprint>q0mau250t0</Fingerprint>
+      <Integrity>+gP2/M2MPQt/GQ21dBDWjpoxb8XeGXZ1/RRuG23aLQI=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>99080</FileLength>
-      <LastWriteTime>Mon, 06 Oct 2025 09:31:36 GMT</LastWriteTime>
+      <FileLength>126845</FileLength>
+      <LastWriteTime>Thu, 26 Feb 2026 10:40:55 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\EnquiryMaster.js'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\ItemMaster.js'))">
+      <SourceType>Package</SourceType>
+      <SourceId>Bizsol.WebERP.UI.Marketing.Masters</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/Bizsol.WebERP.UI.Marketing.Masters</BasePath>
+      <RelativePath>js/ItemMaster.js</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>0p1n5i7034</Fingerprint>
+      <Integrity>VIVMsgK83uF6xdKmVmRExcEsWkthRS4E/aE3o31NEHY=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <FileLength>22316</FileLength>
+      <LastWriteTime>Thu, 26 Mar 2026 12:48:37 GMT</LastWriteTime>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\ItemMaster.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\LeadMaster.js'))">
       <SourceType>Package</SourceType>
@@ -97,8 +117,68 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>74186</FileLength>
-      <LastWriteTime>Thu, 04 Sep 2025 06:49:55 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:36 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\LeadMaster.js'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\Ledger.js'))">
+      <SourceType>Package</SourceType>
+      <SourceId>Bizsol.WebERP.UI.Marketing.Masters</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/Bizsol.WebERP.UI.Marketing.Masters</BasePath>
+      <RelativePath>js/Ledger.js</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>dei634be03</Fingerprint>
+      <Integrity>pUV1iaahtUpHgje8jpkNJUCgOlXupycXRQQpfpGFOoA=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <FileLength>17544</FileLength>
+      <LastWriteTime>Tue, 24 Mar 2026 10:06:27 GMT</LastWriteTime>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\Ledger.js'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\TransporterMaster.js'))">
+      <SourceType>Package</SourceType>
+      <SourceId>Bizsol.WebERP.UI.Marketing.Masters</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/Bizsol.WebERP.UI.Marketing.Masters</BasePath>
+      <RelativePath>js/TransporterMaster.js</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>879z2nb9jz</Fingerprint>
+      <Integrity>VAd26VKQvj0xt8UzkKgp1tXRjzEroIULl3U7hRoJR44=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <FileLength>16607</FileLength>
+      <LastWriteTime>Tue, 24 Mar 2026 10:06:27 GMT</LastWriteTime>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\TransporterMaster.js'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\VendorMaster.js'))">
+      <SourceType>Package</SourceType>
+      <SourceId>Bizsol.WebERP.UI.Marketing.Masters</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/Bizsol.WebERP.UI.Marketing.Masters</BasePath>
+      <RelativePath>js/VendorMaster.js</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>iwk3gubn4y</Fingerprint>
+      <Integrity>kkS1/VedkHxSCsjgPW2GfGQ+dGg8A8/zocXbcDRK89E=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <FileLength>57397</FileLength>
+      <LastWriteTime>Thu, 26 Mar 2026 12:48:37 GMT</LastWriteTime>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\VendorMaster.js'))</OriginalItemSpec>
     </StaticWebAsset>
   </ItemGroup>
 </Project>

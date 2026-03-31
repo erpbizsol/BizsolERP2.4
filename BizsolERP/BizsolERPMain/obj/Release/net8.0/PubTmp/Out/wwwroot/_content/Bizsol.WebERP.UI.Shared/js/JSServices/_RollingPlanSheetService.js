@@ -2,8 +2,8 @@
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const RollingPlanSheetService = {
-    GetRollingPlanSheetList: function GetRollingPlanSheetList() {
-        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetRollingPlanSheetList";
+    GetRollingPlanSheetList: function GetRollingPlanSheetList(FromDate, ToDate) {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetRollingPlanSheetList?FromDate=" + FromDate + "&ToDate=" + ToDate;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -51,8 +51,40 @@ const RollingPlanSheetService = {
             }
         );
     },
-    GetPendingPlansReportList: function GetPendingPlansReportList(FromDate, ToDate) {
-        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetPendingPlansReportList?FromDate=" + FromDate + "&ToDate=" + ToDate;
+    GetPendingPlansReportList: function GetPendingPlansReportList(Payload) {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetPendingPlansReportList";
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(Payload)).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRollingPlanNoDetail: function GetRollingPlanNoDetail(PlanNo) {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetRollingPlanNoDetail?PlanNo=" + PlanNo;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRollingPlanItemName: function GetRollingPlanItemName() {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetRollingPlanItemName";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRollingPlanProductionDetails: function GetRollingPlanProductionDetails(Code) {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + `/GetRollingPlanProductionDetails?Code=${Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRollingPlanAgeingReportList: function GetRollingPlanAgeingReportList(FromDate, ToDate) {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetRollingPlanAgeingReportList?FromDate=" + FromDate + "&ToDate=" + ToDate;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

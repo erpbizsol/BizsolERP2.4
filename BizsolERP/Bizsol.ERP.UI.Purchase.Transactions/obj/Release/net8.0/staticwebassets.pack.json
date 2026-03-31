@@ -5,6 +5,22 @@
       "PackagePath": "staticwebassets\\Script\\FMSReport.js"
     },
     {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\GRNPayment.js",
+      "PackagePath": "staticwebassets\\Script\\GRNPayment.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\GRNPaymentApproval.js",
+      "PackagePath": "staticwebassets\\Script\\GRNPaymentApproval.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\GRNPaymentEntry.js",
+      "PackagePath": "staticwebassets\\Script\\GRNPaymentEntry.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\GRNService.js",
+      "PackagePath": "staticwebassets\\Script\\GRNService.js"
+    },
+    {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\GateEntry.js",
       "PackagePath": "staticwebassets\\Script\\GateEntry.js"
     },
@@ -13,12 +29,28 @@
       "PackagePath": "staticwebassets\\Script\\GateToken.js"
     },
     {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\InvoiceGST.js",
+      "PackagePath": "staticwebassets\\Script\\InvoiceGST.js"
+    },
+    {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\PDI.js",
       "PackagePath": "staticwebassets\\Script\\PDI.js"
     },
     {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\POApproval.js",
       "PackagePath": "staticwebassets\\Script\\POApproval.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\POLevelsApprove.js",
+      "PackagePath": "staticwebassets\\Script\\POLevelsApprove.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\ProjectMaster.js",
+      "PackagePath": "staticwebassets\\Script\\ProjectMaster.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\PurchaseOrderStore.js",
+      "PackagePath": "staticwebassets\\Script\\PurchaseOrderStore.js"
     },
     {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\QRQualityCheck.js",
@@ -43,6 +75,10 @@
     {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\ServicePOApproval.js",
       "PackagePath": "staticwebassets\\Script\\ServicePOApproval.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\SubProjectMaster.js",
+      "PackagePath": "staticwebassets\\Script\\SubProjectMaster.js"
     },
     {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Purchase.Transactions\\wwwroot\\Script\\TransitMaterial.js",

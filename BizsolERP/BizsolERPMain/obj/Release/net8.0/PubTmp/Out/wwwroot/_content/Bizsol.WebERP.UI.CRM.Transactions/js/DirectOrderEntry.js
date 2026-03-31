@@ -844,6 +844,7 @@ function AddFiveNewRows() {
         AddNewRow();
     } else {
         for (var i = 0; i < 5; i++) {
+        //for (var i = 0; i < 1; i++) {
             AddNewRow();
         }
     }
@@ -859,11 +860,7 @@ function AddNewRow() {
 
     var DistributorDealerApplicableInOrder = CRM_Config.ShowDealerColumn;
     var DefaultDiscountType = CRM_Config.DefaultDiscountType;
-    //var QtyPCHeader = CRM_Config.QtyPCHeader;
-    //var QtyMTRHeader = CRM_Config.QtyMTRHeader;
-    //var QtyMTHeader_MT = CRM_Config.QtyMTHeader_MT;
-    //var DistributorDealerApplicableInOrder = CRM_Config.DistributorDealerApplicableInOrder;
-
+    
     
     //var VisitType = 'Order';
     var VisitType = $('#hfVisitType').val();
@@ -893,46 +890,6 @@ function AddNewRow() {
     for (let i = 0; i < TblOrderColumns.length; i++) {
         cells.push(row.insertCell(i));
     }
-
-
-    //var Consignee = row.insertCell(Indx_TblOrder.Consignee);
-    //var DeliveryAddress = row.insertCell(Indx_TblOrder.DeliveryAddress);
-    //var ItemName = row.insertCell(Indx_TblOrder.ItemName);
-    //var Size = row.insertCell(Indx_TblOrder.Size);
-    //var Thickness = row.insertCell(Indx_TblOrder.Thickness);
-    //var SizeDesp = row.insertCell(Indx_TblOrder.SizeDesp);
-    //var UOM = row.insertCell(Indx_TblOrder.UOM);
-    //var Stock = row.insertCell(Indx_TblOrder.Stock);
-    //var OrderQtyBags = row.insertCell(Indx_TblOrder.OrderQtyBags);
-    //var OrderQtyPC = row.insertCell(Indx_TblOrder.OrderQtyPC);
-    //var OrderQtyMT = row.insertCell(Indx_TblOrder.OrderQtyMT);
-    //var OrderQtyMTR = row.insertCell(Indx_TblOrder.OrderQtyMTR);
-    //var RateUnit = row.insertCell(Indx_TblOrder.RateUnit);
-    //var OrderUOM = row.insertCell(Indx_TblOrder.OrderUOM);
-    //var OrderQTY = row.insertCell(Indx_TblOrder.OrderQTY);
-    //var Tolerance = row.insertCell(Indx_TblOrder.Tolerance);
-    //var BasicRate = row.insertCell(Indx_TblOrder.BasicRate);
-    //var ExtraCharges = row.insertCell(Indx_TblOrder.ExtraCharges);
-    //var DiscountType = row.insertCell(Indx_TblOrder.DiscountType);
-    //var Discount = row.insertCell(Indx_TblOrder.Discount);
-    //var OrderRate = row.insertCell(Indx_TblOrder.OrderRate);
-    
-    //var DiscountType_AfterRate = row.insertCell(Indx_TblOrder.DiscountType_AfterRate);
-    //var Discount_AfterRate = row.insertCell(Indx_TblOrder.Discount_AfterRate);
-    //var Amount = row.insertCell(Indx_TblOrder.Amount);
-    //var DeliveryDate = row.insertCell(Indx_TblOrder.DeliveryDate);
-    //var ZonePriceListCode = row.insertCell(Indx_TblOrder.ZonePriceListCode);
-    //var DealerNameList = row.insertCell(Indx_TblOrder.DealerName);
-    //var Remarks = row.insertCell(Indx_TblOrder.Remarks);
-    //var Delete = row.insertCell(Indx_TblOrder.Delete);
-    
-    //var VisitDetailsCode = row.insertCell(Indx_TblOrder.VisitDetailsCode);
-    //var IsNewRow = row.insertCell(Indx_TblOrder.IsNewRow);
-    //var SizeApplicable = row.insertCell(Indx_TblOrder.SizeApplicable);
-    //var ThkApplicable = row.insertCell(Indx_TblOrder.ThkApplicable);
-    //var LenApplicable = row.insertCell(Indx_TblOrder.LenApplicable);
-    //var ItemMasterCode = row.insertCell(Indx_TblOrder.ItemMasterCode);
-    //var UOMDecimalUnit = row.insertCell(Indx_TblOrder.UOMDecimalUnit);
 
     var Consignee = cells[Indx_TblOrder.Consignee];
     var DeliveryAddress = cells[Indx_TblOrder.DeliveryAddress];
@@ -973,6 +930,10 @@ function AddNewRow() {
     var ItemMasterCode = cells[Indx_TblOrder.ItemMasterCode];
     var UOMDecimalUnit = cells[Indx_TblOrder.UOMDecimalUnit];
 
+    let addDealerMasterBtn = '<div class="d-inline-flex gap-1" style="margin-left: 4px;">';
+    addDealerMasterBtn += '<a class="btn btn-success btn-sm" title="Add New Dealer" onclick="AddNewDealer(this);"><i class="fa fa-plus"></i></a>';
+    addDealerMasterBtn += '<a class="btn btn-primary btn-sm" title="Refresh Dealer List" onclick="RefreshDealerList(this);"><i class="fa fa-refresh"></i></a>';
+    addDealerMasterBtn += '</div>';
 
     VisitDetailsCode.style["display"] = "none";
     IsNewRow.style["display"] = "none";
@@ -985,19 +946,6 @@ function AddNewRow() {
         DealerNameList.style["display"] = "none";
     }
 
-    //if (QtyPCHeader == '') {
-    //    OrderQtyPC.style["display"] = "none";
-    //    //$("#tblorderbooking thead tr th:nth-child(" + Indx_TblOrder.OrderQtyPC + ")").css('display', 'none');
-    //}
-    //if (QtyMTRHeader == '') {
-    //    OrderQtyMT.style["display"] = "none";
-    //}
-    //if (QtyMTHeader_MT == '') {
-    //    OrderQtyMTR.style["display"] = "none";
-    //}
-
-    
- 
     Consignee.innerHTML = '<input type="text" id="txtConsignee' + tbItemConsumeRowNo + '" list="listConsignee" class="BizSolFormControl box_border form-control form-control-sm" name="txtConsignee" placeholder="" onclick="$(this).val(\'\')" autocomplete="off" onchange="GetConsigneeCode(this,' + tbItemConsumeRowNo + ');GetAccountDeliveryLocationDetails(this,' + tbItemConsumeRowNo + ');"  required><input type="hidden" id="hdnConsigneeCode' + tbItemConsumeRowNo + '" name="hdnConsigneeCode">';
     DeliveryAddress.innerHTML = '<div class="row"><div class="col-md-7"><datalist id="listDeliveryLocation' + tbItemConsumeRowNo + '"></datalist><input type="text" id="txtDeliveryAddress' + tbItemConsumeRowNo + '" list="listDeliveryLocation' + tbItemConsumeRowNo + '" class="BizSolFormControl box_border form-control form-control-sm" name="txtDeliveryAddress" placeholder="" onclick="$(this).val(\'\')" autocomplete="off"  required onchange="GetDeliveryAddressCode(this,' + tbItemConsumeRowNo + ');"></div><div class="col-md-3"><button type="button" id="btnSelectDeliveryAdd" onclick="GetAccountDeliveryLocationDetails(this,' + tbItemConsumeRowNo + ');ShowDeliveryAddressModal(' + tbItemConsumeRowNo + ');" class="btn btn-primary btn-height" title="Select Address"> <i class="fa fa-search"></i></button></div></div><input type="hidden" id="hdnAddressCode' + tbItemConsumeRowNo + '" name="hdnAddressCode"> ';
     //ItemName.innerHTML = '<input type="text"  id="txtItemName' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtItemName" placeholder="" list="listItem" autocomplete="off" onclick="$(this).val(\'\')"  onchange="GetItemSizeList(this,' + tbItemConsumeRowNo + ');GetLatestPriceListByItemName(this,' + tbItemConsumeRowNo + ');GetUOM(' + tbItemConsumeRowNo + ');GetBasicRateFromPriceList(this,' + tbItemConsumeRowNo + ');GetDealerFromPreRow(this,' + tbItemConsumeRowNo + ');GetItemSizeMasterList(this,' + tbItemConsumeRowNo + ');getRateUnitListFromQtyConfig(' + tbItemConsumeRowNo + ');ShowStockValueByItemSizeThk(this,' + tbItemConsumeRowNo + ');" required>';
@@ -1039,7 +987,8 @@ function AddNewRow() {
     ZonePriceListCode.innerHTML = '<select id="ddlZonePriceList' + tbItemConsumeRowNo + '" class="form-control form-control-sm box_border" name="ZonePriceList"  autocomplete="off" ></select>';
     Remarks.innerHTML = '<input type="text"  id="txtRemarks' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtRemarks" placeholder=""  autocomplete="off"  onchange="" required  maxlength="200">';
     Delete.innerHTML = '<a id="btnDelete" class=" btn btn-danger btn-sm waves-effect waves-light disabled" title="Delete" onclick="DeleteOrderItem(this,' + tbItemConsumeRowNo + ');"><i class="fa fa-times" aria-hidden="true"></i></a>';
-    DealerNameList.innerHTML = '<input type="hidden" id="hdnDistributorDealerCode' + tbItemConsumeRowNo + '" name="hdnDistributorDealerCode"><input type="text"  id="txtDealerNameList' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm" name="txtDealerNameList" placeholder="" list="listDistributorDealer" autocomplete="off" onclick="$(this).val(\'\')" onchange="GetDistributorDealerCode(this,' + tbItemConsumeRowNo + ')"  required>';
+
+    DealerNameList.innerHTML = '<div class="d-flex align-items-center gap-1"><input type="hidden" id="hdnDistributorDealerCode' + tbItemConsumeRowNo + '" name="hdnDistributorDealerCode"><input type="text"  id="txtDealerNameList' + tbItemConsumeRowNo + '" onkeypress="BizSolhandleEnterKey(event);" class="BizSolFormControl box_border form-control form-control-sm flex-grow-1" name="txtDealerNameList" placeholder="" list="listDistributorDealer" autocomplete="off" onclick="$(this).val(\'\')" onchange="GetDistributorDealerCode(this,' + tbItemConsumeRowNo + ')"  required>' + addDealerMasterBtn + '</div>';
 
     VisitDetailsCode.innerHTML = '<input type="text"  id="txtVisitDetailsCode' + tbItemConsumeRowNo + '"  name="txtVisitDetailsCode" placeholder="" value=0  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
     IsNewRow.innerHTML = '<input type="text"  id="txtIsNewRow' + tbItemConsumeRowNo + '"  name="txtIsNewRow" placeholder="" autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
@@ -1065,7 +1014,9 @@ function OnChange_ddlItemName(x, tbItemConsumeRowNo) {
     GetItemSizeMasterList(x, tbItemConsumeRowNo);
     getRateUnitListFromQtyConfig(tbItemConsumeRowNo);
     ShowStockValueByItemSizeThk(x, tbItemConsumeRowNo); 
-    GetBasicRateExtraCharges(x,tbItemConsumeRowNo);
+    GetBasicRateExtraCharges(x, tbItemConsumeRowNo);
+    SetMTRByPacking(x, tbItemConsumeRowNo);
+
 }
 
 function OnChange_ddlItemSize(x, tbItemConsumeRowNo) {
@@ -3093,8 +3044,12 @@ function SetOrderBookingTableHeaderAsPerConfig() {
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.Amount + 1) + ")").css('width', '75px');
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.DiscountType + 1) + ")").css('width', '60px');
     //$("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.Remarks + 1) + ")").css('width', '1000px');
-    $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.Remarks + 1) + ")").css('width', '100px');
+    $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.Remarks + 1) + ")").css('width', '200px');
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.Stock + 1) + ")").css('width', '6%');
+
+    $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.DealerName + 1) + ")").css('width', '13rem');
+    $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQtyBags + 1) + ")").css('width', '70px');
+    $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQtyMTR + 1) + ")").css('width', '70px');
 
 }
 function ShowSizeDespButton(x) {
@@ -3461,6 +3416,7 @@ function PopulateOrderBookingTable(data) {
     // Clear any existing rows
     //tbody.empty();
     //tbody.remove();
+    tbody.innerHTML = ''; 
     //SetOrderBookingTableHeaderAsPerConfig();
 
     // Loop through the data and append rows
@@ -6645,6 +6601,8 @@ function SetMTRByPacking(x, RowNo) {
 
     if (Qty > 0) {
         ObjCurrRow.find('td:eq(' + Indx_TblOrder.OrderQtyMTR + ')')[0].getElementsByTagName('input')[0].value = Qty;
+    } else {
+        ObjCurrRow.find('td:eq(' + Indx_TblOrder.OrderQtyMTR + ')')[0].getElementsByTagName('input')[0].value = 0;
     }
 
 }
@@ -6662,6 +6620,68 @@ function GenerateTableHeaders() {
     });
 }
 
+function AddNewDealer(element) {
+    // Find the current row and try to pick distributor/dealer info from the row
+    var $row = $(element).closest('tr');
+    //var distributorDealerCode = $row.find("input[id^='hdnDistributorDealerCode']").val() || '';
+    //var dealerNameFromRow = $row.find("input[id^='txtDealerNameList']").val() || '';
+    var dealerName = $('#ddlCustomerName option:selected').text() || '';
+    var distributorDealerCode = $('#ddlCustomerName option:selected').val() || '';
+
+    // Build encoded query parameters following existing project pattern
+    var codes = window.btoa(0); // Code = 0 for new
+    var Mode = window.btoa("New");
+    var disCode = window.btoa(distributorDealerCode || '');
+    var Name = window.btoa(dealerName || '');
+
+    var url = baseUrl + "/MarketingMasters/DealerMaster/DealerMaster?Code=" + codes + "&Mode=" + Mode + "&Distributor_Code=" + disCode + "&Distributor_Name=" + Name;
+
+    // Remove any existing modal we might have created previously
+    if ($('#modalAddDealer').length) {
+        $('#modalAddDealer').remove();
+    }
+
+    // Create a bootstrap modal that hosts the DealerMaster page inside an iframe
+    var modalHtml = ''
+        + '<div class="modal fade" id="modalAddDealer" tabindex="-1" role="dialog" aria-hidden="true">'
+        + '  <div class="modal-dialog modal-xl" role="document" style="max-width:1200px;">'
+        + '    <div class="modal-content">'
+        + '      <div class="modal-header">'
+        + '        <h5 class="modal-title">Create New Dealer</h5>'
+        + '        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>'
+        + '      </div>'
+        + '      <div class="modal-body p-0" style="height:80vh;">'
+        + '        <iframe id="iframeAddDealer" src="' + url + '" frameborder="0" style="width:100%; height:100%;"></iframe>'
+        + '      </div>'
+        + '    </div>'
+        + '  </div>'
+        + '</div>';
+
+    $('body').append(modalHtml);
+
+    // Show modal (supporting projects that use bootstrap's jQuery modal plugin)
+    $('#modalAddDealer').modal({
+        backdrop: 'static',
+        keyboard: false
+    });
+    $('#modalAddDealer').modal('show');
+
+    // When the modal is closed remove it and try to refresh dealer list in the row if a global function exists
+    $('#modalAddDealer').on('hidden.bs.modal', function () {
+        setTimeout(function () {
+            // Cleanup
+            $('#modalAddDealer').remove();
+            // If there's a RefreshDealerList function elsewhere in the app, call it to update the row's dealer list
+            if (typeof RefreshDealerList === 'function') {
+                try { RefreshDealerList(element); } catch (e) { console.warn('RefreshDealerList failed:', e); }
+            }
+        }, 100);
+    });
+}
+
+function RefreshDealerList(element) {
+    GetDistributorDealerList();
+}
 let sellogicaltableColumnstimer = setInterval(SetLogicalStockTableColumns, 100);
 window.GetAccountMasterDetails = GetAccountMasterDetails;
 window.BizSolhandleEnterKey = BizSolhandleEnterKey;
@@ -6724,3 +6744,5 @@ window.SetPCByWeightInMT = SetPCByWeightInMT;
 window.GetDefaultItemSizeMasterCode = GetDefaultItemSizeMasterCode;
 window.SetPCandWeightByLengthInMR = SetPCandWeightByLengthInMR;
 window.SetMTRByPacking = SetMTRByPacking;
+window.AddNewDealer = AddNewDealer;
+window.RefreshDealerList = RefreshDealerList;

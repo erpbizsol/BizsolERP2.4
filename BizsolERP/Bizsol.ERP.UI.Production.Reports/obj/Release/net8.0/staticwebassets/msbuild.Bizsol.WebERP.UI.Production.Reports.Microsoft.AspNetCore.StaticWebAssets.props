@@ -12,12 +12,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>ersauj3ugs</Fingerprint>
-      <Integrity>GmpLmKbuaqgb5qXFR+33QfK0gNSsTO2EIkZte7mQykk=</Integrity>
+      <Fingerprint>71weyh5lxz</Fingerprint>
+      <Integrity>q29Ky/o3To81Mi47mvF8YyyY7RcjrV6mJ6p4eEyJym4=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>46645</FileLength>
-      <LastWriteTime>Fri, 14 Nov 2025 12:38:03 GMT</LastWriteTime>
+      <FileLength>48703</FileLength>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:36 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Script\MillWiseProductionReport.js'))</OriginalItemSpec>
     </StaticWebAsset>
   </ItemGroup>

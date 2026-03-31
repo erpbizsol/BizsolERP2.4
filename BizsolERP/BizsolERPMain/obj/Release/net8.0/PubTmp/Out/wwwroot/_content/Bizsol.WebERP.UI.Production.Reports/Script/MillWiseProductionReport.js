@@ -1,23 +1,87 @@
 import { MillWiseProductionReport } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_MillWiseProductionReportService.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 let currentReportData = [];
 let currentJsonData = {};
 let currentIsMachineWise = false;
 let filteredReportData = [];
 let activeSizeFilters = [];
-let activeSizeFiltersByCol = {}; // { COLNAME: Set(values) }
+let activeSizeFiltersByCol = {}; 
+
+let _mwprHeightRaf = 0;
+let _mwprHeightHandlersBound = false;
+function getViewportHeight() {
+    return (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : (window.innerHeight || document.documentElement.clientHeight || 0);
+}
+function getFooterViewportOverlapHeight() {
+    const footer = document.querySelector('footer.footer');
+    if (!footer) return 0;
+    const viewportHeight = getViewportHeight();
+    const rect = footer.getBoundingClientRect();
+    const h = rect.height || 0;
+    if (!isFinite(h) || h <= 0) return 0;
+
+    const overlap = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+    return overlap > 0 && isFinite(overlap) ? overlap : 0;
+}
+function adjustMillWiseProductionTableHeight() {
+    const tableWrapper = document.getElementById('tableWrapper') || document.querySelector('.table-wrapper');
+    if (!tableWrapper) return;
+
+    if (tableWrapper.offsetParent === null) return;
+
+    const rect = tableWrapper.getBoundingClientRect();
+    const viewportHeight = getViewportHeight();
+    const footerHeight = getFooterViewportOverlapHeight();
+    const bottomGap = 8;
+    const minHeight = 200;
+
+    let availableHeight = viewportHeight - rect.top - footerHeight - bottomGap;
+    if (!isFinite(availableHeight)) return;
+    availableHeight = Math.max(minHeight, Math.floor(availableHeight));
+
+    tableWrapper.style.height = availableHeight + 'px';
+    tableWrapper.style.maxHeight = availableHeight + 'px';
+}
+function scheduleMillWiseProductionTableHeightAdjust() {
+    if (_mwprHeightRaf) cancelAnimationFrame(_mwprHeightRaf);
+    _mwprHeightRaf = requestAnimationFrame(function () {
+        _mwprHeightRaf = 0;
+        adjustMillWiseProductionTableHeight();
+    });
+}
+function bindMillWiseProductionTableHeightHandlers() {
+    if (_mwprHeightHandlersBound) return;
+    _mwprHeightHandlersBound = true;
+
+    window.addEventListener('resize', scheduleMillWiseProductionTableHeightAdjust, { passive: true });
+    window.addEventListener('orientationchange', scheduleMillWiseProductionTableHeightAdjust, { passive: true });
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', scheduleMillWiseProductionTableHeightAdjust, { passive: true });
+    }
+
+    setTimeout(scheduleMillWiseProductionTableHeightAdjust, 0);
+    setTimeout(scheduleMillWiseProductionTableHeightAdjust, 150);
+    setTimeout(scheduleMillWiseProductionTableHeightAdjust, 350);
+}
 
 $(document).ready(function () {
-    // Set default dates: From = Financial Year start (Apr 1), To = Today
     InitializeFinancialYearDates();
     GetItemSizeParameter();
     GetMachineNo();
+    bindMillWiseProductionTableHeightHandlers();
+    scheduleMillWiseProductionTableHeightAdjust();
     $("#btnSearch").on("click", function () {
         GetMillWiseProduction();
     });
-
-    // Close filter when clicking outside
+    var urlParams = BizSolHelperFunction.getUrlVars();
+    var menuValue = decodeURI(urlParams['ModuleDesp']);
+    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
+        $("#ERPHeading").text(menuValue);
+    } else {
+        $("#ERPHeading").text("Mill Wise Production Summary");
+    }
     $(document).click(function (event) {
         if (!$(event.target).closest('.size-filter-dropdown, .size-filter-icon, .col-filter-dropdown, .col-filter-icon').length) {
             $('.size-filter-dropdown').hide();
@@ -25,7 +89,6 @@ $(document).ready(function () {
         }
     });
 
-    // Prevent filter dropdown from closing when clicking inside
     $(document).on('click', '.size-filter-dropdown, .col-filter-dropdown', function (event) {
         event.stopPropagation();
     });
@@ -47,7 +110,6 @@ function formatDateYYYYMMDD(date) {
     return y + '-' + m + '-' + d;
 }
 function GetMillWiseProduction() {
-    // Validate From Date
     var fromDate = $("#txtFromDate").val();
     if (!fromDate || fromDate.trim() === '') {
         toastr.warning('Please select From Date');
@@ -55,7 +117,6 @@ function GetMillWiseProduction() {
         return;
     }
 
-    // Validate To Date
     var toDate = $("#txtToDate").val();
     if (!toDate || toDate.trim() === '') {
         toastr.warning('Please select To Date');
@@ -63,14 +124,12 @@ function GetMillWiseProduction() {
         return;
     }
 
-    // Validate date range
     if (new Date(fromDate) > new Date(toDate)) {
         toastr.warning('From Date cannot be greater than To Date');
         $("#txtFromDate").focus();
         return;
     }
 
-    // Validate Size Parameters
     var selectedSizeParams = $("#txtSizeParameter").val() || [];
     if (!selectedSizeParams || selectedSizeParams.length === 0) {
         toastr.warning('Please select at least one Size Parameter');
@@ -98,7 +157,6 @@ function GetMillWiseProductionReportList(jsonData) {
         if (response && response.length > 0) {
             HideLoader();
             currentReportData = response;
-            // Clear all filters when Show button is clicked
             activeSizeFilters = [];
             activeSizeFiltersByCol = {};
             filteredReportData = response;
@@ -124,8 +182,9 @@ function ClearTable() {
     currentReportData = [];
     filteredReportData = [];
     activeSizeFilters = [];
-    activeSizeFiltersByCol = {}; // Clear column filters as well
+    activeSizeFiltersByCol = {}; 
     currentJsonData = {};
+    scheduleMillWiseProductionTableHeightAdjust();
 }
 function RenderMillWiseProductionTable(data, isMachineWise) {
     if (!data || data.length === 0) {
@@ -138,17 +197,15 @@ function RenderMillWiseProductionTable(data, isMachineWise) {
     var cfColumn = null;
     var totalColumn = null;
     var totalODColumn = null;
-    var numericColumn = null; // legacy numeric column reference (not used for OD grouping)
+    var numericColumn = null; 
     var monthMachineColumns = [];
 
-    // Separate columns into categories
     allColumns.forEach(function (col) {
         var colLower = col.toLowerCase();
         if (col === 'S.NO' || col === 'SIZE' || col === 'THICKNESS' || col === 'DIAMETER' ||
             col === 'WIDTH' || col === 'LENGTH' || col === 'WEIGHT' || col === 'GSM' || col === 'MIC') {
             sizeColumns.push(col);
         } else if (col === 'Numeric' || col === 'SizeNumeric' || colLower.indexOf('numeric') >= 0) {
-            // Store numeric column for grouping but don't display it
             numericColumn = col;
         } else if (col.indexOf('C/F') >= 0 || col.indexOf('Previous Year') >= 0) {
             cfColumn = col;
@@ -160,8 +217,6 @@ function RenderMillWiseProductionTable(data, isMachineWise) {
             monthMachineColumns.push(col);
         }
     });
-
-    // Helper: Extract OD key from a row using DIAMETER/DIA, else parse from SIZE (first number)
     var hasDiameterCol = allColumns.indexOf('DIAMETER') >= 0 || allColumns.indexOf('DIA') >= 0 || allColumns.indexOf('OD') >= 0;
     function getOdKey(row) {
         var raw = null;
@@ -178,7 +233,6 @@ function RenderMillWiseProductionTable(data, isMachineWise) {
             var parsed = parseFloat(m[1]);
             if (!isNaN(parsed)) return parsed.toFixed(2);
         }
-        // fallback to legacy numeric column if it looks numeric
         if (numericColumn && row[numericColumn] != null) {
             var n = parseFloat(String(row[numericColumn]).toString().replace(/[^0-9.\-]/g, ''));
             if (!isNaN(n)) return n.toFixed(2);
@@ -188,7 +242,6 @@ function RenderMillWiseProductionTable(data, isMachineWise) {
 
     console.log('All Columns:', allColumns);
 
-    // Helper: resolve selected parameter columns present in data
     function getSelectedParameterColumns() {
         var selectedSizeParams = ($("#txtSizeParameter").val() || []).map(function (x) { return String(x).trim().toUpperCase(); });
         var availableColumns = Object.keys(data[0] || {}).map(function (k) { return String(k).trim().toUpperCase(); });
@@ -213,14 +266,11 @@ function RenderMillWiseProductionTable(data, isMachineWise) {
 
     var selectedParamCols = getSelectedParameterColumns();
 
-    // Build header HTML
     var headerHtml = '';
 
     if (isMachineWise) {
-        // Machine-wise: Create two-row header with Mill names on top, months below
         headerHtml += '<tr>';
 
-        // Size columns header (rowspan=2)
         sizeColumns.forEach(function (col) {
             var colHasFilter = selectedParamCols.has(col.toUpperCase());
             if (colHasFilter) {
@@ -242,12 +292,10 @@ function RenderMillWiseProductionTable(data, isMachineWise) {
             }
         });
 
-        // C/F column (rowspan=2)
         if (cfColumn) {
             headerHtml += '<th rowspan="2" style="text-align:center; vertical-align:middle;">' + cfColumn + '</th>';
         }
 
-        // Group month-machine columns by machine
         var machineGroups = {};
         monthMachineColumns.forEach(function (col) {
             var parts = col.split('_');
@@ -492,6 +540,7 @@ function RenderMillWiseProductionTable(data, isMachineWise) {
     bodyHtml += '</tr>';
 
     $("#table-body").html(bodyHtml);
+    scheduleMillWiseProductionTableHeightAdjust();
 }
 function populateSizeFilterOptions() {
     if (!currentReportData || currentReportData.length === 0) return;

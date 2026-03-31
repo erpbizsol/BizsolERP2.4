@@ -2908,3 +2908,4 @@ D:\BizSolERP24_APPCore\BizsolERP\BizsolERPMain\obj\Release\net8.0\swae.build.ex.
 D:\BizSolERP24_APPCore\BizsolERP\BizsolERPMain\bin\Release\net8.0\Microsoft.Extensions.DependencyInjection.dll
 D:\BizSolERP24_APPCore\BizsolERP\BizsolERPMain\bin\Release\net8.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
 D:\BizSolERP24_APPCore\BizsolERP\BizsolERPMain\bin\Release\net8.0\Properties\launchSettings.json
+D:\BizSolERP24_APPCore\BizsolERP\BizsolERPMain\obj\Release\net8.0\scopedcss\Views\Shared\_LayoutOld.cshtml.rz.scp.css

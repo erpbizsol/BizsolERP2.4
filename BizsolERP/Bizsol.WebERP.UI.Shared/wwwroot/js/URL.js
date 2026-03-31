@@ -1,6 +1,5 @@
 import { environment } from './environment.js';
 
-
 let UrlService = {
     BASE_URL: environment.BASE_URL,
     ERP_SIDE_MENU: `${environment.BASE_URL}/UserModule`,
@@ -134,8 +133,9 @@ let UrlService = {
     API_ENDPOINT_POApprovalConfig: `${environment.BASE_URL}/POApprovalConfig`,
     API_ENDPOINT_GRNPaymentApprovalConfig: `${environment.BASE_URL}/GRNPaymentApprovalConfiguration`,
     API_ENDPOINT_GRNService: `${environment.BASE_URL}/GRNService`,
+    API_ENDPOINT_GRNPaymentEntry: `${environment.BASE_URL}/GRNPaymentEntry`,
     API_ENDPOINT_POLevelsApprove: `${environment.BASE_URL}/POLevelsApproval`,
-    API_ENDPOINT_GRNPaymentApproval: `${environment.BASE_URL}/GRNPaymentApproval`
+    API_ENDPOINT_GRNPaymentLevelsApproval: `${environment.BASE_URL}/GRNPaymentLevelsApproval`
 }
 
 export { UrlService  }

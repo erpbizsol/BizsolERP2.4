@@ -50,6 +50,26 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQxLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/BizSolERP24_APPCore/BizsolERP/BizsolERPMain/Views/Shared/_LayoutTest.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXRUZXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/BizsolERPMain/Views/Shared/_LayoutTest_Backup_DarkSteelTheme.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXRUZXN0X0JhY2t1cF9EYXJrU3RlZWxUaGVtZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/BizsolERPMain/Views/Shared/_LayoutTest_Backup_EmeraldPulseTheme.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXRUZXN0X0JhY2t1cF9FbWVyYWxkUHVsc2VUaGVtZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/BizsolERPMain/Views/Shared/_LayoutTest_Backup_IndigoCyanTheme.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXRUZXN0X0JhY2t1cF9JbmRpZ29DeWFuVGhlbWUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/BizsolERPMain/Views/Shared/_LayoutTest_Backup_OrangeTheme.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXRUZXN0X0JhY2t1cF9PcmFuZ2VUaGVtZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/BizSolERP24_APPCore/BizsolERP/BizsolERPMain/Views/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -65,3 +85,7 @@ build_metadata.AdditionalFiles.CssScope =
 [D:/BizSolERP24_APPCore/BizsolERP/BizsolERPMain/Views/Shared/_Layout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = b-0inr5tfhdl
+
+[D:/BizSolERP24_APPCore/BizsolERP/BizsolERPMain/Views/Shared/_LayoutOld.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXRPbGQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = b-rcjwbtwn7v

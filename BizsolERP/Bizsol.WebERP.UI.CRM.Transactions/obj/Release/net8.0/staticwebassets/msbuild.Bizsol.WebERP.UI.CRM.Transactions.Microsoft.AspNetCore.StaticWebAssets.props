@@ -1,5 +1,25 @@
 ﻿<Project>
   <ItemGroup>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\ExpenseEntry.css'))">
+      <SourceType>Package</SourceType>
+      <SourceId>Bizsol.WebERP.UI.CRM.Transactions</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/Bizsol.WebERP.UI.CRM.Transactions</BasePath>
+      <RelativePath>css/ExpenseEntry.css</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>7ti0dr2rbs</Fingerprint>
+      <Integrity>xUdJdVnweobZB55wR/owBWkvgq/N1tk+uZRZFIKmnQk=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <FileLength>15135</FileLength>
+      <LastWriteTime>Mon, 23 Mar 2026 05:57:59 GMT</LastWriteTime>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\ExpenseEntry.css'))</OriginalItemSpec>
+    </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\CheckinOrCheckout.js'))">
       <SourceType>Package</SourceType>
       <SourceId>Bizsol.WebERP.UI.CRM.Transactions</SourceId>
@@ -17,7 +37,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>3875</FileLength>
-      <LastWriteTime>Thu, 27 Mar 2025 05:27:33 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\CheckinOrCheckout.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\ClosePendingOrder.js'))">
@@ -57,7 +77,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>10402</FileLength>
-      <LastWriteTime>Mon, 05 May 2025 04:55:10 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\CRMDashboard.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\DirectOrderEntry - Copy.js'))">
@@ -77,7 +97,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>375481</FileLength>
-      <LastWriteTime>Fri, 14 Nov 2025 04:35:23 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\DirectOrderEntry - Copy.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\DirectOrderEntry.js'))">
@@ -92,12 +112,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>l6jb2sk9nr</Fingerprint>
-      <Integrity>3ecV+lPrikhIlV2MZVCgnfJrySTVHaXd8hNNhCNXTXg=</Integrity>
+      <Fingerprint>dqrx0qb7g0</Fingerprint>
+      <Integrity>pSJWkyizPYRUVxhS4m+dN3f2Aqxuu1wAz+awHwp1zVc=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>390555</FileLength>
-      <LastWriteTime>Sat, 15 Nov 2025 09:38:24 GMT</LastWriteTime>
+      <FileLength>391659</FileLength>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\DirectOrderEntry.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\ExpenseEntryDetail.js'))">
@@ -112,12 +132,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>rwugubqf5f</Fingerprint>
-      <Integrity>e0rQq8dW6GBWBXfJlCQMXtvqNqb8644oRapWKR+yMK0=</Integrity>
+      <Fingerprint>ygus01tx4x</Fingerprint>
+      <Integrity>Qj3CEx+h25QsIblDELvB97L1KE8C67VUi1Cz6m6FIfk=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>30881</FileLength>
-      <LastWriteTime>Wed, 24 Sep 2025 04:41:01 GMT</LastWriteTime>
+      <FileLength>33046</FileLength>
+      <LastWriteTime>Mon, 23 Mar 2026 05:57:59 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\ExpenseEntryDetail.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\ExpenseEntryList.js'))">
@@ -132,12 +152,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>39g6bad56l</Fingerprint>
-      <Integrity>x/p9O+pipZlJyMpJis9fPUWUTjthybBg8rJ+zyqycaY=</Integrity>
+      <Fingerprint>m3k8y5rhb4</Fingerprint>
+      <Integrity>wp3GzhRsxUFuV9hJDz8EBLZ3xazXjSDXV+UE+H2oi/Q=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>13956</FileLength>
-      <LastWriteTime>Wed, 10 Sep 2025 05:23:31 GMT</LastWriteTime>
+      <FileLength>16198</FileLength>
+      <LastWriteTime>Mon, 23 Mar 2026 05:57:59 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\ExpenseEntryList.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\ExpenseHeadMaster.js'))">
@@ -152,12 +172,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>2pxa5rp5rx</Fingerprint>
-      <Integrity>6vUJ8+ZSMGfdwPlIyI9cVinXvQ3b4j1/sN5P0srC7oQ=</Integrity>
+      <Fingerprint>w4da0r2do9</Fingerprint>
+      <Integrity>AA1KsrBPi50d7Ja2XRgkuwOZTeClIDPsoPkI0BwWPCo=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>10007</FileLength>
-      <LastWriteTime>Mon, 22 Sep 2025 11:35:05 GMT</LastWriteTime>
+      <FileLength>11073</FileLength>
+      <LastWriteTime>Mon, 23 Mar 2026 05:57:59 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\ExpenseHeadMaster.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\FixedParameterConfiguration.js'))">
@@ -177,7 +197,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>13192</FileLength>
-      <LastWriteTime>Wed, 28 May 2025 04:38:32 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\FixedParameterConfiguration.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\OrderEntryList.js'))">
@@ -197,7 +217,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>32094</FileLength>
-      <LastWriteTime>Wed, 03 Sep 2025 10:58:23 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\OrderEntryList.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\PendingOrder.js'))">
@@ -217,7 +237,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>38184</FileLength>
-      <LastWriteTime>Mon, 05 May 2025 04:55:10 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\PendingOrder.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\RoutePlanMaster - Copy.js'))">
@@ -237,7 +257,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>36323</FileLength>
-      <LastWriteTime>Thu, 27 Mar 2025 05:27:33 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\RoutePlanMaster - Copy.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\RoutePlanMaster.js'))">
@@ -257,7 +277,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>42392</FileLength>
-      <LastWriteTime>Mon, 05 May 2025 04:55:10 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\RoutePlanMaster.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\RoutePlanVerify.js'))">
@@ -277,8 +297,28 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>10308</FileLength>
-      <LastWriteTime>Fri, 20 Dec 2024 06:55:58 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\RoutePlanVerify.js'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\SalesReturn.js'))">
+      <SourceType>Package</SourceType>
+      <SourceId>Bizsol.WebERP.UI.CRM.Transactions</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/Bizsol.WebERP.UI.CRM.Transactions</BasePath>
+      <RelativePath>js/SalesReturn.js</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>298lekmwp0</Fingerprint>
+      <Integrity>Bhu3cRR4F/A+pueOjgEwoLuJTMNohQO6AsCAiZHiKVU=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <FileLength>30154</FileLength>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\SalesReturn.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\UnverifiedExceededOrder.js'))">
       <SourceType>Package</SourceType>
@@ -297,7 +337,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>36714</FileLength>
-      <LastWriteTime>Fri, 18 Jul 2025 05:20:49 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\UnverifiedExceededOrder.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\VerifyOrder.js'))">
@@ -317,7 +357,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>127599</FileLength>
-      <LastWriteTime>Tue, 16 Sep 2025 06:04:58 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\VerifyOrder.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\Visit.js'))">
@@ -337,7 +377,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>23913</FileLength>
-      <LastWriteTime>Fri, 28 Mar 2025 07:08:35 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\Visit.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\VisitOrderEntry.js'))">
@@ -357,7 +397,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>105786</FileLength>
-      <LastWriteTime>Fri, 18 Jul 2025 05:20:50 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 04 Feb 2026 08:01:37 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\VisitOrderEntry.js'))</OriginalItemSpec>
     </StaticWebAsset>
   </ItemGroup>

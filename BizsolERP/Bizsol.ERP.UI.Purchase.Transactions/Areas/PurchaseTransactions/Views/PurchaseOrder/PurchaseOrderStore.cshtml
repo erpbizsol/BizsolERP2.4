@@ -169,6 +169,13 @@
         color: #fff; transform: scale(1.12);
         box-shadow: 0 2px 8px rgba(220,38,38,0.35);
     }
+    /* Tolerance max-value hint shown below Qty / Rate inputs when an item is selected */
+    .tol-hint {
+        font-size: 0.67rem; font-weight: 600; color: #b45309;
+        background: #fef3c7; border: 1px solid #fde68a;
+        border-radius: 4px; padding: 1px 5px; margin-top: 2px;
+        display: inline-block; white-space: nowrap;
+    }
     .add-item-btn {
         display: inline-flex; align-items: center; justify-content: center; gap: 5px;
         background: linear-gradient(135deg,#667eea,#764ba2);
@@ -920,6 +927,38 @@
                 <button type="button" onclick="ConfirmDeletePO()"
                         style="background:linear-gradient(135deg,#ef4444,#dc2626);border:none;color:#fff;border-radius:8px;padding:6px 18px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(239,68,68,0.35);">
                     <i class="fa fa-trash me-1"></i>Confirm Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     CANCEL PO MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalCancelPO" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:440px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;padding:16px 20px;">
+                <h5 class="modal-title" style="font-size:0.95rem;font-weight:700;">
+                    <i class="fa fa-ban me-2"></i>Cancel Purchase Order
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:20px;">
+                <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:14px 16px;font-size:0.85rem;color:#7c2d12;">
+                    <i class="fa fa-ban me-2" style="color:#f97316;"></i>
+                    You are about to cancel PO <strong id="modalCancelPONo"></strong>.<br>
+                    <span style="font-size:0.78rem;color:#92400e;display:block;margin-top:5px;">The PO will be marked as <b>Cancelled</b> and cannot be edited further.</span>
+                </div>
+                <input type="hidden" id="modalHfCancelCode" />
+            </div>
+            <div class="modal-footer" style="border:none;padding:12px 20px;background:#fafafa;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Close</button>
+                <button type="button" onclick="ConfirmCancelPO()"
+                        style="background:linear-gradient(135deg,#f97316,#ea580c);border:none;color:#fff;border-radius:8px;padding:6px 18px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(249,115,22,0.35);">
+                    <i class="fa fa-ban me-1"></i>Confirm Cancel
                 </button>
             </div>
         </div>

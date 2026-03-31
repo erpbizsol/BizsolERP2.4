@@ -396,7 +396,6 @@ D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Sales.Transactions\obj\Release\ne
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Sales.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Sales.Transactions.RazorAssemblyInfo.cs
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Sales.Transactions\obj\Release\net8.0\swae.build.ex.cache
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Properties\launchSettings.json
-D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Sales.Transactions\obj\Release\net8.0\Bizsol.WebERP.UI.Sales.Transactions.EmbeddedFilesManifest.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Sales.Transactions\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Sales.Transactions.Microsoft.AspNetCore.StaticWebAssets.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Sales.Transactions\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Sales.Transactions.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Sales.Transactions\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Sales.Transactions.props

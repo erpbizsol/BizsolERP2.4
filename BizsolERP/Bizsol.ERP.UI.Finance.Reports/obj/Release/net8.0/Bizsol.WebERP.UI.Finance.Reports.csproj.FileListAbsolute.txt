@@ -401,3 +401,5 @@ D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Finance.Reports\obj\Release\net8.
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Finance.Reports\obj\Release\net8.0\staticwebassets\msbuild.buildMultiTargeting.Bizsol.WebERP.UI.Finance.Reports.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Finance.Reports\obj\Release\net8.0\staticwebassets\msbuild.buildTransitive.Bizsol.WebERP.UI.Finance.Reports.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Finance.Reports\obj\Release\net8.0\staticwebassets.pack.json
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Finance.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Reports.RazorAssemblyInfo.cache
+D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Finance.Reports\obj\Release\net8.0\Bizsol.WebERP.UI.Finance.Reports.RazorAssemblyInfo.cs

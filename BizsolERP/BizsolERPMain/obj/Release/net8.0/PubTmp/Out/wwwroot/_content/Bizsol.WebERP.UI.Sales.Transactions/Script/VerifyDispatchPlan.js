@@ -1,30 +1,154 @@
-﻿import { VerifyDispatchPlanService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_VerifyDispatchPlanService.js';
+import { VerifyDispatchPlanService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_VerifyDispatchPlanService.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+var UserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
+var userMaster = authKeyData.UserMaster_Code;
+var UserType = UserDetails[0].UserType;
+
 let G_DispatchPlanlist = [];
 let G_DispatchAdviceNo = 0;
+let G_DispatchMaster_Code = 0;
+let G_AccountMaster_Code = 0;
+
+let _vdpHeightRaf = 0;
+let _vdpHeightHandlersBound = false;
+function getViewportHeight() {
+    return (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : (window.innerHeight || document.documentElement.clientHeight || 0);
+}
+function getFooterViewportOverlapHeight() {
+    // Layout uses <footer class="modern-footer"> (fixed bottom), not footer.footer
+    const footer = document.querySelector('footer.modern-footer') || document.querySelector('footer.footer') || document.querySelector('footer');
+    if (!footer) return 0;
+    const viewportHeight = getViewportHeight();
+    const rect = footer.getBoundingClientRect();
+    const h = rect.height || 0;
+    if (!isFinite(h) || h <= 0) return 0;
+
+    const overlap = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+    return overlap > 0 && isFinite(overlap) ? overlap : 0;
+}
+function adjustVerifyDispatchPlanTableHeight() {
+    const tableWrapper = document.getElementById('tableWrapper');
+    if (!tableWrapper) return;
+    if (tableWrapper.offsetParent === null) return; // hidden (display:none)
+
+    const rect = tableWrapper.getBoundingClientRect();
+    const viewportHeight = getViewportHeight();
+    const footerHeight = getFooterViewportOverlapHeight();
+    const bottomGap = 8;
+    const minHeight = 200;
+
+    let availableHeight = viewportHeight - rect.top - footerHeight - bottomGap;
+    if (!isFinite(availableHeight)) return;
+    availableHeight = Math.max(minHeight, Math.floor(availableHeight));
+
+    tableWrapper.style.height = availableHeight + 'px';
+    tableWrapper.style.maxHeight = availableHeight + 'px';
+}
+function scheduleVerifyDispatchPlanTableHeightAdjust() {
+    if (_vdpHeightRaf) cancelAnimationFrame(_vdpHeightRaf);
+    _vdpHeightRaf = requestAnimationFrame(function () {
+        _vdpHeightRaf = 0;
+        adjustVerifyDispatchPlanTableHeight();
+    });
+}
+function bindVerifyDispatchPlanTableHeightHandlers() {
+    if (_vdpHeightHandlersBound) return;
+    _vdpHeightHandlersBound = true;
+
+    window.addEventListener('resize', scheduleVerifyDispatchPlanTableHeightAdjust, { passive: true });
+    window.addEventListener('orientationchange', scheduleVerifyDispatchPlanTableHeightAdjust, { passive: true });
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', scheduleVerifyDispatchPlanTableHeightAdjust, { passive: true });
+    }
+    const sidebarEl = document.getElementById('modern-sidebar');
+    if (sidebarEl) {
+        new MutationObserver(scheduleVerifyDispatchPlanTableHeightAdjust).observe(sidebarEl, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    setTimeout(scheduleVerifyDispatchPlanTableHeightAdjust, 0);
+    setTimeout(scheduleVerifyDispatchPlanTableHeightAdjust, 150);
+    setTimeout(scheduleVerifyDispatchPlanTableHeightAdjust, 350);
+}
 $(document).ready(function () {
-    GetDispatchAdvicePlanList($("#ddlStatus").val());
-    $("#ddlStatus").change(function(){
-        GetDispatchAdvicePlanList($(this).val());
-    })
+    //BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+    var urlParams = BizSolHelperFunction.getUrlVars();
+    var menuValue = decodeURI(urlParams['ModuleDesp']);
+    if (menuValue && menuValue !== "undefined" && menuValue !== "") {
+        $("#ERPHeading").text(menuValue);
+    } else {
+        $("#ERPHeading").text("Delivery Order/Despatch Advice (GST)");
+    }
+    if (decodeURI(urlParams['FrmAction']) == 'Verify PPC') {
+        $("#ddlStatus").val('P');
+    } else if (decodeURI(urlParams['FrmAction']) == 'Verify') {
+        $("#ddlStatus").val('D');
+    } else {
+        $("#ddlStatus").val('M');
+    }
+
+    bindVerifyDispatchPlanTableHeightHandlers();
+    scheduleVerifyDispatchPlanTableHeightAdjust();
+    setCurrentDateDespatchActivity();
+
+    // GetDispatchAdvicePlanList($("#ddlStatus").val());
+    // $("#ddlStatus").change(function(){
+    //     GetDispatchAdvicePlanList($(this).val());
+    // })
+    var initialStatus = $("#ddlStatus").val();
+    if (initialStatus === 'R' || initialStatus === 'T') {
+        $(".despatch-activity-filter").removeClass('d-none');
+        $("#dvTableDispatch").hide();
+    } else {
+        $(".despatch-activity-filter").addClass('d-none');
+        GetDispatchAdvicePlanList(initialStatus);
+    }
+    $("#ddlStatus").change(function () {
+        var status = $(this).val();
+        if (status === 'R' || status === 'T') {
+            $(".despatch-activity-filter").removeClass('d-none');
+            $("#dvTableDispatch").hide();
+        } else {
+            $(".despatch-activity-filter").addClass('d-none');
+            GetDispatchAdvicePlanList(status);
+        }
+    });
+    $("#txtFromDate").change(function () {
+        if ($("#ddlStatus").val() === 'R') {
+            ShowFilteredList();
+        }
+    });
+    $("#txtToDate").change(function () {
+        if ($("#ddlStatus").val() === 'R') {
+            ShowFilteredList();
+        }
+    });
 });
-function GetDispatchAdvicePlanList(Status) {
+function GetDispatchAdvicePlanList(Status, fromdate, todate) {
+    if (fromdate == undefined) {
+        fromdate = '';
+    }
+    if (todate == undefined) {
+        todate = '';
+    }
     Showloader();
-    VerifyDispatchPlanService.GetDispatchAdvicePlanList(Status).then(function (response) {
+    VerifyDispatchPlanService.GetDispatchAdvicePlanList(Status, fromdate, todate).then(function (response) {
         if (response && response.length > 0) {
             G_DispatchPlanlist = response;
             $("#dvTableDispatch").show();
             HideLoader();
-            const stringFilterColumn = ["Marketing Man","PinCode", "Vehicle No", "Client Name", "Consignee Name", "City", "State", "Buyer PO No", "Ord No","Item Name","Size/Particular"];
+            const stringFilterColumn = ["Marketing Man", "PinCode", "Vehicle No", "Client Name", "Consignee Name", "City", "State", "Buyer PO No", "Ord No", "Item Name", "Size/Particular", "Party Name","Destination City","Transporter Name","Truck No","Driver Name","Driver Mobile No"];
             const numericFilterColumn = ["DO No",
-                "Ord Qty Pc","Ord Qty MT","OrdQty MTRS","Bal Qty Pc","Bal Qty MT","BalQty MTRS","Pld Qty Pc","Pld Qty MT","PldQty MTRS","OutStanding Amt","Over due Amt","Credit Days","Credit Limit","AvailableLimit"
+                "Ord Qty Pc", "Ord Qty MT", "OrdQty MTRS", "Bal Qty Pc", "Bal Qty MT", "BalQty MTRS", "Pld Qty Pc", "Pld Qty MT", "PldQty MTRS", "OutStanding Amt", "Over due Amt", "Credit Days", "Credit Limit", "AvailableLimit", "Approved Rate"
             ];
             const dateFilterColumn = ["Ord Date", "Dispatch Date", "DO Date","Buyer PO Date","Delivery Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Code","AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code","Verified","VarifyMarketing","CheckedPPC"];
+            const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"
+                , "Remarks", "Marketing Remark", "PPC Remark","CityMaster_Code_Freight"];
             const columnAlignment = {
                 "Ord Qty Pc": "right;max-width:30px;",
                 "Ord Qty MT": "right",
@@ -45,17 +169,39 @@ function GetDispatchAdvicePlanList(Status) {
                 "AvailableLimit": "right"
             };
             const updatedResponse = response.map(item => {
-                const Action = Status == 'C' ?`<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>`:`<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["Code"]})"><i class="fa fa-check"></i></button>`;
-                const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Send Mail" onclick="SendMail(${item["Code"]})">Send Mail</button>`:'';
-                let formattedItem = {}
-                formattedItem = Status == 'D' ? {
-                    ...item,
-                    Action: Action,
-                    Other: Other
-                } : {
-                    ...item,
-                    Action: Action
-                };
+                const Action = Status == 'C' ? `<button class="btn btn-success icon-height mb-1" title="View All" onclick="ViewAll(${item["Code"]})">All</button>` : `<button class="btn btn-success icon-height mb-1" title="Verify" onclick="Verify(${item["Code"]})"><i class="fa fa-check"></i></button>&nbsp;<button class="btn btn-info icon-height mb-1" title="Update Qty" onclick="EditQty(${item["Code"]})"><i class="fa fa-pencil"></i></button>`;
+                const Remark = `<button class="btn btn-info icon-height mb-1" title="Remarks" onclick="OpenShowRemarksModal(${item["Code"]})">Remark</button>`;
+                const Other = Status == 'D' ? `<button class="btn btn-warning icon-height mb-1" title="Verify/Send Mail" onclick="SendMail(${item["Code"]})">Verify/Send Mail</button>&nbsp;<button class="btn btn-info icon-height mb-1" title="Update Qty" onclick="EditQty(${item["Code"]})"><i class="fa fa-pencil"></i></button>` : '';
+                const Area = `${item["Area"]}&nbsp;<button class="btn btn-success icon-height mb-1" title="add/update area" onclick="UpdateArea(${item["Code"]},${item["CityMaster_Code_Freight"] != null ? item["CityMaster_Code_Freight"] : 0})"><i class="fa fa-plus"></i></button>`;
+
+                let formattedItem;
+                if (Status == 'D') {
+                    formattedItem = {
+                        ...item,
+                        Remark: Remark,
+                        //Action: Action,
+                        Area: Area,
+                        Other: Other
+                    };
+                } else if (Status == 'C') { 
+                    formattedItem = {
+                        ...item,
+                        Action: Action,
+                        LV1_Transporter: item.LV1_Transporter == '' ? '' : `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.Code},${item.LV1_TransporterCode})">${item.LV1_Transporter}</a>`,
+                        LV2_Transporter: item.LV2_Transporter == '' ? '' : `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.Code},${item.LV2_TransporterCode})">${item.LV2_Transporter}</a>`,
+                        LV3_Transporter: item.LV3_Transporter == '' ? '' : `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.Code},${item.LV3_TransporterCode})">${item.LV3_Transporter}</a>`
+                    };
+                } else if (Status == 'T'){
+                    formattedItem = {
+                        ...item
+                    };
+                } else {
+                    formattedItem = {
+                        ...item,
+                        Remark: Remark,
+                        Action: Action
+                    };
+                }
 
                 if (formattedItem["Ord Qty Pc"] != null && formattedItem["Ord Qty Pc"] !== '') {
                     const val = Number(formattedItem["Ord Qty Pc"]);
@@ -137,6 +283,7 @@ function GetDispatchAdvicePlanList(Status) {
                 return formattedItem;
             });
             BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            scheduleVerifyDispatchPlanTableHeightAdjust();
 
             setTimeout(() => {
                 const filteredData = updatedResponse;
@@ -160,6 +307,8 @@ function GetDispatchAdvicePlanList(Status) {
 
                 // Enforce fixed widths by column index (1–14) after render
                 applyFixedWidthsByIndex();
+                applyTableBorders();
+                scheduleVerifyDispatchPlanTableHeightAdjust();
             }, 300);
 
         } else {
@@ -423,6 +572,19 @@ function calculateTotals(data) {
     return totals;
 }
 function addTotalsRow(totals, hiddenColumns = []) {
+    // Check if status is 'T' or 'R' and hide/remove totals row
+    const status = $('#ddlStatus').val();
+    if (status === 'T' || status === 'R') {
+        const tableHead = document.getElementById('table-head');
+        if (tableHead) {
+            const existingTotalsRow = tableHead.querySelector('.totals-row');
+            if (existingTotalsRow) {
+                existingTotalsRow.remove();
+            }
+        }
+        return;
+    }
+    
     const tableHead = document.getElementById('table-head');
     if (!tableHead) {
         setTimeout(() => addTotalsRow(totals, hiddenColumns), 200);
@@ -642,7 +804,7 @@ function addTotalsRow(totals, hiddenColumns = []) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    setInterval(ChangecolorTr, 1000); // Slower interval for better performance
+    setInterval(ChangecolorTr, 1000); 
 });
 function ChangecolorTr() {
     const tableBody = document.getElementById("table-body");
@@ -675,7 +837,7 @@ function ChangecolorTr() {
     const groupColors = [
         "#fde2e2", // red-ish
         "#e6f7e6", // green-ish
-        "#e6f0ff", // blue-ish
+        "#97AAC6", // blue-ish
         "#fff7e0", // yellow-ish
         "#f3e6ff"  // purple-ish
     ];
@@ -743,6 +905,28 @@ function ChangecolorTr() {
 function countTableTr() {
     return $('#table-body tr').length;
 }
+function applyTableBorders() {
+    const tableBody = document.getElementById('table-body');
+    const tableHead = document.getElementById('table-head');
+    
+    if (tableBody) {
+        const tds = tableBody.querySelectorAll('td');
+        tds.forEach(td => {
+            if (!td.style.border || td.style.border === '') {
+                td.style.border = '1px solid #ddd';
+            }
+        });
+    }
+    
+    if (tableHead) {
+        const ths = tableHead.querySelectorAll('th');
+        ths.forEach(th => {
+            if (!th.style.border || th.style.border === '') {
+                th.style.border = '1px solid #ddd';
+            }
+        });
+    }
+}
 
 $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
     setTimeout(() => {
@@ -763,9 +947,10 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
         totals.creditDays = domTotals.creditDays;
         totals.creditLimit = domTotals.creditLimit;
         totals.availableLimit = domTotals.availableLimit;
-        const hiddenColumns = ["AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
+        const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
         addTotalsRow(totals, hiddenColumns);
         applyFixedWidthsByIndex();
+        applyTableBorders();
     }, 300);
 });
 
@@ -773,7 +958,6 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
     setTimeout(() => {
         const filteredData = window['filteredData_tblDispatchPlan'] || [];
         const totals = calculateTotals(filteredData);
-        // Merge with DOM-based calculation for new columns (more accurate)
         const domTotals = calculateTotalsFromDOM();
         totals.ordQtyPc = domTotals.ordQtyPc;
         totals.ordQtyMT = domTotals.ordQtyMT;
@@ -789,48 +973,135 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
         totals.creditDays = domTotals.creditDays;
         totals.creditLimit = domTotals.creditLimit;
         totals.availableLimit = domTotals.availableLimit;
-        const hiddenColumns = ["AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
+        const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
         addTotalsRow(totals, hiddenColumns);
         applyFixedWidthsByIndex();
+        applyTableBorders();
     }, 300);
 });
 function ExportExcel() {
+    var status = $("#ddlStatus").val();
+    if (status === 'R' || status === 'T') {
+        var fromDate = $('#txtFromDate').val();
+        var toDate = $('#txtToDate').val();
+        if (!fromDate || !toDate) {
+            toastr.warning('Please select From Date and To Date before export.');
+            return;
+        }
+        if (new Date(toDate) < new Date(fromDate)) {
+            toastr.warning('To Date must be greater than or equal to From Date.');
+            return;
+        }
+        if (status === 'R') {
+            Showloader();
+            VerifyDispatchPlanService.GetDespatchActivityReportList(fromDate, toDate).then(function (response) {
+                HideLoader();
+                if (response && response.length > 0) {
+                    ExportToExcelControl.ExportToExcel(response, [], "DespatchActivityReport");
+                    toastr.success('Export completed successfully.');
+                } else {
+                    toastr.info('No data to export for the selected date range.');
+                }
+            }).catch(function (error) {
+                HideLoader();
+                toastr.error(error.Msg || error.message || 'Error during export.');
+            });
+            return;
+        }
+        if (status === 'T') {
+            const hiddenFields = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
+            Showloader();
+            VerifyDispatchPlanService.GetDispatchAdvicePlanList(status, fromDate, toDate).then(function (response) {
+                HideLoader();
+                if (response && response.length > 0) {
+                    ExportToExcelControl.ExportToExcel(response, hiddenFields, "DispatchAdvicePlan");
+                    toastr.success('Export completed successfully.');
+                } else {
+                    toastr.info('No data to export.');
+                }
+            }).catch(function (error) {
+                toastr.error(error.Msg || error.message || 'Error during export.');
+            });
+            HideLoader();
+        }
+        return;
+    }
     const hiddenFields = ["Code","AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
-    VerifyDispatchPlanService.GetDispatchAdvicePlanList($("#ddlStatus").val()).then(function (response) {
-        ExportToExcelControl.ExportToExcel(response, hiddenFields, "DispatchAdvicePlan");
+    VerifyDispatchPlanService.GetDispatchAdvicePlanList(status).then(function (response) {
+        if (response && response.length > 0) {
+            ExportToExcelControl.ExportToExcel(response, hiddenFields, "DispatchAdvicePlan");
+            toastr.success('Export completed successfully.');
+        } else {
+            toastr.info('No data to export.');
+        }
+    }).catch(function (error) {
+        toastr.error(error.Msg || error.message || 'Error during export.');
     });
-
 }
-function Verify(DispatchAdviceNo) {
-    var ModuleName = "Despatch Plan Marketing Person Wise",
+function Verify(Code) {
+    var ModuleName = "Delivery Order/Despatch Advice (GST)",
         OptionName = "Verify",
         ShowMsg = "Y",
-        FinYear = getFinancialYear();
-        MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
-        if (response.CheckModuleOptionRight == 'N') {
-            toastr.error(response.Msg);
+        FinYear = getFinancialYear(),
+        status = $("#ddlStatus").val();
+
+    if (status === 'M') {
+        OptionName = "Verify Marketing";
+    } else if (status === 'P') {
+        OptionName = "Verify PPC";
+    } else if (status === 'D') {
+        OptionName = "Verify";
+    }
+
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response1) {
+        if (response1.CheckModuleOptionRight == 'N') {
+            toastr.error(response1.Msg);
             return false;
         } else {
-            VerifyDispatch(DispatchAdviceNo)
+            if (status == "P" && UserType != "A" ) {
+                VerifyDispatchPlanService.GetTimeBasedVerifyNotAllowInDispatch().then(function (response2) {
+                    if (response2[0].Msg == '') {
+                        OpenVerifyModal(Code);
+                    } else {
+                        MenuService.CheckModuleOptionRight(ModuleName, "Verify Within Time Limit", ShowMsg, FinYear).then(function (response3) {
+                            if (response3.CheckModuleOptionRight == 'N') {
+                                toastr.warning(response2[0].Msg);
+                                return false;
+                            } else {
+                                OpenVerifyModal(Code);
+                            }
+                        });
+                    }
+                });
+            } else {
+                OpenVerifyModal(Code);
+            }
         }
     });
 }
-function VerifyDispatch(Code) {
+function VerifyDispatch() {
+    var Remark = $("#txtRemark").val();
+    if (Remark == '') {
+        toastr.error("Please enter remark.");
+        return;
+    }
+    var Code = $("#hfCode").val();
     if (confirm("Are you sure you want to verify ?")) {
         Showloader();
         var Status = $("#ddlStatus").val();
-        VerifyDispatchPlanService.Verify(Code, Status).then(function (response) {
-            if (response[0].Status = 'Y') {
-                toastr.success(response[0].Msg);
+        VerifyDispatchPlanService.Verify(Code, Status, Remark).then(function (response) {
+            if (response.Status == 'Y') {
+                toastr.success(response.Message);
                 GetDispatchAdvicePlanList($("#ddlStatus").val());
+                CloseVerifyModal();
                 HideLoader();
             } else {
-                toastr.error(response[0].Msg);
+                toastr.error(response[0].Message);
                 HideLoader();
             }
         }).catch(function (error) {
             HideLoader();
-            toastr.error(error.Msg || 'Error During Verify ');
+            toastr.error(error.Message || 'Error During Verify ');
         });
     }
 }
@@ -853,12 +1124,19 @@ function ViewAll(Code) {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = [];
+            const hiddenColumns = ["DespatchAdviceMaster_Code","AccountMaster_Code"];
 
             const columnAlignment = {
                 Rate: 'right',
             };
-            BizsolCustomFilterGrid.CreateDataTable("AllTable-head", "AllTable-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            const updatedResponse = response.map(item => {
+                const formattedItem = {
+                    ...item,
+                    'Transporter Name': `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.AccountMaster_Code},${item.DespatchAdviceMaster_Code})">${item['Transporter Name']}</a>`,
+                };
+                return formattedItem;
+            });
+            BizsolCustomFilterGrid.CreateDataTable("AllTable-head", "AllTable-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
             HideLoader();
             $('#AllModal').modal({ backdrop: 'static' });
             $('#AllModal').modal('show');
@@ -926,6 +1204,7 @@ function SendMail(Code) {
 }
 function CloseModal() {
     $('#AllModal').modal('hide');
+    
 }
 function CloseTransporter() {
     $('#Transporter').modal('hide');
@@ -965,7 +1244,7 @@ $(document).on('click', '.transporter-update', function () {
     UpdateTransporter();
 });
 function UpdateTransporter() {
-    var ModuleName = "Despatch Plan Marketing Person Wise",
+    var ModuleName = "Delivery Order/Despatch Advice (GST)",
         OptionName = "Verify",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
@@ -987,12 +1266,12 @@ function Update() {
     if (confirm("Are you sure you want to update ?")) {
         Showloader();
         VerifyDispatchPlanService.UpdateTransporter(codes).then(function (response) {
-            if (response[0].Status = 'Y') {
-                toastr.success(response[0].Msg);
+            if (response.Status == 'Y') {
+                toastr.success(response.Message);
                 HideLoader();
                 CloseTransporter();
             } else {
-                toastr.error(response[0].Msg);
+                toastr.error(response.Message);
                 HideLoader();
             }
         }).catch(function (error) {
@@ -1001,31 +1280,751 @@ function Update() {
     }
 }
 function SendMailToTransporter() {
-    let TranporterCodes = GetEmpCodes();
-    if (TranporterCodes == '') {
-        toastr.error('Please select at least one transporter.');
+    var ModuleName = "Delivery Order/Despatch Advice (GST)",
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear(),
+        status = $("#ddlStatus").val();
+
+    if (status === 'M') {
+        OptionName = "Verify Marketing";
+    } else if (status === 'P') {
+        OptionName = "Verify PPC";
+    } else if (status === 'D') {
+        OptionName = "Verify";
+    }
+
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+
+            let TranporterCodes = GetEmpCodes();
+            let Remark = $("#txtDispatchRemark").val();
+            if (TranporterCodes == '') {
+                toastr.error('Please select at least one transporter.');
+                return;
+            }
+            if (Remark == '') {
+                toastr.error('Please enter remark.');
+                return;
+            }
+            if (confirm("Are you sure you want to verify/send mail ?")) {
+                Showloader();
+                VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo,Remark).then(function (response) {
+                    if (response.Status == 'Y') {
+                        toastr.success(response.Message);
+                        HideLoader();
+                        CloseTransporter();
+                        GetDispatchAdvicePlanList($("#ddlStatus").val());
+                    } else {
+                        toastr.error(response.Message);
+                        HideLoader();
+                    }
+                }).catch(function (error) {
+                    HideLoader();
+                });
+            }
+        }
+    });
+}
+function ApprovedTransporter() {
+    Showloader();
+    VerifyDispatchPlanService.ApprovedQuotation(G_DispatchMaster_Code, G_AccountMaster_Code).then(function (response) {
+        if (response.Status == 'Y') {
+            toastr.success(response.Message);
+            GetDispatchAdvicePlanList($("#ddlStatus").val());
+            CloseApprovedModal();
+            HideLoader();
+        } else {
+            toastr.error(response.Message);
+            HideLoader();
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error During Approved Quotation ');
+    });
+}
+function ApprovedQuotstion(Code, TransporterCode) {
+    G_DispatchMaster_Code = Code;
+    G_AccountMaster_Code = TransporterCode;
+    $('#dvApproved').modal({ backdrop: 'static' });
+    $('#dvApproved').modal('show');
+    CloseModal();
+}
+function CloseApprovedModal() {
+    $('#dvApproved').modal('hide');
+}
+function OpenVerifyModal(Code) {
+    $('#hfCode').val(Code);
+    $('#dvRemark').modal({ backdrop: 'static' });
+    $('#dvRemark').modal('show');
+    $("#txtRemark").val("");
+}
+function CloseVerifyModal() {
+    $('#dvRemark').modal('hide');
+    $("#txtRemark").val("");
+}
+function EditQty(Code) {
+    var ModuleName = "Delivery Order/Despatch Advice (GST)",
+    OptionName = "Edit",
+    ShowMsg = "Y",
+    FinYear = getFinancialYear()
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            OpenUpdateQtyModal(Code);
+        }
+    });
+}
+function OpenUpdateQtyModal(Code) {
+    Showloader();
+    $('#dvUpdateQty').modal({ backdrop: 'static' });
+    $('#dvUpdateQty').modal('show');
+    VerifyDispatchPlanService.GetDespatchAdviceQtyForUpdate(Code).then(function (response) {
+        HideLoader();
+        const $tbody = $('#tbodyUpdateGridWrapper');
+
+        $tbody.empty();
+
+        if (response && response.length > 0) {
+            response.forEach(function (item, index) {
+                const masterCode = item["DespatchAdviceMaster_Code"];
+                const tranCode = item["DespatchAdviceTransaction_Code"];
+                const itemName = item["ItemName"] || '';
+                const sizeDesp = item["SizeDesp"] || '';
+                const qtyPc = item["PlannedQtyPc"] ?? 0;
+                const qtyMT = item["PlannedQtyMT"] ?? 0;
+                const qtyMTRS = item["PlannedQtyMTRS"] ?? 0;
+                // Store balance quantities for validation
+                const balQtyPc = item["BalQTYPCS"] ?? 0;
+                const balQtyMT = item["BalQTYMT"] ?? 0;
+                const balQtyMTRS = item["BalQTYMTRS"] ?? 0;
+
+                // Format balance quantities for display
+                const balQtyPcDisplay = Number(balQtyPc).toFixed(0);
+                const balQtyMTDisplay = Number(balQtyMT).toFixed(3);
+                const balQtyMTRSDisplay = Number(balQtyMTRS).toFixed(0);
+
+                const rowHtml = `
+                    <tr data-master-code="${masterCode}" data-tran-code="${tranCode}" data-bal-qty-pc="${balQtyPc}" data-bal-qty-mt="${balQtyMT}" data-bal-qty-mtrs="${balQtyMTRS}">
+                        <td style="text-align:center;">${index + 1}</td>
+                        <td style="text-align:left;">${itemName}</td>
+                        <td style="text-align:left;">${sizeDesp}</td>
+                        <td style="text-align:right;">${balQtyPcDisplay}</td>
+                        <td style="text-align:right;">${balQtyMTDisplay}</td>
+                        <td style="text-align:right;">${balQtyMTRSDisplay}</td>
+                        <td>
+                            <input type="text"
+                                   class="form-control form-control-sm qty-pc"
+                                   value="${qtyPc}"
+                                   style="text-align:right;" />
+                        </td>
+                        <td>
+                            <input type="text"
+                                   class="form-control form-control-sm qty-mt"
+                                   value="${qtyMT}"
+                                   style="text-align:right;" />
+                        </td>
+                        <td>
+                            <input type="text"
+                                   class="form-control form-control-sm qty-mtrs"
+                                   value="${qtyMTRS}"
+                                   style="text-align:right;" />
+                        </td>
+                    </tr>`;
+                $tbody.append(rowHtml);
+            });
+        } else {
+            toastr.error('No Data Found');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error During Get Transporter List');
+    });
+    
+}
+function CloseUpdateQtyModal() {
+    $('#dvUpdateQty').modal('hide');
+}
+
+$(document).on('keypress', '.qty-pc', function (e) {
+    const charCode = e.which || e.keyCode;
+    if (charCode === 8 || charCode === 9 || charCode === 13) return;
+    const ch = String.fromCharCode(charCode);
+    if (!/[0-9]/.test(ch)) {
+        e.preventDefault();
+    }
+});
+$(document).on('keypress', '.qty-mt, .qty-mtrs', function (e) {
+    const input = e.target;
+    const $input = $(input);
+    const charCode = e.which || e.keyCode;
+    if (charCode === 8 || charCode === 9 || charCode === 13) return;
+
+    const ch = String.fromCharCode(charCode);
+    if (!/[0-9.]/.test(ch)) {
+        e.preventDefault();
         return;
     }
-    if (confirm("Are you sure you want to send mail ?")) {
-        Showloader();
-        VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo).then(function (response) {
-            if (response[0].Status = 'Y') {
-                toastr.success(response[0].Msg);
-                HideLoader();
-                CloseTransporter();
-            } else {
-                toastr.error(response[0].Msg);
-                HideLoader();
-            }
-        }).catch(function (error) {
-            HideLoader();
-        });
+
+    const current = $input.val() ? $input.val().toString() : '';
+    const start = input.selectionStart != null ? input.selectionStart : current.length;
+    const end = input.selectionEnd != null ? input.selectionEnd : current.length;
+    const next = current.slice(0, start) + ch + current.slice(end);
+
+    const dots = (next.match(/\./g) || []).length;
+    if (dots > 1) {
+        e.preventDefault();
+        return;
+    }
+    const parts = next.split('.');
+    if (parts.length === 2 && parts[1].length > 3) {
+        e.preventDefault();
+        return;
+    }
+});
+
+// Validation functions for balance quantity checks
+function validateQtyPc(input) {
+    const $input = $(input);
+    const $row = $input.closest('tr');
+    const balQtyPc = parseFloat($row.data('bal-qty-pc') || 0);
+    const inputVal = $input.val() ? $input.val().toString().trim() : '';
+    
+    if (inputVal === '') {
+        $input.removeClass('is-invalid');
+        return true;
+    }
+    
+    if (!/^\d+$/.test(inputVal)) {
+        return false;
+    }
+    
+    const qtyPc = parseInt(inputVal, 10);
+    if (qtyPc > balQtyPc) {
+        $input.addClass('is-invalid');
+        return false;
+    }
+    
+    $input.removeClass('is-invalid');
+    return true;
+}
+
+function validateQtyMT(input) {
+    const $input = $(input);
+    const $row = $input.closest('tr');
+    const balQtyMT = parseFloat($row.data('bal-qty-mt') || 0);
+    const inputVal = $input.val() ? $input.val().toString().trim() : '';
+    
+    if (inputVal === '') {
+        $input.removeClass('is-invalid');
+        return true;
+    }
+    
+    const decimalRegex = /^(?:\d+|\d*\.\d{1,3})$/;
+    if (!decimalRegex.test(inputVal)) {
+        return false;
+    }
+    
+    const qtyMT = parseFloat(inputVal);
+    if (qtyMT > balQtyMT) {
+        $input.addClass('is-invalid');
+        return false;
+    }
+    
+    $input.removeClass('is-invalid');
+    return true;
+}
+
+function validateQtyMTRS(input) {
+    const $input = $(input);
+    const $row = $input.closest('tr');
+    const balQtyMTRS = parseFloat($row.data('bal-qty-mtrs') || 0);
+    const inputVal = $input.val() ? $input.val().toString().trim() : '';
+    
+    if (inputVal === '') {
+        $input.removeClass('is-invalid');
+        return true;
+    }
+    
+    const decimalRegex = /^(?:\d+|\d*\.\d{1,3})$/;
+    if (!decimalRegex.test(inputVal)) {
+        return false;
+    }
+    
+    const qtyMTRS = parseFloat(inputVal);
+    if (qtyMTRS > balQtyMTRS) {
+        $input.addClass('is-invalid');
+        return false;
+    }
+    
+    $input.removeClass('is-invalid');
+    return true;
+}
+
+// Flag to prevent recursive updates during auto-calculation
+let isCalculating = false;
+
+// Auto-calculation functions for MT and PC
+function calculatePCFromMT($input) {
+    if (isCalculating) return;
+    
+    const $row = $input.closest('tr');
+    const balQtyPc = parseFloat($row.data('bal-qty-pc') || 0);
+    const balQtyMT = parseFloat($row.data('bal-qty-mt') || 0);
+    const inputVal = $input.val() ? $input.val().toString().trim() : '';
+    
+    // If field value is empty, treat as 0
+    const qtyMT = inputVal === '' ? 0 : parseFloat(inputVal);
+    if (isNaN(qtyMT)) {
+        return;
+    }
+    
+    // Check if balance quantities are valid for conversion
+    if (balQtyPc === 0 || balQtyMT === 0) {
+        return;
+    }
+    
+    // Calculate conversion factor from balance quantities
+    const conversionFactor = balQtyMT / balQtyPc;
+    if (conversionFactor === 0 || !isFinite(conversionFactor)) {
+        return;
+    }
+    
+    // Calculate PC from MT: PC = MT / conversionFactor
+    const calculatedPC = Math.round(qtyMT / conversionFactor);
+    const $pcInput = $row.find('.qty-pc');
+    
+    // Update the calculated value (even if 0)
+    if (calculatedPC >= 0 && calculatedPC <= balQtyPc) {
+        isCalculating = true;
+        $pcInput.val(calculatedPC);
+        validateQtyPc($pcInput[0]);
+        isCalculating = false;
     }
 }
+
+function calculateMTFromPC($input) {
+    if (isCalculating) return;
+    
+    const $row = $input.closest('tr');
+    const balQtyPc = parseFloat($row.data('bal-qty-pc') || 0);
+    const balQtyMT = parseFloat($row.data('bal-qty-mt') || 0);
+    const inputVal = $input.val() ? $input.val().toString().trim() : '';
+    
+    // If field value is empty, treat as 0
+    const qtyPc = inputVal === '' ? 0 : parseInt(inputVal, 10);
+    if (isNaN(qtyPc)) {
+        return;
+    }
+    
+    // Check if balance quantities are valid for conversion
+    if (balQtyPc === 0 || balQtyMT === 0) {
+        return;
+    }
+    
+    // Calculate conversion factor from balance quantities
+    const conversionFactor = balQtyMT / balQtyPc;
+    if (conversionFactor === 0 || !isFinite(conversionFactor)) {
+        return;
+    }
+    
+    // Calculate MT from PC: MT = PC * conversionFactor
+    const calculatedMT = (qtyPc * conversionFactor).toFixed(3);
+    const $mtInput = $row.find('.qty-mt');
+    const calculatedMTNum = parseFloat(calculatedMT);
+    
+    // Update the calculated value (even if 0)
+    if (calculatedMTNum >= 0 && calculatedMTNum <= balQtyMT) {
+        isCalculating = true;
+        $mtInput.val(calculatedMT);
+        validateQtyMT($mtInput[0]);
+        isCalculating = false;
+    }
+}
+
+// Add validation and auto-calculation on blur/change events
+$(document).on('blur change', '.qty-pc', function () {
+    validateQtyPc(this);
+    // Auto-calculate MT when PC is entered
+    calculateMTFromPC($(this));
+});
+
+$(document).on('blur change', '.qty-mt', function () {
+    validateQtyMT(this);
+    // Auto-calculate PC when MT is entered
+    calculatePCFromMT($(this));
+});
+
+$(document).on('blur change', '.qty-mtrs', function () {
+    validateQtyMTRS(this);
+});
+
+// Add real-time calculation on input (as user types)
+$(document).on('input', '.qty-pc', function () {
+    // Auto-calculate MT when PC is being typed (even if empty, treat as 0)
+    calculateMTFromPC($(this));
+});
+
+$(document).on('input', '.qty-mt', function () {
+    // Auto-calculate PC when MT is being typed (even if empty, treat as 0)
+    calculatePCFromMT($(this));
+});
+function UpdateQty() {
+    const rows = $('#tbodyUpdateGridWrapper tr');
+    if (rows.length === 0) {
+        toastr.error('No rows to update.');
+        return;
+    }
+    const payload = [];
+    let isValid = true;
+    rows.each(function (rowIndex) {
+        const $row = $(this);
+        const masterCode = $row.data('master-code');
+        const tranCode = $row.data('tran-code');
+
+        let qtyPcStr = ($row.find('.qty-pc').val() || '').toString().trim();
+        let qtyMtStr = ($row.find('.qty-mt').val() || '').toString().trim();
+        let qtyMtrsStr = ($row.find('.qty-mtrs').val() || '').toString().trim();
+
+        if (!masterCode || !tranCode) {
+            return;
+        }
+
+        if (qtyPcStr === '') qtyPcStr = '0';
+        if (qtyMtStr === '') qtyMtStr = '0';
+        if (qtyMtrsStr === '') qtyMtrsStr = '0';
+
+        if (!/^\d+$/.test(qtyPcStr)) {
+            toastr.error('Invalid Planned Qty Pc at row ' + (rowIndex + 1) + '. Only whole numbers allowed.');
+            $row.find('.qty-pc').focus();
+            isValid = false;
+            return false;
+        }
+        const decimalRegex = /^(?:\d+|\d*\.\d{1,3})$/;
+
+        if (!decimalRegex.test(qtyMtStr)) {
+            toastr.error('Invalid Planned Qty MT at row ' + (rowIndex + 1) + '. Max 3 decimals allowed (e.g. 1, 1.5, .999).');
+            $row.find('.qty-mt').focus();
+            isValid = false;
+            return false;
+        }
+
+        if (!decimalRegex.test(qtyMtrsStr)) {
+            toastr.error('Invalid Planned Qty MTRS at row ' + (rowIndex + 1) + '. Max 3 decimals allowed (e.g. 1, 1.5, .999).');
+            $row.find('.qty-mtrs').focus();
+            isValid = false;
+            return false;
+        }
+        const qtyPc = parseInt(qtyPcStr, 10);
+        const qtyMT = parseFloat(qtyMtStr);
+        const qtyMTRS = parseFloat(qtyMtrsStr);
+        
+        // Validate against balance quantities
+        const balQtyPc = parseFloat($row.data('bal-qty-pc') || 0);
+        const balQtyMT = parseFloat($row.data('bal-qty-mt') || 0);
+        const balQtyMTRS = parseFloat($row.data('bal-qty-mtrs') || 0);
+        
+        if (qtyPc > balQtyPc) {
+            toastr.error('Planned Qty Pc (' + qtyPc + ') cannot be greater than Balance Qty Pc (' + balQtyPc + ') at row ' + (rowIndex + 1) + '.');
+            $row.find('.qty-pc').focus().addClass('is-invalid');
+            isValid = false;
+            return false;
+        }
+        
+        if (qtyMT > balQtyMT) {
+            toastr.error('Planned Qty MT (' + qtyMT + ') cannot be greater than Balance Qty MT (' + balQtyMT + ') at row ' + (rowIndex + 1) + '.');
+            $row.find('.qty-mt').focus().addClass('is-invalid');
+            isValid = false;
+            return false;
+        }
+        
+        if (qtyMTRS > balQtyMTRS) {
+            toastr.error('Planned Qty MTRS (' + qtyMTRS + ') cannot be greater than Balance Qty MTRS (' + balQtyMTRS + ') at row ' + (rowIndex + 1) + '.');
+            $row.find('.qty-mtrs').focus().addClass('is-invalid');
+            isValid = false;
+            return false;
+        }
+        
+        let Process = $("#ddlStatus").val();
+        if (Process == 'M') {
+            Process = 'Marketing';
+        } else if (Process == 'P') {
+            Process = 'PPC';
+        }else {
+            Process = 'Dispatch';
+        }
+        payload.push({
+            DespatchAdviceMaster_Code: masterCode,
+            DespatchAdviceTransaction_Code: tranCode,
+            QtyPc: qtyPc,
+            QtyMT: qtyMT,
+            QtyMTRS: qtyMTRS,
+            UserMaster_Code: userMaster,
+            ProcessType: Process
+        });
+    });
+
+    if (!isValid) {
+        return;
+    }
+
+    if (payload.length === 0) {
+        toastr.error('Invalid data. Please check quantities.');
+        return;
+    }
+    console.log("userMasterCode" + userMaster);
+    VerifyDispatchPlanService.SaveDespatchAdviceQty(payload).then(function (response) {
+        if (response.Status == 'Y') {
+            toastr.success(response.Msg);
+            GetDispatchAdvicePlanList($("#ddlStatus").val());
+            CloseUpdateQtyModal();
+            HideLoader();
+        } else {
+            toastr.error(response.Msg);
+            HideLoader();
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error During Approved Quotation ');
+    });
+}
+function OpenShowRemarksModal(Code) {
+    $('#dvShowRemarks').modal({ backdrop: 'static' });
+    $('#dvShowRemarks').modal('show');
+    VerifyDispatchPlanService.GetDespatchAdeviceRemarks(Code).then(function (response) {
+    if (response && response.length > 0) {
+        const stringFilterColumn = [];
+        const numericFilterColumn = [];
+        const dateFilterColumn = [];
+        const button = false;
+        const showButtons = [];
+        const stringDoubleFilterColumn = [];
+        let hiddenColumns = [];
+        if ($("#ddlStatus").val() == "M") {
+            hiddenColumns = ["Marketing Remark", "PPC Remark","Dispatch Remark"];
+        } else if($("#ddlStatus").val() == "P"){
+            hiddenColumns = ["Remarks", "PPC Remark","Dispatch Remark"];
+        }else {
+            hiddenColumns = ["Remarks"];
+        }
+       const columnAlignment = {};
+
+        BizsolCustomFilterGrid.CreateDataTable("table-headRemarks", "table-bodyRemarks", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+    } else {
+        toastr.error('No Data Found');
+        }
+    }).catch(function (error) {
+        toastr.error(error);
+        HideLoader();
+    });
+}
+function CloseShowRemarksModal() {
+    $('#dvShowRemarks').modal('hide');
+}
+function UpdateArea(Code, CityMaster_Code_Freight) {
+    var ModuleName = "Delivery Order/Despatch Advice (GST)",
+        OptionName = "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            $('#hfAreaCode').val(Code);
+            $('#dvUpdateArea').modal({ backdrop: 'static' });
+            $('#dvUpdateArea').modal('show');
+            BindCityMasterDropdownForArea(CityMaster_Code_Freight || 0);
+        }
+    });  
+}
+function BindCityMasterDropdownForArea(selectedCityCode) {
+    var $ddl = $('#ddlAreaCity');
+    if (!$ddl.length) return;
+
+    $ddl.off('change select2:select');
+    $ddl.off('select2:open select2:close');
+
+    var options = '<option value="">-- Select City --</option>';
+    Showloader();
+    VerifyDispatchPlanService.GetCityMasterList('India', 'All').then(function (response) {
+        HideLoader();
+        (response || []).forEach(function (item) {
+            var code = item.Code || item.code || 0;
+            var cityName = item.CityName || item.Descp || item.cityName || '';
+            if (cityName) {
+                options += '<option value="' + code + '">' + cityName + '</option>';
+            }
+        });
+        $ddl.html(options);
+        if (selectedCityCode) {
+            $ddl.val(selectedCityCode);
+        }
+
+        try {
+            if ($.fn.select2) {
+                if ($ddl.hasClass('select2-hidden-accessible')) {
+                    $ddl.select2('destroy');
+                }
+                $ddl.select2({
+                    width: '100%',
+                    placeholder: '-- Select City --',
+                    allowClear: true,
+                    dropdownParent: $('#dvUpdateArea')
+                });
+                if (typeof attachSelect2ScrollPrevention === 'function') {
+                    attachSelect2ScrollPrevention($ddl);
+                } else {
+                    function preventScroll() {
+                        var scrollY = window.scrollY || window.pageYOffset;
+                        document.documentElement.style.overflow = 'hidden';
+                        document.body.style.position = 'fixed';
+                        document.body.style.top = '-' + scrollY + 'px';
+                        document.body.style.width = '100%';
+                        document.body.setAttribute('data-scroll-y', scrollY);
+                    }
+                    function restoreScroll() {
+                        var scrollY = document.body.getAttribute('data-scroll-y') || '0';
+                        document.documentElement.style.overflow = '';
+                        document.body.style.position = '';
+                        document.body.style.top = '';
+                        document.body.style.width = '';
+                        window.scrollTo(0, parseInt(scrollY, 10));
+                        document.body.removeAttribute('data-scroll-y');
+                    }
+                    $ddl.on('select2:open', preventScroll);
+                    $ddl.on('select2:close', restoreScroll);
+                }
+            }
+        } catch (e) {
+            toastr.error('Error initializing select2 for City:', e);
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || error.message || 'Error loading city list.');
+    });
+}
+function SaveArea() {
+    var code = $('#hfAreaCode').val();
+    var cityMaster_Code = $('#ddlAreaCity').val();
+    if (!code) {
+        toastr.error('Invalid record.');
+        return;
+    }
+    if (!cityMaster_Code) {
+        toastr.warning('Please select a city.');
+        return;
+    }
+    Showloader();
+    VerifyDispatchPlanService.SaveArea(code, cityMaster_Code).then(function (response) {
+        HideLoader();
+        if (response && (response.Status === 'Y' || response.status === 'Y')) {
+            toastr.success(response.Msg || 'Area saved successfully.');
+            CloseUpdateAreaModal();
+            var s = $("#ddlStatus").val();
+            if (s === 'T') {
+                GetDispatchAdvicePlanList(s, $('#txtFromDate').val(), $('#txtToDate').val());
+            } else {
+                GetDispatchAdvicePlanList(s);
+            }
+        } else {
+            toastr.error(response.Msg || 'Error saving area.');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || error.message || 'Error saving area.');
+    });
+}
+function CloseUpdateAreaModal() {
+    var $ddl = $('#ddlAreaCity');
+    if ($ddl.hasClass('select2-hidden-accessible')) {
+        $ddl.select2('destroy');
+    }
+    $('#dvUpdateArea').modal('hide');
+    $('#hfAreaCode').val('');
+    $ddl.empty().append('<option value="">-- Select City --</option>').val('');
+}
+function setCurrentDateDespatchActivity() {
+    let today = new Date();
+    let firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    function formatDate(date) {
+        let day = String(date.getDate()).padStart(2, '0');
+        let month = String(date.getMonth() + 1).padStart(2, '0');
+        let year = date.getFullYear();
+        return `${year}-${month}-${day}`;
+    }
+
+    $('#txtFromDate').val(formatDate(firstOfMonth));
+    $('#txtToDate').val(formatDate(today));
+}
+function ShowDespatchActivityList(fromDate, toDate) {
+    Showloader();
+    VerifyDispatchPlanService.GetDespatchActivityReportList(fromDate, toDate).then(function (response) {
+        HideLoader();
+        if (response && response.length > 0) {
+            G_DispatchPlanlist = response;
+            const stringFilterColumn = ["Created By", "Verify Marketing Parson", "Verify PPC Person", "Final Verify","Quotation Approved Name"];
+            const numericFilterColumn = ["DO No","Invoice No"];
+            const dateFilterColumn = ["DO Date","Invoice Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = ["Rows"];
+            const columnAlignment = {};
+            BizsolCustomFilterGrid.CreateDataTable("table-head", "table-body", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            $("#dvTableDispatch").show();
+            const tableHead = document.getElementById('table-head');
+            if (tableHead) {
+                const totalsRow = tableHead.querySelector('.totals-row');
+                if (totalsRow) totalsRow.remove();
+            }
+            scheduleVerifyDispatchPlanTableHeightAdjust();
+        } else {
+            $("#dvTableDispatch").hide();
+            $(".totals-row").hide();
+            toastr.info('No data found for the selected date range.');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        $("#dvTableDispatch").hide();
+        $(".totals-row").hide();
+        toastr.error(error.Msg || error.message || 'Error loading Despatch Activity Report.');
+    });
+}
+function ShowFilteredList() {
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate) {
+        toastr.warning('Please select From Date and To Date.');
+        return;
+    }
+    if (new Date(toDate) < new Date(fromDate)) {
+        toastr.warning('To Date must be greater than or equal to From Date.');
+        return;
+    }
+    if ($("#ddlStatus").val() === 'R') {
+        ShowDespatchActivityList(fromDate, toDate)
+    } else {
+        GetDispatchAdvicePlanList($("#ddlStatus").val(), fromDate, toDate);
+    }
+}
+
 window.ViewAll = ViewAll;
+window.EditQty = EditQty;
+window.CloseVerifyModal = CloseVerifyModal;
+window.CloseUpdateQtyModal = CloseUpdateQtyModal;
+window.OpenVerifyModal = OpenVerifyModal;
+window.VerifyDispatch = VerifyDispatch;
 window.Verify = Verify;
 window.ExportExcel = ExportExcel;
 window.CloseModal = CloseModal;
+window.CloseApprovedModal = CloseApprovedModal;
 window.SendMail = SendMail;
 window.CloseTransporter = CloseTransporter;
 window.TransporterList = TransporterList;
@@ -1033,6 +2032,13 @@ window.GetEmpCodes = GetEmpCodes;
 window.updateSelected = updateSelected;
 window.UpdateTransporter = UpdateTransporter;
 window.SendMailToTransporter = SendMailToTransporter;
-
-
-
+window.ApprovedQuotstion = ApprovedQuotstion;
+window.ApprovedTransporter = ApprovedTransporter;
+window.UpdateQty = UpdateQty;
+window.OpenShowRemarksModal = OpenShowRemarksModal;
+window.CloseShowRemarksModal = CloseShowRemarksModal;
+window.UpdateArea = UpdateArea;
+window.CloseUpdateAreaModal = CloseUpdateAreaModal;
+window.SaveArea = SaveArea;
+window.ShowDespatchActivityList = ShowDespatchActivityList;
+window.ShowFilteredList = ShowFilteredList;

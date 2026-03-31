@@ -1,19 +1,19 @@
-﻿import { UrlService } from '../URL.js';
+import { UrlService } from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const VerifyDispatchPlanService = {
-    GetDispatchAdvicePlanList: function GetDispatchAdvicePlanList(Status) {
-        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetVerifyDispatchAdviceList?Status=" + Status;
+    GetDispatchAdvicePlanList: function GetDispatchAdvicePlanList(Status, FromDate, ToDate) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetVerifyDispatchAdviceList?Status=" + Status+"&FromDate=" + FromDate + "&ToDate=" + ToDate;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
             }
         );
     },
-    Verify: function Verify(Code, Status) {
+    Verify: function Verify(Code, Status,Remark) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/VerifyDispatchAdvice?Status=${Status}&UserMaster_Code=${userMasterCode}&Code=${Code}`;
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/VerifyDispatchAdvice?Status=${Status}&UserMaster_Code=${userMasterCode}&Code=${Code}&Remark=${Remark}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -44,8 +44,74 @@ const VerifyDispatchPlanService = {
             }
         );
     },
-    SendMailToTransporter: function SendMailToTransporter(TransporterCodes,Code) {
-        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/SendMailToTransporter?TransporterCodes=${TransporterCodes}&Code=${Code}`;
+    SendMailToTransporter: function SendMailToTransporter(TransporterCodes,Code,Remark) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/SendMailToTransporter?TransporterCodes=${TransporterCodes}&Code=${Code}&Remark=${Remark}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    ApprovedQuotation: function ApprovedQuotation(Code, Transporter_Code) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/ApprovedQuotation?Code=" + encodeURIComponent(Code) + "&Transporter_Code=" + encodeURIComponent(Transporter_Code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetDespatchAdviceQtyForUpdate: function GetDespatchAdviceQtyForUpdate(Code) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetDespatchAdviceQtyForUpdate?Code=" + encodeURIComponent(Code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SaveDespatchAdviceQty: function SaveDespatchAdviceQty(Data) {
+        var json_data = JSON.stringify(Data, null, 2);
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + `/SaveDespatchAdviceQty`;
+        return promiseAjaxCallApi.CallAPI('POST', URL, json_data).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetDespatchAdeviceRemarks: function GetDespatchAdeviceRemarks(Code) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetDespatchAdeviceRemarks?Code=" + encodeURIComponent(Code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+
+    GetDespatchActivityReportList: function GetDespatchActivityReportList(FromDate, ToDate) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetDespatchActivityReportList?FromDate=" + FromDate + "&ToDate=" + ToDate;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetTimeBasedVerifyNotAllowInDispatch: function GetTimeBasedVerifyNotAllowInDispatch() {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetTimeBasedVerifyNotAllowInDispatch";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetCityMasterList: function GetCityMasterList(CountryName, StateName) {
+        var URL = UrlService.API_ENDPOINT_CITY + "/GetCityList?CountryName=" + (CountryName || 'India') + "&StateName=" + (StateName || 'All');
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SaveArea: function SaveArea(Code, CityMaster_Code) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/SaveDespatchAdviceArea?Code=" + encodeURIComponent(Code) + "&CityMaster_Code=" + encodeURIComponent(CityMaster_Code);
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

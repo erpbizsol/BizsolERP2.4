@@ -396,7 +396,6 @@ D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Tools\obj\Release\net8.0\Bizsol.W
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Tools\obj\Release\net8.0\ref\Bizsol.WebERP.UI.Tools.dll
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Tools\obj\Release\net8.0\swae.build.ex.cache
 D:\Ruchi Data\BizSolWebProjects\BizsolERPMain\BizsolERPMain\bin\Release\net8.0\Properties\launchSettings.json
-D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Tools\obj\Release\net8.0\Bizsol.WebERP.UI.Tools.EmbeddedFilesManifest.cache
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Tools\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Tools.Microsoft.AspNetCore.StaticWebAssets.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Tools\obj\Release\net8.0\staticwebassets\msbuild.Bizsol.WebERP.UI.Tools.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
 D:\BizSolERP24_APPCore\BizsolERP\Bizsol.ERP.UI.Tools\obj\Release\net8.0\staticwebassets\msbuild.build.Bizsol.WebERP.UI.Tools.props

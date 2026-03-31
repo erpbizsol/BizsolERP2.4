@@ -50,6 +50,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ3VzdG9tQ29udHJvbFxfU2l6ZUNvbnRyb2wuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.WebERP.UI.Shared/Views/CustomControl/_SizeFilterControl.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ3VzdG9tQ29udHJvbFxfU2l6ZUZpbHRlckNvbnRyb2wuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/BizSolERP24_APPCore/BizsolERP/Bizsol.WebERP.UI.Shared/Views/GridControl/_GridRowEditControl.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcR3JpZENvbnRyb2xcX0dyaWRSb3dFZGl0Q29udHJvbC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

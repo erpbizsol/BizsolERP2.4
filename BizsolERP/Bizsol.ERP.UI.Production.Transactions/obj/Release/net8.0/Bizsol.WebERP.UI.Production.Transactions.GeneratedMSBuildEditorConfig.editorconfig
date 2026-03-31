@@ -58,6 +58,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xSb2xsaW5nUGxhblNoZWV0XFZlcmlmaWVkLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/StockAgeingReport/StockAgeingReport.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xTdG9ja0FnZWluZ1JlcG9ydFxTdG9ja0FnZWluZ1JlcG9ydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Production.Transactions/Areas/ProductionTransactions/Views/StockTransferWarehouse/ActualDispatch.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcUHJvZHVjdGlvblRyYW5zYWN0aW9uc1xWaWV3c1xTdG9ja1RyYW5zZmVyV2FyZWhvdXNlXEFjdHVhbERpc3BhdGNoLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 

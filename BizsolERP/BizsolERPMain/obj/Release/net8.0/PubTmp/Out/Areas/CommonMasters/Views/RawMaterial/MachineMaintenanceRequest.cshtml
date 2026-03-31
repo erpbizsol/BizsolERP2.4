@@ -1,0 +1,374 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/OptimizeImage.js"></script>
+<style>
+    .select2-container--open .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+
+    .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+
+    .card {
+        overflow: visible !important;
+    }
+
+    .card-body {
+        overflow: visible !important;
+    }
+
+    #dvFrom {
+        overflow: visible !important;
+    }
+
+    .row {
+        overflow: visible !important;
+    }
+
+    .select2-results {
+        max-height: 200px !important;
+        overflow-y: auto !important;
+    }
+
+    .select2-dropdown {
+        position: absolute !important;
+    }
+
+    .form-control-sm {
+        position: relative;
+    }
+
+    .main-content {
+        overflow: visible !important;
+    }
+
+    .col-md-3, .col-md-2 {
+        overflow: visible !important;
+    }
+
+    /* Responsive table height based on screen height (excluding header, paginator and footer) */
+    #dvGrid .table-wrapper {
+        max-height: calc(100vh - 320px);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+    #dvFrom .table-wrapper {
+        max-height: calc(100vh - 390px);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+        /* Sticky table header */
+        #dvGrid .table-wrapper thead,
+        #dvFrom .table-wrapper thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #fff;
+        }
+
+    .paginator {
+        position: sticky;
+        bottom: 15px;
+        background-color: #fff;
+        z-index: 5;
+    }
+
+    /* Image Modal Styles */
+    #imgModal .modal-dialog {
+        max-width: 900px;
+    }
+
+    #imgModal .modal-body {
+        max-height: 70vh;
+        overflow: auto;
+        padding: 15px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #imgModalImage {
+        max-width: 100% !important;
+        max-height: 65vh !important;
+        width: auto !important;
+        height: auto !important;
+        object-fit: contain;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin: 0 auto;
+        display: block;
+    }
+
+    /* Image Preview in Form */
+    #imgPreview {
+        width: 120px !important;
+        height: 120px !important;
+        max-width: 120px !important;
+        max-height: 120px !important;
+        object-fit: contain;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 5px;
+        background-color: #f8f9fa;
+        display: block;
+    }
+
+    #imgPreviewContainer {
+        margin-top: 8px;
+    }
+
+    /* Eye Icon Button Styles */
+    #viewImageBtn {
+        cursor: pointer;
+        height: 28px;
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #viewImageBtn:hover {
+        background-color: #e9ecef;
+    }
+</style>
+<div class="card p-2">
+    <div id="dvGrid" style="display:block;">
+        <div class="row text-end">
+            <div class="col-md-12">
+                <button class="btn btn-success icon-height mb-1" id="txtCreateNewbutton" title="Create New" onclick="CreateNew()">Create New</button>
+            </div>
+        </div>
+        <div class="table-wrapper ">
+            <table id="tblMachineMaintenance" class="fixed-width-table table">
+                <thead id="table-header">
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tblMachineMaintenance">
+        </div>
+    </div>
+
+    <div id="dvFromNEW" style="display:none;">
+
+        <fieldset class="rounded-1">
+            <legend class="float-none w-auto px-2">Entry Details</legend>
+            <div class="row">
+                <div class="col-sm-3">
+                    <label for="txtEntryNo" class="col-form-label-sm fw-bold">Entry No <span class="text-danger">*</span></label>
+                    <input type="text" id="txtEntryNo" readonly class="form-control form-control-sm" maxlength="10">
+                    <input type="hidden" id="hftxtCode" class="form-control form-control-sm" value="0">
+                </div>
+                <div class="col-sm-3">
+                    <label for="txtEntryDate" class="col-form-label-sm fw-bold">Entry Date <span class="text-danger">*</span></label>
+                    <input type="date" readonly id="txtEntryDate" class="form-control form-control-sm" autocomplete="off" maxlength="10">
+                </div>
+                <div class="col-sm-3">
+                    <label for="txtRequestDate" class="col-form-label-sm fw-bold">Request Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtRequestDate" class="form-control form-control-sm" autocomplete="off" maxlength="10">
+                </div>
+                <div class="col-sm-3">
+                    <label for="txtddlMachineNo" class="col-form-label-sm fw-bold">Machine No <span class="text-danger">*</span></label>
+                    <select id="txtddlMachineNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
+
+                </div>
+                <div class="col-sm-3">
+                    <label for="txtddlComplaintDepartment" class="col-form-label-sm fw-bold">Complaint Department <span class="text-danger">*</span></label>
+                    <select id="txtddlComplaintDepartment" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
+                </div>
+                <div class="col-sm-3">
+                    <label for="ddlStatus" class="col-form-label-sm fw-bold">Status <span class="text-danger">*</span></label>
+                    <select id="ddlStatus" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="50"> </select>
+                </div>
+                <div class="col-sm-3" id="hideUpdateStatus" style="display:none">
+                    <label for="ddlUpdateStatus" class="col-form-label-sm fw-bold">Machine Status  <span class="text-danger">*</span></label>
+                    <select id="ddlUpdateStatus" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="100">
+                        <option value="">Select</option>
+                        <option value="OK">OK</option>
+                        <option value="OK,But Under Observation">OK,But Under Observation</option>
+                        <option value="Waiting for Spares">Waiting for Spares</option>
+                        <option value="Upder Repair">Upder Repair</option>
+                    </select>
+                </div>
+                <div class="col-sm-3" id="hideSpareConsumed" style="display:none">
+                    <label for="txtSpareConsumed" class="col-form-label-sm fw-bold">Spare Consumed </label>
+                    <input type="text" id="txtSpareConsumed" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="100">
+                </div>
+                <div class="col-sm-3" id="hideRequestStatus" style="display:none">
+                    <label for="ddlRequestStatus" class="col-form-label-sm fw-bold">Request Status  <span class="text-danger">*</span></label>
+                    <select id="ddlRequestStatus" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="100">
+                        <option value="">Select</option>
+                        <option value="Closed">Closed</option>
+                        <option value="Open">Open</option>
+                    </select>
+                </div>
+                <div class="col-sm-2">
+                    <label for="txtMCFailedDate" class="col-form-label-sm fw-bold">Machine Failed Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtMCFailedDate" class="form-control form-control-sm" autocomplete="off" maxlength="10">
+                </div>
+                <div class="col-sm-1">
+                    <label for="txtMCFailedTime" class="col-form-label-sm fw-bold">Time <span class="text-danger">*</span></label>
+                    <input type="time" id="txtMCFailedTime" class="form-control form-control-sm" autocomplete="off" maxlength="5">
+                </div>
+                <div class="col-sm-3" id="txthideRequestTime" style="display:none">
+                    <label for="txtRequestTime" class="col-form-label-sm fw-bold"> Request Time <span class="text-danger">*</span></label>
+                    <input type="time" id="txtRequestTime" class="form-control form-control-sm" autocomplete="off" maxlength="5">
+                </div>
+                <div class="col-sm-2" style="display:none" id="txthideMachineStartDate">
+                    <label for="txtMachineStartDate" class="col-form-label-sm fw-bold">Machine Start Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtMachineStartDate" class="form-control form-control-sm" autocomplete="off" maxlength="10">
+                </div>
+                <div class="col-sm-1" style="display:none" id="txthideMachineStartTime">
+                    <label for="txtMachineStartTime" class="col-form-label-sm fw-bold">Time <span class="text-danger">*</span></label>
+                    <input type="time" id="txtMachineStartTime" class="form-control form-control-sm" autocomplete="off" maxlength="5">
+                </div>
+            
+                <div class="col-sm-3" style="display:none" id="txthideRemark">
+                    <label for="txtERemark" class="col-form-label-sm fw-bold">Remark <span class="text-danger">*</span></label>
+                    <textarea id="txtERemark" class="form-control form-control-sm" rows="1" autocomplete="off" maxlength="1000"></textarea>
+                </div>
+                <div class="col-sm-3" style="display:none" id="txthideDescriptionWorkDone">
+                    <label for="txtDescriptionWorkDone" class="col-form-label-sm fw-bold">Description of Work Done</label>
+                    <textarea id="txtDescriptionWorkDone" class="form-control form-control-sm" rows="1" autocomplete="off" maxlength="1000"></textarea>
+                </div>
+               
+                <div class="col-sm-3">
+                    <label for="txtddlComplaintReason" class="col-form-label-sm fw-bold">Complaint Reason <span class="text-danger">*</span></label>
+                    <select id="txtddlComplaintReason" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
+                </div>
+                <div class="col-sm-3" id="txtdRemark">
+                    <label for="txtRemark" class="col-form-label-sm fw-bold">Remark</label>
+                    <textarea id="txtRemark" class="form-control form-control-sm" rows="1" autocomplete="off" maxlength="1000"></textarea>
+                </div>
+                <div class="col-sm-3" id="hideMaintenanceType" style="display:none">
+                    <label for="ddlMaintenanceType" class="col-form-label-sm fw-bold">Maintenance Type</label>
+                    <select id="ddlMaintenanceType" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="100">
+                        <option value="">Select</option>
+                        <option value="Breakdown">Breakdown</option>
+                        <option value="Schedule">Schedule</option>
+                        <option value="Preventive">Preventive</option>
+                    </select>
+                </div>
+                <div class="col-sm-3" id="hidePriority" style="display:none">
+                    <label for="ddlPriority" class="col-form-label-sm fw-bold">Action/Priority</label>
+                    <select id="ddlPriority" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="100">
+                        <option value="">Select</option>
+                        <option value="High">High</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </div>
+                <div class="col-sm-3" id="hideNatureofBreakdown" style="display:none">
+                    <label for="ddlNatureofBreakdown" class="col-form-label-sm fw-bold">Nature of Break down</label>
+                    <select id="ddlNatureofBreakdown" class="form-control form-control-sm" autocomplete="off" tabindex="1" maxlength="100">
+                        <option value="">Select</option>
+                        <option value="Mechanical">Mechanical</option>
+                        <option value="Electrical">Electrical</option>
+                        <option value="Tooling">Tooling</option>
+                        <option value="Unidentified">Unidentified</option>
+                    </select>
+                </div>
+                <div class="col-sm-3" id="hideDescriptionofBreakdown">
+                    <label for="txtDescriptionofBreakdown" class="col-form-label-sm fw-bold">Description of Breakdown <span class="text-danger">*</span></label>
+                    <textarea id="txtDescriptionofBreakdown" class="form-control form-control-sm" rows="1" autocomplete="off" maxlength="500"></textarea>
+                </div>
+                
+                <!-- Attachment Field -->
+                <div class="col-sm-3 form-group" id="hideviewImageBtn" style="display:none;">
+                    <label for="attachment" class="form-label col-form-label-sm fw-bold">Section Incharge Signature</label>
+                    <div class="input-group" id="txthidecamera">
+                        <span class="input-group-text" onclick="triggerFileInputClick()" style="cursor: pointer; height:28px" title="Select Image">
+                            <i class="fa fa-camera"></i>
+                        </span>
+                        <input type="file" accept=".jpg, .png, .jpeg" capture="camera" onchange="FileUploadChange(event)" class="form-control form-control-sm box_border" id="txtSectionInchargeSignature" />
+                        <span class="input-group-text" id="viewImageBtn" onclick="ViewAttachedImage()" style="cursor: pointer; height:28px; display: none !important;" title="View Image">
+                            <i class="fa fa-eye"></i>
+                        </span>
+                    </div>
+                    <div class="mt-2" id="imgPreviewContainer" style="display:none;">
+                        <img id="imgPreview" style="width:120px; height:120px; object-fit: contain; border: 1px solid #ddd; border-radius: 4px; padding: 5px; background-color: #f8f9fa;" />
+                    </div>
+                </div>
+                <div class="col-sm-3" id="hidetxtPreparedBy" style="display:none;">
+                    <label for="txtPreparedBy" class="col-form-label-sm fw-bold">Complaint Raised By</label>
+                    <input type="text" id="txtPreparedBy" class="form-control form-control-sm" readonly value="Login User Name">
+                </div>
+                <div class="col-sm-3" id="hideConcernedPerson" style="display:none;">
+                    <label for="txtConcernedPerson" class="col-form-label-sm fw-bold">Concerned Person <span class="text-danger">*</span></label>
+                    <select id="txtConcernedPerson" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
+                </div>
+                <div class="col-sm-3" id="hideConcenedPersonMobileNo" style="display:none;">
+                    <label for="txtConcenedPersonMobileNo" class="col-form-label-sm fw-bold">Mobile No <span class="text-danger">*</span></label>
+                    <input type="text" id="txtConcenedPersonMobileNo" class="form-control form-control-sm Number" autocomplete="off" maxlength="10">
+                </div>
+                <div class="col-sm-3" id="hideJobAssignedTo" style="display:none;">
+                    <label for="txtJobAssignedTo" class="col-form-label-sm fw-bold">Job Assigned To</label>
+                    <select id="txtJobAssignedTo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1" maxlength="50"></select>
+                </div>
+                <div class="col-sm-3" id="hideAssignedToMobileNo" style="display:none;">
+                    <label for="txtAssignedMobileNo" class="col-form-label-sm fw-bold">Assigned To Mobile No</label>
+                    <input type="text" id="txtAssignedMobileNo" class="form-control form-control-sm Number" autocomplete="off" maxlength="10">
+                </div>
+                <div class="col-sm-12 text-end mt-1">
+                    <button type="button" class="btn btn-primary icon-height" onclick="SaveMachineMaintenance()">Save</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="BackMaster()">Back</button>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Reason</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="reasonForDeleteInput" class="form-control form-control-sm" placeholder="Enter reason" autocomplete="off" />
+                <input type="hidden" id="txtcode" class="form-control" placeholder="" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveModalDelete()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModalDelete()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Display Modal -->
+<div class="modal fade" id="imgModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imgModalTitle">Image</h5>
+                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseImageModal()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center" style="min-height: 300px; max-height: 70vh; overflow: auto; padding: 15px;">
+                <div id="imgModalLoading" style="display: flex; justify-content: center; align-items: center; min-height: 300px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+                <img id="imgModalImage" src="" alt="Image" style="max-width: 100%; max-height: 65vh; width: auto; height: auto; object-fit: contain; display: none; border: 1px solid #ddd; border-radius: 4px;" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary icon-height" onclick="CloseImageModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/MachineMaintenance.js"></script>

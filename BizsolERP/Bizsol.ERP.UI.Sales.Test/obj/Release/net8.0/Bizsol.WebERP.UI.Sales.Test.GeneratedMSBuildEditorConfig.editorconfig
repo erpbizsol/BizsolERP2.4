@@ -29,3 +29,27 @@ build_property.MSBuildProjectDirectory = D:\BizSolERP24_APPCore\BizsolERP\Bizsol
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 8.0
 build_property.EnableCodeStyleSeverity = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Sales.Test/Areas/SalesTest/Views/TestTheme/AddNewPo.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2FsZXNUZXN0XFZpZXdzXFRlc3RUaGVtZVxBZGROZXdQby5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Sales.Test/Areas/SalesTest/Views/TestTheme/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2FsZXNUZXN0XFZpZXdzXFRlc3RUaGVtZVxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Sales.Test/Areas/SalesTest/Views/TestTheme/TestDashboard.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2FsZXNUZXN0XFZpZXdzXFRlc3RUaGVtZVxUZXN0RGFzaGJvYXJkLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Sales.Test/Areas/SalesTest/Views/TestTheme/ThemeGallery.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2FsZXNUZXN0XFZpZXdzXFRlc3RUaGVtZVxUaGVtZUdhbGxlcnkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Sales.Test/Areas/SalesTest/Views/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2FsZXNUZXN0XFZpZXdzXF9WaWV3SW1wb3J0cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/BizSolERP24_APPCore/BizsolERP/Bizsol.ERP.UI.Sales.Test/Areas/SalesTest/Views/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU2FsZXNUZXN0XFZpZXdzXF9WaWV3U3RhcnQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 

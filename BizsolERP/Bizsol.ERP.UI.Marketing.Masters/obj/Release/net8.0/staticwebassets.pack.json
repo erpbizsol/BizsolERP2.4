@@ -17,8 +17,24 @@
       "PackagePath": "staticwebassets\\js\\EnquiryMaster.js"
     },
     {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Marketing.Masters\\wwwroot\\js\\ItemMaster.js",
+      "PackagePath": "staticwebassets\\js\\ItemMaster.js"
+    },
+    {
       "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Marketing.Masters\\wwwroot\\js\\LeadMaster.js",
       "PackagePath": "staticwebassets\\js\\LeadMaster.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Marketing.Masters\\wwwroot\\js\\Ledger.js",
+      "PackagePath": "staticwebassets\\js\\Ledger.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Marketing.Masters\\wwwroot\\js\\TransporterMaster.js",
+      "PackagePath": "staticwebassets\\js\\TransporterMaster.js"
+    },
+    {
+      "Id": "D:\\BizSolERP24_APPCore\\BizsolERP\\Bizsol.ERP.UI.Marketing.Masters\\wwwroot\\js\\VendorMaster.js",
+      "PackagePath": "staticwebassets\\js\\VendorMaster.js"
     },
     {
       "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.Bizsol.WebERP.UI.Marketing.Masters.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",

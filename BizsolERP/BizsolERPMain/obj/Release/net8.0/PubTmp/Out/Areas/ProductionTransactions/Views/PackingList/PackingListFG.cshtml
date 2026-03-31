@@ -112,7 +112,7 @@
 
                 <div class="col-md-2 col-6" id="divOrderNo">
                     <label for="ddlOrderNo" id="lblddlOrderNo" class="col-form-label-sm fw-bold">Order No:</label>
-                    <select id="ddlOrderNo" class="form-control form-control-sm box_border" >
+                    <select id="ddlOrderNo" class="form-control form-control-sm box_border" onchange="PackingListFG_OnChangeddlOrderNo()">
                     </select>
                 </div>
                 <div class="col-md-2 col-6">
@@ -211,7 +211,7 @@
         </div>
         <div id="DivBtnAdd" class="col-md-6 text-end">
 
-            <a class="btn btn-primary btn-height" onclick="AddNewScanManualItem()" style="display:none">
+            <a class="btn btn-primary btn-height" onclick="PackingListFG_AddManualItem()">
                 Add
             </a>
 
@@ -220,6 +220,16 @@
         <input type="hidden" value="" id="hfCoilIds" name="hfCoilIds" />
         
     </div>
+   
+        <table id="tbPackingListTransactionManualItem" class="table mt-2">
+            <thead id="tbPackingListTransactionManualItemHeader">
+            </thead>
+            <tbody id="tbPackingListTransactionManualItemBody">
+            </tbody>
+            <tfoot>
+            </tfoot>
+        </table>
+   
     <div class="table-wrapper mt-2 fixed-height-table">
         <table id="tbPackingListTransaction" class="table fixed-width-table">
             <thead id="tbPackingListTransactionHeader">

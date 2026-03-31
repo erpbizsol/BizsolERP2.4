@@ -1,0 +1,569 @@
+@{
+    Layout = null;
+    var urlDashboard  = Url.Action("Index",        "TestTheme", new { area = "SalesTest" });
+    var urlGallery    = Url.Action("ThemeGallery", "TestTheme", new { area = "SalesTest" });
+    var urlClassic    = Url.Action("Index",        "Home",      new { area = ""          });
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BizSol ERP – Theme Gallery</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        /* ── Page Header ── */
+        .gallery-hero {
+            background: linear-gradient(135deg, #0a2760 0%, #1251b5 45%, #0891b2 75%, #1045a8 100%);
+            background-size: 300% 300%;
+            animation: heroFlow 12s ease infinite;
+            padding: 3rem 2rem 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        @@keyframes heroFlow {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .gallery-hero::before {
+            content: '';
+            position: absolute; top: -40%; right: -5%;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(255,255,255,0.10) 0%, transparent 70%);
+            animation: float 10s ease-in-out infinite;
+        }
+        .gallery-hero::after {
+            content: '';
+            position: absolute; bottom: -40%; left: -5%;
+            width: 350px; height: 350px;
+            background: radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%);
+            animation: float 14s ease-in-out infinite reverse;
+        }
+        @@keyframes float {
+            0%,100% { transform: translate(0,0); }
+            50%     { transform: translate(20px,-20px); }
+        }
+        .gallery-hero > * { position: relative; z-index: 1; }
+        .gallery-hero .badge-pill {
+            display: inline-block;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: #fff;
+            border-radius: 50px;
+            padding: 0.35rem 1rem;
+            font-size: 0.78rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+        .gallery-hero h1 {
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.6rem;
+        }
+        .gallery-hero p {
+            color: rgba(255,255,255,0.75);
+            font-size: 1.05rem;
+            max-width: 520px;
+            margin: 0 auto 1.5rem;
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: #fff;
+            text-decoration: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background: rgba(255,255,255,0.22);
+            color: #fff;
+            transform: translateX(-4px);
+        }
+
+        /* ── Grid ── */
+        .gallery-container {
+            max-width: 1400px;
+            margin: -2.5rem auto 3rem;
+            padding: 0 1.5rem;
+            position: relative;
+            z-index: 2;
+        }
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* ── Theme Card ── */
+        .theme-card {
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(12,25,50,0.08);
+            transition: transform 0.35s ease, box-shadow 0.35s ease;
+            border: 2px solid transparent;
+            position: relative;
+        }
+        .theme-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 48px rgba(12,25,50,0.14);
+        }
+        .theme-card.current {
+            border-color: #1251b5;
+            box-shadow: 0 4px 24px rgba(18,81,181,0.25);
+        }
+        .current-badge {
+            position: absolute;
+            top: 12px; right: 12px;
+            background: linear-gradient(135deg, #1251b5, #0891b2);
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 0.3rem 0.7rem;
+            border-radius: 50px;
+            z-index: 5;
+            box-shadow: 0 2px 8px rgba(18,81,181,0.4);
+        }
+
+        /* ── Mini UI Mockup ── */
+        .mockup {
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+        }
+        .mockup-header {
+            height: 38px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 6px;
+            flex-shrink: 0;
+            border-bottom: 2px solid transparent;
+            position: relative;
+        }
+        .mockup-logo { width: 16px; height: 16px; border-radius: 4px; background: rgba(255,255,255,0.4); }
+        .mockup-logo-text { height: 7px; width: 60px; border-radius: 3px; background: rgba(255,255,255,0.6); }
+        .mockup-spacer { flex: 1; }
+        .mockup-dot { width: 24px; height: 24px; border-radius: 6px; background: rgba(255,255,255,0.15); }
+        .mockup-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .mockup-sidebar {
+            width: 56px;
+            flex-shrink: 0;
+            padding: 8px 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .mockup-menu-item {
+            height: 22px;
+            border-radius: 5px;
+            background: rgba(128,128,128,0.12);
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+            gap: 4px;
+        }
+        .mockup-menu-item.active { border-left: 2px solid; }
+        .mockup-menu-icon { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+        .mockup-menu-label { height: 5px; border-radius: 2px; flex: 1; background: rgba(128,128,128,0.25); }
+        .mockup-content {
+            flex: 1;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: #f4f7fb;
+        }
+        .mockup-welcome {
+            height: 44px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            gap: 6px;
+        }
+        .mockup-welcome-text { display: flex; flex-direction: column; gap: 3px; }
+        .mockup-welcome-text span { display: block; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.7); }
+        .mockup-welcome-text span:first-child { width: 70px; }
+        .mockup-welcome-text span:last-child { width: 40px; background: rgba(255,255,255,0.45); }
+        .mockup-stats {
+            display: flex;
+            gap: 5px;
+            flex: 1;
+        }
+        .mockup-stat {
+            flex: 1;
+            background: #fff;
+            border-radius: 6px;
+            border-top: 3px solid;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .mockup-stat-val { height: 8px; border-radius: 3px; width: 70%; }
+        .mockup-stat-lbl { height: 4px; border-radius: 2px; width: 90%; background: #e2e8f0; }
+
+        /* ── Card Body ── */
+        .card-body-info {
+            padding: 1.2rem 1.4rem;
+        }
+        .theme-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0c1932;
+            margin-bottom: 0.2rem;
+        }
+        .theme-desc {
+            font-size: 0.82rem;
+            color: #64748b;
+            margin-bottom: 1rem;
+        }
+        .swatches {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 1.1rem;
+            align-items: center;
+        }
+        .swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            border: 2px solid #fff;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .swatch:hover { transform: scale(1.2); }
+        .swatch-label {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            margin-left: 4px;
+        }
+        .card-actions {
+            display: flex;
+            gap: 0.6rem;
+        }
+        .btn-apply {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-apply::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+            transition: left 0.5s;
+        }
+        .btn-apply:hover::after { left: 100%; }
+        .btn-apply:hover { transform: translateY(-2px); filter: brightness(1.08); }
+        .btn-preview {
+            padding: 0.6rem 0.9rem;
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f0;
+            background: #fff;
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .btn-preview:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            color: #1e293b;
+            transform: translateY(-2px);
+        }
+
+        /* ── Footer ── */
+        .gallery-footer {
+            text-align: center;
+            padding: 2rem 1rem 3rem;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        .gallery-footer a { color: #1251b5; text-decoration: none; font-weight: 600; }
+
+        @@media (max-width: 600px) {
+            .theme-grid { grid-template-columns: 1fr; }
+            .gallery-hero { padding: 2rem 1rem 3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hero Header -->
+    <div class="gallery-hero">
+        <div class="badge-pill">🎨 BizSol ERP v2.4</div>
+        <h1>Theme Gallery</h1>
+        <p>Choose your preferred look. Click <strong>Apply</strong> to switch — the theme is saved and applies across all pages.</p>
+        <a href="@urlDashboard" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="gallery-container">
+        <div class="theme-grid" id="themeGrid">
+            <!-- Cards injected by JS -->
+        </div>
+    </div>
+
+    <div class="gallery-footer">
+        BizSol Technologies Pvt. Ltd. &nbsp;·&nbsp; ERP 2.4 &nbsp;·&nbsp;
+        <a href="@urlDashboard">Dashboard</a>
+    </div>
+
+    <script>
+    /* ── Server-side URLs (path-base aware) ── */
+    const URL_DASHBOARD = '@Html.Raw(urlDashboard)';
+    const URL_GALLERY   = '@Html.Raw(urlGallery)';
+    const URL_CLASSIC   = '@Html.Raw(urlClassic)';
+
+    const THEMES = {
+        orange: {
+            label: 'Orange Classic',
+            desc: 'Warm, energetic & original brand palette.',
+            headerBg: 'linear-gradient(90deg,#ffffff 0%,#fff8f5 50%,#ffffff 100%)',
+            headerBorder: '#ff8c42',
+            sidebarBg: '#ffffff',
+            sidebarText: '#2c3e50',
+            sidebarIcon: '#ff8c42',
+            activeColor: '#f4511e',
+            welcomeBg: 'linear-gradient(135deg,#ff8c42,#ff6b35,#4caf50)',
+            primary: '#ff8c42',
+            secondary: '#4caf50',
+            accent: '#ffc107',
+            info: '#00bcd4',
+            swatches: ['#ff8c42','#4caf50','#ffc107','#f4511e'],
+            swatchLabels: ['Primary','Success','Warning','Energy'],
+            btnGradient: 'linear-gradient(135deg,#ff8c42,#f4511e)',
+            statColors: ['#ff8c42','#4caf50','#ffc107'],
+        },
+        indigo: {
+            label: 'Indigo Cyan',
+            desc: 'Deep indigo sidebar with electric cyan accents.',
+            headerBg: 'linear-gradient(90deg,#ffffff 0%,#f5f3ff 50%,#ffffff 100%)',
+            headerBorder: '#667eea',
+            sidebarBg: 'linear-gradient(180deg,#1e1b4b,#312e81)',
+            sidebarText: '#c7d2fe',
+            sidebarIcon: '#818cf8',
+            activeColor: '#0dcaf0',
+            welcomeBg: 'linear-gradient(135deg,#667eea,#764ba2,#0dcaf0)',
+            primary: '#667eea',
+            secondary: '#0dcaf0',
+            accent: '#f59e0b',
+            info: '#06b6d4',
+            swatches: ['#667eea','#0dcaf0','#f59e0b','#764ba2'],
+            swatchLabels: ['Primary','Cyan','Warning','Violet'],
+            btnGradient: 'linear-gradient(135deg,#667eea,#764ba2)',
+            statColors: ['#667eea','#0dcaf0','#f59e0b'],
+        },
+        emerald: {
+            label: 'Emerald Pulse',
+            desc: 'Vibrant emerald green with a dark charcoal sidebar.',
+            headerBg: 'linear-gradient(90deg,#ffffff 0%,#f0fdf4 50%,#ffffff 100%)',
+            headerBorder: '#059669',
+            sidebarBg: 'linear-gradient(180deg,#0f172a,#1e293b)',
+            sidebarText: '#cbd5e1',
+            sidebarIcon: '#34d399',
+            activeColor: '#f59e0b',
+            welcomeBg: 'linear-gradient(135deg,#059669,#0d9488,#0891b2)',
+            primary: '#059669',
+            secondary: '#10b981',
+            accent: '#f59e0b',
+            info: '#3b82f6',
+            swatches: ['#059669','#10b981','#f59e0b','#3b82f6'],
+            swatchLabels: ['Emerald','Mint','Amber','Blue'],
+            btnGradient: 'linear-gradient(135deg,#059669,#10b981)',
+            statColors: ['#059669','#3b82f6','#f59e0b'],
+        },
+        darksteel: {
+            label: 'Dark Steel Spectrum',
+            desc: 'Metallic dark header with iridescent spectrum border.',
+            headerBg: 'linear-gradient(135deg,#060c18,#0d1b2a,#0a1628)',
+            headerBorder: '#3b82f6',
+            sidebarBg: 'linear-gradient(180deg,#060c18,#0d1422)',
+            sidebarText: '#94a3b8',
+            sidebarIcon: '#60a5fa',
+            activeColor: '#8b5cf6',
+            welcomeBg: 'linear-gradient(135deg,#1d4ed8,#4f46e5,#7c3aed,#ec4899)',
+            primary: '#2563eb',
+            secondary: '#8b5cf6',
+            accent: '#fbbf24',
+            info: '#06b6d4',
+            swatches: ['#2563eb','#8b5cf6','#ec4899','#fbbf24'],
+            swatchLabels: ['Blue','Violet','Rose','Gold'],
+            btnGradient: 'linear-gradient(135deg,#2563eb,#4f46e5)',
+            statColors: ['#2563eb','#8b5cf6','#f59e0b'],
+        },
+        royalblue: {
+            label: 'Royal Blue Corporate',
+            desc: 'SAP Fiori-inspired — deep blue header, clean white sidebar.',
+            headerBg: 'linear-gradient(135deg,#0a2760,#0e3585,#1045a8)',
+            headerBorder: '#38bdf8',
+            sidebarBg: '#ffffff',
+            sidebarText: '#334155',
+            sidebarIcon: '#1251b5',
+            activeColor: '#1251b5',
+            welcomeBg: 'linear-gradient(135deg,#0a2760,#1251b5,#0891b2,#f97316)',
+            primary: '#1251b5',
+            secondary: '#f97316',
+            accent: '#eab308',
+            info: '#0891b2',
+            swatches: ['#1251b5','#f97316','#0891b2','#eab308'],
+            swatchLabels: ['Royal Blue','Orange','Teal','Gold'],
+            btnGradient: 'linear-gradient(135deg,#1251b5,#1565c0)',
+            statColors: ['#1251b5','#0891b2','#f97316'],
+        }
+    };
+
+    function isLight(bg) {
+        return bg.includes('#ffffff') || bg.startsWith('linear-gradient(90deg,#ffffff');
+    }
+
+    function buildMockup(t) {
+        const hLight = isLight(t.headerBg);
+        const sLight = t.sidebarBg === '#ffffff';
+        const menuItemBg = sLight ? 'rgba(128,128,128,0.08)' : 'rgba(255,255,255,0.07)';
+        const activeBg = sLight ? `rgba(0,0,0,0.06)` : 'rgba(255,255,255,0.12)';
+        return `
+        <div class="mockup">
+            <div class="mockup-header" style="background:${t.headerBg}; border-color:${t.headerBorder};">
+                <div class="mockup-logo"></div>
+                <div class="mockup-logo-text"></div>
+                <div class="mockup-spacer"></div>
+                <div class="mockup-dot"></div>
+                <div class="mockup-dot"></div>
+            </div>
+            <div class="mockup-body">
+                <div class="mockup-sidebar" style="background:${t.sidebarBg}; border-right:1px solid rgba(128,128,128,0.12);">
+                    <div class="mockup-menu-item active" style="background:${activeBg}; border-left-color:${t.activeColor};">
+                        <div class="mockup-menu-icon" style="background:${t.sidebarIcon};"></div>
+                    </div>
+                    <div class="mockup-menu-item" style="background:${menuItemBg};">
+                        <div class="mockup-menu-icon" style="background:${t.sidebarIcon}; opacity:0.5;"></div>
+                    </div>
+                    <div class="mockup-menu-item" style="background:${menuItemBg};">
+                        <div class="mockup-menu-icon" style="background:${t.sidebarIcon}; opacity:0.5;"></div>
+                    </div>
+                    <div class="mockup-menu-item" style="background:${menuItemBg};">
+                        <div class="mockup-menu-icon" style="background:${t.sidebarIcon}; opacity:0.5;"></div>
+                    </div>
+                </div>
+                <div class="mockup-content">
+                    <div class="mockup-welcome" style="background:${t.welcomeBg};">
+                        <div class="mockup-welcome-text"><span></span><span></span></div>
+                    </div>
+                    <div class="mockup-stats">
+                        ${t.statColors.map(c => `
+                        <div class="mockup-stat" style="border-top-color:${c};">
+                            <div class="mockup-stat-val" style="background:${c}; opacity:0.7;"></div>
+                            <div class="mockup-stat-lbl"></div>
+                        </div>`).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    function renderGallery() {
+        const current = localStorage.getItem('bizsolTheme') || 'royalblue';
+        const grid = document.getElementById('themeGrid');
+        grid.innerHTML = '';
+
+        Object.entries(THEMES).forEach(([key, t]) => {
+            const isCurrent = key === current;
+            const card = document.createElement('div');
+            card.className = 'theme-card' + (isCurrent ? ' current' : '');
+            card.innerHTML = `
+                ${isCurrent ? '<div class="current-badge">✓ Active</div>' : ''}
+                ${buildMockup(t)}
+                <div class="card-body-info">
+                    <div class="theme-name">${t.label}</div>
+                    <div class="theme-desc">${t.desc}</div>
+                    <div class="swatches">
+                        ${t.swatches.map((c,i) => `<div class="swatch" title="${t.swatchLabels[i]}" style="background:${c};"></div>`).join('')}
+                        <span class="swatch-label">${t.swatches.length} key colors</span>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-apply" style="background:${t.btnGradient};"
+                                onclick="applyAndGo('${key}')">
+                            ${isCurrent ? '✓ Applied' : '🎨 Apply Theme'}
+                        </button>
+                        <a href="${URL_DASHBOARD}?preview=${key}" target="_blank" class="btn-preview">
+                            <i class="fas fa-eye"></i> Preview
+                        </a>
+                    </div>
+                </div>`;
+            grid.appendChild(card);
+        });
+    }
+
+    function applyAndGo(key) {
+        localStorage.setItem('bizsolTheme', key);
+        renderGallery();
+        // Show a quick toast-like feedback
+        const toast = document.createElement('div');
+        toast.style.cssText = `position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);
+            background:linear-gradient(135deg,#0a2760,#1251b5);color:#fff;
+            padding:0.8rem 1.8rem;border-radius:50px;font-size:0.9rem;font-weight:600;
+            box-shadow:0 8px 24px rgba(18,81,181,0.35);z-index:9999;
+            animation:fadeUp 0.4s ease;`;
+        toast.innerHTML = `✓ ${THEMES[key].label} applied — <a href="${URL_DASHBOARD}" style="color:#fde68a;text-decoration:none;font-weight:700;">Open Dashboard →</a>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    // Inject keyframe for toast
+    const s = document.createElement('style');
+    s.textContent = `@@keyframes fadeUp{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}`;
+    document.head.appendChild(s);
+
+    renderGallery();
+    </script>
+</body>
+</html>

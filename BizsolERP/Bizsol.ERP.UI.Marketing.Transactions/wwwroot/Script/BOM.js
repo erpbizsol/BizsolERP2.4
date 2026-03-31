@@ -36,7 +36,12 @@ $(document).ready(function () {
         openBOMFromList($tr.data('id'), 'edit', $tr.data('sub-id') || 0);
     });
     $('#tblBOMList').on('click', '.js-bom-delete', function () {
-        deleteBOMFromList($(this).closest('tr').data('id'));
+        const $tr = $(this).closest('tr');
+        deleteBOMFromList($tr.data('id'), $tr.data('sub-id') || 0);
+    });
+    $('#tblBOMList').on('click', '.js-bom-history', function () {
+        const $tr = $(this).closest('tr');
+        openBomAmendmentHistoryModal($tr.data('id'), $tr.data('sub-id') || 0);
     });
 
     $('#bomSearch').on('input', function () {
@@ -64,6 +69,50 @@ function loadBOMList() {
             toastr.error((error && error.Msg));
         });
 }
+
+/** Indian-style comma formatting (same style as Project Master budget). */
+function formatInrAmountNum(n, minDec, maxDec) {
+    const mn = minDec != null ? minDec : 2;
+    const mx = maxDec != null ? maxDec : 2;
+    if (n == null || isNaN(n)) return '—';
+    return '₹ ' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: mn, maximumFractionDigits: mx });
+}
+
+function formatInrQtyNum(n) {
+    if (n == null || isNaN(n)) return '—';
+    return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+}
+
+/* Same comma rules as Project Master budget field (formatBudgetRaw). */
+function formatBomMoneyRaw(value) {
+    if (value === null || value === undefined) return '';
+    let raw = value.toString();
+    const endsWithDot = raw.trim().endsWith('.');
+    raw = raw.replace(/,/g, '').replace(/[^0-9.]/g, '');
+    if (!raw) return '';
+
+    const parts = raw.split('.');
+    let intPart = (parts[0] || '').replace(/^0+(?=\d)/, '') || '0';
+    let decPart = (parts[1] || '').substring(0, 3);
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    if (endsWithDot && !decPart) return intPart + '.';
+    return decPart ? intPart + '.' + decPart : intPart;
+}
+
+function formatBomMoneyInput(input) {
+    if (!input) return;
+    input.value = formatBomMoneyRaw(input.value);
+}
+
+/** Parse display value (with commas) to number for save / math. */
+function parseBomMoney(val) {
+    if (val == null || val === '') return 0;
+    const v = val.toString().replace(/,/g, '').trim();
+    if (v === '' || v === '.') return 0;
+    const n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+}
+
 function bindBOMGrid(list) {
     const $tbody = $('#tblBOMList tbody');
     if (!$tbody.length) return;
@@ -76,7 +125,7 @@ function bindBOMGrid(list) {
                     <div class="pm-empty">
                         <div class="pm-empty-icon"><i class="fas fa-folder-open"></i></div>
                         <div class="pm-empty-title">No BOM records found</div>
-                        <div class="pm-empty-sub">Click "New BOM" to create your first BOM.</div>
+                        <div class="pm-empty-sub">Click &quot;New BOM&quot; to create your first BOM.</div>
                     </div>
                 </td>
             </tr>`);
@@ -102,7 +151,7 @@ function bindBOMGrid(list) {
                 <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis;">${escHtml(projectName)}</td>
                 <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis;">${escHtml(subProjectName)}</td>
                 <td class="center">${totalItems}</td>
-                <td class="right">&#8377; ${totalAmount.toFixed(2)}</td>
+                <td class="right">${formatInrAmountNum(totalAmount, 2, 2)}</td>
                 <td class="center">
                     <div class="bom-actions">
                         <button type="button" class="bom-btn icon view js-bom-view" title="View">
@@ -110,6 +159,9 @@ function bindBOMGrid(list) {
                         </button>
                         <button type="button" class="bom-btn icon edit js-bom-edit" title="Edit">
                             <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="bom-btn icon history js-bom-history" title="Amendment history">
+                            <i class="fas fa-history"></i>
                         </button>
                         <button type="button" class="bom-btn icon del js-bom-delete" title="Delete">
                             <i class="fas fa-trash-alt"></i>
@@ -119,7 +171,7 @@ function bindBOMGrid(list) {
             </tr>`);
     });
 
-    $('#bomListGrandTotal').text('₹ ' + grandTotal.toFixed(2));
+    $('#bomListGrandTotal').text(formatInrAmountNum(grandTotal, 2, 2));
 }
 function filterBOMs(query) {
     if (!query) { bindBOMGrid(G_BOMList); return; }
@@ -128,6 +180,204 @@ function filterBOMs(query) {
     });
     bindBOMGrid(filtered);
 }
+
+function normalizeAmendmentHistoryResponse(resp) {
+    if (Array.isArray(resp)) return resp;
+    if (resp && Array.isArray(resp.data)) return resp.data;
+    if (resp && Array.isArray(resp.Data)) return resp.Data;
+    return [];
+}
+
+/** Map API / serializer variants to stable column names used by USP_GetCommonAmendmentDetails. */
+function amendmentCanonicalColumnName(key) {
+    if (key == null) return key;
+    const t = String(key).trim();
+    const compact = t.replace(/\s+/g, '').toLowerCase();
+    const aliases = {
+        trancode: 'TranCode',
+        type: 'Type',
+        amendmentno: 'Amendment No',
+        amendmentdate: 'Amendment Date',
+        amendmenttime: 'Amendment Time',
+        amendmentby: 'Amendment By'
+    };
+    return aliases[compact] || t;
+}
+
+function formatAmendmentHistoryDate(val) {
+    if (val == null || val === '') return '';
+    try {
+        const d = new Date(val);
+        if (isNaN(d.getTime())) return String(val);
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch (e) {
+        return String(val);
+    }
+}
+
+function orderAmendmentHistoryColumns(allKeys) {
+    const priority = ['Type', 'Amendment No', 'Amendment Date', 'Amendment Time', 'Amendment By'];
+    const head = priority.filter(function (k) { return allKeys.indexOf(k) >= 0; });
+    const rest = allKeys.filter(function (k) { return priority.indexOf(k) < 0; }).sort(function (a, b) {
+        return String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
+    });
+    return head.concat(rest);
+}
+
+/** Build rows with same keys (pivot columns may differ per amendment), format dates, show nulls as — for numeric pivots. */
+function prepareAmendmentHistoryGridRows(rawRows) {
+    const list = Array.isArray(rawRows) ? rawRows : [];
+    const canonicalRows = list.map(function (row) {
+        const o = {};
+        Object.keys(row).forEach(function (k) {
+            o[amendmentCanonicalColumnName(k)] = row[k];
+        });
+        return o;
+    });
+
+    const keySet = new Set();
+    canonicalRows.forEach(function (r) {
+        Object.keys(r).forEach(function (k) { keySet.add(k); });
+    });
+    const orderedKeys = orderAmendmentHistoryColumns(Array.from(keySet));
+
+    const numericPivotNames = ['Amount', 'Qty Required', 'Rate', 'Tolerance', 'Rate Tolerance'];
+
+    return canonicalRows.map(function (r) {
+        const out = {};
+        orderedKeys.forEach(function (k) {
+            let v = r.hasOwnProperty(k) ? r[k] : '';
+            if (k === 'Amendment Date' && v !== '' && v != null) {
+                out[k] = formatAmendmentHistoryDate(v);
+                return;
+            }
+            if (v === null || v === undefined) {
+                v = '';
+            }
+            if (v === '' && numericPivotNames.indexOf(k) >= 0) {
+                out[k] = '—';
+            } else {
+                out[k] = v;
+            }
+        });
+        return out;
+    });
+}
+
+function sortAmendmentHistoryRows(rows) {
+    return rows.slice().sort(function (a, b) {
+        const noA = parseInt(a['Amendment No'], 10) || 0;
+        const noB = parseInt(b['Amendment No'], 10) || 0;
+        if (noA !== noB) return noB - noA;
+        const tcA = parseInt(a.TranCode, 10) || 0;
+        const tcB = parseInt(b.TranCode, 10) || 0;
+        if (tcA !== tcB) return tcA - tcB;
+        const timeA = String(a['Amendment Time'] || '');
+        const timeB = String(b['Amendment Time'] || '');
+        if (timeA !== timeB) return timeB.localeCompare(timeA);
+        const rank = { OldValue: 0, NewValue: 1 };
+        const ra = rank.hasOwnProperty(a.Type) ? rank[a.Type] : 9;
+        const rb = rank.hasOwnProperty(b.Type) ? rank[b.Type] : 9;
+        return ra - rb;
+    });
+}
+
+/**
+ * Opens modal and binds amendment grid (BizsolCustomFilterGrid — same pattern as Buying Capacity).
+ */
+function openBomAmendmentHistoryModal(projectMasterCode, subProjectMasterCode) {
+    const code = parseInt(projectMasterCode || '0', 10) || 0;
+    const sub  = parseInt(subProjectMasterCode || '0', 10) || 0;
+    if (!code) {
+        toastr.warning('Invalid project for this BOM row.');
+        return;
+    }
+
+    const Grid = window.BizsolCustomFilterGrid;
+    if (!Grid || typeof Grid.CreateDataTable !== 'function') {
+        toastr.error('Grid component not loaded. Ensure filter.js is included on the page.');
+        return;
+    }
+
+    const row = (G_BOMList || []).find(function (x) {
+        return String(x.ProjectMaster_Code || x.Code || 0) === String(code)
+            && String(x.SubProjectMaster_Code || 0) === String(sub);
+    });
+    const proj = row ? (row.ProjectName || row.ProjectDesp || '') : '';
+    const subn = row ? (row.SubProjectName || row.SubProjectDesp || '') : '';
+    $('#bomAmendmentHistorySubtitle').text((proj || '—') + (subn ? ' · ' + subn : ''));
+
+    $('#table-header-BomAmendmentHistory').empty();
+    $('#table-body-BomAmendmentHistory').empty();
+    $('#paginator-tblBomAmendmentHistory').empty();
+
+    showModal('dvBomAmendmentHistoryModal');
+
+    Showloader && Showloader();
+    BOMService.GetBOMAmendmentDetails(sub)
+        .then(function (response) {
+            HideLoader && HideLoader();
+            const raw = normalizeAmendmentHistoryResponse(response);
+            if (!raw.length) {
+                $('#table-body-BomAmendmentHistory').html(
+                    '<tr><td colspan="99" style="text-align:center;padding:24px;color:var(--text-muted);">No amendment history found.</td></tr>'
+                );
+                return;
+            }
+
+            let rows = prepareAmendmentHistoryGridRows(raw);
+            rows = sortAmendmentHistoryRows(rows);
+
+            const keys = Object.keys(rows[0]);
+            /* Must not appear in String/Numeric/Date filter lists, or Filter.js renders a visible header for them. */
+            const AMENDMENT_HIDDEN_COLUMNS = ['TranCode'];
+            const hiddenColumns = AMENDMENT_HIDDEN_COLUMNS.filter(function (k) {
+                return keys.indexOf(k) >= 0;
+            });
+            const DateFilterColumn = keys.indexOf('Amendment Date') >= 0 ? ['Amendment Date'] : [];
+            const numericCandidates = ['Amendment No'];
+            const pivotNumeric = keys.filter(function (k) {
+                return ['Amount', 'Rate', 'Qty Required', 'Tolerance', 'Rate Tolerance'].indexOf(k) >= 0;
+            });
+            const NumericFilterColumn = numericCandidates.concat(pivotNumeric).filter(function (k) {
+                return keys.indexOf(k) >= 0 && hiddenColumns.indexOf(k) < 0;
+            });
+            const StringFilterColumn = keys.filter(function (k) {
+                return hiddenColumns.indexOf(k) < 0
+                    && DateFilterColumn.indexOf(k) < 0
+                    && NumericFilterColumn.indexOf(k) < 0;
+            });
+            const StringdoubleFilterColumn = [];
+            const ColumnAlignment = {};
+            keys.forEach(function (k) {
+                if (NumericFilterColumn.indexOf(k) >= 0) {
+                    ColumnAlignment[k] = 'right';
+                } else if (k === 'Type') {
+                    ColumnAlignment[k] = 'center';
+                }
+            });
+
+            Grid.CreateDataTable(
+                'table-header-BomAmendmentHistory',
+                'table-body-BomAmendmentHistory',
+                rows,
+                false,
+                [],
+                StringFilterColumn,
+                NumericFilterColumn,
+                DateFilterColumn,
+                StringdoubleFilterColumn,
+                hiddenColumns,
+                ColumnAlignment,
+                true
+            );
+        })
+        .catch(function (err) {
+            HideLoader && HideLoader();
+            toastr.error((err && err.Msg) || 'Could not load amendment history.');
+        });
+}
+
 function viewBOM(id, subId) {
     if (!G_BOMList || !G_BOMList.length) return;
     const row = G_BOMList.find(function (x) {
@@ -140,8 +390,8 @@ function viewBOM(id, subId) {
     $('#viewBOMProjectName').text(row.ProjectName || row.ProjectDesp || '—');
     $('#viewBOMSubProjectName').text(row.SubProjectName || row.SubProjectDesp || '—');
     $('#viewBOMTotalItems').text(row.TotalItems || 0);
-    $('#viewBOMTotalQty').text(row.TotalQty != null ? parseFloat(row.TotalQty).toFixed(3) : '—');
-    $('#viewBOMTotalAmount').text('₹ ' + parseFloat(row.TotalAmount || 0).toFixed(2));
+    $('#viewBOMTotalQty').text(row.TotalQty != null ? formatInrQtyNum(parseFloat(row.TotalQty)) : '—');
+    $('#viewBOMTotalAmount').text(formatInrAmountNum(parseFloat(row.TotalAmount || 0), 2, 2));
 
     showModal('dvBOMViewModal');
 }
@@ -311,8 +561,16 @@ function openBOMFromList(id, mode, subProjectCode) {
                     $tr.find('.bom-tolerance').val(   d.Tolerance         != null ? d.Tolerance         : '');
                     $tr.find('.bom-qty-required').val( d.QtyRequired      != null ? d.QtyRequired        : '');
                     $tr.find('.bom-rate-tol').val(     d.RateTolerance    != null ? d.RateTolerance      : '');
-                    $tr.find('.bom-est-rate').val(     d.Rate             != null ? d.Rate               : '');
-                    $tr.find('.bom-amount').val(       d.Amount           != null ? d.Amount             : '');
+                    if (d.Rate != null && d.Rate !== '') {
+                        $tr.find('.bom-est-rate').val(formatBomMoneyRaw(String(d.Rate)));
+                    } else {
+                        $tr.find('.bom-est-rate').val('');
+                    }
+                    if (d.Amount != null && d.Amount !== '') {
+                        $tr.find('.bom-amount').val(formatBomMoneyRaw(Number(d.Amount).toFixed(2)));
+                    } else {
+                        $tr.find('.bom-amount').val('');
+                    }
                 });
 
                 // Async-fetch item lists for each work type present in these rows so UOM
@@ -347,14 +605,19 @@ function disableEntryForm() {
 function enableEntryFormHeader() {
     $('#ddlProject, #ddlSubProject').prop('disabled', false);
 }
-function deleteBOMFromList(id) {
+function deleteBOMFromList(id, subId) {
     if (!G_BOMList || !G_BOMList.length) return;
+    const sub = subId != null ? subId : 0;
     const row = G_BOMList.find(function (x) {
-        return String(x.ProjectMaster_Code || x.Code || 0) === String(id || 0);
+        const sameProj = String(x.ProjectMaster_Code || x.Code || 0) === String(id || 0);
+        const sameSub  = String(x.SubProjectMaster_Code || 0) === String(sub || 0);
+        return sameProj && sameSub;
     });
     if (!row) return;
 
-    $('#delBOMName').text(row.ProjectName || row.ProjectDesp || 'this BOM');
+    const subName = row.SubProjectName || row.SubProjectDesp || '';
+    const projName = row.ProjectName || row.ProjectDesp || 'this BOM';
+    $('#delBOMName').text(subName ? (projName + ' / ' + subName) : projName);
     $('#hfDeleteBOMId').val(id || 0);
     $('#hfDeleteBOMSubId').val(row.SubProjectMaster_Code || 0);
     $('#bomReasonForDeleteInput').val('');
@@ -473,6 +736,7 @@ function resetBomForm() {
     $('#ddlSubProject').empty().append('<option value="">Select project first</option>').prop('disabled', false);
     $('#tblBOM tbody').empty();
     $('#tblBOMSummary tbody').empty();
+    $('#bomSummaryTotalsLine').text('');
     $('#dvBOMSummary').hide();
     $('#btnVerifyAllBomRows').hide().prop('disabled', false);
     $('#btnSaveAllBomRows').prop('disabled', false);
@@ -543,6 +807,7 @@ function initRowCategoryDropdown($tr) {
         const name = (c.CategoryDesp || c.CategoryName || c.Category || '').trim() || ('Category ' + code);
         $cat.append(`<option value="${code}">${escHtml(name)}</option>`);
     });
+    $cat.off('change.bomSum').on('change.bomSum', function () { refreshBOMSummary(); });
 }
 function initRowWorkTypeDropdown($tr) {
     const $wt = $tr.find('.bom-work-type');
@@ -709,7 +974,7 @@ function applyUOMsFromCache(cacheKey) {
 }
 function initRowEvents($tr) {
     $tr.find('.bom-qty-required').on('input', function () { enforceNumeric(this, 3); recalcAmount($tr); });
-    $tr.find('.bom-est-rate').on('input',    function () { enforceNumeric(this, 3); recalcAmount($tr); });
+    $tr.find('.bom-est-rate').on('input', function () { formatBomMoneyInput(this); recalcAmount($tr); });
     $tr.find('.bom-tolerance').on('input',   function () { enforceNumeric(this, 3); refreshBOMSummary(); });
     $tr.find('.bom-rate-tol').on('input',    function () { enforceNumeric(this, 3); refreshBOMSummary(); });
 
@@ -740,11 +1005,11 @@ function buildRowPayload($tr) {
         UOM           : $tr.find('.bom-uom').val() || '',
         UOMMaster_Code: parseInt($tr.attr('data-uom-code') || '0', 10) || 0,
         ItemSpecificationDesp : ($tr.find('.bom-item-spec').val() || '').trim(),
-        Tolerance         : parseFloat($tr.find('.bom-tolerance').val() || '0') || 0,
-        QtyRequired       : parseFloat($tr.find('.bom-qty-required').val() || '0') || 0,
-        RateTolerance     : parseFloat($tr.find('.bom-rate-tol').val() || '0') || 0,
-        EstRate           : parseFloat($tr.find('.bom-est-rate').val() || '0') || 0,
-        Amount            : parseFloat($tr.find('.bom-amount').val() || '0') || 0
+        Tolerance         : parseFloat(($tr.find('.bom-tolerance').val() || '0').replace(/,/g, '')) || 0,
+        QtyRequired       : parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0,
+        RateTolerance     : parseFloat(($tr.find('.bom-rate-tol').val() || '0').replace(/,/g, '')) || 0,
+        EstRate           : parseBomMoney($tr.find('.bom-est-rate').val()),
+        Amount            : parseBomMoney($tr.find('.bom-amount').val())
     };
 }
 function saveAllRows() {
@@ -763,7 +1028,7 @@ function saveAllRows() {
         const qty  = $tr.find('.bom-qty-required').val();
 
         // Skip completely empty rows
-        if (!item && (!qty || parseFloat(qty) === 0)) return;
+        if (!item && (!qty || parseFloat((qty || '').toString().replace(/,/g, '')) === 0)) return;
 
         if (!validateRow($tr)) { hasError = true; return false; }
 
@@ -774,6 +1039,23 @@ function saveAllRows() {
     if (!payloads.length) {
         toastr.warning('Please enter at least one complete line before saving.');
         return;
+    }
+
+    const subProjectCodePre = parseInt($('#ddlSubProject').val() || '0', 10) || 0;
+    if (subProjectCodePre && G_SubProjectList && G_SubProjectList.length) {
+        const spRow = G_SubProjectList.find(function (s) { return String(s.Code) === String(subProjectCodePre); });
+        const limit = spRow ? (parseFloat(spRow.Budget || spRow.SubProjectBudget || 0) || 0) : 0;
+        if (limit > 0) {
+            let bomSum = 0;
+            payloads.forEach(function (p) { bomSum += parseFloat(p.Amount || 0) || 0; });
+            if (bomSum > limit) {
+                toastr.warning(
+                    'Total BOM amount (' + formatInrAmountNum(bomSum, 2, 2)
+                        + ') cannot exceed sub-project budget (' + formatInrAmountNum(limit, 2, 2) + ').'
+                );
+                return;
+            }
+        }
     }
 
     // For edit, hfBOMCode holds the ProjectMaster_Code; for new, fall back to ddlProject
@@ -801,7 +1083,7 @@ function saveAllRows() {
             Code                             : p.DetailCode || 0,
             ProjectMaster_Code               : projectMaster_Code,
             ProjectCategory_Code             : p.CategoryCode || 0,
-            ProjectSubCategory_Code          : subProjectCode,
+            ProjectSubCategory_Code          : 0,
             F_CommonValues_WorkType_Code     : 0,
             WorkTypeMaster_Code              : p.WorkTypeCode || 0,
             UOMMaster_Code                   : p.UOMMaster_Code || 0,
@@ -842,7 +1124,7 @@ function saveAllRows() {
                 toastr.success(resp.Msg || 'BOM saved successfully.');
                 loadBOMList();
             } else {
-                toastr.warning((resp && resp.Msg));
+                toastr.warning((resp && (resp.Msg || resp.Message)));
             }
         })
         .catch(function () {
@@ -900,7 +1182,7 @@ function validateRow($tr) {
         toastr.warning('Please select Item (Work Material / Service).');
         return false;
     }
-    if (!qty || parseFloat(qty) <= 0) {
+    if (!qty || parseFloat((qty || '').toString().replace(/,/g, '')) <= 0) {
         toastr.warning('Please enter Qty Required greater than 0.');
         return false;
     }
@@ -913,7 +1195,7 @@ function validateRow($tr) {
 
 function isValidNumber(val) {
     if (val == null) return false;
-    const v = val.toString().trim();
+    const v = val.toString().replace(/,/g, '').trim();
     return !!v && !isNaN(parseFloat(v));
 }
 function enforceNumeric(input, maxDecimals) {
@@ -924,52 +1206,94 @@ function enforceNumeric(input, maxDecimals) {
     if (p2[1]) v = p2[0] + '.' + p2[1].slice(0, maxDecimals);
     input.value = v;
 }
+function getCategoryGroupKey($tr) {
+    const code = ($tr.find('.bom-project-category').val() || '').trim();
+    return code || '_uncat';
+}
+
+function getCategoryLabelFromRow($tr) {
+    const $sel = $tr.find('.bom-project-category');
+    const v = $sel.val();
+    if (!v) return 'Uncategorized';
+    const t = ($sel.find('option:selected').text() || '').trim();
+    return t || ('Category ' + v);
+}
+
 function refreshBOMSummary() {
     const groups = {};
 
     $('#tblBOM tbody tr').each(function () {
         const $tr = $(this);
-        const uom = ($tr.find('.bom-uom').val() || '').trim();
-        if (!uom) return;
+        const qty  = parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0;
+        const rate = parseFloat(($tr.find('.bom-est-rate').val()     || '0').replace(/,/g, '')) || 0;
+        const amt  = parseFloat(($tr.find('.bom-amount').val()       || '0').replace(/,/g, '')) || 0;
+        const item = $tr.find('.bom-item').val();
 
-        if (!groups[uom]) {
-            groups[uom] = { qtyRequired: 0, amount: 0 };
+        if (!item && qty === 0 && amt === 0) return;
+
+        const key = getCategoryGroupKey($tr);
+        if (!groups[key]) {
+            groups[key] = { label: getCategoryLabelFromRow($tr), qty: 0, rateTimesQty: 0, amount: 0 };
         }
-        groups[uom].qtyRequired += parseFloat($tr.find('.bom-qty-required').val() || '0') || 0;
-        groups[uom].amount      += parseFloat($tr.find('.bom-amount').val()        || '0') || 0;
+        groups[key].qty += qty;
+        groups[key].rateTimesQty += qty * rate;
+        groups[key].amount += amt;
     });
 
-    const keys = Object.keys(groups);
-    if (!keys.length) { $('#dvBOMSummary').hide(); return; }
+    const keys = Object.keys(groups).filter(function (k) {
+        const g = groups[k];
+        return g.qty !== 0 || g.amount !== 0;
+    });
+    if (!keys.length) {
+        $('#dvBOMSummary').hide();
+        $('#bomSummaryTotalsLine').text('');
+        return;
+    }
 
     const $tbody = $('#tblBOMSummary tbody');
     $tbody.empty();
 
-    let gQty = 0, gAmt = 0;
+    let gQty = 0, gRateTimesQty = 0, gAmt = 0;
 
-    keys.forEach(function (uom) {
-        const g = groups[uom];
-        gQty += g.qtyRequired;
+    keys.sort().forEach(function (k) {
+        const g = groups[k];
+        gQty += g.qty;
+        gRateTimesQty += g.rateTimesQty;
         gAmt += g.amount;
+
+        const wAvg = g.qty > 0 ? (g.rateTimesQty / g.qty) : 0;
 
         $tbody.append(`
             <tr>
-                <td><span class="uom-badge">${escHtml(uom)}</span></td>
-                <td class="right">${g.qtyRequired.toFixed(3)}</td>
-                <td class="right"><strong>&#8377; ${g.amount.toFixed(2)}</strong></td>
+                <td><span class="uom-badge">${escHtml(g.label)}</span></td>
+                <td class="right">${formatInrQtyNum(g.qty)}</td>
+                <td class="right">${formatInrAmountNum(wAvg, 2, 2)}</td>
+                <td class="right"><strong>${formatInrAmountNum(g.amount, 2, 2)}</strong></td>
             </tr>`);
     });
 
-    $('#sumQtyRequired').text(gQty.toFixed(3));
-    $('#sumAmount').text('₹ ' + gAmt.toFixed(2));
+    const grandWAvg = gQty > 0 ? (gRateTimesQty / gQty) : 0;
+    $('#sumQtyRequired').text(formatInrQtyNum(gQty));
+    $('#sumEstRate').text(formatInrAmountNum(grandWAvg, 2, 2));
+    $('#sumAmount').text(formatInrAmountNum(gAmt, 2, 2));
+
+    $('#bomSummaryTotalsLine').text(
+        'Total Qty: ' + formatInrQtyNum(gQty) +
+            ', Total EST. Rate (wt. avg): ' + formatInrAmountNum(grandWAvg, 2, 2) +
+            ', Total Amount: ' + formatInrAmountNum(gAmt, 2, 2)
+    );
 
     $('#dvBOMSummary').show();
 }
 function recalcAmount($tr) {
     const qty  = parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0;
-    const rate = parseFloat(($tr.find('.bom-est-rate').val()     || '0').replace(/,/g, '')) || 0;
+    const rate = parseBomMoney($tr.find('.bom-est-rate').val());
     const amt  = qty * rate;
-    $tr.find('.bom-amount').val(isNaN(amt) ? '' : amt.toFixed(2));
+    if (isNaN(amt)) {
+        $tr.find('.bom-amount').val('');
+    } else {
+        $tr.find('.bom-amount').val(formatBomMoneyRaw(amt.toFixed(2)));
+    }
     refreshBOMSummary();
 }
 function escHtml(str) {

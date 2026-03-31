@@ -125,6 +125,7 @@
             <button class="tab active" onclick="HideShowTab('1',this)">Enquiry</button>
             <button class="tab" onclick="HideShowTab('2',this)">Contact Person Details</button>
             <button class="tab" onclick="HideShowTab('3',this)">Product Details</button>
+            <button type="button" class="btn btn-danger icon-height" onclick="BackEnquiry()">Back To List</button>
         </div>
         <div class="card p-2" id="dvTab1" style="display:block;">
             <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Enquiry</div>
@@ -243,7 +244,7 @@
             <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Contact Person Details</div>
                 <div class="row">
                     <div class="col-12">
-                        <div class="table-wrapper">
+                        <div class="table-responsive-wrapper">
                             <table id="ContactPersonGrid" class="table table-sm table-bordered">
                                 <thead class="table-light">
                                     <tr>
@@ -252,6 +253,7 @@
                                         <th style="min-width:150px !important;">Designation </th>
                                         <th style="min-width:150px !important;">Email Id </th>
                                         <th style="min-width:150px !important;">Contact No </th>
+                                        <th style="min-width:50px !important;">Default </th>
                                         <th style="min-width:90px !important;">Actions</th>
                                     </tr>
                                 </thead>
@@ -263,7 +265,7 @@
             </div>
         <div id="dvTab3" class="card p-2" style="display:block;">
            <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Product Details</div>
-                <div class="table-wrapper">
+                <div class="table-responsive-wrapper">
                     <table id="ProductDetailsGrid" class="table table-sm table-bordered">
                         <thead class="table-light">
                             <tr>
@@ -283,7 +285,7 @@
         </div>
         <div style="text-align:right;">
             <button type="button" class="btn btn-primary icon-height" onclick="SaveLeadEnquiryData()">Save</button>
-            <button type="button" class="btn btn-danger icon-height" onclick="BackEnquiry()">Back To List</button>
+            @* <button type="button" class="btn btn-danger icon-height" onclick="BackEnquiry()">Back To List</button> *@
         </div>
     </div>
 </div>
@@ -369,14 +371,20 @@
                     <select id="ddlNextFollowUpModeFollowUp" class="form-control form-control-sm box_border">
                     </select>
                 </div>
+                <div class="col-md-4" id="dvddlLeadStatus" style="display:block">
+                    <label for="ddlLeadStatus" class="form-label">Status<span class="text-danger">*</span></label>
+                    <select id="ddlLeadStatus" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
                 <div class="col-md-4" style="margin-top: 26px;">
                     <button type="button" id="btnFollowUpSave" class="btn btn-success icon-height" onclick="SaveEnquiryFollowUp()">Save</button>
                     <button type="button" id="btnFollowUpReset" class="btn btn-info icon-height" onclick="ResetEnquiryFollowUp()">Reset</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="BackFolloupMaster()">Back To List</button>
                 </div>
             </div>
         </div>
         <div id="tblFollowUp" style="display:none;" class="mt-2">
-            <div class="table-wrapper">
+            <div >
                 <table id="FollowUp" class="table table-sm table-bordered">
                     <thead id="FollowUp-header">
                     </thead>
@@ -387,9 +395,9 @@
             <div class="paginator" id="paginator-FollowUp">
             </div>
         </div>
-        <div style="text-align:right;">
+        @* <div style="text-align:right;">
             <button type="button" class="btn btn-danger icon-height" onclick="BackMaster()">Back To List</button>
-        </div>
+        </div> *@
     </div>
 </div>
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -562,6 +570,24 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary icon-height" onclick="SaveModalContactPersonDetails()">Save</button>
                 <button type="button" class="btn btn-danger icon-height" onclick="CloseContactPersonModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="EnquiryDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Enquiry Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">×</span></button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div class="col-md-12">
+                    <div id="EnquiryDetailsModaldv"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseEnquiryDetails()">Close</button>
             </div>
         </div>
     </div>

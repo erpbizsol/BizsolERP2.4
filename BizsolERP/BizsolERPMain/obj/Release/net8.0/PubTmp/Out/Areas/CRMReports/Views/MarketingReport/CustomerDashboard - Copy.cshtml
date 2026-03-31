@@ -1,0 +1,640 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Shared/components/FilterSidePanelControl/FilterSidePanelControl.css" rel="stylesheet" />
+<style>
+    /* Prevent black screen overlay during zoom on mobile */
+    body {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Ensure loader is properly styled and doesn't cause black screen */
+    .loader-wrapper, #loader {
+        z-index: 9998 !important;
+    }
+
+    /* Prevent loader from showing during zoom gestures */
+    body.zooming #loader {
+        visibility: hidden !important;
+        display: none !important;
+    }
+
+    /* Prevent any modal backdrops from interfering */
+    .modal-backdrop {
+        z-index: 9997 !important;
+    }
+
+    /* Use CSS class instead of inline style to avoid linter warnings and ensure consistent behavior */
+    .chart-scroll {
+        overflow-x: auto;
+        width: 100%;
+    }
+        /* force canvas to be block so min-width applies reliably */
+        .chart-scroll canvas {
+            display: block;
+        }
+    /* sizes used by the regional charts (adjust min-width to your desired scroll threshold) */
+    .chart-minwide-600 {
+        min-width: 600px;
+    }
+
+    .chart-minwide-800 {
+        min-width: 800px;
+    }
+
+    /* Client table styling */
+    .client-table-container {
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid #e6e6e6;
+    }
+
+    .top-client {
+        font-size: 34px;
+        letter-spacing: 1px;
+    }
+
+    /* Map loading skeleton animation */
+    .map-skeleton {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s ease-in-out infinite;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: #666;
+    }
+
+    .map-skeleton.hidden {
+        display: none;
+    }
+
+    @@keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    /* Enhanced map styling */
+    #regionalMap {
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        position: relative;
+        min-height: 400px; /* Ensure minimum height for mobile */
+    }
+
+    /* Mobile map adjustments */
+    @@media (max-width: 768px) {
+        #regionalMap {
+            height: 400px !important; /* Fixed height for mobile */
+            min-height: 400px !important;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        #regionalMap {
+            height: 350px !important; /* Slightly smaller for small phones */
+            min-height: 350px !important;
+        }
+    }
+
+    /* Custom marker cluster styling */
+    .marker-cluster-small {
+        background-color: rgba(192, 57, 43, 0.6);
+    }
+    .marker-cluster-small div {
+        background-color: rgba(192, 57, 43, 0.8);
+    }
+
+    .marker-cluster-medium {
+        background-color: rgba(230, 126, 34, 0.6);
+    }
+    .marker-cluster-medium div {
+        background-color: rgba(230, 126, 34, 0.8);
+    }
+
+    .marker-cluster-large {
+        background-color: rgba(231, 76, 60, 0.6);
+    }
+    .marker-cluster-large div {
+        background-color: rgba(231, 76, 60, 0.8);
+    }
+
+    .marker-cluster {
+        background-clip: padding-box;
+        border-radius: 50%;
+    }
+    .marker-cluster div {
+        width: 30px;
+        height: 30px;
+        margin-left: 5px;
+        margin-top: 5px;
+        text-align: center;
+        border-radius: 50%;
+        font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+        color: white;
+        font-weight: bold;
+        line-height: 30px;
+    }
+
+    /* Mobile-friendly tabs styling */
+    #customerDashboardTabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+        #customerDashboardTabs::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        #customerDashboardTabs::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+
+        #customerDashboardTabs .nav-item {
+            flex-shrink: 0;
+        }
+
+        #customerDashboardTabs .nav-link {
+            white-space: nowrap;
+            border-radius: 8px 8px 0 0;
+            padding: 12px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            margin-right: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            #customerDashboardTabs .nav-link i {
+                font-size: 16px;
+            }
+
+            #customerDashboardTabs .nav-link:not(.active) {
+                background-color: #f8f9fa;
+                color: #495057;
+            }
+
+                #customerDashboardTabs .nav-link:not(.active):hover {
+                    background-color: #e9ecef;
+                    color: #212529;
+                }
+
+            #customerDashboardTabs .nav-link.active {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+            }
+
+    /* Mobile specific styles */
+    @@media (max-width: 768px) {
+        #customerDashboardTabs .nav-link {
+            font-size: 13px;
+            padding: 10px 16px;
+            gap: 6px;
+        }
+
+            #customerDashboardTabs .nav-link i {
+                font-size: 14px;
+            }
+
+        .top-client {
+            font-size: 24px;
+        }
+
+        .card-body h3, .card-body h5 {
+            font-size: 1.1rem;
+        }
+
+        .card-body h6 {
+            font-size: 0.85rem;
+        }
+        /* Reduce chart min-width on mobile for better fit */
+        .chart-minwide-800 {
+            min-width: 600px;
+        }
+
+        .chart-minwide-600 {
+            min-width: 450px;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        #customerDashboardTabs {
+            border-bottom: 1px solid #dee2e6;
+        }
+
+            #customerDashboardTabs .nav-link {
+                font-size: 11px;
+                padding: 8px 12px;
+                margin-right: 2px;
+                gap: 4px;
+            }
+
+                #customerDashboardTabs .nav-link i {
+                    font-size: 13px;
+                }
+
+        .chart-minwide-800 {
+            min-width: 500px;
+        }
+
+        .chart-minwide-600 {
+            min-width: 400px;
+        }
+    }
+</style>
+
+<!-- FilterSidePanelControl Web Component - Provides floating button and side panel with all filters -->
+<filter-side-panel-control id="filterPanel"></filter-side-panel-control>
+
+
+<ul class="nav nav-tabs" id="customerDashboardTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="Sales-tab" data-bs-toggle="tab" data-bs-target="#Sales" type="button" role="tab" aria-controls="Sales" aria-selected="true">
+            <i class="fas fa-chart-line me-2"></i>Sales Analysis
+        </button>
+    </li>
+
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="regional-tab" data-bs-toggle="tab" data-bs-target="#regional" type="button" role="tab" aria-controls="regional" aria-selected="false">
+            <i class="fas fa-map-marked-alt me-2"></i>Regional Analysis
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="client-tab" data-bs-toggle="tab" data-bs-target="#client" type="button" role="tab" aria-controls="client" aria-selected="false">
+            <i class="fas fa-users me-2"></i>Client Analysis
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="target-growth-tab" data-bs-toggle="tab" data-bs-target="#target-growth" type="button" role="tab" aria-controls="target-growth" aria-selected="false">
+            <i class="fas fa-bullseye me-2"></i>Target and Growth Analysis
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="product-tab" data-bs-toggle="tab" data-bs-target="#product" type="button" role="tab" aria-controls="product" aria-selected="false">
+            <i class="fas fa-box me-2"></i>Product Analysis
+        </button>
+    </li>
+</ul>
+
+
+
+<div class="tab-content pt-3" id="customerDashboardTabsContent">
+    <div class="tab-pane fade show active" id="Sales" role="tabpanel" aria-labelledby="Sales-tab">
+        <div class="row">
+            <!-- Left column: KPI Cards -->
+            <div class="col-lg-3">
+                <div class="card mb-3">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">Current Year Sales</h6>
+                        <h3 id="kpi-selected-year" class="fw-bold">0</h3>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">Best Month</h6>
+                        <h5 id="kpi-best-month"></h5>
+                        <div id="kpi-best-month-amt" class="fw-bold">0</div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">Best Day</h6>
+                        <div id="kpi-best-day-date"></div>
+                        <div id="kpi-best-day-amt" class="fw-bold">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right column: Charts with fixed horizontal scrolling -->
+            <div class="col-lg-9">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Current Year vs Previous Year Sales</h5>
+                        <div class="chart-scroll">
+                            <canvas id="barSalesChart" height="270" class="chart-minwide-800"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="regional" role="tabpanel" aria-labelledby="regional-tab">
+        <div class="row">
+            <div class="col-lg-6 col-md-12">
+                <div class="card mb-3">
+                    <div class="card-body p-2">
+                        <h6 class="card-subtitle mb-2">Sales over Region</h6>
+                        <div id="regionalMap" style="height:520px; width:100%;">
+                            <div id="mapSkeleton" class="map-skeleton">
+                                <div>
+                                    <i class="fas fa-map-marked-alt fa-3x mb-3" style="opacity: 0.3;"></i>
+                                    <div>Loading map...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 col-md-12">
+                <div class="card mb-3">
+                    <div class="card-body text-center py-4">
+                        <small class="text-muted">State with Maximum Sales</small>
+                        <div id="regional-state-max" class="fw-bold" style="font-size:36px; margin-top:8px;">-</div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body text-center py-4">
+                        <small class="text-muted">City with Maximum Sales</small>
+                        <div id="regional-city-max" class="fw-bold" style="font-size:32px; margin-top:8px;">-</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Sales by Region</small>
+                        <div class="chart-scroll">
+                            <canvas id="regionSalesChart" height="120" class="chart-minwide-600"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="tab-pane fade" id="client" role="tabpanel" aria-labelledby="client-tab">
+        <div class="mb-3">
+            <div class="card" style="border:1px solid #dcdcdc;">
+                <div class="card-body text-center p-3">
+                    <small class="text-muted">Top Client</small>
+                    <div id="top-client-name" class="fw-bold top-client mt-2">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <small class="text-muted">Client Wise Sales</small>
+                <div class="client-table-container mt-2">
+                    <table id="clientSalesTable" class="table table-sm table-striped mb-0 fixed-width-table" style="min-width:800px;">
+                        <thead class="table-secondary" id="clientSalesTableHeader">
+                            @* <tr>
+                                <th>Client Name</th>
+                                <th>Client's Growth (%)</th>
+                                <th class="text-end">Current Year Sales</th>
+                                <th class="text-end">Last Year Sales</th>
+                            </tr> *@
+                        </thead>
+                        <tbody id="clientSalesTableBody">
+                            <!-- populated by JS -->
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-clientSalesTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="tab-pane fade" id="target-growth" role="tabpanel" aria-labelledby="target-growth-tab">
+        <div class="row mb-3">
+            <div class="col-lg-6">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Best Marketing Man</small>
+                        <div id="best-marketing-man" class="fw-bold top-client mt-2">-</div>
+                        <div id="best-marketing-man-amt" class="mt-1">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Quantity Sold vs Target</small>
+                        <div class="chart-scroll">
+                            <canvas id="targetGaugeChart" height="45" class="chart-minwide-600"></canvas>
+                        </div>
+                        <div class="mt-2 text-muted small">0 &nbsp; <span id="gauge-center-label"></span> &nbsp; Target</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-lg-6">
+
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Target Analysis</small>
+                        <div class="client-table-container mt-2">
+                            <table id="targetAnalysisTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>Marketing Man</th>
+                                        <th class="text-end">Current Year Sales</th>
+                                        <th class="text-end">Target</th>
+                                        <th class="text-center">Target Achieved</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Sales without Assigned Target</small>
+                        <div class="client-table-container mt-2">
+                            <table id="salesWithoutTargetTable" class="table table-sm table-striped mb-0" style="min-width:480px;">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>Marketing Man</th>
+                                        <th class="text-end">Sales</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <small class="text-muted">Marketing Men's Growth</small>
+                <div class="client-table-container mt-2">
+                    <table id="marketingGrowthTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Marketing Man</th>
+                                <th class="text-end">Marketing Man's Growth (%)</th>
+                                <th class="text-end">Current Year Sales</th>
+                                <th class="text-end">Last Year Sales</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="product" role="tabpanel" aria-labelledby="product-tab">
+        <div class="row mb-3">
+            <div class="col-lg-3">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Top Product by Sales</small>
+                        <div id="top-product-name" class="fw-bold top-client mt-2">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Top Group by Sales</small>
+                        <div id="top-group-name" class="fw-bold top-client mt-2">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Top Thickness by Sales</small>
+                        <div id="top-thickness" class="fw-bold top-client mt-2">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-3">
+                        <small class="text-muted">Top Size by Sales</small>
+                        <div id="top-size" class="fw-bold top-client mt-2">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Top 5 Products by Sales</small>
+                        <div class="chart-scroll">
+                            <canvas id="topProductsPie" height="260"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Top 5 Thickness by Sales</small>
+                        <div class="chart-scroll">
+                            <canvas id="thicknessPie" height="220"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Top 5 Sizes by Sales</small>
+                        <div class="chart-scroll">
+                            <canvas id="sizePie" height="220"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Product Wise Sales</small>
+                        <div class="client-table-container mt-2">
+                            <table id="productSalesTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
+                                <thead class="table-secondary" id="productSalesTableHeader">
+                                </thead>
+                                <tbody id="productSalesTableBody">
+                                </tbody>
+                            </table>
+                            <div class="paginator" id="paginator-productSalesTable">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Product Wise Sales (Sizes and Thickness)</small>
+                        <div class="client-table-container mt-2">
+                            <table id="productSpecTable" class="table table-sm table-striped mb-0" style="min-width:900px;">
+                                <thead class="table-secondary" id="productSpecTableHeader">
+                                </thead>
+                                <tbody id="productSpecTableBody"></tbody>
+                            </table>
+                            <div class="paginator" id="paginator-productSpecTable">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+
+    </div>
+</div>
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+<!-- Load Leaflet and dependencies first (before module scripts) -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- Then load module scripts -->
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/CustomerDashboard.js"></script>
