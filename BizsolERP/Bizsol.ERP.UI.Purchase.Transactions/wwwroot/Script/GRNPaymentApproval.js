@@ -593,7 +593,7 @@ function ShowGpaEmpty(show) {
 function NavigateToGRNService() {
     const appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/'))
         .replace(/\/?$/, '/');
-    window.location.href = appBase + 'PurchaseTransactions/GRNService/GRNService?ModuleDesp=GRN%20Service';
+    window.location.href = appBase + 'PurchaseTransactions/GRNPaymentApproval/GRNPaymentApproval?ModuleDesp=Payment%20Entry';
 }
 
 document.addEventListener('DOMContentLoaded', function () {

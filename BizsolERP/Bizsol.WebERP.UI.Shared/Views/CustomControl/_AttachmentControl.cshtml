@@ -1,126 +1,467 @@
-﻿
+﻿<style>
+    /* ── Attachment Control – Modern Redesign ────────────────────────── */
+    #AttachmentControlmodal .modal-content {
+        border: none;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 24px 64px rgba(102, 126, 234, 0.22);
+    }
+
+    /* ── Header ── */
+    #AttachmentControlmodal .ac-modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 16px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    #AttachmentControlmodal .ac-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    #AttachmentControlmodal .ac-header-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(255,255,255,0.18);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: #fff;
+        flex-shrink: 0;
+    }
+    #AttachmentControlmodal .ac-header-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: 0.2px;
+    }
+    #AttachmentControlmodal .ac-header-subtitle {
+        font-size: 11.5px;
+        color: rgba(255,255,255,0.72);
+        margin-top: 1px;
+    }
+    #AttachmentControlmodal .ac-close-btn {
+        background: rgba(255,255,255,0.15);
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #fff;
+        font-size: 16px;
+        transition: background 0.2s;
+        flex-shrink: 0;
+        padding: 0;
+    }
+    #AttachmentControlmodal .ac-close-btn:hover { background: rgba(255,255,255,0.28); }
+
+    /* ── Body ── */
+    #AttachmentControlmodal .modal-body {
+        background: #f4f6fb;
+        padding: 22px 22px 18px;
+    }
+
+    /* ── Drop Zone ── */
+    #AttachmentControlmodal .ac-dropzone {
+        background: #fff;
+        border: 2.5px dashed #c7d2fe;
+        border-radius: 14px;
+        padding: 30px 20px 24px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.25s, background 0.25s;
+    }
+    #AttachmentControlmodal .ac-dropzone:hover,
+    #AttachmentControlmodal .ac-dropzone.dz-hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+    #AttachmentControlmodal .ac-dz-icon-wrap {
+        width: 62px;
+        height: 62px;
+        background: linear-gradient(135deg, rgba(102,126,234,0.12), rgba(118,75,162,0.12));
+        border-radius: 50%;
+        margin: 0 auto 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #AttachmentControlmodal .ac-dz-icon-wrap i {
+        font-size: 28px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    #AttachmentControlmodal .ac-dz-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 3px;
+    }
+    #AttachmentControlmodal .ac-dz-sub {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-bottom: 14px;
+    }
+    #AttachmentControlmodal .ac-browse-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border: none;
+        padding: 9px 22px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(102,126,234,0.38);
+        transition: opacity 0.2s, box-shadow 0.2s;
+        letter-spacing: 0.2px;
+    }
+    #AttachmentControlmodal .ac-browse-btn:hover {
+        opacity: 0.88;
+        box-shadow: 0 6px 18px rgba(102,126,234,0.46);
+    }
+    #AttachmentControlmodal #file-input { display: none; }
+
+    /* ── Staged file list items ── */
+    #AttachmentControlmodal .file-list-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 9px 13px;
+        margin-top: 8px;
+        transition: box-shadow 0.2s;
+    }
+    #AttachmentControlmodal .file-list-item:hover {
+        box-shadow: 0 2px 10px rgba(102,126,234,0.10);
+    }
+    #AttachmentControlmodal .ac-fi-icon {
+        width: 34px;
+        height: 34px;
+        background: linear-gradient(135deg, rgba(102,126,234,0.12), rgba(118,75,162,0.12));
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 15px;
+        color: #667eea;
+    }
+    #AttachmentControlmodal .file-particulars-input {
+        flex: 1 1 160px;
+        border: 1px solid #e2e8f0;
+        border-radius: 7px;
+        padding: 7px 11px;
+        font-size: 12.5px;
+        color: #334155;
+        outline: none;
+        min-width: 0;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #AttachmentControlmodal .file-particulars-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.12);
+    }
+    #AttachmentControlmodal .file-name-input {
+        flex: 1 1 150px;
+        font-size: 12.5px;
+        color: #667eea;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-decoration: none;
+        min-width: 0;
+    }
+    #AttachmentControlmodal .file-name-input:hover { text-decoration: underline; }
+    #AttachmentControlmodal .file-list-item .btn-danger.icon-height {
+        flex-shrink: 0;
+        padding: 6px 10px;
+        font-size: 12px;
+        border-radius: 7px;
+        border: none;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        box-shadow: 0 2px 8px rgba(239,68,68,0.28);
+    }
+
+    /* ── Save action bar ── */
+    #AttachmentControlmodal .ac-action-bar {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 12px;
+    }
+    #AttachmentControlmodal .ac-save-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border: none;
+        padding: 9px 26px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(102,126,234,0.32);
+        transition: opacity 0.2s, box-shadow 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    #AttachmentControlmodal .ac-save-btn:hover {
+        opacity: 0.88;
+        box-shadow: 0 6px 18px rgba(102,126,234,0.42);
+    }
+
+    /* ── Section divider ── */
+    #AttachmentControlmodal .ac-section-divider {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 20px 0 12px;
+    }
+    #AttachmentControlmodal .ac-section-label {
+        font-size: 11.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #667eea;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    #AttachmentControlmodal .ac-section-divider hr {
+        flex: 1;
+        border: none;
+        border-top: 1.5px solid #e2e8f0;
+        margin: 0;
+    }
+
+    /* ── Existing attachments table card ── */
+    #AttachmentControlmodal .ac-table-card {
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+    #AttachmentControlmodal #tbAttachmentControl {
+        margin: 0;
+        font-size: 13px;
+    }
+    #AttachmentControlmodal #tbAttachmentControl thead tr {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    #AttachmentControlmodal #tbAttachmentControl thead th {
+        color: #fff !important;
+        font-weight: 600;
+        font-size: 11px;
+        letter-spacing: 0.7px;
+        text-transform: uppercase;
+        border: none !important;
+        padding: 11px 14px;
+    }
+    #AttachmentControlmodal #tbAttachmentControl tbody tr {
+        border-bottom: 1px solid #f1f5f9;
+        transition: background 0.15s;
+    }
+    #AttachmentControlmodal #tbAttachmentControl tbody tr:hover { background: #f8f7ff; }
+    #AttachmentControlmodal #tbAttachmentControl tbody tr:last-child { border-bottom: none; }
+    #AttachmentControlmodal #tbAttachmentControl tbody td {
+        color: #334155;
+        border: none !important;
+        padding: 10px 14px;
+        vertical-align: middle;
+    }
+    #AttachmentControlmodal #tbAttachmentControl tbody td a {
+        color: #667eea;
+        font-weight: 500;
+        text-decoration: none;
+    }
+    #AttachmentControlmodal #tbAttachmentControl tbody td a:hover { text-decoration: underline; }
+    #AttachmentControlmodal #tbAttachmentControl .btn-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        border-radius: 7px;
+        padding: 5px 9px;
+        font-size: 12px;
+        box-shadow: 0 2px 6px rgba(239,68,68,0.28);
+    }
+    #AttachmentControlmodal .icon-height { line-height: 1; }
+
+    /* ── Paginator ── */
+    #AttachmentControlmodal #paginator-tbAttachmentControl {
+        padding: 6px 10px;
+        background: #f8fafc;
+        border-top: 1px solid #f1f5f9;
+        border-radius: 0 0 12px 12px;
+    }
+
+    /* ── Footer bar ── */
+    #AttachmentControlmodal .ac-footer-bar {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 14px;
+    }
+    #AttachmentControlmodal .ac-download-all-btn {
+        background: linear-gradient(135deg, #0dcaf0 0%, #0891b2 100%);
+        color: #fff;
+        border: none;
+        padding: 9px 22px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(13,202,240,0.30);
+        transition: opacity 0.2s, box-shadow 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+    #AttachmentControlmodal .ac-download-all-btn:hover {
+        opacity: 0.88;
+        box-shadow: 0 6px 18px rgba(13,202,240,0.40);
+    }
+</style>
 
 <div class="modal fade bs-example-modal-center" id="AttachmentControlmodal" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="true">
-@* <div class="modal fade bs-example-modal-center" id="AttachmentControlmodal" role="dialog" > *@
-    <div class="modal-dialog modal-dialog-scrollable" style="max-width:800px">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width: 820px">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Bizsol ERP Document Control</h5>
-                    @* <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" ></button> *@
-                <button type="button" class="btn-close" onclick="$('#AttachmentControlmodal').modal('hide')" aria-hidden="false"></button>
-            </div>
-            <div class="modal-body">
-                <form action="#" class="dropzone" id="fileUploadForm">
-                    <div class="upload-container">
-                       <div class="row">
-                        <div class="col-md-2">
-                                <i class="display-2 text-muted bx bx-cloud-upload"></i>
-                            </div>
-                           <div class="col-md-8 mt-3">
-                                <input type="text" id="file-names" placeholder="Drag & Drop image here or choose a file" ondragenter="preventDefaults(event);this.classList.add('hover');" ondragover="preventDefaults(event);this.classList.add('hover');" ondragleave="preventDefaults(event);this.classList.remove('hover');" ondrop="preventDefaults(event);handleDrop(event);this.classList.remove('hover')" readonly />
-                            </div>
-                            <div class="col-md-2 mt-4">
-                                <label id="file-button" onclick="document.getElementById('file-input').click()">Browse</label>
-                                <input type="file" id="file-input" multiple onchange="handleFiles(this.files)">
-                            </div>
 
-                            <div class="col-md-12">
-                                <div class="file-list" id="fileList" >
-                                <!-- Dynamically added files will appear here -->
-                            </div>
-                        </div>
-                            
-                       
-                        </div>
-                        <div class="row">
-                            <div class="col-12 text-end">
-                                <a class="btn btn-primary btn-height btn-width" onclick="Save_AttachmentControl()">
-                                    Save
-                                </a>
-                            </div>
-                        </div>
+            <!-- Header -->
+            <div class="ac-modal-header">
+                <div class="ac-header-left">
+                    <div class="ac-header-icon">
+                        <i class="bx bx-folder-open"></i>
                     </div>
+                    <div>
+                        <p class="ac-header-title">Bizsol ERP Document Control</p>
+                        <div class="ac-header-subtitle">Manage &amp; upload your files securely</div>
+                    </div>
+                </div>
+                <button type="button" class="ac-close-btn" onclick="$('#AttachmentControlmodal').modal('hide')" aria-label="Close">
+                    <i class="bx bx-x"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body">
+
+                @if (ViewBag.MasterTableCode != null && (int)ViewBag.MasterTableCode == 0)
+                {
+                    <div style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(14,165,233,0.09),rgba(2,132,199,0.07));border:1px solid #bae6fd;border-radius:10px;padding:10px 14px;font-size:0.8rem;color:#0369a1;margin-bottom:14px;">
+                        <i class="bx bx-info-circle" style="font-size:1.1rem;flex-shrink:0;"></i>
+                        <span>
+                            <strong>New entry — offline queue.</strong>
+                            Files you add here are <strong>stored in memory</strong> and will be
+                            uploaded to the server automatically once you <strong>Save</strong> the main entry.
+                        </span>
+                    </div>
+                }
+
+                <form action="#" id="fileUploadForm">
+
+                    <!-- Drop Zone -->
+                    <div class="ac-dropzone"
+                         id="ac-dropzone"
+                         ondragenter="preventDefaults(event);this.classList.add('dz-hover');"
+                         ondragover="preventDefaults(event);this.classList.add('dz-hover');"
+                         ondragleave="preventDefaults(event);this.classList.remove('dz-hover');"
+                         ondrop="preventDefaults(event);handleDrop(event);this.classList.remove('dz-hover');"
+                         onclick="document.getElementById('file-input').click()">
+                        <div class="ac-dz-icon-wrap">
+                            <i class="bx bx-cloud-upload"></i>
+                        </div>
+                        <div class="ac-dz-title">Drag &amp; Drop files here</div>
+                        <div class="ac-dz-sub">Supports all file types &nbsp;·&nbsp; Multiple files allowed</div>
+                        <a class="ac-browse-btn"
+                                onclick="event.stopPropagation();document.getElementById('file-input').click()">
+                            <i class="bx bx-upload"></i>&nbsp;Browse Files
+                        </a>
+                        <input type="file" id="file-input" multiple onchange="handleFiles(this.files)">
+                    </div>
+
+                    <!-- Staged file list -->
+                    <div id="fileList"></div>
+
+                    <!-- Save bar -->
+                    <div class="ac-action-bar">
+                        <button type="button" class="ac-save-btn" onclick="Save_AttachmentControl()">
+                            @if (ViewBag.MasterTableCode != null && (int)ViewBag.MasterTableCode == 0)
+                            {
+                                <i class="bx bx-time-five"></i> <span>Queue Files</span>
+                            }
+                            else
+                            {
+                                <i class="bx bx-save"></i> <span>Save Attachments</span>
+                            }
+                        </button>
+                    </div>
+
                 </form>
 
+                <!-- Existing Attachments section -->
+                <div class="ac-section-divider">
+                    @if (ViewBag.MasterTableCode != null && (int)ViewBag.MasterTableCode == 0)
+                    {
+                        <span class="ac-section-label">
+                            <i class="bx bx-time-five"></i> Queued Files
+                            <span id="acQueueCountBadge" style="margin-left:4px;font-size:0.75rem;font-weight:700;color:#0ea5e9;"></span>
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="ac-section-label"><i class="bx bx-paperclip"></i> Existing Attachments</span>
+                    }
+                    <hr />
+                </div>
 
-                <div class="table-wrapper mt-1">
-                    <table id="tbAttachmentControl" class="table fixed-width-table">
-                        <thead id="table-header-tbAttachmentControl">
-                        </thead>
-                        <tbody id="table-body-tbAttachmentControl">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="paginator" id="paginator-tbAttachmentControl">
+                <div class="ac-table-card">
+                    <div class="table-responsive">
+                        <table id="tbAttachmentControl" class="table table-hover mb-0 fixed-width-table">
+                            <thead id="table-header-tbAttachmentControl"></thead>
+                            <tbody id="table-body-tbAttachmentControl"></tbody>
+                        </table>
+                    </div>
+                    <div id="paginator-tbAttachmentControl"></div>
                 </div>
 
-                
-                <div class="text-end mt-1">
-                    <a class="btn btn-primary  btn-height btn-width" onclick="DownloadAll_AttachmentControl()">
-                       Download all
-                    </a>
-                    &nbsp;
-                    
-                    <input type="hidden" value="@ViewBag.MasterTableName" id="hfMasterTableName" />
-                    <input type="hidden" value="@ViewBag.MasterTableCode" id="hfMasterTableCode" />
-                    <input type="hidden" value="@ViewBag.DetailTableName" id="hfDetailTableName" />
-                    <input type="hidden" value="@ViewBag.DetailTableCode" id="hfDetailTableCode" />
-                    <input type="hidden" value="@ViewBag.EntryNo" id="hfEntryNo" />
-                    <input type="hidden" value="@ViewBag.EntryDate" id="hfEntryDate" />
-                    <input type="hidden" value="@ViewBag.Mode" id="hfMode"/>
-                    <input type="hidden" value="@ViewBag.SourceDownloadFileName" id="hfSourceDownloadFileName" />
-                    
+                <!-- Footer -->
+                <div class="ac-footer-bar" id="acFooterBar"@(ViewBag.MasterTableCode != null && (int)ViewBag.MasterTableCode == 0 ? " style=\"display:none;\"" : "")>
+                    <button type="button" class="ac-download-all-btn" onclick="DownloadAll_AttachmentControl()">
+                        <i class="bx bx-download"></i> Download All
+                    </button>
                 </div>
+
+                <!-- Hidden fields -->
+                <input type="hidden" value="@ViewBag.MasterTableName" id="hfMasterTableName" />
+                <input type="hidden" value="@ViewBag.MasterTableCode" id="hfMasterTableCode" />
+                <input type="hidden" value="@ViewBag.DetailTableName" id="hfDetailTableName" />
+                <input type="hidden" value="@ViewBag.DetailTableCode" id="hfDetailTableCode" />
+                <input type="hidden" value="@ViewBag.EntryNo" id="hfEntryNo" />
+                <input type="hidden" value="@ViewBag.EntryDate" id="hfEntryDate" />
+                <input type="hidden" value="@ViewBag.Mode" id="hfMode" />
+                <input type="hidden" value="@ViewBag.SourceDownloadFileName" id="hfSourceDownloadFileName" />
+
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div>
-<style>
-    
-    #file-button {
-        background-color: #5156be;
-        color: white;
-        padding: 8px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-    }
-
-    #file-names {
-        width: 100%;
-        margin-bottom: 10px;
-        padding: 10px;
-        border: 1px solid #ccc;
-        font-size: 16px;
-    }
-
-    #file-names.hover {
-            border-color: #007BFF;
-            background-color: #f0f8ff;
-            border-width: medium;
-    }
-
- 
-
-    .file-input {
-        display: none;
-    }
-
-    .upload-container input[type="file"] {
-        display: none;
-    }
-
-   
-   
-</style>
 
 @* <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script> *@
 <script>
         var fileInput = document.getElementById('file-input');
-        var fileNamesInput = document.getElementById('file-names');
         var fileList = document.getElementById('fileList');
-        var fileListArry=[]
-    
+        var fileListArry = [];
+
     function preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -134,32 +475,37 @@
 
     function handleFiles(files) {
         if (files.length > 0) {
-            for (let index = 0; index<files.length; index++) {
-                const file = files[index];
-                fileListArry.push(file);
+            for (let index = 0; index < files.length; index++) {
+                fileListArry.push(files[index]);
             }
             UpdateFileUploadGrid();
         }
     }
 
-    function handleFiles(files) {
-        if (files.length > 0) {
-            for (let index = 0; index<files.length; index++) {
-                const file = files[index];
-                fileListArry.push(file);
-            }
-            UpdateFileUploadGrid();
-        }
+    function _getFileIcon(fileName) {
+        const ext = fileName.split('.').pop().toLowerCase();
+        const map = {
+            pdf: 'bx bxs-file-pdf', doc: 'bx bxs-file-doc', docx: 'bx bxs-file-doc',
+            xls: 'bx bxs-spreadsheet', xlsx: 'bx bxs-spreadsheet',
+            png: 'bx bxs-image', jpg: 'bx bxs-image', jpeg: 'bx bxs-image', gif: 'bx bxs-image',
+            zip: 'bx bxs-archive', rar: 'bx bxs-archive',
+            txt: 'bx bxs-file-txt'
+        };
+        return map[ext] || 'bx bxs-file';
     }
 
     function UpdateFileUploadGrid() {
-        fileList.innerHTML='';
+        fileList.innerHTML = '';
         $.each(fileListArry, function (index, val) {
             const file = val;
 
             const fileItem = document.createElement('div');
-
             fileItem.classList.add('file-list-item');
+
+            // file-type icon
+            const iconWrap = document.createElement('div');
+            iconWrap.classList.add('ac-fi-icon');
+            iconWrap.innerHTML = "<i class='" + _getFileIcon(file.name) + "'></i>";
 
             const fileParticularsInput = document.createElement('input');
             fileParticularsInput.type = "text";
@@ -170,23 +516,17 @@
             const fileNameInput = document.createElement('a');
             fileNameInput.href = "#";
             fileNameInput.classList.add('file-name-input');
-            fileNameInput.classList.add('m-2');
             fileNameInput.innerHTML = file.name;
-            fileNameInput.setAttribute("onclick", "ViewFile_AttachmentControl(" + index +")");
+            fileNameInput.setAttribute("onclick", "ViewFile_AttachmentControl(" + index + ")");
 
+            const deleteBtn = document.createElement('button');
+            deleteBtn.classList.add('btn', 'btn-danger', 'icon-height');
+            deleteBtn.innerHTML = "<i class='fa fa-trash'></i>";
+            deleteBtn.setAttribute("onclick", "DeleteFile_AttachmentControl(" + index + ")");
+
+            fileItem.appendChild(iconWrap);
             fileItem.appendChild(fileParticularsInput);
             fileItem.appendChild(fileNameInput);
-
-            // Add delete button
-            const deleteBtn = document.createElement('button');
-            deleteBtn.classList.add('btn');
-            deleteBtn.classList.add('btn-danger');
-            deleteBtn.classList.add('icon-height');
-            deleteBtn.classList.add('m-2');
-            deleteBtn.innerHTML = "<i class='fa fa-trash'></i>"
-            deleteBtn.setAttribute("onclick", "DeleteFile_AttachmentControl("+index+")");
-
-
             fileItem.appendChild(deleteBtn);
             fileList.appendChild(fileItem);
         });

@@ -5,6 +5,12 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 
 $(document).ready(async function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+    window.AttachmentControl_onQueueChange = function (count) {
+        const badge = document.getElementById('gpaTempAttachBadge');
+        if (!badge) return;
+        badge.textContent = String(count);
+        badge.style.display = count > 0 ? 'inline-flex' : 'none';
+    };
 });
 
 // ── Numeric input helpers ────────────────────────────────────────────────────
@@ -79,9 +85,13 @@ function mapGpaListRow(item) {
     const amt = rawAmt !== undefined && rawAmt !== null && rawAmt !== '' ? Number(rawAmt) : '';
     const ref = item.RefNo ?? item.refNo ?? '';
     const label = String(entryNo || code || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const rawEdStr = ed ? String(ed).substring(0, 10) : '';
+    const enNum = parseInt(entryNo, 10) || 0;
     const btns =
         '<button type="button" class="im-btn-edit" title="Edit" onclick="editGRNPaymentApproval(' + code + ')">' +
         '<i class="fas fa-pen"></i></button>' +
+        '<button type="button" class="im-btn-attach" title="Attachment" onclick="openGpaListAttachmentControl(' + code + ',' + enNum + ',\'' + rawEdStr + '\')">' +
+        '<i class="fas fa-paperclip"></i></button>' +
         '<button type="button" class="im-btn-delete" title="Delete" onclick="confirmDeleteGRNPaymentApproval(' + code + ', \'' + label + '\')">' +
         '<i class="fas fa-trash-can"></i></button>';
     return {
@@ -157,7 +167,7 @@ function renderGpaListGridForActiveTab() {
     const showButtons = [];
     const StringdoubleFilterColumn = [];
     const hiddenColumns = ['Code', 'StatusCode'];
-    const ColumnAlignment = { Action: 'center;width:118px;' };
+    const ColumnAlignment = { Action: 'center;width:172px;' };
 
     updateGpaStatusTabStrip();
 
@@ -1490,6 +1500,17 @@ function saveGRNPaymentApproval() {
             );
             if (ok) {
                 applyEntryNoFromResponse(data);
+                const newMasterCode = parseInt(data.Code ?? data.code ?? 0, 10) || 0;
+                const entryDate = document.getElementById('dtPaymentDate')?.value ?? '';
+                const entryNo = parseInt(document.getElementById('txtEntryNo')?.value?.trim() ?? '0', 10) || 0;
+                if (newMasterCode > 0 && typeof window.FlushPendingAttachments === 'function') {
+                    const flush = await window.FlushPendingAttachments(newMasterCode, 'GRNPaymentMaster', entryNo, entryDate);
+                    if (flush && flush.failed > 0) {
+                        showToast(flush.uploaded + ' attachment(s) uploaded, ' + flush.failed + ' failed.', 'warning');
+                    } else if (flush && flush.uploaded > 0) {
+                        showToast(flush.uploaded + ' pending attachment(s) uploaded.', 'success');
+                    }
+                }
                 showToast(editMode ? 'Payment entry updated successfully.' : 'Payment entry saved successfully.', 'success');
                 editMode = false;
                 setTimeout(async () => {
@@ -1545,6 +1566,43 @@ function resetGRNPaymentApprovalForm() {
     showGpaPartyHint();
     recalcFooter();
     hideGpaAddBillModalAndReset();
+    if (typeof window.ClearPendingAttachments_AttachmentControl === 'function') {
+        window.ClearPendingAttachments_AttachmentControl();
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ATTACHMENT CONTROL
+// ══════════════════════════════════════════════════════════════════════════════
+function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode, sourceDownloadFileName) {
+    var url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
+    $('#GRNPaymentEntry_AttachmentControlmodal').load(url, {
+        MasterTableName: masterTableName,
+        MasterTableCode: masterTableCode,
+        DetailTableName: detailTableName,
+        DetailTableCode: detailTableCode,
+        EntryNo: entryNo,
+        EntryDate: entryDate,
+        Mode: mode,
+        SourceDownloadFileName: sourceDownloadFileName || ''
+    });
+}
+
+function openGpaAttachmentControl() {
+    const masterCode = parseInt(document.getElementById('hdnGRNPaymentMasterCode')?.value ?? '0', 10) || 0;
+    const entryNo = parseInt(document.getElementById('txtEntryNo')?.value?.trim() ?? '0', 10) || 0;
+    const entryDate = document.getElementById('dtPaymentDate')?.value ?? '';
+    // masterCode=0 → temp mode handled generically inside the shared control
+    InitAttachmentControl('GRNPaymentMaster', masterCode, '', 0, entryNo, entryDate, 'all', '');
+}
+
+function openGpaListAttachmentControl(code, entryNo, entryDate) {
+    const masterCode = parseInt(code, 10) || 0;
+    if (masterCode <= 0) {
+        showToast('Invalid record. Cannot open attachments.', 'warning');
+        return;
+    }
+    InitAttachmentControl('GRNPaymentMaster', masterCode, '', 0, parseInt(entryNo, 10) || 0, entryDate || '', 'all', '');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1593,6 +1651,9 @@ function getFinancialYear() {
     return year + "-" + (year + 1);
 }
 
+window.InitAttachmentControl = InitAttachmentControl;
+window.openGpaAttachmentControl = openGpaAttachmentControl;
+window.openGpaListAttachmentControl = openGpaListAttachmentControl;
 window.blockNonNumeric = blockNonNumeric;
 window.stripNonNumeric = stripNonNumeric;
 window.markFooterAdvanceManual = markFooterAdvanceManual;
