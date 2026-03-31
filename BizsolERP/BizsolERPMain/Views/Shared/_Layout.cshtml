@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -78,7 +78,7 @@
         .modern-header {
             background: #ffffff;
             box-shadow: 0 1px 12px rgba(102, 126, 234, 0.08);
-            padding: 0.75rem 1.5rem;
+            padding: 0.5rem 1.4rem;
             position: fixed;
             top: 0;
             left: 0;
@@ -93,7 +93,7 @@
             width: 280px;
             position: fixed;
             left: 0;
-            top: 70px;
+            top: 55px;
             bottom: 0;
             box-shadow: 4px 0 20px rgba(30, 27, 75, 0.15);
             overflow-y: auto;
@@ -1175,6 +1175,246 @@
                 color: var(--accent-primary);
             }
 
+        /* ── Notification bell + dropdown panel (well list) ── */
+        .modern-header .dropdown-menu.notification-dropdown,
+        .modern-header .dropdown-menu.profile-dropdown {
+            z-index: 1025;
+        }
+
+        .notification-dropdown {
+            min-width: 310px;
+            max-width: 400px;
+            padding: 0 !important;
+            margin-top: 0.15rem !important;
+            border-radius: 10px;
+            border: 1px solid #e8ecf1;
+            background: #ffffff;
+            box-shadow: 0 16px 48px rgba(15, 23, 42, 0.1), 0 4px 14px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+
+        #bell-icon .notification-badge.notification-bell-badge {
+            top: -4px !important;
+            right: -10px !important;
+            left: auto !important;
+            transform: none !important;
+        }
+
+        .notification-bell-badge {
+            background: #2563eb !important;
+            color: #fff !important;
+            border-radius: 999px !important;
+            min-width: 1.125rem;
+            min-height: 1.125rem;
+            padding: 1px 0.32rem !important;
+            font-size: 0.65rem !important;
+            font-weight: 700;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            animation: none !important;
+            box-shadow: 0 1px 3px rgba(37, 99, 235, 0.4);
+            line-height: 1;
+        }
+
+        #bell-icon.header-icon-btn {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #64748b;
+        }
+
+            #bell-icon.header-icon-btn:hover {
+                background: rgba(102, 126, 234, 0.08) !important;
+                color: #334155;
+            }
+
+        #bell-icon .fa-bell,
+        #bell-icon .fa-regular {
+            font-size: 1.15rem;
+        }
+
+        .notification-well-header {
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.875rem;
+            letter-spacing: 0.02em;
+            color: #0f172a;
+            padding: 0.55rem 1rem 0.45rem;
+            border-bottom: 1px solid #eeeeee;
+            background: #ffffff;
+        }
+
+        .notification-well-list {
+            max-height: 300px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #ffffff;
+            scrollbar-width: thin;
+            scrollbar-color: #3b82f6 #f1f5f9;
+        }
+
+            .notification-well-list::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .notification-well-list::-webkit-scrollbar-track {
+                background: #f1f5f9;
+                border-radius: 100px;
+            }
+
+            .notification-well-list::-webkit-scrollbar-thumb {
+                background: #3b82f6;
+                border-radius: 100px;
+            }
+
+        .notification-well-item {
+            display: flex;
+            gap: 0.6rem;
+            padding: 0.45rem 0.85rem;
+            text-decoration: none;
+            color: inherit;
+            border-bottom: 1px solid #eeeeee;
+            align-items: center;
+            transition: background 0.15s ease;
+        }
+
+            .notification-well-item:last-child {
+                border-bottom: none;
+            }
+
+            .notification-well-item:hover {
+                background: #f8fafc;
+            }
+
+        .notification-well-icon {
+            flex-shrink: 0;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.82rem;
+        }
+
+            .notification-well-icon--danger {
+                background: #fce7f3;
+                color: #e11d48;
+            }
+
+            .notification-well-icon--warning {
+                background: #fef9c3;
+                color: #ca8a04;
+            }
+
+            .notification-well-icon--info {
+                background: #e0f2fe;
+                color: #2563eb;
+            }
+
+            .notification-well-icon--success {
+                background: #d1fae5;
+                color: #059669;
+            }
+
+        .notification-well-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .notification-well-title {
+            font-weight: 700;
+            font-size: 0.8125rem;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .notification-well-desc {
+            font-size: 0.75rem;
+            color: #64748b;
+            line-height: 1.25;
+        }
+
+        .notification-well-time {
+            font-size: 0.6875rem;
+            color: #9ca3af;
+            line-height: 1.2;
+        }
+
+        .notification-well-empty {
+            padding: 0.85rem 1rem;
+            text-align: center;
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        /* ── Profile dropdown (white card + accent bar) ── */
+        .profile-dropdown {
+            min-width: 232px;
+            padding: 0 !important;
+            margin-top: 0.35rem !important;
+            border: 1px solid #e8ecf1;
+            border-radius: 10px;
+            background: #ffffff;
+            box-shadow: 0 16px 48px rgba(15, 23, 42, 0.1), 0 4px 14px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+
+            .profile-dropdown .profile-dropdown-accent {
+                height: 3px;
+                background: #667eea;
+            }
+
+        .profile-dropdown .dropdown-item {
+            color: #0f172a;
+            padding: 0.7rem 1.15rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+            .profile-dropdown .dropdown-item i {
+                font-size: 1.05rem;
+                width: 1.25rem;
+                text-align: center;
+                color: #64748b;
+            }
+
+            .profile-dropdown .dropdown-item:hover,
+            .profile-dropdown .dropdown-item:focus {
+                background: #f8fafc;
+                color: #0f172a;
+            }
+
+                .profile-dropdown .dropdown-item:hover i {
+                    color: #334155;
+                }
+
+        .profile-dropdown .profile-dropdown-logout {
+            color: #b91c1c;
+        }
+
+            .profile-dropdown .profile-dropdown-logout i {
+                color: #dc2626;
+            }
+
+            .profile-dropdown .profile-dropdown-logout:hover,
+            .profile-dropdown .profile-dropdown-logout:focus {
+                background: #fef2f2;
+                color: #991b1b;
+            }
+
+        .profile-dropdown .dropdown-divider {
+            border-color: #eeeeee;
+            margin: 0;
+        }
+
         /* Scrollbar Styling for Light Theme */
         ::-webkit-scrollbar {
             width: 8px;
@@ -1218,9 +1458,9 @@
                     <h4 class="mb-0 erpHedTextSize" id="ERPHeading">Dashboard</h4>
                 </div>
                 <div class="header-actions">
-                    <button type="button" class="header-icon-btn position-relative" id="bell-icon" data-bs-toggle="dropdown">
-                        <i class="fa fa-bell"></i>
-                        <span class="notification-badge position-absolute top-0 start-100 translate-middle" id="notificationCount"></span>
+                    <button type="button" class="header-icon-btn position-relative" id="bell-icon" data-bs-toggle="dropdown" aria-label="Notifications">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="notification-badge notification-bell-badge position-absolute" id="notificationCount" aria-hidden="true"></span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end notification-dropdown" id="notificationDropdown"></div>
 
@@ -1232,17 +1472,19 @@
                     </div>
 
                     <div class="dropdown">
-                        <button type="button" class="header-icon-btn" data-bs-toggle="dropdown">
+                        <button type="button" class="header-icon-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
                             <img class="profile-avatar" src="~/assets/images/users/user.jpg" alt="User">
                         </button>
-                        <div class="dropdown-menu dropdown-menu-end">
+                        <div class="dropdown-menu dropdown-menu-end profile-dropdown">
+                            <div class="profile-dropdown-accent" aria-hidden="true"></div>
                             <a class="dropdown-item" href="#">
-                                <i class='bx bxs-user align-middle me-1'></i>
+                                <i class="fas fa-user-circle" aria-hidden="true"></i>
                                 <span>Profile</span>
                             </a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="#" onclick="logoutUser()">
-                                <i class="bx bx-log-out align-middle me-1"></i> <span>Logout</span>
+                            <a class="dropdown-item profile-dropdown-logout" href="#" onclick="logoutUser()">
+                                <i class="fas fa-right-from-bracket" aria-hidden="true"></i>
+                                <span>Logout</span>
                             </a>
                         </div>
                     </div>
