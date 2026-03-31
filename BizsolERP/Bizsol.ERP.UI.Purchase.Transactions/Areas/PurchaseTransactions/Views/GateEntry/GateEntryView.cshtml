@@ -3,25 +3,527 @@
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
 
-<div class="tab-section" id="DivGateEntryForm">
-    <ul class="nav nav-tabs" id="GateEntryTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#EmptyInTab" role="tab" aria-controls="home" aria-selected="true" onclick="GateEntyMode_GateEntry('form','EmptyInNew')">
-                Empty In
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#LoadedInTab" role="tab" aria-controls="profile" aria-selected="false" onclick="GateEntyMode_GateEntry('form','LoadedInNew')">
-                Loaded In
-            </button>
-        </li>
-    </ul>
-    <div class="tab-content" id="GateEntryTabContent">
+<style>
+    /* Align with PurchaseOrderStore (purple gradient, step cards, filters) */
+    .po-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .po-list-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .po-list-header small { color: rgba(255,255,255,0.75); font-size: 0.78rem; display: block; }
+    .po-header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .po-create-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        background: #fff; border: 2px solid rgba(255,255,255,0.6); color: #667eea;
+        border-radius: 10px; padding: 8px 16px; font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.2); white-space: nowrap;
+        cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+        line-height: 1; text-decoration: none; font-size: 0.85rem;
+    }
+    .po-create-btn:hover { background: #f0f4ff; border-color: #667eea; color: #667eea; }
+    .po-filter-bar {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        padding: 14px 18px 10px;
+        margin-bottom: 14px;
+    }
+    .po-grid-wrap {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 12px rgba(102,126,234,0.07);
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    .table-wrapper.po-table-scroll { max-height: 420px; overflow-y: auto; }
+    #DivGateEntryGrid .table {
+        border-collapse: collapse;
+    }
+    #DivGateEntryGrid .table thead tr th {
+        background: #4f46e5;
+        color: #fff; font-size: 0.73rem; font-weight: 600;
+        text-align: center; vertical-align: middle;
+        padding: 8px 6px; white-space: nowrap;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        letter-spacing: 0.03em;
+    }
+    #DivGateEntryGrid .table tbody tr { transition: background 0.15s; }
+    #DivGateEntryGrid .table tbody tr:hover { background: #f5f3ff; }
+    .ge-grid-footer {
+        padding: 8px 14px 12px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #475569;
+        background: #fafbff;
+        border-top: 1px solid #eef0f8;
+    }
+    .po-step-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 14px;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease;
+    }
+    .po-step-card:hover { box-shadow: 0 4px 20px rgba(102,126,234,0.13); }
+    .po-step-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 18px;
+        background: #fafbff;
+        border-bottom: 1px solid #eef0f8;
+        border-left: 4px solid var(--step-clr, #667eea);
+    }
+    .po-step-num {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: var(--step-clr, #667eea); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.72rem; flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(102,126,234,0.35);
+    }
+    .po-step-title {
+        font-weight: 700; font-size: 0.84rem;
+        color: #1e293b; letter-spacing: 0.04em; text-transform: uppercase;
+        flex: 1;
+    }
+    .po-step-icon { color: var(--step-clr, #667eea); font-size: 1rem; }
+    .po-step-body { padding: 16px 18px; }
+    #DivGateEntryForm .po-step-body .row { margin-bottom: 9px; align-items: center; }
+    #DivGateEntryForm .po-step-body .col-4,
+    #DivGateEntryForm .po-step-body .col-2 {
+        font-size: 0.79rem; font-weight: 600; color: #475569;
+    }
+    .form-control, .form-select {
+        border: 1.5px solid #ddd6fe;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        background-color: #f5f3ff;
+        color: #1e1b4b;
+        transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+    }
+    .form-control[readonly] {
+        background-color: #ede9fe;
+        border-color: #c4b5fd;
+        color: #5b21b6;
+        cursor: default;
+    }
+    .form-control-sm, .form-select-sm { height: 30px; padding: 3px 8px; font-size: 0.8rem; }
+    .req { color: #ef4444; }
+    .btn-po-save {
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        border: none; color: #fff;
+        border-radius: 10px; padding: 2px 22px;
+        font-size: 0.88rem; font-weight: 700;
+        box-shadow: 0 4px 14px rgba(102,126,234,0.4);
+        transition: all 0.2s; cursor: pointer;
+        line-height: 1.4;
+    }
+    .btn-po-save:hover { transform: translateY(-1px); color: #fff; box-shadow: 0 6px 18px rgba(102,126,234,0.5); }
+    .btn-po-cancel {
+        background: linear-gradient(135deg,#f59e0b,#d97706);
+        border: none; color: #fff;
+        border-radius: 10px; padding: 2px 20px;
+        font-size: 0.88rem; font-weight: 700;
+        box-shadow: 0 4px 14px rgba(245,158,11,0.4);
+        transition: all 0.2s; cursor: pointer;
+        line-height: 1.4;
+    }
+    .btn-po-cancel:hover { transform: translateY(-1px); color: #fff; }
+    .btn-ge-secondary {
+        background: linear-gradient(135deg,#64748b,#475569);
+        border: none; color: #fff;
+        border-radius: 10px; padding: 7px 18px;
+        font-size: 0.82rem; font-weight: 700;
+        box-shadow: 0 3px 10px rgba(71,85,105,0.35);
+        transition: all 0.2s;
+    }
+    .btn-ge-secondary:hover { color: #fff; transform: translateY(-1px); }
+    /* Tab strip — blue bar; inactive muted on blue; hover → white text/icon; desktop active = white pill + dark blue; ≤576px active = gradient + white (mockup) */
+    .ge-tab-shell {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 42%, #3b82f6 100%);
+        border: 1px solid #1e40af;
+        border-bottom: none;
+        border-radius: 14px 14px 0 0;
+        padding: 0;
+        margin-bottom: 0;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    #GateEntryTab.nav-tabs {
+        border-bottom: none;
+        margin: 0;
+        padding: 6px 10px 0 14px;
+        gap: 4px;
+        flex-wrap: wrap;
+        align-items: center;
+        height: 50px;
+        box-sizing: border-box;
+    }
+    #GateEntryTab .nav-item { margin-bottom: 0; }
+    #GateEntryTab .nav-link {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        border: none !important;
+        border-radius: 10px 10px 0 0 !important;
+        padding: 0 18px !important;
+        margin-bottom: 0 !important;
+        height: 39px;
+        box-sizing: border-box;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: rgba(255,255,255,0.72) !important;
+        background: transparent !important;
+        border-bottom: 3px solid transparent !important;
+        transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    /* Inactive tabs: readable on blue bar — soft glass strip + crisp label */
+    #GateEntryTab .nav-link:not(.active) {
+        color: rgba(255,255,255,0.92) !important;
+        font-weight: 500;
+        background: linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%) !important;
+        border: 1px solid rgba(255,255,255,0.22) !important;
+        border-bottom: none !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 1px 2px rgba(15,23,42,0.12);
+        text-shadow: 0 1px 1px rgba(15,23,42,0.25);
+    }
+    #GateEntryTab .nav-link i {
+        font-size: 0.9em;
+        color: rgba(255,255,255,0.7);
+        transition: color 0.2s ease;
+    }
+    #GateEntryTab .nav-link:not(.active) i {
+        color: rgba(255,255,255,0.88) !important;
+        filter: drop-shadow(0 1px 1px rgba(15,23,42,0.2));
+    }
+    #GateEntryTab .nav-link:not(.active):hover {
+        color: #fff !important;
+        background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.14) 100%) !important;
+        border-color: rgba(255,255,255,0.38) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 3px 10px rgba(0,0,0,0.15);
+        text-shadow: 0 1px 2px rgba(15,23,42,0.35);
+    }
+    #GateEntryTab .nav-link:not(.active):hover i {
+        color: #fff !important;
+        opacity: 1;
+        filter: none;
+    }
+    #GateEntryTab .nav-link:focus-visible {
+        outline: none !important;
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.95);
+        z-index: 1;
+    }
+    #GateEntryTab .nav-link.active {
+        color: #1e3a8a !important;
+        font-weight: 700;
+        background: #fff !important;
+        border-bottom-color: #1e40af !important;
+        height: 39px;
+        box-sizing: border-box;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.12);
+    }
+    #GateEntryTab .nav-link.active i {
+        color: #1e40af !important;
+        opacity: 1;
+    }
+    #GateEntryTab .nav-link.active:hover {
+        color: #172554 !important;
+        background: #f8fafc !important;
+    }
+    #GateEntryTab .nav-link.active:hover i {
+        color: #1e40af !important;
+    }
+    /* Mobile: active tab = gradient + white label (mockup); desktop keeps white pill above */
+    @@media (max-width: 576px) {
+        #GateEntryTab.nav-tabs {
+            height: auto;
+            min-height: 50px;
+            align-items: stretch;
+        }
+        #GateEntryTab .nav-item { flex: 1; min-width: 0; }
+        #GateEntryTab .nav-link {
+            width: 100%;
+            height: 39px;
+            justify-content: center;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        #GateEntryTab .nav-link.active {
+            color: #fff !important;
+            background: linear-gradient(180deg, #38bdf8 0%, #2563eb 38%, #1d4ed8 100%) !important;
+            border-bottom-color: #172554 !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.28);
+        }
+        #GateEntryTab .nav-link.active i {
+            color: #fff !important;
+        }
+        #GateEntryTab .nav-link.active:hover {
+            color: #fff !important;
+            background: linear-gradient(180deg, #0ea5e9 0%, #1d4ed8 45%, #1e40af 100%) !important;
+        }
+        #GateEntryTab .nav-link.active:hover i {
+            color: #fff !important;
+        }
+    }
+    .ge-tab-content-wrap {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        padding: 18px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(102, 126, 234, 0.06);
+    }
+    .section-entry-animation { animation: geFadeIn 0.35s ease both; }
+    @@keyframes geFadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .po-form-wrap { padding-bottom: 24px; }
+    #DivGateEntryForm .input-group-text {
+        border: 1.5px solid #ddd6fe;
+        background: #ede9fe;
+        color: #5b21b6;
+        border-radius: 8px 0 0 8px;
+    }
+    #DivGateEntryForm .btn-height.btn-dark {
+        background: linear-gradient(135deg,#475569,#334155);
+        border: none;
+        border-radius: 0 8px 8px 0;
+        box-shadow: 0 2px 8px rgba(51,65,85,0.25);
+    }
+    @@media (max-width: 768px) {
+        .po-header-top .d-flex { width: 100%; justify-content: flex-start !important; }
+    }
+    /* Gate grid filter: same label row + control row — Show uses invisible label so button tops align with inputs */
+    #DivGateEntryGrid .ge-grid-filter-row {
+        align-items: flex-start;
+    }
+    #DivGateEntryGrid .ge-grid-filter-row > [class*="col-"] {
+        display: flex;
+        flex-direction: column;
+    }
+    #DivGateEntryGrid .ge-filter-show-col .btn-po-save {
+        height: 30px;
+        min-height: 30px;
+        padding: 0 18px;
+        line-height: 1.2;
+        font-size: 0.8rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+    /* Gate grid — mobile: stack filters, full-width Show, no margin hacks */
+    @@media (max-width: 767.98px) {
+        #DivGateEntryGrid .po-list-header {
+            padding: 12px 14px 12px;
+            border-radius: 12px 12px 0 0;
+        }
+        #DivGateEntryGrid .po-header-top {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+        #DivGateEntryGrid .po-header-top > div:first-child h5 {
+            font-size: 0.95rem;
+        }
+        #DivGateEntryGrid .po-header-top .d-flex {
+            width: 100%;
+            justify-content: stretch !important;
+            gap: 8px;
+        }
+        #DivGateEntryGrid .po-create-btn {
+            flex: 1 1 0;
+            min-width: 0;
+            justify-content: center;
+            padding: 9px 10px;
+            font-size: 0.8rem;
+        }
+        #DivGateEntryGrid .btn-ge-secondary {
+            flex: 1 1 0;
+            min-width: 0;
+            justify-content: center;
+            padding: 9px 10px;
+            font-size: 0.78rem;
+        }
+        #DivGateEntryGrid #btnGateEntyConfiguration {
+            flex: 0 0 44px;
+            width: 44px;
+            padding: 9px !important;
+        }
+        #DivGateEntryGrid .po-filter-bar {
+            padding: 12px 12px 10px;
+            border-radius: 0 0 12px 12px;
+        }
+        #DivGateEntryGrid .ge-grid-filter-row {
+            --bs-gutter-y: 0.5rem;
+        }
+        #DivGateEntryGrid .ge-filter-show-col .btn-po-save {
+            min-height: 38px;
+        }
+        #DivGateEntryGrid .po-grid-wrap {
+            border-radius: 12px;
+        }
+        #DivGateEntryGrid .table-wrapper.po-table-scroll {
+            max-height: min(52vh, 420px);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+    /* Set Configuration modal — Vendor Master modal pattern (gradient header, pill close) */
+    #GateEntryConfigurationModal .modal-dialog {
+        max-width: 520px;
+    }
+    #GateEntryConfigurationModal .modal-content {
+        border: none;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 20px 56px rgba(8, 12, 36, 0.24);
+    }
+    #GateEntryConfigurationModal .ge-config-modal-header {
+        background: linear-gradient(130deg, #5b5ef4, #a855f7);
+        border: none;
+        padding: 12px 16px;
+        position: relative;
+        overflow: hidden;
+    }
+    #GateEntryConfigurationModal .ge-config-modal-header::before {
+        content: '';
+        position: absolute;
+        top: -18px;
+        right: -18px;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.08);
+        pointer-events: none;
+    }
+    #GateEntryConfigurationModal .ge-config-modal-title {
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        position: relative;
+        z-index: 1;
+        margin: 0;
+    }
+    #GateEntryConfigurationModal .ge-config-modal-close {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255,255,255,0.18);
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: background 0.13s;
+        position: relative;
+        z-index: 1;
+        flex-shrink: 0;
+    }
+    #GateEntryConfigurationModal .ge-config-modal-close:hover {
+        background: rgba(255,255,255,0.32);
+    }
+    #GateEntryConfigurationModal .ge-config-modal-body {
+        padding: 20px 22px 14px;
+    }
+    #GateEntryConfigurationModal .ge-config-modal-body::-webkit-scrollbar {
+        width: 8px;
+    }
+    #GateEntryConfigurationModal .ge-config-modal-body::-webkit-scrollbar-thumb {
+        background: #c4c8d4;
+        border-radius: 4px;
+    }
+    #GateEntryConfigurationModal .ge-config-checks > [class*="col-"] {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 13px;
+        color: #374151;
+        padding: 6px 4px;
+    }
+    #GateEntryConfigurationModal .ge-config-checks input[type="checkbox"] {
+        margin-top: 0.2rem;
+        flex-shrink: 0;
+        width: 1rem;
+        height: 1rem;
+        cursor: pointer;
+    }
+    #GateEntryConfigurationModal .ge-config-checks label {
+        font-weight: 500;
+        line-height: 1.35;
+        cursor: pointer;
+        margin: 0;
+    }
+    #GateEntryConfigurationModal .ge-config-modal-footer {
+        padding: 12px 22px 18px;
+        border-top: 1px solid #eef2ff;
+        justify-content: flex-end;
+    }
+    #GateEntryConfigurationModal .ge-config-btn-close {
+        padding: 9px 20px;
+        border-radius: 999px;
+        border: 1.5px solid #d4d7e8;
+        background: #fff;
+        color: #374151;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.13s;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+    #GateEntryConfigurationModal .ge-config-btn-close:hover {
+        background: #f5f5fb;
+        border-color: #9ca3af;
+    }
+</style>
+
+<div class="tab-section po-form-wrap" id="DivGateEntryForm">
+    <div class="ge-tab-shell">
+        <ul class="nav nav-tabs" id="GateEntryTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#EmptyInTab" type="button" role="tab" aria-controls="EmptyInTab" aria-selected="true" onclick="GateEntyMode_GateEntry('form','EmptyInNew')">
+                    <i class="fa fa-sign-in-alt me-1"></i> Empty In
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#LoadedInTab" type="button" role="tab" aria-controls="LoadedInTab" aria-selected="false" onclick="GateEntyMode_GateEntry('form','LoadedInNew')">
+                    <i class="fa fa-truck-loading me-1"></i> Loaded In
+                </button>
+            </li>
+        </ul>
+    </div>
+    <div class="tab-content ge-tab-content-wrap" id="GateEntryTabContent">
         <div class="tab-pane fade show active" id="EmptyInTab" role="tabpanel" aria-labelledby="home-tab">
-            <div class="row">
-                @*  Empty-in *@
-                <span class="mt-1" style="color:#28a745;font-weight: 600"><b>Empty In</b></span>
-                <div class="col-sm-6" id="DivfrmEmptyIn">
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <div class="po-step-card section-entry-animation" style="--step-clr:#667eea;">
+                        <div class="po-step-header">
+                            <div class="po-step-num">1</div>
+                            <span class="po-step-title">Empty In</span>
+                            <i class="fa fa-truck-pickup po-step-icon ms-auto"></i>
+                        </div>
+                        <div class="po-step-body" id="DivfrmEmptyIn">
                     @*  <div class="row">
                         <div class="col-sm-6">
                             Empty-in
@@ -36,6 +538,16 @@
                         </div>
                         <div class="col-8">
                             <input id="frmEmptyIn_txtDateIn" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" readonly autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row" id="RowGateEntry_ModeOfTransportation_EmptyIn" style="display:none">
+                        <div class="col-4">
+                            Mode Of Transportation <span class="text-danger fw-semibold gate-entry-mot-required">*</span>
+                        </div>
+                        <div class="col-8">
+                            <select id="frmEmptyIn_txtModeOfTransportation" class="BizSolFormControl form-control form-control-sm">
+
+                            </select>
                         </div>
                     </div>
                     <div class="row">
@@ -196,16 +708,25 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-sm-12 text-end">
-                            <button id="frmEmptyIn_btnSave" type="button" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('EmptyInSave')">Save</button> &nbsp;
-                            <button id="frmEmptyIn_btnCancel" type="button" class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
+                        <div class="col-sm-12 text-end pt-2">
+                            <button id="frmEmptyIn_btnSave" type="button" class="btn-po-save" onclick="GateEntry_SaveData('EmptyInSave')">Save</button> &nbsp;
+                            <button id="frmEmptyIn_btnCancel" type="button" class="btn-po-cancel" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
+                        </div>
+                    </div>
                         </div>
                     </div>
                 </div>
 
                 @*  Loaded-Out *@
 
-                <div class="col-sm-6" id="DivfrmLoadedOut">
+                <div class="col-lg-6">
+                    <div class="po-step-card section-entry-animation" style="--step-clr:#10b981;">
+                        <div class="po-step-header" style="border-left-color:#10b981;">
+                            <div class="po-step-num" style="background:linear-gradient(135deg,#10b981,#059669);">2</div>
+                            <span class="po-step-title">Loaded Out</span>
+                            <i class="fa fa-sign-out-alt po-step-icon ms-auto" style="color:#10b981;"></i>
+                        </div>
+                        <div class="po-step-body" id="DivfrmLoadedOut">
                     <div class="row">
                         <div class="col-4">
                             Date Out
@@ -427,9 +948,11 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-sm-12 text-end">
-                            <button type="button" id="frmLoadedOut_btnSave" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('UpdateEmptyInSave')">Save</button> &nbsp;
-                            <button type="button" id="frmLoadedOut_btnCancel" class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
+                        <div class="col-sm-12 text-end pt-2">
+                            <button type="button" id="frmLoadedOut_btnSave" class="btn-po-save" onclick="GateEntry_SaveData('UpdateEmptyInSave')">Save</button> &nbsp;
+                            <button type="button" id="frmLoadedOut_btnCancel" class="btn-po-cancel" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
+                        </div>
+                    </div>
                         </div>
                     </div>
                 </div>
@@ -439,16 +962,30 @@
         </div>
 
         <div class="tab-pane fade" id="LoadedInTab" role="tabpanel" aria-labelledby="profile-tab">
-            <div class="row">
-                @*  Loaded-in *@
-                <span class="mt-1" style="color:#28a745;font-weight: 600"><b>Loaded In</b></span>
-                <div class="col-sm-6" id="DivfrmLoadedIn">
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <div class="po-step-card section-entry-animation" style="--step-clr:#0dcaf0;">
+                        <div class="po-step-header" style="border-left-color:#0dcaf0;">
+                            <div class="po-step-num" style="background:linear-gradient(135deg,#0dcaf0,#0891b2);">1</div>
+                            <span class="po-step-title">Loaded In</span>
+                            <i class="fa fa-dolly po-step-icon ms-auto" style="color:#0dcaf0;"></i>
+                        </div>
+                        <div class="po-step-body" id="DivfrmLoadedIn">
                     <div class="row">
                         <div class="col-4">
                             Date In <span class="text-danger fw-semibold">*</span>
                         </div>
                         <div class="col-8">
                             <input id="frmLoadedIn_txtDateIn" class="BizSolFormControl form-control form-control-sm" type="date" onkeypress="BizSolhandleEnterKey(event)" readonly autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row" id="RowGateEntry_ModeOfTransportation_LoadedIn" style="display:none">
+                        <div class="col-4">
+                            Mode Of Transportation <span class="text-danger fw-semibold gate-entry-mot-required">*</span>
+                        </div>
+                        <div class="col-8">
+                            <select id="frmLoadedIn_txtModeOfTransportation" class="BizSolFormControl form-control form-control-sm">
+                            </select>
                         </div>
                     </div>
                     <div class="row">
@@ -670,6 +1207,14 @@
                             <label>
                                 W/O PO
                             </label>
+                            <span id="RowGateEntry_rdPOAccess_WithoutExistingItem" class="d-none">
+                                &nbsp;
+                                &nbsp;
+                                <input type="radio" class="box_border" name="rdPOAccess" onclick="GateEntry_rdPOAccess_onClick(this)" value="withoutexistingitem" />&nbsp;
+                                <label>
+                                    W/O Existing Item
+                                </label>
+                            </span>
                         </div>
                     </div>
                     <div class="row" id="RowfrmLoadedInddlPurchaseOrder">
@@ -764,16 +1309,25 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-sm-12 text-end">
-                            <button type="button" id="frmLoadedIn_btnSave" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('LoadedInSave')">Save</button> &nbsp;
-                            <button type="button" id="frmLoadedIn_btnCancel" class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
+                        <div class="col-sm-12 text-end pt-2">
+                            <button type="button" id="frmLoadedIn_btnSave" class="btn-po-save" onclick="GateEntry_SaveData('LoadedInSave')">Save</button> &nbsp;
+                            <button type="button" id="frmLoadedIn_btnCancel" class="btn-po-cancel" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
+                        </div>
+                    </div>
                         </div>
                     </div>
                 </div>
 
                 @* Empty-Out *@
 
-                <div class="col-sm-6" id="DivfrmEmptyOut">
+                <div class="col-lg-6">
+                    <div class="po-step-card section-entry-animation" style="--step-clr:#f59e0b;">
+                        <div class="po-step-header" style="border-left-color:#f59e0b;">
+                            <div class="po-step-num" style="background:linear-gradient(135deg,#f59e0b,#d97706);">2</div>
+                            <span class="po-step-title">Empty Out</span>
+                            <i class="fa fa-door-open po-step-icon ms-auto" style="color:#f59e0b;"></i>
+                        </div>
+                        <div class="po-step-body" id="DivfrmEmptyOut">
                     <div class="row">
                         <div class="col-4">
                             Date Out <span class="text-danger fw-semibold">*</span>
@@ -857,9 +1411,11 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-sm-12 text-end">
-                            <button type="button" id="frmEmptyOut_btnSave" class="btn btn-primary icon-height" onclick="GateEntry_SaveData('UpdateLoadedInSave')">Save</button> &nbsp;
-                            <button type="button" id="frmEmptyOut_btnCancel" class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
+                        <div class="col-sm-12 text-end pt-2">
+                            <button type="button" id="frmEmptyOut_btnSave" class="btn-po-save" onclick="GateEntry_SaveData('UpdateLoadedInSave')">Save</button> &nbsp;
+                            <button type="button" id="frmEmptyOut_btnCancel" class="btn-po-cancel" onclick="GateEntyMode_GateEntry('grid','')">Cancel</button>
+                        </div>
+                    </div>
                         </div>
                     </div>
                 </div>
@@ -872,75 +1428,82 @@
 
 
 <div id="DivGateEntryGrid">
-    <div class="row">
-        <div class="col-sm-2">
-            <label for="from-date">From Date</label>
-            <input type="date" class="form-control form-control-sm" id="txtFromDate" onchange="GateEntryGirdByDates()">
+    <div class="po-list-header">
+        <div class="po-header-top">
+            <div>
+                <h5><i class="fa fa-warehouse me-2"></i>Gate Entry</h5>
+            </div>
+            <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
+                <button type="button" class="po-create-btn" onclick="GateEntyMode_GateEntry('form','EmptyInNew')">
+                    <i class="fa fa-plus-circle"></i><span class="ms-1">Create New</span>
+                </button>
+                <button type="button" class="btn-ge-secondary" onclick="GateEntry_ExportExecl()"><i class="fa fa-download me-1"></i>Download</button>
+                <button type="button" class="btn-ge-secondary" id="btnGateEntyConfiguration" onclick="ShowGateEntryConfigurationModal()" title="Settings"><i class="fa fa-gear"></i></button>
+            </div>
         </div>
-        <div class="col-sm-2">
-            <label for="to-date">To Date</label>
-            <input type="date" class="form-control form-control-sm" id="txtToDate" onchange="GateEntryGirdByDates()">
-        </div>
-        <div class="col-sm-2">
-            <label for="to-date">Vehicles</label>
-            <select class="form-control form-control-sm" id="ddlVehiclesStatusInFectory" >
-                
-            </select>
-        </div>
-        <div class="col-sm-2" id="DivGodown">
-            <label for="to-date">Warehouse</label>
-            <select class="form-control form-control-sm" id="ddlGodown" >
-                
-            </select>
-        </div>
-        <div class="col-sm-4 without-label-field text-end">
-            <label></label>
-            <button type="button" class="btn btn-primary icon-height" onclick="GateEntryGirdByDates()">Show</button>
-            &nbsp;
-            <button type="button" class="btn btn-primary icon-height" onclick="GateEntry_ExportExecl()">Download</button>
-            <button type="button" class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','EmptyInNew')">CREATE NEW</button>
-            &nbsp;
-            <i class="fa fa-gear" id="btnGateEntyConfiguration" onclick="ShowGateEntryConfigurationModal()" style="cursor:pointer"></i>
-
-        </div>
-    </div>
-    <div class="table-wrapper mt-2">
-        <table id="tbGateEntyView" class="table fixed-width-table">
-            <thead id="tbGateEntyViewHeader">
-            </thead>
-            <tbody id="tbGateEntyViewBody">
-            </tbody>
-        </table>
-    </div>
-    <div class="paginator" id="paginator-tbGateEntyView">
+        <span id="spNoOfVehicles" class="visually-hidden" aria-hidden="true">0</span>
     </div>
 
-    <div>
-        No of Vehicles: <span id="spNoOfVehicles">0</span>
+    <div class="po-filter-bar">
+        <div class="row g-2 ge-grid-filter-row">
+            <div class="col-6 col-md-2">
+                <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">From Date</label>
+                <input type="date" class="form-control form-control-sm" id="txtFromDate" onchange="GateEntryGirdByDates()">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">To Date</label>
+                <input type="date" class="form-control form-control-sm" id="txtToDate" onchange="GateEntryGirdByDates()">
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Vehicles</label>
+                <select class="form-control form-control-sm form-select" id="ddlVehiclesStatusInFectory"></select>
+            </div>
+            <div class="col-12 col-md-auto ge-filter-show-col">
+                <label class="form-label mb-1 d-none d-md-block invisible user-select-none" style="font-size:0.77rem;font-weight:600;color:#475569;" aria-hidden="true">From Date</label>
+                <button type="button" class="btn-po-save w-100 w-md-auto" onclick="GateEntryGirdByDates()"><i class="fa fa-search me-1"></i>Show</button>
+            </div>
+            <div class="col-12 col-md-2" id="DivGodown">
+                <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Warehouse</label>
+                <select class="form-control form-control-sm form-select" id="ddlGodown"></select>
+            </div>
+        </div>
+    </div>
+
+    <div class="po-grid-wrap">
+        <div class="table-wrapper po-table-scroll mt-0">
+            <table id="tbGateEntyView" class="table table-sm table-hover fixed-width-table mb-0">
+                <thead id="tbGateEntyViewHeader">
+                </thead>
+                <tbody id="tbGateEntyViewBody">
+                </tbody>
+            </table>
+        </div>
+        <div class="paginator px-3 py-2" id="paginator-tbGateEntyView">
+        </div>
     </div>
 </div>
 
 <div id="GateEntry_AttachmentControlmodal"></div>
 
-<div class="modal fade bs-example-modal-center" id="GateEntryConfigurationModal" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="false">
-    <div class="modal-dialog modal-dialog-scrollable" style="max-width:484px">
+<div class="modal fade" id="GateEntryConfigurationModal" tabindex="-1" aria-labelledby="GateEntryConfigurationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Set Configuration</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header ge-config-modal-header">
+                <h5 class="modal-title ge-config-modal-title" id="GateEntryConfigurationModalLabel">
+                    <i class="fa fa-sliders-h" aria-hidden="true"></i> Set Configuration
+                </h5>
+                <button type="button" class="ge-config-modal-close" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fa fa-times" aria-hidden="true"></i>
+                </button>
             </div>
-            <div class="modal-body">
-                <div id="DivChkSetGateEntryConfiguration" class="row">
-                </div>
-
-                <div class="text-end mt-1">
-                    <a class="btn btn-danger icon-height" data-bs-dismiss="modal">
-                        Close
-                    </a>
-                </div>
+            <div class="modal-body ge-config-modal-body">
+                <div id="DivChkSetGateEntryConfiguration" class="row g-2 ge-config-checks"></div>
             </div>
-        </div><!-- /.modal-content -->
-    </div><!-- /.modal-dialog -->
+            <div class="modal-footer ge-config-modal-footer border-0">
+                <button type="button" class="ge-config-btn-close" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div id="GateEntry_DivSelectMachineToGetWeightControl"></div>

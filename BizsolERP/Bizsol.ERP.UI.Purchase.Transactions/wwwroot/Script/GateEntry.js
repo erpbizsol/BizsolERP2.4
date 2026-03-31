@@ -9,6 +9,7 @@ $("#ERPHeading").text("Gate Entry");
 
 let ConfigGateEntry = [];
 let IsWithPo = false;
+let IsEntryWithoutExistingItem = false;
 let GateEntryMaster_Code = 0;
 let LoginGodownMaster_Code = 0;
 let G_PendingPONOList = [];
@@ -285,6 +286,7 @@ function ChangeMode(Mode) {
     }
 }
 function LoadedInNew() {
+    IsEntryWithoutExistingItem = false;
     $('#RowfrmLoadedInReportingDatetime').hide();
     $('#RowfrmLoadedInVehicleLoadedWeight').hide();
     $('#RowfrmLoadedInWeightmentSlipNoLoaded').hide();
@@ -301,8 +303,7 @@ function LoadedInNew() {
 
     $('#frmLoadedIn_txtDateIn').val(new Date().toISOString().slice(0, 10));
     $('#frmLoadedIn_txtVehicleInTime').val(`${new Date().getHours()}:${new Date().getMinutes()}`);
-
-
+    $('#frmLoadedIn_txtModeOfTransportation').val('');
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
         $('#frmLoadedIn_txtReportingDatetime').val('');
@@ -329,8 +330,11 @@ function LoadedInNew() {
         $('#RowfrmLoadedInPOAccess').show();
         $('#RowfrmLoadedInddlPurchaseOrder').show();
         IsWithPo = true;
+        IsEntryWithoutExistingItem = false;
         WithPO();
      }
+
+    GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState();
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
         $('#frmLoadedIn_txtChassisNo').val('');
@@ -362,24 +366,6 @@ function LoadedInNew() {
                 if (selectedItem) {
                     $('#frmLoadedIn_ddlPurchaseOrder').val('').trigger('change');
                     chnage_VendorNameGetPOByVendor();
-                }
-            }
-        );
-    });
-    GateEntryService.GetGoodDespList().then(function (response) {
-        // Map with UOM included for auto-suggestion
-        const goodsList = response.map((item) => ({ Desp: item.GoodDesp, UOM: item.UOM }));
-
-        // Setup auto-suggestion with selection callback to set UOM
-        AutoSuggestionControl.SetUpAutoSuggestion(
-            $('#frmLoadedIn_txtGoodsDescription'),
-            $('#frmLoadedIn_txtGoodsDescription_List'),
-            goodsList,
-            'StartWith',
-            true,
-            function(selectedItem) {
-                if (selectedItem && selectedItem.UOM) {
-                    $('#frmLoadedIn_txtUOM').val(selectedItem.UOM).trigger('change');
                 }
             }
         );
@@ -417,6 +403,7 @@ function EmptyInNew() {
     $('#frmEmptyIn_txtVehicleInTime').val(`${new Date().getHours()}:${new Date().getMinutes()}`);
 
     $('#frmEmptyIn_txtVehicleNo').val('');
+    $('#frmEmptyIn_txtModeOfTransportation').val('');
     $('#frmEmptyIn_txtDriverName').val('');
     $('#frmEmptyIn_txtDriverNo').val('');
     $('#frmEmptyIn_txtRemarks').val('');
@@ -483,6 +470,7 @@ function EmptyInNew() {
 
 function UpdateLoadedIn_Emptyout(gateEntryData) {
     console.log(gateEntryData);
+    GateEntry_ApplyEntryWithoutExistingItemRadioVisibility();
     $('#RowfrmLoadedInReportingDatetime').hide();
     $('#RowfrmLoadedInVehicleLoadedWeight').hide();
     $('#RowfrmLoadedInWeightmentSlipNoLoaded').hide();
@@ -555,7 +543,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtDriverAadharNo').val(gateEntryData[0].DriverAadharNo);
     $('#frmLoadedIn_txtTokenNo').val(gateEntryData[0].TokenNo);
 
-
+    GateEntry_ApplyModeOfTransportationCode(GateEntry_ModeOfTransportationCodeFromData(gateEntryData));
 
     $('#frmLoadedIn_txtVehicleInTime').attr('readonly', 'readonly');
     $('#frmLoadedIn_txtVehicleNo').attr('readonly', 'readonly');
@@ -587,6 +575,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtDriverLicenseExpiredDate').attr('readonly', 'readonly');
     $('#frmLoadedIn_txtDriverAadharNo').attr('readonly', 'readonly');
     $('#frmLoadedIn_txtTokenNo').attr('readonly', 'readonly');
+    $('#frmLoadedIn_txtModeOfTransportation').attr('disabled', 'disabled');
 
     $('#DivfrmLoadedIn_fileVehiclePhoto').hide();
     $('#DivfrmLoadedIn_fileGoodsPhoto').hide();
@@ -670,16 +659,29 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     if (parseInt(gateEntryData[0].PurchaseOrderMaster_Code) == 0) { //Entry saved without PO...
 
         IsWithPo = false;
+        const entryWithoutExisting =
+            gateEntryData[0].EntryWithOutExistingItem === 'Y' ||
+            gateEntryData[0].EntryWithOutExistingItem === true ||
+            String(gateEntryData[0].EntryWithOutExistingItem || '').toUpperCase() === 'Y';
+        const useWithoutExistingRadio = entryWithoutExisting && GateEntry_IsEntryWithoutExistingItemEnabled();
+        IsEntryWithoutExistingItem = useWithoutExistingRadio;
         WithPO();
         $('#frmLoadedIn_txtGoodsDescription').val(gateEntryData[0].GoodDescription);
         $('#frmLoadedIn_txtQTY').val(gateEntryData[0].Qty);
         $('#frmLoadedIn_txtUOM').attr('disabled', 'disabled');
         
-        jQuery('input:radio[name="rdPOAccess"]').filter('[value="withoutpo"]').attr('checked', true);
+        if (useWithoutExistingRadio) {
+            jQuery('input:radio[name="rdPOAccess"]').filter('[value="withoutexistingitem"]').prop('checked', true);
+        } else {
+            jQuery('input:radio[name="rdPOAccess"]').filter('[value="withoutpo"]').prop('checked', true);
+        }
     }
     else {
-        jQuery('input:radio[name="rdPOAccess"]').filter('[value="withpo"]').attr('checked', true);
+        IsEntryWithoutExistingItem = false;
+        jQuery('input:radio[name="rdPOAccess"]').filter('[value="withpo"]').prop('checked', true);
     }
+
+    GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState();
 
       $('#DivfrmEmptyOut').show();
       $('#RowfrmEmptyOut_fileVehiclePhoto').show();
@@ -716,6 +718,8 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#frmEmptyIn_txtDriverAadharNo').val(gateEntryData[0].DriverAadharNo);
     $('#frmEmptyIn_txtTokenNo').val(gateEntryData[0].TokenNo);
 
+    GateEntry_ApplyModeOfTransportationCode(GateEntry_ModeOfTransportationCodeFromData(gateEntryData));
+
     G_TableName = gateEntryData[0].TableName;
     G_TableCode = gateEntryData[0].Table_Code;
 
@@ -734,6 +738,7 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#frmEmptyIn_txtDriverLicenseExpiredDate').attr('readonly', 'readonly');
     $('#frmEmptyIn_txtDriverAadharNo').attr('readonly', 'readonly');
     $('#frmEmptyIn_txtTokenNo').attr('readonly', 'readonly');
+    $('#frmEmptyIn_txtModeOfTransportation').attr('disabled', 'disabled');
 
     
     $('#DivfrmEmptyIn_fileVehiclePhoto').hide();
@@ -858,6 +863,65 @@ function BindSelectList2(element, list) {
     });
     element.innerHTML = option;
 }
+function BindSelectList3(element, list) {
+    let option = '<option value="">Please select </option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Desp + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
+function GateEntry_ModeOfTransportationCodeFromData(gateEntryData) {
+    if (!gateEntryData || !gateEntryData[0]) return '';
+    const d = gateEntryData[0];
+    const v = d.F_ModeOfTransportation_Code ?? d.ModeOfTransportationCode ?? d.ModeOfTransportation ?? d.modeOfTransportation;
+    return v === undefined || v === null ? '' : String(v);
+}
+
+function GateEntry_ApplyModeOfTransportationCode(code) {
+    const v = code === undefined || code === null || code === '' ? '' : String(code);
+    $('#frmEmptyIn_txtModeOfTransportation').val(v);
+    $('#frmLoadedIn_txtModeOfTransportation').val(v);
+}
+
+function GateEntry_IsModeOfTransportEnabled() {
+    if (!ConfigGateEntry || ConfigGateEntry.length === 0) return false;
+    const p = ConfigGateEntry.find((x) => x.PerameterName === 'EnableModeOfTransport');
+    return p && String(p.PerameterValue).toUpperCase() === 'Y';
+}
+
+/** When mode is By Hand or Courier, vehicle/driver/transporter/weight slip/vehicle photo are not mandatory (requires EnableModeOfTransport + matching option text). */
+function GateEntry_IsByHandOrCourierFromSelect($select) {
+    if (!$select || !$select.length) return false;
+    const t = ($select.find('option:selected').text() || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    return t === 'by hand' || t === 'courier';
+}
+
+function GateEntry_ApplyModeOfTransportVisibility() {
+    const show = GateEntry_IsModeOfTransportEnabled();
+    const $rows = $('#RowGateEntry_ModeOfTransportation_EmptyIn, #RowGateEntry_ModeOfTransportation_LoadedIn');
+    if (show) {
+        $rows.show();
+    } else {
+        $rows.hide();
+        $('#frmEmptyIn_txtModeOfTransportation').val('');
+        $('#frmLoadedIn_txtModeOfTransportation').val('');
+    }
+}
+
+function BindGateEntryTransportModeSelects() {
+    GateEntryService.GetTransportMode().then(function (response) {
+        if (!response || !Array.isArray(response)) return;
+        const list = response.map((item) => ({
+            Desp: item.Desp ?? item.desp ?? item.Description ?? item.ModeName ?? '',
+        })).filter((x) => x.Desp !== '');
+        const ids = ['frmEmptyIn_txtModeOfTransportation', 'frmLoadedIn_txtModeOfTransportation'];
+        ids.forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) BindSelectList3(el, list);
+        });
+    });
+}
+
 function ShowGateEntryConfigurationModal() {
     GateEntryService.GetConfigGateEntry().then(function (response) {
         //console.log(response);
@@ -895,11 +959,68 @@ function setGateEntryParamater(element, PerameterName, PerameterValue) {
 
 }
 
+function GateEntry_IsEntryWithoutExistingItemEnabled() {
+    if (!ConfigGateEntry || ConfigGateEntry.length === 0) return false;
+    const p = ConfigGateEntry.find((x) => x.PerameterName === 'EntryWithOutExistingItem');
+    return p && String(p.PerameterValue).toUpperCase() === 'Y';
+}
+
+function GateEntry_ApplyEntryWithoutExistingItemRadioVisibility() {
+    const $wrap = $('#RowGateEntry_rdPOAccess_WithoutExistingItem');
+    if (!$wrap.length) return;
+    if (GateEntry_IsEntryWithoutExistingItemEnabled()) {
+        $wrap.removeClass('d-none');
+    } else {
+        $wrap.addClass('d-none');
+        const sel = $('input[name="rdPOAccess"]:checked').val();
+        if (sel === 'withoutexistingitem') {
+            $('input[name="rdPOAccess"][value="withpo"]').prop('checked', true);
+            IsWithPo = true;
+            IsEntryWithoutExistingItem = false;
+            WithPO();
+            GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState();
+        }
+    }
+}
+
+function GateEntry_clearLoadedInGoodsDescriptionAutoSuggestion() {
+    const $inp = $('#frmLoadedIn_txtGoodsDescription');
+    const $list = $('#frmLoadedIn_txtGoodsDescription_List');
+    $inp.off('focus input keydown');
+    $list.empty().hide();
+    $(document).off('click', '#frmLoadedIn_txtGoodsDescription_List li');
+}
+
+function GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState() {
+    if (IsEntryWithoutExistingItem) {
+        GateEntry_clearLoadedInGoodsDescriptionAutoSuggestion();
+        return;
+    }
+    GateEntryService.GetGoodDespList().then(function (response) {
+        const goodsList = response.map((item) => ({ Desp: item.GoodDesp, UOM: item.UOM }));
+        AutoSuggestionControl.SetUpAutoSuggestion(
+            $('#frmLoadedIn_txtGoodsDescription'),
+            $('#frmLoadedIn_txtGoodsDescription_List'),
+            goodsList,
+            'StartWith',
+            true,
+            function (selectedItem) {
+                if (selectedItem && selectedItem.UOM) {
+                    $('#frmLoadedIn_txtUOM').val(selectedItem.UOM).trigger('change');
+                }
+            }
+        );
+    });
+}
+
 function GetConfigGateEntry() {
     GateEntryService.GetConfigGateEntry().then(function (response) {
         ConfigGateEntry = response;
         EnableScaleWeight();
         BindddlVehiclesStatusInFectory();
+        BindGateEntryTransportModeSelects();
+        GateEntry_ApplyModeOfTransportVisibility();
+        GateEntry_ApplyEntryWithoutExistingItemRadioVisibility();
 
     });
 }
@@ -908,10 +1029,16 @@ function GateEntry_rdPOAccess_onClick(ele) {
    
     if (ele.value === 'withpo') {
         IsWithPo = true;
+        IsEntryWithoutExistingItem = false;
+    } else if (ele.value === 'withoutexistingitem') {
+        IsWithPo = false;
+        IsEntryWithoutExistingItem = true;
     } else {
         IsWithPo = false;
+        IsEntryWithoutExistingItem = false;
     }
     WithPO();
+    GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState();
 }
 function WithPO() {
     if (IsWithPo ==true) {
@@ -994,10 +1121,23 @@ function GateEntry_SaveData(Mode) {
     let GRNo = "";
 
     let RejectEntry = 'N';
+    let ModeOfTransportation = '';
 
     if (Mode === 'EmptyInSave' || Mode === 'emptyinedit') {
         let PhotoLenth = 0;
         Time = $('#frmEmptyIn_txtVehicleInTime').val();
+        if (GateEntry_IsModeOfTransportEnabled()) {
+            ModeOfTransportation = $('#frmEmptyIn_txtModeOfTransportation').val() || '';
+            if (!ModeOfTransportation || ModeOfTransportation === '') {
+                valid = false;
+                toastr.error('Please Check! Mode Of Transportation can not be blank');
+                $('#frmEmptyIn_txtModeOfTransportation').focus();
+                return;
+            }
+        } else {
+            ModeOfTransportation = '';
+        }
+        const relaxHandCourierEmptyIn = GateEntry_IsModeOfTransportEnabled() && GateEntry_IsByHandOrCourierFromSelect($('#frmEmptyIn_txtModeOfTransportation'));
         VehicleNo = $('#frmEmptyIn_txtVehicleNo').val();
         DriverName = $('#frmEmptyIn_txtDriverName').val();
         DriverMobile = $('#frmEmptyIn_txtDriverNo').val();
@@ -1006,7 +1146,7 @@ function GateEntry_SaveData(Mode) {
         PhotoLenth = $('#frmEmptyIn_fileVehiclePhoto')[0].files.length;
 
         
-        if (typeof VehicleNo === 'undefined' || VehicleNo === '' || VehicleNo === null) {
+        if (!relaxHandCourierEmptyIn && (typeof VehicleNo === 'undefined' || VehicleNo === '' || VehicleNo === null)) {
             valid = false;
             toastr.error('Please Check! Vehicle No can not be blank');
             $('#frmEmptyIn_txtVehicleNo').focus();
@@ -1053,33 +1193,33 @@ function GateEntry_SaveData(Mode) {
             
         }
 
-        if (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null) {
+        if (!relaxHandCourierEmptyIn && (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null)) {
             valid = false;
             toastr.error('Please Check! Driver Name can not be blank');
             $('#frmEmptyIn_txtDriverName').focus();
             return;
         }
-        if (typeof DriverMobile === 'undefined' || DriverMobile === '' || DriverMobile === null) {
+        if (!relaxHandCourierEmptyIn && (typeof DriverMobile === 'undefined' || DriverMobile === '' || DriverMobile === null)) {
             valid = false;
             toastr.error('Please Check! Driver No. can not be blank');
             $('#frmEmptyIn_txtDriverNo').focus();
             return;
         }
-        if (BizSolInputControl.IsMobileNumber(DriverMobile) == false) {
+        if (!relaxHandCourierEmptyIn && BizSolInputControl.IsMobileNumber(DriverMobile) == false) {
             valid = false;
             toastr.error('Please enter valid mobile number.');
             $('#frmEmptyIn_txtDriverNo').focus();
             return;
 
         }
-        if (typeof TransporterName === 'undefined' || TransporterName === '' || TransporterName === null) {
+        if (!relaxHandCourierEmptyIn && (typeof TransporterName === 'undefined' || TransporterName === '' || TransporterName === null)) {
             valid = false;
             toastr.error('Please Check! Transporter Name can not be blank');
             $('#frmEmptyIn_ddlTransporterName').focus();
             return;
         }
 
-        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+        if (!relaxHandCourierEmptyIn && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
             EmptyWeight = $('#frmEmptyIn_txtVehicleEmptyWeight').val();
             WeightmentSlipNumberIn = $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val();
 
@@ -1095,9 +1235,12 @@ function GateEntry_SaveData(Mode) {
                 $('#frmEmptyIn_txtWeightmentSlipNoEmpty').focus();
                 return;
             }
+        } else if (relaxHandCourierEmptyIn && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+            EmptyWeight = $('#frmEmptyIn_txtVehicleEmptyWeight').val();
+            WeightmentSlipNumberIn = $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val();
         }
 
-        if (Mode === 'EmptyInSave' && (typeof PhotoLenth === 'undefined' || PhotoLenth === 0)) {
+        if (Mode === 'EmptyInSave' && !relaxHandCourierEmptyIn && (typeof PhotoLenth === 'undefined' || PhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Vehicle Photo can not be blank');
             $('#frmEmptyIn_fileVehiclePhoto').focus();
@@ -1129,6 +1272,19 @@ function GateEntry_SaveData(Mode) {
         ReportingDatetime = $('#frmEmptyIn_txtReportingDatetime').val();
         EmptyWeight = $('#frmEmptyIn_txtVehicleEmptyWeight').val();
         WeightmentSlipNumberIn = $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val();
+
+        if (GateEntry_IsModeOfTransportEnabled()) {
+            ModeOfTransportation = $('#frmEmptyIn_txtModeOfTransportation').val() || '';
+            if (!ModeOfTransportation || ModeOfTransportation === '') {
+                valid = false;
+                toastr.error('Please Check! Mode Of Transportation can not be blank');
+                $('#frmEmptyIn_txtModeOfTransportation').focus();
+                return;
+            }
+        } else {
+            ModeOfTransportation = '';
+        }
+        const relaxHandCourierLoadedOut = GateEntry_IsModeOfTransportEnabled() && GateEntry_IsByHandOrCourierFromSelect($('#frmEmptyIn_txtModeOfTransportation'));
 
         GateEntryOutDate = $('#frmLoadedOut_txtDateOut').val();
         VehicleOutTime = $('#frmLoadedOut_txtVehicleOutTime').val();
@@ -1169,7 +1325,7 @@ function GateEntry_SaveData(Mode) {
             DriverAadharNo = $('#frmEmptyIn_txtDriverAadharNo').val();
         }
 
-        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+        if (!relaxHandCourierLoadedOut && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
             LoadedWeight = $('#frmLoadedOut_txtVehicleLoadedWeight').val();
             WeightmentSlipNumberOut = $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val();
 
@@ -1191,8 +1347,15 @@ function GateEntry_SaveData(Mode) {
                 toastr.error('Please Check! vehicle loaded weight Should be greater than to vehicle empty weight');
                 return;
             }
+        } else if (relaxHandCourierLoadedOut && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+            LoadedWeight = $('#frmLoadedOut_txtVehicleLoadedWeight').val();
+            WeightmentSlipNumberOut = $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val();
+            const lw = parseFloat(LoadedWeight) || 0;
+            const ew = parseFloat(EmptyWeight) || 0;
+            NetWeight = lw - ew;
+            $('#frmLoadedOut_txtNetWeightLoadedOut').val(parseFloat(NetWeight).toFixed(2));
         }
-        if (RejectEntry == 'N' && Mode === 'UpdateEmptyInSave' && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
+        if (RejectEntry == 'N' && Mode === 'UpdateEmptyInSave' && !relaxHandCourierLoadedOut && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Vehicle Photo can not be blank');
             $('#frmLoadedOut_fileVehiclePhoto').focus();
@@ -1272,6 +1435,18 @@ function GateEntry_SaveData(Mode) {
     }
     else if (Mode === 'LoadedInSave' || Mode ==='loadedinedit') {
         Time = $('#frmLoadedIn_txtVehicleInTime').val();
+        if (GateEntry_IsModeOfTransportEnabled()) {
+            ModeOfTransportation = $('#frmLoadedIn_txtModeOfTransportation').val() || '';
+            if (!ModeOfTransportation || ModeOfTransportation === '') {
+                valid = false;
+                toastr.error('Please Check! Mode Of Transportation can not be blank');
+                $('#frmLoadedIn_txtModeOfTransportation').focus();
+                return;
+            }
+        } else {
+            ModeOfTransportation = '';
+        }
+        const relaxHandCourierLoadedIn = GateEntry_IsModeOfTransportEnabled() && GateEntry_IsByHandOrCourierFromSelect($('#frmLoadedIn_txtModeOfTransportation'));
         VehicleNo = $('#frmLoadedIn_txtVehicleNo').val();
         DriverName = $('#frmLoadedIn_txtDriverName').val();
         DriverMobile = $('#frmLoadedIn_txtDriverNo').val();
@@ -1303,7 +1478,7 @@ function GateEntry_SaveData(Mode) {
         // Check if document type is "Others" - if yes, only validate driver name
         let isOthersDocument = Documenttype && Documenttype.toLowerCase() === 'others';
         
-        if (!isOthersDocument && (typeof VehicleNo === 'undefined' || VehicleNo === '' || VehicleNo === null)) {
+        if (!isOthersDocument && !relaxHandCourierLoadedIn && (typeof VehicleNo === 'undefined' || VehicleNo === '' || VehicleNo === null)) {
             valid = false;
             toastr.error('Please Check! Vehicle No can not be blank');
             $('#frmLoadedIn_txtVehicleNo').focus();
@@ -1349,7 +1524,7 @@ function GateEntry_SaveData(Mode) {
             }
         }
         
-        if (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null) {
+        if (!relaxHandCourierLoadedIn && (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null)) {
             valid = false;
             toastr.error('Please Check! Driver Name can not be blank');
             $('#frmLoadedIn_txtDriverName').focus();
@@ -1361,13 +1536,13 @@ function GateEntry_SaveData(Mode) {
             // Only driver name is mandatory for "Others" document type
             // Skip all other field validations
         } else {
-            if (typeof DriverMobile === 'undefined' || DriverMobile === '' || DriverMobile === null) {
+            if (!relaxHandCourierLoadedIn && (typeof DriverMobile === 'undefined' || DriverMobile === '' || DriverMobile === null)) {
                 valid = false;
                 toastr.error('Please Check! Driver No. can not be blank');
                 $('#frmLoadedIn_txtDriverNo').focus();
                 return;
             }
-            if (BizSolInputControl.IsMobileNumber(DriverMobile) == false) {
+            if (!relaxHandCourierLoadedIn && BizSolInputControl.IsMobileNumber(DriverMobile) == false) {
                 valid = false;
                 toastr.error('Please enter valid mobile number.');
                 $('#frmLoadedIn_txtDriverNo').focus();
@@ -1375,13 +1550,13 @@ function GateEntry_SaveData(Mode) {
 
             }
             
-            if (typeof TransporterName === 'undefined' || TransporterName === '' || TransporterName === null) {
+            if (!relaxHandCourierLoadedIn && (typeof TransporterName === 'undefined' || TransporterName === '' || TransporterName === null)) {
                 valid = false;
                 toastr.error('Please Check! Transporter Name can not be blank');
                 $('#frmLoadedIn_ddlTransporterName').focus();
                 return;
             }
-            if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+            if (!relaxHandCourierLoadedIn && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
                 LoadedWeight = $('#frmLoadedIn_txtVehicleLoadedWeight').val();
                 WeightmentSlipNumberIn = $('#frmLoadedIn_txtWeightmentSlipNoLoaded').val();
 
@@ -1398,9 +1573,12 @@ function GateEntry_SaveData(Mode) {
                     $('#frmLoadedIn_txtWeightmentSlipNoLoaded').focus();
                     return;
                 }
+            } else if (relaxHandCourierLoadedIn && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+                LoadedWeight = $('#frmLoadedIn_txtVehicleLoadedWeight').val();
+                WeightmentSlipNumberIn = $('#frmLoadedIn_txtWeightmentSlipNoLoaded').val();
             }
 
-            if (Mode === 'LoadedInSave' && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
+            if (Mode === 'LoadedInSave' && !relaxHandCourierLoadedIn && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
                 valid = false;
                 toastr.error('Please Check! Vehicle Photo can not be blank');
                 $('#frmLoadedIn_fileVehiclePhoto').focus();
@@ -1523,6 +1701,19 @@ function GateEntry_SaveData(Mode) {
 
         ReportingDatetime = $('#frmLoadedIn_txtReportingDatetime').val();
 
+        if (GateEntry_IsModeOfTransportEnabled()) {
+            ModeOfTransportation = $('#frmLoadedIn_txtModeOfTransportation').val() || '';
+            if (!ModeOfTransportation || ModeOfTransportation === '') {
+                valid = false;
+                toastr.error('Please Check! Mode Of Transportation can not be blank');
+                $('#frmLoadedIn_txtModeOfTransportation').focus();
+                return;
+            }
+        } else {
+            ModeOfTransportation = '';
+        }
+        const relaxHandCourierEmptyOut = GateEntry_IsModeOfTransportEnabled() && GateEntry_IsByHandOrCourierFromSelect($('#frmLoadedIn_txtModeOfTransportation'));
+
         WeightmentSlipNumberIn = $('#frmLoadedIn_txtWeightmentSlipNoLoaded').val();
         GoodDescription = $('#frmLoadedIn_txtGoodsDescription').val();
         Qty = $('#frmLoadedIn_txtQTY').val();
@@ -1553,7 +1744,7 @@ function GateEntry_SaveData(Mode) {
         let isOthersDocument = Documenttype && Documenttype.toLowerCase() === 'others';
         
         // Validate driver name (always mandatory)
-        if (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null) {
+        if (!relaxHandCourierEmptyOut && (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null)) {
             valid = false;
             toastr.error('Please Check! Driver Name can not be blank');
             $('#frmLoadedIn_txtDriverName').focus();
@@ -1574,7 +1765,7 @@ function GateEntry_SaveData(Mode) {
                 DriverLicenseExpiredDate = $('#frmLoadedIn_txtDriverLicenseExpiredDate').val();
                 DriverAadharNo = $('#frmLoadedIn_txtDriverAadharNo').val();
             }
-            if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+            if (!relaxHandCourierEmptyOut && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
                 EmptyWeight = $('#frmEmptyOut_txtVehicleEmptyWeight').val();
                 WeightmentSlipNumberOut = $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val();
 
@@ -1596,12 +1787,18 @@ function GateEntry_SaveData(Mode) {
                     toastr.error('Please Check! vehicle Empty weight Should be less than to vehicle Loaded weight');
                     return;
                 }
+            } else if (relaxHandCourierEmptyOut && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+                EmptyWeight = $('#frmEmptyOut_txtVehicleEmptyWeight').val();
+                WeightmentSlipNumberOut = $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val();
+                const lw = parseFloat(LoadedWeight) || 0;
+                const ew = parseFloat(EmptyWeight) || 0;
+                NetWeight = lw - ew;
             }
             if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
                 ReportingDatetime = $('#frmLoadedIn_txtReportingDatetime').val();
             }
             
-            if (RejectEntry == 'N' && Mode == 'UpdateLoadedInSave' &&(typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
+            if (RejectEntry == 'N' && Mode == 'UpdateLoadedInSave' && !relaxHandCourierEmptyOut && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
                 valid = false;
                 toastr.error('Please Check! Vehicle Photo can not be blank');
                 $('#frmEmptyOut_fileVehiclePhoto').focus();
@@ -1685,7 +1882,9 @@ function GateEntry_SaveData(Mode) {
                     outType: OutType,
                     outReason: OutReason,
                     gRNo: GRNo,
-                    driverAadharNo: DriverAadharNo
+                    driverAadharNo: DriverAadharNo,
+                    modeOfTransportation: ModeOfTransportation,
+                    entryWithOutExistingItem: IsEntryWithoutExistingItem ? 'Y' : 'N'
                 }
             ],
 
@@ -2263,8 +2462,10 @@ function ClearAllFrm() {
     $('#frmLoadedIn_txtVendorName').removeAttr('readonly');
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'POWiseEntryMendatory').PerameterValue === 'Y') {
         IsWithPo = true;
+        IsEntryWithoutExistingItem = false;
     }
     WithPO();
+    GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState();
     ClearEmptyOutOrLoadedOutFrm();
 
 
@@ -2281,7 +2482,11 @@ function ClearAllFrm() {
 
     $('#frmEmptyOut_btnSave').removeAttr('onclick');
     $('#frmEmptyOut_btnSave').attr('onclick', "GateEntry_SaveData('UpdateLoadedInSave')");
-    
+
+    $('#frmEmptyIn_txtModeOfTransportation').removeAttr('disabled');
+    $('#frmLoadedIn_txtModeOfTransportation').removeAttr('disabled');
+    GateEntry_ApplyModeOfTransportVisibility();
+    GateEntry_ApplyEntryWithoutExistingItemRadioVisibility();
 
 }
 function ClearEmptyOutOrLoadedOutFrm() {
@@ -2352,6 +2557,9 @@ function ViewGateEntry(gateEntryData, EntryType) {
 
 
         $('#frmEmptyOut_btnSave').attr('disabled', 'disabled')
+
+        $('#frmEmptyIn_txtModeOfTransportation').attr('disabled', 'disabled');
+        $('#frmLoadedIn_txtModeOfTransportation').attr('disabled', 'disabled');
         
     }
     else if (mode.toLowerCase() === 'emptyinview') {
@@ -2423,6 +2631,9 @@ function ViewGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_txtOutReason').attr('readonly', 'readonly');
 
         $('#frmLoadedOut_btnSave').attr('disabled', 'disabled')
+
+        $('#frmEmptyIn_txtModeOfTransportation').attr('disabled', 'disabled');
+        $('#frmLoadedIn_txtModeOfTransportation').attr('disabled', 'disabled');
     }
 
 }
@@ -2556,6 +2767,7 @@ function EditGateEntry(gateEntryData, EntryType) {
 }
 
 function EditLoaded() {
+    $('#frmLoadedIn_txtModeOfTransportation').removeAttr('disabled');
     $('#frmLoadedIn_txtVehicleInTime').removeAttr('readonly');
     $('#frmLoadedIn_txtVehicleNo').removeAttr('readonly');
     $('#frmLoadedIn_txtDriverName').removeAttr('readonly');
@@ -2596,6 +2808,7 @@ function EditLoaded() {
     $('#frmLoadedIn_txtUOM').removeAttr('disabled');
 }
 function EditEmptyIn() {
+    $('#frmEmptyIn_txtModeOfTransportation').removeAttr('disabled');
     $('#frmEmptyIn_txtVehicleNo').removeAttr('readonly')
     $('#frmEmptyIn_txtDriverName').removeAttr('readonly')
     $('#frmEmptyIn_txtDriverNo').removeAttr('readonly')

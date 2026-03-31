@@ -6,6 +6,159 @@ import { createSizeFilterControlModal, initializeSizeFilterControl } from '../..
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 let G_ItemSizeMaster_Codes = '';
 
+const LOGICAL_STOCK_COLUMN_MAP = [
+    ['PhysicalStock', 'Physical Stock'],
+    ['BalanceQty', 'Balance Qty'],
+    ['SaleOrderQty', 'Sale Order Qty'],
+    ['PendingCRMOrder', 'Pending CRM Order'],
+    ['RollingForcast', 'Rolling Forecast'],
+    ['PendingEnquiry', 'Pending Enquiry'],
+    ['MinimumQty', 'Minimum Qty']
+];
+
+function filterLogicalStockRows(rows) {
+    return rows.filter(function (row) {
+        var ps = parseFloat(row.PhysicalStock);
+        var bq = parseFloat(row.BalanceQty);
+        var psVal = isNaN(ps) ? 0 : ps;
+        var bqVal = isNaN(bq) ? 0 : bq;
+        return !(psVal === 0 && bqVal === 0);
+    });
+}
+
+function mapLogicalStockRowForGrid(raw) {
+    var apiKeysMappedToDisplay = new Set(
+        LOGICAL_STOCK_COLUMN_MAP.map(function (p) {
+            return p[0];
+        })
+    );
+
+    var itemName =
+        raw['Item Name'] !== undefined ? raw['Item Name'] : raw['ItemName'];
+    var sizeDesp = raw['SizeDesp'];
+
+    /** Logical-stock numeric fields (display keys) */
+    var logicalValues = {};
+    LOGICAL_STOCK_COLUMN_MAP.forEach(function (pair) {
+        var apiKey = pair[0];
+        var displayKey = pair[1];
+        if (!Object.prototype.hasOwnProperty.call(raw, apiKey)) {
+            return;
+        }
+        var v = raw[apiKey];
+        if (v !== undefined && v !== null && v !== '' && !isNaN(parseFloat(v))) {
+            logicalValues[displayKey] = parseFloat(v).toFixed(3);
+        } else {
+            logicalValues[displayKey] = v === undefined || v === null ? '' : v;
+        }
+    });
+
+    /** Any other API fields (warehouse, etc.) — placed after Item Name / SizeDesp, before qty totals */
+    var passthrough = {};
+    Object.keys(raw).forEach(function (key) {
+        if (
+            key === 'Item Name' ||
+            key === 'ItemName' ||
+            key === 'SizeDesp' ||
+            key === 'Code' ||
+            key === 'ItemMaster_Code'
+        ) {
+            return;
+        }
+        if (apiKeysMappedToDisplay.has(key)) {
+            return;
+        }
+        passthrough[key] = raw[key];
+    });
+    var passthroughKeys = Object.keys(passthrough).sort();
+
+    var out = {};
+    if (itemName !== undefined) {
+        out['Item Name'] = itemName;
+    }
+    if (sizeDesp !== undefined) {
+        out['SizeDesp'] = sizeDesp;
+    }
+    passthroughKeys.forEach(function (k) {
+        out[k] = passthrough[k];
+    });
+    LOGICAL_STOCK_COLUMN_MAP.forEach(function (pair) {
+        var displayKey = pair[1];
+        if (Object.prototype.hasOwnProperty.call(logicalValues, displayKey)) {
+            out[displayKey] = logicalValues[displayKey];
+        }
+    });
+    if (raw['Code'] !== undefined) {
+        out['Code'] = raw['Code'];
+    }
+    if (raw['ItemMaster_Code'] !== undefined) {
+        out['ItemMaster_Code'] = raw['ItemMaster_Code'];
+    }
+
+    return out;
+}
+
+const STOCK_AGEING_THEAD_ID = 'table-head-StockAgeingReport';
+const STOCK_AGEING_TBODY_ID = 'table-body-StockAgeingReport';
+const BALANCE_QTY_NEGATIVE_ROW_BG = '#ffe8e8';
+let stockAgeingBalanceQtyHighlightTimerId = null;
+
+function getBalanceQtyColumnIndex(thead) {
+    var headerRow = thead.querySelector('tr');
+    if (!headerRow) {
+        return -1;
+    }
+    var ths = headerRow.querySelectorAll('th');
+    for (var i = 0; i < ths.length; i++) {
+        var span = ths[i].querySelector('.filter-table-heading');
+        var label = span ? span.textContent.trim() : ths[i].textContent.trim();
+        if (label === 'Balance Qty') {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/** Light red row when Balance Qty < 0 (logical stock grid). Runs on an interval so it stays correct after filter/pagination. */
+function applyStockAgeingNegativeBalanceRowStyle() {
+    var thead = document.getElementById(STOCK_AGEING_THEAD_ID);
+    var tbody = document.getElementById(STOCK_AGEING_TBODY_ID);
+    if (!thead || !tbody) {
+        return;
+    }
+
+    var balanceColIndex = getBalanceQtyColumnIndex(thead);
+    if (balanceColIndex < 0) {
+        return;
+    }
+
+    var rows = tbody.querySelectorAll('tr');
+    rows.forEach(function (row) {
+        if (row.classList.contains('total-row') || row.classList.contains('grand-total-row')) {
+            return;
+        }
+        var tds = row.querySelectorAll('td');
+        if (tds.length <= balanceColIndex) {
+            return;
+        }
+
+        var raw = (tds[balanceColIndex].textContent || '').replace(/,/g, '').trim();
+        var val = parseFloat(raw);
+        var isNegative = !isNaN(val) && val < 0;
+
+        tds.forEach(function (td) {
+            td.style.backgroundColor = isNegative ? BALANCE_QTY_NEGATIVE_ROW_BG : '';
+        });
+    });
+}
+
+function startStockAgeingBalanceQtyRowHighlightTimer() {
+    if (stockAgeingBalanceQtyHighlightTimerId != null) {
+        return;
+    }
+    stockAgeingBalanceQtyHighlightTimerId = setInterval(applyStockAgeingNegativeBalanceRowStyle, 1000);
+}
+
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     setCurrentDate();
@@ -26,6 +179,8 @@ $(document).ready(function () {
     $("#btnStockAgeingReportShow").click(function () {
         GetStockAgeingReportList();
     });
+
+    startStockAgeingBalanceQtyRowHighlightTimer();
 });
 
 function setCurrentDate() {
@@ -245,7 +400,6 @@ function Bind_ddlSizeParameter(ItemMaster_Code) {
         $ddl.select2({ width: '-webkit-fill-available', multiple: true, placeholder: 'Select Size Parameter...' });
     });
 }
-
 function Bind_ddlItemMaster() {
     let Category = $('#ddlCategory').val() || [];
     let ItemType = $('#ddlItemName').val() || [];
@@ -400,45 +554,75 @@ export function GetStockAgeingReportList() {
         $('#StockAgeingReport').show();
         
         if (response && response.length > 0) {
-            response = response.map(item => {
-                if (item["0-90 D"] !== undefined && item["0-90 D"] !== null && !isNaN(item["0-90 D"])) {
-                    item["0-90 D"] = parseFloat(item["0-90 D"]).toFixed(3);
+            let stringFilterColumn;
+            let numericFilterColumn;
+            let columnAlignment;
+            let TotalColumns;
+            if (ReportOption == 'Stock Ageing (FIFO)') {
+                response = response.map(function (item) {
+                    if (item["0-90 D"] !== undefined && item["0-90 D"] !== null && !isNaN(item["0-90 D"])) {
+                        item["0-90 D"] = parseFloat(item["0-90 D"]).toFixed(3);
+                    }
+                    if (item["91-120 D "] !== undefined && item["91-120 D "] !== null && !isNaN(item["91-120 D "])) {
+                        item["91-120 D "] = parseFloat(item["91-120 D "]).toFixed(3);
+                    }
+                    if (item["121-180 D "] !== undefined && item["121-180 D "] !== null && !isNaN(item["121-180 D "])) {
+                        item["121-180 D "] = parseFloat(item["121-180 D "]).toFixed(3);
+                    }
+                    if (item["> 180 D"] !== undefined && item["> 180 D"] !== null && !isNaN(item["> 180 D"])) {
+                        item["> 180 D"] = parseFloat(item["> 180 D"]).toFixed(3);
+                    }
+                    if (item["Total"] !== undefined && item["Total"] !== null && !isNaN(item["Total"])) {
+                        item["Total"] = parseFloat(item["Total"]).toFixed(3);
+                    }
+                    return item;
+                });
+                stringFilterColumn = ["Item Name", "SizeDesp"];
+                numericFilterColumn = ["0-90 D", "91-120 D ", "121-180 D ", "> 180 D"];
+                columnAlignment = {
+                    "0-90 D": 'right',
+                    "91-120 D ": 'right',
+                    "121-180 D ": 'right',
+                    "> 180 D": 'right',
+                    "Total": 'right'
+                };
+                TotalColumns = ["0-90 D", "91-120 D ", "121-180 D ", "> 180 D", "Total"];
+            } else {
+                response = filterLogicalStockRows(response);
+                if (response.length === 0) {
+                    $('#StockAgeingReportTableCard').hide();
+                    $('#StockAgeingReport').hide();
+                    clearStockAgeingFooter();
+                    toastr.error('No Data Found');
+                    return;
                 }
-                if (item["91-120 D "] !== undefined && item["91-120 D "] !== null && !isNaN(item["91-120 D "])) {
-                    item["91-120 D "] = parseFloat(item["91-120 D "]).toFixed(3);
-                }
-                if (item["121-180 D "] !== undefined && item["121-180 D "] !== null && !isNaN(item["121-180 D "])) {
-                    item["121-180 D "] = parseFloat(item["121-180 D "]).toFixed(3);
-                }
-                if (item["> 180 D"] !== undefined && item["> 180 D"] !== null && !isNaN(item["> 180 D"])) {
-                    item["> 180 D"] = parseFloat(item["> 180 D"]).toFixed(3);
-                }
-                if (item["Total"] !== undefined && item["Total"] !== null && !isNaN(item["Total"])) {
-                    item["Total"] = parseFloat(item["Total"]).toFixed(3);
-                }
-                return item;
-            });
-            
-            const stringFilterColumn = ["Item Name","SizeDesp"];
-            const numericFilterColumn = ["0-90 D", "91-120 D ", "121-180 D ", "> 180 D"];
+                response = response.map(mapLogicalStockRowForGrid);
+                stringFilterColumn = ["Item Name", "SizeDesp"];
+                numericFilterColumn = [
+                    "Physical Stock", "Balance Qty", "Sale Order Qty", "Pending CRM Order", "Rolling Forecast", "Pending Enquiry", "Minimum Qty"
+                ];
+                columnAlignment = {
+                    "Physical Stock": 'right',
+                    "Balance Qty": 'right',
+                    "Sale Order Qty": 'right',
+                    "Pending CRM Order": 'right',
+                    "Rolling Forecast": 'right',
+                    "Pending Enquiry": 'right',
+                    "Minimum Qty": 'right'
+                };
+                TotalColumns = [
+                    "Physical Stock", "Balance Qty", "Sale Order Qty", "Pending CRM Order", "Rolling Forecast", "Pending Enquiry", "Minimum Qty"
+                ];
+                
+            }
+
             const dateFilterColumn = [];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = ["Code", "ItemMaster_Code"];
-            const columnAlignment = { "0-90 D": 'right', "91-120 D ": 'right', "121-180 D ": 'right', "> 180 D": 'right',"Total":'right'};
-            let TotalColumns = [];
-            if (ReportOption == 'Stock Ageing (FIFO)') {
-                TotalColumns = [
-                    "0-90 D", "91-120 D ", "121-180 D ", "> 180 D", "Total"
-                ]
-            } else {
-                TotalColumns = [
-                    "PhysicalStock", "SaleOrderQty", "BalanceQty", "PendingCRMOrder", "RollingForcast", "PendingEnquiry", "MinimumQty"
-                ]
-            }
-            BizsolCustomFilterGrid.CreateDataTable("table-head-StockAgeingReport", "table-body-StockAgeingReport", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, TotalColumns);
-           
+            BizsolCustomFilterGrid.CreateDataTable("table-head-StockAgeingReport", "table-body-StockAgeingReport", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, TotalColumns, null);
+            setTimeout(applyStockAgeingNegativeBalanceRowStyle, 0);
 
         } else {
             HideLoader();
@@ -509,17 +693,42 @@ function ExportExcel() {
         ItemName = 0;
     }
 
+    let sizeParameterDesps = '';
+    if (isLogicalStockWithSeparateParameters()) {
+        var $sizeParam = $('#ddlSizeParameter');
+        var sizeParamVal = $('#ddlSizeParameter').val();
+        if (Array.isArray(sizeParamVal) && sizeParamVal.length > 0) {
+            if (!sizeParamVal.includes('All')) {
+                sizeParameterDesps = $sizeParam.find('option:selected').map(function () { return $(this).text(); }).get().join(',');
+            }
+        } else if (sizeParamVal && sizeParamVal !== 'All') {
+            sizeParameterDesps = $sizeParam.find('option:selected').map(function () { return $(this).text(); }).get().join(',');
+        }
+    }
+
+    const ReportOptionExport = $('#ddlReportOption').val();
+
     const Payload = {
         category: CategoryName,
         itemType: ItemTypeName,
         warehouse: WarehouseName,
         itemMaster_Code: ItemName,
         asOnDate: AsOnDate,
-        itemSizeMaster_Codes: G_ItemSizeMaster_Codes
-    }
-    
+        itemSizeMaster_Codes: G_ItemSizeMaster_Codes || 0,
+        itemParameterMaster_Desps: sizeParameterDesps,
+        ReportType: ReportOptionExport
+    };
+
     StockAgeingReportService.GetStockAgeingReportList(Payload).then(function (response) {
         if (response && response.length > 0) {
+            if (ReportOptionExport && ReportOptionExport !== 'Stock Ageing (FIFO)') {
+                response = filterLogicalStockRows(response);
+                if (response.length === 0) {
+                    toastr.error('No Data Found');
+                    return;
+                }
+                response = response.map(mapLogicalStockRowForGrid);
+            }
             ExportToExcelControl.ExportToExcel(response, hiddenFields, "StockAgeingReport");
         } else {
             toastr.error('No Data Found');
