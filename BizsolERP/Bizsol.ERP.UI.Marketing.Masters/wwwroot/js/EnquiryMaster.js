@@ -13,6 +13,76 @@ let G_ItemMasterList = [];
 let G_UOMMasterList = [];
 let G_CompanyNation = "";
 let G_Status = "";
+var ENQUIRY_FILTER_SS_KEY_SP = "EnquiryMaster_ddlSalesPerson";
+var ENQUIRY_FILTER_SS_KEY_ST = "EnquiryMaster_ddlStatus";
+function saveEnquiryListFilters() {
+    try {
+        var sp = $("#ddlSalesPerson").val();
+        var st = $("#ddlStatus").val();
+        if (sp != null && sp !== "") sessionStorage.setItem(ENQUIRY_FILTER_SS_KEY_SP, sp);
+        if (st != null && st !== "") sessionStorage.setItem(ENQUIRY_FILTER_SS_KEY_ST, st);
+    } catch (e) { /* ignore quota / private mode */ }
+}
+function restoreEnquirySalesPersonSelect() {
+    try {
+        var saved = sessionStorage.getItem(ENQUIRY_FILTER_SS_KEY_SP);
+        if (!saved) return;
+        var $sel = $("#ddlSalesPerson");
+        var $match = $sel.find("option").filter(function () { return this.value === saved; });
+        if ($match.length) {
+            $sel.val(saved);
+        }
+    } catch (e) { /* ignore */ }
+}
+function restoreEnquiryStatusInput() {
+    try {
+        var saved = sessionStorage.getItem(ENQUIRY_FILTER_SS_KEY_ST);
+        if (saved != null && saved !== "") {
+            $("#ddlStatus").val(saved);
+        }
+    } catch (e) { /* ignore */ }
+}
+/** Select2 breaks when #dvLoad is display:none (wrong coordinates / label in header). Tear down while hidden; rebuild when list is shown. */
+function detachSalesPersonSelect2() {
+    var $el = $("#ddlSalesPerson");
+    if (!$el.length) return;
+    $el.off("select2:opening select2:open select2:close");
+    if ($el.data("select2")) {
+        try {
+            $el.select2("close");
+        } catch (e) { /* ignore */ }
+        try {
+            $el.select2("destroy");
+        } catch (e) { /* ignore */ }
+    }
+}
+function rebindSalesPersonSelect2() {
+    var $el = $("#ddlSalesPerson");
+    if (!$el.length || !$el.is("select")) return;
+    var saved = $el.val();
+    detachSalesPersonSelect2();
+    $el.select2({
+        width: "100%"
+    });
+    BizSolHelperFunction.attachSelect2ScrollPrevention($el);
+    if (saved != null && saved !== "") {
+        $el.val(saved);
+    }
+    if (G_UserType == "A") {
+        $el.prop("disabled", false);
+    } else {
+        $el.prop("disabled", true);
+    }
+}
+/** After BizsolCustomFilterGrid redraws the table, layout reflow can leave Select2's widget at wrong coordinates (floating near page header). Re-init after paint. */
+function scheduleSalesPersonSelect2LayoutFix() {
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+            if (!$("#dvLoad").is(":visible")) return;
+            rebindSalesPersonSelect2();
+        });
+    });
+}
 $(document).ready(function () {
     GetDepartmentlist();
     GetCompanyParameter();
@@ -20,176 +90,36 @@ $(document).ready(function () {
     $('#btnSubmit').click(function (e) {
         SaveData();
     });
-    GetNestedMarketingManList();
-    GetStatuslist();
+    GetStatuslist().then(function () {
+        GetNestedMarketingManList();
+    }).catch(function () {
+        GetNestedMarketingManList();
+    });
     if (G_UserType == 'A') {
         $("#ddlSalesPerson").prop("disabled",false)
     } else {
         $("#ddlSalesPerson").prop("disabled", true)
     }
     $("#ddlSalesPerson").change(function () {
+        saveEnquiryListFilters();
         var SalesPerson = $(this).val();
-        var Status = $("#ddlStatus").val();
-        
         if (G_originalData && G_originalData.length > 0) {
-            let updatedResponse = [];
-            let filteredData = [];
-
-            if (SalesPerson?.toLowerCase() === "all" && Status?.toLowerCase() === "all") {
-                filteredData = G_originalData;
-            } else {
-                filteredData = G_originalData.filter(item => {
-                    const salesMatch = SalesPerson?.toLowerCase() === "all"
-                        || item["Sales Person"]?.toLowerCase() === SalesPerson?.toLowerCase();
-
-                    const statusMatch = Status?.toLowerCase() === "all"
-                        || item["Status"]?.toLowerCase() === Status?.toLowerCase();
-
-                    return salesMatch && statusMatch;
-                });
-            }
-
-            const StringFilterColumn = ["Company Name", "City", "Sales Person", "Lead Type"];
-            const NumericFilterColumn = [];
-            const DateFilterColumn = ["Followup Date", "Next Follow Up Date"];
-            const Button = false;
-            const showButtons = [];
-            const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Followup Date", "Lead Date", "Lead Source", "Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "NextFollowupMode", "FollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No", "State","Next Followup Date"]
-            const ColumnAlignment = {
-            };
-            if (filteredData.length > 0) {
-                updatedResponse = filteredData.map(item => {
-                    const isDraft = item.Status === 'Draft';
-                    const isRejected = item.Status === 'Rejected';
-                    const isVerified = item.Verified === 'Y' || item.Status === 'Draft';
-                    const isUnverified = item.Verified === 'N';
-
-                    const followUpBtn = isUnverified ? '' : `<button class="btn btn-info icon-height mb-1" title="Follow Up" onclick="FollowUp(${item.Code})" ${isRejected ? 'disabled' : ''}><i class="fa-solid fa-user-plus"></i></button>&nbsp;`;
-                    const editBtn = `<button class="btn btn-warning icon-height mb-1" title="Edit" onclick="GetEnquiryDetailsByCode(${item.Code},this)" ${isRejected ? 'disabled' : ''}><i class="fa fa-pencil"></i></button>&nbsp;<button class="btn btn-info icon-height mb-1" title="View" onclick="GetEnquiryDetailsForViewByCode(${item.Code})"><i class="fa fa-eye"></i></button>&nbsp;`;
-
-                    const verifyBtn = isVerified ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Verify" class="btn btn-success mb-1 btn-height" title="Verify" onclick="VerifyEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-                    const assignBtn = isDraft ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Assign" class="btn btn-info mb-1 btn-height" title="Assign" onclick="AssignEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-                    const deleteBtn = `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Delete" class="btn btn-danger mb-1 btn-height" title="Delete" onclick="Delete(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-
-                    const dropdown = `
-                        <div class="btn-group">
-                            <button type="button" style="margin-top:-4px" class="btn btn-primary icon-height dropdown-toggle" data-bs-toggle="dropdown" ${isRejected ? 'disabled' : ''}>
-                                ...
-                            </button>
-                            <ul class="dropdown-menu p-1">
-                                ${verifyBtn}
-                                ${assignBtn}
-                                ${deleteBtn}
-                            </ul>
-                        </div>
-                    `;
-                    const whatsappbtn = `<button class="btn btn-success icon-height mb-1" title="WhatsApp" onclick="WhatsApp(${item.Code})"><i class="fab fa-whatsapp"></i></button>&nbsp;`;
-
-                    var updatedItem = {
-                        ...item,
-                        Action: followUpBtn + editBtn + whatsappbtn + dropdown,
-                    };
-                    
-                    
-                    if (IsInvalidDate(item["Next Followup Date"])) {
-                        updatedItem["Next Followup Date"] = "";
-                    }
-                    
-                    return updatedItem;
-                });
-            }
-            if (filteredData.length === 0) {
-                $("#table-body").html("<tr><td colspan='10' style='text-align:center;'>No matching records found</td></tr>");
-                return;
-            }
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+            const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, SalesPerson, $("#ddlStatus").val());
+            renderEnquiryListGridFromFilteredData(filteredData);
         } else {
             GetLeadMasterList(SalesPerson);
         }
     });
+    $("#ddlStatus").on("blur", saveEnquiryListFilters);
     $("#ddlStatus").change(function () {
+        saveEnquiryListFilters();
         var SalesPerson = $("#ddlSalesPerson").val();
         var Status = $("#ddlStatus").val();
-        let updatedResponse = [];
-        let filteredData = [];
-
-        if (SalesPerson?.toLowerCase() === "all" && Status?.toLowerCase() === "all") {
-            filteredData = G_originalData;
-        } else {
-            filteredData = G_originalData.filter(item => {
-                const salesMatch = SalesPerson?.toLowerCase() === "all"
-                    || item["Sales Person"]?.toLowerCase() === SalesPerson?.toLowerCase();
-
-                const statusMatch = Status?.toLowerCase() === "all"
-                    || item["Status"]?.toLowerCase() === Status?.toLowerCase();
-
-                return salesMatch && statusMatch;
-            });
-        }
-
-        const StringFilterColumn = ["Company Name", "City", "Sales Person", "Lead Type"];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = ["Next Follow Up Date"];
-        const Button = false;
-        const showButtons = [];
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["Followup Date", "Lead Date", "Code", "Lead Source", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "NextFollowupMode", "FollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No", "State","Next Followup Date"]
-        const ColumnAlignment = {
-        };
-        if (filteredData.length > 0) {
-            updatedResponse = filteredData.map(item => {
-                const isDraft = item.Status === 'Draft';
-                const isRejected = item.Status === 'Rejected';
-                const isVerified = item.Verified === 'Y' || item.Status === 'Draft';
-                const isUnverified = item.Verified === 'N';
-
-                const followUpBtn = isUnverified ? '' : `<button class="btn btn-info icon-height mb-1" title="Follow Up" onclick="FollowUp(${item.Code})" ${isRejected ? 'disabled' : ''}><i class="fa-solid fa-user-plus"></i></button>&nbsp;`;
-                const editBtn = `<button class="btn btn-warning icon-height mb-1" title="Edit" onclick="GetEnquiryDetailsByCode(${item.Code},this)" ${isRejected ? 'disabled' : ''}><i class="fa fa-pencil"></i></button>&nbsp;<button class="btn btn-info icon-height mb-1" title="View" onclick="GetEnquiryDetailsForViewByCode(${item.Code})"><i class="fa fa-eye"></i></button>&nbsp;`;
-
-                //if (isDraft) {
-                //    return {
-                //        ...item,
-                //        Action: followUpBtn + editBtn,
-                //    };
-                //}
-
-                const verifyBtn = isVerified ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Verify" class="btn btn-success mb-1 btn-height" title="Verify" onclick="VerifyEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-                const assignBtn = isDraft ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Assign" class="btn btn-info mb-1 btn-height" title="Assign" onclick="AssignEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-                const deleteBtn = `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Delete" class="btn btn-danger mb-1 btn-height" title="Delete" onclick="Delete(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-
-                const dropdown = `
-                    <div class="btn-group">
-                        <button type="button" style="margin-top:-4px" class="btn btn-primary icon-height dropdown-toggle" data-bs-toggle="dropdown" ${isRejected ? 'disabled' : ''}>
-                            ...
-                        </button>
-                        <ul class="dropdown-menu p-1">
-                            ${verifyBtn}
-                            ${assignBtn}
-                            ${deleteBtn}
-                        </ul>
-                    </div>
-                `;
-                const whatsappbtn = `<button class="btn btn-success icon-height mb-1" title="WhatsApp" onclick="WhatsApp(${item.Code})"><i class="fab fa-whatsapp"></i></button>&nbsp;`;
-
-                var updatedItem = {
-                    ...item,
-                    Action: followUpBtn + editBtn + whatsappbtn + dropdown,
-                };
-                
-                
-                if (IsInvalidDate(item["Next Followup Date"])) {
-                    updatedItem["Next Followup Date"] = "";
-                }
-                
-                return updatedItem;
-            });
-        }
-        if (filteredData.length === 0) {
-            $("#table-body").html("<tr><td colspan='10' style='text-align:center;'>No matching records found</td></tr>");
+        if (!G_originalData || G_originalData.length === 0) {
             return;
         }
-        BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+        const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, SalesPerson, Status);
+        renderEnquiryListGridFromFilteredData(filteredData);
     });
     Bind_ddlCustomer();
     //Bind_ddlCustomerType();
@@ -506,6 +436,9 @@ function IsInvalidDate(dateValue) {
     if (dateStr.indexOf('1900') !== -1 || dateStr.indexOf('01-Jan-1900') !== -1 || dateStr.indexOf('1900-01-01') !== -1) {
         return true;
     }
+    if (/^0?1[-/]Jan[-/]1900$/i.test(dateStr) || /^Jan[-/]0?1[-/]1900$/i.test(dateStr)) {
+        return true;
+    }
     var date = new Date(dateStr);
     if (isNaN(date.getTime())) {
         return true;
@@ -574,9 +507,10 @@ function GetNestedMarketingManList() {
         if (response.length > 0) {
             BindSelectForSalePerson($('#ddlSalesPerson')[0], response.map((item) => ({ Code: item.PersonName, Desp: item.PersonName })));
             $('#ddlSalesPerson').select2({
-                width: '-webkit-fill-available'
+                width: '100%'
             });
             BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlSalesPerson'));
+            restoreEnquirySalesPersonSelect();
             BindSelectList($('#ddlAssignSalesman')[0], response.map((item) => ({ Code: item.PersonName, Desp: item.PersonName })));
             $('#ddlAssignSalesman').select2({
                 width: '-webkit-fill-available'
@@ -584,15 +518,18 @@ function GetNestedMarketingManList() {
             BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlAssignSalesman'));
             BindSelectList($('#ddlAssignTo')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })));
             $('#ddlAssignTo').select2({
-                width: '-webkit-fill-available'
+                width: '-webkit-fill-available',
+                dropdownParent: $('#AssignModal')
             });
             BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlAssignTo'));
+            $("#ddlSalesPerson").trigger("change");
+        } else {
+            GetLeadMasterList($("#ddlSalesPerson").val());
         }
-        GetLeadMasterList($("#ddlSalesPerson").val());
     });
 }
 function GetStatuslist() {
-    LeadMasterService.GetStatuslist().then(function (response) {
+    return LeadMasterService.GetStatuslist().then(function (response) {
         if (response.length > 0) {
             $('#ddlStatusList option').empty();
             var option = '<option data-code="0">All</option>';
@@ -603,75 +540,99 @@ function GetStatuslist() {
             }
             $('#ddlStatusList')[0].innerHTML = option;
         }
-
-
+        restoreEnquiryStatusInput();
     });
+}
+function filterEnquiryListBySalesAndStatus(data, salesPerson, status) {
+    if (!data || !data.length) return [];
+    const sp = String(salesPerson ?? "all").toLowerCase();
+    const st = String(status ?? "all").toLowerCase();
+    if (sp === "all" && st === "all") {
+        return data.slice();
+    }
+    return data.filter(item => {
+        const salesMatch = sp === "all"
+            || item["Sales Person"]?.toLowerCase() === sp;
+        const statusMatch = st === "all"
+            || item["Status"]?.toLowerCase() === st;
+        return salesMatch && statusMatch;
+    });
+}
+function mapEnquiryItemToGridRow(item) {
+    const isDraft = item.Status === 'Draft';
+    const isRejected = item.Status === 'Rejected';
+    const isVerified = item.Verified === 'Y' || item.Status === 'Draft';
+    const isUnverified = item.Verified === 'N';
+
+    const followUpBtn = isUnverified ? '' : `<button class="btn btn-info icon-height mb-1" title="Follow Up" onclick="FollowUp(${item.Code})" ${isRejected ? 'disabled' : ''}><i class="fa-solid fa-user-plus"></i></button>&nbsp;`;
+    const editBtn = `<button class="btn btn-warning icon-height mb-1" title="Edit" onclick="GetEnquiryDetailsByCode(${item.Code},this)" ${isRejected ? 'disabled' : ''}><i class="fa fa-pencil"></i></button>&nbsp;<button class="btn btn-info icon-height mb-1" title="View" onclick="GetEnquiryDetailsForViewByCode(${item.Code})"><i class="fa fa-eye"></i></button>&nbsp;`;
+
+    const verifyBtn = isVerified ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Verify" class="btn btn-success mb-1 btn-height" title="Verify" onclick="VerifyEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
+    const assignBtn = isDraft ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Assign" class="btn btn-info mb-1 btn-height" title="Assign" onclick="AssignEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
+    const deleteBtn = `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Delete" class="btn btn-danger mb-1 btn-height" title="Delete" onclick="Delete(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
+
+    const dropdown = `
+        <div class="btn-group">
+            <button type="button" class="btn btn-primary icon-height dropdown-toggle" data-bs-toggle="dropdown" ${isRejected ? 'disabled' : ''}>
+                ...
+            </button>
+            <ul class="dropdown-menu p-1">
+                ${verifyBtn}
+                ${assignBtn}
+                ${deleteBtn}
+            </ul>
+        </div>&nbsp;
+    `;
+    const whatsappbtn = `<button class="btn btn-success icon-height mb-1" title="WhatsApp" onclick="WhatsApp(${item.Code})"><i class="fab fa-whatsapp"></i></button>&nbsp;`;
+
+    var updatedItem = {
+        ...item,
+        Action: `<div class="enq-action-wrap">${followUpBtn + editBtn + whatsappbtn + dropdown}</div>`,
+    };
+
+    if (IsInvalidDate(item["Next Follow Up Date"])) {
+        updatedItem["Next Follow Up Date"] = "";
+    }
+    if (item["Next Followup Date"] !== undefined && IsInvalidDate(item["Next Followup Date"])) {
+        updatedItem["Next Followup Date"] = "";
+    }
+
+    return updatedItem;
+}
+function renderEnquiryListGridFromFilteredData(filteredData) {
+    const StringFilterColumn = ["Person Name", "Company Name", "City", "Sales Person", "Contact No", "Status", "Lead Type"];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = ["Followup Date",];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = ["Followup Date", "Lead Date", "Lead Source", "Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "FollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No", "State"];
+    const ColumnAlignment = {
+        Action: 'center'
+    };
+
+    if (!filteredData || filteredData.length === 0) {
+        $("#table-body").html("<tr><td colspan='10' style='text-align:center;'>No matching records found</td></tr>");
+        scheduleSalesPersonSelect2LayoutFix();
+        return;
+    }
+    const updatedResponse = filteredData.map(mapEnquiryItemToGridRow);
+    BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+    setTimeout(function () {
+        applyEnquiryListOverdueNextFollowUpRowHighlight();
+    }, 0);
+    scheduleSalesPersonSelect2LayoutFix();
 }
 function GetLeadMasterList(SalesPerson) {
     LeadMasterService.GetLeadMasterList(SalesPerson).then(function (response) {
         $("#table").show();
         if (response.length > 0) {
             G_originalData = response;
-            const StringFilterColumn = ["Person Name", "Company Name", "City", "Sales Person", "Contact No","Status","Lead Type"];
-            const NumericFilterColumn = [];
-            const DateFilterColumn = ["Followup Date", "Next Follow Up Date"];
-            const Button = false;
-            const showButtons = [];
-            const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Followup Date", "Lead Date", "Lead Source", "Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "FollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No","State"];
-            const ColumnAlignment = {
-                Action: ";min-width:150px;"
-            };
-
-            const updatedResponse = response.map(item => {
-                const isDraft = item.Status === 'Draft';
-                const isRejected = item.Status === 'Rejected';
-                const isVerified = item.Verified === 'Y' || item.Status === 'Draft';
-                const isUnverified = item.Verified === 'N';
-
-                const followUpBtn = isUnverified ? '' : `<button class="btn btn-info icon-height mb-1" title="Follow Up" onclick="FollowUp(${item.Code})" ${isRejected ? 'disabled' : ''}><i class="fa-solid fa-user-plus"></i></button>&nbsp;`;
-                const editBtn = `<button class="btn btn-warning icon-height mb-1" title="Edit" onclick="GetEnquiryDetailsByCode(${item.Code},this)" ${isRejected ? 'disabled' : ''}><i class="fa fa-pencil"></i></button>&nbsp;<button class="btn btn-info icon-height mb-1" title="View" onclick="GetEnquiryDetailsForViewByCode(${item.Code})"><i class="fa fa-eye"></i></button>&nbsp;`;
-
-                //if (isDraft) {
-                //    return {
-                //        ...item,
-                //        Action: followUpBtn + editBtn ,
-                //    };
-                //}
-
-                const verifyBtn = isVerified ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Verify" class="btn btn-success mb-1 btn-height" title="Verify" onclick="VerifyEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-                const assignBtn = isDraft ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Assign" class="btn btn-info mb-1 btn-height" title="Assign" onclick="AssignEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-                const deleteBtn = `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Delete" class="btn btn-danger mb-1 btn-height" title="Delete" onclick="Delete(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-
-                const dropdown = `
-                    <div class="btn-group">
-                        <button type="button" style="margin-top:-4px" class="btn btn-primary icon-height dropdown-toggle" data-bs-toggle="dropdown" ${isRejected ? 'disabled' : ''}>
-                            ...
-                        </button>
-                        <ul class="dropdown-menu p-1">
-                            ${verifyBtn}
-                            ${assignBtn}
-                            ${deleteBtn}
-                        </ul>
-                    </div>&nbsp;
-                `;
-                const whatsappbtn = `<button class="btn btn-success icon-height mb-1" title="WhatsApp" onclick="WhatsApp(${item.Code})"><i class="fab fa-whatsapp"></i></button>&nbsp;`;
-                
-                var updatedItem = {
-                    ...item,
-                    Action: followUpBtn + editBtn + whatsappbtn + dropdown,
-                };
-                
-                if (IsInvalidDate(item["Next Follow Up Date"])) {
-                    updatedItem["Next Follow Up Date"] = "";
-                }
-                
-                return updatedItem;
-            });
-
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+            const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, $("#ddlSalesPerson").val(), $("#ddlStatus").val());
+            renderEnquiryListGridFromFilteredData(filteredData);
         }
         else {
+            G_originalData = [];
             toastr.error('No Data Found');
             $("#table").hide();
         }
@@ -679,6 +640,7 @@ function GetLeadMasterList(SalesPerson) {
 }
 function BackMaster() {
     $("#dvLoad").show();
+    rebindSalesPersonSelect2();
     $("#dvEnquiry").hide();
     $('input[name="customerType"]').eq(0).prop('disabled', false);
     $('input[name="customerType"]').eq(0).prop('checked', true);
@@ -702,11 +664,13 @@ function BackMaster() {
 }
 function BackFolloupMaster() {
     $("#dvLoad").show();
+    rebindSalesPersonSelect2();
     $("#dvEnquiry").hide();
     $('input[name="customerType"]').eq(0).prop('disabled', false);
     $('input[name="customerType"]').eq(0).prop('checked', true);
     $("#txtCompanyName").hide("");
     $('#ddlCompanyName').next('.select2-container').show();
+    GetLeadMasterList($("#ddlSalesPerson").val());
     $("#tblContactPerson").hide();
     $("#tblProductDetails").hide();
     $("#dvFollowup").hide();
@@ -732,6 +696,7 @@ function CreateNew() {
             return false;
         } else {
             $("#dvLoad").hide();
+            detachSalesPersonSelect2();
             $("#dvEnquiry").show();
             let Grid = CreateContactNewRow();
             $("#ContactPersonGrid tbody").html(Grid);
@@ -1104,6 +1069,7 @@ async function GetEnquiryDetailsByCode(Code) {
 
         // 2. Show / Hide required sections
         $("#dvLoad").hide();
+        detachSalesPersonSelect2();
         $("#dvEnquiry").show();
         $('input[name="customerType"]').eq(0).prop('disabled', true);
         $('input[name="customerType"]').eq(1).prop('checked', true);
@@ -1808,6 +1774,7 @@ function FollowUp(EnquiryMaster_Code) {
     $("#hfFollowUpEnquiryMaster_Code").val(EnquiryMaster_Code);
     $("#dvFollowup").show();
     $("#dvLoad").hide();
+    detachSalesPersonSelect2();
     Bind_ddlContactPersonDetail(EnquiryMaster_Code);
     CreateNewFollowUp();
     Bind_ddlLeadStatus();
@@ -1825,13 +1792,22 @@ function FollowUp(EnquiryMaster_Code) {
             const StringdoubleFilterColumn = [];
             const hiddenColumns = ["Code", "EnquiryMaster_Code", "FollowupMode", "EnquiryContactPersonDetail_Code", "EnquiryDate", "EnquiryNo", "CompanyName", "FollowupByName", "CustomerContactPersonName", "CustomerContactPhoneNumber", "CustomerContactEmailID"]
             const ColumnAlignment = {
+                Action: 'center'
             };
 
+            const cleanGridVal = (v) => {
+                if (v === null || v === undefined) return '';
+                if (typeof v === 'number' && !Number.isNaN(v)) return v;
+                const s = String(v).trim();
+                return s.toLowerCase() === 'null' ? '' : v;
+            };
             const updatedResponse = response.map(item => {
-                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit"  onclick="GetFollowupDetailsByCode(${item.Code},this)"><i class="fa fa-pencil"></i></button>
-                <button class="btn btn-danger icon-height mb-1" title="Delete"  onclick="DeleteFollowUp(${item.Code})"><i class="fa fa-times"></i></button>`;
+                const row = Object.fromEntries(
+                    Object.entries(item).map(([k, v]) => [k, cleanGridVal(v)])
+                );
+                let buttonsHTML = `<span class="enq-fu-row-actions"><button type="button" class="btn btn-primary icon-height" title="Edit" onclick="GetFollowupDetailsByCode(${item.Code},this)"><i class="fa fa-pencil"></i></button><button type="button" class="btn btn-danger icon-height" title="Delete" onclick="DeleteFollowUp(${item.Code})"><i class="fa fa-times"></i></button></span>`;
                 return {
-                    ...item,
+                    ...row,
                     Action: buttonsHTML,
                 };
 
@@ -2480,7 +2456,7 @@ function GetCompanyParameter() {
 function GetAssignDetails(Code) {
     LeadMasterService.GetAssignDetails(Code).then(function (response) {
         if (response.length > 0) {
-            $("#tblAssignDetails").show();
+            $("#dvAssignDetailsWrap").show();
             const StringFilterColumn = ["Name", "Assign Date"];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
@@ -2489,13 +2465,13 @@ function GetAssignDetails(Code) {
             const StringdoubleFilterColumn = [];
             const hiddenColumns = [];
             const ColumnAlignment = {
-                Action: ";width:150px;"
+                Action: 'center'
             };
 
             BizsolCustomFilterGrid.CreateDataTable("AssignDetails-header", "AssignDetails-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment,false)
         }
         else {
-            $("#tblAssignDetails").hide();
+            $("#dvAssignDetailsWrap").hide();
         }
     });
 }
@@ -2636,14 +2612,14 @@ async function GetEnquiryDetailsForViewByCode(Code) {
         
         if (resObj.ContactPersonsList?.length > 0) {
             modalHtml += `
-                <div class="card mb-3">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0">Contact Persons</h6>
+                <div class="enq-details-section">
+                    <div class="enq-details-section-head">
+                        <h6>Contact Persons</h6>
                     </div>
-                    <div class="card-body">
+                    <div class="enq-details-section-body">
                         <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead class="table-light">
+                            <table class="table table-bordered table-sm enq-details-table mb-0">
+                                <thead>
                                     <tr>
                                         <th>Name</th>
                                         <th>Department</th>
@@ -2666,7 +2642,7 @@ async function GetEnquiryDetailsForViewByCode(Code) {
                         <td>${person.Designation || '-'}</td>
                         <td>${person["Email Id"] || '-'}</td>
                         <td>${person["Contact No"] || '-'}</td>
-                        <td class="text-center">${isDefault ? '<i class="fa fa-check text-success"></i>' : '-'}</td>
+                        <td class="text-center">${isDefault ? '<i class="fa fa-check" style="color:#16a34a;"></i>' : '—'}</td>
                     </tr>`;
             });
 
@@ -2678,17 +2654,16 @@ async function GetEnquiryDetailsForViewByCode(Code) {
                 </div>
             `;
         }
-        // ---------------- Enquiry Details (Products) ----------------
         if (resObj.EnquiryDetails?.length > 0) {
             modalHtml += `
-                <div class="card mb-3">
-                    <div class="card-header bg-success text-white">
-                        <h6 class="mb-0">Product Details</h6>
+                <div class="enq-details-section">
+                    <div class="enq-details-section-head">
+                        <h6>Product Details</h6>
                     </div>
-                    <div class="card-body">
+                    <div class="enq-details-section-body">
                         <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead class="table-light">
+                            <table class="table table-bordered table-sm enq-details-table mb-0">
+                                <thead>
                                     <tr>
                                         <th>Product Name</th>
                                         <th>Specification</th>
@@ -2718,21 +2693,20 @@ async function GetEnquiryDetailsForViewByCode(Code) {
                 </div>
             `;
         }
-        // ---------------- Enquiry Details (Products) ----------------
         if (resObj.EnquiryFollupDetails?.length > 0) {
             modalHtml += `
-                <div class="card mb-3">
-                    <div class="card-header bg-success text-white">
-                        <h6 class="mb-0" style="color: white;">Follow Up Details</h6>
+                <div class="enq-details-section">
+                    <div class="enq-details-section-head">
+                        <h6>Follow Up Details</h6>
                     </div>
-                    <div class="card-body">
+                    <div class="enq-details-section-body">
                         <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead class="table-light">
+                            <table class="table table-bordered table-sm enq-details-table mb-0">
+                                <thead>
                                     <tr>
                                         <th>Follow Up Date</th>
                                         <th>Follow Up Mode</th>
-                                        <th>Next Follow Up Date	</th>
+                                        <th>Next Follow Up Date</th>
                                         <th>Next Follow Up Mode</th>
                                         <th>Our Remarks</th>
                                         <th>Customer Remarks</th>
@@ -2762,100 +2736,99 @@ async function GetEnquiryDetailsForViewByCode(Code) {
                 </div>
             `;
         }
-        // ---------------- Enquiry Master ----------------
         if (resObj.EnquiryMaster?.length > 0) {
             const data = resObj.EnquiryMaster[0];
-            
+
             modalHtml += `
-                <div class="card mb-3">
-                    <div class="card-header bg-primary text-white">
-                        <h6 class="mb-0" style="color: white;">Enquiry Information</h6>
+                <div class="enq-details-section">
+                    <div class="enq-details-section-head">
+                        <h6>Enquiry Information</h6>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Company Name :</label>
-                                <span>${data.AccountDesp || '-'}</span>
+                    <div class="enq-details-section-body">
+                        <div class="enq-details-kv">
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Company Name</span>
+                                <span class="enq-kv-val">${data.AccountDesp || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Enquiry Type :</label>
-                                <span >${data.EnquiryTypeName || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Enquiry Type</span>
+                                <span class="enq-kv-val">${data.EnquiryTypeName || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Enquiry Date :</label>
-                                <span >${data.EnquiryDate || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Enquiry Date</span>
+                                <span class="enq-kv-val">${data.EnquiryDate || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Status :</label>
-                                <span >${data.Status || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Status</span>
+                                <span class="enq-kv-val">${data.Status || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Email :</label>
-                                <span >${data.EMail || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Email</span>
+                                <span class="enq-kv-val">${data.EMail || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Mobile No :</label>
-                                <span >${data.MobileNo || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Mobile No</span>
+                                <span class="enq-kv-val">${data.MobileNo || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Phone No :</label>
-                                <span >${data.PhoneNo || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Phone No</span>
+                                <span class="enq-kv-val">${data.PhoneNo || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Website :</label>
-                                <span >${data.Website || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Website</span>
+                                <span class="enq-kv-val">${data.Website || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Country :</label>
-                                <span >${data.Nation || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Country</span>
+                                <span class="enq-kv-val">${data.Nation || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">State :</label>
-                                <span >${data.State || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">State</span>
+                                <span class="enq-kv-val">${data.State || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">City :</label>
-                                <span >${data.City || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">City</span>
+                                <span class="enq-kv-val">${data.City || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Pin Code :</label>
-                                <span >${data.PinCode || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Pin Code</span>
+                                <span class="enq-kv-val">${data.PinCode || '—'}</span>
                             </div>
-                            <div class="col-md-12 mb-2">
-                                <label class="fw-bold">Address Line 1:</label>
-                                <span >${data.Address1 || '-'}</span>
+                            <div class="enq-kv-item enq-kv-full">
+                                <span class="enq-kv-label">Address Line 1</span>
+                                <span class="enq-kv-val">${data.Address1 || '—'}</span>
                             </div>
-                            <div class="col-md-12 mb-2">
-                                <label class="fw-bold">Address Line 2 :</label>
-                                <span >${data.Address2 || '-'}</span>
+                            <div class="enq-kv-item enq-kv-full">
+                                <span class="enq-kv-label">Address Line 2</span>
+                                <span class="enq-kv-val">${data.Address2 || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Enquiry Source :</label>
-                                <span >${data.LeadSourceDespName || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Enquiry Source</span>
+                                <span class="enq-kv-val">${data.LeadSourceDespName || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Reference By :</label>
-                                <span >${data.ReferenceBy || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Reference By</span>
+                                <span class="enq-kv-val">${data.ReferenceBy || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Reference Date :</label>
-                                <span >${data.ReferenceDate || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Reference Date</span>
+                                <span class="enq-kv-val">${data.ReferenceDate || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Assigned Salesman :</label>
-                                <span >${data.PersonName || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Assigned Salesman</span>
+                                <span class="enq-kv-val">${data.PersonName || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Next Followup Date :</label>
-                                <span >${data.NextFollowupDate || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Next Followup Date</span>
+                                <span class="enq-kv-val">${data.NextFollowupDate || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Next Followup Mode :</label>
-                                <span >${data.NextFollowupMode || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Next Followup Mode</span>
+                                <span class="enq-kv-val">${data.NextFollowupMode || '—'}</span>
                             </div>
-                            <div class="col-md-12 mb-2">
-                                <label class="fw-bold">Remarks:</label>
-                                <span >${data.Remark || '-'}</span>
+                            <div class="enq-kv-item enq-kv-full">
+                                <span class="enq-kv-label">Remarks</span>
+                                <span class="enq-kv-val">${data.Remark || '—'}</span>
                             </div>
                         </div>
                     </div>
@@ -2863,9 +2836,10 @@ async function GetEnquiryDetailsForViewByCode(Code) {
             `;
         }
 
-       
+        if (!modalHtml || !modalHtml.trim()) {
+            modalHtml = '<p class="text-muted text-center py-4 mb-0" style="font-size:0.9rem;">No enquiry details to display.</p>';
+        }
 
-        // Display in modal
         $("#EnquiryDetailsModaldv").html(modalHtml);
         $("#EnquiryDetailsModal").modal('show');
 
@@ -2877,6 +2851,68 @@ async function GetEnquiryDetailsForViewByCode(Code) {
 function CloseEnquiryDetails() {
     $("#EnquiryDetailsModal").modal('hide');
 }
+
+/** Main enquiry list grid: find "Next Follow Up Date" column index from header row */
+function getEnquiryListNextFollowUpDateColumnIndex() {
+    const headers = document.querySelectorAll("#table-header th");
+    for (let i = 0; i < headers.length; i++) {
+        const t = (headers[i].textContent || "").replace(/\s+/g, " ").trim().toUpperCase();
+        if (t.indexOf("NEXT FOLLOW UP DATE") !== -1) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+function parseEnquiryListGridDateCell(text) {
+    if (!text || !String(text).trim()) return null;
+    const s = String(text).trim();
+    if (IsInvalidDate(s)) return null;
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    if (d.getFullYear() <= 1900) return null;
+    return d;
+}
+
+/** If Next Follow Up Date is strictly before today, highlight the whole row (light red) */
+function applyEnquiryListOverdueNextFollowUpRowHighlight() {
+    const tbody = document.getElementById("table-body");
+    if (!tbody) return;
+    const colIdx = getEnquiryListNextFollowUpDateColumnIndex();
+    if (colIdx < 0) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const rows = tbody.querySelectorAll("tr");
+    rows.forEach(function (row) {
+        row.style.backgroundColor = "";
+        const tds = row.querySelectorAll("td");
+        if (tds.length <= colIdx) return;
+        const cellText = tds[colIdx].textContent || "";
+        const cellDate = parseEnquiryListGridDateCell(cellText);
+        if (!cellDate) return;
+        const cd = new Date(cellDate.getTime());
+        cd.setHours(0, 0, 0, 0);
+        if (cd.getFullYear() > 1900 && cd < today) {
+            row.style.backgroundColor = "#fecaca";
+        }
+    });
+}
+
+(function initEnquiryListOverdueHighlightTimer() {
+    function tick() {
+        if (document.getElementById("table-body") && document.getElementById("dvLoad") && $("#dvLoad").is(":visible")) {
+            applyEnquiryListOverdueNextFollowUpRowHighlight();
+        }
+    }
+    function start() {
+        setInterval(tick, 1000);
+    }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", start);
+    } else {
+        start();
+    }
+})();
 
 window.ViewAttachment = ViewAttachment;
 window.ChangeContact = ChangeContact;

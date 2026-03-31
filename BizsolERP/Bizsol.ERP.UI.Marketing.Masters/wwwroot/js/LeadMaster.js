@@ -1,4 +1,4 @@
-﻿import { LeadMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_LeadMasterService.js';
+import { LeadMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_LeadMasterService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
@@ -332,7 +332,8 @@ function GetNestedMarketingManList() {
             });
             BindSelectList($('#ddlAssignTo')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })));
             $('#ddlAssignTo').select2({
-                width: '-webkit-fill-available'
+                width: '-webkit-fill-available',
+                dropdownParent: $('#AssignModal')
             });
         }
     });
