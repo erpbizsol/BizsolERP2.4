@@ -498,7 +498,8 @@ function vmBuildVendorMasterPrintHtml(payload) {
         '</div><table class="fld"><tbody>' +
         row("Vendor Name", item.AccountDesp) +
         row("Display Name", item.BillName) +
-        row("Address", [item.Address1, item.Address2].filter(Boolean).join(", ") || "—") +
+        row("Address Line 1", item.Address1 || "—") +
+        row("Address Line 2", item.Address2 || "—") +
         row("Country", item.Nation) +
         row("City", item.City) +
         row("State", item.State) +
@@ -2033,12 +2034,13 @@ function validateCPEmail(showError) {
     return true;
 }
 function ClearVendorForm() {
-    G_VendorSuppressCityAddressFill = false;
+    G_VendorSuppressCityAddressFill = true;
+    G_VendorProgrammaticNationStateCity = true;
     G_BillNameSyncedWithVendorName = true;
     vmResetVendorAttachment();
     $("#AccountDesp").removeData("vm-had-chars");
-    // VendorMaster fields
-    ["AccountDesp", "BillName", "GSTNNo", "PANNo", "EMail", "PhoneNo", "Address1","Address2", "City", "State", "Nation", "Pin"].forEach(function (id) {
+    // Text inputs (Address1/Address2 must clear on New; Pin uses id PinCode, not Pin)
+    ["AccountDesp", "BillName", "GSTNNo", "PANNo", "EMail", "PhoneNo", "Address1", "Address2"].forEach(function (id) {
         $("#" + id)
             .val("")
             .removeClass("vm-input-error")
@@ -2049,6 +2051,18 @@ function ClearVendorForm() {
         var dupEl = $("#dup_" + id);
         if (dupEl.length) dupEl.hide();
     });
+
+    $("#PinCode")
+        .val("")
+        .removeClass("vm-input-error");
+    $("#err_PinCode").hide();
+
+    $("#Nation").val("").trigger("change");
+    $("#State").val("").trigger("change");
+    $("#City").val("").trigger("change");
+
+    G_VendorProgrammaticNationStateCity = false;
+    G_VendorSuppressCityAddressFill = false;
 
     // Nature dropdown
     $("#Nature").val("");
