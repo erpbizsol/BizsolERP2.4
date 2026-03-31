@@ -163,7 +163,6 @@
         }
     /* ── FLOATING SAVE BAR (GRN same) ── */
     #floatBar.po-float-bar {
-        display: flex !important;
         position: fixed;
         bottom: 44px;
         left: 0;
@@ -443,6 +442,22 @@
         font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s;
     }
     .im-btn-delete:hover { background: #dc2626; color: #fff; border-color: #dc2626; box-shadow: 0 2px 8px rgba(220,38,38,0.3); }
+    .im-btn-attach {
+        display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
+        background: #e0f2fe; color: #0284c7; border: 1.5px solid #7dd3fc; border-radius: 7px;
+        font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s; margin-right: 4px;
+    }
+    .im-btn-attach:hover { background: #0284c7; color: #fff; border-color: #0284c7; box-shadow: 0 2px 8px rgba(2,132,199,0.3); }
+    /* ── Attachment badge on float bar button ── */
+    .gpa-attach-btn-wrap { position: relative; display: inline-flex; }
+    .gpa-temp-badge {
+        position: absolute; top: -7px; right: -7px;
+        min-width: 18px; height: 18px; border-radius: 9px;
+        background: #ef4444; color: #fff;
+        font-size: 0.68rem; font-weight: 800;
+        display: none; align-items: center; justify-content: center;
+        padding: 0 4px; border: 2px solid #fff; z-index: 1;
+    }
     /* Bill grid row delete (same as GRNService item table) */
     .del-row-btn {
         display: inline-flex;
@@ -698,6 +713,13 @@
         <button type="button" class="btn-po-cancel" onclick="resetGRNPaymentApprovalForm()">
             <i class="fa fa-undo me-1"></i> Reset
         </button>
+        <div class="gpa-attach-btn-wrap">
+            <button type="button" class="btn-po-cancel" onclick="openGpaAttachmentControl()" title="Attachments"
+                    style="background:linear-gradient(135deg,#0ea5e9,#0284c7);">
+                <i class="fa fa-paperclip me-1"></i> Attachment
+            </button>
+            <span id="gpaTempAttachBadge" class="gpa-temp-badge">0</span>
+        </div>
         <button type="button" class="btn-po-save" onclick="saveGRNPaymentApproval()">
             <i class="fa fa-save me-1"></i> Save
         </button>
@@ -738,9 +760,13 @@
     </div>
 </div>
 
+<!-- ── ATTACHMENT CONTROL PLACEHOLDER ── -->
+<div id="GRNPaymentEntry_AttachmentControlmodal"></div>
+
 <script>
     (function () {
         const sidebar = document.getElementById('modern-sidebar');
+      
         const bar = document.getElementById('floatBar');
         if (!sidebar || !bar) return;
         function syncMargin() {
