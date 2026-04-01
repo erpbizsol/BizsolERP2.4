@@ -97,6 +97,7 @@ const Indx_Stock = StockColumns.reduce((acc, col, index) => {
 
 
 let arrayList_NestedDealer = [];
+let arrayList_NestedDealerFull = [];
 let arrayList_ItemMaster = [];
 let arrayList_UOMMaster = [];
 let arrayList_UOMMasterDecimalPoints = [];
@@ -754,6 +755,7 @@ function GetNestedDealerList() {
 
 
             arrayList_NestedDealer = [];
+            arrayList_NestedDealerFull = response.slice();
             response = response.map((item) => ({
                 key: item.Code, value: item.AccountDesp
             }));
@@ -765,6 +767,12 @@ function GetNestedDealerList() {
 
     });
 }
+function GetSelectedCustomerAccountNature() {
+    var selectedCode = parseInt($('#ddlCustomerName option:selected').val());
+    var found = arrayList_NestedDealerFull.find(function (item) { return item.Code === selectedCode; });
+    return found ? (found.AccountNature || '') : '';
+}
+
 function GetZoneMasterList() {
 
     VisitOrderEntryService.GetZoneMasterList().then(function (response) {
@@ -1259,6 +1267,7 @@ function ValidateData() {
     var ShowExtraColumnOrderQtyAndUnit = CRM_Config.ShowExtraColumnOrderQtyAndUnit;
     var ShowDeliveryDate = CRM_Config.ShowDeliveryDate;
     var CheckLogicalStockLimit = CRM_Config.CheckLogicalStockLimit;
+    var isOEMClient = GetSelectedCustomerAccountNature() === 'OEM';
     var PaymentTerm = $('#ddlPaymentTerms option:selected').text();//$("#txtPaymentTerms").val();
     var Freight = $('#ddlFreight option:selected').text();//$("#txtlistFreight").val();
    
@@ -1480,7 +1489,7 @@ function ValidateData() {
                 Valid = false;
             }
 
-            if (Stock > 0 && QtyMT > 0) {
+            if (Stock > 0 && QtyMT > 0 && !isOEMClient) {
                 if (CheckLogicalStockLimit == 'Y') {
                     if (parseFloat(QtyMT) > parseFloat(Stock)) {
                         MsgStr += "* Qty value shouldn't be greater than the stock value at Row No " + rowNo + "!" + newLine;
@@ -1488,7 +1497,7 @@ function ValidateData() {
 
                     }
                 }
-               
+
             }
 
             if (ShowDeliveryDate == 'Y') {
@@ -1588,7 +1597,7 @@ function ValidateData() {
 
 
 
-            if (Stock <= 0 && AllowOrderOnlyAvailableStock == 'Y') {
+            if (Stock <= 0 && AllowOrderOnlyAvailableStock == 'Y' && !isOEMClient) {
 
                 MsgStr += "* Stock not Available at Row No " + rowNo + "!" + newLine;
                 Valid = false;
