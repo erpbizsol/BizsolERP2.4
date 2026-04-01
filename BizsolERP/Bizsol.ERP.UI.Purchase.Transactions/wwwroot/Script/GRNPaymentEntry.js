@@ -952,6 +952,8 @@ function clearGpaAddBillModalBillFields() {
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
     set('gpaAddBillModalMrn', '');
     set('gpaAddBillModalBillNo', '');
+    set('gpaAddBillModalProject', '');
+    set('gpaAddBillModalSubProject', '');
     set('gpaAddBillModalBillDate', '');
     set('gpaAddBillModalBillAmt', '');
     set('gpaAddBillModalPayable', '');
@@ -1015,6 +1017,10 @@ function applyBillApiRowToModalInputs(r) {
 
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
     set('gpaAddBillModalBillNo', no);
+    const pv = r.ProjectDesp ?? r.projectDesp ?? r.Project ?? r.project ?? '';
+    const sv = r.SubProjectDesp ?? r.subProjectDesp ?? r.SubProject ?? r.subProject ?? '';
+    set('gpaAddBillModalProject', pv !== undefined && pv !== null ? String(pv) : '');
+    set('gpaAddBillModalSubProject', sv !== undefined && sv !== null ? String(sv) : '');
     set('gpaAddBillModalBillDate', formatDateInput(bdt));
     set('gpaAddBillModalBillAmt', bAmt !== undefined && bAmt !== null && bAmt !== '' ? String(bAmt) : '');
     const payStr = pAmt !== undefined && pAmt !== null && pAmt !== '' ? String(pAmt) : '';
