@@ -1666,6 +1666,25 @@
         var _s2ViewportHandler  = null;
         var _s2InitialVvpHeight = null;
 
+        // ── Modal-scroll guard ────────────────────────────────────────────────
+        // Select2 focuses its search field BEFORE firing select2:open, which
+        // causes the nearest scrollable ancestor (.modal) to auto-scroll down
+        // to the newly-appended dropdown container. We save the scroll position
+        // in select2:opening (before any DOM change) and restore it in
+        // select2:open via requestAnimationFrame (before the browser paints).
+        var _s2ModalEl  = null;
+        var _s2ModalTop = 0;
+
+        $(document).on('select2:opening', function (e) {
+            var $modal = $(e.target).closest('.modal');
+            if ($modal.length) {
+                _s2ModalEl  = $modal[0];
+                _s2ModalTop = $modal[0].scrollTop;
+            } else {
+                _s2ModalEl = null;
+            }
+        });
+
         function _adjustSelect2AboveKeyboard() {
             if (!window.visualViewport) return;
             var vvp = window.visualViewport;
@@ -1713,12 +1732,37 @@
         }
 
         // Auto-focus the search field when any Select2 opens
-        $(document).on('select2:open', function () {
+        $(document).on('select2:open', function (e) {
+            // Restore the modal scroll position that Select2 disrupted by focusing
+            // its search input (which triggered a browser scroll-into-view on the
+            // dropdown element appended at the end of the modal DOM).
+            if (_s2ModalEl) {
+                var el  = _s2ModalEl;
+                var top = _s2ModalTop;
+                requestAnimationFrame(function () { el.scrollTop = top; });
+            }
+
             setTimeout(function () {
-                var fields = document.querySelectorAll('.select2-search__field');
-                if (fields.length > 0) {
-                    fields[fields.length - 1].focus();
+                // For multiple-select, the search field is INLINE — every instance
+                // keeps its own .select2-search__field in the DOM at all times.
+                // querySelectorAll returns ALL of them, so [last] always lands on
+                // the bottom-most row (Management). Instead, look up only the field
+                // that belongs to the Select2 that just opened.
+                var searchField = null;
+                try {
+                    var s2 = $(e.target).data('select2');
+                    if (s2 && s2.$container && s2.$container.length) {
+                        searchField = s2.$container[0].querySelector('.select2-search__field');
+                    }
+                } catch (err) {}
+
+                // Fallback for single-selects: their search lives in the dropdown
+                if (!searchField) {
+                    var fields = document.querySelectorAll('.select2-dropdown .select2-search__field');
+                    if (fields.length > 0) { searchField = fields[fields.length - 1]; }
                 }
+
+                if (searchField) { searchField.focus({ preventScroll: true }); }
             }, 10);
 
             // Mobile: add backdrop + prevent background scroll
@@ -1746,6 +1790,7 @@
 
         // Cleanup on close
         $(document).on('select2:close', function () {
+            _s2ModalEl = null;
             $('.select2-backdrop').remove();
             document.body.style.overflow = '';
 
