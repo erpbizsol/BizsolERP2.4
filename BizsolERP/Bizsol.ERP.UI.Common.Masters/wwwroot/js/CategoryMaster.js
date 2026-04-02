@@ -107,7 +107,7 @@ function GetCategoryMasterList() {
 }
 
 function OpenNewCategory() {
-    var ModuleName = 'Category Master',
+    var ModuleName = 'Group Master',
         OptionName = 'New',
         ShowMsg = 'Y',
         FinYear = getFinancialYear();
@@ -126,7 +126,7 @@ function OpenNewCategory() {
 }
 
 function EditCategory(code) {
-    var ModuleName = 'Category Master',
+    var ModuleName = 'Group Master',
         OptionName = 'Edit',
         ShowMsg = 'Y',
         FinYear = getFinancialYear();
@@ -156,7 +156,7 @@ function EditCategory(code) {
 }
 
 function ViewCategory(code) {
-    var ModuleName = 'Category Master',
+    var ModuleName = 'Group Master',
         OptionName = 'View',
         ShowMsg = 'Y',
         FinYear = getFinancialYear();
@@ -202,7 +202,7 @@ function ConfirmDelete(code) {
 }
 
 function DoDelete() {
-    var ModuleName = 'Category Master',
+    var ModuleName = 'Group Master',
         OptionName = 'Delete',
         ShowMsg = 'Y',
         FinYear = getFinancialYear();

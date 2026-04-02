@@ -378,26 +378,57 @@ function vmDownloadVendorAttachmentFromViewModal() {
     vmDownloadVendorAttachment(G_VendorViewAttachData, G_VendorViewAttachFileName);
 }
 
-function vmParseVendorPrintPayload(raw) {
-    var list = raw && (raw.VendorMaster || raw.VendorMasterList);
-    var item =
-        list && list.length > 0
-            ? list[0]
-            : Array.isArray(raw) && raw[0] && !Array.isArray(raw[0])
-            ? raw[0]
-            : Array.isArray(raw) && raw.length > 0 && Array.isArray(raw[0]) && raw[0][0]
-            ? raw[0][0]
-            : raw;
-    if (Array.isArray(item) && item.length > 0) {
-        item = item[0];
-    }
+function vmParseVendorPrintPayload(res) {
+    var parsed = vmResolveVendorMasterItemFromApiResponse(res);
+    var raw = parsed.raw;
+    var item = parsed.item;
     if (!item || typeof item !== "object") return null;
-    var cpList = raw.AccountContactPersonDetail || raw.accountContactPersonDetail || raw.Table3 || (Array.isArray(raw) && raw[2]);
+    var cpList = raw && (raw.AccountContactPersonDetail || raw.accountContactPersonDetail || raw.Table3 || (Array.isArray(raw) && raw[2]));
     var cp = Array.isArray(cpList) && cpList.length > 0 ? cpList[0] : null;
-    var bkList = raw.BankAccountDetail || raw.bankAccountDetail || raw.Table2 || (Array.isArray(raw) && raw[1]);
+    var bkList = raw && (raw.BankAccountDetail || raw.bankAccountDetail || raw.Table2 || (Array.isArray(raw) && raw[1]));
     var bk = Array.isArray(bkList) && bkList.length > 0 ? bkList[0] : null;
     var vAtt = vmParseVendorAttachmentFromApiResponse(raw, item);
     return { item: item, cp: cp, bk: bk, attach: vAtt };
+}
+
+/** Industry label for print / display when API has Code but not name (same lookup as view). */
+function vmResolveIndustryTypeLabelAsync(item) {
+    if (!item) return Promise.resolve("—");
+    var label = vmVendorPickFirst(item, [
+        "IndustryTypeMaster_Name",
+        "IndustryTypeName",
+        "IndustryType",
+        "IndustryTypeDesp",
+        "Industry_Type"
+    ]);
+    if (label) return Promise.resolve(String(label));
+    var code = vmVendorPickFirst(item, [
+        "IndustryTypeMaster_Code",
+        "industryTypeMaster_Code",
+        "IndustryTypeMasterCode"
+    ]);
+    if (code === undefined || code === null || String(code).trim() === "" || String(code) === "0") {
+        return Promise.resolve("—");
+    }
+    return VendorMasterService.GetIndustryType()
+        .then(function (resObj) {
+            var raw = resObj && (resObj.data || resObj.Data || resObj);
+            var rows = Array.isArray(raw) ? raw : [];
+            var c = parseInt(String(code), 10);
+            if (!Number.isFinite(c)) return String(code);
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                var rc = parseInt(String(r.Code != null ? r.Code : r.code), 10);
+                if (Number.isFinite(rc) && rc === c) {
+                    var name = (r.IndustryType || r.industryType || r.Desp || "").trim();
+                    return name || "—";
+                }
+            }
+            return "—";
+        })
+        .catch(function () {
+            return String(code);
+        });
 }
 
 function vmBuildVendorMasterPrintHtml(payload) {
@@ -502,7 +533,14 @@ function vmBuildVendorMasterPrintHtml(payload) {
         '<div class="sec"><div class="sec-h">' +
         vmEscapeHtml(partyInfoHeading) +
         '</div><table class="fld"><tbody>' +
+        row("Vendor Code", item.VendorCode || "—") +
         row("Vendor Name", item.AccountDesp) +
+        row(
+            "Industry Type",
+            payload.industryTypeLabel !== undefined
+                ? payload.industryTypeLabel
+                : vmVendorPickFirst(item, ["IndustryTypeMaster_Name", "IndustryTypeName", "IndustryType", "IndustryTypeDesp"]) || "—"
+        ) +
         row("Display Name", item.BillName) +
         row("Address Line 1", item.Address1 || "—") +
         row("Address Line 2", item.Address2 || "—") +
@@ -553,31 +591,33 @@ function PrintVendor(code, mode) {
     }
     VendorMasterService.GetSolarVendorMasterByCode(c)
         .then(function (res) {
-            var raw = res && (res.data || res.Data || res);
-            var payload = vmParseVendorPrintPayload(raw);
+            var payload = vmParseVendorPrintPayload(res);
             if (!payload || !payload.item) {
                 toastr.error("Failed to load vendor for print.");
                 return;
             }
-            var html = vmBuildVendorMasterPrintHtml({
-                item: payload.item,
-                cp: payload.cp,
-                bk: payload.bk,
-                attach: { data: payload.attach.data, fileName: payload.attach.fileName },
+            vmResolveIndustryTypeLabelAsync(payload.item).then(function (industryLabel) {
+                var html = vmBuildVendorMasterPrintHtml({
+                    item: payload.item,
+                    cp: payload.cp,
+                    bk: payload.bk,
+                    attach: { data: payload.attach.data, fileName: payload.attach.fileName },
+                    industryTypeLabel: industryLabel
+                });
+                var win = window.open("", "_blank", "width=920,height=760,scrollbars=yes,resizable=yes");
+                if (!win) {
+                    toastr.warning("Please allow popups for this site to use print.");
+                    return;
+                }
+                win.document.write(html);
+                win.document.close();
+                if (mode === "print") {
+                    setTimeout(function () {
+                        win.focus();
+                        win.print();
+                    }, 600);
+                }
             });
-            var win = window.open("", "_blank", "width=920,height=760,scrollbars=yes,resizable=yes");
-            if (!win) {
-                toastr.warning("Please allow popups for this site to use print.");
-                return;
-            }
-            win.document.write(html);
-            win.document.close();
-            if (mode === "print") {
-                setTimeout(function () {
-                    win.focus();
-                    win.print();
-                }, 600);
-            }
         })
         .catch(function (err) {
             toastr.error("Error loading vendor for print.");
@@ -660,7 +700,8 @@ $(document).ready(function () {
     GetNationList();
     GetStateList();
     GetCityList();
-   
+    GetIndustryTypeMasterList();
+
     $("#vmBtnModalClose, #vmBtnCancelVendor").on("click", CloseVendorForm);
     $("#vmBtnCancelDelete").on("click", function () {
         $("#vmDeleteConfirmBackdrop").removeClass("show");
@@ -752,7 +793,7 @@ $(document).ready(function () {
         validateCPEmail(true);
     });
 
-    $("#Nation, #State, #City").on("change", function () {
+    $("#Nation, #State, #City, #IndustryTypeMaster").on("change", function () {
         var sid = this.id;
         $("#err_" + sid).hide();
         $("#" + sid).removeClass("vm-input-error");
@@ -805,6 +846,13 @@ $(document).ready(function () {
     $(window).on("load", function () {
         syncVendorModuleContextFromHeading();
         applyVendorMasterClientModeUi();
+    });
+
+    $(document).on("keydown", "#vmIndustryTypeNewName", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            vmSaveNewIndustryType();
+        }
     });
 });
 
@@ -1159,11 +1207,33 @@ function OpenNewVendor() {
                 $("#vmFormModalTitle").text("Add New Vendor");
                 $("#vmBtnSaveText").text("Save Vendor");
                 $("#vendorDialogBackdrop").addClass("show");
-                setTimeout(function () { $("#AccountDesp").focus(); }, 140);
+                setTimeout(function () {
+                    vmVendorCodeField().focus();
+                }, 140);
             }
         });
    
 }
+/** Wait until Industry Type options exist, then set value (list loads async). */
+function vmSetIndustryTypeMasterFromCode(code) {
+    var v = code != null && code !== undefined && String(code) !== "" ? String(code) : "";
+    function apply() {
+        $("#IndustryTypeMaster").val(v).trigger("change");
+    }
+    if (!v) {
+        apply();
+        return;
+    }
+    var n = 0;
+    var t = setInterval(function () {
+        n++;
+        if ($("#IndustryTypeMaster option[value='" + v + "']").length || n > 50) {
+            clearInterval(t);
+            apply();
+        }
+    }, 40);
+}
+
 function EditVendor(code) {
     var ModuleName = G_ModuleName,
         OptionName = "Edit",
@@ -1182,22 +1252,9 @@ function EditVendor(code) {
         $("#vmBtnSaveText").text("Update Vendor");
 
         VendorMasterService.GetSolarVendorMasterByCode(code).then(function (res) {
-            // ── Handle API response (multiple structures) ─────────────────
-            var raw = res && (res.data || res.Data || res);
-            var item = null;
-            var list = raw && (raw.VendorMaster || raw.VendorMasterList);
-            if (list && Array.isArray(list) && list.length > 0) {
-                item = list[0];
-            } else if (Array.isArray(raw) && raw.length > 0) {
-                // API may return [resultSet1, resultSet2, resultSet3]
-                if (Array.isArray(raw[0]) && raw[0].length > 0) {
-                    item = raw[0][0];
-                } else {
-                    item = raw[0];
-                }
-            } else if (raw && typeof raw === 'object' && raw.AccountDesp !== undefined) {
-                item = raw;
-            }
+            var parsed = vmResolveVendorMasterItemFromApiResponse(res);
+            var raw = parsed.raw;
+            var item = parsed.item;
 
             if (!item) {
                 toastr.error("Failed to load vendor data.");
@@ -1259,6 +1316,13 @@ function EditVendor(code) {
             $("#Address2").val(item.Address2 || "");
             $("#PinCode").val(item.PinCode || "");
             $("#Nature").val(item.AccountNature || "");
+            vmVendorCodeField().val(item.VendorCode != null && item.VendorCode !== undefined ? String(item.VendorCode) : "");
+            var industryCode = vmVendorPickFirst(item, [
+                "IndustryTypeMaster_Code",
+                "industryTypeMaster_Code",
+                "IndustryTypeMasterCode"
+            ]);
+            vmSetIndustryTypeMasterFromCode(industryCode);
 
             var stateCode = item.StateMaster_Code != null ? String(item.StateMaster_Code) : "";
             var cityCode = item.CityMaster_Code != null ? String(item.CityMaster_Code) : "";
@@ -1279,7 +1343,7 @@ function EditVendor(code) {
                         setTimeout(function () {
                             G_VendorSuppressCityAddressFill = false;
                             G_VendorProgrammaticNationStateCity = false;
-                            $("#AccountDesp").focus();
+                            vmVendorCodeField().focus();
                         }, 120);
                     }, 100);
                 }, 100);
@@ -1310,10 +1374,13 @@ function ViewVendor(code) {
             window.G_VendorViewCode = code;
 
             VendorMasterService.GetSolarVendorMasterByCode(code).then(function (res) {
-                var raw = res && (res.data || res.Data || res);
-                var list = raw && (raw.VendorMaster || raw.VendorMasterList);
-                var item = (list && list.length > 0) ? list[0] : (Array.isArray(raw) ? raw[0] : raw);
-                if (!item) { toastr.error("Failed to load vendor details."); return; }
+                var parsed = vmResolveVendorMasterItemFromApiResponse(res);
+                var raw = parsed.raw;
+                var item = parsed.item;
+                if (!item) {
+                    toastr.error("Failed to load vendor details.");
+                    return;
+                }
 
                 // Header
                 $("#viewVendorName").text(item.AccountDesp || "—");
@@ -1333,6 +1400,8 @@ function ViewVendor(code) {
                 // Fields
                 $("#vf_VendorName").text(item.AccountDesp || "—");
                 $("#vf_DisplayName").text(item.BillName || "—");
+                $("#vf_VendorCode").text(item.VendorCode != null && item.VendorCode !== "" ? String(item.VendorCode) : "—");
+                vmFillViewIndustryType(item);
                 $("#vf_Address1").text(item.Address1 || "—");
                 $("#vf_Address2").text(item.Address2 || "—");
                 $("#vf_Pincode").text(item.PinCode || "—");
@@ -1560,7 +1629,16 @@ function friendlyValidationLine(fieldKey, apiMsg) {
     if (k.indexOf('CityMaster_Code') >= 0 || m.indexOf('citymaster_code') >= 0)
         return 'Please select City.';
     if (k === 'VendorMaster' || m.indexOf('vendormaster field is required') >= 0)
-        return 'Please fill all required fields (name, email, phone, country, state, city) and save again.';
+        return 'Please fill all required fields (vendor code, name, email, phone, country, state, city) and save again.';
+    // Avoid false positives: any API text containing "VendorCode" (e.g. validation on other fields) used to map here.
+    if (
+        m.indexOf("vendor code is required") >= 0 ||
+        (m.indexOf("vendorcode") >= 0 && m.indexOf("required") >= 0) ||
+        (m.indexOf("vendor code") >= 0 && m.indexOf("required") >= 0)
+    ) {
+        return "Vendor Code is required.";
+    }
+    if (k.indexOf("VendorCode") >= 0 && m.indexOf("required") >= 0) return "Vendor Code is required.";
     return apiMsg;
 }
 
@@ -1779,12 +1857,12 @@ function BuildVendorPayload() {
                 DiscountGroupMaster_Code: 0,
                 SpecialDiscountPercent: 0,
                 FreightDiscountPercent: 0,
-                VendorCode: "",
+                VendorCode: (vmVendorCodeField().val() || "").trim(),
                 PreferredTransport: "",
                 RoadPermitApplicable: "N",
                 Distance: 0,
                 AllowOnlyFreightAccountProvisionInInvoice: "N",
-                IndustryTypeMaster_Code: 0,
+                IndustryTypeMaster_Code: vmDropdownMasterCode("IndustryTypeMaster"),
                 F_CommonValues_Priority_Code: 0,
                 F_CommonValues_Code_Grade: 0,
                 EmailInvoiceCopy: "N",
@@ -1894,13 +1972,28 @@ function BuildVendorPayload() {
 function ValidateVendorForm() {
     var valid = true;
 
+    // Vendor Code — required
+    var vcEl = vmVendorCodeField();
+    var vcErr = $("#err_VendorCode");
+    var vcVal = (vcEl.val() || "").trim();
+    if (!vcVal) {
+        vcErr.css("display", "flex");
+        vcEl.addClass("vm-input-error");
+        vcEl.focus();
+        valid = false;
+        console.warn("Validation failed: VendorCode is empty");
+    } else {
+        vcErr.hide();
+        vcEl.removeClass("vm-input-error");
+    }
+
     // Vendor Name — required
     var nameEl = $("#AccountDesp");
     var nameErr = $("#err_AccountDesp");
     if (!nameEl.val()) {
         nameErr.css("display", "flex");
         nameEl.addClass("vm-input-error");
-        nameEl.focus();
+        if (vcVal) nameEl.focus();
         valid = false;
         console.warn("Validation failed: AccountDesp is empty");
     } else {
@@ -2120,7 +2213,7 @@ function ClearVendorForm() {
     vmResetVendorAttachment();
     $("#AccountDesp").removeData("vm-had-chars");
     // Text inputs (Address1/Address2 must clear on New; Pin uses id PinCode, not Pin)
-    ["AccountDesp", "BillName", "GSTNNo", "PANNo", "EMail", "PhoneNo", "Address1", "Address2"].forEach(function (id) {
+    ["AccountDesp", "BillName", "VendorCode", "GSTNNo", "PANNo", "EMail", "PhoneNo", "Address1", "Address2"].forEach(function (id) {
         $("#" + id)
             .val("")
             .removeClass("vm-input-error")
@@ -2146,6 +2239,7 @@ function ClearVendorForm() {
 
     // Nature dropdown
     $("#Nature").val("");
+    $("#IndustryTypeMaster").val("").trigger("change");
 
     // ContactPerson fields
     $("#ContactPersonName").val("");
@@ -2206,6 +2300,80 @@ function vmVendorPickFirst(obj, keys) {
         if (obj[k] !== undefined && obj[k] !== null && obj[k] !== "") return obj[k];
     }
     return undefined;
+}
+
+/** Same rules as EditVendor — handles VendorMaster wrapper or [ [row], bank[], cp[] ] arrays. */
+function vmResolveVendorMasterItemFromApiResponse(res) {
+    var raw = res && (res.data || res.Data || res);
+    var item = null;
+    var list = raw && (raw.VendorMaster || raw.VendorMasterList);
+    if (list && Array.isArray(list) && list.length > 0) {
+        item = list[0];
+    } else if (Array.isArray(raw) && raw.length > 0) {
+        if (Array.isArray(raw[0]) && raw[0].length > 0) {
+            item = raw[0][0];
+        } else {
+            item = raw[0];
+        }
+    } else if (raw && typeof raw === "object" && raw.AccountDesp !== undefined) {
+        item = raw;
+    }
+    return { raw: raw, item: item };
+}
+
+/** Add/Edit modal Vendor Code input (avoids wrong #VendorCode if DOM ever duplicates). */
+function vmVendorCodeField() {
+    var $v = $("#vendorDialogBackdrop #VendorCode");
+    return $v.length ? $v : $("#VendorCode");
+}
+
+/** View modal: show industry name from row, or resolve label by IndustryTypeMaster_Code via GetIndustryType. */
+function vmFillViewIndustryType(item) {
+    var label = vmVendorPickFirst(item, [
+        "IndustryTypeMaster_Name",
+        "IndustryTypeName",
+        "IndustryType",
+        "IndustryTypeDesp",
+        "Industry_Type"
+    ]);
+    if (label) {
+        $("#vf_IndustryType").text(label);
+        return;
+    }
+    var code = vmVendorPickFirst(item, [
+        "IndustryTypeMaster_Code",
+        "industryTypeMaster_Code",
+        "IndustryTypeMasterCode"
+    ]);
+    if (code === undefined || code === null || String(code).trim() === "" || String(code) === "0") {
+        $("#vf_IndustryType").text("—");
+        return;
+    }
+    $("#vf_IndustryType").text("…");
+    VendorMasterService.GetIndustryType()
+        .then(function (resObj) {
+            var raw = resObj && (resObj.data || resObj.Data || resObj);
+            var rows = Array.isArray(raw) ? raw : [];
+            var c = parseInt(String(code), 10);
+            if (!Number.isFinite(c)) {
+                $("#vf_IndustryType").text(String(code));
+                return;
+            }
+            var found = null;
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                var rc = parseInt(String(r.Code != null ? r.Code : r.code), 10);
+                if (Number.isFinite(rc) && rc === c) {
+                    found = r;
+                    break;
+                }
+            }
+            var name = found && (found.IndustryType || found.industryType || found.Desp || "");
+            $("#vf_IndustryType").text(name || "—");
+        })
+        .catch(function () {
+            $("#vf_IndustryType").text(String(code));
+        });
 }
 function vmVendorNormalizeCityApiResponse(res) {
     if (!res) return null;
@@ -2338,6 +2506,111 @@ function GetNationList() {
         });
     });
 }
+
+/** Industry type master — option text = name, value = Code (IndustryTypeMaster_Code in save payload). */
+function GetIndustryTypeMasterList(selectCodeAfter) {
+    if ($("#IndustryTypeMaster").length && $("#IndustryTypeMaster").data("select2")) {
+        try {
+            $("#IndustryTypeMaster").select2("destroy");
+        } catch (e) {
+            /* ignore */
+        }
+    }
+    return VendorMasterService.GetIndustryType()
+        .then(function (resObj) {
+            var raw = resObj && (resObj.data || resObj.Data || resObj);
+            var rows = Array.isArray(raw) ? raw : [];
+            var mapped = rows.map(function (item) {
+                return {
+                    Code: item.Code,
+                    Desp: item.IndustryType || item.industryType || ""
+                };
+            });
+            BindSelectList($("#IndustryTypeMaster")[0], mapped);
+            $("#IndustryTypeMaster").select2({
+                width: "-webkit-fill-available"
+            });
+            if (selectCodeAfter != null && String(selectCodeAfter) !== "") {
+                vmSetIndustryTypeMasterFromCode(selectCodeAfter);
+            }
+        })
+        .catch(function (err) {
+            console.warn("GetIndustryTypeMasterList:", err);
+            BindSelectList($("#IndustryTypeMaster")[0], []);
+            $("#IndustryTypeMaster").select2({
+                width: "-webkit-fill-available"
+            });
+        });
+}
+
+function vmExtractNewIndustryCode(res) {
+    if (!res) return null;
+    var c =
+        res.Code !== undefined && res.Code !== null
+            ? res.Code
+            : res.code !== undefined && res.code !== null
+              ? res.code
+              : res.IdentityCode !== undefined
+                ? res.IdentityCode
+                : res.NewCode;
+    if (c !== undefined && c !== null && String(c) !== "") return c;
+    var d = res.Data || res.data;
+    if (d && typeof d === "object") {
+        var dc =
+            d.Code !== undefined && d.Code !== null
+                ? d.Code
+                : d.code !== undefined && d.code !== null
+                  ? d.code
+                  : d.IdentityCode;
+        if (dc !== undefined && dc !== null && String(dc) !== "") return dc;
+    }
+    return null;
+}
+
+function vmIndustryTypeSaveSucceeded(res) {
+    if (!res) return false;
+    if (res.Status === "Y" || res.status === "Y" || res.Status === 1 || res.status === 1) return true;
+    if (res.Status === "N" || res.status === "N") return false;
+    if (res.Success === true || res.success === true) return true;
+    if (vmExtractNewIndustryCode(res) != null) return true;
+    return false;
+}
+
+function vmOpenIndustryTypeQuickAdd() {
+    $("#vmIndustryTypeNewName").val("");
+    $("#vmIndustryTypeQuickBackdrop").addClass("show");
+    setTimeout(function () {
+        $("#vmIndustryTypeNewName").trigger("focus");
+    }, 120);
+}
+
+function vmCloseIndustryTypeQuickAdd() {
+    $("#vmIndustryTypeQuickBackdrop").removeClass("show");
+}
+
+function vmSaveNewIndustryType() {
+    var name = ($("#vmIndustryTypeNewName").val() || "").trim();
+    if (!name) {
+        toastr.warning("Enter industry type name.");
+        $("#vmIndustryTypeNewName").trigger("focus");
+        return;
+    }
+    VendorMasterService.SaveIndustryType(name)
+        .then(function (res) {
+            if (vmIndustryTypeSaveSucceeded(res)) {
+                toastr.success((res && (res.Msg || res.msg)) || "Industry type saved.");
+                var newCode = vmExtractNewIndustryCode(res);
+                vmCloseIndustryTypeQuickAdd();
+                GetIndustryTypeMasterList(newCode);
+            } else {
+                toastr.error((res && (res.Msg || res.msg)) || "Failed to save industry type.");
+            }
+        })
+        .catch(function (err) {
+            console.error("SaveIndustryType:", err);
+            toastr.error("Error saving industry type.");
+        });
+}
 function BindSelectList(element, list) {
     let option = '<option value="">select</option>';
     $.each(list, function (key, val) {
@@ -2380,3 +2653,6 @@ window.PrintVendorFromView = PrintVendorFromView;
 window.InitAttachmentControl = InitAttachmentControl;
 window.openVendorMasterAttachmentControl = openVendorMasterAttachmentControl;
 window.openVendorMasterListAttachmentControl = openVendorMasterListAttachmentControl;
+window.vmOpenIndustryTypeQuickAdd = vmOpenIndustryTypeQuickAdd;
+window.vmCloseIndustryTypeQuickAdd = vmCloseIndustryTypeQuickAdd;
+window.vmSaveNewIndustryType = vmSaveNewIndustryType;
