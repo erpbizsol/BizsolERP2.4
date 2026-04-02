@@ -53,6 +53,14 @@ const PurchaseOrderStoreService = {
         return PurchaseOrderStoreService.Getddl('DDL_ITEMLIST');
     },
 
+    GetItemListWithoutProject: function GetItemListWithoutProject() {
+        return PurchaseOrderStoreService.Getddl('DDL_WITHOUTPROJECTITEMLIST');
+    },
+
+    GetCompanyInfoList: function GetCompanyInfoList() {
+        return PurchaseOrderStoreService.Getddl('DDL_COMPANYINFOLIST');
+    },
+
     GetUOMList: function GetUOMList() {
         return PurchaseOrderStoreService.Getddl('DDL_UOMLIST');
     },

@@ -46,7 +46,6 @@ function hideModal(id) {
     }
 }
 
-/** BOM-style: show grid, hide full-page entry */
 function showCompanyListView() {
     $('#dvCompanyEntry').hide();
     $('#dvCompanyList').show();
@@ -54,7 +53,6 @@ function showCompanyListView() {
     window.scrollTo(0, 0);
 }
 
-/** BOM-style: show entry form, hide grid */
 function showCompanyEntryView() {
     $('#dvCompanyList').hide();
     $('#dvCompanyEntry').show();
@@ -65,10 +63,6 @@ function clearCompanyFieldInvalid() {
     $('#dvCompanyEntry input.form-control').removeClass('ci-field-invalid');
 }
 
-/**
- * List grid: matches SELECT … ROW_NUMBER AS [S.No.], Code, UnitCode AS CompanyCode, …
- * Keys are insertion-ordered so BizsolCustomFilterGrid.CreateDataTable column order is stable.
- */
 function getCompanyCodeFromListItem(item) {
     if (!item) return '';
     if (item.CompanyCode != null && item.CompanyCode !== '') return item.CompanyCode;
@@ -100,26 +94,22 @@ function buildCompanyListGridRow(item, index) {
         c +
         ')"><i class="fa fa-trash-can"></i></button>' +
         '</span>';
+    /* Display keys (friendly labels); Code last + hidden for filters/actions — matches list SP aliases */
     return {
         'S.No.': getSerialNoFromListItem(item, index),
-        Code: c,
-        CompanyCode: getCompanyCodeFromListItem(item),
-        CompanyName: item.CompanyName || item.companyName || '',
-        CompanyAliasName: item.CompanyAliasName || item.companyAliasName || '',
-        OfficeAddress1: item.OfficeAddress1 || item.officeAddress1 || '',
-        GSTNo: item.GSTNo || item.gstNo || '',
-        OfficePhones1: item.OfficePhones1 || item.officePhones1 || '',
-        EMail: item.EMail || item.eMail || item.Email || item.email || '',
-        WebSite: item.WebSite || item.webSite || '',
+        'Company Code': getCompanyCodeFromListItem(item),
+        'Company Name': item.CompanyName || item.companyName || '',
+        'Alias Name': item.CompanyAliasName || item.companyAliasName || '',
+        'Company Address': item.OfficeAddress1 || item.officeAddress1 || '',
+        'GST No.': item.GSTNo || item.gstNo || '',
+        'Phone No.': item.OfficePhones1 || item.officePhones1 || '',
+        Email: item.EMail || item.eMail || item.Email || item.email || '',
+        Website: item.WebSite || item.webSite || '',
         Action: btns,
+        Code: c,
     };
 }
 
-/**
- * Limits match dbo.CompanyParameter columns (varchar lengths).
- * UnitCode 15, CompanyName 100, CompanyAliasName 100, OfficeAddress1 200,
- * GSTNo 20, OfficePhones1 100, EMail 100, WebSite 50
- */
 var CI_COLUMN_MAX = {
     UnitCode: 15,
     CompanyName: 100,
@@ -131,7 +121,6 @@ var CI_COLUMN_MAX = {
     WebSite: 50,
 };
 
-/** Indian GSTIN — 15 chars; 3rd–12th per GST law (simplified check) */
 function isValidIndianGSTIN(value) {
     const s = String(value || '')
         .trim()
@@ -144,7 +133,6 @@ function countDigits(str) {
     return ((str || '').match(/\d/g) || []).length;
 }
 
-/** OfficePhones1: allow typical phone formatting; 10–15 digits (India mobile / STD) */
 function validateOfficePhones1(value) {
     const t = String(value || '').trim();
     if (!t) return { ok: false, msg: 'Phone No. is required.' };
@@ -167,7 +155,6 @@ function validateOfficePhones1(value) {
     return { ok: true };
 }
 
-/** EMail — practical RFC-like + length ≤ 100 */
 function validateEMail(value) {
     const t = String(value || '').trim();
     if (!t) return { ok: false, msg: 'Email is required.' };
@@ -183,7 +170,6 @@ function validateEMail(value) {
     return { ok: true };
 }
 
-/** WebSite — varchar(50); parse as URL with optional https:// prefix */
 function validateWebSite(value) {
     const t = String(value || '').trim();
     if (!t) return { ok: false, msg: 'Website is required.' };
@@ -328,7 +314,7 @@ function bindCompanyInfoForm(item, readOnly) {
     $('#txtOfficePhones1').val(item.OfficePhones1 || item.officePhones1 || '');
     $('#txtEMail').val(item.EMail || item.eMail || item.Email || '');
     $('#txtWebSite').val(item.WebSite || item.webSite || '');
-    $('#txtUnitCode').val(item.UnitCode != null ? item.UnitCode : item.unitCode || '');
+    $('#txtUnitCode').val(item.UnitCode != null ? item.UnitCode : item.CompanyCode || '');
 
     const ro = !!readOnly;
     $('#txtCompanyName, #txtCompanyAliasName, #txtOfficeAddress1, #txtGSTNo, #txtOfficePhones1, #txtEMail, #txtWebSite, #txtUnitCode').prop(
@@ -505,21 +491,21 @@ function refreshCompanyInformationGrid() {
 
             /* Column keys must match buildCompanyListGridRow — string filters for text SQL fields */
             const stringFilterColumn = [
-                'CompanyCode',
-                'CompanyName',
-                'CompanyAliasName',
-                'OfficeAddress1',
-                'GSTNo',
-                'OfficePhones1',
-                'EMail',
-                'WebSite',
+                'Company Code',
+                'Company Name',
+                'Alias Name',
+                'Company Address',
+                'GST No.',
+                'Phone No.',
+                'Email',
+                'Website',
             ];
-            const numericFilterColumn = ['S.No.', 'Code'];
+            const numericFilterColumn = ['S.No.'];
             const dateFilterColumn = [];
             const button = false;
             const showButtons = [];
             const stringDoubleFilterColumn = [];
-            const hiddenColumns = [];
+            const hiddenColumns = ['Code'];
             const columnAlignment = { Action: 'center;min-width:120px;white-space:nowrap;' };
 
             const mapped = rows.map(function (item, index) {
