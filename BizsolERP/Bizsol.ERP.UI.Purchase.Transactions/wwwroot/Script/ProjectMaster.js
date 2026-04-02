@@ -431,6 +431,14 @@ function sumProjectListBudget(list) {
     return sum;
 }
 
+function sumProjectListEstDays(list) {
+    let sum = 0;
+    (list || []).forEach(function (x) {
+        sum += parseInt(x.EstimatedCompletionDays || x.EstimatedDays || 0, 10) || 0;
+    });
+    return sum;
+}
+
 function formatTotalBudgetInr(sum) {
     return '₹ ' + Number(sum).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -440,6 +448,8 @@ function updateProjectVisibleBudgetTotals(list) {
     const txt = formatTotalBudgetInr(sumProjectListBudget(list));
     $('#projectTableBudgetTotal').text(txt);
     $('#statTotalBudget').text(txt);
+    const daysTotal = sumProjectListEstDays(list);
+    $('#projectTableEstDaysTotal').text(daysTotal + ' days');
 }
 
 function bindProjectGrid(list) {
