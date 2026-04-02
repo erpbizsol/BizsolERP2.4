@@ -43,7 +43,6 @@ const VendorMasterService = {
         var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetNationList`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
-    /** City master row by name (state/country/pin) — same contract as Dealer/Route City service. */
     GetCityMasterByName: function GetCityMasterByName(CityName, Mode) {
         var URL =
             UrlService.API_ENDPOINT_CITY +
@@ -63,6 +62,20 @@ const VendorMasterService = {
         var URL = UrlService.API_ENDPOINT_FixedParameter + `/GetFixedParameterDetails`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
+    GetIndustryType: function GetIndustryType() {
+        var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetIndustryType`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
+    SaveIndustryType: function SaveIndustryType(IndustryType) {
+        var URL = UrlService.API_ENDPOINT_VendorMaster + `/SaveIndustryType`;
+        var text = IndustryType != null && IndustryType !== undefined ? String(IndustryType).trim() : "";
+        var body = JSON.stringify(text);
+        return promiseAjaxCallApi.CallAPI("POST", URL, body).then(function (value) {
+            return value;
+        });
+    },
+    
+    
 };
 
 export { VendorMasterService };
