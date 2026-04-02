@@ -237,7 +237,7 @@ function ViewItem(code) {
                         ? String(otherDetail.ItemNature).trim()
                         : (item.ItemNature != null ? String(item.ItemNature).trim() : "");
                 var typeText =
-                    natureVal === "G" ? "Good" : natureVal === "S" ? "Services" : natureVal;
+                    natureVal === "G" ? "Goods" : natureVal === "S" ? "Service" : natureVal;
                 if (typeText) {
                     $("#viewItemTypeBadge").html('<i class="fas fa-cubes" style="margin-right:5px;font-size:10px;"></i>Type: ' + typeText).show();
                 } else {
