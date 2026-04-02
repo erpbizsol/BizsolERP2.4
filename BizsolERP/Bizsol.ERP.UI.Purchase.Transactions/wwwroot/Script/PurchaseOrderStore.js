@@ -17,6 +17,8 @@ let G_ItemRowCount = 0;
 let G_MobileItemEditRowId = null;
 let G_BillToShipToList = [];
 let G_SiteRepList = [];
+let G_ItemWithoutProjectList = [];
+let G_CompanyInfoList = [];
 
 BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
@@ -100,6 +102,8 @@ function InitDropdowns() {
     LoadVendorDropdown();
     LoadWorkTypeDropdown();
     LoadItemDropdown();
+    LoadItemWithoutProjectList();
+    LoadCompanyInfoDropdown();
     LoadUOMDropdown();
     LoadPaymentTermsDropdown();
     LoadBillToShipToDropdown();
@@ -141,6 +145,24 @@ function LoadItemDropdown() {
     }).catch(() => { G_ItemMasterList = []; });
 }
 
+function LoadItemWithoutProjectList() {
+    PurchaseOrderStoreService.GetItemListWithoutProject().then(function (data) {
+        G_ItemWithoutProjectList = data || [];
+    }).catch(() => { G_ItemWithoutProjectList = []; });
+}
+
+function LoadCompanyInfoDropdown(selectedCode) {
+    PurchaseOrderStoreService.GetCompanyInfoList().then(function (data) {
+        G_CompanyInfoList = data || [];
+        let html = '<option value="">-- Select Company --</option>';
+        G_CompanyInfoList.forEach(function (c) {
+            const sel = selectedCode && c.Code == selectedCode ? 'selected' : '';
+            html += `<option value="${c.Code}" ${sel}>${c.Name}</option>`;
+        });
+        $('#frmDdlCompanyInfo').html(html);
+    }).catch(() => { $('#frmDdlCompanyInfo').html('<option value="">-- Select Company --</option>'); });
+}
+
 function LoadUOMDropdown() {
     PurchaseOrderStoreService.GetUOMList().then(function (data) {
         G_UOMMasterList = data || [];
@@ -163,15 +185,24 @@ function LoadPaymentTermsDropdown(selectedCode) {
 
 function GetFilteredItemList() {
     const againstProject = $('#frmChkAgainstProject').is(':checked');
+    const workTypeCode   = parseInt($('#frmDdlWorkType').val()) || 0;
+
+    if (!againstProject) {
+        if (workTypeCode) {
+            const workTypeName = $('#frmDdlWorkType option:selected').text().trim();
+            return G_ItemWithoutProjectList.filter(i => i.WorkTypDesp === workTypeName);
+        }
+        return G_ItemWithoutProjectList;
+    }
+
     const projectCode    = parseInt($('#frmDdlProject').val())    || 0;
     const subProjectCode = parseInt($('#frmDdlSubProject').val()) || 0;
-    const workTypeCode   = parseInt($('#frmDdlWorkType').val())   || 0;
 
-    if (againstProject && subProjectCode && workTypeCode) {
+    if (subProjectCode && workTypeCode) {
         return G_ItemMasterList.filter(i =>
             i.ProjectMaster_Code    == projectCode &&
             i.SubProjectMaster_Code == subProjectCode &&
-            i.WorkTypeMaster_Code == workTypeCode
+            i.WorkTypeMaster_Code   == workTypeCode
         );
     }
     if (workTypeCode) {
@@ -231,6 +262,7 @@ window.ToggleProjectFields = function () {
         G_SubProjectList = [];
         $('#frmDdlProject').html('<option value="">-- Select Project --</option>');
         $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>');
+        if (G_ItemWithoutProjectList.length === 0) LoadItemWithoutProjectList();
     }
     RefreshAllItemDropdowns();
 };
@@ -244,6 +276,12 @@ function LoadProjectDropdown(selectedCode) {
             html += `<option value="${p.Code}" ${sel}>${p.Name}</option>`;
         });
         $('#frmDdlProject').html(html);
+        if (selectedCode) {
+            const proj = G_ProjectList.find(p => String(p.Code) === String(selectedCode));
+            if (proj && proj.DataBaseLocation_Code) {
+                $('#frmDdlCompanyInfo').val(proj.DataBaseLocation_Code);
+            }
+        }
     }).catch(() => { $('#frmDdlProject').html('<option value="">-- Select Project --</option>'); });
 }
 
@@ -253,6 +291,10 @@ window.LoadSubProjects = function (selectedCode) {
         $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>');
         RefreshAllItemDropdowns();
         return;
+    }
+    const selectedProject = G_ProjectList.find(p => String(p.Code) === String(projectCode));
+    if (selectedProject && selectedProject.DataBaseLocation_Code) {
+        $('#frmDdlCompanyInfo').val(selectedProject.DataBaseLocation_Code);
     }
     PurchaseOrderStoreService.GetSubProjectList(projectCode).then(function (data) {
         G_SubProjectList = data || [];
@@ -572,6 +614,7 @@ function ResetPOForm() {
     $('#frmTxtRemarks').val('');
     $('#frmChkAgainstProject').prop('checked', true);
     $('#divProjectFields').show();
+    $('#frmDdlCompanyInfo').val('');
     G_SubProjectList = [];
     if (G_ProjectList.length === 0) LoadProjectDropdown();
     $('#frmDdlProject').html('<option value="">-- Select Project --</option>');
@@ -664,6 +707,16 @@ function GetRowToleranceInfo(rowId) {
 }
 
 function ApplyToleranceToRow(rowId, item) {
+    const againstProject = $('#frmChkAgainstProject').is(':checked');
+    if (!againstProject) {
+        $(`#frmHfBaseQty_${rowId}`).val(0);
+        $(`#frmHfQtyTolerance_${rowId}`).val(0);
+        $(`#frmHfBaseRate_${rowId}`).val(0);
+        $(`#frmHfRateTolerance_${rowId}`).val(0);
+        $(`#frmTxtQty_${rowId}`).removeAttr('title');
+        $(`#frmTxtRate_${rowId}`).removeAttr('title');
+        return;
+    }
     const baseQty  = item ? (parseFloat(item.QtyRequired  || item.Qty          || 0)) : 0;
     const qtyTol   = item ? (parseFloat(item.QtyTolerance || item.Tolerance     || 0)) : 0;
     const baseRate = item ? (parseFloat(item.Rate         || item.EstimatedRate || 0)) : 0;
@@ -694,7 +747,9 @@ function ApplyToleranceToRow(rowId, item) {
 
 window.OnItemChange = function (rowId) {
     const selectedCode = $(`#frmDdlItem_${rowId}`).val();
-    const item = G_ItemMasterList.find(i => String(i.Code) === String(selectedCode));
+    const againstProject = $('#frmChkAgainstProject').is(':checked');
+    const itemList = againstProject ? G_ItemMasterList : G_ItemWithoutProjectList;
+    const item = itemList.find(i => String(i.Code) === String(selectedCode));
     if (item && item.UOM_Code) {
         $(`#frmDdlUOM_${rowId}`).val(item.UOM_Code);
     }
@@ -707,25 +762,28 @@ window.OnItemChange = function (rowId) {
 };
 
 window.CalcRowValue = function (rowId) {
-    const tol = GetRowToleranceInfo(rowId);
-    let qty    = parseFloat($(`#frmTxtQty_${rowId}`).val())  || 0;
-    let rate   = parseFloat($(`#frmTxtRate_${rowId}`).val()) || 0;
+    const againstProject = $('#frmChkAgainstProject').is(':checked');
+    let qty  = parseFloat($(`#frmTxtQty_${rowId}`).val())  || 0;
+    let rate = parseFloat($(`#frmTxtRate_${rowId}`).val()) || 0;
 
-    if (tol.maxQty > 0 && qty > tol.maxQty) {
-        const qtyMsg = tol.qtyTol > 0
-            ? `Qty exceeds the ${tol.qtyTol}% tolerance. Maximum allowed Qty is ${tol.maxQty}.`
-            : `Qty cannot exceed the required Qty of ${tol.maxQty} (no tolerance allowed).`;
-        toastr.warning(qtyMsg);
-        qty = tol.maxQty;
-        $(`#frmTxtQty_${rowId}`).val(qty);
-    }
-    if (tol.maxRate > 0 && rate > tol.maxRate) {
-        const rateMsg = tol.rateTol > 0
-            ? `Rate exceeds the ${tol.rateTol}% tolerance. Maximum allowed Rate is ${tol.maxRate}.`
-            : `Rate cannot exceed the required Rate of ${tol.maxRate} (no tolerance allowed).`;
-        toastr.warning(rateMsg);
-        rate = tol.maxRate;
-        $(`#frmTxtRate_${rowId}`).val(rate);
+    if (againstProject) {
+        const tol = GetRowToleranceInfo(rowId);
+        if (tol.maxQty > 0 && qty > tol.maxQty) {
+            const qtyMsg = tol.qtyTol > 0
+                ? `Qty exceeds the ${tol.qtyTol}% tolerance. Maximum allowed Qty is ${tol.maxQty}.`
+                : `Qty cannot exceed the required Qty of ${tol.maxQty} (no tolerance allowed).`;
+            toastr.warning(qtyMsg);
+            qty = tol.maxQty;
+            $(`#frmTxtQty_${rowId}`).val(qty);
+        }
+        if (tol.maxRate > 0 && rate > tol.maxRate) {
+            const rateMsg = tol.rateTol > 0
+                ? `Rate exceeds the ${tol.rateTol}% tolerance. Maximum allowed Rate is ${tol.maxRate}.`
+                : `Rate cannot exceed the required Rate of ${tol.maxRate} (no tolerance allowed).`;
+            toastr.warning(rateMsg);
+            rate = tol.maxRate;
+            $(`#frmTxtRate_${rowId}`).val(rate);
+        }
     }
 
     const value = qty * rate;
@@ -805,20 +863,22 @@ window.SavePO = function () {
 
         if (!itemCode) { toastr.warning('Please select item in all rows.'); itemValid = false; return false; }
         if (qty <= 0) { toastr.warning('Qty must be greater than 0 for all items.'); itemValid = false; return false; }
-        const saveTol = GetRowToleranceInfo(rowId);
-        if (saveTol.maxQty > 0 && qty > saveTol.maxQty) {
-            const saveQtyMsg = saveTol.qtyTol > 0
-                ? `Row ${rowId}: Qty ${qty} exceeds the ${saveTol.qtyTol}% tolerance. Maximum allowed: ${saveTol.maxQty}.`
-                : `Row ${rowId}: Qty ${qty} cannot exceed the required Qty of ${saveTol.maxQty} (no tolerance allowed).`;
-            toastr.warning(saveQtyMsg);
-            itemValid = false; return false;
-        }
-        if (saveTol.maxRate > 0 && rate > saveTol.maxRate) {
-            const saveRateMsg = saveTol.rateTol > 0
-                ? `Row ${rowId}: Rate ${rate} exceeds the ${saveTol.rateTol}% tolerance. Maximum allowed: ${saveTol.maxRate}.`
-                : `Row ${rowId}: Rate ${rate} cannot exceed the required Rate of ${saveTol.maxRate} (no tolerance allowed).`;
-            toastr.warning(saveRateMsg);
-            itemValid = false; return false;
+        if (agaistProject === 'Y') {
+            const saveTol = GetRowToleranceInfo(rowId);
+            if (saveTol.maxQty > 0 && qty > saveTol.maxQty) {
+                const saveQtyMsg = saveTol.qtyTol > 0
+                    ? `Row ${rowId}: Qty ${qty} exceeds the ${saveTol.qtyTol}% tolerance. Maximum allowed: ${saveTol.maxQty}.`
+                    : `Row ${rowId}: Qty ${qty} cannot exceed the required Qty of ${saveTol.maxQty} (no tolerance allowed).`;
+                toastr.warning(saveQtyMsg);
+                itemValid = false; return false;
+            }
+            if (saveTol.maxRate > 0 && rate > saveTol.maxRate) {
+                const saveRateMsg = saveTol.rateTol > 0
+                    ? `Row ${rowId}: Rate ${rate} exceeds the ${saveTol.rateTol}% tolerance. Maximum allowed: ${saveTol.maxRate}.`
+                    : `Row ${rowId}: Rate ${rate} cannot exceed the required Rate of ${saveTol.maxRate} (no tolerance allowed).`;
+                toastr.warning(saveRateMsg);
+                itemValid = false; return false;
+            }
         }
 
         transactions.push({
@@ -882,7 +942,8 @@ window.SavePO = function () {
             ShippingAdress: parseInt($('#frmDdlShipTo').val()) || 0,
             subProjectMaster_Code: agaistProject === 'Y' ? (parseInt($('#frmDdlSubProject').val()) || 0) : 0,
             workTypeMaster_Code: parseInt($('#frmDdlWorkType').val()) || 0,
-            SiteRepresentativeMaster_Code: parseInt($('#frmDdlSiteRep').val()) || 0
+            SiteRepresentativeMaster_Code: parseInt($('#frmDdlSiteRep').val()) || 0,
+            DataBaseLocation_Code: parseInt($('#frmDdlCompanyInfo').val()) || 0
         }],
         transactions: transactions
     };
@@ -923,6 +984,7 @@ function LoadPOForEdit(code) {
         const againstProject = (header.IsPOAgainstProject === 'Y');
         $('#frmChkAgainstProject').prop('checked', againstProject);
         $('#frmDdlWorkType').val(header.WorkTypeMaster_Code || '');
+        $('#frmDdlCompanyInfo').val(header.DataBaseLocation_Code || '');
 
         // ── Bill To / Ship To ──────────────────────────────────────────────
         if (G_BillToShipToList.length > 0) {
@@ -1090,21 +1152,21 @@ window.ViewPO = function (code) {
 
         PurchaseOrderStoreService.GetPurchaseOrderStoreById(code).then(function (res) {
             if (!res) { toastr.error('PO not found.'); return; }
-        const header = res[0][0];
-        const details = res[1] || [];
-        const approvalFlow = res[2] || [];
+            const header = res[0][0];
+            const details = res[1] || [];
+            const approvalFlow = res[2] || [];
 
-        const vendorName = (G_VendorList.find(v => v.Code == header.VendorMaster_Code) || {}).Name || '';
-        const paymentTermsName = (G_PaymentTermsList.find(p => p.Code == header.PaymentTermsMaster_Code) || {}).Name || '';
-        const againstProject = header.IsPOAgainstProject === 'Y';
-        const billToAddr = G_BillToShipToList.find(a => a.Code == header.BillToAddress_Code) || null;
-        const shipToAddr = G_BillToShipToList.find(a => a.Code == header.ShipToAddress_Code) || null;
+            const vendorName = (G_VendorList.find(v => v.Code == header.VendorMaster_Code) || {}).Name || '';
+            const paymentTermsName = (G_PaymentTermsList.find(p => p.Code == header.PaymentTermsMaster_Code) || {}).Name || '';
+            const againstProject = header.IsPOAgainstProject === 'Y';
+            const billToAddr = G_BillToShipToList.find(a => a.Code == header.BillToAddress_Code) || null;
+            const shipToAddr = G_BillToShipToList.find(a => a.Code == header.ShipToAddress_Code) || null;
 
-        let detailRows = '';
-        details.forEach((det, idx) => {
-            const itemName = (G_ItemMasterList.find(i => i.Code == det.ItemMaster_Code) || {}).Name || '';
-            const uomName = (G_UOMMasterList.find(u => u.Code == det.UOMMaster_Code) || {}).Name || '';
-            detailRows += `<tr>
+            let detailRows = '';
+            details.forEach((det, idx) => {
+                const itemName = (G_ItemMasterList.find(i => i.Code == det.ItemMaster_Code) || {}).Name || '';
+                const uomName = (G_UOMMasterList.find(u => u.Code == det.UOMMaster_Code) || {}).Name || '';
+                detailRows += `<tr>
                 <td class="text-center">${idx + 1}</td>
                 <td>${itemName}</td>
                 <td>${det.Specification || ''}</td>
@@ -1114,21 +1176,21 @@ window.ViewPO = function (code) {
                 <td class="text-end">${parseFloat(det.Rate || 0).toFixed(2)}</td>
                 <td class="text-end">${parseFloat(det.Amount || 0).toFixed(2)}</td>
             </tr>`;
-        });
+            });
 
-        const siteRepObj = G_SiteRepList.find(function (r) { return r.Code == header.SiteRepresentativeMaster_Code; }) || null;
-        let siteRepViewHtml = '';
-        if (siteRepObj) {
-            const srMobile = siteRepObj.Mobile || siteRepObj.MobileNo || '';
-            let sr = '<div class="row g-2 mt-1">';
-            if (siteRepObj.Name)  sr += '<div class="col-md-4" style="font-size:0.8rem;"><i class="fa fa-user me-1 text-muted"></i><b>Name:</b> ' + siteRepObj.Name + '</div>';
-            if (srMobile)         sr += '<div class="col-md-4" style="font-size:0.8rem;"><i class="fa fa-phone me-1 text-muted"></i><b>Mobile:</b> ' + srMobile + '</div>';
-            if (siteRepObj.Email) sr += '<div class="col-md-4" style="font-size:0.8rem;"><i class="fa fa-envelope me-1 text-muted"></i><b>Email:</b> ' + siteRepObj.Email + '</div>';
-            sr += '</div>';
-            siteRepViewHtml = '<div class="row g-2 mb-3"><div class="col-12"><div class="bts-view-panel" style="border-color:#d1fae5;background:#f0fdf4;"><div class="bts-vp-title" style="color:#059669;"><i class="fa fa-user-tie me-1"></i>Site Representative</div>' + sr + '</div></div></div>';
-        }
+            const siteRepObj = G_SiteRepList.find(function (r) { return r.Code == header.SiteRepresentativeMaster_Code; }) || null;
+            let siteRepViewHtml = '';
+            if (siteRepObj) {
+                const srMobile = siteRepObj.Mobile || siteRepObj.MobileNo || '';
+                let sr = '<div class="row g-2 mt-1">';
+                if (siteRepObj.Name) sr += '<div class="col-md-4" style="font-size:0.8rem;"><i class="fa fa-user me-1 text-muted"></i><b>Name:</b> ' + siteRepObj.Name + '</div>';
+                if (srMobile) sr += '<div class="col-md-4" style="font-size:0.8rem;"><i class="fa fa-phone me-1 text-muted"></i><b>Mobile:</b> ' + srMobile + '</div>';
+                if (siteRepObj.Email) sr += '<div class="col-md-4" style="font-size:0.8rem;"><i class="fa fa-envelope me-1 text-muted"></i><b>Email:</b> ' + siteRepObj.Email + '</div>';
+                sr += '</div>';
+                siteRepViewHtml = '<div class="row g-2 mb-3"><div class="col-12"><div class="bts-view-panel" style="border-color:#d1fae5;background:#f0fdf4;"><div class="bts-vp-title" style="color:#059669;"><i class="fa fa-user-tie me-1"></i>Site Representative</div>' + sr + '</div></div></div>';
+            }
 
-        $('#modalViewPOBody').html(`
+            $('#modalViewPOBody').html(`
             <div class="row g-2 mb-3">
                 <div class="col-md-6">
                     <table class="table table-sm table-borderless">
@@ -1147,6 +1209,7 @@ window.ViewPO = function (code) {
                         <tr><td class="fw-bold" style="width:45%">Against Project</td><td>${againstProject ? 'Yes' : 'No'}</td></tr>
                         ${againstProject ? `<tr><td class="fw-bold">Project</td><td>${header.ProjectName || '-'}</td></tr>
                         <tr><td class="fw-bold">Sub Project</td><td>${header.SubProjectName || '-'}</td></tr>` : ''}
+                        <tr><td class="fw-bold">Company Info</td><td>${header.CompanyInfo || '-'}</td></tr>
                         <tr><td class="fw-bold">Taxable Amount</td><td class="text-end">${parseFloat(header.TotalAssValue || 0).toFixed(2)}</td></tr>
                         <tr><td class="fw-bold">${header.OtherChargesDesp || 'Other Charges'}</td><td class="text-end">${parseFloat(header.OtherChargesAmount || 0).toFixed(2)}</td></tr>
                         <tr><td class="fw-bold">Freight</td><td class="text-end">${parseFloat(header.FreightAmount || 0).toFixed(2)}</td></tr>
@@ -1291,8 +1354,11 @@ function OpenMobileItemModal(rowId) {
     G_MobileItemEditRowId = rowId;
 
     // Populate item dropdown
+    const mobileItemList = GetFilteredItemList();
+    const mobileAgainstProject = $('#frmChkAgainstProject').is(':checked');
+    const mobileItemSrcList = mobileAgainstProject ? G_ItemMasterList : G_ItemWithoutProjectList;
     let itemHtml = '<option value="">-- Select Item --</option>';
-    G_ItemMasterList.forEach(i => { itemHtml += `<option value="${i.Code}">${i.Name}</option>`; });
+    mobileItemList.forEach(i => { itemHtml += `<option value="${i.Code}">${i.Name}</option>`; });
     $('#mobileItemDdlItem').html(itemHtml);
 
     // Populate UOM dropdown
@@ -1303,7 +1369,7 @@ function OpenMobileItemModal(rowId) {
     // Auto-fill UOM and GST when item changes
     $('#mobileItemDdlItem').off('change').on('change', function () {
         const code = $(this).val();
-        const item = G_ItemMasterList.find(i => String(i.Code) === String(code));
+        const item = mobileItemSrcList.find(i => String(i.Code) === String(code));
         if (item && item.UOM_Code) $('#mobileItemDdlUOM').val(item.UOM_Code);
         if (item && item.GSTRate !== undefined) $('#mobileItemTxtGST').val(item.GSTRate || 0);
         $('#mobileItemTxtSpec').val(item ? (item.ItemSpecificationDesp || '') : '');
@@ -1350,27 +1416,29 @@ function MobileItemModalConfirm() {
     if (!itemCode) { toastr.warning('Please select an item.'); return; }
     if (qty <= 0) { toastr.warning('Qty must be greater than 0.'); return; }
 
-    // ── Tolerance validation ───────────────────────────────────────────────────
-    const mobileItem   = G_ItemMasterList.find(i => String(i.Code) === String(itemCode));
-    if (mobileItem) {
-        const mbBaseQty  = parseFloat(mobileItem.QtyRequired  || mobileItem.Qty          || 0);
-        const mbQtyTol   = parseFloat(mobileItem.QtyTolerance || mobileItem.Tolerance     || 0);
-        const mbBaseRate = parseFloat(mobileItem.Rate         || mobileItem.EstimatedRate || 0);
-        const mbRateTol  = parseFloat(mobileItem.RateTolerance                             || 0);
-        const mobileRate = parseFloat($('#mobileItemTxtRate').val()) || 0;
-        const mbMaxQty   = (mbBaseQty  > 0 && mbQtyTol  > 0) ? parseFloat((mbBaseQty  * (1 + mbQtyTol  / 100)).toFixed(3)) : 0;
-        const mbMaxRate  = (mbBaseRate > 0 && mbRateTol > 0) ? parseFloat((mbBaseRate * (1 + mbRateTol / 100)).toFixed(2)) : 0;
-        if (mbMaxQty > 0 && qty > mbMaxQty) {
-            toastr.warning(`Qty exceeds the ${mbQtyTol}% tolerance. Maximum allowed Qty is ${mbMaxQty}.`);
-            $('#mobileItemTxtQty').val(mbMaxQty);
-            MobileCalcValue();
-            return;
-        }
-        if (mbMaxRate > 0 && mobileRate > mbMaxRate) {
-            toastr.warning(`Rate exceeds the ${mbRateTol}% tolerance. Maximum allowed Rate is ${mbMaxRate}.`);
-            $('#mobileItemTxtRate').val(mbMaxRate);
-            MobileCalcValue();
-            return;
+    // ── Tolerance validation (only applicable when Against Project is checked) ─
+    if ($('#frmChkAgainstProject').is(':checked')) {
+        const mobileItem = G_ItemMasterList.find(i => String(i.Code) === String(itemCode));
+        if (mobileItem) {
+            const mbBaseQty  = parseFloat(mobileItem.QtyRequired  || mobileItem.Qty          || 0);
+            const mbQtyTol   = parseFloat(mobileItem.QtyTolerance || mobileItem.Tolerance     || 0);
+            const mbBaseRate = parseFloat(mobileItem.Rate         || mobileItem.EstimatedRate || 0);
+            const mbRateTol  = parseFloat(mobileItem.RateTolerance                             || 0);
+            const mobileRate = parseFloat($('#mobileItemTxtRate').val()) || 0;
+            const mbMaxQty   = (mbBaseQty  > 0 && mbQtyTol  > 0) ? parseFloat((mbBaseQty  * (1 + mbQtyTol  / 100)).toFixed(3)) : 0;
+            const mbMaxRate  = (mbBaseRate > 0 && mbRateTol > 0) ? parseFloat((mbBaseRate * (1 + mbRateTol / 100)).toFixed(2)) : 0;
+            if (mbMaxQty > 0 && qty > mbMaxQty) {
+                toastr.warning(`Qty exceeds the ${mbQtyTol}% tolerance. Maximum allowed Qty is ${mbMaxQty}.`);
+                $('#mobileItemTxtQty').val(mbMaxQty);
+                MobileCalcValue();
+                return;
+            }
+            if (mbMaxRate > 0 && mobileRate > mbMaxRate) {
+                toastr.warning(`Rate exceeds the ${mbRateTol}% tolerance. Maximum allowed Rate is ${mbMaxRate}.`);
+                $('#mobileItemTxtRate').val(mbMaxRate);
+                MobileCalcValue();
+                return;
+            }
         }
     }
 
