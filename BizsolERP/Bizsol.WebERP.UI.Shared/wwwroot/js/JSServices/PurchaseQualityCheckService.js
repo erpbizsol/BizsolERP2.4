@@ -88,8 +88,16 @@ const PurchaseQualityCheckService = {
             return value;
         });
     },
-    RawMaterialReportOfMaize: function RawMaterialReportOfMaize(Fromdate, Todate,ModuleDesp, DisplayName) {
-        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetRawMaterialReportOfMaize?Fromdate=${Fromdate}&Todate=${Todate}&ModuleDesp=${ModuleDesp}&DisplayName=${DisplayName}`;
+    RawMaterialReportOfMaize: function RawMaterialReportOfMaize(Fromdate, Todate, ItemMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + `/GetRawMaterialReportOfMaize?Fromdate=${Fromdate}&Todate=${Todate}&ItemMaster_Code=${ItemMaster_Code}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRawMaterialItemList: function GetRawMaterialItemList() {
+        var URL = UrlService.API_ENDPOINT_QCPropertyGroupMaster + "/GetRawMaterialItemList";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

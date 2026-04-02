@@ -656,7 +656,7 @@
 
 <!-- ── ADD BILL MODAL (same flow as GRNService Add Item) ── -->
 <div class="modal fade" id="gpaAddBillModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 560px;">
         <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.18);">
             <div class="modal-header" style="background: linear-gradient(135deg,#10b981,#059669); color: #fff; border: none;">
                 <h6 class="modal-title mb-0"><i class="fa fa-file-invoice-dollar me-2"></i>Add bill</h6>
@@ -683,6 +683,16 @@
                     <div class="mb-2">
                         <label class="form-label mb-1 po-field-lbl">Bill no</label>
                         <input type="text" id="gpaAddBillModalBillNo" class="form-control form-control-sm" maxlength="64" autocomplete="off" placeholder="Bill no">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">Project</label>
+                            <input type="text" id="gpaAddBillModalProject" class="form-control form-control-sm" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;" autocomplete="off">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">Sub project</label>
+                            <input type="text" id="gpaAddBillModalSubProject" class="form-control form-control-sm" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;" autocomplete="off">
+                        </div>
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1 po-field-lbl">Bill date</label>
