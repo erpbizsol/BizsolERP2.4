@@ -805,34 +805,35 @@ select.im-input {
 </style>
 
 <div class="im-page-wrapper">
+    <span id="ERPHeading" style="display:none"></span>
     <div class="im-card">
 
         <!-- ── Header ── -->
         <div class="im-card-header">
             <div class="im-header-left">
                 <div class="im-header-icon">
-                    <i class="fas fa-boxes-stacked"></i>
+                    <i class="fas fa-layer-group"></i>
                 </div>
                 <div>
-                    <div class="im-header-title">Item Master</div>
+                    <div class="im-header-title">Category Master</div>
                 </div>
             </div>
-            <button type="button" class="im-btn-new" onclick="OpenNewItem()">
+            <button type="button" class="im-btn-new" onclick="OpenNewCategory()">
                 <i class="fas fa-plus"></i>
-                <span>New Item</span>
+                <span>New Category</span>
             </button>
         </div>
 
         <!-- ── Table ── -->
         <div class="im-card-body">
-            <div id="tblitemMaster">
+            <div id="tblCategoryMaster">
                 <div class="im-table-wrapper">
-                    <table id="ItemMaster" style="width:100%;border-collapse:collapse;font-size:13px;">
-                        <thead id="ItemMaster-header"></thead>
-                        <tbody id="ItemMaster-body"></tbody>
+                    <table id="CategoryMasterGrid" style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead id="CategoryMaster-header"></thead>
+                        <tbody id="CategoryMaster-body"></tbody>
                     </table>
                 </div>
-                <div class="paginator" id="paginator-ItemMaster"></div>
+                <div class="paginator" id="paginator-CategoryMasterGrid"></div>
             </div>
         </div>
 
@@ -840,13 +841,13 @@ select.im-input {
 </div>
 
 <!-- ═══════════════ FORM MODAL ═══════════════ -->
-<div id="itemDialogBackdrop" class="im-backdrop">
-    <div class="im-modal" id="itemFormContainer">
+<div id="categoryDialogBackdrop" class="im-backdrop">
+    <div class="im-modal" id="categoryFormContainer">
 
         <div class="im-modal-header">
             <div class="im-modal-header-title">
                 <i class="fas fa-tag"></i>
-                <span id="formModalTitle">Add New Item</span>
+                <span id="formModalTitle">Add New Category</span>
             </div>
             <button type="button" class="im-modal-close" id="btnModalClose" title="Close">
                 <i class="fas fa-times"></i>
@@ -854,71 +855,29 @@ select.im-input {
         </div>
 
         <div class="im-modal-body">
-            <div class="im-form-grid">
+            <div class="im-form-grid" style="grid-template-columns: 1fr;">
 
                 <div class="im-form-group">
-                    <label for="ItemCode">Item Code</label>
-                    <input type="text" id="ItemCode" class="im-input" placeholder="Auto-generated" autocomplete="off" readonly />
-                    <span class="im-err-text" id="err_ItemCode"><i class="fas fa-circle-exclamation"></i> Item Code is required.</span>
-                    <span class="im-dup-warning" id="dup_ItemCode"><i class="fas fa-triangle-exclamation"></i> Already exists.</span>
+                    <label for="CategoryName">Category Name <span class="im-required">*</span></label>
+                    <input type="text" id="CategoryName" class="im-input" placeholder="Enter category name" autocomplete="off" maxlength="200" />
+                    <span class="im-err-text" id="err_CategoryName"><i class="fas fa-circle-exclamation"></i> Category Name is required.</span>
                 </div>
 
                 <div class="im-form-group">
-                    <label for="ItemName">Item Name <span class="im-required">*</span></label>
-                    <input type="text" id="ItemName" class="im-input" placeholder="Enter item name" autocomplete="off" />
-                    <span class="im-err-text" id="err_ItemName"><i class="fas fa-circle-exclamation"></i> Item Name is required.</span>
-                    <span class="im-dup-warning" id="dup_ItemName"><i class="fas fa-triangle-exclamation"></i> Already exists.</span>
-                </div>
-
-                <div class="im-form-group">
-                    <label for="UOM">UOM <span class="im-required">*</span></label>
-                    <select id="UOM" class="im-input" autocomplete="off" tabindex="1" maxlength="50"> </select>
-                    <span class="im-err-text" id="err_UOM"><i class="fas fa-circle-exclamation"></i> UOM is required.</span>
-                </div>
-
-                <div class="im-form-group">
-                    <label for="ItemGroup">Group <span class="im-required">*</span></label>
-                    <select id="ItemGroup" class="im-input" autocomplete="off" tabindex="1"></select>
-                    <span class="im-err-text" id="err_ItemGroup"><i class="fas fa-circle-exclamation"></i> Group is required.</span>
-                </div>
-
-                <div class="im-form-group">
-                    <label for="HSN">HSN Code <small style="color:#9ca3af;font-weight:400;text-transform:none;">(max 8 digits)</small></label>
-                    <input type="text" id="HSN" class="im-input" placeholder="Enter HSN code" autocomplete="off"
-                           inputmode="numeric" maxlength="8" />
-                    <span class="im-err-text" id="err_HSN"><i class="fas fa-circle-exclamation"></i> Max 8 digits allowed.</span>
-                </div>
-
-                <div class="im-form-group">
-                    <label for="ItemType">Item Type</label>
-                    <select id="ItemType" class="im-input" autocomplete="off">
-                        <option value="">-- Select Type --</option>
-                        <option value="G">Good</option>
-                        <option value="S">Services</option>
-                    </select>
-                </div>
-
-                <div class="im-form-group">
-                    <label for="GSTRate">GST (%)</label>
-                    <input type="text" id="GSTRate" class="im-input" placeholder="e.g. 18" autocomplete="off"
-                           inputmode="decimal" />
-                </div>
-
-                <div class="im-form-group" style="grid-column: span 3;">
-                    <label for="ItemSpecification">Item Specification</label>
-                    <input type="text" id="ItemSpecification" class="im-input" placeholder="Enter item specification" autocomplete="off" />
+                    <label for="CategoryDesc">Category Description</label>
+                    <textarea id="CategoryDesc" class="im-input" rows="3" placeholder="Enter description (optional)" autocomplete="off" style="resize:vertical;min-height:72px;"></textarea>
                 </div>
 
             </div>
         </div>
 
         <div class="im-modal-footer">
-            <button type="button" class="im-btn-cancel" id="btnCancelItem">
+            <button type="button" class="im-btn-cancel" id="btnCancelCategory">
                 <i class="fas fa-times"></i> Cancel
             </button>
-            <button type="button" class="im-btn-save" id="btnSaveItem" onclick="SaveItem()">
+            <button type="button" class="im-btn-save" id="btnSaveCategory" onclick="SaveCategory()">
                 <i class="fas fa-floppy-disk"></i>
-                <span id="btnSaveText">Save Item</span>
+                <span id="btnSaveText">Save Category</span>
             </button>
         </div>
 
@@ -926,7 +885,7 @@ select.im-input {
 </div>
 
 <!-- ═══════════════ VIEW MODAL ═══════════════ -->
-<div id="viewItemBackdrop" class="im-backdrop">
+<div id="viewCategoryBackdrop" class="im-backdrop">
     <div class="im-view-modal">
 
         <div class="im-view-header">
@@ -934,91 +893,39 @@ select.im-input {
                 <i class="fas fa-times"></i>
             </button>
             <div class="im-view-avatar">
-                <i class="fas fa-box-open"></i>
+                <i class="fas fa-layer-group"></i>
             </div>
             <div class="im-view-header-text">
                 <div class="im-view-header-code">
                     <span style="opacity:0.55;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;margin-right:4px;">
-                        <i class="fas fa-barcode" style="margin-right:3px;"></i>Item Code:
+                        <i class="fas fa-hashtag" style="margin-right:3px;"></i>Code:
                     </span>
-                    <span id="viewItemCode">—</span>
+                    <span id="viewCategoryCode">—</span>
                 </div>
-                <div class="im-view-header-name" id="viewItemName" title="" style="font-size:15px;"></div>
+                <div class="im-view-header-name" id="viewCategoryName" title="" style="font-size:15px;"></div>
                 <div style="font-size:9px;color:rgba(255,255,255,0.55);letter-spacing:0.06em;text-transform:uppercase;margin-top:-6px;margin-bottom:6px;">
-                    <i class="fas fa-tag" style="margin-right:3px;"></i>Item Name
-                </div>
-                <div class="im-view-badges">
-                    <span class="im-view-badge" id="viewItemTypeBadge" style="display:none;"></span>
-                    <span class="im-view-badge" id="viewGSTBadge" style="display:none;"></span>
+                    <i class="fas fa-tag" style="margin-right:3px;"></i>Category Name
                 </div>
             </div>
         </div>
 
         <div class="im-view-body">
-            <div class="im-view-section-label">Item Details</div>
+            <div class="im-view-section-label">Category Details</div>
             <div class="im-view-fields-grid">
-
-                <div class="im-view-field">
-                    <div class="im-view-field-icon"><i class="fas fa-barcode"></i></div>
-                    <div class="im-view-field-info">
-                        <div class="im-view-field-label">Item Code</div>
-                        <div class="im-view-field-value" id="vf_ItemCode">—</div>
-                    </div>
-                </div>
 
                 <div class="im-view-field">
                     <div class="im-view-field-icon"><i class="fas fa-tag"></i></div>
                     <div class="im-view-field-info">
-                        <div class="im-view-field-label">Item Name</div>
-                        <div class="im-view-field-value" id="vf_ItemName">—</div>
-                    </div>
-                </div>
-
-                <div class="im-view-field">
-                    <div class="im-view-field-icon"><i class="fas fa-ruler-horizontal"></i></div>
-                    <div class="im-view-field-info">
-                        <div class="im-view-field-label">UOM</div>
-                        <div class="im-view-field-value" id="vf_UOM">—</div>
-                    </div>
-                </div>
-
-                <div class="im-view-field">
-                    <div class="im-view-field-icon"><i class="fas fa-layer-group"></i></div>
-                    <div class="im-view-field-info">
-                        <div class="im-view-field-label">Group</div>
-                        <div class="im-view-field-value" id="vf_ItemGroup">—</div>
-                    </div>
-                </div>
-
-                <div class="im-view-field">
-                    <div class="im-view-field-icon"><i class="fas fa-hashtag"></i></div>
-                    <div class="im-view-field-info">
-                        <div class="im-view-field-label">HSN Code</div>
-                        <div class="im-view-field-value" id="vf_HSN">—</div>
-                    </div>
-                </div>
-
-                <div class="im-view-field">
-                    <div class="im-view-field-icon"><i class="fas fa-cubes"></i></div>
-                    <div class="im-view-field-info">
-                        <div class="im-view-field-label">Item Type</div>
-                        <div class="im-view-field-value" id="vf_ItemType">—</div>
-                    </div>
-                </div>
-
-                <div class="im-view-field">
-                    <div class="im-view-field-icon"><i class="fas fa-percent"></i></div>
-                    <div class="im-view-field-info">
-                        <div class="im-view-field-label">GST (%)</div>
-                        <div class="im-view-field-value" id="vf_GSTRate">—</div>
+                        <div class="im-view-field-label">Category Name</div>
+                        <div class="im-view-field-value" id="vf_CategoryName">—</div>
                     </div>
                 </div>
 
                 <div class="im-view-field" style="grid-column: span 2;">
-                    <div class="im-view-field-icon" style="background:#f0fdf4;color:#10b981;"><i class="fas fa-file-lines"></i></div>
+                    <div class="im-view-field-icon" style="background:#f0fdf4;color:#10b981;"><i class="fas fa-align-left"></i></div>
                     <div class="im-view-field-info">
-                        <div class="im-view-field-label">Item Specification</div>
-                        <div class="im-view-field-value" id="vf_ItemSpecification" style="white-space:normal;overflow:visible;">—</div>
+                        <div class="im-view-field-label">Category Description</div>
+                        <div class="im-view-field-value" id="vf_CategoryDesc" style="white-space:normal;overflow:visible;">—</div>
                     </div>
                 </div>
 
@@ -1030,7 +937,7 @@ select.im-input {
                 <i class="fas fa-times"></i> Close
             </button>
             <button type="button" class="im-btn-view-edit" onclick="EditFromView()">
-                <i class="fas fa-pen"></i> Edit Item
+                <i class="fas fa-pen"></i> Edit Category
             </button>
         </div>
 
@@ -1043,12 +950,11 @@ select.im-input {
         <div class="im-delete-icon-wrap">
             <i class="fas fa-trash-can"></i>
         </div>
-        <div class="im-delete-title">Delete this Item?</div>
+        <div class="im-delete-title">Delete this Category?</div>
         <div class="im-delete-text">
-            This action cannot be undone.<br>The item record will be permanently removed.
+            This action cannot be undone.<br>The category record will be permanently removed.
         </div>
 
-        <!-- Reason for Delete -->
         <div class="im-delete-reason">
             <label class="im-delete-reason-label">
                 <i class="fas fa-comment-dots"></i> Reason for Delete <span class="im-required">*</span>
@@ -1082,6 +988,6 @@ select.im-input {
     </div>
 </div>
 
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Masters/js/ItemMaster.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/CategoryMaster.js"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 
