@@ -21,7 +21,10 @@ let G_VendorSuppressCityAddressFill = false;
 /** When true, Nation/State change must not cascade-clear City/State (edit load / city-driven fill). */
 let G_VendorProgrammaticNationStateCity = false;
 
-/** Attachment (same pattern as GRNService: byte[] + file name). */
+/** DocumentMaster — same table key as other Account / party attachments (e.g. Lead). */
+var VM_ATTACHMENT_MASTER_TABLE = "AccountMaster";
+
+/** Legacy single-file attachment from API (bytes + file name) for view/print. */
 let vmVendorFileName = "";
 let vmVendorImageBase64Data = [];
 let vmVendorExistingImageData = [];
@@ -55,10 +58,13 @@ function vmResetVendorAttachment() {
     vmVendorImageBase64Data = [];
     vmVendorExistingImageData = [];
     vmVendorExistingFileName = "";
-    var fin = document.getElementById("vmFileAttachment");
-    if (fin) fin.value = "";
+    var legacyRow = document.getElementById("vmLegacyAttachRow");
+    if (legacyRow) legacyRow.style.display = "none";
     var vbtn = document.getElementById("vmViewAttachmentBtn");
-    if (vbtn) vbtn.style.setProperty("display", "none", "important");
+    if (vbtn) vbtn.style.removeProperty("display");
+    if (typeof window.ClearPendingAttachments_AttachmentControl === "function") {
+        window.ClearPendingAttachments_AttachmentControl();
+    }
 }
 
 function vmParseVendorAttachmentFromApiResponse(raw, item) {
@@ -80,35 +86,35 @@ function vmApplyVendorAttachmentFromApi(raw, item) {
     vmVendorExistingImageData = p.data;
     vmVendorImageBase64Data = [];
     vmVendorFileName = "";
-    var fin = document.getElementById("vmFileAttachment");
-    if (fin) fin.value = "";
+    var legacyRow = document.getElementById("vmLegacyAttachRow");
     var vbtn = document.getElementById("vmViewAttachmentBtn");
-    if (vbtn) {
+    if (legacyRow && vbtn) {
         if (vmVendorAttachmentHasData(vmVendorExistingImageData)) {
-            vbtn.style.setProperty("display", "flex", "important");
+            legacyRow.style.display = "flex";
             if (vmVendorExistingFileName) vbtn.title = vmVendorExistingFileName;
         } else {
-            vbtn.style.setProperty("display", "none", "important");
+            legacyRow.style.display = "none";
         }
     }
 }
 
 function vmFileUploadChange(event) {
-    var files = event.target.files;
+    var files = event && event.target ? event.target.files : null;
     vmVendorFileName = files && files[0] ? files[0].name : "";
+    var legacyRow = document.getElementById("vmLegacyAttachRow");
     var vbtn = document.getElementById("vmViewAttachmentBtn");
     if (files && files.length > 0) {
         vmConvertFileToByteArray(files[0]).then(function (b) {
             vmVendorImageBase64Data = b;
-            if (vbtn) vbtn.style.setProperty("display", "flex", "important");
+            if (legacyRow) legacyRow.style.display = "flex";
         });
     } else {
         vmVendorImageBase64Data = [];
-        if (vbtn) {
+        if (legacyRow && vbtn) {
             if (vmVendorAttachmentHasData(vmVendorExistingImageData)) {
-                vbtn.style.setProperty("display", "flex", "important");
+                legacyRow.style.display = "flex";
             } else {
-                vbtn.style.setProperty("display", "none", "important");
+                legacyRow.style.display = "none";
             }
         }
     }
@@ -498,7 +504,8 @@ function vmBuildVendorMasterPrintHtml(payload) {
         '</div><table class="fld"><tbody>' +
         row("Vendor Name", item.AccountDesp) +
         row("Display Name", item.BillName) +
-        row("Address", [item.Address1, item.Address2].filter(Boolean).join(", ") || "—") +
+        row("Address Line 1", item.Address1 || "—") +
+        row("Address Line 2", item.Address2 || "—") +
         row("Country", item.Nation) +
         row("City", item.City) +
         row("State", item.State) +
@@ -624,6 +631,13 @@ function shouldShowVendorPartyVerifyColumn() {
 }
 
 $(document).ready(function () {
+    window.AttachmentControl_onQueueChange = function (count) {
+        var badge = document.getElementById("vmTempAttachBadge");
+        if (!badge) return;
+        badge.textContent = String(count);
+        badge.style.display = count > 0 ? "inline-flex" : "none";
+    };
+
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     syncVendorModuleContextFromHeading();
     applyVendorMasterClientModeUi();
@@ -793,6 +807,7 @@ $(document).ready(function () {
         applyVendorMasterClientModeUi();
     });
 });
+
 function rowIsVerified(item) {
     var v = item && item.Verified;
     if (v === undefined || v === null) return false;
@@ -968,6 +983,13 @@ function mapVendorRowsToGrid(rows) {
             ',\'print\')">' +
             '<i class="fas fa-print"></i>' +
             "</button>" +
+            '<button type="button" class="vm-btn-attach" title="Attachment" onclick="openVendorMasterListAttachmentControl(' +
+            item.Code +
+            "," +
+            item.Code +
+            ",\'\')\">" +
+            '<i class="fas fa-paperclip"></i>' +
+            "</button>" +
             '<button class="vm-btn-edit" title="Edit" onclick="EditVendor(' + item.Code + ')">' +
             '<i class="fas fa-pen"></i>' +
             "</button>" +
@@ -1025,7 +1047,7 @@ function getVendorMasterColumnAlignment() {
         ca.Verify = "center;min-width:96px;white-space:nowrap;";
     }
     if (G_IsClientOrVendor === "V") {
-        ca.Action = "center;min-width:120px;white-space:nowrap;";
+        ca.Action = "center;min-width:152px;white-space:nowrap;";
     }
     return ca;
 }
@@ -1494,6 +1516,40 @@ function DoVendorDelete() {
 }
 
 /** Map API / model validation text to short user-facing messages (save errors). */
+function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode, sourceDownloadFileName) {
+    var url = (sessionStorage.getItem("AppBaseURL") || "") + "/CustomControl/AttachmentControl";
+    if (typeof jQuery !== "undefined") {
+        jQuery("#VendorMaster_AttachmentControlmodal").load(url, {
+            MasterTableName: masterTableName,
+            MasterTableCode: masterTableCode,
+            DetailTableName: detailTableName,
+            DetailTableCode: detailTableCode,
+            EntryNo: entryNo,
+            EntryDate: entryDate,
+            Mode: mode,
+            SourceDownloadFileName: sourceDownloadFileName || ""
+        });
+    }
+}
+
+function openVendorMasterAttachmentControl() {
+    var masterCode = parseInt(String(G_EditCode || 0), 10) || 0;
+    var entryNo = masterCode;
+    var entryDate = new Date().toISOString().split("T")[0];
+    InitAttachmentControl(VM_ATTACHMENT_MASTER_TABLE, masterCode, "", 0, entryNo, entryDate, "all", "");
+}
+
+function openVendorMasterListAttachmentControl(code, entryNo, entryDate) {
+    var masterCode = parseInt(code, 10) || 0;
+    if (masterCode <= 0) {
+        toastr.warning("Invalid record. Cannot open attachments.");
+        return;
+    }
+    var en = parseInt(entryNo, 10) || 0;
+    if (en <= 0) en = masterCode;
+    InitAttachmentControl(VM_ATTACHMENT_MASTER_TABLE, masterCode, "", 0, en, entryDate || "", "all", "");
+}
+
 function friendlyValidationLine(fieldKey, apiMsg) {
     var k = fieldKey || '';
     var m = (apiMsg || '').toLowerCase();
@@ -1529,8 +1585,38 @@ function SaveVendor() {
             btnSave.prop("disabled", true);
             $("#vmBtnSaveText").text(isEdit ? "Updating…" : "Saving…");
 
-            VendorMasterService.SaveVendorMaster(payload).then(function (res) {
+            VendorMasterService.SaveVendorMaster(payload).then(async function (res) {
                 if (res && res.Status === 'Y') {
+                    var savedPk =
+                        parseInt(
+                            res.Code ??
+                                res.code ??
+                                (res.Data && (res.Data.Code ?? res.Data.code)) ??
+                                (res.data && (res.data.Code ?? res.data.code)) ??
+                                (isEdit ? G_EditCode : 0),
+                            10
+                        ) || 0;
+                    var entryDateStr = new Date().toISOString().split("T")[0];
+                    if (savedPk > 0 && typeof window.FlushPendingAttachments === "function") {
+                        var flush = await window.FlushPendingAttachments(
+                            savedPk,
+                            VM_ATTACHMENT_MASTER_TABLE,
+                            savedPk,
+                            entryDateStr
+                        );
+                        if (flush && flush.failed > 0) {
+                            toastr.warning(
+                                (flush.uploaded || 0) +
+                                    " attachment(s) uploaded, " +
+                                    flush.failed +
+                                    " failed."
+                            );
+                        } else if (flush && flush.uploaded > 0) {
+                            toastr.success(
+                                (flush.uploaded || 0) + " pending attachment(s) uploaded."
+                            );
+                        }
+                    }
                     CloseVendorForm();
                     GetVendorMasterList();
                     ShowVendorSuccessModal(
@@ -1761,13 +1847,8 @@ function BuildVendorPayload() {
                 ACNo_ByThirdParty: "",
                 TransNo_ByThirdParty: "",
                 OtherStatus: "",
-                AttachFileName: vmVendorFileName || vmVendorExistingFileName || "",
-                AttachData:
-                    vmVendorImageBase64Data.length > 0
-                        ? vmVendorImageBase64Data
-                        : vmVendorExistingImageData.length > 0
-                          ? vmVendorExistingImageData
-                          : []
+                AttachFileName: "",
+                AttachData: []
             }
         ],
 
@@ -2033,12 +2114,13 @@ function validateCPEmail(showError) {
     return true;
 }
 function ClearVendorForm() {
-    G_VendorSuppressCityAddressFill = false;
+    G_VendorSuppressCityAddressFill = true;
+    G_VendorProgrammaticNationStateCity = true;
     G_BillNameSyncedWithVendorName = true;
     vmResetVendorAttachment();
     $("#AccountDesp").removeData("vm-had-chars");
-    // VendorMaster fields
-    ["AccountDesp", "BillName", "GSTNNo", "PANNo", "EMail", "PhoneNo", "Address1","Address2", "City", "State", "Nation", "Pin"].forEach(function (id) {
+    // Text inputs (Address1/Address2 must clear on New; Pin uses id PinCode, not Pin)
+    ["AccountDesp", "BillName", "GSTNNo", "PANNo", "EMail", "PhoneNo", "Address1", "Address2"].forEach(function (id) {
         $("#" + id)
             .val("")
             .removeClass("vm-input-error")
@@ -2049,6 +2131,18 @@ function ClearVendorForm() {
         var dupEl = $("#dup_" + id);
         if (dupEl.length) dupEl.hide();
     });
+
+    $("#PinCode")
+        .val("")
+        .removeClass("vm-input-error");
+    $("#err_PinCode").hide();
+
+    $("#Nation").val("").trigger("change");
+    $("#State").val("").trigger("change");
+    $("#City").val("").trigger("change");
+
+    G_VendorProgrammaticNationStateCity = false;
+    G_VendorSuppressCityAddressFill = false;
 
     // Nature dropdown
     $("#Nature").val("");
@@ -2283,3 +2377,6 @@ window.vmDownloadVendorAttachment = vmDownloadVendorAttachment;
 window.vmDownloadVendorAttachmentFromViewModal = vmDownloadVendorAttachmentFromViewModal;
 window.PrintVendor = PrintVendor;
 window.PrintVendorFromView = PrintVendorFromView;
+window.InitAttachmentControl = InitAttachmentControl;
+window.openVendorMasterAttachmentControl = openVendorMasterAttachmentControl;
+window.openVendorMasterListAttachmentControl = openVendorMasterListAttachmentControl;

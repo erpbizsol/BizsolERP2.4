@@ -1,7 +1,6 @@
 import { GRNService }          from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_GRNService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService }          from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
-import { VendorMasterService }  from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VendorMasterService.js';
 
 // ── Numeric input helpers ────────────────────────────────────────────────────
 // Block e, E, +, - keys that browsers allow in type="number"
@@ -23,45 +22,18 @@ let projectItemsCache = [];
 let editMode          = false;
 let editCode          = 0;
 
-window.G_PartyVerificationBeforeOrderY = false;
-window.G_GRNHasVerifyRight = false;
-let G_GRNVerifyCode = 0;
-window.G_GRNStatFilter = "all";
-window.G_GRNMasterSourceRows = [];
-
-function extractPartyVerificationBeforeOrderY(res) {
-    var row = null;
-    if (Array.isArray(res) && res.length > 0) row = res[0];
-    else if (res && Array.isArray(res.data) && res.data.length > 0) row = res.data[0];
-    else if (res && Array.isArray(res.Data) && res.Data.length > 0) row = res.Data[0];
-    else if (res && typeof res === "object" && !Array.isArray(res)) row = res;
-    if (!row || typeof row !== "object") return false;
-    var v = row.PartyVerificationBeforeOrder;
-    if (v === undefined || v === null) v = row.partyVerificationBeforeOrder;
-    if (v === undefined || v === null) return false;
-    var s = String(v).trim().toUpperCase();
-    return s === "Y" || s === "YES" || s === "1";
-}
-
-function applyGRNPartyVerificationUi() {
-    var strip = document.getElementById("grnMasterStatsStrip");
-    if (!strip) return;
-    strip.style.display = window.G_PartyVerificationBeforeOrderY ? "flex" : "none";
-    if (!window.G_PartyVerificationBeforeOrderY) window.G_GRNStatFilter = "all";
-}
-
-function shouldShowGRNPartyVerifyColumn() {
-    return !!(window.G_PartyVerificationBeforeOrderY && window.G_GRNHasVerifyRight);
-}
+let grnVerifyPendingCode = 0;
+let grnHasVerifyRight = false;
+let grnMasterSourceRows = [];
 
 function resolveGRNVerifyRight() {
     var FinYear = getFinancialYear();
     return MenuService.CheckModuleOptionRight("GRN Services", "Verify", "N", FinYear)
         .then(function (response) {
-            window.G_GRNHasVerifyRight = response && response.CheckModuleOptionRight === "Y";
+            grnHasVerifyRight = response && response.CheckModuleOptionRight === "Y";
         })
         .catch(function () {
-            window.G_GRNHasVerifyRight = false;
+            grnHasVerifyRight = false;
         });
 }
 
@@ -176,30 +148,6 @@ function buildGrnVerifiedBadgeHtml(item) {
     );
 }
 
-function updateGRNMasterStats(rows) {
-    var list = Array.isArray(rows) ? rows : [];
-    var total = list.length;
-    var verified = 0;
-    for (var i = 0; i < list.length; i++) {
-        if (rowIsVerifiedGrn(list[i])) verified++;
-    }
-    var pending = total - verified;
-    var elT = document.getElementById("grnStatTotal");
-    var elV = document.getElementById("grnStatVerified");
-    var elP = document.getElementById("grnStatPending");
-    if (elT) elT.textContent = String(total);
-    if (elV) elV.textContent = String(verified);
-    if (elP) elP.textContent = String(pending);
-}
-
-function filterGRNRowsByStat(rows, mode) {
-    var list = Array.isArray(rows) ? rows : [];
-    if (!window.G_PartyVerificationBeforeOrderY) return list.slice();
-    if (mode === "verified") return list.filter(function (r) { return rowIsVerifiedGrn(r); });
-    if (mode === "pending") return list.filter(function (r) { return !rowIsVerifiedGrn(r); });
-    return list.slice();
-}
-
 function mapGRNRowsToGrid(rows) {
     return rows.map(function (item) {
         const code = item.Code ?? item.code ?? 0;
@@ -214,15 +162,12 @@ function mapGRNRowsToGrid(rows) {
             '<i class="fas fa-paperclip"></i></button>' +
             '<button class="im-btn-delete" title="Delete" onclick="confirmDeleteGRN(' + code + ', \'' + (item.GRNo ?? item.MRNNo ?? '') + '\')">' +
             '<i class="fas fa-trash-can"></i></button>';
-        var verifyCell = "";
-        if (shouldShowGRNPartyVerifyColumn()) {
-            verifyCell = rowIsVerifiedGrn(item)
+        if (grnHasVerifyRight) {
+            btns += rowIsVerifiedGrn(item)
                 ? buildGrnVerifiedBadgeHtml(item)
-                : '<button type="button" class="grn-btn-verify" onclick="VerifyGRN(' + code + ')"><i class="fas fa-check"></i></button>';
+                : '<button type="button" class="grn-btn-verify" title="Verify" onclick="VerifyGRN(' + code + ')"><i class="fas fa-check"></i></button>';
         }
-        var patch = { Action: btns };
-        if (shouldShowGRNPartyVerifyColumn()) patch.Verify = verifyCell;
-        return Object.assign({}, item, patch);
+        return Object.assign({}, item, { Action: btns });
     });
 }
 
@@ -241,40 +186,21 @@ function getGRNListHiddenColumns() {
         "Verified ON",
         "Verified On",
     ];
-    if (!window.G_PartyVerificationBeforeOrderY) {
-        cols.push("Verify");
-    }
+    cols.push("Verify");
     return cols;
 }
 
 function getGRNListColumnAlignment() {
-    var ca = {
-        Action: "center;width:168px;",
+    return {
+        Action: "center;min-width:220px;white-space:nowrap;",
     };
-    if (shouldShowGRNPartyVerifyColumn()) {
-        ca.Verify = "center;min-width:96px;white-space:nowrap;";
-    }
-    return ca;
-}
-
-function syncGRNStatChipClasses() {
-    if (!window.G_PartyVerificationBeforeOrderY) return;
-    var mode = window.G_GRNStatFilter || "all";
-    $("#grnMasterStatsStrip .grn-stat-chip[data-grn-filter]")
-        .removeClass("vm-stat-chip--active")
-        .attr("aria-pressed", "false");
-    $('#grnMasterStatsStrip .grn-stat-chip[data-grn-filter="' + mode + '"]')
-        .addClass("vm-stat-chip--active")
-        .attr("aria-pressed", "true");
 }
 
 function refreshGRNListGrid() {
-    var source = window.G_GRNMasterSourceRows || [];
-    var mode = window.G_GRNStatFilter || "all";
+    var source = grnMasterSourceRows || [];
     if (source.length === 0) return;
 
-    var filtered = filterGRNRowsByStat(source, mode);
-    var mapped = mapGRNRowsToGrid(filtered);
+    var mapped = mapGRNRowsToGrid(source.slice());
 
     const StringFilterColumn = ["Bill No", "Party Name", "Sub Project", "Project"];
     const NumericFilterColumn = ["MRN No"];
@@ -304,7 +230,6 @@ function refreshGRNListGrid() {
         if (typeof window.updatePageInfo === "function") window.updatePageInfo("grnListTable");
         if (typeof window.updateButtons === "function") window.updateButtons("grnListTable");
         if (typeof window.updateFilteredClass === "function") window.updateFilteredClass("grnListTbody-body");
-        syncGRNStatChipClasses();
         return;
     }
 
@@ -321,7 +246,6 @@ function refreshGRNListGrid() {
         hiddenColumns,
         ColumnAlignment
     );
-    syncGRNStatChipClasses();
 }
 
 $(document).ready(async function () {
@@ -341,42 +265,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadProjectList(),
         loadAllPOs(),
     ]);
-    await new Promise(function (resolve) {
-        window.G_PartyVerificationBeforeOrderY = false;
-        VendorMasterService.GetFixedParameterDetails()
-            .then(function (res) {
-                window.G_PartyVerificationBeforeOrderY = extractPartyVerificationBeforeOrderY(res);
-            })
-            .catch(function () {
-                window.G_PartyVerificationBeforeOrderY = false;
-            })
-            .finally(function () {
-                applyGRNPartyVerificationUi();
-                resolveGRNVerifyRight()
-                    .then(function () {
-                        return loadGRNList();
-                    })
-                    .finally(function () {
-                        resolve();
-                    });
-            });
-    });
+    await resolveGRNVerifyRight();
+    await loadGRNList();
     showListView();
 
     if (typeof jQuery !== "undefined") {
-        jQuery(document).on("click", ".grn-stat-chip[data-grn-filter]", function () {
-            var mode = jQuery(this).attr("data-grn-filter");
-            window.G_GRNStatFilter = mode;
-            if (window.G_GRNMasterSourceRows && window.G_GRNMasterSourceRows.length > 0) {
-                refreshGRNListGrid();
-            }
-        });
-        jQuery(document).on("keydown", ".grn-stat-chip[data-grn-filter]", function (e) {
-            if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                jQuery(this).trigger("click");
-            }
-        });
         jQuery(document).on("click", ".grn-verify-status--done[data-grn-verify-info]", function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -1475,8 +1368,7 @@ function loadGRNList() {
         if (Array.isArray(response)) rows = response;
         else if (Array.isArray(response.data)) rows = response.data;
         else if (Array.isArray(response.Data)) rows = response.Data;
-        window.G_GRNMasterSourceRows = rows;
-        updateGRNMasterStats(rows);
+        grnMasterSourceRows = rows;
         if (rows.length > 0) {
             $("#grnListTable").show();
             refreshGRNListGrid();
@@ -1490,33 +1382,24 @@ function loadGRNList() {
 }
 
 function VerifyGRN(code) {
-    if (!window.G_PartyVerificationBeforeOrderY) {
-        toastr.warning("Party verification is not enabled in fixed parameters.");
-        return;
-    }
-    if (!window.G_GRNHasVerifyRight) {
+    if (!grnHasVerifyRight) {
         toastr.warning("You do not have Verify permission.");
         return;
     }
-    G_GRNVerifyCode = code;
+    grnVerifyPendingCode = code;
     $("#grnVerifyConfirmTitle").text("Verify this GRN?");
     $("#grnVerifyConfirmText").text("This will mark the GRN as verified.");
     $("#grnVerifyConfirmBackdrop").addClass("show");
 }
 
 function CloseGRNVerifyModal() {
-    G_GRNVerifyCode = 0;
+    grnVerifyPendingCode = 0;
     $("#grnVerifyConfirmBackdrop").removeClass("show");
 }
 
 function DoGRNVerify() {
-    var code = G_GRNVerifyCode;
+    var code = grnVerifyPendingCode;
     if (!code) {
-        CloseGRNVerifyModal();
-        return;
-    }
-    if (!window.G_PartyVerificationBeforeOrderY) {
-        toastr.warning("Party verification is not enabled in fixed parameters.");
         CloseGRNVerifyModal();
         return;
     }

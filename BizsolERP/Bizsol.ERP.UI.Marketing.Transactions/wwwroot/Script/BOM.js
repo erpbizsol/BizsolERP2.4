@@ -1225,7 +1225,6 @@ function refreshBOMSummary() {
     $('#tblBOM tbody tr').each(function () {
         const $tr = $(this);
         const qty  = parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0;
-        const rate = parseFloat(($tr.find('.bom-est-rate').val()     || '0').replace(/,/g, '')) || 0;
         const amt  = parseFloat(($tr.find('.bom-amount').val()       || '0').replace(/,/g, '')) || 0;
         const item = $tr.find('.bom-item').val();
 
@@ -1233,10 +1232,9 @@ function refreshBOMSummary() {
 
         const key = getCategoryGroupKey($tr);
         if (!groups[key]) {
-            groups[key] = { label: getCategoryLabelFromRow($tr), qty: 0, rateTimesQty: 0, amount: 0 };
+            groups[key] = { label: getCategoryLabelFromRow($tr), qty: 0, amount: 0 };
         }
         groups[key].qty += qty;
-        groups[key].rateTimesQty += qty * rate;
         groups[key].amount += amt;
     });
 
@@ -1253,33 +1251,26 @@ function refreshBOMSummary() {
     const $tbody = $('#tblBOMSummary tbody');
     $tbody.empty();
 
-    let gQty = 0, gRateTimesQty = 0, gAmt = 0;
+    let gQty = 0, gAmt = 0;
 
     keys.sort().forEach(function (k) {
         const g = groups[k];
         gQty += g.qty;
-        gRateTimesQty += g.rateTimesQty;
         gAmt += g.amount;
-
-        const wAvg = g.qty > 0 ? (g.rateTimesQty / g.qty) : 0;
 
         $tbody.append(`
             <tr>
                 <td><span class="uom-badge">${escHtml(g.label)}</span></td>
                 <td class="right">${formatInrQtyNum(g.qty)}</td>
-                <td class="right">${formatInrAmountNum(wAvg, 2, 2)}</td>
                 <td class="right"><strong>${formatInrAmountNum(g.amount, 2, 2)}</strong></td>
             </tr>`);
     });
 
-    const grandWAvg = gQty > 0 ? (gRateTimesQty / gQty) : 0;
     $('#sumQtyRequired').text(formatInrQtyNum(gQty));
-    $('#sumEstRate').text(formatInrAmountNum(grandWAvg, 2, 2));
     $('#sumAmount').text(formatInrAmountNum(gAmt, 2, 2));
 
     $('#bomSummaryTotalsLine').text(
         'Total Qty: ' + formatInrQtyNum(gQty) +
-            ', Total EST. Rate (wt. avg): ' + formatInrAmountNum(grandWAvg, 2, 2) +
             ', Total Amount: ' + formatInrAmountNum(gAmt, 2, 2)
     );
 

@@ -169,6 +169,13 @@ function EditItem(code) {
     });
 }
 
+/** GST value for display — no trailing % (label already says GST (%)). */
+function imGstValueForDisplay(duty) {
+    if (duty == null || duty === "") return "";
+    var s = String(duty).trim();
+    return s.replace(/%+\s*$/,"").trim();
+}
+
 // ── View Item ───────────────────────────────────────────────
 function ViewItem(code) {
     var ModuleName = "Item Master",
@@ -192,28 +199,40 @@ function ViewItem(code) {
                 $("#viewItemCode").text(item.ItemCode || "—");
                 $("#viewItemName").text(item.ItemName || "—");
 
-                // Badges
-                var natureVal = item.ItemNature || "";
-                var typeText = natureVal === 'G' ? 'Good' : natureVal === 'S' ? 'Services' : '';
+                // Badges — ItemNature lives on ItemMasterOtherDetail (same as EditItem)
+                var natureVal =
+                    (otherDetail && otherDetail.ItemNature != null && String(otherDetail.ItemNature).trim() !== "")
+                        ? String(otherDetail.ItemNature).trim()
+                        : (item.ItemNature != null ? String(item.ItemNature).trim() : "");
+                var typeText =
+                    natureVal === "G" ? "Good" : natureVal === "S" ? "Services" : natureVal;
                 if (typeText) {
                     $("#viewItemTypeBadge").html('<i class="fas fa-cubes" style="margin-right:5px;font-size:10px;"></i>Type: ' + typeText).show();
                 } else {
                     $("#viewItemTypeBadge").hide();
                 }
-                if (item.DutyValue) {
-                    $("#viewGSTBadge").html('<i class="fas fa-percent" style="margin-right:5px;font-size:10px;"></i>GST: ' + item.DutyValue + '%').show();
+                var gstDisp = imGstValueForDisplay(item.DutyValue);
+                if (gstDisp) {
+                    $("#viewGSTBadge").html('<i class="fas fa-percent" style="margin-right:5px;font-size:10px;"></i>GST: ' + gstDisp).show();
                 } else {
                     $("#viewGSTBadge").hide();
                 }
 
-                // Fields
+                // Fields — ItemSpecification on item row (same as EditItem), fallback otherDetail
+                var specText = "";
+                if (item.ItemSpecification != null && String(item.ItemSpecification).trim() !== "") {
+                    specText = String(item.ItemSpecification).trim();
+                } else if (otherDetail && otherDetail.ItemSpecification != null && String(otherDetail.ItemSpecification).trim() !== "") {
+                    specText = String(otherDetail.ItemSpecification).trim();
+                }
+
                 $("#vf_ItemCode").text(item.ItemCode || "—");
                 $("#vf_ItemName").text(item.ItemName || "—");
                 $("#vf_UOM").text(item.UOM || "—");
-                $("#vf_GSTRate").text(item.DutyValue ? item.DutyValue + "%" : "—");
+                $("#vf_GSTRate").text(gstDisp || "—");
                 $("#vf_ItemType").text(typeText || "—");
                 $("#vf_HSN").text((otherDetail && otherDetail.HSNCode != null && otherDetail.HSNCode !== "") ? otherDetail.HSNCode : "—");
-                $("#vf_ItemSpecification").text((otherDetail && otherDetail.ItemSpecification) ? otherDetail.ItemSpecification : "—");
+                $("#vf_ItemSpecification").text(specText || "—");
 
                 // Open view modal
                 $("#viewItemBackdrop").addClass("show");
