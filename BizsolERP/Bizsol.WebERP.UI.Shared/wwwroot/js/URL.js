@@ -135,7 +135,8 @@ let UrlService = {
     API_ENDPOINT_GRNService: `${environment.BASE_URL}/GRNService`,
     API_ENDPOINT_GRNPaymentEntry: `${environment.BASE_URL}/GRNPaymentEntry`,
     API_ENDPOINT_POLevelsApprove: `${environment.BASE_URL}/POLevelsApproval`,
-    API_ENDPOINT_GRNPaymentLevelsApproval: `${environment.BASE_URL}/GRNPaymentLevelsApproval`
+    API_ENDPOINT_GRNPaymentLevelsApproval: `${environment.BASE_URL}/GRNPaymentLevelsApproval`,
+    API_ENDPOINT_CompanyInformation: `${environment.BASE_URL}/CompanyInformation`
 }
 
 export { UrlService  }
