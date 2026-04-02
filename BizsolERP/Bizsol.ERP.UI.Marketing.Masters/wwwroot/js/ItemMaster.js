@@ -393,7 +393,7 @@ function BuildPayload() {
                 UOM: $("#UOM").val(),
                 DisplayName: $("#ItemName").val().trim(),
                 Category: "",
-                CategoryName: "",
+                CategoryName:  imItemGroupNameForPayload(),
                 SubCategoryName: "",
                 GroupName: "",
                 SubGroupName: "",
@@ -430,7 +430,6 @@ function BuildPayload() {
                 DutyValue: parseFloat($("#GSTRate").val()) || 0,
                 ItemSpecification: $("#ItemSpecification").val().trim(),
                 //UserMasterCode: G_UserMasterCode,
-                CategoryMaster_Code:imItemGroupNameForPayload(),
             }
         ],
         ItemMasterOtherDetail: [
@@ -618,12 +617,18 @@ function imItemGroupCodeForPayload() {
     return isNaN(n) || n <= 0 ? "" : String(n);
 }
 
+/** Selected group’s CategoryName for API — prefers category master row (same as view/edit resolution). */
 function imItemGroupNameForPayload() {
     var v = $("#ItemGroup").val();
     if (v == null || String(v).trim() === "") return "";
+    var s = String(v).trim();
+    var found = imFindCategoryRowForItemGroup(s);
+    if (found && found.CategoryName != null && String(found.CategoryName).trim() !== "") {
+        return String(found.CategoryName).trim();
+    }
     var opt = $("#ItemGroup option:selected");
-    var t = opt.text() ? opt.text().trim() : "";
-    if (t === "select") return "";
+    var t = opt.length ? String(opt.text()).trim() : "";
+    if (!t || t.toLowerCase() === "select") return "";
     return t;
 }
 
