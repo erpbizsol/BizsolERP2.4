@@ -8,9 +8,7 @@ import { MarketingManMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSSe
 var authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
 var G_UserMasterCode = authKeyData.UserMaster_Code || 0;
 
-/** Full list from API (for search) */
 var G_MMM_SourceRows = [];
-/** 'list' | 'new' | 'edit' | 'view' */
 var G_MMM_DetailMode = 'list';
 var G_MMM_DropdownsReady = false;
 
@@ -463,7 +461,7 @@ function loadEditRecord(code, mode) {
 }
 
 function saveMarketingMan() {
-    var ModuleName = 'Marketing Man Master',
+    var ModuleName = 'Marketing Executive Master',
         OptionName = parseInt($('#hfMarketingManMaster_Code').val() || '0', 10) > 0 ? 'Edit' : 'New',
         ShowMsg = 'Y',
         FinYear = getFinancialYear();
@@ -501,7 +499,7 @@ function saveMarketingMan() {
 }
 
 function MMM_OpenView(code) {
-    var ModuleName = 'Marketing Man Master',
+    var ModuleName = 'Marketing Executive Master',
         OptionName = 'View',
         ShowMsg = 'Y',
         FinYear = getFinancialYear();
@@ -519,7 +517,7 @@ function MMM_OpenView(code) {
 }
 
 function MMM_OpenEdit(code) {
-    var ModuleName = 'Marketing Man Master',
+    var ModuleName = 'Marketing Executive Master',
         OptionName = 'Edit',
         ShowMsg = 'Y',
         FinYear = getFinancialYear();
@@ -537,7 +535,7 @@ function MMM_OpenEdit(code) {
 }
 
 function MMM_OpenDelete(code) {
-    var ModuleName = 'Marketing Man Master',
+    var ModuleName = 'Marketing Executive Master',
         OptionName = 'Delete',
         ShowMsg = 'Y',
         FinYear = getFinancialYear();
@@ -586,7 +584,7 @@ function confirmMMMDelete() {
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
     if (!$('#ERPHeading').text().trim()) {
-        $('#ERPHeading').text('Marketing Man Master');
+        $('#ERPHeading').text('Marketing Executive Master');
     }
 
     $('#btnCreateMarketingMan').on('click', function () {

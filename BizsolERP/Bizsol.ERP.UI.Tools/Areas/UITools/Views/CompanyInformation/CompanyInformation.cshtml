@@ -1,0 +1,822 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Tools/script/CompanyInformation.js"></script>
+
+<style>
+    /* ── Page (aligned with Purchase ProjectMaster.cshtml) ── */
+    #CompanyInformationPage.pm-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        padding: 4px 0 32px;
+    }
+
+    #CompanyInformationPage .pm-hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    #CompanyInformationPage .pm-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    #CompanyInformationPage .pm-hero-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        background: var(--primary-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 22px;
+        box-shadow: var(--shadow-primary);
+        flex-shrink: 0;
+    }
+
+    #CompanyInformationPage .pm-hero-title {
+        font-size: 21px;
+        font-weight: 800;
+        color: var(--text-dark);
+        letter-spacing: -.025em;
+        line-height: 1.2;
+    }
+
+    #CompanyInformationPage .pm-hero-sub {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    /* ── Card + toolbar ── */
+    #CompanyInformationPage .pm-card {
+        background: var(--white-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        position: relative;
+    }
+
+    #CompanyInformationPage .pm-card::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: var(--primary-gradient);
+        border-radius: 20px 20px 0 0;
+    }
+
+    #CompanyInformationPage .pm-card-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 18px 22px 16px;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    #CompanyInformationPage .pm-btn-new {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        outline: none;
+        padding: 10px 22px;
+        border-radius: 12px;
+        background: var(--primary-gradient);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: var(--shadow-primary);
+        transition: transform .15s, box-shadow .15s;
+        white-space: nowrap;
+    }
+
+    #CompanyInformationPage .pm-btn-new:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px rgba(102, 126, 234, .45);
+    }
+
+    #CompanyInformationPage .pm-btn-new:active {
+        transform: translateY(0);
+    }
+
+    #CompanyInformationPage .pm-btn-new .pm-plus {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, .22);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    /* ── Table (ProjectMaster gradient header + zebra) ── */
+    #CompanyInformationPage .pm-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: calc(100vh - 360px);
+        overflow-y: auto;
+        padding: 0 8px 16px;
+    }
+
+    #CompanyInformationPage .pm-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+        min-width: 980px;
+        table-layout: auto;
+    }
+
+    /* List grid: space key columns (Code column is hidden but still last in DOM) */
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(2),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(2) {
+        min-width: 118px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(3),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(3) {
+        min-width: 200px;
+        max-width: 320px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(4),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(4) {
+        min-width: 140px;
+        max-width: 240px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(5),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(5) {
+        min-width: 220px;
+        max-width: 380px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(6),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(6) {
+        min-width: 130px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(7),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(7) {
+        min-width: 120px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(8),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(8) {
+        min-width: 160px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(9),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(9) {
+        min-width: 120px;
+    }
+
+    #CompanyInformationPage .pm-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+
+    #CompanyInformationPage .pm-table thead th {
+        color: #fff !important;
+        background: transparent !important;
+        font-weight: 700;
+        padding: 13px 16px;
+        text-align: left;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 12px;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    #CompanyInformationPage .pm-table thead th.center {
+        text-align: center;
+    }
+
+    #CompanyInformationPage .pm-table tbody tr {
+        transition: background .12s;
+    }
+
+    #CompanyInformationPage .pm-table tbody tr:nth-child(even) {
+        background: var(--light-bg) !important;
+    }
+
+    #CompanyInformationPage .pm-table tbody tr:nth-child(odd) {
+        background: #fff !important;
+    }
+
+    #CompanyInformationPage .pm-table tbody tr:hover {
+        background: rgba(102, 126, 234, .07) !important;
+    }
+
+    #CompanyInformationPage .pm-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-light) !important;
+        color: var(--text-dark) !important;
+        background: transparent !important;
+        vertical-align: middle;
+    }
+
+    #CompanyInformationPage .pm-table td.center {
+        text-align: center;
+    }
+
+    /* ── Row actions ── */
+    #CompanyInformationPage .pm-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #CompanyInformationPage .pm-icon-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: transform .14s, box-shadow .14s;
+        outline: none;
+    }
+
+    #CompanyInformationPage .pm-icon-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    #CompanyInformationPage .pm-icon-btn.view {
+        background: rgba(6, 182, 212, .12);
+        color: var(--accent-info);
+        border: 1px solid rgba(6, 182, 212, .25);
+    }
+
+    #CompanyInformationPage .pm-icon-btn.view:hover {
+        background: rgba(6, 182, 212, .22);
+        box-shadow: 0 4px 12px rgba(6, 182, 212, .25);
+    }
+
+    #CompanyInformationPage .pm-icon-btn.edit {
+        background: rgba(102, 126, 234, .12);
+        color: var(--accent-primary);
+        border: 1px solid rgba(102, 126, 234, .25);
+    }
+
+    #CompanyInformationPage .pm-icon-btn.edit:hover {
+        background: rgba(102, 126, 234, .22);
+        box-shadow: var(--shadow-primary);
+    }
+
+    #CompanyInformationPage .pm-icon-btn.del {
+        background: rgba(239, 68, 68, .1);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, .2);
+    }
+
+    #CompanyInformationPage .pm-icon-btn.del:hover {
+        background: rgba(239, 68, 68, .2);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, .22);
+    }
+
+    /* ── Entry panel: PurchaseOrderStore.cshtml pattern (scoped) ── */
+    #dvCompanyEntry {
+        display: none;
+        max-width: 920px;
+        margin: 0 auto 24px;
+    }
+
+    #dvCompanyEntry .ci-po-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    #dvCompanyEntry .ci-po-list-header h5 {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    #dvCompanyEntry .ci-po-list-header small {
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 0.78rem;
+        display: block;
+        margin-top: 4px;
+    }
+
+    #dvCompanyEntry .ci-po-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    #dvCompanyEntry .ci-po-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        color: #667eea;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s;
+        line-height: 1;
+        text-decoration: none;
+        font-size: 0.85rem;
+    }
+
+    #dvCompanyEntry .ci-po-back-btn:hover {
+        background: #f0f4ff;
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    #dvCompanyEntry .ci-po-step-card {
+        background: #fff;
+        border-radius: 0 0 14px 14px;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        margin-bottom: 14px;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease;
+    }
+
+    #dvCompanyEntry .ci-po-step-card:hover {
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.13);
+    }
+
+    #dvCompanyEntry .ci-po-step-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 18px;
+        background: #fafbff;
+        border-bottom: 1px solid #eef0f8;
+        border-left: 4px solid #667eea;
+    }
+
+    #dvCompanyEntry .ci-po-step-num {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #667eea;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.72rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+    }
+
+    #dvCompanyEntry .ci-po-step-title {
+        font-weight: 700;
+        font-size: 0.84rem;
+        color: #1e293b;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        flex: 1;
+    }
+
+    #dvCompanyEntry .ci-po-step-icon {
+        color: #667eea;
+        font-size: 1rem;
+    }
+
+    #dvCompanyEntry .ci-po-step-body {
+        padding: 16px 18px 10px;
+    }
+
+    #dvCompanyEntry .ci-po-field-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 9px;
+    }
+
+    #dvCompanyEntry .ci-po-field-lbl {
+        font-size: 0.79rem;
+        font-weight: 600;
+        color: #475569;
+        flex: 0 0 160px;
+        min-width: 0;
+    }
+
+    #dvCompanyEntry .ci-po-field-ctrl {
+        flex: 1;
+        min-width: 0;
+    }
+
+    #dvCompanyEntry .ci-po-field-ctrl .form-control {
+        border: 1.5px solid #ddd6fe;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        background-color: #f5f3ff;
+        color: #1e1b4b;
+        transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+    }
+
+    #dvCompanyEntry .ci-po-field-ctrl .form-control:focus {
+        border-color: #667eea;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
+
+    #dvCompanyEntry .ci-po-field-ctrl .form-control[readonly] {
+        background-color: #ede9fe;
+        border-color: #c4b5fd;
+        color: #5b21b6;
+        cursor: default;
+    }
+
+    #dvCompanyEntry .ci-po-field-ctrl .form-control-sm {
+        height: 30px;
+        padding: 3px 8px;
+    }
+
+    #dvCompanyEntry .ci-po-field-ctrl .form-control.ci-field-invalid {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+        background-color: #fff5f5;
+    }
+
+    #dvCompanyEntry .req {
+        color: #ef4444;
+    }
+
+    #dvCompanyEntry .ci-po-step-footer {
+        padding: 12px 18px 16px;
+        border-top: 1px solid #eef0f8;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        background: #fafbff;
+    }
+
+    #dvCompanyEntry .btn-ci-po-save {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px 28px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+        transition: all 0.2s;
+        cursor: pointer;
+        line-height: 1.4;
+    }
+
+    #dvCompanyEntry .btn-ci-po-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        color: #fff;
+    }
+
+    #dvCompanyEntry .btn-ci-po-save:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    #dvCompanyEntry .section-entry-animation {
+        animation: ciFadeSlideIn 0.3s ease both;
+    }
+
+    @@keyframes ciFadeSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        #dvCompanyEntry .ci-po-field-lbl {
+            flex: 0 0 110px;
+            font-size: 0.74rem;
+        }
+
+        #dvCompanyEntry .ci-po-back-label {
+            display: none;
+        }
+
+        #dvCompanyEntry .ci-po-back-btn {
+            padding: 8px 12px;
+        }
+    }
+
+    /* ── Delete modal only ── */
+    #modalCompanyInformationDelete.pm-modal .modal-dialog {
+        margin: auto;
+    }
+
+    #modalCompanyInformationDelete.pm-modal .modal-content {
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+    }
+
+    #modalCompanyInformationDelete.pm-modal .modal-header {
+        background: linear-gradient(135deg, #b91c1c, #ef4444);
+        color: #fff;
+        border-bottom: none;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    #modalCompanyInformationDelete.pm-modal .pm-modal-hdr-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, .2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+
+    #modalCompanyInformationDelete.pm-modal .modal-title {
+        color: #fff;
+        font-weight: 700;
+        font-size: 17px;
+        flex: 1;
+        margin: 0;
+    }
+
+    #modalCompanyInformationDelete.pm-modal .pm-close-btn {
+        background: rgba(255, 255, 255, .15);
+        border: none;
+        color: #fff;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background .15s;
+        outline: none;
+        flex-shrink: 0;
+    }
+
+    #modalCompanyInformationDelete.pm-modal .pm-close-btn:hover {
+        background: rgba(255, 255, 255, .28);
+    }
+
+    #modalCompanyInformationDelete.pm-modal .modal-body {
+        padding: 22px 24px 18px;
+        background: var(--light-bg);
+    }
+
+    #modalCompanyInformationDelete.pm-modal .modal-footer {
+        border-top: 1px solid var(--border-color);
+        padding: 14px 24px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        background: var(--white-bg);
+    }
+
+    #modalCompanyInformationDelete.pm-modal .pm-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: none;
+        outline: none;
+        padding: 10px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform .14s, box-shadow .14s;
+        min-height: 40px;
+    }
+
+    #modalCompanyInformationDelete.pm-modal .pm-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    #modalCompanyInformationDelete.pm-modal .pm-btn.danger {
+        background: linear-gradient(135deg, #ef4444, #f87171);
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(239, 68, 68, .32);
+    }
+
+    #modalCompanyInformationDelete.pm-modal .pm-btn.danger:hover {
+        box-shadow: 0 8px 24px rgba(239, 68, 68, .4);
+    }
+
+    /* Cancel — same red family as delete, outline (not solid) so Delete stays primary */
+    #modalCompanyInformationDelete.pm-modal .pm-btn.danger-outline {
+        background: #fff;
+        color: #b91c1c;
+        border: 1.5px solid #f87171;
+        box-shadow: none;
+    }
+
+    #modalCompanyInformationDelete.pm-modal .pm-btn.danger-outline:hover {
+        background: #fef2f2;
+        color: #991b1b;
+        border-color: #ef4444;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, .18);
+    }
+
+    #modalCompanyInformationDelete.pm-modal .form-control,
+    #modalCompanyInformationDelete.pm-modal .form-control-sm {
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        padding: 10px 13px;
+    }
+
+    #modalCompanyInformationDelete.pm-modal #txtCompanyInfoDeleteReason.ci-reason-invalid {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, .15);
+    }
+
+    #modalCompanyInformationDelete.pm-modal label.form-label {
+        font-weight: 700;
+        font-size: 12.5px;
+        color: var(--text-primary);
+    }
+</style>
+
+<div class="tab-section pm-page" id="CompanyInformationPage">
+    <!-- List view (BOM-style) -->
+    <div id="dvCompanyList">
+        <div class="pm-hero">
+            <div class="pm-hero-left">
+                <div class="pm-hero-icon" aria-hidden="true"><i class="fa fa-building"></i></div>
+                <div>
+                    <div class="pm-hero-title">Company Information</div>
+                    <div class="pm-hero-sub">Manage company master records</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pm-card">
+            <div class="pm-card-toolbar">
+                <div class="text-muted small fw-semibold">List, add, edit, view, and delete company parameters</div>
+                <button type="button" class="pm-btn-new" id="btnCompanyInfoNew" title="Add new">
+                    <span class="pm-plus">+</span> Create New
+                </button>
+            </div>
+            <div class="pm-table-wrap">
+                <div id="tblCompanyInformation">
+                    <div class="table-wrapper fixed-height-table">
+                        <table id="CompanyInformation" class="fixed-width-table table pm-table">
+                            <thead id="table-header-CompanyInformation"></thead>
+                            <tbody id="table-body-CompanyInformation"></tbody>
+                        </table>
+                    </div>
+                    <div class="paginator" id="paginator-CompanyInformation"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full-page add / edit / view — layout aligned with PurchaseOrderStore -->
+    <div id="dvCompanyEntry">
+        <input type="hidden" id="hfCompanyInfoCode" value="0" />
+
+        <div class="ci-po-list-header">
+            <div class="ci-po-header-top">
+                <div>
+                    <h5 id="ciEntryTitle">Company</h5>
+                    <small id="ciEntrySub">All fields are required to save</small>
+                </div>
+                <button type="button" class="ci-po-back-btn" id="btnBackToCompanyList" title="Back to list">
+                    <i class="fa fa-arrow-left"></i> <span class="ci-po-back-label">Back</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="ci-po-step-card section-entry-animation">
+            <div class="ci-po-step-header">
+                <span class="ci-po-step-num">1</span>
+                <span class="ci-po-step-title">Company details</span>
+                <i class="fa fa-building ci-po-step-icon" aria-hidden="true"></i>
+            </div>
+            <div class="ci-po-step-body">
+                <div class="ci-po-field-row">
+                    <label class="ci-po-field-lbl" for="txtUnitCode">Company Code <span class="req">*</span></label>
+                    <div class="ci-po-field-ctrl">
+                        <input type="text" class="form-control form-control-sm" id="txtUnitCode" maxlength="15" autocomplete="off" title="UnitCode — varchar(15), NOT NULL" />
+                    </div>
+                </div>
+                <div class="ci-po-field-row">
+                    <label class="ci-po-field-lbl" for="txtCompanyName">Company Name <span class="req">*</span></label>
+                    <div class="ci-po-field-ctrl">
+                        <input type="text" class="form-control form-control-sm" id="txtCompanyName" maxlength="100" autocomplete="off" title="CompanyName — varchar(100)" />
+                    </div>
+                </div>
+                <div class="ci-po-field-row">
+                    <label class="ci-po-field-lbl" for="txtCompanyAliasName">Alias Name <span class="req">*</span></label>
+                    <div class="ci-po-field-ctrl">
+                        <input type="text" class="form-control form-control-sm" id="txtCompanyAliasName" maxlength="100" autocomplete="off" title="CompanyAliasName — varchar(100)" />
+                    </div>
+                </div>
+                <div class="ci-po-field-row">
+                    <label class="ci-po-field-lbl" for="txtOfficeAddress1">Company Address <span class="req">*</span></label>
+                    <div class="ci-po-field-ctrl">
+                        <input type="text" class="form-control form-control-sm" id="txtOfficeAddress1" maxlength="200" autocomplete="off" title="OfficeAddress1 — varchar(200)" />
+                    </div>
+                </div>
+                <div class="ci-po-field-row">
+                    <label class="ci-po-field-lbl" for="txtGSTNo">GST No. <span class="req">*</span></label>
+                    <div class="ci-po-field-ctrl">
+                        <input type="text" class="form-control form-control-sm" id="txtGSTNo" maxlength="20" autocomplete="off" title="GSTNo — varchar(20), valid 15-char GSTIN" placeholder="15-character GSTIN" />
+                    </div>
+                </div>
+                <div class="ci-po-field-row">
+                    <label class="ci-po-field-lbl" for="txtOfficePhones1">Phone No. <span class="req">*</span></label>
+                    <div class="ci-po-field-ctrl">
+                        <input type="text" class="form-control form-control-sm" id="txtOfficePhones1" maxlength="100" autocomplete="off" inputmode="tel" title="OfficePhones1 — varchar(100), min 10 digits" placeholder="e.g. +91 9876543210" />
+                    </div>
+                </div>
+                <div class="ci-po-field-row">
+                    <label class="ci-po-field-lbl" for="txtEMail">Email <span class="req">*</span></label>
+                    <div class="ci-po-field-ctrl">
+                        <input type="email" class="form-control form-control-sm" id="txtEMail" maxlength="100" autocomplete="off" title="EMail — varchar(100)" />
+                    </div>
+                </div>
+                <div class="ci-po-field-row">
+                    <label class="ci-po-field-lbl" for="txtWebSite">Website <span class="req">*</span></label>
+                    <div class="ci-po-field-ctrl">
+                        <input type="text" class="form-control form-control-sm" id="txtWebSite" maxlength="50" autocomplete="off" title="WebSite — varchar(50)" placeholder="www.example.com" />
+                    </div>
+                </div>
+            </div>
+            <div class="ci-po-step-footer">
+                <button type="button" class="btn-ci-po-save" id="btnCompanyInfoSave"><i class="fa fa-check"></i> Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete only -->
+<div class="modal fade pm-modal" id="modalCompanyInformationDelete" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header pm-modal-header--danger">
+                <div class="pm-modal-hdr-icon"><i class="fa fa-trash-can"></i></div>
+                <h5 class="modal-title">Confirm delete</h5>
+                <button type="button" class="pm-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="fa fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <label for="txtCompanyInfoDeleteReason" class="form-label">Reason for delete <span class="text-danger">*</span></label>
+                <input type="text" id="txtCompanyInfoDeleteReason" class="form-control form-control-sm" maxlength="500" autocomplete="off" required aria-required="true" placeholder="Enter reason (required)" />
+                <input type="hidden" id="hfCompanyInfoDeleteCode" value="0" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="pm-btn danger-outline" data-bs-dismiss="modal"><i class="fa fa-times"></i> Cancel</button>
+                <button type="button" class="pm-btn danger" id="btnCompanyInfoDeleteConfirm"><i class="fa fa-trash-can"></i> Delete</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -418,6 +418,76 @@ function openNewBOM() {
         .then(function ()  { HideLoader && HideLoader(); addNewBomRow(); })
         .catch(function () { HideLoader && HideLoader(); addNewBomRow(); });
 }
+/** GETBYCODE response may be a bare array or wrapped in Data/data. */
+function normalizeBOMDetailResponse(response) {
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.Data)) return response.Data;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
+}
+
+/**
+ * Rebuilds the BOM grid from API detail rows (sets data-detail-code from DB).
+ * Used after load and after Save so a second Save sends real detail Codes, not 0.
+ */
+function applyBomDetailRows(detailRows) {
+    $('#tblBOM tbody').empty();
+
+    if (detailRows.length > 0) {
+        detailRows.forEach(function (d) {
+            addNewBomRow();
+            var $tr = $('#tblBOM tbody tr').last();
+
+            $tr.attr('data-detail-code',    d.Code || 0);
+            $tr.attr('data-uom-code',        parseInt(d.UOMMaster_Code || 0, 10) || 0);
+            $tr.attr('data-item-code',       parseInt(d.ItemMaster_Code || 0, 10) || 0);
+            $tr.attr('data-work-type-name',  (d.WorkTypeDesp || '').trim().toUpperCase());
+
+            $tr.find('.bom-project-category').val(String(d.ProjectCategory_Code || ''));
+
+            setWorkTypeSilent($tr, d.WorkTypeMaster_Code || 0, d.WorkTypeDesp || '');
+
+            var $itemDdl = $tr.find('.bom-item');
+            $itemDdl.empty().append('<option value="">Select</option>');
+            if (d.ItemMaster_Code) {
+                var cachedUom = getUomTextFromCache(d.WorkTypeDesp || '', d.ItemMaster_Code);
+                var uomText   = d.UOM || cachedUom || '';
+
+                $itemDdl.append(
+                    `<option value="${d.ItemMaster_Code}"
+                             data-uom="${escHtml(uomText)}"
+                             data-uom-code="${parseInt(d.UOMMaster_Code || 0, 10) || 0}">
+                        ${escHtml(d.ItemName || '')}
+                     </option>`
+                );
+                $tr.find('.bom-uom').val(uomText);
+            }
+            $itemDdl.val(String(d.ItemMaster_Code || 0));
+
+            $tr.find('.bom-item-spec').val(    d.ItemSpecificationDesp != null ? d.ItemSpecificationDesp : '');
+            $tr.find('.bom-tolerance').val(   d.Tolerance         != null ? d.Tolerance         : '');
+            $tr.find('.bom-qty-required').val( d.QtyRequired      != null ? d.QtyRequired        : '');
+            $tr.find('.bom-rate-tol').val(     d.RateTolerance    != null ? d.RateTolerance      : '');
+            if (d.Rate != null && d.Rate !== '') {
+                $tr.find('.bom-est-rate').val(formatBomMoneyRaw(String(d.Rate)));
+            } else {
+                $tr.find('.bom-est-rate').val('');
+            }
+            if (d.Amount != null && d.Amount !== '') {
+                $tr.find('.bom-amount').val(formatBomMoneyRaw(Number(d.Amount).toFixed(2)));
+            } else {
+                $tr.find('.bom-amount').val('');
+            }
+        });
+
+        prefetchUOMsForRows(detailRows);
+        refreshBOMSummary();
+    } else {
+        addNewBomRow();
+        refreshBOMSummary();
+    }
+}
+
 function openBOMFromList(id, mode, subProjectCode) {
     const projectCode    = parseInt(id             || '0', 10) || 0;
     const subProjCode    = parseInt(subProjectCode || '0', 10) || 0;
@@ -455,12 +525,7 @@ function openBOMFromList(id, mode, subProjectCode) {
             HideLoader && HideLoader();
 
             const response = results[2];
-
-            // GETBYCODE returns a flat array: [{ row1 }, { row2 }, …]
-            var detailRows = [];
-            if (Array.isArray(response))                    detailRows = response;
-            else if (response && Array.isArray(response.Data)) detailRows = response.Data;
-            else if (response && Array.isArray(response.data)) detailRows = response.data;
+            var detailRows = normalizeBOMDetailResponse(response);
 
             // ── Bind header controls ──────────────────────────────────────
             if (detailRows.length > 0) {
@@ -516,71 +581,7 @@ function openBOMFromList(id, mode, subProjectCode) {
             }
 
             // ── Build detail rows ─────────────────────────────────────────
-            $('#tblBOM tbody').empty();
-
-            if (detailRows.length > 0) {
-                detailRows.forEach(function (d) {
-                    addNewBomRow();
-                    var $tr = $('#tblBOM tbody tr').last();
-
-                    // Store DB code, UOM code, item code and work-type name as attributes
-                    // (work-type name is needed later by applyUOMsFromCache)
-                    $tr.attr('data-detail-code',    d.Code || 0);
-                    $tr.attr('data-uom-code',        parseInt(d.UOMMaster_Code || 0, 10) || 0);
-                    $tr.attr('data-item-code',       parseInt(d.ItemMaster_Code || 0, 10) || 0);
-                    $tr.attr('data-work-type-name',  (d.WorkTypeDesp || '').trim().toUpperCase());
-
-                    // Project Category (bind by code)
-                    $tr.find('.bom-project-category').val(String(d.ProjectCategory_Code || ''));
-
-                    // Work Type — set silently by CODE first, then name, so item dropdown
-                    // is NOT cleared (setWorkTypeSilent does NOT fire the change event)
-                    setWorkTypeSilent($tr, d.WorkTypeMaster_Code || 0, d.WorkTypeDesp || '');
-
-                    // Inject the saved item as the only option so it shows immediately
-                    var $itemDdl = $tr.find('.bom-item');
-                    $itemDdl.empty().append('<option value="">Select</option>');
-                    if (d.ItemMaster_Code) {
-                        // UOM text: try from GETBYCODE (d.UOM) or from item cache (if pre-loaded)
-                        var cachedUom = getUomTextFromCache(d.WorkTypeDesp || '', d.ItemMaster_Code);
-                        var uomText   = d.UOM || cachedUom || '';
-
-                        $itemDdl.append(
-                            `<option value="${d.ItemMaster_Code}"
-                                     data-uom="${escHtml(uomText)}"
-                                     data-uom-code="${parseInt(d.UOMMaster_Code || 0, 10) || 0}">
-                                ${escHtml(d.ItemName || '')}
-                             </option>`
-                        );
-                        $tr.find('.bom-uom').val(uomText);
-                    }
-                    $itemDdl.val(String(d.ItemMaster_Code || 0));
-
-                    // Numeric / text fields — exact SP column names
-                    $tr.find('.bom-item-spec').val(    d.ItemSpecificationDesp != null ? d.ItemSpecificationDesp : '');
-                    $tr.find('.bom-tolerance').val(   d.Tolerance         != null ? d.Tolerance         : '');
-                    $tr.find('.bom-qty-required').val( d.QtyRequired      != null ? d.QtyRequired        : '');
-                    $tr.find('.bom-rate-tol').val(     d.RateTolerance    != null ? d.RateTolerance      : '');
-                    if (d.Rate != null && d.Rate !== '') {
-                        $tr.find('.bom-est-rate').val(formatBomMoneyRaw(String(d.Rate)));
-                    } else {
-                        $tr.find('.bom-est-rate').val('');
-                    }
-                    if (d.Amount != null && d.Amount !== '') {
-                        $tr.find('.bom-amount').val(formatBomMoneyRaw(Number(d.Amount).toFixed(2)));
-                    } else {
-                        $tr.find('.bom-amount').val('');
-                    }
-                });
-
-                // Async-fetch item lists for each work type present in these rows so UOM
-                // text gets filled even when GETBYCODE does not return IM.UOM
-                prefetchUOMsForRows(detailRows);
-                refreshBOMSummary();
-            } else {
-                addNewBomRow();
-                refreshBOMSummary();
-            }
+            applyBomDetailRows(detailRows);
 
             if (mode === 'view') {
                 disableEntryForm();
@@ -1111,25 +1112,36 @@ function saveAllRows() {
     }
 
     Showloader && Showloader();
+    let saveSuccessMsg = '';
     BOMService.SaveBOM(payload)
         .then(function (resp) {
-            HideLoader && HideLoader();
             if (resp && resp.Status === 'Y') {
-                // Ensure hfBOMCode always holds the project code after a successful save
-                // (important for new BOM where it was 0 before first save)
+                saveSuccessMsg = resp.Msg || 'BOM saved successfully.';
                 $('#hfBOMCode').val(projectMaster_Code);
-
-                lockAllRowsAfterSave();
-                $('#btnVerifyAllBomRows').show();
-                toastr.success(resp.Msg || 'BOM saved successfully.');
-                loadBOMList();
-            } else {
-                toastr.warning((resp && (resp.Msg || resp.Message)));
+                if (BOMService && typeof BOMService.GetBOMByCode === 'function') {
+                    return BOMService.GetBOMByCode(projectMaster_Code, subProjectCode);
+                }
+                return Promise.resolve(null);
             }
-        })
-        .catch(function () {
             HideLoader && HideLoader();
-            toastr.error('Error while saving BOM.');
+            toastr.warning((resp && (resp.Msg || resp.Message)));
+            return Promise.reject(new Error());
+        })
+        .then(function (reloadResponse) {
+            HideLoader && HideLoader();
+            if (reloadResponse !== null && reloadResponse !== undefined) {
+                const detailRows = normalizeBOMDetailResponse(reloadResponse);
+                applyBomDetailRows(detailRows);
+            }
+            lockAllRowsAfterSave();
+            $('#btnVerifyAllBomRows').show();
+            toastr.success(saveSuccessMsg || 'BOM saved successfully.');
+            loadBOMList();
+        })
+        .catch(function (err) {
+            HideLoader && HideLoader();
+            if (err && err.message === 'save_failed') return;
+            toastr.error('Error while saving BOM or reloading lines.');
         });
 }
 function lockAllRowsAfterSave() {
