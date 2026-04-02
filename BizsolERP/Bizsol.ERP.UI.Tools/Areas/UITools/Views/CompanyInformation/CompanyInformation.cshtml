@@ -138,7 +138,52 @@
         width: 100%;
         border-collapse: collapse;
         font-size: 13.5px;
-        min-width: 720px;
+        min-width: 980px;
+        table-layout: auto;
+    }
+
+    /* List grid: space key columns (Code column is hidden but still last in DOM) */
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(2),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(2) {
+        min-width: 118px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(3),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(3) {
+        min-width: 200px;
+        max-width: 320px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(4),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(4) {
+        min-width: 140px;
+        max-width: 240px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(5),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(5) {
+        min-width: 220px;
+        max-width: 380px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(6),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(6) {
+        min-width: 130px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(7),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(7) {
+        min-width: 120px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(8),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(8) {
+        min-width: 160px;
+    }
+
+    #CompanyInformationPage #CompanyInformation thead th:nth-child(9),
+    #CompanyInformationPage #CompanyInformation tbody td:nth-child(9) {
+        min-width: 120px;
     }
 
     #CompanyInformationPage .pm-table thead {
