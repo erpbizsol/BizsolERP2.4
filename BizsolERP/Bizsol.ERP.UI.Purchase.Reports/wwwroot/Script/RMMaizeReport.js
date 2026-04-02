@@ -8,7 +8,7 @@ let G_ModuleDesp = '';
 $(document).ready(function () {
     G_ModuleDesp = BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp") ||'Quality Report In Grid';
     SetDate();
-    FillReportType(G_ModuleDesp);
+    GetRawMaterialItemList();
 }); 
 
 function ShowData() {
@@ -28,7 +28,7 @@ function ShowData() {
         return;
     }
     if (!ReportType || ReportType === "" || ReportType==0) {
-        toastr.error('Please select the Report type');
+        toastr.error('Please select Item Name');
         $("#ReportType").focus();
         return;
     }
@@ -37,7 +37,7 @@ function ShowData() {
         $("#txtToDate").focus();
         return;
     }
-    GetRawMaterialReportOfMaize(FromDate, ToDate, moduleDesp, ReportType);
+    GetRawMaterialReportOfMaize(FromDate, ToDate, ReportType);
 }
 
 function SetDate() {
@@ -58,9 +58,9 @@ function formatDate(date) {
     return `${year}-${month}-${day}`;
 }
 
-function GetRawMaterialReportOfMaize(FromDate, ToDate, moduleDesp, ReportType) {
+function GetRawMaterialReportOfMaize(FromDate, ToDate, ItemMaster_Code) {
     Showloader();
-    PurchaseQualityCheckService.RawMaterialReportOfMaize(FromDate, ToDate, moduleDesp, ReportType).then(function (response) {
+    PurchaseQualityCheckService.RawMaterialReportOfMaize(FromDate, ToDate, ItemMaster_Code).then(function (response) {
         if (response && response.length > 0) {
             G_RawMaterialReportOfMaize = response;
             HideLoader();
@@ -101,10 +101,10 @@ function Download() {
     ];
     ExportToExcelControl.ExportToExcel(G_RawMaterialReportOfMaize, hiddenFields, "RawMaterialReportOfMaize");
 }
-function FillReportType(ModuleDesp) {
-    ReportsService.GetReportTypeOfMaize(ModuleDesp).then(function (response) {
+function GetRawMaterialItemList() {
+    PurchaseQualityCheckService.GetRawMaterialItemList().then(function (response) {
         if (response && response.length > 0) {
-            BindSelectList($('#ddlReportType')[0], response.map((item) => ({ Code: item.DisplayName, Desp: item.DisplayName })));
+            BindSelectList($('#ddlReportType')[0], response.map((item) => ({ Code: item.Code, Desp: item.ItemName })));
 
             $('#ddlReportType').select2({
                 width: '-webkit-fill-available'
