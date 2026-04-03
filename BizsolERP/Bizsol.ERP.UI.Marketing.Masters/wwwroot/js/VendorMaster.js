@@ -24,6 +24,18 @@ let G_VendorProgrammaticNationStateCity = false;
 /** DocumentMaster — same table key as other Account / party attachments (e.g. Lead). */
 var VM_ATTACHMENT_MASTER_TABLE = "AccountMaster";
 
+/** Letterhead for vendor/client register print preview (replaces session “Solar” branding). */
+function vmGetPrintPreviewHeaderInfo() {
+    return {
+        companyName: "PURSHOTAM PROFILES PVT.LTD.",
+        tagline: "OPTIMISING STRUCTURAL SOLUTIONS",
+        companyPhone: "011-47049127",
+        companyEmail: "info@purshotamgroup.com",
+        companyWeb: "www.purshotamgroup.com",
+        footerAddress: "City Tower, 2nd Floor, Netaji Subhash Place, Pitampura, Delhi-110034",
+    };
+}
+
 /** Legacy single-file attachment from API (bytes + file name) for view/print. */
 let vmVendorFileName = "";
 let vmVendorImageBase64Data = [];
@@ -437,33 +449,78 @@ function vmBuildVendorMasterPrintHtml(payload) {
     var bk = payload.bk;
     var att = payload.attach || { fileName: "", data: null };
     var co = vmGetSessionCompanyInfo();
+    var pp = vmGetPrintPreviewHeaderInfo();
     var hdrContact = "";
-    if (co.companyPhone) hdrContact += "&#9990;&nbsp;" + vmEscapeHtml(co.companyPhone) + "<br>";
-    if (co.companyEmail) hdrContact += "&#9993;&nbsp;" + vmEscapeHtml(co.companyEmail) + "<br>";
-    if (co.companyWeb) hdrContact += "&#127760;&nbsp;" + vmEscapeHtml(co.companyWeb) + "<br>";
+    if (pp.companyPhone) hdrContact += "&#9990;&nbsp;" + vmEscapeHtml(pp.companyPhone) + "<br>";
+    if (pp.companyEmail) hdrContact += "&#9993;&nbsp;" + vmEscapeHtml(pp.companyEmail) + "<br>";
+    if (pp.companyWeb) hdrContact += "&#127760;&nbsp;" + vmEscapeHtml(pp.companyWeb) + "<br>";
     if (co.companyGST) hdrContact += "GSTIN:&nbsp;" + vmEscapeHtml(co.companyGST);
 
+    var logoUrl =
+        (sessionStorage.getItem("AppBaseURL") || (window.location.origin + "/")).replace(/\/?$/, "/") +
+        "assets/images/pppllog.jpeg";
+
     var panView = item.PANNo || "";
-    if (!panView && item.GSTNNo) {
-        var gV = (item.GSTNNo || "").trim().toUpperCase();
+    var gstForPan = vmVendorPickFirst(item, ["GSTNNo", "GSTN No", "gstnNo"]);
+    if (!panView && gstForPan) {
+        var gV = String(gstForPan).trim().toUpperCase();
         if (gV.length === 15 && isValidGstinFormat(gV)) {
             panView = gV.substring(2, 12);
         }
     }
 
-    function row(label, val) {
-        var v = "—";
-        if (val != null && String(val).trim() !== "") {
-            v = String(val);
-        }
+    /** Same value as list grid — supports API aliases ("Vendor Name", "GSTN No", "Pin Code", …). */
+    var gridVendorName = vmVendorPickFirst(item, ["Vendor Name", "AccountDesp", "Client Name"]);
+    var gridNature = vmVendorPickFirst(item, ["Nature", "AccountNature", "accountNature"]);
+    var gridGstn = vmVendorPickFirst(item, ["GSTNNo", "GSTN No", "gstnNo"]);
+    var gridPhone = vmVendorPickFirst(item, ["PhoneNo", "Phone"]);
+    var gridEmail = vmVendorPickFirst(item, ["EMail", "Email", "email"]);
+    var gridCity = vmVendorPickFirst(item, ["City", "city"]);
+    var gridState = vmVendorPickFirst(item, ["State", "state"]);
+    var gridCountry = vmVendorPickFirst(item, ["Nation", "Country", "country"]);
+    var gridPin = vmVendorPickFirst(item, ["PinCode", "Pin Code", "pinCode"]);
+
+    function cellVal(val) {
+        if (val == null || String(val).trim() === "") return "—";
+        return String(val);
+    }
+
+    /** Two label–value pairs per row (compact, PO-style single page). */
+    function row2(l1, v1, l2, v2) {
         return (
-            '<tr><td class="lbl">' +
-            vmEscapeHtml(label) +
+            "<tr>" +
+            '<td class="lbl">' +
+            vmEscapeHtml(l1) +
             '</td><td class="val">' +
-            vmEscapeHtml(v) +
+            vmEscapeHtml(cellVal(v1)) +
+            '</td><td class="lbl">' +
+            vmEscapeHtml(l2) +
+            '</td><td class="val">' +
+            vmEscapeHtml(cellVal(v2)) +
             "</td></tr>"
         );
     }
+
+    function rowFull(label, val) {
+        return (
+            "<tr>" +
+            '<td class="lbl">' +
+            vmEscapeHtml(label) +
+            '</td><td class="val" colspan="3">' +
+            vmEscapeHtml(cellVal(val)) +
+            "</td></tr>"
+        );
+    }
+
+    var industryLabel =
+        payload.industryTypeLabel !== undefined
+            ? payload.industryTypeLabel
+            : vmVendorPickFirst(item, [
+                  "IndustryTypeMaster_Name",
+                  "IndustryTypeName",
+                  "IndustryType",
+                  "IndustryTypeDesp",
+              ]) || "—";
 
     var attachBlock = "";
     if (vmVendorAttachmentHasData(att.data)) {
@@ -476,110 +533,127 @@ function vmBuildVendorMasterPrintHtml(payload) {
                 " (PDF) — use Download from screen to save.</div>";
         } else if (srcAtt) {
             attachBlock =
-                '<div class="att-wrap"><div class="sec-sub">Logo / Attachment</div><img class="att-img" src="' +
+                '<div class="att-wrap"><div class="sec-band" style="margin-top:4px;">Attachment</div><img class="att-img" src="' +
                 srcAtt.replace(/"/g, "&quot;") +
                 '" alt="attachment" /></div>';
         }
     }
 
     var css =
-        "@page{size:A4 portrait;margin:10mm 14mm 22mm 14mm;}" +
+        "@page{size:A4 portrait;margin:8mm 10mm 20mm 10mm;}" +
         "*{box-sizing:border-box;margin:0;padding:0;}" +
-        "body{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#000;background:#fff;padding:0;}" +
-        ".no-print{margin-bottom:5mm;}" +
+        "body{font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;color:#000;background:#fff;padding:0;position:relative;}" +
+        ".no-print{margin-bottom:4mm;}" +
         "@media print{.no-print{display:none!important;}}" +
-        ".po-hdr{display:flex;align-items:flex-start;padding:8px 4px 10px 4px;border-bottom:2px solid #000;margin-bottom:10px;}" +
-        ".hdr-name{font-size:13pt;font-weight:800;padding-left:2px;}" +
-        ".hdr-tag{font-size:8pt;margin-top:4px;font-weight:600;padding-left:2px;}" +
-        ".hdr-contact{text-align:right;font-size:8pt;line-height:1.65;min-width:150px;padding-right:2px;}" +
-        ".doc-title{text-align:center;font-size:12pt;font-weight:800;letter-spacing:0.12em;border:2px solid #000;padding:12px 20px;margin:10px 0 16px 0;background:#fafafa;}" +
-        ".sec{margin-top:14px;padding:0 2px;}" +
-        ".sec:first-of-type{margin-top:4px;}" +
-        ".sec-h{font-weight:800;font-size:10pt;padding:10px 14px;margin:0 0 10px 0;background:#eef2f7;border:1px solid #cfd8e3;border-left:4px solid #1a2a6c;color:#111;}" +
-        ".sec-sub{font-weight:700;font-size:9pt;margin:8px 0 6px 0;padding:0 4px;}" +
+        ".po-hdr{display:flex;align-items:flex-start;padding-bottom:5px;border-bottom:2.5px solid #000;margin-bottom:5px;}" +
+        ".hdr-co{flex:1;}" +
+        ".hdr-name{font-size:14pt;font-weight:800;color:#000;letter-spacing:0.3px;line-height:1.2;}" +
+        ".hdr-tag{font-size:8pt;color:#000;letter-spacing:1px;margin-top:1px;font-weight:700;}" +
+        ".hdr-contact{text-align:right;font-size:8pt;color:#000;line-height:1.75;min-width:155px;font-weight:600;}" +
+        ".hdr-logo{width:65px;height:65px;object-fit:contain;margin-right:14px;flex-shrink:0;}" +
+        ".hdr-left{display:flex;align-items:center;flex:1;}" +
+        ".po-title{text-align:center;font-size:10pt;font-weight:800;border:2px solid #000;color:#000;padding:3px 0;margin:4px 0;letter-spacing:1.2px;}" +
+        ".sec-band{border-top:2.5px solid #000;border-bottom:2.5px solid #000;font-weight:800;font-size:9pt;padding:3px 8px;margin:5px 0 3px;letter-spacing:0.5px;color:#000;text-transform:uppercase;}" +
         "table.fld{width:100%;border-collapse:collapse;table-layout:fixed;}" +
-        "table.fld td{padding:10px 14px;border:1px solid #666;font-size:9.2pt;vertical-align:top;line-height:1.45;}" +
-        "table.fld .lbl{width:34%;font-weight:700;background:#f4f6f8;padding-left:16px;}" +
-        "table.fld .val{font-weight:600;padding-right:16px;word-wrap:break-word;}" +
-        ".att-wrap{margin-top:10px;text-align:center;padding:8px 4px;}" +
-        ".att-img{max-height:140px;max-width:100%;object-fit:contain;}" +
-        ".att-note{font-size:9pt;margin-top:8px;padding:12px 14px;border:1px dashed #555;}" +
-        ".footer-bar{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:9pt;padding:8px 12px;border-top:2px solid #000;background:#fff;}";
+        "table.fld td{padding:3px 6px;border:1px solid #555;font-size:8.5pt;vertical-align:top;line-height:1.35;}" +
+        "table.fld .lbl{width:18%;font-weight:700;background:#f7f8fa;padding-left:8px;}" +
+        "table.fld .val{width:32%;font-weight:600;word-wrap:break-word;}" +
+        ".att-wrap{margin-top:4px;text-align:center;padding:4px 2px;}" +
+        ".att-img{max-height:100px;max-width:100%;object-fit:contain;}" +
+        ".att-note{font-size:8pt;margin-top:4px;padding:6px 8px;border:1px dashed #555;}" +
+        ".print-footer{position:fixed;bottom:0;left:0;right:0;z-index:2;padding:6px 10mm 10px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}" +
+        ".print-footer-addr{text-align:center;font-family:Georgia,'Times New Roman',Times,serif;font-size:8.5pt;color:#6d7d92;line-height:1.45;margin:0 0 6px;padding:0 8px;}" +
+        ".print-footer-addr .print-footer-pin{margin-right:4px;}" +
+        ".print-footer-code{text-align:center;font-size:9pt;color:#000;font-weight:700;margin:0 0 8px;padding:0 8px;}" +
+        ".print-footer-strip{height:22px;width:100%;background:linear-gradient(102deg,#d4c6e6 0%,#d4c6e6 44.5%,#ffffff 44.5%,#ffffff 47.2%,#d8dce2 47.2%,#d8dce2 100%);}" +
+        ".wm-logo{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:320px;background:url(" +
+        logoUrl.replace(/\(/g, "%28").replace(/\)/g, "%29") +
+        ") no-repeat center;background-size:contain;opacity:0.07;pointer-events:none;z-index:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}" +
+        ".print-main{position:relative;z-index:1;padding-bottom:96px;}";
 
-    var title = G_ModuleName === "Vendor Master" ? "VENDOR" : "CLIENT";
-    var partyInfoHeading = G_ModuleName === "Vendor Master" ? "Vendor / Party Information" : "Client / Party Information";
+    var docTitle = G_ModuleName === "Vendor Master" ? "VENDOR REGISTRATION FORM" : "CLIENT REGISTRATION FORM";
+    var codeLabel = G_ModuleName === "Vendor Master" ? "Vendor Code" : "Client Code";
+    var vendorNameLabel = G_ModuleName === "Vendor Master" ? "Vendor Name" : "Client Name";
+    var secBandMain =
+        G_ModuleName === "Vendor Master" ? "Vendor &amp; registration" : "Client &amp; registration";
 
     var html =
         "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>" +
-        title +
+        docTitle +
         " — " +
         vmEscapeHtml(item.AccountDesp || "") +
         "</title><style>" +
         css +
         "</style></head><body>" +
-        '<div class="no-print" style="display:flex;gap:8px;padding:4px 0 8px;">' +
+        '<div class="no-print" style="display:flex;gap:8px;padding:3px 0 6px;">' +
         '<button type="button" onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:5px 16px;border-radius:5px;font-size:9pt;cursor:pointer;">Print</button>' +
         '<button type="button" onclick="window.close()" style="background:#666;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:9pt;cursor:pointer;">Close</button>' +
         "</div>" +
-        '<div class="po-hdr"><div style="flex:1;"><div class="hdr-name">' +
-        vmEscapeHtml(co.companyName || "COMPANY NAME") +
-        '</div><div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div>' +
+        '<div class="wm-logo"></div>' +
+        '<div class="print-main" id="printpreview">' +
+        '<div class="po-hdr">' +
+        '<div class="hdr-left"><img class="hdr-logo" src="' +
+        logoUrl.replace(/"/g, "&quot;") +
+        '" alt="Logo"><div class="hdr-co"><div class="hdr-name">' +
+        vmEscapeHtml(pp.companyName) +
+        '</div><div class="hdr-tag">' +
+        vmEscapeHtml(pp.tagline) +
+        "</div></div></div>" +
         '<div class="hdr-contact">' +
         hdrContact +
         "</div></div>" +
-        '<div class="doc-title">' +
-        title +
+        '<div class="po-title">' +
+        docTitle +
         "</div>" +
-        '<div class="sec"><div class="sec-h">' +
-        vmEscapeHtml(partyInfoHeading) +
-        '</div><table class="fld"><tbody>' +
-        row("Vendor Code", item.VendorCode || "—") +
-        row("Vendor Name", item.AccountDesp) +
-        row(
-            "Industry Type",
-            payload.industryTypeLabel !== undefined
-                ? payload.industryTypeLabel
-                : vmVendorPickFirst(item, ["IndustryTypeMaster_Name", "IndustryTypeName", "IndustryType", "IndustryTypeDesp"]) || "—"
-        ) +
-        row("Display Name", item.BillName) +
-        row("Address Line 1", item.Address1 || "—") +
-        row("Address Line 2", item.Address2 || "—") +
-        row("Country", item.Nation) +
-        row("City", item.City) +
-        row("State", item.State) +
-        row("Pincode", item.PinCode) +
-        row("GST Number", item.GSTNNo) +
-        row("PAN Number", panView) +
-        row("Email", item.EMail) +
-        row("Phone No", item.PhoneNo) +
-        "</tbody></table></div>";
+        '<div class="sec-band">' +
+        secBandMain +
+        "</div>" +
+        "<table class=\"fld\"><tbody>" +
+        row2(codeLabel, cellVal(item.VendorCode), vendorNameLabel, gridVendorName) +
+        row2("Industry Type", industryLabel, "Nature", gridNature) +
+        row2("Display Name", item.BillName, "GSTN No", gridGstn) +
+        row2("PAN Number", panView, "Address Line 1", item.Address1) +
+        row2("Address Line 2", item.Address2, "Country", gridCountry) +
+        row2("City", gridCity, "State", gridState) +
+        row2("Pin Code", gridPin, "Email", gridEmail) +
+        rowFull("Phone", gridPhone) +
+        "</tbody></table>";
 
     html +=
-        '<div class="sec"><div class="sec-h">Contact Person</div><table class="fld"><tbody>' +
-        row("Contact Name", cp && cp.ContactPersonName) +
-        row("Designation", cp && cp.ContactPersonDesignation) +
-        row("Contact Mobile", cp && cp.ContactPersonMobile) +
-        row("Contact Email", cp && cp.ContactPersonEMail) +
-        "</tbody></table></div>";
-
-    html +=
-        '<div class="sec"><div class="sec-h">Bank Details</div><table class="fld"><tbody>' +
-        row("Bank Name", bk && (bk.BankName || bk.bankName)) +
-        row("Bank Address", bk && (bk.Address || bk.address)) +
-        row("Account No", bk && (bk.AccountNo || bk.accountNo)) +
-        row("IFSC Code", bk && (bk.IFSCCode || bk.ifscCode)) +
-        "</tbody></table></div>";
+        '<div class="sec-band">Contact person</div>' +
+        "<table class=\"fld\"><tbody>" +
+        row2("Contact Name", cp && cp.ContactPersonName, "Designation", cp && cp.ContactPersonDesignation) +
+        row2("Contact Mobile", cp && cp.ContactPersonMobile, "Contact Email", cp && cp.ContactPersonEMail) +
+        "</tbody></table>" +
+        '<div class="sec-band">Bank details</div>' +
+        "<table class=\"fld\"><tbody>" +
+        row2("Bank Name", bk && (bk.BankName || bk.bankName), "Account No", bk && (bk.AccountNo || bk.accountNo)) +
+        rowFull("Bank Address", bk && (bk.Address || bk.address)) +
+        rowFull("IFSC Code", bk && (bk.IFSCCode || bk.ifscCode)) +
+        "</tbody></table>";
 
     if (attachBlock) {
-        html += '<div class="sec">' + attachBlock + "</div>";
+        html += attachBlock;
     }
 
-    if (co.companyAddr) {
-        html +=
-            '<div class="footer-bar">&#9679;&nbsp;' + vmEscapeHtml(co.companyAddr) + "</div>";
-    }
+    var footerAddrLine = (pp.footerAddress || "").trim() || (co.companyAddr || "").trim();
+    html +=
+        '<footer class="print-footer" role="contentinfo">' +
+        (footerAddrLine
+            ? '<div class="print-footer-addr"><span class="print-footer-pin" aria-hidden="true">&#128205;</span>' +
+              vmEscapeHtml(footerAddrLine) +
+              "</div>"
+            : "") +
+        '<div class="print-footer-code">' +
+        "<b>" +
+        vmEscapeHtml(codeLabel) +
+        " : </b>" +
+        vmEscapeHtml(cellVal(item.VendorCode)) +
+        "</div>" +
+        '<div class="print-footer-strip" aria-hidden="true"></div>' +
+        "</footer>";
 
-    html += "</body></html>";
+    html += "</div></body></html>";
     return html;
 }
 
@@ -1080,6 +1154,9 @@ function getVendorMasterHiddenColumns() {
         "Verified By",
         "Verified ON",
         "Verified On",
+        "Address Line 1",
+        "Address Line 2",
+        "Pin Code",
     ];
     if (G_IsClientOrVendor === "C") {
         cols.push("Action");
@@ -1097,6 +1174,7 @@ function getVendorMasterColumnAlignment() {
     if (G_IsClientOrVendor === "V") {
         ca.Action = "center;min-width:152px;white-space:nowrap;";
     }
+    ca.SNo = "min-width:10px;";
     return ca;
 }
 function syncVendorStatChipClasses() {
@@ -1117,8 +1195,8 @@ function refreshVendorMasterGrid() {
     var filtered = filterVendorRowsByStat(source, mode);
     var mapped = mapVendorRowsToGrid(filtered);
 
-    const StringFilterColumn = ["Vendor Name","Nature", "GSTN No", "Phone", "Email", "City", "State", "Country", "Pin Code"];
-    const NumericFilterColumn = [];
+    const StringFilterColumn = ["Vendor Name", "Nature", "GSTN No", "Phone", "Email", "City", "State", "Country","Industry Type"];
+    const NumericFilterColumn = ["SNo"];
     const DateFilterColumn = [];
     const Button = false;
     const showButtons = [];
