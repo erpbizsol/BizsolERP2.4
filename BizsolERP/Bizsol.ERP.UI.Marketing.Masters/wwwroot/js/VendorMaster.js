@@ -32,6 +32,7 @@ function vmGetPrintPreviewHeaderInfo() {
         companyPhone: "011-47049127",
         companyEmail: "info@purshotamgroup.com",
         companyWeb: "www.purshotamgroup.com",
+        footerAddress: "City Tower, 2nd Floor, Netaji Subhash Place, Pitampura, Delhi-110034",
     };
 }
 
@@ -538,16 +539,6 @@ function vmBuildVendorMasterPrintHtml(payload) {
         }
     }
 
-    var now = new Date();
-    var printDateStr =
-        (now.getDate() < 10 ? "0" : "") +
-        now.getDate() +
-        "/" +
-        (now.getMonth() + 1 < 10 ? "0" : "") +
-        (now.getMonth() + 1) +
-        "/" +
-        now.getFullYear();
-
     var css =
         "@page{size:A4 portrait;margin:8mm 10mm 20mm 10mm;}" +
         "*{box-sizing:border-box;margin:0;padding:0;}" +
@@ -562,10 +553,6 @@ function vmBuildVendorMasterPrintHtml(payload) {
         ".hdr-logo{width:65px;height:65px;object-fit:contain;margin-right:14px;flex-shrink:0;}" +
         ".hdr-left{display:flex;align-items:center;flex:1;}" +
         ".po-title{text-align:center;font-size:10pt;font-weight:800;border:2px solid #000;color:#000;padding:3px 0;margin:4px 0;letter-spacing:1.2px;}" +
-        ".info-row{display:flex;border:1px solid #000;margin-bottom:4px;}" +
-        ".info-cell{flex:1;padding:4px 7px;font-size:8.5pt;}" +
-        ".info-cell+.info-cell{border-left:1px solid #000;}" +
-        ".info-field{font-size:8.5pt;margin-bottom:1px;color:#000;font-weight:600;}" +
         ".sec-band{border-top:2.5px solid #000;border-bottom:2.5px solid #000;font-weight:800;font-size:9pt;padding:3px 8px;margin:5px 0 3px;letter-spacing:0.5px;color:#000;text-transform:uppercase;}" +
         "table.fld{width:100%;border-collapse:collapse;table-layout:fixed;}" +
         "table.fld td{padding:3px 6px;border:1px solid #555;font-size:8.5pt;vertical-align:top;line-height:1.35;}" +
@@ -574,13 +561,17 @@ function vmBuildVendorMasterPrintHtml(payload) {
         ".att-wrap{margin-top:4px;text-align:center;padding:4px 2px;}" +
         ".att-img{max-height:100px;max-width:100%;object-fit:contain;}" +
         ".att-note{font-size:8pt;margin-top:4px;padding:6px 8px;border:1px dashed #555;}" +
-        ".footer-bar{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:9pt;padding:4px 10px;border-top:2.5px solid #000;color:#000;font-weight:700;background:#fff;}" +
+        ".print-footer{position:fixed;bottom:0;left:0;right:0;z-index:2;padding:6px 10mm 10px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}" +
+        ".print-footer-addr{text-align:center;font-family:Georgia,'Times New Roman',Times,serif;font-size:8.5pt;color:#6d7d92;line-height:1.45;margin:0 0 6px;padding:0 8px;}" +
+        ".print-footer-addr .print-footer-pin{margin-right:4px;}" +
+        ".print-footer-code{text-align:center;font-size:9pt;color:#000;font-weight:700;margin:0 0 8px;padding:0 8px;}" +
+        ".print-footer-strip{height:22px;width:100%;background:linear-gradient(102deg,#d4c6e6 0%,#d4c6e6 44.5%,#ffffff 44.5%,#ffffff 47.2%,#d8dce2 47.2%,#d8dce2 100%);}" +
         ".wm-logo{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:320px;background:url(" +
         logoUrl.replace(/\(/g, "%28").replace(/\)/g, "%29") +
         ") no-repeat center;background-size:contain;opacity:0.07;pointer-events:none;z-index:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}" +
-        ".print-main{position:relative;z-index:1;}";
+        ".print-main{position:relative;z-index:1;padding-bottom:96px;}";
 
-    var docTitle = G_ModuleName === "Vendor Master" ? "VENDOR REGISTER FORM" : "CLIENT REGISTER FORM";
+    var docTitle = G_ModuleName === "Vendor Master" ? "VENDOR REGISTRATION FORM" : "CLIENT REGISTRATION FORM";
     var codeLabel = G_ModuleName === "Vendor Master" ? "Vendor Code" : "Client Code";
     var vendorNameLabel = G_ModuleName === "Vendor Master" ? "Vendor Name" : "Client Name";
     var secBandMain =
@@ -614,41 +605,19 @@ function vmBuildVendorMasterPrintHtml(payload) {
         '<div class="po-title">' +
         docTitle +
         "</div>" +
-        '<div class="info-row">' +
-        '<div class="info-cell"><div class="info-field"><b>Date : </b>' +
-        vmEscapeHtml(printDateStr) +
-        "</div></div>" +
-        '<div class="info-cell" style="text-align:right;"><div class="info-field"><b>' +
-        vmEscapeHtml(codeLabel) +
-        " : </b>" +
-        vmEscapeHtml(cellVal(item.VendorCode)) +
-        "</div></div></div>" +
         '<div class="sec-band">' +
         secBandMain +
         "</div>" +
         "<table class=\"fld\"><tbody>" +
-        row2(vendorNameLabel, gridVendorName, "Industry Type", industryLabel) +
-        row2("Nature", gridNature, "Display Name", item.BillName) +
-        row2("GSTN No", gridGstn, "PAN Number", panView) +
-        row2("Address Line 1", item.Address1, "Address Line 2", item.Address2) +
-        row2("Country", gridCountry, "City", gridCity) +
-        row2("State", gridState, "Pin Code", gridPin) +
-        row2("Email", gridEmail, "Phone", gridPhone) +
+        row2(codeLabel, cellVal(item.VendorCode), vendorNameLabel, gridVendorName) +
+        row2("Industry Type", industryLabel, "Nature", gridNature) +
+        row2("Display Name", item.BillName, "GSTN No", gridGstn) +
+        row2("PAN Number", panView, "Address Line 1", item.Address1) +
+        row2("Address Line 2", item.Address2, "Country", gridCountry) +
+        row2("City", gridCity, "State", gridState) +
+        row2("Pin Code", gridPin, "Email", gridEmail) +
+        rowFull("Phone", gridPhone) +
         "</tbody></table>";
-
-    if (typeof window.G_PartyVerificationBeforeOrderY !== "undefined" && window.G_PartyVerificationBeforeOrderY) {
-        html +=
-            '<div class="sec-band">Party verification</div>' +
-            "<table class=\"fld\"><tbody>" +
-            row2(
-                "Verified",
-                rowIsVerified(item) ? "Yes" : "No",
-                "Verified By",
-                getVendorVerifiedByDisplay(item)
-            ) +
-            rowFull("Verified ON", formatVendorVerifiedOnDisplay(getVendorVerifiedOnRaw(item))) +
-            "</tbody></table>";
-    }
 
     html +=
         '<div class="sec-band">Contact person</div>' +
@@ -667,10 +636,22 @@ function vmBuildVendorMasterPrintHtml(payload) {
         html += attachBlock;
     }
 
-    if (co.companyAddr) {
-        html +=
-            '<div class="footer-bar">&#9679;&nbsp;' + vmEscapeHtml(co.companyAddr) + "</div>";
-    }
+    var footerAddrLine = (pp.footerAddress || "").trim() || (co.companyAddr || "").trim();
+    html +=
+        '<footer class="print-footer" role="contentinfo">' +
+        (footerAddrLine
+            ? '<div class="print-footer-addr"><span class="print-footer-pin" aria-hidden="true">&#128205;</span>' +
+              vmEscapeHtml(footerAddrLine) +
+              "</div>"
+            : "") +
+        '<div class="print-footer-code">' +
+        "<b>" +
+        vmEscapeHtml(codeLabel) +
+        " : </b>" +
+        vmEscapeHtml(cellVal(item.VendorCode)) +
+        "</div>" +
+        '<div class="print-footer-strip" aria-hidden="true"></div>' +
+        "</footer>";
 
     html += "</div></body></html>";
     return html;
@@ -1173,6 +1154,9 @@ function getVendorMasterHiddenColumns() {
         "Verified By",
         "Verified ON",
         "Verified On",
+        "Address Line 1",
+        "Address Line 2",
+        "Pin Code",
     ];
     if (G_IsClientOrVendor === "C") {
         cols.push("Action");
@@ -1190,6 +1174,7 @@ function getVendorMasterColumnAlignment() {
     if (G_IsClientOrVendor === "V") {
         ca.Action = "center;min-width:152px;white-space:nowrap;";
     }
+    ca.SNo = "min-width:10px;";
     return ca;
 }
 function syncVendorStatChipClasses() {
@@ -1210,8 +1195,8 @@ function refreshVendorMasterGrid() {
     var filtered = filterVendorRowsByStat(source, mode);
     var mapped = mapVendorRowsToGrid(filtered);
 
-    const StringFilterColumn = ["Vendor Name","Nature", "GSTN No", "Phone", "Email", "City", "State", "Country", "Pin Code"];
-    const NumericFilterColumn = [];
+    const StringFilterColumn = ["Vendor Name", "Nature", "GSTN No", "Phone", "Email", "City", "State", "Country","Industry Type"];
+    const NumericFilterColumn = ["SNo"];
     const DateFilterColumn = [];
     const Button = false;
     const showButtons = [];
