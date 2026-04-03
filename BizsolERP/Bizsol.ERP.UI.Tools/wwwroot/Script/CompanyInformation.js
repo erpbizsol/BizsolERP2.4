@@ -549,6 +549,11 @@ $(document).ready(function () {
         $(this).removeClass('ci-field-invalid');
     });
 
+    $('#dvCompanyEntry').on('input', '#txtCompanyName', function () {
+        if ($(this).prop('readonly')) return;
+        $('#txtCompanyAliasName').val($(this).val());
+    });
+
     window.CompanyInformation_View = openCompanyInfoView;
     window.CompanyInformation_Edit = openCompanyInfoEdit;
     window.CompanyInformation_Delete = openCompanyInfoDelete;

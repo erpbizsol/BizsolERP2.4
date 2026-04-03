@@ -83,6 +83,65 @@ function formatInrQtyNum(n) {
     return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 }
 
+/** Indian numbering: amount in words after ₹ for BOM summary footer (no "Rupees" / "Only"). */
+const _INR_ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+const _INR_TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+function _inrWordsBelowHundred(n) {
+    n = Math.floor(Math.abs(n));
+    if (n < 20) return _INR_ONES[n] || '';
+    const t = Math.floor(n / 10);
+    const o = n % 10;
+    return _INR_TENS[t] + (o ? ' ' + _INR_ONES[o] : '');
+}
+
+function _inrWordsBelowThousand(n) {
+    n = Math.floor(Math.abs(n));
+    if (n === 0) return '';
+    if (n < 100) return _inrWordsBelowHundred(n);
+    const h = Math.floor(n / 100);
+    const rest = n % 100;
+    return _INR_ONES[h] + ' Hundred' + (rest ? ' ' + _inrWordsBelowHundred(rest) : '');
+}
+
+function numToWordsIndian(n) {
+    n = Math.floor(Math.abs(Number(n)));
+    if (n === 0) return 'Zero';
+    if (n >= 10000000) {
+        const crore = Math.floor(n / 10000000);
+        const rest = n % 10000000;
+        const cw = crore < 1000 ? _inrWordsBelowThousand(crore) : numToWordsIndian(crore);
+        if (!rest) return cw + ' Crore';
+        const rw = numToWordsIndian(rest);
+        return cw + ' Crore ' + (rw === 'Zero' ? '' : rw);
+    }
+    let rem = n;
+    const lakh = Math.floor(rem / 100000);
+    rem %= 100000;
+    const thousand = Math.floor(rem / 1000);
+    rem %= 1000;
+    const parts = [];
+    if (lakh) parts.push(_inrWordsBelowThousand(lakh) + ' Lakh');
+    if (thousand) parts.push(_inrWordsBelowThousand(thousand) + ' Thousand');
+    if (rem) parts.push(_inrWordsBelowThousand(rem));
+    return parts.length ? parts.join(' ') : 'Zero';
+}
+
+function inrAmountWordsRupeeSymbol(amount) {
+    if (amount == null || isNaN(amount)) return '';
+    const rounded = Math.round(Number(amount) * 100) / 100;
+    const rupees = Math.floor(rounded);
+    const paise = Math.round((rounded - rupees) * 100);
+    let w = numToWordsIndian(rupees);
+    if (rupees === 0 && paise === 0) w = 'Zero';
+    let s = '₹ ' + w;
+    if (paise > 0) {
+        s += ' and ' + numToWordsIndian(paise) + ' Paise';
+    }
+    return s;
+}
+
 /* Same comma rules as Project Master budget field (formatBudgetRaw). */
 function formatBomMoneyRaw(value) {
     if (value === null || value === undefined) return '';
@@ -243,6 +302,20 @@ function prepareAmendmentHistoryGridRows(rawRows) {
 
     const numericPivotNames = ['Amount', 'Qty Required', 'Rate', 'Tolerance', 'Rate Tolerance'];
 
+    function formatAmendmentPivotNumber(columnName, raw) {
+        if (raw === '' || raw === null || raw === undefined) return raw;
+        const n = parseFloat(String(raw).replace(/,/g, '').trim());
+        if (isNaN(n)) return raw;
+        /* Large floats from SQL/JSON often stringify as 4e+007 — normalize to INR / qty display */
+        if (columnName === 'Amount' || columnName === 'Rate') {
+            return formatInrAmountNum(n, 2, 2);
+        }
+        if (columnName === 'Qty Required' || columnName === 'Tolerance' || columnName === 'Rate Tolerance') {
+            return formatInrQtyNum(n);
+        }
+        return raw;
+    }
+
     return canonicalRows.map(function (r) {
         const out = {};
         orderedKeys.forEach(function (k) {
@@ -256,6 +329,8 @@ function prepareAmendmentHistoryGridRows(rawRows) {
             }
             if (v === '' && numericPivotNames.indexOf(k) >= 0) {
                 out[k] = '—';
+            } else if (numericPivotNames.indexOf(k) >= 0 && v !== '') {
+                out[k] = formatAmendmentPivotNumber(k, v);
             } else {
                 out[k] = v;
             }
@@ -737,7 +812,9 @@ function resetBomForm() {
     $('#ddlSubProject').empty().append('<option value="">Select project first</option>').prop('disabled', false);
     $('#tblBOM tbody').empty();
     $('#tblBOMSummary tbody').empty();
-    $('#bomSummaryTotalsLine').text('');
+    $('#bomSummaryTotalsLine').empty();
+    $('#sumQtyRequired').text('—');
+    $('#sumAmount').text('—');
     $('#dvBOMSummary').hide();
     $('#btnVerifyAllBomRows').hide().prop('disabled', false);
     $('#btnSaveAllBomRows').prop('disabled', false);
@@ -1256,7 +1333,7 @@ function refreshBOMSummary() {
     });
     if (!keys.length) {
         $('#dvBOMSummary').hide();
-        $('#bomSummaryTotalsLine').text('');
+        $('#bomSummaryTotalsLine').empty();
         return;
     }
 
@@ -1281,9 +1358,16 @@ function refreshBOMSummary() {
     $('#sumQtyRequired').text(formatInrQtyNum(gQty));
     $('#sumAmount').text(formatInrAmountNum(gAmt, 2, 2));
 
-    $('#bomSummaryTotalsLine').text(
-        'Total Qty: ' + formatInrQtyNum(gQty) +
-            ', Total Amount: ' + formatInrAmountNum(gAmt, 2, 2)
+    const amtFormatted = formatInrAmountNum(gAmt, 2, 2);
+    const wordsFormatted = inrAmountWordsRupeeSymbol(gAmt);
+    $('#bomSummaryTotalsLine').html(
+        '<div class="bom-summary-footer-qty">Total Qty: ' + escHtml(formatInrQtyNum(gQty)) + '</div>' +
+        '<div class="bom-summary-footer-row bom-summary-footer-total-amt">' +
+        '<span class="bom-summary-footer-label">Total Amount :</span> ' +
+        '<span class="bom-summary-footer-value">' + escHtml(amtFormatted) + '</span></div>' +
+        '<div class="bom-summary-footer-row bom-summary-footer-amt-words">' +
+        '<span class="bom-summary-footer-label">Amount In Words :</span> ' +
+        '<span class="bom-summary-footer-value">' + escHtml(wordsFormatted) + '</span></div>'
     );
 
     $('#dvBOMSummary').show();
