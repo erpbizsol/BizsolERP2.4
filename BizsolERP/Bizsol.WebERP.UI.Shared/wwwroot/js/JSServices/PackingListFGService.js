@@ -172,6 +172,15 @@ const PackingListFGService = {
             }
         );
     },
+    GetDeliveryAddressCodeList: function GetDeliveryAddressCodeList(ClientCode) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetPackingListDDl?ddlType=GetDeliveryAddressCodeList&Code=" + ClientCode;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 
