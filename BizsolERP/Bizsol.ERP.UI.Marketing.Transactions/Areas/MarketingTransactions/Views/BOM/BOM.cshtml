@@ -270,6 +270,40 @@
         background: #f8f9fa !important;
         border-top: 2px solid var(--border-color) !important;
     }
+    /* Footer under summary table: qty + labeled Total Amount (red) + Amount In Words (yellow) */
+    .bom-summary-footer {
+        margin: 10px 14px 14px;
+        font-size: 12.5px;
+        font-weight: 600;
+        line-height: 1.55;
+    }
+    .bom-summary-footer-qty {
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+    .bom-summary-footer-row {
+        margin-top: 6px;
+    }
+    .bom-summary-footer-label {
+        font-weight: 700;
+    }
+    .bom-summary-footer-total-amt {
+        color: #c62828;
+    }
+    .bom-summary-footer-total-amt .bom-summary-footer-value {
+        font-weight: 700;
+    }
+    .bom-summary-footer-amt-words {
+        color: #a16207;
+        background: #fffbeb;
+        border-radius: 6px;
+        padding: 6px 10px;
+        margin-top: 4px;
+        border: 1px solid #fde68a;
+    }
+    .bom-summary-footer-amt-words .bom-summary-footer-value {
+        font-weight: 600;
+    }
     #tblBOMSummary .uom-badge {
         display: inline-block;
         padding: 2px 10px;
@@ -837,7 +871,7 @@
                 </tfoot>
             </table>
         </div>
-        <p id="bomSummaryTotalsLine" style="margin:10px 14px 14px; font-size:12.5px; color:var(--text-muted); font-weight:600;"></p>
+        <div id="bomSummaryTotalsLine" class="bom-summary-footer" aria-live="polite"></div>
     </div>
 </div>
 
