@@ -20,6 +20,7 @@ let BaleNoDesp = "";
 let FourthOrderUnitApplicable = "N";
 let ShowPalletTypeAndNoInPackingList = "N";
 let FGNameForBatchNo = "";
+let ShowDeliveryCodeInPackingList = "N";
 
 let FinYear = '';
 let PackingListMaster_Code = 0;
@@ -32,6 +33,7 @@ let G_PackingTypeDesp = "";
 let G_dllClientName = "";
 let G_dllConsigneeName = "";
 let G_DefaultAccountCodeStockTransfar = 0;
+let G_DeliveryAddressCode = "";
 let G_QtyMT = 'MT';
 let G_QtyPC = 'PC';
 let G_QtyMTR = 'MTRS';
@@ -328,6 +330,9 @@ function Bind_ddlClientNameORddlConsignee() {
         if (G_dllClientName !== '') {
             SelectOptionByText('ddlClientName', G_dllClientName);
             SelectOptionByText('ddlConsignee', G_dllConsigneeName);
+            if (ShowDeliveryCodeInPackingList === 'Y') {
+                Bind_ddlDeliveryAddressCode($('#ddlClientName').val(), G_DeliveryAddressCode);
+            }
         }
         if (Number(G_DefaultAccountCodeStockTransfar) > 0) {
             $('#ddlClientName').val(G_DefaultAccountCodeStockTransfar);
@@ -401,7 +406,18 @@ function Bind_ddlGodownTo() {
         $('#ddlGodownTo').select2({
             width: '-webkit-fill-available'
         });
-        
+
+    });
+}
+function Bind_ddlDeliveryAddressCode(ClientCode, selectedCode = "") {
+    PackingListFGService.GetDeliveryAddressCodeList(ClientCode).then(function (response) {
+        BindSelectList($('#ddlDeliveryAddressCode')[0], response.map((item) => ({ Code: item.Code, Desp: item.Desp })));
+        if (selectedCode !== "") {
+            $('#ddlDeliveryAddressCode').val(selectedCode);
+        }
+        $('#ddlDeliveryAddressCode').select2({
+            width: '-webkit-fill-available'
+        });
     });
 }
 
@@ -575,6 +591,7 @@ function EditMode(isView) {
                 PackingListFG_OnChangeddlPackingType();
                 G_dllClientName = response[0][0].ClienName;
                 G_dllConsigneeName = response[0][0].ConsigneeName;
+                G_DeliveryAddressCode = response[0][0].DeliveryAddressCode || "";
 
 
                 $('#txtScanIdentification').removeAttr("readonly");
@@ -603,6 +620,7 @@ function EditMode(isView) {
                 $('#ddlClientName').attr("disabled", "disabled");
                 $('#ddlConsignee').attr("disabled", "disabled");
                 $('#ddlTransporterName').attr("disabled", "disabled");
+                $('#ddlDeliveryAddressCode').attr("disabled", "disabled");
 
                 SelectOptionByText('ddlGodownFrom', response[0][0].GodownName);
                 SelectOptionByText('ddlGodownTo', response[0][0].GodownNameTo);
@@ -1109,6 +1127,9 @@ function PackingListFG_OnChangeddlClientNameORddlConsignee(element) {
         ddlClientNameMode = ddlClientNameMode === '' ? "GetPendingOrderListByBuyerName" : ddlClientNameMode;
         //ddlClientNameMode = ddlClientNameMode === '' ? "GetPendingOrderListByPartyName" : ddlClientNameMode;
         Bind_ddlOrderNo(ddlClientNameMode, eleText, eleText);
+        if (ShowDeliveryCodeInPackingList === 'Y') {
+            Bind_ddlDeliveryAddressCode(eleValue);
+        }
     }
     else {
         let ddlClientName = document.getElementById("ddlClientName");
@@ -1145,7 +1166,8 @@ function PackingListFG_StartLoading(G_LoadNoOfPalletData=[]) {
     let ddlTransporterName = document.getElementById("ddlTransporterName");
     let TextTransporterName = ddlTransporterName.options[ddlTransporterName.selectedIndex].text;
 
-    
+    let DeliveryAddressCode = $('#ddlDeliveryAddressCode').val() || '';
+
     let OnlyEntry = "M";
 
     if (typeof ClientMaster_Code === 'undefined' || ClientMaster_Code === '' || ClientMaster_Code === null || ClientMaster_Code === '0') {
@@ -1206,7 +1228,8 @@ function PackingListFG_StartLoading(G_LoadNoOfPalletData=[]) {
         printPC: "",
         printMT: "",
         printMTRS: "",
-        mrnMaster_Code: G_PackingTypeDesp.toUpperCase().trim() === ('PURCHASE RETURN').trim() ? parseInt(ddlOrderNo_Code) : 0
+        mrnMaster_Code: G_PackingTypeDesp.toUpperCase().trim() === ('PURCHASE RETURN').trim() ? parseInt(ddlOrderNo_Code) : 0,
+        deliveryAddressCode: DeliveryAddressCode
     }];
 
     let packingListPayLoad = {
@@ -1428,6 +1451,7 @@ function ClrFrm() {
     G_dllConsigneeName = '';
     G_PackingTypeDesp = '';
     G_DefaultAccountCodeStockTransfar = 0;
+    G_DeliveryAddressCode = "";
 
     $('#txtPackingListNo').val('0');
     $('#txtScanIdentification').val('');
@@ -1452,6 +1476,8 @@ function ClrFrm() {
     $('#txtGRNo').val("");
     //$('#txtGRDate').val("");
     $('#txtGRDate').val(new Date().toISOString().slice(0, 10));
+    $('#ddlDeliveryAddressCode').val('0');
+    $('#ddlDeliveryAddressCode').select2({ width: '-webkit-fill-available' });
 
    
     $('#ddlGodownFrom').select2({
@@ -1486,6 +1512,7 @@ function ClrFrm() {
 
     $('#ddlClientName').removeAttr("disabled");
     $('#ddlConsignee').removeAttr("disabled");
+    $('#ddlDeliveryAddressCode').removeAttr("disabled");
 
     $('#txtPackingListDate').removeAttr("readonly");
     $('#ddlTransporterName').removeAttr("disabled");
@@ -1665,7 +1692,15 @@ function LoadFrm() {
     if (PackingListFGFixedParaMeters.length > 0 && PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'AutoSelectConsigneeByOrder').PeramaterValue === 'Y') {
         G_AutoSelectConsigneeByOrder = "Y";
     }
-    
+    if (PackingListFGFixedParaMeters.length > 0 && PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'ShowDeliveryCodeInPackingList') &&
+        PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'ShowDeliveryCodeInPackingList').PeramaterValue === 'Y') {
+        ShowDeliveryCodeInPackingList = "Y";
+        $('#divDeliveryAddressCode').show();
+    } else {
+        ShowDeliveryCodeInPackingList = "N";
+        $('#divDeliveryAddressCode').hide();
+    }
+
     if (ShowPalletTypeAndNoInPackingList === 'Y') {
         let chkSummary = document.getElementById("chkSummary");
         chkSummary.checked = true;
