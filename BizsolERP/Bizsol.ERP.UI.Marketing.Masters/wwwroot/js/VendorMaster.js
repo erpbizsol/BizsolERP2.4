@@ -564,7 +564,6 @@ function vmBuildVendorMasterPrintHtml(payload) {
         ".print-footer{position:fixed;bottom:0;left:0;right:0;z-index:2;padding:6px 10mm 10px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}" +
         ".print-footer-addr{text-align:center;font-family:Georgia,'Times New Roman',Times,serif;font-size:8.5pt;color:#6d7d92;line-height:1.45;margin:0 0 6px;padding:0 8px;}" +
         ".print-footer-addr .print-footer-pin{margin-right:4px;}" +
-        ".print-footer-code{text-align:center;font-size:9pt;color:#000;font-weight:700;margin:0 0 8px;padding:0 8px;}" +
         ".print-footer-strip{height:22px;width:100%;background:linear-gradient(102deg,#d4c6e6 0%,#d4c6e6 44.5%,#ffffff 44.5%,#ffffff 47.2%,#d8dce2 47.2%,#d8dce2 100%);}" +
         ".wm-logo{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:320px;background:url(" +
         logoUrl.replace(/\(/g, "%28").replace(/\)/g, "%29") +
@@ -644,12 +643,6 @@ function vmBuildVendorMasterPrintHtml(payload) {
               vmEscapeHtml(footerAddrLine) +
               "</div>"
             : "") +
-        '<div class="print-footer-code">' +
-        "<b>" +
-        vmEscapeHtml(codeLabel) +
-        " : </b>" +
-        vmEscapeHtml(cellVal(item.VendorCode)) +
-        "</div>" +
         '<div class="print-footer-strip" aria-hidden="true"></div>' +
         "</footer>";
 
@@ -1092,6 +1085,7 @@ function mapVendorRowsToGrid(rows) {
         }
 
         var btns =
+            '<span class="vm-action-btns">' +
             '<button class="vm-btn-view" title="View" onclick="ViewVendor(' + item.Code + ')">' +
             '<i class="fas fa-eye"></i>' +
             "</button>" +
@@ -1117,7 +1111,8 @@ function mapVendorRowsToGrid(rows) {
             "</button>" +
             '<button class="vm-btn-delete" title="Delete" onclick="ConfirmVendorDelete(' + item.Code + ')">' +
             '<i class="fas fa-trash-can"></i>' +
-            "</button>";
+            "</button>" +
+            "</span>";
         var patch = {};
         if (shouldShowVendorPartyVerifyColumn()) {
             patch.Verify = verifyCell;
@@ -1172,7 +1167,7 @@ function getVendorMasterColumnAlignment() {
         ca.Verify = "center;min-width:96px;white-space:nowrap;";
     }
     if (G_IsClientOrVendor === "V") {
-        ca.Action = "center;min-width:152px;white-space:nowrap;";
+        ca.Action = "center;width:1%;max-width:118px;white-space:normal;vertical-align:middle;";
     }
     ca.SNo = "min-width:10px;";
     return ca;
@@ -1195,7 +1190,7 @@ function refreshVendorMasterGrid() {
     var filtered = filterVendorRowsByStat(source, mode);
     var mapped = mapVendorRowsToGrid(filtered);
 
-    const StringFilterColumn = ["Vendor Name", "Nature", "GSTN No", "Phone", "Email", "City", "State", "Country","Industry Type"];
+    const StringFilterColumn = ["Vendor Code","Vendor Name", "Nature", "GSTN No", "Phone", "Email", "City", "State", "Country","Industry Type"];
     const NumericFilterColumn = ["SNo"];
     const DateFilterColumn = [];
     const Button = false;
@@ -1302,10 +1297,15 @@ function vmSetIndustryTypeMasterFromCode(code) {
         apply();
         return;
     }
+    function optionExistsForValue(val) {
+        return $("#IndustryTypeMaster option").toArray().some(function (o) {
+            return String(o.value) === val;
+        });
+    }
     var n = 0;
     var t = setInterval(function () {
         n++;
-        if ($("#IndustryTypeMaster option[value='" + v + "']").length || n > 50) {
+        if (optionExistsForValue(v) || n > 50) {
             clearInterval(t);
             apply();
         }
@@ -1400,7 +1400,7 @@ function EditVendor(code) {
                 "industryTypeMaster_Code",
                 "IndustryTypeMasterCode"
             ]);
-            vmSetIndustryTypeMasterFromCode(industryCode);
+            GetIndustryTypeMasterList(undefined, { vendorIndustryCode: industryCode });
 
             var stateCode = item.StateMaster_Code != null ? String(item.StateMaster_Code) : "";
             var cityCode = item.CityMaster_Code != null ? String(item.CityMaster_Code) : "";
@@ -2562,7 +2562,9 @@ function GetCityList() {
         G_VendorCityMasterList = Array.isArray(resObj) ? resObj : [];
         BindSelectList($('#City')[0], resObj.map((item) => ({ Code: item.Code, Desp: item.CityName })));
         $('#City').select2({
-            width: '-webkit-fill-available'
+            width: '-webkit-fill-available',
+            dropdownParent: vmGetIndustryTypeSelect2DropdownParent(),
+            allowClear: false
         });
     });
 }
@@ -2571,7 +2573,9 @@ function GetStateList() {
     VendorMasterService.GetStateList().then(function (resObj) {
         BindSelectList($('#State')[0], resObj.map((item) => ({ Code: item.Code, Desp: item.StateName })));
         $('#State').select2({
-            width: '-webkit-fill-available'
+            width: '-webkit-fill-available',
+            dropdownParent: vmGetIndustryTypeSelect2DropdownParent(),
+            allowClear: false
         });
     });
 }
@@ -2580,22 +2584,66 @@ function GetNationList() {
     VendorMasterService.GetNationList().then(function (resObj) {
         BindSelectList($('#Nation')[0], resObj.map((item) => ({ Code: item.Code, Desp: item.CountryName })));
         $('#Nation').select2({
-            width: '-webkit-fill-available'
+            width: '-webkit-fill-available',
+            dropdownParent: vmGetIndustryTypeSelect2DropdownParent(),
+            allowClear: false
         });
     });
 }
 
-/** Industry type master — option text = name, value = Code (IndustryTypeMaster_Code in save payload). */
-function GetIndustryTypeMasterList(selectCodeAfter) {
-    if ($("#IndustryTypeMaster").length && $("#IndustryTypeMaster").data("select2")) {
-        try {
-            $("#IndustryTypeMaster").select2("destroy");
-        } catch (e) {
-            /* ignore */
-        }
-    }
+/** Shared: Select2 Industry Type attaches to form modal so blur/outside-click does not drop selection. */
+function vmGetIndustryTypeSelect2DropdownParent() {
+    var $formModal = $("#vendorFormContainer");
+    if ($formModal.length) return $formModal;
+    var $bd = $("#vendorDialogBackdrop");
+    return $bd.length ? $bd : $(document.body);
+}
+
+/** Industry type master — option text = name, value = Code (IndustryTypeMaster_Code in save payload).
+ *  @param selectCodeAfter — after quick-add save: explicit code to select
+ *  @param options.vendorIndustryCode — Edit Vendor: always apply this value after reload (overrides previousVal) */
+function GetIndustryTypeMasterList(selectCodeAfter, options) {
+    options = options || {};
+    var hasVendorIndustry = Object.prototype.hasOwnProperty.call(options, "vendorIndustryCode");
+    var explicitAfter =
+        !hasVendorIndustry &&
+        selectCodeAfter !== undefined &&
+        selectCodeAfter !== null &&
+        String(selectCodeAfter).trim() !== "";
+
+    window._vmIndustryTypeListSeq = (window._vmIndustryTypeListSeq || 0) + 1;
+    var seq = window._vmIndustryTypeListSeq;
+
     return VendorMasterService.GetIndustryType()
         .then(function (resObj) {
+            if (seq !== window._vmIndustryTypeListSeq) return;
+
+            var previousVal = "";
+            if (!explicitAfter && !hasVendorIndustry) {
+                try {
+                    var $ind = $("#IndustryTypeMaster");
+                    if ($ind.length) {
+                        previousVal = $ind.val() || "";
+                        if (!previousVal && $ind.data("select2")) {
+                            var s2Data = $ind.select2("data");
+                            if (s2Data && s2Data.length && s2Data[0] && s2Data[0].id != null && String(s2Data[0].id) !== "") {
+                                previousVal = String(s2Data[0].id);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    previousVal = "";
+                }
+            }
+
+            if ($("#IndustryTypeMaster").length && $("#IndustryTypeMaster").data("select2")) {
+                try {
+                    $("#IndustryTypeMaster").select2("destroy");
+                } catch (e) {
+                    /* ignore */
+                }
+            }
+
             var raw = resObj && (resObj.data || resObj.Data || resObj);
             var rows = Array.isArray(raw) ? raw : [];
             var mapped = rows.map(function (item) {
@@ -2606,17 +2654,38 @@ function GetIndustryTypeMasterList(selectCodeAfter) {
             });
             BindSelectList($("#IndustryTypeMaster")[0], mapped);
             $("#IndustryTypeMaster").select2({
-                width: "-webkit-fill-available"
+                width: "-webkit-fill-available",
+                dropdownParent: vmGetIndustryTypeSelect2DropdownParent(),
+                allowClear: false
             });
-            if (selectCodeAfter != null && String(selectCodeAfter) !== "") {
-                vmSetIndustryTypeMasterFromCode(selectCodeAfter);
+            if (hasVendorIndustry) {
+                var vic = options.vendorIndustryCode;
+                var norm =
+                    vic == null || vic === "" || (typeof vic === "string" && vic.trim() === "") || String(vic) === "0"
+                        ? ""
+                        : String(vic);
+                vmSetIndustryTypeMasterFromCode(norm);
+            } else if (explicitAfter) {
+                vmSetIndustryTypeMasterFromCode(String(selectCodeAfter));
+            } else if (previousVal) {
+                vmSetIndustryTypeMasterFromCode(previousVal);
             }
         })
         .catch(function (err) {
+            if (seq !== window._vmIndustryTypeListSeq) return;
             console.warn("GetIndustryTypeMasterList:", err);
+            if ($("#IndustryTypeMaster").length && $("#IndustryTypeMaster").data("select2")) {
+                try {
+                    $("#IndustryTypeMaster").select2("destroy");
+                } catch (e) {
+                    /* ignore */
+                }
+            }
             BindSelectList($("#IndustryTypeMaster")[0], []);
             $("#IndustryTypeMaster").select2({
-                width: "-webkit-fill-available"
+                width: "-webkit-fill-available",
+                dropdownParent: vmGetIndustryTypeSelect2DropdownParent(),
+                allowClear: false
             });
         });
 }
@@ -2705,8 +2774,10 @@ function SelectOptionByText(Id, FindText) {
         }
     }
     $('#' + Id).select2({
-        width: '-webkit-fill-available'
-    })
+        width: '-webkit-fill-available',
+        dropdownParent: vmGetIndustryTypeSelect2DropdownParent(),
+        allowClear: false
+    });
 }
 
 window.OpenNewVendor = OpenNewVendor;
