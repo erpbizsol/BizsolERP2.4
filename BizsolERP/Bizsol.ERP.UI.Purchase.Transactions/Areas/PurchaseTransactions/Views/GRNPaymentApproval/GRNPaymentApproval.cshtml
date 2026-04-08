@@ -113,8 +113,8 @@
         letter-spacing: 0.02em;
         text-transform: uppercase;
     }
-        th:hover {
-            background: linear-gradient(90deg, #e6091f 0%, #6b5ee6 100%) !important;
+        #divGPAList th:hover {
+            background: linear-gradient(135deg, #6d72f7, #5b5ef4) !important;
         }
     table, th, td, tr {
         border: 1px solid #ddd;
@@ -268,6 +268,16 @@
         flex-wrap: wrap;
         gap: 14px 16px;
     }
+    /* Tabs + GRN/New ek saath — beech mein bada gap nahi */
+    .po-list-header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        flex: 0 1 auto;
+        min-width: 0;
+    }
     .po-list-header-left {
         flex: 0 1 auto;
         min-width: 160px;
@@ -286,9 +296,9 @@
         display: flex;
         flex-wrap: wrap;
         align-items: stretch;
-        justify-content: center;
+        justify-content: flex-start;
         gap: 8px;
-        flex: 1 1 260px;
+        flex: 0 0 auto;
         padding: 0;
         margin: 0;
         background: transparent;
@@ -297,37 +307,40 @@
     }
 
         #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab {
-            flex: 0 1 auto;
-            min-width: 187px;
-            max-width: 127px;
-            padding: 1px 12px 10px;
-            border: 1px solid rgba(255, 255, 255, 0.35);
+            flex: 0 0 auto;
+            box-sizing: border-box;
+            width: 118px;
+            min-width: 118px;
+            max-width: 118px;
+            padding: 8px 6px 10px;
+            border: 1.5px solid rgba(255, 255, 255, 0.5);
             border-radius: 10px;
-            background: rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.12);
             cursor: pointer;
             font-size: 0.62rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.07em;
-            color: rgba(255, 255, 255, 0.95);
+            color: rgba(255, 255, 255, 0.98);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 4px;
-            min-height: 50px;
+            min-height: 52px;
             transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
         }
     #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab:hover {
-        background: rgba(255,255,255,0.24);
-        border-color: rgba(255,255,255,0.55);
+        background: rgba(255,255,255,0.22);
+        border-color: rgba(255,255,255,0.72);
         color: #fff;
     }
+    /* Active: same glass style as others — thoda zyada highlight, solid white block nahi */
     #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active {
-        background: #fff;
-        border-color: #fff;
-        color: #4c1d95;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        background: rgba(255, 255, 255, 0.34);
+        border-color: rgba(255, 255, 255, 0.95);
+        color: #fff;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
     }
     #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab:focus-visible {
         outline: 2px solid #fff;
@@ -339,13 +352,10 @@
         line-height: 1.2;
         text-align: center;
     }
+    /* Count colours — Pending / Approved / Rejected; active par bhi same accent (tabs ek jaisa family) */
     #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab--u .gpa-status-tab-count { color: #fde047; }
     #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab--p .gpa-status-tab-count { color: #6ee7b7; }
     #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab--r .gpa-status-tab-count { color: #fca5a5; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active .gpa-status-tab-count { color: #5b21b6; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active.gpa-status-tab--p .gpa-status-tab-count { color: #047857; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active.gpa-status-tab--r .gpa-status-tab-count { color: #b91c1c; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active.gpa-status-tab--u .gpa-status-tab-count { color: #6d28d9; }
     #divGPAList .po-list-header .gpa-status-tab-count {
         font-size: 1rem;
         font-weight: 800;
@@ -356,14 +366,18 @@
             order: 1;
             flex-basis: 100%;
         }
-        #divGPAList .po-list-header .gpa-status-tabs--in-header {
+        .po-list-header-right {
             order: 2;
-            flex-basis: 100%;
+            width: 100%;
             justify-content: center;
+            flex-wrap: wrap;
+        }
+        #divGPAList .po-list-header .gpa-status-tabs--in-header {
+            justify-content: center;
+            flex: 1 1 auto;
         }
         .po-list-header-actions {
-            order: 3;
-            width: 100%;
+            width: auto;
             justify-content: center;
             margin-left: 0;
         }
@@ -393,42 +407,39 @@
         top: 0;
         z-index: 2;
     }
-    .vm-btn-new {
-        background: rgba(255,255,255,0.18);
-        border: 1.5px solid rgba(255,255,255,0.55);
+    /* GRN Payment + New — same full pill button (height, padding, flex) */
+    .po-list-header-actions .vm-btn-new,
+    .po-list-header-actions .vm-btn-approval-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 40px;
+        padding: 0 20px;
+        background: rgba(255, 255, 255, 0.22);
+        border: 1.5px solid rgba(255, 255, 255, 0.65);
         color: #fff !important;
         border-radius: 10px;
-        padding: 6px 18px;
         font-size: 0.88rem;
         font-weight: 700;
         cursor: pointer;
-        transition: all 0.14s;
-    }
-    .vm-btn-new:hover {
-        background: rgba(255,255,255,0.26);
-        border-color: rgba(255,255,255,0.80);
-        transform: translateY(-1px);
-    }
-
-    .vm-btn-approval-link {
-        display: inline-flex;
-        align-items: center;
-        padding: 11px 18px;
-        font-size: 0.82rem;
-        font-weight: 700;
-        color: #fff !important;
+        transition: background 0.14s, border-color 0.14s, transform 0.14s, box-shadow 0.14s;
         text-decoration: none !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.55);
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.12);
-        transition: background 0.14s, border-color 0.14s, transform 0.14s;
-        gap: 2px;
+        box-sizing: border-box;
+        line-height: 1.2;
+        white-space: nowrap;
+        -webkit-tap-highlight-color: transparent;
     }
-    .vm-btn-approval-link:hover {
-        background: rgba(255,255,255,0.22);
-        border-color: rgba(255,255,255,0.85);
+    .po-list-header-actions .vm-btn-new {
+        font-family: inherit;
+    }
+    .po-list-header-actions .vm-btn-new:hover,
+    .po-list-header-actions .vm-btn-approval-link:hover {
+        background: rgba(255, 255, 255, 0.34);
+        border-color: rgba(255, 255, 255, 0.95);
         color: #fff !important;
         transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     }
     .im-btn-edit {
         display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
@@ -505,31 +516,33 @@
             <h5><i class="fa fa-money-check-alt me-2"></i>Payment Entry List</h5>
             <small>Payment Entry — filter by approval status</small>
         </div>
-        <div class="gpa-status-tabs gpa-status-tabs--in-header" id="gpaStatusTabs" role="tablist" aria-label="Payment entry status">
-            <button type="button" class="gpa-status-tab gpa-status-tab--u is-active" role="tab" data-gpa-status="U" aria-selected="true"
-                    onclick="onGpaListStatusTabClick('U')">
-                <span class="gpa-status-tab-count" id="gpaTabCountU">0</span>
-                <span class="gpa-status-tab-lbl">Pending</span>
-            </button>
-            <button type="button" class="gpa-status-tab gpa-status-tab--p" role="tab" data-gpa-status="P" aria-selected="false"
-                    onclick="onGpaListStatusTabClick('P')">
-                <span class="gpa-status-tab-count" id="gpaTabCountP">0</span>
-                <span class="gpa-status-tab-lbl">Approved</span>
-            </button>
-            <button type="button" class="gpa-status-tab gpa-status-tab--r" role="tab" data-gpa-status="R" aria-selected="false"
-                    onclick="onGpaListStatusTabClick('R')">
-                <span class="gpa-status-tab-count" id="gpaTabCountR">0</span>
-                <span class="gpa-status-tab-lbl">Rejected</span>
-            </button>
-        </div>
-        <div class="po-list-header-actions">
-            <a href="@Url.Action("GRNPaymentApproval", "GRNService", new { area = "PurchaseTransactions", returnUrl = Url.Action("GRNPaymentApproval", "GRNPaymentApproval", new { area = "PurchaseTransactions" }) })"
-               class="vm-btn-approval-link">
-                <i class="fa fa-check-double me-1"></i> GRN Payment Approval
-            </a>
-            <button type="button" class="vm-btn-new" onclick="newGRNPaymentApproval()">
-                <i class="fa fa-plus me-1"></i> New
-            </button>
+        <div class="po-list-header-right">
+            <div class="gpa-status-tabs gpa-status-tabs--in-header" id="gpaStatusTabs" role="tablist" aria-label="Payment entry status">
+                <button type="button" class="gpa-status-tab gpa-status-tab--u is-active" role="tab" data-gpa-status="U" aria-selected="true"
+                        onclick="onGpaListStatusTabClick('U')">
+                    <span class="gpa-status-tab-count" id="gpaTabCountU">0</span>
+                    <span class="gpa-status-tab-lbl">Pending</span>
+                </button>
+                <button type="button" class="gpa-status-tab gpa-status-tab--p" role="tab" data-gpa-status="P" aria-selected="false"
+                        onclick="onGpaListStatusTabClick('P')">
+                    <span class="gpa-status-tab-count" id="gpaTabCountP">0</span>
+                    <span class="gpa-status-tab-lbl">Approved</span>
+                </button>
+                <button type="button" class="gpa-status-tab gpa-status-tab--r" role="tab" data-gpa-status="R" aria-selected="false"
+                        onclick="onGpaListStatusTabClick('R')">
+                    <span class="gpa-status-tab-count" id="gpaTabCountR">0</span>
+                    <span class="gpa-status-tab-lbl">Rejected</span>
+                </button>
+            </div>
+            <div class="po-list-header-actions">
+                <a href="@Url.Action("GRNPaymentApproval", "GRNService", new { area = "PurchaseTransactions", returnUrl = Url.Action("GRNPaymentApproval", "GRNPaymentApproval", new { area = "PurchaseTransactions" }) })"
+                   class="vm-btn-approval-link" role="button">
+                    <i class="fa fa-check-double" aria-hidden="true"></i><span>GRN Payment</span>
+                </a>
+                <button type="button" class="vm-btn-new" onclick="newGRNPaymentApproval()">
+                    <i class="fa fa-plus" aria-hidden="true"></i><span>New</span>
+                </button>
+            </div>
         </div>
     </div>
     <div class="po-grid-wrap">
@@ -553,7 +566,7 @@
             <i class="fa fa-file-invoice po-step-icon ms-auto"></i>
         </div>
         <div class="po-step-body">
-            <div class="row g-2">
+            <div class="row g-2 align-items-end">
                 <input type="hidden" id="hdnGRNPaymentMasterCode" value="0" />
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Entry No</label>
@@ -564,10 +577,22 @@
                     <input type="date" id="dtPaymentDate" class="form-control form-control-sm" autocomplete="off">
                 </div>
                 <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">Party Name <span class="req">*</span></label>
-                    <select id="ddlPartyName" class="form-control form-control-sm" autocomplete="off" onchange="onPartyChange()">
-                        <option value="">-- Select Party --</option>
-                    </select>
+                    <div class="form-check mb-1">
+                        <input type="checkbox" class="form-check-input" id="chkGpaPayToParty" checked onchange="onGpaPartyEmployeeModeChange()">
+                        <label class="form-check-label po-field-lbl mb-0" for="chkGpaPayToParty" style="font-size:0.8rem;font-weight:600;">Pay to party (vendor)</label>
+                    </div>
+                    <div id="wrapGpaPartyName">
+                        <label class="po-field-lbl d-block mb-1">Party Name <span class="req">*</span></label>
+                        <select id="ddlPartyName" class="form-control form-control-sm" autocomplete="off" onchange="onPartyChange()">
+                            <option value="">-- Select Party --</option>
+                        </select>
+                    </div>
+                    <div id="wrapGpaEmployeeName" style="display:none;">
+                        <label class="po-field-lbl d-block mb-1">Employee <span class="req">*</span></label>
+                        <select id="ddlEmployeeName" class="form-control form-control-sm" autocomplete="off" onchange="onGpaEmployeeChange()">
+                            <option value="">-- Select Employee --</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Payment mode</label>
@@ -582,7 +607,7 @@
                     <input type="text" id="txtRefNo" class="form-control form-control-sm" maxlength="50" autocomplete="off" placeholder="Reference / Cheque no.">
                 </div>
                 <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">Amount</label>
+                    <label class="po-field-lbl d-block mb-1">Amount <span class="req">*</span></label>
                     <input type="number" id="txtHeaderAmount" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00" autocomplete="off">
                 </div>
                 <div class="col-md-6 d-flex align-items-end">
@@ -628,7 +653,7 @@
                             <th>Bill date</th>
                             <th>Bill amount</th>
                             <th>Payable amount</th>
-                            <th>Payment amount</th>
+                            <th>Payment amount <span id="gpaPayAmtReqMark" class="req">*</span></th>
                             <th style="width:52px;text-align:center;">Action</th>
                         </tr>
                     </thead>
@@ -668,12 +693,6 @@
                 </div>
                 <div id="gpaAddBillModalForm">
                     <input type="hidden" id="gpaAddBillModalMrn" value="">
-                    <div class="mb-2">
-                        <label class="form-label mb-1 po-field-lbl">Party Name <span class="req">*</span></label>
-                        <select id="gpaAddBillModalParty" class="form-control form-control-sm" onchange="onGpaAddBillModalPartyChange()">
-                            <option value="">-- Select Party --</option>
-                        </select>
-                    </div>
                     <div id="gpaAddBillModalBillWrap" class="mb-2" style="display: none;">
                         <label class="form-label mb-1 po-field-lbl">Bill</label>
                         <select id="gpaAddBillModalBill" class="form-control form-control-sm" onchange="onGpaAddBillModalBillChange()">
@@ -682,16 +701,21 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1 po-field-lbl">Bill no</label>
-                        <input type="text" id="gpaAddBillModalBillNo" class="form-control form-control-sm" maxlength="64" autocomplete="off" placeholder="Bill no">
+                        <input type="text" id="gpaAddBillModalBillNo" class="form-control form-control-sm" maxlength="64" autocomplete="off" placeholder="Bill no"
+                               oninput="gpaOnAddBillModalBillNoInput()">
                     </div>
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="form-label mb-1 po-field-lbl">Project</label>
-                            <input type="text" id="gpaAddBillModalProject" class="form-control form-control-sm" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;" autocomplete="off">
+                            <select id="gpaAddBillModalProject" class="form-control form-control-sm" onchange="onGpaAddBillModalProjectPick()">
+                                <option value="">-- Project --</option>
+                            </select>
                         </div>
                         <div class="col-6">
                             <label class="form-label mb-1 po-field-lbl">Sub project</label>
-                            <input type="text" id="gpaAddBillModalSubProject" class="form-control form-control-sm" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;" autocomplete="off">
+                            <select id="gpaAddBillModalSubProject" class="form-control form-control-sm" onchange="onGpaAddBillModalSubPick()">
+                                <option value="">-- Sub project --</option>
+                            </select>
                         </div>
                     </div>
                     <div class="mb-2">
@@ -706,7 +730,8 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label mb-1 po-field-lbl">Payable amount</label>
-                            <input type="number" id="gpaAddBillModalPayable" class="form-control form-control-sm" min="0" step="0.01" placeholder="0" readonly style="background: #ede9fe; border-color: #c4b5fd;">
+                            <input type="number" id="gpaAddBillModalPayable" class="form-control form-control-sm" min="0" step="0.01" placeholder="0" readonly style="background: #ede9fe; border-color: #c4b5fd;"
+                                   onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this);">
                         </div>
                     </div>
                     <div class="mb-2">

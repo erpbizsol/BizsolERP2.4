@@ -6383,7 +6383,9 @@ function SelectStockCheck(x) {
         ObjCurrRow.find('td:eq(0)')[0].getElementsByTagName('input')[0].checked = true;
     }
     var Bal_Qty = ObjCurrRow.find("label").text();
-    if (CRM_Config.CheckLogicalStockLimit == 'Y') {
+    var isOEMClient = GetSelectedCustomerAccountNature() === 'OEM';
+
+    if (CRM_Config.CheckLogicalStockLimit == 'Y' && !isOEMClient) {
         if (parseFloat($(x).val()) > parseFloat(Bal_Qty)) {
             toastr.error("Qty Value shouldn't be greater than Balance Qty");
             $(x).val(0);

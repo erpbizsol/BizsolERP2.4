@@ -1,5 +1,6 @@
 
 import { GRNPaymentApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GRNPaymentEntryService.js';
+import { GRNService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_GRNService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 
@@ -38,6 +39,10 @@ let gpaListFullRows = [];
 let gpaVendorListCache = [];
 /** Cached from GetBankPayment — used for print voucher payment mode label. */
 let gpaBankPaymentListCache = [];
+/** Cached from GRN GetProjectList — bill row project dropdowns. */
+let gpaProjectListCache = [];
+/** Cached from GetMarketingManMaster — employee dropdown. */
+let gpaEmployeeListCache = [];
 /** Active list tab: 'U' | 'P' | 'R' */
 let gpaListActiveStatusTab = 'U';
 
@@ -85,6 +90,9 @@ function mapGpaListRow(item) {
     const entryNo = item.EntryNo ?? item.entryNo ?? '';
     const ed = item.EntryDate ?? item.entryDate ?? item.PaymentDate ?? item.paymentDate;
     const party = item.PartyName ?? item.VendorName ?? item.AccountName ?? item.partyName ?? item.Party ?? '';
+    const empRaw = item.Employee ?? item.employee ?? item.MarketingManMaster ?? item.marketingManMaster
+        ?? item.MarketingManName ?? item.marketingManName ?? '';
+    const employee = empRaw !== undefined && empRaw !== null ? String(empRaw).trim() : '';
     const rawAmt = item.Amount ?? item.amount ?? item.HeaderAmount ?? item.headerAmount;
     const amt = rawAmt !== undefined && rawAmt !== null && rawAmt !== '' ? Number(rawAmt) : '';
     const ref = item.RefNo ?? item.refNo ?? '';
@@ -106,6 +114,7 @@ function mapGpaListRow(item) {
         'Entry No': entryNo,
         'Entry Date': formatGpaListDate(ed),
         'Party Name': party,
+        Employee: employee,
         'Amount': amt,
         'Ref No': ref,
         Action: btns,
@@ -139,6 +148,7 @@ function gpaListEmptyTabPlaceholderRow() {
         'Entry No': '',
         'Entry Date': '',
         'Party Name': 'No payment entries in this status.',
+        Employee: '',
         'Amount': '',
         'Ref No': '',
         Action: '',
@@ -168,7 +178,7 @@ function updateGpaStatusTabStrip() {
 }
 
 function renderGpaListGridForActiveTab() {
-    const StringFilterColumn = ['Party Name', 'Ref No'];
+    const StringFilterColumn = ['Party Name', 'Employee', 'Ref No'];
     const NumericFilterColumn = ['Entry No', 'Amount'];
     const DateFilterColumn = ['Entry Date'];
     const Button = false;
@@ -328,11 +338,10 @@ async function doDeleteGRNPaymentApproval(code) {
     });
 }
 
-
-
 // ── DOM ready ────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-    await Promise.all([loadVendorList(), loadBankPaymentList()]);
+    await Promise.all([loadVendorList(), loadBankPaymentList(), loadEmployeeList(), loadGpaProjectListForGrid()]);
+    syncGpaPartyEmployeeUI();
     setTodayDates();
     await loadGRNPaymentApprovalList();
     showListView();
@@ -568,7 +577,77 @@ async function loadVendorList() {
     }
 }
 
-function fillBillGridFromDetailRows(rows) {
+async function loadEmployeeList() {
+    const ddl = document.getElementById('ddlEmployeeName');
+    if (!ddl) return;
+    try {
+        const result = await GRNPaymentApprovalService.GetMarketingManMaster();
+        const rows = normalizeApiRows(result);
+        gpaEmployeeListCache = rows;
+        ddl.innerHTML = '<option value="">-- Select Employee --</option>';
+        rows.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.MarketingManMaster_Code ?? v.marketingManMaster_Code ?? v.Code ?? v.code ?? '';
+            opt.text = v.Name ?? v.name ?? v.MarketingManName ?? v.marketingManName ?? v.EmployeeName ?? v.employeeName ?? '';
+            const acc = v.AccountMaster_Code ?? v.accountMaster_Code;
+            if (acc !== undefined && acc !== null && `${acc}`.trim() !== '') {
+                opt.dataset.accountCode = String(acc);
+            }
+            ddl.appendChild(opt);
+        });
+    } catch (e) {
+        console.error('Failed to load employees:', e);
+    }
+}
+
+async function loadGpaProjectListForGrid() {
+    try {
+        const result = await GRNService.GetProjectList();
+        gpaProjectListCache = Array.isArray(result) ? result : normalizeApiRows(result);
+    } catch (e) {
+        console.error('loadGpaProjectListForGrid', e);
+        gpaProjectListCache = [];
+    }
+}
+
+function isGpaPartyMode() {
+    const chk = document.getElementById('chkGpaPayToParty');
+    return chk ? chk.checked : true;
+}
+
+/** Edit load: employee payment vs vendor — API may send MarketingManMaster / Employee / *_Code. */
+function gpaMasterIsEmployeePayment(master) {
+    if (!master || typeof master !== 'object') return false;
+    const name = master.MarketingManMaster ?? master.marketingManMaster ?? master.Employee ?? master.employee ?? '';
+    if (String(name).trim() !== '') return true;
+    const mc = master.MarketingManMaster_Code ?? master.marketingManMaster_Code
+        ?? master.F_MarketingManMaster_Code ?? master.f_MarketingManMaster_Code;
+    const n = parseInt(String(mc ?? '0'), 10);
+    return Number.isFinite(n) && n > 0;
+}
+
+function getGpaCounterpartyKey() {
+    if (isGpaPartyMode()) {
+        return document.getElementById('ddlPartyName')?.value?.trim() ?? '';
+    }
+    return document.getElementById('ddlEmployeeName')?.value?.trim() ?? '';
+}
+
+function syncGpaPartyEmployeeUI() {
+    const partyWrap = document.getElementById('wrapGpaPartyName');
+    const empWrap = document.getElementById('wrapGpaEmployeeName');
+    const showParty = isGpaPartyMode();
+    if (partyWrap) partyWrap.style.display = showParty ? '' : 'none';
+    if (empWrap) empWrap.style.display = showParty ? 'none' : '';
+    const payAmtMark = document.getElementById('gpaPayAmtReqMark');
+    if (payAmtMark) {
+        payAmtMark.style.display = 'inline';
+        payAmtMark.setAttribute('aria-hidden', 'false');
+    }
+    gpaRefreshAllBillRowsPayableEditable();
+}
+
+async function fillBillGridFromDetailRows(rows) {
     const tbody = document.getElementById('billTbody');
     if (!tbody) return;
     clearBillRows();
@@ -576,11 +655,12 @@ function fillBillGridFromDetailRows(rows) {
         addBillRows(DEFAULT_BILL_ROW_COUNT);
         return;
     }
-    rows.forEach(r => {
+    for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
         tbody.insertAdjacentHTML('beforeend', billRowTemplate());
         const tr = tbody.querySelector('tr.bill-row:last-child');
-        if (tr) applyBillDetailRow(tr, r);
-    });
+        if (tr) await applyBillDetailRow(tr, r);
+    }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -645,13 +725,29 @@ function applyEntryNoFromResponse(data) {
     updateFloatBarEntryNo();
 }
 
-function getSelectedAccountMasterCode() {
-    const ddl = document.getElementById('ddlPartyName');
+/**
+ * TY_GRNPaymentMaster.AccountMaster_Code: party = vendor/ledger (option accountCode or party value);
+ * employee payment = ledger AccountMaster_Code from option only — employee PK is MarketingManMaster_Code.
+ */
+function gpaTyGrnPaymentMasterAccountMasterCode() {
+    const ddl = isGpaPartyMode()
+        ? document.getElementById('ddlPartyName')
+        : document.getElementById('ddlEmployeeName');
     const opt = ddl?.selectedOptions?.[0];
     const acc = opt?.dataset?.accountCode;
     if (acc !== undefined && acc !== null && String(acc).trim() !== '') {
         return parseInt(acc, 10) || 0;
     }
+    if (isGpaPartyMode()) {
+        return parseInt(ddl?.value || '0', 10) || 0;
+    }
+    return 0;
+}
+
+/** TY_GRNPaymentMaster.MarketingManMaster_Code — employee dropdown PK; 0 when Pay to party. */
+function gpaTyGrnPaymentMasterMarketingManMasterCode() {
+    if (isGpaPartyMode()) return 0;
+    const ddl = document.getElementById('ddlEmployeeName');
     return parseInt(ddl?.value || '0', 10) || 0;
 }
 
@@ -667,8 +763,8 @@ function billRowTemplate() {
         <input type="text" class="form-control form-control-sm inp-bill-no" maxlength="64" autocomplete="off" placeholder="Bill no">
     </td>
     <td><input type="text" class="form-control form-control-sm inp-deduction" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;min-width:72px;"></td>
-    <td><input type="text" class="form-control form-control-sm inp-project" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;min-width:120px;"></td>
-    <td><input type="text" class="form-control form-control-sm inp-subproject" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;min-width:120px;"></td>
+    <td><select class="form-control form-control-sm inp-project-ddl" style="min-width:140px;"><option value="">-- Project --</option></select></td>
+    <td><select class="form-control form-control-sm inp-subproject-ddl" style="min-width:140px;"><option value="">-- Sub project --</option></select></td>
     <td><input type="date" class="form-control form-control-sm inp-bill-date" autocomplete="off"></td>
     <td><input type="number" class="form-control form-control-sm inp-bill-amt" min="0" step="0.01" placeholder="0" onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this)"></td>
     <td><input type="number" class="form-control form-control-sm inp-payable" min="0" step="0.01" placeholder="0" readonly style="background:#ede9fe;border-color:#c4b5fd;"></td>
@@ -695,6 +791,251 @@ function addBillRows(count) {
     if (!tbody) return;
     for (let i = 0; i < count; i++) {
         tbody.insertAdjacentHTML('beforeend', billRowTemplate());
+        const tr = tbody.querySelector('tr.bill-row:last-child');
+        if (tr) {
+            initBillRowProjectSelects(tr);
+            gpaRefreshRowPayableEditable(tr);
+        }
+    }
+}
+
+function initBillRowProjectSelects(tr) {
+    const pj = tr.querySelector('.inp-project-ddl');
+    const sp = tr.querySelector('.inp-subproject-ddl');
+    if (!pj || !sp) return;
+    pj.innerHTML = '<option value="">-- Project --</option>';
+    (gpaProjectListCache || []).forEach(p => {
+        const opt = document.createElement('option');
+        const code = p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? p.code ?? '';
+        opt.value = code !== undefined && code !== null ? String(code) : '';
+        opt.text = p.ProjectName ?? p.projectName ?? p.Name ?? p.ProjectDesp ?? p.projectDesp ?? opt.value;
+        pj.appendChild(opt);
+    });
+    sp.innerHTML = '<option value="">-- Sub project --</option>';
+}
+
+async function fillSubProjectOptionsForRow(tr, projectCode) {
+    const sp = tr.querySelector('.inp-subproject-ddl');
+    if (!sp) return;
+    const prev = sp.value;
+    sp.innerHTML = '<option value="">-- Sub project --</option>';
+    if (!projectCode) return;
+    try {
+        const subResult = await GRNService.GetSubProjectList(projectCode);
+        const subs = Array.isArray(subResult) ? subResult : normalizeApiRows(subResult);
+        subs.forEach(s => {
+            const opt = document.createElement('option');
+            const code = s.SubProjectMaster_Code ?? s.subProjectMaster_Code ?? s.Code ?? s.code ?? '';
+            opt.value = code !== undefined && code !== null ? String(code) : '';
+            opt.text = s.SubProjectName ?? s.subProjectName ?? s.Name ?? s.SubProjectDesp ?? opt.value;
+            sp.appendChild(opt);
+        });
+        if (prev && [...sp.options].some(o => o.value === prev)) sp.value = prev;
+    } catch (e) {
+        console.error('fillSubProjectOptionsForRow', e);
+    }
+}
+
+/** Query params for GetBillDetails: blank / missing → 0 on server. */
+function gpaToBillDetailQueryCode(v) {
+    if (v === undefined || v === null) return 0;
+    const s = String(v).trim();
+    if (s === '') return 0;
+    const n = parseInt(s, 10);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function resolveProjectMasterCodeFromRow(r) {
+    if (!r || typeof r !== 'object') return '';
+    const v = r.ProjectMaster_Code ?? r.projectMaster_Code
+        ?? r.F_ProjectMaster_Code ?? r.f_ProjectMaster_Code
+        ?? r.F_Project_Code ?? r.f_Project_Code
+        ?? r.Project_Code ?? r.project_Code
+        ?? r.ProjectMasterCode ?? r.projectMasterCode;
+    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+    const pm = r.ProjectMaster ?? r.projectMaster;
+    if (pm !== undefined && pm !== null) {
+        const s = String(pm).trim();
+        if (/^\d+$/.test(s)) return s;
+    }
+    return '';
+}
+
+function resolveSubProjectMasterCodeFromRow(r) {
+    if (!r || typeof r !== 'object') return '';
+    const v = r.SubProjectMaster_Code ?? r.subProjectMaster_Code
+        ?? r.F_SubProjectMaster_Code ?? r.f_SubProjectMaster_Code
+        ?? r.F_SubProject_Code ?? r.f_SubProject_Code
+        ?? r.SubProject_Code ?? r.subProject_Code
+        ?? r.SubProjectMasterCode ?? r.subProjectMasterCode;
+    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+    const sm = r.SubProjectMaster ?? r.subProjectMaster;
+    if (sm !== undefined && sm !== null) {
+        const s = String(sm).trim();
+        if (/^\d+$/.test(s)) return s;
+    }
+    return '';
+}
+
+/** Display text for project — TY_GRNPaymentDetails often uses ProjectMaster (string); SQL joins use ProjectDesp. */
+function resolveProjectDespFromRow(r) {
+    if (!r || typeof r !== 'object') return '';
+    let v = r.ProjectDesp ?? r.projectDesp ?? r.ProjectName ?? r.projectName ?? r.Project ?? r.project ?? '';
+    if (v === undefined || v === null || String(v).trim() === '') {
+        const pm = r.ProjectMaster ?? r.projectMaster;
+        if (pm !== undefined && pm !== null) {
+            const ps = String(pm).trim();
+            if (ps && !/^\d+$/.test(ps)) v = pm;
+        }
+    }
+    return v !== undefined && v !== null ? String(v) : '';
+}
+
+/** Display text for sub-project — TY uses SubProjectMaster (string); joins use SubProjectDesp. */
+function resolveSubProjectDespFromRow(r) {
+    if (!r || typeof r !== 'object') return '';
+    let v = r.SubProjectDesp ?? r.subProjectDesp ?? r.SubProjectName ?? r.subProjectName ?? r.SubProject ?? r.subProject ?? '';
+    if (v === undefined || v === null || String(v).trim() === '') {
+        const sm = r.SubProjectMaster ?? r.subProjectMaster;
+        if (sm !== undefined && sm !== null) {
+            const ss = String(sm).trim();
+            if (ss && !/^\d+$/.test(ss)) v = sm;
+        }
+    }
+    return v !== undefined && v !== null ? String(v) : '';
+}
+
+/** Bill / MRN / amounts only — used when project+sub filters a bill from API without overwriting user project picks incorrectly. */
+function applyBillApiFieldsOnly(tr, r) {
+    if (!tr || !r) return;
+    const mrnHidden = tr.querySelector('.inp-mrn-code');
+    const dCode = tr.querySelector('.inp-detail-code');
+    const mrnNum = resolveMrnFromRow(r);
+    if (mrnHidden) mrnHidden.value = mrnNum != null ? String(mrnNum) : '';
+    if (dCode) {
+        const explicit = r.GRNPaymentDetail_Code ?? r.GRNPaymentDetails_Code
+            ?? r.DetailCode ?? r.detailCode ?? r.LineCode ?? r.lineCode;
+        if (explicit !== undefined && explicit !== null && `${explicit}`.trim() !== '') {
+            dCode.value = String(explicit);
+        } else if (isGrnPaymentSavedDetailRow(r)) {
+            const c = r.Code ?? r.code;
+            if (c !== undefined && c !== null && `${c}`.trim() !== '') dCode.value = String(c);
+        } else {
+            dCode.value = '0';
+        }
+    }
+    const no = tr.querySelector('.inp-bill-no');
+    const bd = tr.querySelector('.inp-bill-date');
+    const ba = tr.querySelector('.inp-bill-amt');
+    const py = tr.querySelector('.inp-payable');
+    const pm = tr.querySelector('.inp-payment');
+    if (no) {
+        no.value = r.BillNo ?? r.billNo ?? r.Name ?? r.name ?? r.BillName ?? r.billName ?? '';
+    }
+    const bdt = r.BillDate ?? r.billDate ?? r.ReceiveDate ?? r.receiveDate;
+    if (bd) bd.value = formatDateInput(bdt);
+    const bAmt = r.BillAmount ?? r.billAmount ?? r.Amount ?? r.amount
+        ?? r.TotalBillAmountManual ?? r.totalBillAmountManual;
+    const pAmt = r.PayableAmount ?? r.payableAmount ?? r.NetPayable ?? r.netPayable ?? bAmt;
+    if (ba) ba.value = bAmt !== undefined && bAmt !== null && bAmt !== '' ? bAmt : '';
+    if (py) py.value = pAmt !== undefined && pAmt !== null && pAmt !== '' ? pAmt : '';
+    if (pm) {
+        const payExplicit = r.PaymentAmount ?? r.paymentAmount;
+        if (payExplicit !== undefined && payExplicit !== null && payExplicit !== '') {
+            pm.value = String(payExplicit);
+        }
+    }
+    const ded = tr.querySelector('.inp-deduction');
+    if (ded) {
+        const dv = r.Dedution ?? r.dedution ?? r.Deduction ?? r.deduction;
+        ded.value = dv !== undefined && dv !== null && `${dv}`.trim() !== '' ? String(dv) : '';
+    }
+}
+
+function bindBillRowProjectSubAsync(tr, r) {
+    if (!tr || !r) return Promise.resolve();
+    return (async () => {
+        const pj = tr.querySelector('.inp-project-ddl');
+        const sp = tr.querySelector('.inp-subproject-ddl');
+        if (!pj || !sp) return;
+        initBillRowProjectSelects(tr);
+        const pCode = resolveProjectMasterCodeFromRow(r);
+        const sCode = resolveSubProjectMasterCodeFromRow(r);
+        const pv = resolveProjectDespFromRow(r);
+        const sv = resolveSubProjectDespFromRow(r);
+
+        if (pCode !== '' && ![...pj.options].some(o => o.value === String(pCode))) {
+            const o = document.createElement('option');
+            o.value = String(pCode);
+            o.text = pv.trim() ? pv.trim() : String(pCode);
+            pj.appendChild(o);
+        }
+        if (pCode !== '') {
+            pj.value = String(pCode);
+        } else if (pv.trim()) {
+            const opt = [...pj.options].find(o => String(o.text).trim() === pv.trim());
+            if (opt) pj.value = opt.value;
+        }
+
+        await fillSubProjectOptionsForRow(tr, pj.value);
+
+        if (sCode !== '' && ![...sp.options].some(o => o.value === String(sCode))) {
+            const o = document.createElement('option');
+            o.value = String(sCode);
+            o.text = sv.trim() ? sv.trim() : String(sCode);
+            sp.appendChild(o);
+        }
+        if (sCode !== '') {
+            sp.value = String(sCode);
+        } else if (sv.trim()) {
+            const opt = [...sp.options].find(o => String(o.text).trim() === sv.trim());
+            if (opt) sp.value = opt.value;
+        }
+    })();
+}
+
+async function onBillRowProjectSubChange(tr) {
+    if (!tr || editMode) return;
+    const partyKey = getGpaCounterpartyKey();
+    const pj = tr.querySelector('.inp-project-ddl');
+    const sp = tr.querySelector('.inp-subproject-ddl');
+    const proj = pj?.value?.trim() ?? '';
+    const sub = sp?.value?.trim() ?? '';
+    if (!partyKey) return;
+    if (!proj && !sub) return;
+    const prevPay = tr.querySelector('.inp-payment')?.value ?? '';
+    try {
+        const result = await GRNPaymentApprovalService.GetBillDetails(
+            partyKey,
+            gpaToBillDetailQueryCode(proj),
+            gpaToBillDetailQueryCode(sub)
+        );
+        const rows = normalizeApiRows(result);
+        if (!rows.length) {
+            // Employee (non-vendor): allow manual allocation with Project + Sub project + Amount only (no MRN from server).
+            if (!isGpaPartyMode()) {
+                const mrnHidden = tr.querySelector('.inp-mrn-code');
+                if (mrnHidden) mrnHidden.value = '';
+                const pyEl = tr.querySelector('.inp-payable');
+                if (pyEl && !(parseNum(pyEl) > 0)) {
+                    pyEl.value = '';
+                }
+                return;
+            }
+            showToast('No matching bill for this project/sub-project.', 'info');
+            return;
+        }
+        applyBillApiFieldsOnly(tr, rows[0]);
+        const pm = tr.querySelector('.inp-payment');
+        if (pm && prevPay !== undefined && prevPay !== null && String(prevPay).trim() !== '') {
+            pm.value = prevPay;
+        }
+        recalcFooter();
+    } catch (e) {
+        console.error('onBillRowProjectSubChange', e);
+        showToast('Could not load bill for selected project/sub-project.', 'error');
+    } finally {
+        gpaRefreshRowPayableEditable(tr);
     }
 }
 
@@ -702,26 +1043,45 @@ function wireBillTableDelegation() {
     const tbody = document.getElementById('billTbody');
     if (!tbody || tbody.dataset.delegationWired === '1') return;
     tbody.dataset.delegationWired = '1';
+    tbody.addEventListener('change', e => {
+        const t = e.target;
+        if (t.classList.contains('inp-project-ddl')) {
+            const tr = t.closest('tr');
+            if (tr) {
+                fillSubProjectOptionsForRow(tr, t.value).then(() => onBillRowProjectSubChange(tr));
+            }
+        } else if (t.classList.contains('inp-subproject-ddl')) {
+            const tr = t.closest('tr');
+            if (tr) void onBillRowProjectSubChange(tr);
+        }
+    });
     tbody.addEventListener('input', e => {
         const t = e.target;
         if (!(t instanceof HTMLInputElement)) return;
         if (t.classList.contains('inp-bill-amt')) {
             const tr = t.closest('tr');
             const pay = tr && tr.querySelector('.inp-payable');
-            if (pay) pay.value = t.value;
+            if (pay && pay.readOnly) pay.value = t.value;
+            const payInp = tr && tr.querySelector('.inp-payment');
+            if (payInp) clampGpaPaymentToPayable(payInp);
+        }
+        if (t.classList.contains('inp-payable')) {
+            const tr = t.closest('tr');
             const payInp = tr && tr.querySelector('.inp-payment');
             if (payInp) clampGpaPaymentToPayable(payInp);
         }
         if (t.classList.contains('inp-payment')) {
             clampGpaPaymentToPayable(t);
         }
-        if (t.classList.contains('inp-bill-amt') || t.classList.contains('inp-payment')) {
+        if (t.classList.contains('inp-bill-amt') || t.classList.contains('inp-payment') || t.classList.contains('inp-payable')) {
             recalcFooter();
         }
     });
     tbody.addEventListener('focusout', e => {
         const t = e.target;
         if (!(t instanceof HTMLInputElement) || !t.classList.contains('inp-bill-no')) return;
+        const tr = t.closest('tr');
+        if (tr) gpaRefreshRowPayableEditable(tr);
         const issue = findDuplicateBillAllocationIssue();
         if (issue) showGpaDuplicateBillToast(issue);
     });
@@ -741,13 +1101,14 @@ function showGpaPartyHint() {
     const tbody = document.getElementById('billTbody');
     if (!tbody || editMode) return;
     removeGpaPartyHint();
+    const who = isGpaPartyMode() ? 'Party Name' : 'Employee';
     tbody.insertAdjacentHTML('beforeend', `
 <tr id="trGpaPartyHint" class="gpa-party-hint-row">
     <td colspan="9" style="text-align:center;padding:18px 12px;background:linear-gradient(135deg,rgba(102,126,234,0.06),rgba(99,102,241,0.05));border-top:1px dashed #c4b5fd;">
         <div style="display:inline-flex;align-items:center;gap:10px;max-width:520px;">
             <i class="fa fa-info-circle" style="color:#667eea;font-size:1.1rem;"></i>
             <span style="font-size:0.82rem;color:#475569;">
-                Select <strong style="color:#4f46e5;">Party Name</strong> first (section 1). Then turn on <strong style="color:#4f46e5;">Fill Grid</strong> to load pending bills from the server, or use <strong style="color:#4f46e5;">Add row</strong> to enter a bill manually.
+                Select <strong style="color:#4f46e5;">${who}</strong> first (section 1). Then turn on <strong style="color:#4f46e5;">Fill Grid</strong> to load pending bills from the server, or use <strong style="color:#4f46e5;">Add row</strong> to enter a bill manually.
             </span>
         </div>
     </td>
@@ -770,16 +1131,116 @@ function parseNum(el) {
     return Number.isFinite(v) ? v : 0;
 }
 
+/** Selected option label text for TY_GRNPayment* string fields (skips placeholder options). */
+function gpaSelectedOptionText(selectEl) {
+    if (!selectEl || selectEl.selectedIndex <= 0) return '';
+    const opt = selectEl.selectedOptions?.[0];
+    if (!opt) return '';
+    const t = String(opt.textContent ?? opt.text ?? '').trim();
+    if (!t || /^--\s/.test(t)) return '';
+    return t;
+}
+
 function formatMoney(n) {
     return Number.isFinite(n) ? n.toFixed(2) : '0.00';
 }
 
+/** Unspecified numeric fields default to 0 for API payloads. */
+function gpaNumOrZero(v) {
+    const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/,/g, ''));
+    return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Allocated amount per row for totals and save:
+ * Case 1 (MRN line): Payment amount only.
+ * Case 2 (Party, no bill no): Payment if set, else Payable.
+ * Case 3 (Employee): Payment if set, else Payable.
+ * Party with bill no text but no MRN: Payment only.
+ */
+function gpaLineEffectivePayment(tr) {
+    if (!tr) return 0;
+    const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+    const pay = parseNum(tr.querySelector('.inp-payment'));
+    const payable = parseNum(tr.querySelector('.inp-payable'));
+    if (mrn > 0) return pay;
+    if (!isGpaPartyMode()) return pay > 0 ? pay : payable;
+    const billNo = tr.querySelector('.inp-bill-no')?.value?.trim() ?? '';
+    if (!billNo) return pay > 0 ? pay : payable;
+    return pay;
+}
+
 function sumGpaGridPaymentAmounts() {
     let sum = 0;
-    document.querySelectorAll('#billTbody .inp-payment').forEach(inp => {
-        sum += parseNum(inp);
+    document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
+        if (isGpaPartyMode() && !gpaPartyLineIsIncludedInAllocation(tr)) return;
+        sum += gpaLineEffectivePayment(tr);
     });
     return sum;
+}
+
+/** Party + no MRN + empty bill no + Project + Sub + (Payable > 0 or Payment > 0) (Case 2). */
+function gpaIsPartyCase2Line(tr) {
+    if (!tr || !isGpaPartyMode()) return false;
+    const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+    if (mrn > 0) return false;
+    const billNo = tr.querySelector('.inp-bill-no')?.value?.trim() ?? '';
+    if (billNo) return false;
+    // Must match collectPayload / TY_GRNPaymentDetails: use selected option text, not .value (codes can be blank until DDL binds).
+    const pj = gpaSelectedOptionText(tr.querySelector('.inp-project-ddl'));
+    const sp = gpaSelectedOptionText(tr.querySelector('.inp-subproject-ddl'));
+    if (!pj || !sp) return false;
+    const payable = parseNum(tr.querySelector('.inp-payable'));
+    const pay = parseNum(tr.querySelector('.inp-payment'));
+    return payable > 0 || pay > 0;
+}
+
+/** Party + no MRN + empty bill no + no Project/Sub + Payment > 0 (Case 3: on-account / payment only). */
+function gpaIsPartyCase3PaymentOnlyLine(tr) {
+    if (!tr || !isGpaPartyMode()) return false;
+    const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+    if (mrn > 0) return false;
+    const billNo = tr.querySelector('.inp-bill-no')?.value?.trim() ?? '';
+    if (billNo) return false;
+    const pj = gpaSelectedOptionText(tr.querySelector('.inp-project-ddl'));
+    const sp = gpaSelectedOptionText(tr.querySelector('.inp-subproject-ddl'));
+    if (pj || sp) return false;
+    return parseNum(tr.querySelector('.inp-payment')) > 0;
+}
+
+/**
+ * Party mode: row counts toward footer total and save only if it is complete enough to post.
+ * - MRN line, Bill no line, Case 2 (project+sub+amount), or Case 3 (payment only, no bill/project).
+ */
+function gpaPartyLineIsIncludedInAllocation(tr) {
+    if (!tr || !isGpaPartyMode()) return true;
+    const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+    if (mrn > 0) return true;
+    const billNo = tr.querySelector('.inp-bill-no')?.value?.trim() ?? '';
+    if (billNo) return true;
+    if (gpaIsPartyCase3PaymentOnlyLine(tr)) return true;
+    return gpaIsPartyCase2Line(tr);
+}
+
+/** Payable column: editable for Employee (Case 3) and Party without bill no (Case 2); readonly when MRN loaded (Case 1). */
+function gpaRefreshRowPayableEditable(tr) {
+    if (!tr) return;
+    const py = tr.querySelector('.inp-payable');
+    if (!py) return;
+    const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+    const billNo = tr.querySelector('.inp-bill-no')?.value?.trim() ?? '';
+    let ro = true;
+    if (mrn > 0) ro = true;
+    else if (!isGpaPartyMode()) ro = false;
+    else if (!billNo) ro = false;
+    else ro = true;
+    py.readOnly = ro;
+    py.style.background = ro ? '#ede9fe' : '#fff';
+    py.style.borderColor = ro ? '#c4b5fd' : '';
+}
+
+function gpaRefreshAllBillRowsPayableEditable() {
+    document.querySelectorAll('#billTbody tr.bill-row').forEach(gpaRefreshRowPayableEditable);
 }
 
 /** When payable > 0, payment cannot exceed it (row-level). */
@@ -918,31 +1379,36 @@ function gpaShowFillGridCheckbox(show) {
 
 async function onGpaFillGridChange() {
     if (editMode) return;
-    const party = document.getElementById('ddlPartyName')?.value?.trim() ?? '';
-    if (isGpaFillGridChecked() && !party) {
-        showToast('Please select Party Name first (same as GRN: pick Party before loading the grid).', 'warning');
+    const cp = getGpaCounterpartyKey();
+    if (isGpaFillGridChecked() && !cp) {
+        showToast(
+            isGpaPartyMode()
+                ? 'Please select Party Name first (same as GRN: pick Party before loading the grid).'
+                : 'Please select Employee first before loading the grid.',
+            'warning'
+        );
         const chk = document.getElementById('chkGpaFillGrid');
         if (chk) chk.checked = false;
         recalcFooter();
         return;
     }
-    if (isGpaFillGridChecked() && party) {
+    if (isGpaFillGridChecked() && cp) {
         try {
-            const result = await GRNPaymentApprovalService.GetBillDetails(party);
+            const result = await GRNPaymentApprovalService.GetBillDetails(cp);
             const billRows = normalizeApiRows(result);
-            fillBillGridFromDetailRows(billRows);
+            await fillBillGridFromDetailRows(billRows);
             if (billRows.length === 0) {
-                showToast('No pending bills for this party.', 'info');
+                showToast(isGpaPartyMode() ? 'No pending bills for this party.' : 'No pending bills for this employee.', 'info');
             }
         } catch (e) {
             console.error('onGpaFillGridChange', e);
             clearBillRows();
             showGpaPartyHint();
-            showToast('Could not load bill details for party.', 'error');
+            showToast('Could not load bill details.', 'error');
         }
     } else if (!isGpaFillGridChecked()) {
         clearBillRows();
-        if (party) addBillRows(DEFAULT_BILL_ROW_COUNT);
+        if (cp) addBillRows(DEFAULT_BILL_ROW_COUNT);
         else showGpaPartyHint();
     }
     recalcFooter();
@@ -958,29 +1424,74 @@ function clearGpaAddBillModalBillFields() {
     set('gpaAddBillModalBillAmt', '');
     set('gpaAddBillModalPayable', '');
     set('gpaAddBillModalPayment', '');
+    gpaRefreshAddBillModalPayableEditable();
 }
 
-function populateGpaAddBillModalPartySelect() {
-    const main = document.getElementById('ddlPartyName');
-    const modalP = document.getElementById('gpaAddBillModalParty');
-    if (!modalP || !main) return;
-    modalP.innerHTML = '';
-    for (let i = 0; i < main.options.length; i++) {
-        const o = main.options[i];
+/** Bill / Payable / Payment — numeric fields reset to 0 (e.g. when Project changes). */
+function gpaZeroAddBillModalAmountFields() {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set('gpaAddBillModalBillAmt', '0');
+    set('gpaAddBillModalPayable', '0');
+    set('gpaAddBillModalPayment', '0');
+    gpaRefreshAddBillModalPayableEditable();
+}
+
+function clearGpaAddBillModalBillOnlyFields() {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set('gpaAddBillModalMrn', '');
+    set('gpaAddBillModalBillNo', '');
+    set('gpaAddBillModalBillDate', '');
+    gpaZeroAddBillModalAmountFields();
+}
+
+/** Project / Sub project change: clear bill no, MRN, date, amounts + bill dropdown (manual Project+Sub+Payment path). */
+function gpaResetAddBillModalForProjectAndSubChange() {
+    gpaAddBillModalBillRowsCache = [];
+    const billWrap = document.getElementById('gpaAddBillModalBillWrap');
+    const billSel = document.getElementById('gpaAddBillModalBill');
+    if (billWrap) billWrap.style.display = 'none';
+    if (billSel) billSel.innerHTML = '<option value="">-- Select bill --</option>';
+    clearGpaAddBillModalBillOnlyFields();
+}
+
+async function populateGpaAddBillModalProjectSubDropdowns() {
+    const pSel = document.getElementById('gpaAddBillModalProject');
+    const sSel = document.getElementById('gpaAddBillModalSubProject');
+    if (!pSel || !sSel) return;
+    pSel.innerHTML = '<option value="">-- Project --</option>';
+    (gpaProjectListCache || []).forEach(p => {
         const opt = document.createElement('option');
-        opt.value = o.value;
-        opt.text = o.text;
-        const acc = o.dataset?.accountCode;
-        if (acc !== undefined && acc !== null && String(acc).trim() !== '') {
-            opt.dataset.accountCode = String(acc);
-        }
-        modalP.appendChild(opt);
+        const code = p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? p.code ?? '';
+        opt.value = code !== undefined && code !== null ? String(code) : '';
+        opt.text = p.ProjectName ?? p.projectName ?? p.Name ?? p.ProjectDesp ?? p.projectDesp ?? opt.value;
+        pSel.appendChild(opt);
+    });
+    sSel.innerHTML = '<option value="">-- Sub project --</option>';
+}
+
+async function fillGpaAddBillModalSubProjects(projectCode) {
+    const sSel = document.getElementById('gpaAddBillModalSubProject');
+    if (!sSel) return;
+    const prev = sSel.value;
+    sSel.innerHTML = '<option value="">-- Sub project --</option>';
+    if (!projectCode) return;
+    try {
+        const subResult = await GRNService.GetSubProjectList(projectCode);
+        const subs = Array.isArray(subResult) ? subResult : normalizeApiRows(subResult);
+        subs.forEach(s => {
+            const opt = document.createElement('option');
+            const code = s.SubProjectMaster_Code ?? s.subProjectMaster_Code ?? s.Code ?? s.code ?? '';
+            opt.value = code !== undefined && code !== null ? String(code) : '';
+            opt.text = s.SubProjectName ?? s.subProjectName ?? s.Name ?? s.SubProjectDesp ?? opt.value;
+            sSel.appendChild(opt);
+        });
+        if (prev && [...sSel.options].some(o => o.value === prev)) sSel.value = prev;
+    } catch (e) {
+        console.error('fillGpaAddBillModalSubProjects', e);
     }
 }
 
 function resetGpaAddBillModalForm() {
-    const partySel = document.getElementById('gpaAddBillModalParty');
-    if (partySel) partySel.value = '';
     const billWrap = document.getElementById('gpaAddBillModalBillWrap');
     if (billWrap) billWrap.style.display = 'none';
     const sel = document.getElementById('gpaAddBillModalBill');
@@ -991,6 +1502,35 @@ function resetGpaAddBillModalForm() {
     const form = document.getElementById('gpaAddBillModalForm');
     if (hint) hint.style.display = 'none';
     if (form) form.style.display = 'block';
+    gpaRefreshAddBillModalPayableEditable();
+}
+
+/** Payable in Add bill modal: editable when no MRN (manual Project/Sub/Payable, Bill no cleared). */
+function gpaRefreshAddBillModalPayableEditable() {
+    const mrnEl = document.getElementById('gpaAddBillModalMrn');
+    const py = document.getElementById('gpaAddBillModalPayable');
+    const ba = document.getElementById('gpaAddBillModalBillAmt');
+    if (!py) return;
+    const mrn = parseInt(mrnEl?.value ?? '0', 10) || 0;
+    if (mrn > 0) {
+        py.readOnly = true;
+        py.style.background = '#ede9fe';
+        py.style.borderColor = '#c4b5fd';
+        if (ba) py.value = ba.value;
+    } else {
+        py.readOnly = false;
+        py.style.background = '#fff';
+        py.style.borderColor = '';
+    }
+}
+
+function gpaOnAddBillModalBillNoInput() {
+    const billNo = document.getElementById('gpaAddBillModalBillNo')?.value?.trim() ?? '';
+    if (!billNo) {
+        const mrnEl = document.getElementById('gpaAddBillModalMrn');
+        if (mrnEl) mrnEl.value = '';
+    }
+    gpaRefreshAddBillModalPayableEditable();
 }
 
 /** Close Add bill modal and clear fields (edit / reset must not leave modal looking like the loaded voucher). */
@@ -1017,15 +1557,41 @@ function applyBillApiRowToModalInputs(r) {
 
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
     set('gpaAddBillModalBillNo', no);
-    const pv = r.ProjectDesp ?? r.projectDesp ?? r.Project ?? r.project ?? '';
-    const sv = r.SubProjectDesp ?? r.subProjectDesp ?? r.SubProject ?? r.subProject ?? '';
-    set('gpaAddBillModalProject', pv !== undefined && pv !== null ? String(pv) : '');
-    set('gpaAddBillModalSubProject', sv !== undefined && sv !== null ? String(sv) : '');
+    const pSel = document.getElementById('gpaAddBillModalProject');
+    const sSel = document.getElementById('gpaAddBillModalSubProject');
+    const pCode = r.ProjectMaster_Code ?? r.projectMaster_Code ?? '';
+    const sCode = r.SubProjectMaster_Code ?? r.subProjectMaster_Code ?? '';
+    if (pSel) {
+        if (pCode && [...pSel.options].some(o => o.value === String(pCode))) {
+            pSel.value = String(pCode);
+        } else {
+            const pv = r.ProjectDesp ?? r.projectDesp ?? r.Project ?? r.project ?? '';
+            if (pv) {
+                const opt = [...pSel.options].find(o => String(o.text).trim() === String(pv).trim());
+                if (opt) pSel.value = opt.value;
+            }
+        }
+    }
+    void fillGpaAddBillModalSubProjects(pSel?.value ?? '').then(() => {
+        if (sSel) {
+            if (sCode && [...sSel.options].some(o => o.value === String(sCode))) {
+                sSel.value = String(sCode);
+            } else {
+                const sv = r.SubProjectDesp ?? r.subProjectDesp ?? r.SubProject ?? r.subProject ?? '';
+                if (sv) {
+                    const opt = [...sSel.options].find(o => String(o.text).trim() === String(sv).trim());
+                    if (opt) sSel.value = opt.value;
+                }
+            }
+        }
+        gpaRefreshAddBillModalPayableEditable();
+    });
     set('gpaAddBillModalBillDate', formatDateInput(bdt));
     set('gpaAddBillModalBillAmt', bAmt !== undefined && bAmt !== null && bAmt !== '' ? String(bAmt) : '');
     const payStr = pAmt !== undefined && pAmt !== null && pAmt !== '' ? String(pAmt) : '';
     set('gpaAddBillModalPayable', payStr);
     set('gpaAddBillModalPayment', '');
+    gpaRefreshAddBillModalPayableEditable();
 }
 
 function onGpaAddBillModalBillChange() {
@@ -1033,20 +1599,18 @@ function onGpaAddBillModalBillChange() {
     const v = sel?.value ?? '';
     if (v === '') {
         clearGpaAddBillModalBillFields();
+        gpaRefreshAddBillModalPayableEditable();
         return;
     }
     const idx = parseInt(v, 10);
     const r = gpaAddBillModalBillRowsCache[idx];
     if (r) applyBillApiRowToModalInputs(r);
+    else gpaRefreshAddBillModalPayableEditable();
 }
 
-/** Modal party → sync header party (no onPartyChange, avoids wiping grid) + load bills into modal. */
-async function onGpaAddBillModalPartyChange() {
-    const party = document.getElementById('gpaAddBillModalParty')?.value ?? '';
-    const mainDdl = document.getElementById('ddlPartyName');
-    if (mainDdl && party) {
-        mainDdl.value = party;
-    }
+/** Load bills into Add bill modal using Party / Employee selected in Payment Entry (step 1). */
+async function loadGpaAddBillModalBillsForMainParty() {
+    const party = getGpaCounterpartyKey();
 
     const billWrap = document.getElementById('gpaAddBillModalBillWrap');
     const billSel = document.getElementById('gpaAddBillModalBill');
@@ -1061,8 +1625,13 @@ async function onGpaAddBillModalPartyChange() {
     if (!party) {
         if (hint) {
             hint.style.display = 'block';
-            if (hintText) hintText.textContent = 'Select Party Name to load bill details below.';
+            if (hintText) {
+                hintText.textContent = isGpaPartyMode()
+                    ? 'Select Party Name in Payment Entry (step 1) to load bill details below.'
+                    : 'Select Employee in Payment Entry (step 1) to load bill details below.';
+            }
         }
+        gpaRefreshAddBillModalPayableEditable();
         return;
     }
     if (hint) hint.style.display = 'none';
@@ -1088,15 +1657,80 @@ async function onGpaAddBillModalPartyChange() {
             });
         }
     } catch (e) {
-        console.error('onGpaAddBillModalPartyChange', e);
+        console.error('loadGpaAddBillModalBillsForMainParty', e);
         showToast('Could not load bills for this party.', 'error');
+    } finally {
+        gpaRefreshAddBillModalPayableEditable();
     }
+}
+
+/** @deprecated Modal party dropdown removed; use loadGpaAddBillModalBillsForMainParty */
+async function onGpaAddBillModalPartyChange() {
+    return loadGpaAddBillModalBillsForMainParty();
+}
+
+async function reloadGpaAddBillModalBillsFromFilters() {
+    const party = getGpaCounterpartyKey()?.trim() ?? '';
+    if (!party) return;
+    const pSel = document.getElementById('gpaAddBillModalProject');
+    const sSel = document.getElementById('gpaAddBillModalSubProject');
+    const pc = pSel?.value?.trim() ?? '';
+    const sc = sSel?.value?.trim() ?? '';
+    if (!pc && !sc) return;
+    const billWrap = document.getElementById('gpaAddBillModalBillWrap');
+    const billSel = document.getElementById('gpaAddBillModalBill');
+    try {
+        const result = await GRNPaymentApprovalService.GetBillDetails(
+            party,
+            gpaToBillDetailQueryCode(pc),
+            gpaToBillDetailQueryCode(sc)
+        );
+        const billRows = normalizeApiRows(result);
+        gpaAddBillModalBillRowsCache = billRows;
+        clearGpaAddBillModalBillOnlyFields();
+        if (billRows.length === 0) {
+            if (billWrap) billWrap.style.display = 'none';
+            if (billSel) billSel.innerHTML = '<option value="">-- Select bill --</option>';
+            showToast('No bills for this project/sub-project.', 'info');
+            return;
+        }
+        if (billRows.length === 1) {
+            if (billWrap) billWrap.style.display = 'none';
+            applyBillApiRowToModalInputs(billRows[0]);
+            return;
+        }
+        if (billWrap) billWrap.style.display = 'block';
+        if (billSel) {
+            billSel.innerHTML = '<option value="">-- Select bill --</option>';
+            billRows.forEach((row, i) => {
+                const no = row.BillNo ?? row.billNo ?? row.Name ?? row.name ?? `Bill ${i + 1}`;
+                billSel.appendChild(new Option(String(no), String(i)));
+            });
+        }
+    } catch (e) {
+        console.error('reloadGpaAddBillModalBillsFromFilters', e);
+        showToast('Could not load bills for this filter.', 'error');
+    } finally {
+        gpaRefreshAddBillModalPayableEditable();
+    }
+}
+
+async function onGpaAddBillModalProjectPick() {
+    gpaResetAddBillModalForProjectAndSubChange();
+    const pSel = document.getElementById('gpaAddBillModalProject');
+    await fillGpaAddBillModalSubProjects(pSel?.value ?? '');
+    await reloadGpaAddBillModalBillsFromFilters();
+}
+
+async function onGpaAddBillModalSubPick() {
+    gpaResetAddBillModalForProjectAndSubChange();
+    await reloadGpaAddBillModalBillsFromFilters();
 }
 
 function onGpaAddBillModalBillAmtInput() {
     const ba = document.getElementById('gpaAddBillModalBillAmt');
     const py = document.getElementById('gpaAddBillModalPayable');
-    if (py && ba) py.value = ba.value;
+    if (py && ba && py.readOnly) py.value = ba.value;
 }
 
 async function onAddBillRowClick() {
@@ -1105,18 +1739,18 @@ async function onAddBillRowClick() {
         addBillRows(DEFAULT_BILL_ROW_COUNT);
     }
     resetGpaAddBillModalForm();
-    populateGpaAddBillModalPartySelect();
-    const mainParty = document.getElementById('ddlPartyName')?.value ?? '';
-    const modalParty = document.getElementById('gpaAddBillModalParty');
-    if (modalParty && mainParty) {
-        modalParty.value = mainParty;
-        await onGpaAddBillModalPartyChange();
+    await populateGpaAddBillModalProjectSubDropdowns();
+    const mainParty = getGpaCounterpartyKey();
+    if (mainParty) {
+        await loadGpaAddBillModalBillsForMainParty();
     } else {
         const hint = document.getElementById('gpaAddBillModalHint');
         const hintText = document.getElementById('gpaAddBillModalHintText');
         if (hint) hint.style.display = 'block';
         if (hintText) {
-            hintText.textContent = 'Select Party Name to load bill details into the form below.';
+            hintText.textContent = isGpaPartyMode()
+                ? 'Select Party Name in Payment Entry (step 1) to load bills, or enter Project/Sub project and Payment amount, or only Payment amount.'
+                : 'Select Employee in Payment Entry (step 1) to load bills, or enter details below.';
         }
     }
 
@@ -1129,19 +1763,54 @@ async function onAddBillRowClick() {
 function saveGpaAddBillModalToGrid() {
     const mrn = parseInt(document.getElementById('gpaAddBillModalMrn')?.value ?? '0', 10) || 0;
     const pay = parseFloat(String(document.getElementById('gpaAddBillModalPayment')?.value ?? '').replace(/,/g, '')) || 0;
-    const payable = parseFloat(String(document.getElementById('gpaAddBillModalPayable')?.value ?? '').replace(/,/g, ''));
+    const payableRaw = document.getElementById('gpaAddBillModalPayable')?.value ?? '';
+    const payable = parseFloat(String(payableRaw).replace(/,/g, ''));
+    const payableNum = Number.isFinite(payable) ? payable : 0;
     const billNo = document.getElementById('gpaAddBillModalBillNo')?.value?.trim() ?? '';
+    const modalProj = document.getElementById('gpaAddBillModalProject')?.value?.trim() ?? '';
+    const modalSub = document.getElementById('gpaAddBillModalSubProject')?.value?.trim() ?? '';
 
-    const modalParty = document.getElementById('gpaAddBillModalParty')?.value?.trim() ?? '';
-    if (!modalParty) {
-        showToast('Please select Party Name in the add bill window.', 'warning');
+    const mainParty = getGpaCounterpartyKey()?.trim() ?? '';
+    if (!mainParty) {
+        showToast(
+            isGpaPartyMode()
+                ? 'Please select Party Name in Payment Entry (step 1) before adding a bill row.'
+                : 'Please select Employee in Payment Entry (step 1) before adding a bill row.',
+            'warning'
+        );
         return;
     }
-    if (mrn <= 0 && pay <= 0) {
-        showToast('Enter payment amount or load a bill by selecting party / bill.', 'warning');
+
+    const hasBill = mrn > 0 || billNo.length > 0;
+    const hasProjSub = Boolean(modalProj && modalSub);
+    const partialProj = Boolean(modalProj || modalSub) && !hasProjSub;
+    if (partialProj) {
+        showToast('Select both Project and Sub project, or clear both to use Bill no or only Payment amount.', 'warning');
         return;
     }
-    if (Number.isFinite(payable) && pay > payable) {
+
+    /** Party mode: (1) Bill no / loaded bill + Payment (2) Project + Sub + Payment (3) only Payment */
+    const scenarioBill = hasBill && pay > 0;
+    const scenarioProjPay = !hasBill && hasProjSub && pay > 0;
+    const scenarioPayOnly = !hasBill && !hasProjSub && pay > 0;
+    const employeePayableOnly = !isGpaPartyMode() && mrn <= 0 && payableNum > 0 && pay <= 0;
+
+    if (isGpaPartyMode()) {
+        if (!scenarioBill && !scenarioProjPay && !scenarioPayOnly) {
+            showToast(
+                'Use one of: (1) Bill no (or pick bill) with Payment amount — (2) Project, Sub project and Payment amount — (3) only Payment amount.',
+                'warning'
+            );
+            return;
+        }
+    } else if (!scenarioBill && !scenarioProjPay && !scenarioPayOnly && !employeePayableOnly) {
+        showToast(
+            'Enter Payment or Payable amount, or load a bill (with Payment), or Project + Sub project + Payment.',
+            'warning'
+        );
+        return;
+    }
+    if (Number.isFinite(payable) && payableNum > 0 && pay > payableNum + 0.0001) {
         showToast('Payment amount cannot be greater than Payable amount.', 'warning');
         return;
     }
@@ -1151,29 +1820,33 @@ function saveGpaAddBillModalToGrid() {
     const tr = tbody?.querySelector('tr.bill-row:last-child');
     if (!tr) return;
 
+    const payStr = pay > 0 ? String(pay) : '';
+    const payAmtStr = payableNum > 0 ? String(payableNum) : '';
+
     let rowObj = {
         MRNMaster_Code: mrn > 0 ? mrn : undefined,
         BillNo: billNo,
         BillDate: document.getElementById('gpaAddBillModalBillDate')?.value ?? '',
         BillAmount: document.getElementById('gpaAddBillModalBillAmt')?.value ?? '',
-        PayableAmount: document.getElementById('gpaAddBillModalPayable')?.value ?? '',
-        PaymentAmount: document.getElementById('gpaAddBillModalPayment')?.value ?? '',
+        PayableAmount: payAmtStr,
+        PaymentAmount: payStr,
+        ProjectMaster_Code: modalProj || undefined,
+        SubProjectMaster_Code: modalSub || undefined,
     };
     if (mrn > 0 && Array.isArray(gpaAddBillModalBillRowsCache) && gpaAddBillModalBillRowsCache.length) {
         const hit = gpaAddBillModalBillRowsCache.find(x => resolveMrnFromRow(x) === mrn);
         if (hit) rowObj = { ...hit, ...rowObj };
     }
-    applyBillDetailRow(tr, rowObj);
-    const dc = tr.querySelector('.inp-detail-code');
-    if (dc) dc.value = '0';
-
-    recalcFooter();
-
-    const modalEl = document.getElementById('gpaAddBillModal');
-    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        const inst = bootstrap.Modal.getInstance(modalEl) ?? bootstrap.Modal.getOrCreateInstance(modalEl);
-        inst.hide();
-    }
+    void applyBillDetailRow(tr, rowObj).then(() => {
+        const dc = tr.querySelector('.inp-detail-code');
+        if (dc) dc.value = '0';
+        recalcFooter();
+        const modalEl = document.getElementById('gpaAddBillModal');
+        if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const inst = bootstrap.Modal.getInstance(modalEl) ?? bootstrap.Modal.getOrCreateInstance(modalEl);
+            inst.hide();
+        }
+    });
 }
 
 function applyBillDetailRow(tr, r) {
@@ -1217,20 +1890,13 @@ function applyBillDetailRow(tr, r) {
         }
     }
     const ded = tr.querySelector('.inp-deduction');
-    const pj = tr.querySelector('.inp-project');
-    const sp = tr.querySelector('.inp-subproject');
     if (ded) {
         const dv = r.Dedution ?? r.dedution ?? r.Deduction ?? r.deduction;
         ded.value = dv !== undefined && dv !== null && `${dv}`.trim() !== '' ? String(dv) : '';
     }
-    if (pj) {
-        const pv = r.ProjectDesp ?? r.projectDesp ?? r.Project ?? r.project ?? '';
-        pj.value = pv !== undefined && pv !== null ? String(pv) : '';
-    }
-    if (sp) {
-        const sv = r.SubProjectDesp ?? r.subProjectDesp ?? r.SubProject ?? r.subProject ?? '';
-        sp.value = sv !== undefined && sv !== null ? String(sv) : '';
-    }
+    return bindBillRowProjectSubAsync(tr, r).then(() => {
+        gpaRefreshRowPayableEditable(tr);
+    });
 }
 
 function rowMrnFromBillApi(r) {
@@ -1277,7 +1943,7 @@ async function onPartyChange() {
     try {
         const result = await GRNPaymentApprovalService.GetBillDetails(code);
         const billRows = normalizeApiRows(result);
-        fillBillGridFromDetailRows(billRows);
+        await fillBillGridFromDetailRows(billRows);
         if (billRows.length === 0) {
             showToast('No pending bills for this party.', 'info');
         }
@@ -1289,6 +1955,50 @@ async function onPartyChange() {
     recalcFooter();
 }
 
+async function onGpaEmployeeChange() {
+    if (editMode) {
+        recalcFooter();
+        return;
+    }
+    removeGpaPartyHint();
+    const code = document.getElementById('ddlEmployeeName')?.value?.trim() ?? '';
+    clearBillRows();
+    if (!code) {
+        showGpaPartyHint();
+        recalcFooter();
+        return;
+    }
+    if (!isGpaFillGridChecked()) {
+        addBillRows(DEFAULT_BILL_ROW_COUNT);
+        recalcFooter();
+        return;
+    }
+    try {
+        const result = await GRNPaymentApprovalService.GetBillDetails(code);
+        const billRows = normalizeApiRows(result);
+        await fillBillGridFromDetailRows(billRows);
+        if (billRows.length === 0) {
+            showToast('No pending bills for this employee.', 'info');
+        }
+    } catch (e) {
+        console.error('Failed to load bill details for employee:', e);
+        showGpaPartyHint();
+        showToast('Could not load bill details for employee.', 'error');
+    }
+    recalcFooter();
+}
+
+function onGpaPartyEmployeeModeChange() {
+    syncGpaPartyEmployeeUI();
+    if (editMode) {
+        recalcFooter();
+        return;
+    }
+    clearBillRows();
+    showGpaPartyHint();
+    recalcFooter();
+}
+
 function collectPayload() {
     const masterCode = parseInt(document.getElementById('hdnGRNPaymentMasterCode')?.value ?? '0', 10) || 0;
     const entryNoRaw = document.getElementById('txtEntryNo')?.value?.trim() ?? '';
@@ -1296,33 +2006,58 @@ function collectPayload() {
     const entryDateStr = document.getElementById('dtPaymentDate')?.value ?? '';
     const bankType = parseInt(document.getElementById('ddlPaymentMode')?.value ?? '0', 10) || 0;
 
+    /* TY_GRNPaymentMaster — must match API (no VendorMaster / F_Marketing / string MarketingMan / master Project). */
     const GRNPaymentMaster = [{
         Code: masterCode,
         EntryNo: entryNo,
         RefNo: document.getElementById('txtRefNo')?.value?.trim() ?? '',
         EntryDate: entryDateStr ? entryDateStr : null,
-        AccountMaster_Code: getSelectedAccountMasterCode(),
-        F_BankPaymentTypeMaster_Code: bankType,
-        Amount: parseNum(document.getElementById('txtHeaderAmount')),
-        AdvanceAmount: parseNum(document.getElementById('txtFooterAdvance')),
+        AccountMaster_Code: gpaNumOrZero(gpaTyGrnPaymentMasterAccountMasterCode()),
+        F_BankPaymentTypeMaster_Code: gpaNumOrZero(bankType),
+        Amount: gpaNumOrZero(parseNum(document.getElementById('txtHeaderAmount'))),
+        AdvanceAmount: gpaNumOrZero(parseNum(document.getElementById('txtFooterAdvance'))),
         Narration: document.getElementById('txtNarration')?.value?.trim() ?? '',
+        MarketingManMaster_Code: gpaNumOrZero(gpaTyGrnPaymentMasterMarketingManMasterCode()),
     }];
 
     const GRNPaymentDetails = [];
+    const employeeMode = !isGpaPartyMode();
     document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
         const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
         const dCode = parseInt(tr.querySelector('.inp-detail-code')?.value ?? '0', 10) || 0;
-        const pay = parseNum(tr.querySelector('.inp-payment'));
-        if (mrn <= 0) return;
-        GRNPaymentDetails.push({
-            Code: dCode,
-            GRNPaymentMaster_Code: masterCode,
-            MRNMaster_Code: mrn,
-            PaymentAmount: pay,
-        });
+        const projText = gpaSelectedOptionText(tr.querySelector('.inp-project-ddl'));
+        const subText = gpaSelectedOptionText(tr.querySelector('.inp-subproject-ddl'));
+        const eff = gpaLineEffectivePayment(tr);
+        const pushDetail = (mrnCode, amt) => {
+            GRNPaymentDetails.push({
+                Code: dCode,
+                GRNPaymentMaster_Code: masterCode,
+                MRNMaster_Code: mrnCode,
+                PaymentAmount: gpaNumOrZero(amt),
+                ProjectMaster: projText,
+                SubProjectMaster: subText,
+            });
+        };
+        if (mrn > 0) {
+            pushDetail(mrn, parseNum(tr.querySelector('.inp-payment')));
+            return;
+        }
+        if (eff <= 0) return;
+        if (employeeMode) {
+            pushDetail(0, eff);
+            return;
+        }
+        const billNo = tr.querySelector('.inp-bill-no')?.value?.trim() ?? '';
+        if (billNo) {
+            pushDetail(0, eff);
+            return;
+        }
+        if (gpaIsPartyCase2Line(tr) || gpaIsPartyCase3PaymentOnlyLine(tr)) {
+            pushDetail(0, eff);
+        }
     });
 
-    /* VM_GRNPaymentMaster: GRNPaymentMaster[] (TY_GRNPaymentMaster) + GRNPaymentDetails[] (TY_GRNPaymentDetails) — matches SaveGRNPaymentApproval SP SAVE TVPs */
+    /* TY_GRNPaymentMaster[] + TY_GRNPaymentDetails[] — Project/SubProject on details only. */
     return { GRNPaymentMaster, GRNPaymentDetails };
 }
 
@@ -1354,7 +2089,9 @@ async function loadGRNPaymentApprovalByCode(Code) {
     if (!Number.isFinite(codeNum) || codeNum <= 0) return;
     try {
         await loadVendorList();
+        await loadEmployeeList();
         await loadBankPaymentList();
+        await loadGpaProjectListForGrid();
         const res = await GRNPaymentApprovalService.GetGRNPaymentApprovalByCode(codeNum);
         const root = peelGrnPaymentApiRoot(res);
         const master = firstMasterFromApi(root);
@@ -1380,26 +2117,67 @@ async function loadGRNPaymentApprovalByCode(Code) {
         const dt = document.getElementById('dtPaymentDate');
         if (dt) dt.value = ed ? formatDateInput(ed) : '';
 
-        const party = master?.AccountMaster_Code ?? master?.accountMaster_Code
-            ?? master?.VendorMaster_Code ?? master?.vendorMaster_Code;
-        const ddlParty = document.getElementById('ddlPartyName');
-        if (ddlParty && party !== undefined && party !== null) {
-            const pv = String(party);
-            let matched = false;
-            for (let i = 0; i < ddlParty.options.length; i++) {
-                const opt = ddlParty.options[i];
-                if (opt.value === pv) {
-                    ddlParty.value = pv;
-                    matched = true;
-                    break;
+        const isEmpPayment = gpaMasterIsEmployeePayment(master);
+        const chkPayToParty = document.getElementById('chkGpaPayToParty');
+        if (chkPayToParty) chkPayToParty.checked = !isEmpPayment;
+        syncGpaPartyEmployeeUI();
+
+        if (isEmpPayment) {
+            const ddlParty = document.getElementById('ddlPartyName');
+            if (ddlParty) ddlParty.value = '';
+            const ddlEmp = document.getElementById('ddlEmployeeName');
+            const empCode = master?.MarketingManMaster_Code ?? master?.marketingManMaster_Code
+                ?? master?.F_MarketingManMaster_Code ?? master?.f_MarketingManMaster_Code;
+            const empName = String(
+                master?.MarketingManMaster ?? master?.marketingManMaster ?? master?.Employee ?? master?.employee ?? ''
+            ).trim();
+            if (ddlEmp) {
+                let matched = false;
+                const codeStr = empCode !== undefined && empCode !== null && `${empCode}`.trim() !== ''
+                    ? String(empCode).trim()
+                    : '';
+                if (codeStr) {
+                    for (let i = 0; i < ddlEmp.options.length; i++) {
+                        const opt = ddlEmp.options[i];
+                        if (opt.value === codeStr) {
+                            ddlEmp.value = codeStr;
+                            matched = true;
+                            break;
+                        }
+                    }
                 }
-                if (opt.dataset.accountCode === pv) {
-                    ddlParty.value = opt.value;
-                    matched = true;
-                    break;
+                if (!matched && empName) {
+                    const hit = [...ddlEmp.options].find(o => String(o.text).trim() === empName);
+                    if (hit) {
+                        ddlEmp.value = hit.value;
+                        matched = true;
+                    }
                 }
             }
-            if (!matched) ddlParty.value = pv;
+        } else {
+            const party = master?.AccountMaster_Code ?? master?.accountMaster_Code
+                ?? master?.VendorMaster_Code ?? master?.vendorMaster_Code;
+            const ddlParty = document.getElementById('ddlPartyName');
+            if (ddlParty && party !== undefined && party !== null) {
+                const pv = String(party);
+                let matched = false;
+                for (let i = 0; i < ddlParty.options.length; i++) {
+                    const opt = ddlParty.options[i];
+                    if (opt.value === pv) {
+                        ddlParty.value = pv;
+                        matched = true;
+                        break;
+                    }
+                    if (opt.dataset.accountCode === pv) {
+                        ddlParty.value = opt.value;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) ddlParty.value = pv;
+            }
+            const ddlEmp = document.getElementById('ddlEmployeeName');
+            if (ddlEmp) ddlEmp.value = '';
         }
 
         const bank = master?.F_BankPaymentTypeMaster_Code ?? master?.f_BankPaymentTypeMaster_Code;
@@ -1421,18 +2199,21 @@ async function loadGRNPaymentApprovalByCode(Code) {
 
         hideGpaAddBillModalAndReset();
 
-        const partyVendorForBills = document.getElementById('ddlPartyName')?.value?.trim() ?? '';
-        const pendingBillRows = partyVendorForBills ? await fetchPartyPendingBillRows(partyVendorForBills) : [];
+        const counterpartyForBills = isEmpPayment
+            ? (document.getElementById('ddlEmployeeName')?.value?.trim() ?? '')
+            : (document.getElementById('ddlPartyName')?.value?.trim() ?? '');
+        const pendingBillRows = counterpartyForBills ? await fetchPartyPendingBillRows(counterpartyForBills) : [];
 
         clearBillRows();
         const tbody = document.getElementById('billTbody');
         if (details.length && tbody) {
-            details.forEach(d => {
+            for (let i = 0; i < details.length; i++) {
+                const d = details[i];
                 const merged = mergeEditDetailWithBillLookup(d, pendingBillRows);
                 tbody.insertAdjacentHTML('beforeend', billRowTemplate());
                 const tr = tbody.querySelector('tr.bill-row:last-child');
-                if (tr) applyBillDetailRow(tr, merged);
-            });
+                if (tr) await applyBillDetailRow(tr, merged);
+            }
         } else {
             addBillRows(DEFAULT_BILL_ROW_COUNT);
         }
@@ -1448,19 +2229,33 @@ async function loadGRNPaymentApprovalByCode(Code) {
             }
         }
         gpaShowFillGridCheckbox(false);
+        syncGpaPartyEmployeeUI();
     } catch (e) {
         showToast('Failed to load Payment Entry.', 'error');
     }
 }
 
 function validateGRNPaymentApproval() {
-    const party = document.getElementById('ddlPartyName')?.value;
-    if (!party) {
-        showToast('Please select Party Name (Vendor).', 'warning');
-        return false;
+    if (isGpaPartyMode()) {
+        const party = document.getElementById('ddlPartyName')?.value;
+        if (!party) {
+            showToast('Please select Party Name (Vendor).', 'warning');
+            return false;
+        }
+    } else {
+        const emp = document.getElementById('ddlEmployeeName')?.value;
+        if (!emp) {
+            showToast('Please select Employee.', 'warning');
+            return false;
+        }
     }
     if (!document.getElementById('dtPaymentDate')?.value) {
         showToast('Please enter Date.', 'warning');
+        return false;
+    }
+    const headerAmtRequired = parseNum(document.getElementById('txtHeaderAmount'));
+    if (!(headerAmtRequired > 0)) {
+        showToast('Please enter Amount.', 'warning');
         return false;
     }
     if (refNoIsRequiredForCurrentMode()) {
@@ -1475,24 +2270,83 @@ function validateGRNPaymentApproval() {
         showToast('Bill allocation: add at least one row and fill bill details before save.', 'warning');
         return false;
     }
-    let hasMrnLine = false;
-    billRows.forEach(tr => {
-        const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
-        if (mrn > 0) hasMrnLine = true;
-    });
-    if (!hasMrnLine) {
-        showToast('Bill allocation: fill at least one row with a valid bill (MRN). Use Fill Grid or Add row to load bills for the party.', 'warning');
-        return false;
-    }
-    let badMrn = false;
-    document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
-        const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
-        const pay = parseNum(tr.querySelector('.inp-payment'));
-        if (pay > 0 && mrn <= 0) badMrn = true;
-    });
-    if (badMrn) {
-        showToast('Payment amount is set but MRN is missing. Use Fill Grid or Add row so the bill line loads MRN from the server.', 'warning');
-        return false;
+    recalcFooter();
+
+    if (isGpaPartyMode()) {
+        let hasMrnLine = false;
+        billRows.forEach(tr => {
+            const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+            if (mrn > 0) hasMrnLine = true;
+        });
+
+        if (hasMrnLine) {
+            let badMrnNoPayParty = false;
+            document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
+                const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+                const pay = parseNum(tr.querySelector('.inp-payment'));
+                if (mrn > 0 && !(pay > 0)) badMrnNoPayParty = true;
+            });
+            if (badMrnNoPayParty) {
+                showToast('Enter Payment amount on each line that has a loaded bill (MRN).', 'warning');
+                return false;
+            }
+        } else {
+            let hasPartyBillLine = false;
+            document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
+                const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+                const billNo = tr.querySelector('.inp-bill-no')?.value?.trim() ?? '';
+                if (mrn <= 0 && billNo) hasPartyBillLine = true;
+            });
+            let hasPartyAlloc = false;
+            document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
+                if (gpaPartyLineIsIncludedInAllocation(tr) && gpaLineEffectivePayment(tr) > 0) hasPartyAlloc = true;
+            });
+            if (!hasPartyAlloc && !hasPartyBillLine) {
+                showToast(
+                    'Bill allocation: load a bill (MRN), or Bill no + payment, or Project + Sub project + amount, or Payment only (no bill/project). Incomplete rows are ignored.',
+                    'warning'
+                );
+                return false;
+            }
+            if (!hasPartyAlloc) {
+                showToast('Enter Payment amount on each line that has Bill no.', 'warning');
+                return false;
+            }
+        }
+
+        const sumPayParty = sumGpaGridPaymentAmounts();
+        if (!(sumPayParty > 0)) {
+            showToast('Please enter Payment or Payable amount so the grid total is greater than zero.', 'warning');
+            return false;
+        }
+    } else {
+        const sumPayEmp = sumGpaGridPaymentAmounts();
+        if (!(sumPayEmp > 0)) {
+            showToast('Please enter Payable amount or Payment amount in Bill allocation (total must be greater than zero).', 'warning');
+            return false;
+        }
+        let incompleteEmployeeLine = false;
+        document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
+            const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+            const pj = tr.querySelector('.inp-project-ddl')?.value?.trim() ?? '';
+            const sp = tr.querySelector('.inp-subproject-ddl')?.value?.trim() ?? '';
+            if (mrn > 0) return;
+            if ((pj && !sp) || (!pj && sp)) incompleteEmployeeLine = true;
+        });
+        if (incompleteEmployeeLine) {
+            showToast('Select both Project and Sub project, or clear both.', 'warning');
+            return false;
+        }
+        let badMrnNoPayEmp = false;
+        document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
+            const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+            const pay = parseNum(tr.querySelector('.inp-payment'));
+            if (mrn > 0 && !(pay > 0)) badMrnNoPayEmp = true;
+        });
+        if (badMrnNoPayEmp) {
+            showToast('Enter Payment amount on each line that has a loaded bill (MRN).', 'warning');
+            return false;
+        }
     }
     let badPayVsPayable = false;
     document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
@@ -1507,30 +2361,41 @@ function validateGRNPaymentApproval() {
         showGpaDuplicateBillToast(dupIssue);
         return false;
     }
-    const headerAmt = parseNum(document.getElementById('txtHeaderAmount'));
+    const headerAmt = headerAmtRequired;
     const sumPay = sumGpaGridPaymentAmounts();
     const adv = parseNum(document.getElementById('txtFooterAdvance'));
     const allocated = sumPay + adv;
-    const EPS = 0.005;
-    // When Advance is auto (Amount − total payment), allocated always equals Amount, so the
-    // check below never fires; block over-allocation and negative Advance explicitly.
+    const EPS = 0.01;
+    // Total (grid) + Advance / On account must equal Amount — not more, not less.
     if (sumPay > headerAmt + EPS || adv < -EPS) {
         showToast(
-            `Total payment (${formatMoney(sumPay)}) cannot exceed Amount (${formatMoney(headerAmt)}). Advance / On account cannot be negative.`,
+            `Total (${formatMoney(sumPay)}) cannot exceed Amount (${formatMoney(headerAmt)}). Advance / On account cannot be negative.`,
             'warning'
         );
         return false;
     }
     if (allocated > headerAmt + EPS) {
         showToast(
-            `Total payment (${formatMoney(sumPay)}) + Advance / On account (${formatMoney(adv)}) must not exceed Amount (${formatMoney(headerAmt)}). Current total: ${formatMoney(allocated)}.`,
+            `Total (${formatMoney(sumPay)}) + Advance / On account (${formatMoney(adv)}) = ${formatMoney(allocated)} must not exceed Amount (${formatMoney(headerAmt)}).`,
+            'warning'
+        );
+        return false;
+    }
+    if (allocated < headerAmt - EPS) {
+        showToast(
+            `Total (${formatMoney(sumPay)}) + Advance / On account (${formatMoney(adv)}) = ${formatMoney(allocated)} must equal Amount (${formatMoney(headerAmt)}). Short by ${formatMoney(headerAmt - allocated)}.`,
             'warning'
         );
         return false;
     }
     const p = collectPayload();
     if (!p.GRNPaymentDetails.length) {
-        showToast('Add at least one bill line with a valid MRN (and payment if required).', 'warning');
+        showToast(
+            isGpaPartyMode()
+                ? 'Add at least one bill line with a valid MRN (and payment if required).'
+                : 'Add at least one line with Payment amount (or a bill with MRN).',
+            'warning'
+        );
         return false;
     }
     return true;
@@ -1600,6 +2465,11 @@ function resetGRNPaymentApprovalForm() {
     updateFloatBarEntryNo();
     const ddl = document.getElementById('ddlPartyName');
     if (ddl) ddl.value = '';
+    const emp = document.getElementById('ddlEmployeeName');
+    if (emp) emp.value = '';
+    const chkParty = document.getElementById('chkGpaPayToParty');
+    if (chkParty) chkParty.checked = true;
+    syncGpaPartyEmployeeUI();
     const mode = document.getElementById('ddlPaymentMode');
     if (mode) {
         mode.selectedIndex = 0;
@@ -1987,6 +2857,10 @@ window.blockNonNumeric = blockNonNumeric;
 window.stripNonNumeric = stripNonNumeric;
 window.markFooterAdvanceManual = markFooterAdvanceManual;
 window.onPartyChange = onPartyChange;
+window.onGpaEmployeeChange = onGpaEmployeeChange;
+window.onGpaPartyEmployeeModeChange = onGpaPartyEmployeeModeChange;
+window.onGpaAddBillModalProjectPick = onGpaAddBillModalProjectPick;
+window.onGpaAddBillModalSubPick = onGpaAddBillModalSubPick;
 window.syncRefNoRequiredUI = syncRefNoRequiredUI;
 window.onGpaFillGridChange = onGpaFillGridChange;
 window.onAddBillRowClick = onAddBillRowClick;
@@ -1995,6 +2869,7 @@ window.onGpaAddBillModalPartyChange = onGpaAddBillModalPartyChange;
 window.onGpaAddBillModalBillChange = onGpaAddBillModalBillChange;
 window.onGpaAddBillModalBillAmtInput = onGpaAddBillModalBillAmtInput;
 window.saveGpaAddBillModalToGrid = saveGpaAddBillModalToGrid;
+window.gpaOnAddBillModalBillNoInput = gpaOnAddBillModalBillNoInput;
 window.saveGRNPaymentApproval = saveGRNPaymentApproval;
 window.resetGRNPaymentApprovalForm = resetGRNPaymentApprovalForm;
 window.newGRNPaymentApproval = newGRNPaymentApproval;

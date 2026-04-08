@@ -77,7 +77,7 @@ function GetItemMasterList() {
 
         if (rows.length > 0) {
             $("#tblitemMaster").show();
-            const StringFilterColumn = ["Item Code", "Item Name", "UOM", "Type"];
+            const StringFilterColumn = ["Item Code", "Item Name", "UOM", "Type","Group"];
             const NumericFilterColumn = ["Entry No"];
             const DateFilterColumn = ["Entry Date"];
             const Button = false;
