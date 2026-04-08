@@ -612,6 +612,8 @@ function ResetPOForm() {
     $('#frmTxtRefDate').val('');
     $('#frmDdlPaymentTerms').val('');
     $('#frmTxtRemarks').val('');
+    $('#frmTxtTermsCondition').val('');
+    $('#frmTxtScopeOfWork').val('');
     $('#frmChkAgainstProject').prop('checked', true);
     $('#divProjectFields').show();
     $('#frmDdlCompanyInfo').val('');
@@ -693,8 +695,9 @@ function RenumberRows() {
     });
 }
 
-// ─── TOLERANCE HELPERS ───────────────────────────────────────────────────────
+// ─── TOLERANCE HELPERS (temporarily disabled) ───────────────────────────────
 
+/* TOLERANCE DISABLED
 function GetRowToleranceInfo(rowId) {
     const baseQty  = parseFloat($(`#frmHfBaseQty_${rowId}`).val())       || 0;
     const qtyTol   = parseFloat($(`#frmHfQtyTolerance_${rowId}`).val())  || 0;
@@ -732,18 +735,19 @@ function ApplyToleranceToRow(rowId, item) {
     const maxRate = baseRate > 0 ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2)) : 0;
 
     if (maxQty  > 0) {
-        const qtyTitle = qtyTol > 0 ? `Max Qty (${qtyTol}% tolerance): ${maxQty}` : `Max Qty (no tolerance): ${maxQty}`;
+        const qtyTitle = qtyTol > 0 ? 'Max Qty (' + qtyTol + '% tolerance): ' + maxQty : 'Max Qty (no tolerance): ' + maxQty;
         $(`#frmTxtQty_${rowId}`).attr('title', qtyTitle);
     } else {
         $(`#frmTxtQty_${rowId}`).removeAttr('title');
     }
     if (maxRate > 0) {
-        const rateTitle = rateTol > 0 ? `Max Rate (${rateTol}% tolerance): ${maxRate}` : `Max Rate (no tolerance): ${maxRate}`;
+        const rateTitle = rateTol > 0 ? 'Max Rate (' + rateTol + '% tolerance): ' + maxRate : 'Max Rate (no tolerance): ' + maxRate;
         $(`#frmTxtRate_${rowId}`).attr('title', rateTitle);
     } else {
         $(`#frmTxtRate_${rowId}`).removeAttr('title');
     }
 }
+TOLERANCE DISABLED */
 
 window.OnItemChange = function (rowId) {
     const selectedCode = $(`#frmDdlItem_${rowId}`).val();
@@ -757,7 +761,7 @@ window.OnItemChange = function (rowId) {
         $(`#frmTxtGSTRate_${rowId}`).val(item.GSTRate || 0);
     }
     $(`#frmTxtSpecification_${rowId}`).val(item ? (item.ItemSpecificationDesp || '') : '');
-    ApplyToleranceToRow(rowId, item || null);
+    // ApplyToleranceToRow(rowId, item || null); // TOLERANCE DISABLED
     CalcRowValue(rowId);
 };
 
@@ -766,25 +770,27 @@ window.CalcRowValue = function (rowId) {
     let qty  = parseFloat($(`#frmTxtQty_${rowId}`).val())  || 0;
     let rate = parseFloat($(`#frmTxtRate_${rowId}`).val()) || 0;
 
+    /* TOLERANCE DISABLED
     if (againstProject) {
         const tol = GetRowToleranceInfo(rowId);
         if (tol.maxQty > 0 && qty > tol.maxQty) {
             const qtyMsg = tol.qtyTol > 0
-                ? `Qty exceeds the ${tol.qtyTol}% tolerance. Maximum allowed Qty is ${tol.maxQty}.`
-                : `Qty cannot exceed the required Qty of ${tol.maxQty} (no tolerance allowed).`;
+                ? 'Qty exceeds the ' + tol.qtyTol + '% tolerance. Maximum allowed Qty is ' + tol.maxQty + '.'
+                : 'Qty cannot exceed the required Qty of ' + tol.maxQty + ' (no tolerance allowed).';
             toastr.warning(qtyMsg);
             qty = tol.maxQty;
             $(`#frmTxtQty_${rowId}`).val(qty);
         }
         if (tol.maxRate > 0 && rate > tol.maxRate) {
             const rateMsg = tol.rateTol > 0
-                ? `Rate exceeds the ${tol.rateTol}% tolerance. Maximum allowed Rate is ${tol.maxRate}.`
-                : `Rate cannot exceed the required Rate of ${tol.maxRate} (no tolerance allowed).`;
+                ? 'Rate exceeds the ' + tol.rateTol + '% tolerance. Maximum allowed Rate is ' + tol.maxRate + '.'
+                : 'Rate cannot exceed the required Rate of ' + tol.maxRate + ' (no tolerance allowed).';
             toastr.warning(rateMsg);
             rate = tol.maxRate;
             $(`#frmTxtRate_${rowId}`).val(rate);
         }
     }
+    TOLERANCE DISABLED */
 
     const value = qty * rate;
     $(`#frmTxtValue_${rowId}`).val(value.toFixed(2));
@@ -863,23 +869,25 @@ window.SavePO = function () {
 
         if (!itemCode) { toastr.warning('Please select item in all rows.'); itemValid = false; return false; }
         if (qty <= 0) { toastr.warning('Qty must be greater than 0 for all items.'); itemValid = false; return false; }
+        /* TOLERANCE DISABLED
         if (agaistProject === 'Y') {
             const saveTol = GetRowToleranceInfo(rowId);
             if (saveTol.maxQty > 0 && qty > saveTol.maxQty) {
                 const saveQtyMsg = saveTol.qtyTol > 0
-                    ? `Row ${rowId}: Qty ${qty} exceeds the ${saveTol.qtyTol}% tolerance. Maximum allowed: ${saveTol.maxQty}.`
-                    : `Row ${rowId}: Qty ${qty} cannot exceed the required Qty of ${saveTol.maxQty} (no tolerance allowed).`;
+                    ? 'Row ' + rowId + ': Qty ' + qty + ' exceeds the ' + saveTol.qtyTol + '% tolerance. Maximum allowed: ' + saveTol.maxQty + '.'
+                    : 'Row ' + rowId + ': Qty ' + qty + ' cannot exceed the required Qty of ' + saveTol.maxQty + ' (no tolerance allowed).';
                 toastr.warning(saveQtyMsg);
                 itemValid = false; return false;
             }
             if (saveTol.maxRate > 0 && rate > saveTol.maxRate) {
                 const saveRateMsg = saveTol.rateTol > 0
-                    ? `Row ${rowId}: Rate ${rate} exceeds the ${saveTol.rateTol}% tolerance. Maximum allowed: ${saveTol.maxRate}.`
-                    : `Row ${rowId}: Rate ${rate} cannot exceed the required Rate of ${saveTol.maxRate} (no tolerance allowed).`;
+                    ? 'Row ' + rowId + ': Rate ' + rate + ' exceeds the ' + saveTol.rateTol + '% tolerance. Maximum allowed: ' + saveTol.maxRate + '.'
+                    : 'Row ' + rowId + ': Rate ' + rate + ' cannot exceed the required Rate of ' + saveTol.maxRate + ' (no tolerance allowed).';
                 toastr.warning(saveRateMsg);
                 itemValid = false; return false;
             }
         }
+        TOLERANCE DISABLED */
 
         transactions.push({
             code: detailCode,
@@ -932,10 +940,11 @@ window.SavePO = function () {
             otherChargesDesp: $('#frmTxtOtherChargesLbl1').val(),
             otherChargesAmount: otherChargesAmt,
             totalPOAmount: totalPO,
-            remarks: $('#frmTxtRemarks').val(),
+            remarks: $('#frmTxtTermsCondition').val(),
             poType: 'S',
             finYear: '',
-            remarks1: '',
+            remarks1: $('#frmTxtRemarks').val(),
+            deliveryRemark: $('#frmTxtScopeOfWork').val(),
             isPOAgainstProject: agaistProject,
             projectMaster_Code: projectCode,
             billingAddress: parseInt($('#frmDdlBillTo').val()) || 0,
@@ -979,7 +988,9 @@ function LoadPOForEdit(code) {
         $('#frmTxtRefNo').val(header.RefNo || '');
         if (header.RefDate) $('#frmTxtRefDate').val(FormatDateInput(new Date(header.RefDate)));
         $('#frmDdlPaymentTerms').val(header.PaymentTermsMaster_Code || '');
-        $('#frmTxtRemarks').val(header.Remarks || '');
+        $('#frmTxtRemarks').val(header.Remarks1 || '');
+        $('#frmTxtTermsCondition').val(header.Remarks || '');
+        $('#frmTxtScopeOfWork').val(header.DeliveryRemark || '');
 
         const againstProject = (header.IsPOAgainstProject === 'Y');
         $('#frmChkAgainstProject').prop('checked', againstProject);
@@ -1059,8 +1070,9 @@ function LoadPOForEdit(code) {
                 </td>
             </tr>`;
             $('#tblPOItemsBody').append(row);
-            const tolItem = G_ItemMasterList.find(i => String(i.Code) === String(det.ItemMaster_Code));
-            ApplyToleranceToRow(rowId, tolItem || null);
+            // TOLERANCE DISABLED
+            // const tolItem = G_ItemMasterList.find(i => String(i.Code) === String(det.ItemMaster_Code));
+            // ApplyToleranceToRow(rowId, tolItem || null);
         });
 
         if (details.length === 0) AddItemRow(true);
@@ -1200,7 +1212,7 @@ window.ViewPO = function (code) {
                         <tr><td class="fw-bold">Ref No</td><td>${header.RefNo || '-'}</td></tr>
                         <tr><td class="fw-bold">Ref Date</td><td>${header.RefDate ? FormatDateDisplay(header.RefDate) : '-'}</td></tr>
                         <tr><td class="fw-bold">Payment Terms</td><td>${paymentTermsName || '-'}</td></tr>
-                        <tr><td class="fw-bold">Remarks</td><td>${header.Remarks || '-'}</td></tr>
+                        <tr><td class="fw-bold">Remarks</td><td>${header.Remarks1 || '-'}</td></tr>
                         <tr><td class="fw-bold">Create By:</td><td>${header.CreatedByName || '-'}</td></tr>
                     </table>
                 </div>
@@ -1695,16 +1707,16 @@ function PrintPO(code, mode) {
 
         let billToHtml = '<span style="color:#999;font-size:7.5pt;">Not specified</span>';
         if (billToAddr) {
-            billToHtml = '<div class="info-name">' + (billToAddr.Name || '') + '</div>';
-            if (billToAddr.DisplayName) billToHtml += '<div class="info-field">' + billToAddr.DisplayName + '</div>';
+            billToHtml = '<div class="info-name">' + (billToAddr.DisplayName || '') + '</div>';
+           // if (billToAddr.DisplayName) billToHtml += '<div class="info-field">' + billToAddr.DisplayName + '</div>';
             if (billToAddr.Address)     billToHtml += '<div class="info-field"><b>ADDRESS : </b>' + billToAddr.Address + '</div>';
             if (billToAddr.GSTNo)       billToHtml += '<div class="info-field"><b>GSTIN: </b>' + billToAddr.GSTNo + '</div>';
         }
 
         let shipToSection = '';
         if (shipToAddr) {
-            let st = '<div class="info-name">' + (shipToAddr.Name || '') + '</div>';
-            if (shipToAddr.DisplayName) st += '<div class="info-field"><b>Site Name : </b>' + shipToAddr.DisplayName + '</div>';
+            let st = '<div class="info-name">' + (shipToAddr.DisplayName || '') + '</div>';
+            if (header.SubProjectName) st += '<div class="info-field"><b>Site Name : </b>' + header.SubProjectName + '</div>';
             if (shipToAddr.Address)     st += '<div class="info-field"><b>ADDRESS : </b>' + shipToAddr.Address + '</div>';
             if (shipToAddr.GSTNo)       st += '<div class="info-field"><b>GSTIN : </b>' + shipToAddr.GSTNo + '</div>';
             shipToSection = '<div class="info-row"><div class="info-cell full"><div class="info-label">Ship To :</div>' + st + '</div></div>';
@@ -1754,6 +1766,12 @@ function PrintPO(code, mode) {
         const ptHtml = payTermsName
             ? '<div class="pt-box"><b>Payment Terms :-</b><br>&bull;&nbsp;' + payTermsName + '</div>'
             : '';
+        const termsHtml = header.Remarks
+            ? '<div class="pt-box"><b>Terms &amp; Condition :-</b><br>' + (header.Remarks || '').replace(/\n/g, '<br>') + '</div>'
+            : '';
+        const scopeHtml = header.DeliveryRemark
+            ? '<div class="pt-box"><b>Scope of Work :-</b><br>' + (header.DeliveryRemark || '').replace(/\n/g, '<br>') + '</div>'
+            : '';
 
         let nowParts = [];
         if (againstProj && header.ProjectName)    nowParts.push(header.ProjectName);
@@ -1765,6 +1783,7 @@ function PrintPO(code, mode) {
         // ── Compose full print document ──────────────────────────────────────────
         //const logoUrl = ((sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/')) + 'assets/images/logo-full.jpeg';
         const logoUrl = ((sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/')) + 'assets/images/pppllog.jpeg';
+        const showLogo = companyName.trim().toUpperCase() === 'PURSHOTAM PROFILES PVT.LTD.';
         const css = '@page{size:A4 portrait;margin:8mm 10mm 22mm 10mm;}'
             + '*{box-sizing:border-box;margin:0;padding:0;}'
             + 'body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;color:#000;background:#fff;}'
@@ -1772,8 +1791,8 @@ function PrintPO(code, mode) {
             + '@media print{.no-print{display:none!important;}}'
             + '.po-hdr{display:flex;align-items:flex-start;padding-bottom:5px;border-bottom:2.5px solid #000;margin-bottom:5px;}'
             + '.hdr-co{flex:1;}'
-            + '.hdr-name{font-size:14pt;font-weight:800;color:#000;letter-spacing:0.3px;line-height:1.2;}'
-            + '.hdr-tag{font-size:8pt;color:#000;letter-spacing:1px;margin-top:1px;font-weight:700;}'
+            + '.hdr-name{font-size:15pt;font-weight:800;color:#000;letter-spacing:0.3px;line-height:1.2;}'
+            + '.hdr-tag{font-size:9pt;color:#000;letter-spacing:1px;margin-top:1px;font-weight:700;}'
             + '.hdr-contact{text-align:right;font-size:8pt;color:#000;line-height:1.75;min-width:155px;font-weight:600;}'
             + '.po-title{text-align:center;font-size:10pt;font-weight:800;border:2px solid #000;color:#000;padding:3px 0;margin:4px 0;letter-spacing:1.5px;}'
             + '.info-row{display:flex;border:1px solid #000;margin-bottom:4px;}'
@@ -1797,15 +1816,17 @@ function PrintPO(code, mode) {
             + 'table.totals tr.grand td{border:1.5px solid #000;border-top:2px solid #000;font-weight:800;color:#000;}'
             + '.words-box{border:1.5px solid #555;padding:5px 9px;margin:5px 0;font-size:9pt;font-weight:600;color:#000;}'
             + '.pt-box{border:1.5px solid #555;padding:5px 9px;margin:5px 0;font-size:9pt;font-weight:600;color:#000;}'
-            + '.sig-row{display:flex;gap:5px;margin-top:12px;}'
-            + '.sig-box{flex:1;border:1.5px solid #000;padding:5px 4px;text-align:center;min-width:0;}'
-            + '.sig-title{font-weight:800;font-size:8.5pt;color:#000;margin-bottom:28px;letter-spacing:0.02em;}'
-            + '.sig-line{border-top:1px solid #000;margin:0 4px 3px;}'
+            + '.sig-row{display:flex;gap:0;margin-top:12px;border:1.5px solid #000;}'
+            + '.sig-box{flex:1;border-right:1.5px solid #000;display:flex;flex-direction:column;justify-content:flex-end;min-height:90px;min-width:0;}'
+            + '.sig-box:last-child{border-right:none;}'
+            + '.sig-title{font-weight:800;font-size:8.5pt;color:#000;text-align:center;padding:5px 4px;border-top:1.5px solid #000;letter-spacing:0.02em;}'
             + '.sig-name{font-size:7.5pt;color:#000;font-weight:600;}'
-            + '.footer-bar{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:10.5pt;padding:5px 10px;border-top:2.5px solid #000;color:#000;font-weight:700;background:#fff;letter-spacing:0.02em;}'
+            + '.print-footer{position:fixed;bottom:0;left:0;right:0;z-index:2;padding:6px 10mm 10px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+            + '.print-footer-addr{text-align:center;font-family:Georgia,"Times New Roman",Times,serif;font-size:8.5pt;color:#6d7d92;line-height:1.45;margin:0 0 6px;padding:0 8px;}'
+            + '.print-footer-strip{height:22px;width:100%;background:linear-gradient(102deg,#d4c6e6 0%,#d4c6e6 44.5%,#ffffff 44.5%,#ffffff 47.2%,#d8dce2 47.2%,#d8dce2 100%);}'
             + '.hdr-logo{width:65px;height:65px;object-fit:contain;margin-right:14px;flex-shrink:0;}'
             + '.hdr-left{display:flex;align-items:center;flex:1;}'
-            + '.wm-logo{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:320px;background:url(' + logoUrl + ') no-repeat center;background-size:contain;opacity:0.07;pointer-events:none;z-index:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+            + (showLogo ? '.wm-logo{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:320px;background:url(' + logoUrl + ') no-repeat center;background-size:contain;opacity:0.07;pointer-events:none;z-index:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' : '')
 
         const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + docTitle + ' - '
             + (header.PONo || '') + '</title><style>' + css + '</style></head><body>'
@@ -1814,11 +1835,11 @@ function PrintPO(code, mode) {
             + '<button onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:5px 16px;border-radius:5px;font-size:9pt;cursor:pointer;">&#128438;&nbsp;Print</button>'
             + '<button onclick="window.close()" style="background:#666;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:9pt;cursor:pointer;">&#10005;&nbsp;Close</button>'
             + '</div>'
-            // Watermark logo (visible on screen and print)
-            + '<div class="wm-logo"></div>'
+            // Watermark logo (only for PURSHOTAM PROFILES PVT.LTD.)
+            + (showLogo ? '<div class="wm-logo"></div>' : '')
             // Header
             + '<div class="po-hdr">'
-            + '<div class="hdr-left"><img class="hdr-logo" src="' + logoUrl + '" alt="Logo"><div class="hdr-co"><div class="hdr-name">' + (companyName || 'COMPANY NAME') + '</div><div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div></div>'
+            + '<div class="hdr-left">' + (showLogo ? '<img class="hdr-logo" src="' + logoUrl + '" alt="Logo">' : '') + '<div class="hdr-co"><div class="hdr-name">' + (companyName || 'COMPANY NAME') + '</div><div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div></div>'
             + '<div class="hdr-contact">' + hdrContact + '</div>'
             + '</div>'
             // PO title bar
@@ -1862,17 +1883,20 @@ function PrintPO(code, mode) {
             + '<div class="words-box"><b>Amount in Word : </b>' + amtWords + '</div>'
             // Payment Terms
             + ptHtml
+            // Terms & Condition and Scope of Work
+            + (termsHtml || scopeHtml
+                ? '<div style="display:flex;gap:6px;margin:5px 0;">' + (termsHtml ? '<div style="flex:1;">' + termsHtml + '</div>' : '') + (scopeHtml ? '<div style="flex:1;">' + scopeHtml + '</div>' : '') + '</div>'
+                : '')
             // Signatures
             + '<div class="sig-row">'
-            + '<div class="sig-box"><div class="sig-title">P.M</div><div class="sig-line"></div><div class="sig-name">&nbsp;</div></div>'
-            + '<div class="sig-box"><div class="sig-title">HOD</div><div class="sig-line"></div><div class="sig-name">&nbsp;</div></div>'
-            + '<div class="sig-box"><div class="sig-title">Finance</div><div class="sig-line"></div><div class="sig-name">&nbsp;</div></div>'
-            + '<div class="sig-box"><div class="sig-title">C.O</div><div class="sig-line"></div><div class="sig-name">&nbsp;</div></div>'
-            + '<div class="sig-box"><div class="sig-title">C.E.O</div><div class="sig-line"></div><div class="sig-name">&nbsp;</div></div>'
-            + '<div class="sig-box"><div class="sig-title">Management</div><div class="sig-line"></div><div class="sig-name">&nbsp;</div></div>'
+            + '<div class="sig-box"><div class="sig-title">Approved By P.M</div></div>'
+            + '<div class="sig-box"><div class="sig-title">Approved By Finance</div></div>'
+            + '<div class="sig-box"><div class="sig-title">Approved By Management</div></div>'
             + '</div>'
             // Footer
-            + (companyAddr ? '<div class="footer-bar">&#9679;&nbsp;' + companyAddr + '</div>' : '')
+            + (companyAddr
+                ? '<footer class="print-footer" role="contentinfo"><div class="print-footer-addr"><span style="margin-right:4px;">&#9679;</span>' + companyAddr + '</div><div class="print-footer-strip" aria-hidden="true"></div></footer>'
+                : '<footer class="print-footer" role="contentinfo"><div class="print-footer-strip" aria-hidden="true"></div></footer>')
             + '</body></html>';
 
         const win = window.open('', '_blank', 'width=920,height=760,scrollbars=yes,resizable=yes');
