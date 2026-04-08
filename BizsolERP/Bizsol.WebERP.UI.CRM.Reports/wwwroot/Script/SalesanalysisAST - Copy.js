@@ -1113,129 +1113,26 @@ function renderWeekWeightTable(data) {
         return;
     }
 
-    const tableHeader = document.getElementById('weekWeightTableHeader');
-    const tableBody = document.getElementById('weekWeightTableBody');
-    if (!tableHeader || !tableBody) return;
+    const StringFilterColumn = [];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = [];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = [];
 
-    const allKeys = Object.keys(data[0]);
-
-    // Identify the person column
-    const personKeyOptions = ['MGKT_PERSON', 'MGKT Person', 'Marketing Man', 'MarketingMan', 'Person'];
-    const personKey = personKeyOptions.find(k => allKeys.includes(k)) || allKeys[0];
-
-    // Identify summary columns by keyword match
-    const isSummaryKey = (k) => {
-        const l = k.toLowerCase();
-        return l.includes('actual total') || l === 'actualtotal' ||
-               l.includes('target total') || l === 'targettotal' ||
-               l.includes('variance') ||
-               l.includes('achievement');
-    };
-
-    const actualTotalKey  = allKeys.find(k => k.toLowerCase().includes('actual total')  || k.toLowerCase() === 'actualtotal');
-    const targetTotalKey  = allKeys.find(k => k.toLowerCase().includes('target total')  || k.toLowerCase() === 'targettotal');
-    const varianceKey     = allKeys.find(k => k.toLowerCase().includes('variance'));
-    const achievementKey  = allKeys.find(k => k.toLowerCase().includes('achievement'));
-
-    // Week columns = everything that is not the person key and not a summary column
-    const weekColumns = allKeys.filter(k => k !== personKey && !isSummaryKey(k));
-    const numWeeks = weekColumns.length;
-
-    // ---- Build two-row header ----
-    const headerBg  = '#4472C4';
-    const subBg     = '#5B9BD5';
-    const summaryBg = '#365E9A';
-    const sepStyle  = 'border-left:2px solid rgba(255,255,255,0.4);';
-
-    let row1 = `<tr>`;
-    row1 += `<th rowspan="2" style="vertical-align:middle;background-color:${headerBg};color:white;white-space:nowrap;">${escapeHtml(personKey)}</th>`;
-    weekColumns.forEach(wk => {
-        row1 += `<th colspan="3" class="text-center" style="background-color:${headerBg};color:white;white-space:nowrap;${sepStyle}">${escapeHtml(wk)}</th>`;
-    });
-    if (actualTotalKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;${sepStyle}">Actual Total</th>`;
-    if (targetTotalKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Target Total</th>`;
-    if (varianceKey)    row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Variance</th>`;
-    if (achievementKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Achievement %</th>`;
-    row1 += `</tr>`;
-
-    let row2 = `<tr>`;
-    weekColumns.forEach(() => {
-        row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;${sepStyle}">Actual Sales</th>`;
-        row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;">Week Target</th>`;
-        row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;">Achievement %</th>`;
-    });
-    row2 += `</tr>`;
-
-    tableHeader.innerHTML = row1 + row2;
-
-    // ---- Build body ----
-    tableBody.innerHTML = '';
-
-    const grandWeekActuals  = {};
-    const grandWeekTargets  = {};
-    weekColumns.forEach(wk => { grandWeekActuals[wk] = 0; grandWeekTargets[wk] = 0; });
-    let grandActualTotal = 0;
-    let grandTargetTotal = 0;
-
-    data.forEach(row => {
-        const personName  = row[personKey] || '';
-        const actualTotal = parseFloat(row[actualTotalKey] || 0);
-        const targetTotal = parseFloat(row[targetTotalKey] || 0);
-        const variance    = parseFloat(row[varianceKey]    || 0);
-
-        // Distribute total target equally across weeks
-        const weekTarget       = numWeeks > 0 ? targetTotal / numWeeks : 0;
-        const overallAchievement = targetTotal > 0 ? (actualTotal / targetTotal) * 100 : 0;
-
-        grandActualTotal += actualTotal;
-        grandTargetTotal += targetTotal;
-
-        let rowHTML = `<td style="white-space:nowrap;">${escapeHtml(personName)}</td>`;
-
-        weekColumns.forEach(wk => {
-            const actualSales  = parseFloat(row[wk] || 0);
-            const wkAchievement = weekTarget > 0 ? (actualSales / weekTarget) * 100 : 0;
-            grandWeekActuals[wk] += actualSales;
-            grandWeekTargets[wk] += weekTarget;
-
-            rowHTML += `<td class="text-end" style="${sepStyle}">${formatNumber(actualSales)}</td>`;
-            rowHTML += `<td class="text-end">${formatNumber(weekTarget)}</td>`;
-            rowHTML += `<td class="text-end">${wkAchievement.toFixed(2)}%</td>`;
-        });
-
-        if (actualTotalKey) rowHTML += `<td class="text-end fw-bold" style="${sepStyle}">${formatNumber(actualTotal)}</td>`;
-        if (targetTotalKey) rowHTML += `<td class="text-end fw-bold">${formatNumber(targetTotal)}</td>`;
-        if (varianceKey)    rowHTML += `<td class="text-end fw-bold">${formatNumber(variance)}</td>`;
-        if (achievementKey) rowHTML += `<td class="text-end fw-bold">${overallAchievement.toFixed(2)}%</td>`;
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = rowHTML;
-        tableBody.appendChild(tr);
+    // Right align all numeric columns (weeks)
+    const ColumnAlignment = {};
+    Object.keys(data[0] || {}).forEach(key => {
+        if (key !== 'MGKT_PERSON' && key !== 'MGKT Person' && key !== 'Marketing Man' &&
+            key !== 'MarketingMan' && key !== 'Person') {
+            ColumnAlignment[key] = 'right';
+        }
     });
 
-    // ---- Grand Total row ----
-    const grandVariance    = grandActualTotal - grandTargetTotal;
-    const grandAchievement = grandTargetTotal > 0 ? (grandActualTotal / grandTargetTotal) * 100 : 0;
-
-    const grandTotalRow = document.createElement('tr');
-    grandTotalRow.style.cssText = 'background-color:#d4edda;font-weight:bold;border-top:2px solid #333;';
-
-    let grandHTML = `<td style="white-space:nowrap;"><strong>Grand Total</strong></td>`;
-    weekColumns.forEach(wk => {
-        const gActual = grandWeekActuals[wk] || 0;
-        const gTarget = grandWeekTargets[wk] || 0;
-        const gAch    = gTarget > 0 ? (gActual / gTarget) * 100 : 0;
-        grandHTML += `<td class="text-end" style="${sepStyle}"><strong>${formatNumber(gActual)}</strong></td>`;
-        grandHTML += `<td class="text-end"><strong>${formatNumber(gTarget)}</strong></td>`;
-        grandHTML += `<td class="text-end"><strong>${gAch.toFixed(2)}%</strong></td>`;
-    });
-    if (actualTotalKey) grandHTML += `<td class="text-end" style="${sepStyle}"><strong>${formatNumber(grandActualTotal)}</strong></td>`;
-    if (targetTotalKey) grandHTML += `<td class="text-end"><strong>${formatNumber(grandTargetTotal)}</strong></td>`;
-    if (varianceKey)    grandHTML += `<td class="text-end"><strong>${formatNumber(grandVariance)}</strong></td>`;
-    if (achievementKey) grandHTML += `<td class="text-end"><strong>${grandAchievement.toFixed(2)}%</strong></td>`;
-
-    grandTotalRow.innerHTML = grandHTML;
-    tableBody.appendChild(grandTotalRow);
+    if (typeof BizsolCustomFilterGrid !== 'undefined') {
+        BizsolCustomFilterGrid.CreateDataTable("weekWeightTableHeader", "weekWeightTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+    }
 }
 
 function renderManifesteTable(data) {
