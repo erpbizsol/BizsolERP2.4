@@ -54,9 +54,18 @@ const GRNPaymentApprovalService = {
             });
     },
 
-    GetBillDetails: function GetBillDetails(PartyMaster_Code) {
+    GetBillDetails: function GetBillDetails(PartyMaster_Code, ProjectMaster_Code, SubProjectMaster_Code) {
+        const toQuery = (x) => {
+            if (x === undefined || x === null) return '0';
+            const s = String(x).trim();
+            return s === '' ? '0' : s;
+        };
+        const pmc = toQuery(ProjectMaster_Code);
+        const smc = toQuery(SubProjectMaster_Code);
         let url = UrlService.API_ENDPOINT_GRNPaymentEntry +
-            `/GetBillDetails?PartyMaster_Code=${encodeURIComponent(PartyMaster_Code || '')}`;
+            `/GetBillDetails?PartyMaster_Code=${encodeURIComponent(PartyMaster_Code || '')}` +
+            `&ProjectMaster_Code=${encodeURIComponent(pmc)}` +
+            `&SubProjectMaster_Code=${encodeURIComponent(smc)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
@@ -70,6 +79,28 @@ const GRNPaymentApprovalService = {
                 return value;
             });
     },
+    GetMarketingManMaster: function GetMarketingManMaster() {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetMarketingManMaster`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+    GetProjectMaster: function GetProjectMaster() {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetProjectMaster`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+    GetSubProjectMaster: function GetSubProjectMaster() {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetSubProjectMaster`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+    
 };
 
 export { GRNPaymentApprovalService };
