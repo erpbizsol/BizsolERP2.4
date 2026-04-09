@@ -25,6 +25,54 @@ let editCode          = 0;
 let grnVerifyPendingCode = 0;
 let grnHasVerifyRight = false;
 let grnMasterSourceRows = [];
+/** @type {null|string} null = all rows, 'N' = not verified (Pending), 'Y' = verified */
+let grnListVerifiedFilter = null;
+
+/** Persist verified row codes (list API often omits Verified) — badge stays after refresh. */
+var GRN_VERIFIED_CODES_STORAGE_KEY = "bizsol_grnService_verified_codes";
+
+function getRememberedGrnVerifiedCodeSet() {
+    try {
+        var raw = sessionStorage.getItem(GRN_VERIFIED_CODES_STORAGE_KEY);
+        if (!raw) return {};
+        var arr = JSON.parse(raw);
+        if (!Array.isArray(arr)) return {};
+        var o = {};
+        for (var i = 0; i < arr.length; i++) {
+            var n = parseInt(arr[i], 10);
+            if (!isNaN(n)) o[n] = true;
+        }
+        return o;
+    } catch (e) {
+        return {};
+    }
+}
+
+function rememberGrnVerifiedCode(code) {
+    var n = parseInt(code, 10);
+    if (isNaN(n)) return;
+    var set = getRememberedGrnVerifiedCodeSet();
+    set[n] = true;
+    var arr = Object.keys(set).map(function (k) {
+        return parseInt(k, 10);
+    });
+    try {
+        sessionStorage.setItem(GRN_VERIFIED_CODES_STORAGE_KEY, JSON.stringify(arr));
+    } catch (e) {}
+}
+
+function applyRememberedVerifiedToRows(rows) {
+    var set = getRememberedGrnVerifiedCodeSet();
+    var has = Object.keys(set).length > 0;
+    if (!has) return rows.slice();
+    return rows.map(function (row) {
+        var rc = parseInt(row.Code ?? row.code ?? 0, 10);
+        if (!isNaN(rc) && set[rc]) {
+            return Object.assign({}, row, { Verified: "Y" });
+        }
+        return row;
+    });
+}
 
 function resolveGRNVerifyRight() {
     var FinYear = getFinancialYear();
@@ -38,11 +86,23 @@ function resolveGRNVerifyRight() {
 }
 
 function rowIsVerifiedGrn(item) {
-    var v = item && item.Verified;
+    if (!item || typeof item !== "object") return false;
+    var v =
+        item.Verified !== undefined && item.Verified !== null
+            ? item.Verified
+            : item.verified !== undefined && item.verified !== null
+              ? item.verified
+              : item.IsVerified !== undefined && item.IsVerified !== null
+                ? item.IsVerified
+                : item.isVerified !== undefined && item.isVerified !== null
+                  ? item.isVerified
+                  : item.Verify !== undefined && item.Verify !== null
+                    ? item.Verify
+                    : item.verify;
     if (v === undefined || v === null) return false;
     if (typeof v === "string") {
-        var u = v.toUpperCase();
-        return u === "Y" || u === "YES" || v === "1";
+        var u = v.trim().toUpperCase();
+        return u === "Y" || u === "YES" || v === "1" || u === "TRUE" || u === "V";
     }
     return v === true || v === 1;
 }
@@ -107,16 +167,76 @@ function formatGrnVerifiedOnDisplay(val) {
     return String(val);
 }
 
+var grnVerifyPopoverOpenAnchor = null;
+var grnVerifyPopoverOutsideHandler = null;
+
+function closeGrnVerifyDetailPopover() {
+    var pop = document.getElementById("grnVerifyDetailPopover");
+    if (pop) pop.style.display = "none";
+    grnVerifyPopoverOpenAnchor = null;
+    if (grnVerifyPopoverOutsideHandler) {
+        document.removeEventListener("mousedown", grnVerifyPopoverOutsideHandler, true);
+        grnVerifyPopoverOutsideHandler = null;
+    }
+}
+
+function positionGrnVerifyPopoverNear(anchorEl) {
+    var pop = document.getElementById("grnVerifyDetailPopover");
+    var inner = pop && pop.querySelector(".grn-verify-popover-inner");
+    if (!pop || !inner || !anchorEl) return;
+    var rect = anchorEl.getBoundingClientRect();
+    var w = inner.offsetWidth || 260;
+    var h = inner.offsetHeight || 80;
+    var left = rect.left + rect.width / 2 - w / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+    var top = rect.bottom + 10;
+    if (top + h > window.innerHeight - 12) {
+        top = rect.top - h - 10;
+    }
+    if (top < 8) top = 8;
+    pop.style.left = left + "px";
+    pop.style.top = top + "px";
+}
+
 function showGrnVerifyDetailFromBadge(el) {
     var enc = el.getAttribute("data-grn-verify-info");
-    if (!enc) return;
-    var txt = decodeURIComponent(enc);
-    var oneLine = txt.replace(/\s*\n+\s*/g, " · ");
-    if (typeof toastr !== "undefined") {
-        toastr.info(oneLine, "Verification", { timeOut: 5500 });
-    } else {
-        window.alert(txt);
+    var bodyEl = document.getElementById("grnVerifyDetailPopoverBody");
+    var pop = document.getElementById("grnVerifyDetailPopover");
+    if (grnVerifyPopoverOpenAnchor === el && pop && pop.style.display === "block") {
+        closeGrnVerifyDetailPopover();
+        return;
     }
+    if (!bodyEl || !pop) {
+        if (!enc) return;
+        var txt0 = decodeURIComponent(enc);
+        var oneLine0 = txt0.replace(/\s*\n+\s*/g, " · ");
+        if (typeof toastr !== "undefined") {
+            toastr.info(oneLine0, "Verify", { timeOut: 5500 });
+        } else {
+            window.alert(txt0);
+        }
+        return;
+    }
+    closeGrnVerifyDetailPopover();
+    var txt = enc ? decodeURIComponent(enc) : "This GRN has been verified.";
+    var oneLine = txt.replace(/\s*\n+\s*/g, " · ");
+    bodyEl.textContent = oneLine;
+    grnVerifyPopoverOpenAnchor = el;
+    pop.style.display = "block";
+    requestAnimationFrame(function () {
+        positionGrnVerifyPopoverNear(el);
+        requestAnimationFrame(function () {
+            positionGrnVerifyPopoverNear(el);
+        });
+    });
+    setTimeout(function () {
+        grnVerifyPopoverOutsideHandler = function (e) {
+            if (el.contains(e.target)) return;
+            if (pop.contains(e.target)) return;
+            closeGrnVerifyDetailPopover();
+        };
+        document.addEventListener("mousedown", grnVerifyPopoverOutsideHandler, true);
+    }, 0);
 }
 
 function buildGrnVerifiedBadgeHtml(item) {
@@ -125,26 +245,19 @@ function buildGrnVerifiedBadgeHtml(item) {
     var parts = [];
     if (by) parts.push("Verify By: " + by);
     if (on) parts.push("Verified ON: " + on);
-    var titleAttr = parts.length ? ' title="' + escapeGrnAttr(parts.join(" · ")) + '"' : "";
-    var dataAttr = "";
-    var a11y = "";
-    var extraClass = "";
-    if (parts.length) {
-        extraClass = " grn-verify-status--with-detail";
-        dataAttr = ' data-grn-verify-info="' + encodeURIComponent(parts.join("\n")) + '"';
-        a11y =
-            ' role="button" tabindex="0" aria-label="' +
-            escapeGrnAttr(parts.join(". ")) +
-            '"';
-    }
+    var payload = parts.length ? parts.join("\n") : "This GRN has been verified.";
+    var titleAttr = ' title="' + escapeGrnAttr(parts.length ? parts.join(" · ") : "Verified — click for details") + '"';
+    var dataAttr = ' data-grn-verify-info="' + encodeURIComponent(payload) + '"';
+    var a11y =
+        ' role="button" tabindex="0" aria-label="' +
+        escapeGrnAttr(parts.length ? parts.join(". ") : "Verified. Click for details.") +
+        '"';
     return (
-        '<span class="grn-verify-status grn-verify-status--done' +
-        extraClass +
-        '"' +
+        '<span class="grn-verify-status grn-verify-status--done grn-verify-status--with-detail"' +
         titleAttr +
         dataAttr +
         a11y +
-        ">Verified</span>"
+        ">Verify</span>"
     );
 }
 
@@ -165,7 +278,7 @@ function mapGRNRowsToGrid(rows) {
         if (grnHasVerifyRight) {
             btns += rowIsVerifiedGrn(item)
                 ? buildGrnVerifiedBadgeHtml(item)
-                : '<button type="button" class="grn-btn-verify" title="Verify" onclick="VerifyGRN(' + code + ')"><i class="fas fa-check"></i></button>';
+                : '<button type="button" class="grn-btn-verify" title="Verify" aria-label="Verify" onclick="VerifyGRN(' + code + ')"><i class="fas fa-check" aria-hidden="true"></i></button>';
         }
         return Object.assign({}, item, { Action: btns });
     });
@@ -192,14 +305,60 @@ function getGRNListHiddenColumns() {
 
 function getGRNListColumnAlignment() {
     return {
-        Action: "center;min-width:220px;white-space:nowrap;",
+        Action: "center;min-width:240px;white-space:nowrap;",
     };
 }
 
-function refreshGRNListGrid() {
-    var source = grnMasterSourceRows || [];
-    if (source.length === 0) return;
+function applyGrnVerifiedListFilter(rows) {
+    if (!grnListVerifiedFilter) return rows.slice();
+    return rows.filter(function (row) {
+        var isV = rowIsVerifiedGrn(row);
+        return grnListVerifiedFilter === "Y" ? isV : !isV;
+    });
+}
 
+function updateGrnVerifyFilterTabCounts() {
+    var rows = grnMasterSourceRows || [];
+    var pending = 0;
+    var verified = 0;
+    for (var i = 0; i < rows.length; i++) {
+        if (rowIsVerifiedGrn(rows[i])) verified++;
+        else pending++;
+    }
+    var elP = document.getElementById("grnVerifyFilterCountPending");
+    var elV = document.getElementById("grnVerifyFilterCountVerified");
+    if (elP) elP.textContent = String(pending);
+    if (elV) elV.textContent = String(verified);
+}
+
+function syncGrnVerifyFilterTabButtons() {
+    var btnN = document.getElementById("grnVerifyFilterTabPending");
+    var btnY = document.getElementById("grnVerifyFilterTabVerified");
+    if (btnN) {
+        btnN.classList.toggle("is-active", grnListVerifiedFilter === "N");
+        btnN.setAttribute("aria-pressed", grnListVerifiedFilter === "N" ? "true" : "false");
+    }
+    if (btnY) {
+        btnY.classList.toggle("is-active", grnListVerifiedFilter === "Y");
+        btnY.setAttribute("aria-pressed", grnListVerifiedFilter === "Y" ? "true" : "false");
+    }
+}
+
+function onGrnListVerifyFilterClick(which) {
+    if (grnListVerifiedFilter === which) {
+        grnListVerifiedFilter = null;
+    } else {
+        grnListVerifiedFilter = which;
+    }
+    syncGrnVerifyFilterTabButtons();
+    refreshGRNListGrid();
+}
+
+function refreshGRNListGrid() {
+    var master = grnMasterSourceRows || [];
+    if (master.length === 0) return;
+
+    var source = applyGrnVerifiedListFilter(master);
     var mapped = mapGRNRowsToGrid(source.slice());
 
     const StringFilterColumn = ["Bill No", "Party Name", "Sub Project", "Project"];
@@ -270,18 +429,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     showListView();
 
     if (typeof jQuery !== "undefined") {
-        jQuery(document).on("click", ".grn-verify-status--done[data-grn-verify-info]", function (e) {
+        jQuery(document).on("click", ".grn-verify-status--done", function (e) {
             e.preventDefault();
             e.stopPropagation();
             showGrnVerifyDetailFromBadge(this);
         });
-        jQuery(document).on("keydown", ".grn-verify-status--done[data-grn-verify-info]", function (e) {
+        jQuery(document).on("keydown", ".grn-verify-status--done", function (e) {
             if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 showGrnVerifyDetailFromBadge(this);
             }
         });
     }
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closeGrnVerifyDetailPopover();
+    });
+    window.addEventListener("resize", function () {
+        if (grnVerifyPopoverOpenAnchor) {
+            positionGrnVerifyPopoverNear(grnVerifyPopoverOpenAnchor);
+        }
+    });
 
     // Allow only positive numbers with decimals in amount fields
     ['txtTotalBillAmountManual', 'txtDedution'].forEach(id => {
@@ -1362,13 +1530,24 @@ function calcNetPayable() {
 // ══════════════════════════════════════════════════════════════════════════════
 // GRN LIST VIEW
 // ══════════════════════════════════════════════════════════════════════════════
-function loadGRNList() {
+/** @param {number|string} [lastVerifiedGrnCode] Remember this code + merge (list API may omit Verified). */
+function loadGRNList(lastVerifiedGrnCode) {
     return GRNService.GetGRNList().then(function (response) {
         var rows = [];
         if (Array.isArray(response)) rows = response;
         else if (Array.isArray(response.data)) rows = response.data;
         else if (Array.isArray(response.Data)) rows = response.Data;
-        grnMasterSourceRows = rows;
+        rows.forEach(function (row) {
+            if (rowIsVerifiedGrn(row)) {
+                rememberGrnVerifiedCode(row.Code ?? row.code);
+            }
+        });
+        if (lastVerifiedGrnCode !== undefined && lastVerifiedGrnCode !== null && lastVerifiedGrnCode !== "") {
+            rememberGrnVerifiedCode(lastVerifiedGrnCode);
+        }
+        grnMasterSourceRows = applyRememberedVerifiedToRows(rows);
+        updateGrnVerifyFilterTabCounts();
+        syncGrnVerifyFilterTabButtons();
         if (rows.length > 0) {
             $("#grnListTable").show();
             refreshGRNListGrid();
@@ -1397,6 +1576,29 @@ function CloseGRNVerifyModal() {
     $("#grnVerifyConfirmBackdrop").removeClass("show");
 }
 
+/** API success flag (Y / y / true). */
+function isGrnVerifyApiSuccess(res) {
+    if (!res) return false;
+    var s = res.Status !== undefined ? res.Status : res.status;
+    if (s === true || s === 1) return true;
+    if (s === undefined || s === null) return false;
+    return String(s).trim().toUpperCase() === "Y";
+}
+
+/** Server says already verified — still refresh list so check button becomes Verify badge. */
+function isGrnAlreadyVerifiedApiMessage(res) {
+    var msg = (res && (res.Msg || res.message || res.msg)) || "";
+    msg = String(msg).toLowerCase();
+    if (!msg) return false;
+    return (
+        msg.indexOf("already verified") >= 0 ||
+        msg.indexOf("already verify") >= 0 ||
+        msg.indexOf("mrn already") >= 0 ||
+        msg.indexOf("grn already") >= 0 ||
+        msg.indexOf("already been verified") >= 0
+    );
+}
+
 function DoGRNVerify() {
     var code = grnVerifyPendingCode;
     if (!code) {
@@ -1416,11 +1618,18 @@ function DoGRNVerify() {
         }
         GRNService.VerifyGRNService(code)
             .then(function (res) {
-                var ok = res && (res.Status === "Y" || res.status === "Y");
+                var ok = isGrnVerifyApiSuccess(res);
+                var already = isGrnAlreadyVerifiedApiMessage(res);
                 if (ok) {
                     CloseGRNVerifyModal();
                     toastr.success(res.Msg || "Verified successfully.");
-                    loadGRNList();
+                    loadGRNList(code);
+                } else if (already) {
+                    CloseGRNVerifyModal();
+                    if (typeof toastr !== "undefined") {
+                        toastr.info(res.Msg || "Already verified.");
+                    }
+                    loadGRNList(code);
                 } else {
                     toastr.error((res && (res.Msg || res.message)) || "Verify failed.");
                 }
@@ -2119,9 +2328,11 @@ window.loadSubProjects        = loadSubProjects;
 window.onSubProjectChange     = onSubProjectChange;
 window.onProjectFieldFocus    = onProjectFieldFocus;
 window.loadGRNList          = loadGRNList;
+window.onGrnListVerifyFilterClick = onGrnListVerifyFilterClick;
 window.VerifyGRN            = VerifyGRN;
 window.CloseGRNVerifyModal  = CloseGRNVerifyModal;
 window.DoGRNVerify          = DoGRNVerify;
+window.closeGrnVerifyDetailPopover = closeGrnVerifyDetailPopover;
 window.InitAttachmentControl = InitAttachmentControl;
 window.openGrnServiceAttachmentControl = openGrnServiceAttachmentControl;
 window.openGrnServiceListAttachmentControl = openGrnServiceListAttachmentControl;
