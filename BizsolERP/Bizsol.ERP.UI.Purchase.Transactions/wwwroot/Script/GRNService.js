@@ -556,16 +556,27 @@ function showFillGridCheckbox(show) {
 
 async function onPartyChange() {
     updateProjectFieldsState();
-    if (!isFillGridChecked()) return;
-    const projectCode = document.getElementById('frmDdlProject')?.value;
-    const subProjectCode = document.getElementById('frmDdlSubProject')?.value;
+
+    // Always clear existing grid rows when party changes
+    document.getElementById('itemTbody').innerHTML = '';
+    rowIndex = 0;
+    projectItemsCache = [];
+
+    if (!isFillGridChecked()) {
+        addItemRow();
+        loadAllPOs();
+        calcTotal();
+        updateMobileCards();
+        return;
+    }
+
+    const projectCode      = document.getElementById('frmDdlProject')?.value;
+    const subProjectCode   = document.getElementById('frmDdlSubProject')?.value;
     const partyMaster_Code = document.getElementById('ddlPartyName')?.value;
+
     if (projectCode && subProjectCode && partyMaster_Code) {
         await loadItemsByProject(projectCode, subProjectCode, partyMaster_Code);
     } else {
-        document.getElementById('itemTbody').innerHTML = '';
-        rowIndex = 0;
-        projectItemsCache = [];
         addItemRow();
     }
 }
