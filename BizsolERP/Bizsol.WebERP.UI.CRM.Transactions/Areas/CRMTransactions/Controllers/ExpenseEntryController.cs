@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Bizsol.WebERP.UI.CRM.Transactions.Areas.CRMTransactions.Controllers
 {
@@ -32,6 +32,16 @@ namespace Bizsol.WebERP.UI.CRM.Transactions.Areas.CRMTransactions.Controllers
             return View();
         }
        public IActionResult ExpenseHeadMaster()
+        {
+            return View();
+        }
+
+        public IActionResult ExpenseEntryApprovalConfiguration()
+        {
+            return View();
+        }
+
+        public IActionResult ExpenseEntryLevelsApproval()
         {
             return View();
         }

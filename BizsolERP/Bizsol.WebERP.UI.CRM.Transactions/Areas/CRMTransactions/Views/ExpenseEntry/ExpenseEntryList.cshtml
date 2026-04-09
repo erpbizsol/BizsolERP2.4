@@ -7,42 +7,87 @@
 <link href="~/_content/Bizsol.WebERP.UI.CRM.Transactions/css/ExpenseEntry.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/ExpenseEntryList.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
-
 <style>
-    .datepicker td, .datepicker th { border-radius: 20px !important; }
-    .datepicker table tr td, .datepicker table tr th { padding: 8px 9px !important; height: 16px !important; }
-    .datepicker table tfoot { display: none; }
     .btn:not(:disabled):not(.disabled) { cursor: pointer !important; }
 </style>
 
 <div class="ee-page">
-<div class="expense-entry-card">
+    <!-- PO Store–style: purple header + stats strip + attached filter (see PurchaseOrderStore.cshtml) -->
+    <div class="ee-list-header section-entry-animation">
+        <div class="ee-list-header-top">
+            <div class="ee-list-header-title-block">
+                <h2 class="ee-list-header-title"><i class="fa fa-file-invoice me-2" aria-hidden="true"></i>Expense Entry</h2>
+                <small class="ee-list-header-sub">Manage and track all expense entries.</small>
+            </div>
+            <div class="ee-list-header-actions">
+                <button type="button" id="btnExpenseEntryConfig" class="ee-list-header-icon-btn ee-list-header-icon-btn--settings" title="Expense head configuration" hidden><i class="fas fa-gear" aria-hidden="true"></i></button>
+                <button type="button" id="btnExpenseEntryApprovalConfig" class="ee-list-header-icon-btn ee-list-header-icon-btn--approval" title="Expense entry approval configuration" hidden><i class="fas fa-sitemap" aria-hidden="true"></i></button>
+                <button type="button" id="btnAddExpenseEntryHero" class="ee-list-create-btn">
+                    <i class="fa fa-plus-circle" aria-hidden="true"></i>
+                    <span class="ee-list-create-btn-label ms-1">Create New Expense</span>
+                </button>
+            </div>
+        </div>
+        <div class="ee-list-stats-strip" role="group" aria-label="Summary">
+            <button type="button" class="ee-list-stat-chip" id="eeStatCardTotal" title="Scroll to list">
+                <span class="val" id="eeStatTotal">—</span>
+                <span class="lbl">Total</span>
+            </button>
+            <button type="button" class="ee-list-stat-chip ee-list-stat-chip--pending" id="eeStatCardPending" title="Filter: Pending &amp; Rejected">
+                <span class="val" id="eeStatPending">—</span>
+                <span class="lbl">Pending</span>
+            </button>
+            <button type="button" class="ee-list-stat-chip ee-list-stat-chip--onme ee-list-stat-chip--link" id="eeStatCardPendingOnMe" title="Open approvals pending on you">
+                <span class="val" id="eeStatPendingOnMe">—</span>
+                <span class="lbl">Pending on me</span>
+            </button>
+            <button type="button" class="ee-list-stat-chip ee-list-stat-chip--approved" id="eeStatCardApproved" title="Filter: Approved (Verified)">
+                <span class="val" id="eeStatApproved">—</span>
+                <span class="lbl">Approved</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters (flush under header, PO filter-bar style) -->
+    <div class="ee-list-filter-bar">
     <div class="row g-3 align-items-end">
         <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-            <label for="txtFromDate" class="form-label">From Date <span class="text-danger">*</span></label>
-            <input type="text" id="txtFromDate" name="FromDate" class="form-control form-control-sm box_border" autocomplete="off" required />
+            <div class="ee-fg">
+                <label for="txtFromDate">From Date <span class="text-danger">*</span></label>
+                <input type="date" id="txtFromDate" name="FromDate" autocomplete="off" required />
+            </div>
         </div>
         <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-            <label for="txtToDate" class="form-label">To Date <span class="text-danger">*</span></label>
-            <input type="text" id="txtToDate" name="ToDate" class="form-control form-control-sm box_border" autocomplete="off" required />
+            <div class="ee-fg">
+                <label for="txtToDate">To Date <span class="text-danger">*</span></label>
+                <input type="date" id="txtToDate" name="ToDate" autocomplete="off" required />
+            </div>
         </div>
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
             <label for="ddlMarketingMan" class="form-label">Sales Person <span class="text-danger">*</span></label>
             <input list="ddlSalesPersonList" id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" onclick="$(this).val('');" placeholder="Sales Person" autocomplete="off" required>
             <datalist id="ddlSalesPersonList"></datalist>
         </div>
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3 without-label-field" style="margin-bottom:0.8rem">
-            <div class="expense-entry-actions">
-                <button type="button" id="btnShow" class="btn btn-primary btn-height">Show</button>
-                <button type="button" id="btnAddExpenseEntry" class="btn btn-success btn-height">Create New</button>
-                <button type="button" id="btnExpenseEntryConfig" class="btn btn-warning btn-height" title="Expense Entry Configuration Settings"><i class="fa fa-gear"></i></button>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+            <label for="ddlListStatus" class="form-label">Status</label>
+            <select id="ddlListStatus" class="form-control form-control-sm box_border">
+                <option value="ALL">-- All Status --</option>
+                <option value="PENDING_ALL">Pending &amp; Rejected</option>
+                <option value="Unverified">Unverified</option>
+                <option value="Pending">Pending Approval</option>
+                <option value="Verified">Verified</option>
+                <option value="Rejected">Rejected</option>
+            </select>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-1 without-label-field" style="margin-bottom:0.5rem">
+            <div class="expense-entry-actions ee-list-toolbar">
+                <button type="button" id="btnShow" class="btn btn-primary btn-height"><i class="fas fa-search me-1"></i>Show</button>
             </div>
         </div>
     </div>
-</div>
+    </div>
 
-<div class="expense-entry-card expense-entry-card-table" id="cardExpenseEntryList" style="display:none">
+<div class="expense-entry-card expense-entry-card-table ee-list-grid-wrap" id="cardExpenseEntryList">
     <div id="tblExpenseEntryList">
         <div class="expense-entry-table-wrapper">
             <table id="ExpenseEntryList" class="fixed-width-table table">
@@ -70,6 +115,44 @@
         <div class="ee-delete-actions">
             <button type="button" class="ee-btn-cancel" id="eeBtnCancelDelete"><i class="fas fa-times"></i> Cancel</button>
             <button type="button" class="ee-btn-confirm-delete" onclick="DoExpenseEntryDelete()"><i class="fas fa-trash-can"></i> Yes, Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Approved Entries Modal -->
+<div id="eeApprovedModal" class="ee-backdrop">
+    <div class="ee-approved-modal">
+        <div class="ee-approved-modal-header">
+            <div class="ee-approved-modal-title">
+                <i class="fas fa-circle-check me-2"></i>Approved Expense Entries
+            </div>
+            <button type="button" class="ee-approved-modal-close" onclick="closeApprovedEntriesModal()" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="ee-approved-modal-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Person Name</th>
+                            <th>Entry No</th>
+                            <th>Entry Date</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eeApprovedModalBody">
+                        <tr><td colspan="6" class="text-center py-3"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="ee-approved-modal-footer">
+            <button type="button" class="ee-btn-cancel" onclick="closeApprovedEntriesModal()">
+                <i class="fas fa-times me-1"></i>Close
+            </button>
         </div>
     </div>
 </div>

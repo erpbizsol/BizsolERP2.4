@@ -1,11 +1,17 @@
 import { ExpenseHeadMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseHeadMasterService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
 let G_Date = '';
 let G_ExpenseHeadMaster = 0;
 let G_Code = 0;
 let G_ExpenseHeadMaster_Mode = 'E';
+let G_EHM_DeleteCode = 0;
+
+function getFinancialYear() {
+    return BizSolHelperFunction.getFinancialYear();
+}
 $(document).ready(function () {
     $("#ERPHeading").text("Expense Head Master");
     
@@ -26,14 +32,15 @@ function GetExpenseHeadMasterTable(){
             const ColumnAlignment = {};
 
             const updatedResponse = response.map(item => {
-                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditData('${item.Code}','${item?.["Expense Description"]}','E')"><i class="fa fa-pencil"></i></button>&nbsp;
-                <button class="btn btn-info icon-height mb-1" title="View" onclick="EditData('${item.Code}','${item?.["Expense Description"]}','V')"><i class="fa-regular fa-eye"></i></button>`;
-                
+                let buttonsHTML =
+                    `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditData('${item.Code}','${item?.["Expense Description"]}','E')"><i class="fa fa-pencil"></i></button>&nbsp;` +
+                    `<button class="btn btn-info icon-height mb-1" title="View" onclick="EditData('${item.Code}','${item?.["Expense Description"]}','V')"><i class="fa-regular fa-eye"></i></button>&nbsp;` +
+                    `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="OpenDeleteExpenseHead(${item.Code})"><i class="fa fa-trash-alt"></i></button>`;
+
                 return {
                     ...item,
                     Action: buttonsHTML,
                 };
-                
             });
 
             BizsolCustomFilterGrid.CreateDataTable("table-header-ExpenseHeadMaster", "table-body-ExpenseHeadMaster", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
@@ -242,6 +249,55 @@ function submit_ExpenseHeadMaster() {
             }
         });
 }
+/** Opens the delete confirmation modal after checking user rights. */
+function OpenDeleteExpenseHead(code) {
+    MenuService.CheckModuleOptionRight('Expense Head Master', 'Delete', 'Y', getFinancialYear())
+        .then(function (response) {
+            if (!response || response.CheckModuleOptionRight === 'N') {
+                toastr.error((response && response.Msg) || 'You do not have permission to delete.');
+                return;
+            }
+            G_EHM_DeleteCode = code;
+            $('#ehmReasonForDeleteInput').val('');
+            $('#ehmDeleteBackdrop').addClass('show');
+            setTimeout(function () { $('#ehmReasonForDeleteInput').focus(); }, 150);
+        })
+        .catch(function () {
+            toastr.error('Permission check failed. Please try again.');
+        });
+}
+
+function CloseDeleteEHMModal() {
+    $('#ehmDeleteBackdrop').removeClass('show');
+    G_EHM_DeleteCode = 0;
+}
+
+function ConfirmDeleteExpenseHead() {
+    var reason = ($('#ehmReasonForDeleteInput').val() || '').trim();
+    if (!reason) {
+        toastr.warning('Please provide a reason for deletion.');
+        $('#ehmReasonForDeleteInput').focus();
+        return;
+    }
+    if (!G_EHM_DeleteCode) {
+        CloseDeleteEHMModal();
+        return;
+    }
+    ExpenseHeadMasterService.DeleteExpenseHeadMaster(G_EHM_DeleteCode, reason)
+        .then(function (response) {
+            if (response && response.Status === 'Y') {
+                CloseDeleteEHMModal();
+                toastr.success((response && response.Msg) || 'Expense head deleted successfully.');
+                GetExpenseHeadMasterTable();
+            } else {
+                toastr.error((response && response.Msg) || 'Delete failed. Please try again.');
+            }
+        })
+        .catch(function () {
+            toastr.error('Delete request failed. Please try again.');
+        });
+}
+
 $('#btnExpenseEntryListDetails').click(function (e) {
     window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryList";
 });
@@ -265,3 +321,6 @@ window.validateDecimalInput = validateDecimalInput;
 window.submit_ExpenseHeadMaster = submit_ExpenseHeadMaster;
 window.EditLimitData = EditLimitData;
 window.CloseExpenseHeadMasterSuccessModal = CloseExpenseHeadMasterSuccessModal;
+window.OpenDeleteExpenseHead = OpenDeleteExpenseHead;
+window.CloseDeleteEHMModal = CloseDeleteEHMModal;
+window.ConfirmDeleteExpenseHead = ConfirmDeleteExpenseHead;
