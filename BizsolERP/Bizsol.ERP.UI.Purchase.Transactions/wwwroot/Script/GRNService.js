@@ -18,6 +18,7 @@ function stripNonNumeric(el) {
 // ── App-level state ─────────────────────────────────────────────────────────
 let rowIndex          = 0;
 let poList            = [];
+
 let projectItemsCache = [];
 let editMode          = false;
 let editCode          = 0;
