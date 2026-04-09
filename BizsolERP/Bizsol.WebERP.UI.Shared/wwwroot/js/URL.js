@@ -81,7 +81,7 @@ let UrlService = {
     API_ENDPOINT_QTY_CONFIG: `${environment.BASE_URL}/FixedParameterQtyConfig`,
     API_ENDPOINT_CRM_ORDERENTRY_CONFIG: `${environment.BASE_URL}/ConfigCRMOrderEntry`,
     
-
+    
     API_ENDPOINT_BreakDown: `${environment.BASE_URL}/BreakDownStartOrEnd`,
     API_ENDPOINT_SlittingEntry: `${environment.BASE_URL}/SlittingEntry`,
     API_ENDPOINT_VisitorMaster: `${environment.BASE_URL}/VisitorMaster`,
@@ -136,7 +136,9 @@ let UrlService = {
     API_ENDPOINT_GRNPaymentEntry: `${environment.BASE_URL}/GRNPaymentEntry`,
     API_ENDPOINT_POLevelsApprove: `${environment.BASE_URL}/POLevelsApproval`,
     API_ENDPOINT_GRNPaymentLevelsApproval: `${environment.BASE_URL}/GRNPaymentLevelsApproval`,
-    API_ENDPOINT_CompanyInformation: `${environment.BASE_URL}/CompanyInformation`
+    API_ENDPOINT_CompanyInformation: `${environment.BASE_URL}/CompanyInformation`,
+    API_ENDPOINT_EXPENSE_ENTRY_APPROVAL_CONFIG: `${environment.BASE_URL}/ExpenseEntryApprovalConfiguration`,
+    API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL: `${environment.BASE_URL}/ExpenseEntryLevelsApproval`
 }
 
 export { UrlService  }
