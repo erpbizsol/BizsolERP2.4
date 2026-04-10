@@ -359,16 +359,7 @@ function FilterCards(query) {
 
 // ─── OPEN DETAIL MODAL ─────────────────────────────────────────────────────────
 function OpenDetailModal(poCode) {
-    var ModuleName = 'Payment Entry',
-        OptionName = 'Verify',
-        ShowMsg = 'Y',
-        FinYear = getFinancialYear();
-
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(async function (response) {
-        if (response.CheckModuleOptionRight === 'N') {
-            toastr.error(response.Msg);
-            return;
-        } else {
+  
             G_CurrentPO = G_POList.find(function (p) {
                 return (p.Code || p.PurchaseOrderMaster_Code || 0) == poCode;
             });
@@ -434,8 +425,7 @@ function OpenDetailModal(poCode) {
                         '<i class="fa fa-exclamation-triangle me-1"></i>Error loading items.</td></tr>'
                     );
                 });
-        }
-    });
+      
    
 }
 

@@ -69,6 +69,14 @@ function normalizeGpaListStatusCode(item) {
     return 'U';
 }
 
+/** Same labels as SQL: CASE WHEN pom.Status = 'P' THEN 'Approved' WHEN 'R' THEN 'Rejected' ELSE 'Pending' */
+function formatGpaApprovalStatusLabel(statusCode) {
+    const c = (statusCode || 'U').toString().trim().toUpperCase();
+    if (c === 'P') return 'Approved';
+    if (c === 'R') return 'Rejected';
+    return 'Pending';
+}
+
 function formatGpaListDate(val) {
     if (val === undefined || val === null || val === '') return '';
     const s = String(val);
@@ -110,6 +118,7 @@ function mapGpaListRow(item) {
         '<i class="fas fa-paperclip"></i></button>' +
         '<button type="button" class="im-btn-delete" title="Delete" onclick="confirmDeleteGRNPaymentApproval(' + code + ', \'' + label + '\')">' +
         '<i class="fas fa-trash-can"></i></button>';
+    const statusCode = normalizeGpaListStatusCode(item);
     return {
         'Entry No': entryNo,
         'Entry Date': formatGpaListDate(ed),
@@ -117,9 +126,10 @@ function mapGpaListRow(item) {
         Employee: employee,
         'Amount': amt,
         'Ref No': ref,
+        'Approval Status': formatGpaApprovalStatusLabel(statusCode),
         Action: btns,
         Code: code,
-        StatusCode: normalizeGpaListStatusCode(item),
+        StatusCode: statusCode,
     };
 }
 
@@ -151,6 +161,7 @@ function gpaListEmptyTabPlaceholderRow() {
         Employee: '',
         'Amount': '',
         'Ref No': '',
+        'Approval Status': '',
         Action: '',
         Code: '__gpa_empty__',
         StatusCode: gpaListActiveStatusTab,
@@ -178,7 +189,7 @@ function updateGpaStatusTabStrip() {
 }
 
 function renderGpaListGridForActiveTab() {
-    const StringFilterColumn = ['Party Name', 'Employee', 'Ref No'];
+    const StringFilterColumn = ['Party Name', 'Employee', 'Ref No', 'Approval Status'];
     const NumericFilterColumn = ['Entry No', 'Amount'];
     const DateFilterColumn = ['Entry Date'];
     const Button = false;
