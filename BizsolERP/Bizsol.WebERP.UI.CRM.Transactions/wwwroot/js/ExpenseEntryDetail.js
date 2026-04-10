@@ -22,6 +22,8 @@ const Indx_Tbl = {
 
 var G_ProjectList = [];
 var G_SubProjectList = [];
+var G_ProjectApplicable = 'N';
+var G_LevelVerifyApplicable = 'N';
 
 /** API expects int; empty / non-numeric cells must be 0 (not null). */
 function normalizeDetailLineCode($tr) {
@@ -132,7 +134,16 @@ $(document).ready(function () {
         $row.find('td').eq(Indx_Tbl.SubProject).html(html);
     });
 
-    PopulateExpenseHeadDetails(param_ExpenseEntryMaster_Code);
+    ExpenseEntryService.GetConfigExpenseEntryParameter()
+        .then(function (cfg) {
+            var row = Array.isArray(cfg) && cfg.length > 0 ? cfg[0] : (cfg || {});
+            G_ProjectApplicable      = ((row.ProjectApplicable      || 'N') + '').trim().toUpperCase();
+            G_LevelVerifyApplicable  = ((row.LevelVerifyApplicable  || 'N') + '').trim().toUpperCase();
+            PopulateExpenseHeadDetails(param_ExpenseEntryMaster_Code);
+        })
+        .catch(function () {
+            PopulateExpenseHeadDetails(param_ExpenseEntryMaster_Code);
+        });
 
     $('#btnBack').click(function (e) {
         let MarketingPersonName = encodeURIComponent($("#txtMarketingManName").val());
@@ -230,6 +241,9 @@ function PopulateExpenseHeadDetails(Code) {
                 const showButtons = [];
                 const StringdoubleFilterColumn = [];
                 const hiddenColumns = ['Designation Name', 'Per Day Limit', 'VerifyStatus', 'ExpenseEntryDetail_Code', 'ExpenseHeadMaster_Code', 'Attachment', 'Effective From'];
+                if (G_ProjectApplicable !== 'Y') {
+                    hiddenColumns.push('Project', 'Sub Project');
+                }
                 const ColumnAlignment = {
                     'Allowed Amount': 'center',
                     'Approved Amount': 'center',
@@ -272,6 +286,9 @@ function ShowExpenseEntryDetailEmptyState() {
         "Attachment": "", ExpenseEntryDetail_Code: 0, ExpenseHeadMaster_Code: 0
     };
     var hiddenColumns = ["Designation Name", "Per Day Limit", "VerifyStatus", "ExpenseEntryDetail_Code", "ExpenseHeadMaster_Code", "Attachment", "Effective From"];
+    if (G_ProjectApplicable !== 'Y') {
+        hiddenColumns.push('Project', 'Sub Project');
+    }
     renderTableHeader(hiddenColumns, "ExpenseEntryDetails-header", "ExpenseEntryDetails-body", Object.keys(emptyRow), false, [], [], [], []);
     var colCount = Object.keys(emptyRow).length;
     $("#ExpenseEntryDetails-body").html('<tr class="expense-entry-empty-row"><td colspan="' + colCount + '"><span>No expense heads configured for this sales person</span></td></tr>');
@@ -572,8 +589,8 @@ function VerifyExpenseEntryMaster() {
             Attachment = '';// $(this).find('td:eq(' + Indx_Tbl.Attachment + ')')[0].getElementsByTagName('input')[0].value;
             //ExpenseHeadMaster_Code = $(this).find('td:eq(' + Indx_Tbl.ExpenseHeadMaster_Code + ')')[0].innerHTML.trim();
             ExpenseHeadMaster_Code = parseInt($(this).find('.hdnExpenseHeadMasterCode').val(), 10) || 0;
-            var projectMaster_Code = parseInt($(this).find('.ee-ddl-project').val(), 10) || 0;
-            var subProjectMaster_Code = parseInt($(this).find('.ee-ddl-subproject').val(), 10) || 0;
+            var projectMaster_Code    = G_ProjectApplicable === 'Y' ? (parseInt($(this).find('.ee-ddl-project').val(), 10) || 0) : 0;
+            var subProjectMaster_Code = G_ProjectApplicable === 'Y' ? (parseInt($(this).find('.ee-ddl-subproject').val(), 10) || 0) : 0;
 
             var rowData = {};
 
@@ -664,8 +681,8 @@ function SaveData() {
                 ApprovedAmount = $(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')')[0].getElementsByTagName('input')[0].value;
                 Remarks = $(this).find('td:eq(' + Indx_Tbl.Remarks + ')')[0].getElementsByTagName('input')[0].value;
                 ExpenseHeadMaster_Code = $(this).find('.hdnExpenseHeadMasterCode').val();
-                var projectMaster_Code = parseInt($(this).find('.ee-ddl-project').val(), 10) || 0;
-                var subProjectMaster_Code = parseInt($(this).find('.ee-ddl-subproject').val(), 10) || 0;
+                var projectMaster_Code    = G_ProjectApplicable === 'Y' ? (parseInt($(this).find('.ee-ddl-project').val(), 10) || 0) : 0;
+                var subProjectMaster_Code = G_ProjectApplicable === 'Y' ? (parseInt($(this).find('.ee-ddl-subproject').val(), 10) || 0) : 0;
 
                 var rowData = {};
 
