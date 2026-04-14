@@ -21,7 +21,11 @@ namespace BizsolERPMain
                     new ResponseCacheAttribute
                     {
                         NoStore = true
-                    }));
+                    }))
+                // Explicitly register Finance.Transactions assembly so its controllers
+                // are always discovered even though the RCL was previously an empty stub.
+                .AddApplicationPart(
+                    typeof(Bizsol.ERP.UI.Finance.Transactions.Program).Assembly);
 
             var app = builder.Build();
 
@@ -86,6 +90,11 @@ namespace BizsolERPMain
             app.MapControllerRoute(
                name: "PurchaseMasters",
                pattern: "{area:exists}/{controller=PurchaseOrder}/{action=POApprovalConfiguration}/{id?}");
+
+            app.MapAreaControllerRoute(
+               name: "FinanceTransactions",
+               areaName: "FinanceTransactions",
+               pattern: "FinanceTransactions/{controller=BankStatement}/{action=BankStatementImport}/{id?}");
 
             app.Run();
         }

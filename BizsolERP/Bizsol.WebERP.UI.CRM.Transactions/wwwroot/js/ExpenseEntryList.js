@@ -1,6 +1,14 @@
 import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
 import { ExpenseEntryLevelsApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryLevelsApprovalService.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
+
+function CheckRight(optionName) {
+    const ModuleName = $('#ERPHeading').text().trim();
+    const FinYear = BizSolHelperFunction.getFinancialYear();
+    return MenuService.CheckModuleOptionRight(ModuleName, optionName, 'Y', FinYear);
+}
 var G_EEL_LevelVerifyApplicable = 'N';
 
 const Indx_Tbl = {
@@ -351,7 +359,7 @@ function GetExpenseEntryList(opts){
 
             const updatedResponse = filtered.map(item => {
                 let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${item.Status !== 'Unverified' ? 'disabled' : ''} onclick="EditData(${item.Code},this)"><i class="fa fa-pencil"></i></button>
-                <button class="btn btn-danger icon-height mb-1" title="Delete" ${item.Status !== 'Unverified' ? 'disabled' : ''} onclick="DeleteData('${item.Code}',this)"><i class="fa fa-times"></i></button>
+                <button class="btn btn-danger icon-height mb-1" title="Delete" ${item.VerifyStatus === 'Y' ? 'disabled' : ''} onclick="DeleteData('${item.Code}',this)"><i class="fa fa-times"></i></button>
                 <button class="btn btn-info icon-height mb-1" title="View" onclick="ViewData(${item.Code},this)"><i class="fa fa-eye"></i></button>`;
 
                 var td_StatusBtn = '';
@@ -442,45 +450,64 @@ function ShowExpenseEntryListEmptyState(opt) {
     }
 }
 
-function EditData(Code,x){
-    const codes = window.btoa(Code);
-    var ObjCurrRow = $(x).closest('tr');
-
-    var Name = ObjCurrRow.find('td:eq(' + Indx_Tbl.PersonName + ')')[0].innerHTML.trim();
-
-    var MarketingPersonName = window.btoa(Name);
-    var Mode = window.btoa("Edit");
-    window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryDetail?Code=" + codes + "&Mode=" + Mode +"&MarketingMan_Name=" + MarketingPersonName;
+function EditData(Code, x) {
+    CheckRight('Edit').then(function (respCheck) {
+        if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+            toastr.error(respCheck.Msg);
+            return;
+        }
+        const codes = window.btoa(Code);
+        var ObjCurrRow = $(x).closest('tr');
+        var Name = ObjCurrRow.find('td:eq(' + Indx_Tbl.PersonName + ')')[0].innerHTML.trim();
+        var MarketingPersonName = window.btoa(Name);
+        var Mode = window.btoa("Edit");
+        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryDetail?Code=" + codes + "&Mode=" + Mode + "&MarketingMan_Name=" + MarketingPersonName;
+    });
 }
-function ViewData(Code,x){
-    const codes = window.btoa(Code);
-    var ObjCurrRow = $(x).closest('tr');
-
-    var Name = ObjCurrRow.find('td:eq(' + Indx_Tbl.PersonName + ')')[0].innerHTML.trim();
-
-    var MarketingPersonName = window.btoa(Name);
-    var Mode = window.btoa("View");
-    window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryDetail?Code=" + codes + "&Mode=" + Mode +"&MarketingMan_Name=" + MarketingPersonName;
+function ViewData(Code, x) {
+    CheckRight('View').then(function (respCheck) {
+        if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+            toastr.error(respCheck.Msg);
+            return;
+        }
+        const codes = window.btoa(Code);
+        var ObjCurrRow = $(x).closest('tr');
+        var Name = ObjCurrRow.find('td:eq(' + Indx_Tbl.PersonName + ')')[0].innerHTML.trim();
+        var MarketingPersonName = window.btoa(Name);
+        var Mode = window.btoa("View");
+        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryDetail?Code=" + codes + "&Mode=" + Mode + "&MarketingMan_Name=" + MarketingPersonName;
+    });
 }
 function CreateNew(Code) {
-    if ($("#ddlMarketingMan").val() == 'undefined' || $("#ddlMarketingMan").val() == "" || $("#ddlMarketingMan").val() == "ALL") {
-        toastr.error('Please select a sales person name.');
-        return false;
-    }
-
-    const codes = window.btoa(Code);
-    var MarketingPersonName = window.btoa($("#ddlMarketingMan").val());
-    var Mode = window.btoa("New");
-    window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryDetail?Code=" + codes + "&Mode=" + Mode +"&MarketingMan_Name=" + MarketingPersonName;
+    CheckRight('New').then(function (respCheck) {
+        if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+            toastr.error(respCheck.Msg);
+            return;
+        }
+        if ($("#ddlMarketingMan").val() == 'undefined' || $("#ddlMarketingMan").val() == "" || $("#ddlMarketingMan").val() == "ALL") {
+            toastr.error('Please select a sales person name.');
+            return;
+        }
+        const codes = window.btoa(Code);
+        var MarketingPersonName = window.btoa($("#ddlMarketingMan").val());
+        var Mode = window.btoa("New");
+        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryDetail?Code=" + codes + "&Mode=" + Mode + "&MarketingMan_Name=" + MarketingPersonName;
+    });
 }
 
 var G_DeleteExpenseEntryCode = 0;
 
 function DeleteData(Code) {
-    G_DeleteExpenseEntryCode = Code;
-    $('#eeReasonForDeleteInput').val('');
-    $('#eeDeleteConfirmBackdrop').addClass('show');
-    setTimeout(function () { $('#eeReasonForDeleteInput').focus(); }, 150);
+    CheckRight('Edit').then(function (respCheck) {
+        if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+            toastr.error(respCheck.Msg);
+            return;
+        }
+        G_DeleteExpenseEntryCode = Code;
+        $('#eeReasonForDeleteInput').val('');
+        $('#eeDeleteConfirmBackdrop').addClass('show');
+        setTimeout(function () { $('#eeReasonForDeleteInput').focus(); }, 150);
+    });
 }
 
 function DoExpenseEntryDelete() {
@@ -555,18 +582,24 @@ function openApprovedEntriesModal() {
 
     $('#eeApprovedModal').addClass('show');
     $('#eeApprovedModalBody').html(
-        '<tr><td colspan="6" class="text-center py-3 text-muted">' +
+        '<tr><td colspan="7" class="text-center py-3 text-muted">' +
         '<i class="fas fa-spinner fa-spin me-2"></i>Loading approved entries…</td></tr>'
     );
 
     ExpenseEntryLevelsApprovalService.GetPendingExpenseEntryList(fd, td, 'Y')
         .then(function (data) {
-            var list = Array.isArray(data) ? data : (data && (data.Data || data.data)) || [];
-            if (!Array.isArray(list)) list = [];
+            var raw = Array.isArray(data) ? data : (data && (data.Data || data.data)) || [];
+            if (!Array.isArray(raw)) raw = [];
+
+            // Filter to only Approved entries from the response
+            var list = raw.filter(function (item) {
+                var st = (item.ApprovalStatus || item.Status || '').toString().trim().toLowerCase();
+                return st === 'approved' || st === 'y';
+            });
 
             if (list.length === 0) {
                 $('#eeApprovedModalBody').html(
-                    '<tr><td colspan="6" class="text-center py-3 text-muted">' +
+                    '<tr><td colspan="7" class="text-center py-3 text-muted">' +
                     '<i class="fas fa-inbox me-2"></i>No approved entries for this period.</td></tr>'
                 );
                 return;
@@ -574,18 +607,22 @@ function openApprovedEntriesModal() {
 
             var html = '';
             list.forEach(function (item, idx) {
-                var personName  = item['Person Name'] || item.PersonName || '—';
-                var entryNo     = item.EntryNo || item['Entry No'] || '—';
-                var entryDate   = item['Entry Date'] || '—';
-                var totalAmt    = (item['Total Amount'] != null)
-                    ? parseFloat(item['Total Amount']).toLocaleString('en-IN', { minimumFractionDigits: 2 })
+                var personName    = item['Person Name'] || item.PersonName || '—';
+                var entryNo       = item['Entry No'] || item.EntryNo || '—';
+                var entryDate     = item['Entry Date'] || item.EntryDate || '—';
+                var expendedAmt   = item['Total Expended Amount'] != null
+                    ? '\u20B9' + parseFloat(item['Total Expended Amount']).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : '—';
+                var allowedAmt    = item['Total Allowed Amount'] != null
+                    ? '\u20B9' + parseFloat(item['Total Allowed Amount']).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     : '—';
                 html += '<tr>' +
                     '<td class="text-center">' + (idx + 1) + '</td>' +
                     '<td>' + personName + '</td>' +
                     '<td class="text-center">' + entryNo + '</td>' +
                     '<td class="text-center">' + entryDate + '</td>' +
-                    '<td class="text-end">' + totalAmt + '</td>' +
+                    '<td class="text-end">' + expendedAmt + '</td>' +
+                    '<td class="text-end">' + allowedAmt + '</td>' +
                     '<td class="text-center"><span class="ee-badge-approved">Approved</span></td>' +
                     '</tr>';
             });
@@ -593,7 +630,7 @@ function openApprovedEntriesModal() {
         })
         .catch(function () {
             $('#eeApprovedModalBody').html(
-                '<tr><td colspan="6" class="text-center text-danger py-3">' +
+                '<tr><td colspan="7" class="text-center text-danger py-3">' +
                 '<i class="fas fa-plug-circle-xmark me-2"></i>Failed to load approved entries.</td></tr>'
             );
         });

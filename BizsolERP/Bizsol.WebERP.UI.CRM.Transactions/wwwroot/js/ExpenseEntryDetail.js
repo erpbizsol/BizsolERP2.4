@@ -1,6 +1,13 @@
 import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+
+function CheckRight(optionName) {
+    const FinYear = BizSolHelperFunction.getFinancialYear();
+    return MenuService.CheckModuleOptionRight('Expense Entry', optionName, 'Y', FinYear);
+}
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
 const Indx_Tbl = {
@@ -155,10 +162,23 @@ $(document).ready(function () {
 
 
     $('#btnSubmit').click(function (e) {
-        SaveData();
+        var option = parseInt(param_ExpenseEntryMaster_Code, 10) > 0 ? 'Edit' : 'New';
+        CheckRight(option).then(function (respCheck) {
+            if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+                toastr.error(respCheck.Msg);
+                return;
+            }
+            SaveData();
+        });
     });
     $('#btnVerify').click(function (e) {
-        VerifyExpenseEntryMaster();
+        CheckRight('Verify').then(function (respCheck) {
+            if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+                toastr.error(respCheck.Msg);
+                return;
+            }
+            VerifyExpenseEntryMaster();
+        });
     });
 
     $('#eeBtnConfirmCancel').on('click', function () { ApplyAmountExceedResponse(false); });
