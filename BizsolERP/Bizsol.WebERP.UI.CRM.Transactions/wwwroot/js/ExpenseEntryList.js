@@ -1,6 +1,7 @@
 import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
 import { ExpenseEntryLevelsApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryLevelsApprovalService.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
+var G_EEL_LevelVerifyApplicable = 'N';
 
 const Indx_Tbl = {
     Code: 0,
@@ -19,19 +20,20 @@ const Indx_Tbl = {
 $(document).ready(function () {
     $("#ERPHeading").text("Expense Entry");
 
-    var ObjUserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
-    if (ObjUserDetails !== undefined && ObjUserDetails[0].UserType == 'A') {
-        $('#btnExpenseEntryConfig').prop('hidden', false);
-        $('#btnExpenseEntryApprovalConfig').prop('hidden', false);
-    } else {
-        $('#btnExpenseEntryConfig').prop('hidden', true);
-        $('#btnExpenseEntryApprovalConfig').prop('hidden', true);
-    }
-
     GetNestedMarketingManList();
     DatePicker();
     renderInitialEmptyExpenseTable();
-    refreshPendingOnMeCount();
+
+    // Load config → controls approval-level UI visibility
+    ExpenseEntryService.GetConfigExpenseEntryParameter()
+        .then(function (cfg) {
+            var row = Array.isArray(cfg) && cfg.length > 0 ? cfg[0] : (cfg || {});
+            G_EEL_LevelVerifyApplicable = ((row.LevelVerifyApplicable || 'N') + '').trim().toUpperCase();
+            applyEEListConfigVisibility();
+        })
+        .catch(function () {
+            applyEEListConfigVisibility();
+        });
 
     var urlParams = getUrlVars();
 
@@ -129,6 +131,34 @@ $(document).ready(function () {
         $('#eeDeleteConfirmBackdrop').removeClass('show');
     });
  });
+
+function applyEEListConfigVisibility() {
+    var ObjUserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
+    var isAdmin = ObjUserDetails && ObjUserDetails[0] && ObjUserDetails[0].UserType === 'A';
+
+    // Settings / config icon: always shown to admins
+    if (isAdmin) {
+        $('#btnExpenseEntryConfig').prop('hidden', false);
+    } else {
+        $('#btnExpenseEntryConfig').prop('hidden', true);
+    }
+
+    // Approval-config icon: only for admins AND when level-verify is enabled
+    if (isAdmin && G_EEL_LevelVerifyApplicable === 'Y') {
+        $('#btnExpenseEntryApprovalConfig').prop('hidden', false);
+    } else {
+        $('#btnExpenseEntryApprovalConfig').prop('hidden', true);
+    }
+
+    // "Pending on Me" chip: only when level-verify is enabled
+    if (G_EEL_LevelVerifyApplicable === 'Y') {
+        $('#eeStatCardPendingOnMe').show();
+        refreshPendingOnMeCount();
+    } else {
+        $('#eeStatCardPendingOnMe').hide();
+    }
+}
+
 function getUrlVars() {
     var vars = {};
     var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
