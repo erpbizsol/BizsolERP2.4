@@ -773,6 +773,12 @@ function GetSelectedCustomerAccountNature() {
     return found ? (found.AccountNature || '') : '';
 }
 
+function GetSelectedCustomerBillApplicable() {
+    var selectedCode = parseInt($('#ddlCustomerName option:selected').val());
+    var found = arrayList_NestedDealerFull.find(function (item) { return item.Code === selectedCode; });
+    return found ? (found.BillApplicable || 'Y') : 'Y';
+}
+
 function GetZoneMasterList() {
 
     VisitOrderEntryService.GetZoneMasterList().then(function (response) {
@@ -1277,6 +1283,10 @@ function ValidateData() {
     if (AccountDesp == "") {
 
         MsgStr += "* Please Select Customer Name!" + newLine;
+        Valid = false;
+    }
+    if (GetSelectedCustomerBillApplicable() === 'N') {
+        MsgStr += "* Order cannot be saved. Billing is not applicable for the selected Customer!" + newLine;
         Valid = false;
     }
     //if (ListValidation("#txtDealer", "#listdealer") == false) {
@@ -2080,6 +2090,10 @@ function GetAccountMasterDetails() {
 
     if (AccountDesp == "") {
         //toastr.error("Please Select Customer Name!")
+        return false;
+    }
+    if (GetSelectedCustomerBillApplicable() === 'N') {
+        toastr.error("Order cannot be placed for '" + AccountDesp + "'. Billing is not applicable for this Customer.");
         return false;
     }
     const now = new Date();
@@ -6695,6 +6709,7 @@ function RefreshDealerList(element) {
 }
 let sellogicaltableColumnstimer = setInterval(SetLogicalStockTableColumns, 100);
 window.GetAccountMasterDetails = GetAccountMasterDetails;
+window.GetSelectedCustomerBillApplicable = GetSelectedCustomerBillApplicable;
 window.BizSolhandleEnterKey = BizSolhandleEnterKey;
 window.AddNewRow = AddNewRow;
 window.GetItemSizeList = GetItemSizeList;

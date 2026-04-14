@@ -207,6 +207,7 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
             ClearEmptyOutOrLoadedOutFrm();
             UpdateLoadedIn_Emptyout(response);
             CopyWeightmentSlip('emptyOut');
+            GateEntry_ShowEntryNoBanner(response[0].GateEntryNo, 'out');
         });
 
     }
@@ -224,8 +225,9 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
             ClearEmptyOutOrLoadedOutFrm();
             UpdateEmptyIn_loadedout(response);
             CopyWeightmentSlip('loadedOut');
+            GateEntry_ShowEntryNoBanner(response[0].GateEntryNo, 'out');
         });
-        
+
     }
     else if (EntryType.includes('print') == true) {
         ChangeMode(Mode);
@@ -255,6 +257,7 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
                 } else {
                     ChangeMode(Mode);
                     EditGateEntry(response, EntryType);
+                    GateEntry_ShowEntryNoBanner(response[0].GateEntryNo, 'update');
                 }
             });
 
@@ -1900,10 +1903,11 @@ function GateEntry_SaveData(Mode) {
         GateEntryService.SaveGateEntryMaster(JSON.stringify(GateEntryPostdata), POItemsData, 'SAVEDATA').then(function (response) {
             if (response.Status === 'Y') {
                 HideLoader();
-                toastr.success(`Entry save success`);
-                // window.location.href = sessionStorage.getItem('AppBaseURL') +'PurchaseTransactions/GateEntry/GateEntryView';
-                GateEntyMode_GateEntry('grid', '');
-                GateEntryGirdByDates();
+                //toastr.success(`Entry save success`);
+                        ShowGateEntrySaveSuccessModal(response.Msg);
+                        // window.location.href = sessionStorage.getItem('AppBaseURL') +'PurchaseTransactions/GateEntry/GateEntryView';
+                        GateEntyMode_GateEntry('grid', '');
+                        GateEntryGirdByDates();
             }
             else {
                 toastr.error(response.Msg);
@@ -2306,6 +2310,7 @@ function frmLoadedOut_ddlDocumentType(callby) {
 }
 
 function ClearAllFrm() {
+    $('#GateEntryFormEntryNoBanner').remove();
     GateEntryImageDetail = [{
         imgVehicle: [],
         imgMaterial: [],
@@ -3512,6 +3517,46 @@ function GateEntry_changeDocumentType_LoadedIn() {
             );
         });
     }
+}
+
+function ShowGateEntrySaveSuccessModal(msg) {
+    $('#GateEntrySaveSuccessModal').remove();
+    let modalHtml = `
+        <div class="modal fade" id="GateEntrySaveSuccessModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title"><i class="fa fa-check-circle"></i>&nbsp;Entry Saved Successfully</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p class="mb-2">${msg}</p>
+                        <div class="alert alert-warning mb-0 text-start">
+                            <i class="fa fa-exclamation-triangle"></i>&nbsp;<strong>Note:</strong> Entry No. is auto-generated and <strong>cannot be decreased</strong> once saved.
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <a class="btn btn-success px-4" data-bs-dismiss="modal">OK</a>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    $('body').append(modalHtml);
+    const modalEl = document.getElementById('GateEntrySaveSuccessModal');
+    const bsModal = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+    bsModal.show();
+    modalEl.addEventListener('hidden.bs.modal', function () { $(this).remove(); });
+}
+
+function GateEntry_ShowEntryNoBanner(entryNo, operation) {
+    $('#GateEntryFormEntryNoBanner').remove();
+    if (!entryNo || parseInt(entryNo) <= 0) return;
+    let opLabel = operation === 'out' ? 'Entry Out' : 'Update Entry';
+    let bannerHtml = `<div id="GateEntryFormEntryNoBanner" class="alert alert-info alert-dismissible fade show mb-2 py-2">
+        <i class="fa fa-info-circle"></i>&nbsp;<strong>${opLabel}</strong>&nbsp;&mdash;&nbsp;Entry No:&nbsp;<strong class="text-primary fs-5">${entryNo}</strong>
+        <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>`;
+    $('#DivGateEntryForm').prepend(bannerHtml);
 }
 
 window.GateEntyMode_GateEntry = GateEntyMode_GateEntry
