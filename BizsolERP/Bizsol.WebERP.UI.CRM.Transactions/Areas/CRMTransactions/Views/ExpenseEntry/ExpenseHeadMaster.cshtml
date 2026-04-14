@@ -35,7 +35,7 @@
         <div class="row g-3 align-items-end">
             <div class="col-12 col-sm-6 col-md-4">
                 <label for="txtExpenseDescription" class="form-label fw-bold">Expense Description <span class="text-danger">*</span></label>
-                <input id="txtExpenseDescription" type="text" name="txtExpenseDescription" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Expense Description" maxlength="11" required />
+                <input id="txtExpenseDescription" type="text" name="txtExpenseDescription" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Expense Description" maxlength="50" required />
             </div>
                 <div class="col-12 col-sm-6 col-md-4 without-label-field" style="margin-bottom:0.8rem">
                 <button type="button" id="btnExpenseEntryListBack" class="btn btn-secondary btn-height" title="Back" onclick="ExpenseHeadMaster_Back()">Back</button>
@@ -79,6 +79,25 @@
             </table>
         </div>
         <div class="paginator" id="paginator-ExpenseHeadLimitDetails"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div id="ehmDeleteBackdrop" class="ee-backdrop">
+    <div class="ee-delete-modal">
+        <div class="ee-delete-icon-wrap"><i class="fas fa-trash-can"></i></div>
+        <div class="ee-delete-title">Delete this Expense Head?</div>
+        <div class="ee-delete-text">This action cannot be undone. The expense head will be permanently removed.</div>
+        <div class="ee-delete-reason">
+            <label class="ee-delete-reason-label">
+                <i class="fas fa-comment-dots"></i> Reason for Delete <span class="text-danger">*</span>
+            </label>
+            <input type="text" id="ehmReasonForDeleteInput" class="ee-delete-reason-input" placeholder="Enter reason for deletion…" autocomplete="off" />
+        </div>
+        <div class="ee-delete-actions">
+            <button type="button" class="ee-btn-cancel" onclick="CloseDeleteEHMModal()"><i class="fas fa-times"></i> Cancel</button>
+            <button type="button" class="ee-btn-confirm-delete" onclick="ConfirmDeleteExpenseHead()"><i class="fas fa-trash-can"></i> Yes, Delete</button>
         </div>
     </div>
 </div>

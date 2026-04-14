@@ -73,11 +73,56 @@ function getTotalAmount(p) {
     return v;
 }
 
+function levelRowIsApproved(lvl) {
+    if (!lvl || typeof lvl !== 'object') return false;
+    const on = lvl.ApprovedOn ?? lvl.Approved_Date ?? lvl.ApprovedDate ?? lvl.ApprovedOnDate;
+    if (on != null && String(on).trim() !== '') return true;
+    const st = (lvl.Status ?? lvl.ApprovalStatus ?? lvl.IsApproved ?? '').toString().trim().toLowerCase();
+    return st === 'y' || st === 'approved' || st === '1' || st === 'true';
+}
+
+/** When master Status lags the API, infer from per-level rows (all levels 1..TotalLevels approved). */
+function allLevelsApprovedFromDetails(p) {
+    const total = parseInt(p.TotalLevels ?? p.MaxLevel ?? 0, 10) || 0;
+    if (total < 1) return false;
+    const levels = Array.isArray(p.LevelDetails) ? p.LevelDetails : [];
+    if (!levels.length) return false;
+    for (let i = 1; i <= total; i++) {
+        const lvl = levels.find(function (l) {
+            const n = parseInt(l.LevelNo ?? l.Level ?? l.LevelOrder ?? 0, 10);
+            return n === i;
+        });
+        if (!levelRowIsApproved(lvl)) return false;
+    }
+    return true;
+}
+
 function getApprovalStatus(p) {
-    const raw = (p.ApprovalStatus ?? p.Status ?? p.Approval_Status ?? 'Pending').toString().trim();
-    if (raw === 'N' || raw.toLowerCase() === 'pending') return 'Pending';
-    if (raw === 'Y' || raw.toLowerCase() === 'approved') return 'Approved';
-    if (raw === 'R' || raw.toLowerCase() === 'rejected') return 'Rejected';
+    const raw = (p.ApprovalStatus ?? p.Status ?? p.Approval_Status ?? '').toString().trim();
+    const upper = raw.toUpperCase();
+    const lower = raw.toLowerCase();
+
+    // Matches SQL: CASE WHEN pom.Status = 'P' THEN 'Approved' WHEN pom.Status = 'R' THEN 'Rejected' ELSE 'Pending'
+    if (upper === 'R' || lower === 'rejected') return 'Rejected';
+    if (upper === 'P' || raw === 'Y' || lower === 'approved') return 'Approved';
+
+    if (allLevelsApprovedFromDetails(p)) return 'Approved';
+
+    const cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 0, 10) || 0;
+    const tot = parseInt(p.TotalLevels ?? p.MaxLevel ?? 0, 10) || 0;
+    if (tot > 0 && cur > tot) return 'Approved';
+
+    if (raw === '' || raw === 'N' || upper === 'U' || lower === 'pending') return 'Pending';
+    if (
+        lower === 'complete' || lower === 'completed' ||
+        lower.indexOf('fully approved') >= 0 ||
+        lower.indexOf('final approved') >= 0 ||
+        lower.indexOf('all approved') >= 0 ||
+        (lower.indexOf('all levels') >= 0 && lower.indexOf('approved') >= 0)
+    ) {
+        return 'Approved';
+    }
+
     return raw || 'Pending';
 }
 
@@ -319,56 +364,69 @@ function unwrapGpaActionResponse(res) {
 }
 
 function OpenDetailModal(paymentCode) {
-    const code = parseInt(paymentCode, 10);
-    if (!Number.isFinite(code) || code <= 0) return;
+    var ModuleName = 'Payment Entry',
+        OptionName = 'Verify',
+        ShowMsg = 'Y',
+        FinYear = getFinancialYear();
 
-    G_CurrentPayment = G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === code; }) || null;
-    if (!G_CurrentPayment) {
-        G_CurrentPayment = { Code: code, GRNPaymentMaster_Code: code };
-    }
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(async function (response) {
+        if (response.CheckModuleOptionRight === 'N') {
+            toastr.error(response.Msg);
+            return;
+        } else {
+            const code = parseInt(paymentCode, 10);
+            if (!Number.isFinite(code) || code <= 0) return;
 
-    const entryNo = getEntryNo(G_CurrentPayment);
-    const vendor = getPartyName(G_CurrentPayment);
+            G_CurrentPayment = G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === code; }) || null;
+            if (!G_CurrentPayment) {
+                G_CurrentPayment = { Code: code, GRNPaymentMaster_Code: code };
+            }
 
-    $('#gpaModalEntryTitle').text('Entry# ' + entryNo);
-    $('#gpaModalParty').text(vendor);
-    $('#hfGpaPaymentCode').val(String(code));
-    $('#hfGpaLevelCode').val(String(getLevelCode(G_CurrentPayment)));
-    $('#gpaFrmRemarks').val('');
+            const entryNo = getEntryNo(G_CurrentPayment);
+            const vendor = getPartyName(G_CurrentPayment);
 
-    paintModalFromPayment(G_CurrentPayment);
-
-    $('#gpaModalItemsBody').html(
-        '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
-        '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
-    );
-
-    $('#gpaBtnApproveAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
-    $('#gpaBtnRejectAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
-
-    $('#modalGpaDetail').modal({ backdrop: 'static' });
-    $('#modalGpaDetail').modal('show');
-
-    GRNPaymentApprovalService.GetGRNPaymentDetail(code)
-        .then(function (res) {
-            const root = res?.Data ?? res?.data ?? res;
-            G_CurrentPayment = mergeDetailIntoPayment(res, G_CurrentPayment);
+            $('#gpaModalEntryTitle').text('Entry# ' + entryNo);
+            $('#gpaModalParty').text(vendor);
+            $('#hfGpaPaymentCode').val(String(code));
             $('#hfGpaLevelCode').val(String(getLevelCode(G_CurrentPayment)));
+            $('#gpaFrmRemarks').val('');
+
             paintModalFromPayment(G_CurrentPayment);
-            const lines = extractDetailLines(res);
-            RenderGpaModalItems(lines);
-            const st = getApprovalStatus(G_CurrentPayment);
-            const pend = st.toLowerCase() === 'pending';
-            $('#gpaBtnApproveAction').toggle(pend);
-            $('#gpaBtnRejectAction').toggle(pend);
-        })
-        .catch(function (err) {
-            console.error('GetGRNPaymentDetail', err);
+
             $('#gpaModalItemsBody').html(
-                '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
-                '<i class="fa fa-exclamation-triangle me-1"></i>Error loading bill lines.</td></tr>'
+                '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+                '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
             );
-        });
+
+            $('#gpaBtnApproveAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
+            $('#gpaBtnRejectAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
+
+            $('#modalGpaDetail').modal({ backdrop: 'static' });
+            $('#modalGpaDetail').modal('show');
+
+            GRNPaymentApprovalService.GetGRNPaymentDetail(code)
+                .then(function (res) {
+                    const root = res?.Data ?? res?.data ?? res;
+                    G_CurrentPayment = mergeDetailIntoPayment(res, G_CurrentPayment);
+                    $('#hfGpaLevelCode').val(String(getLevelCode(G_CurrentPayment)));
+                    paintModalFromPayment(G_CurrentPayment);
+                    const lines = extractDetailLines(res);
+                    RenderGpaModalItems(lines);
+                    const st = getApprovalStatus(G_CurrentPayment);
+                    const pend = st.toLowerCase() === 'pending';
+                    $('#gpaBtnApproveAction').toggle(pend);
+                    $('#gpaBtnRejectAction').toggle(pend);
+                })
+                .catch(function (err) {
+                    console.error('GetGRNPaymentDetail', err);
+                    $('#gpaModalItemsBody').html(
+                        '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                        '<i class="fa fa-exclamation-triangle me-1"></i>Error loading bill lines.</td></tr>'
+                    );
+                });
+        }
+    });
+   
 }
 
 function paintModalFromPayment(po) {

@@ -1,8 +1,6 @@
 import { POLevelsApproveService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/POLevelsApproveService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
-// ─── DUMMY MODE — set false when backend is ready ─────────────────────────────
-//const USE_DUMMY = true;
 const USE_DUMMY = false;
 
 // ─── DUMMY PO LIST ────────────────────────────────────────────────────────────
@@ -361,71 +359,74 @@ function FilterCards(query) {
 
 // ─── OPEN DETAIL MODAL ─────────────────────────────────────────────────────────
 function OpenDetailModal(poCode) {
-    G_CurrentPO = G_POList.find(function (p) {
-        return (p.Code || p.PurchaseOrderMaster_Code || 0) == poCode;
-    });
-    if (!G_CurrentPO) return;
+  
+            G_CurrentPO = G_POList.find(function (p) {
+                return (p.Code || p.PurchaseOrderMaster_Code || 0) == poCode;
+            });
+            if (!G_CurrentPO) return;
 
-    const poNo     = G_CurrentPO['PO No']            || G_CurrentPO.PONo        || '—';
-    const vendor   = G_CurrentPO['Party Name']        || G_CurrentPO.VendorName  || '—';
-    const poDate   = FmtDateDisplay(G_CurrentPO['PO Date'] || G_CurrentPO.PODate);
-    const amount   = FmtCurrency(G_CurrentPO['Total Bill Amount'] || G_CurrentPO.TotalAmount || 0);
-    const curLvlNo = parseInt(G_CurrentPO.CurrentLevelNo  || G_CurrentPO.CurrentLevel || 1);
-    const totalLvl = parseInt(G_CurrentPO.TotalLevels     || G_CurrentPO.MaxLevel      || 3);
-    const pmtTerms = G_CurrentPO.PaymentTerms || G_CurrentPO['Payment Terms'] || '—';
-    const status   = (G_CurrentPO.ApprovalStatus || G_CurrentPO.Status || 'Pending').trim();
+            const poNo = G_CurrentPO['PO No'] || G_CurrentPO.PONo || '—';
+            const vendor = G_CurrentPO['Party Name'] || G_CurrentPO.VendorName || '—';
+            const poDate = FmtDateDisplay(G_CurrentPO['PO Date'] || G_CurrentPO.PODate);
+            const amount = FmtCurrency(G_CurrentPO['Total Bill Amount'] || G_CurrentPO.TotalAmount || 0);
+            const curLvlNo = parseInt(G_CurrentPO.CurrentLevelNo || G_CurrentPO.CurrentLevel || 1);
+            const totalLvl = parseInt(G_CurrentPO.TotalLevels || G_CurrentPO.MaxLevel || 3);
+            const pmtTerms = G_CurrentPO.PaymentTerms || G_CurrentPO['Payment Terms'] || '—';
+            const status = (G_CurrentPO.ApprovalStatus || G_CurrentPO.Status || 'Pending').trim();
 
-    $('#modalPONo').text('PO# ' + poNo);
-    $('#modalVendorName').text(vendor);
-    $('#hfPOCode').val(poCode);
-    $('#hfLevelCode').val(G_CurrentPO.LevelCode || G_CurrentPO.ApprovalLevel_Code || 0);
-    $('#frmRemarks').val('');
+            $('#modalPONo').text('PO# ' + poNo);
+            $('#modalVendorName').text(vendor);
+            $('#hfPOCode').val(poCode);
+            $('#hfLevelCode').val(G_CurrentPO.LevelCode || G_CurrentPO.ApprovalLevel_Code || 0);
+            $('#frmRemarks').val('');
 
-    // PO header info grid
-    $('#modalPOHeader').html(
-        '<div class="pla-info-grid">' +
-            BuildInfoItem('PO Number',     EscHtml(poNo),     'fa-file-invoice') +
-            BuildInfoItem('Vendor',        EscHtml(vendor),   'fa-building') +
-            BuildInfoItem('PO Date',       EscHtml(poDate || '—'), 'fa-calendar-alt') +
-            BuildInfoItem('Total Amount',  amount,            'fa-rupee-sign', '#667eea') +
-            BuildInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +
-            BuildInfoItem('Status',        EscHtml(status),   'fa-info-circle') +
-        '</div>'
-    );
-
-    // Approval level stepper
-    $('#modalApprovalStepper').html(BuildDetailStepper(G_CurrentPO));
-
-    // Show/hide approve & reject buttons
-    const isPending = status.toLowerCase() === 'pending';
-    $('#btnApproveAction').toggle(isPending);
-    $('#btnRejectAction').toggle(isPending);
-
-    // Items placeholder
-    $('#modalItemsBody').html(
-        '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
-        '<i class="fa fa-spinner fa-spin me-1"></i>Loading items\u2026</td></tr>'
-    );
-
-    $('#modalPODetail').modal({ backdrop: 'static' });
-    $('#modalPODetail').modal('show');
-
-    // Load items async
-    if (USE_DUMMY) {
-        setTimeout(function () {
-            RenderModalItems(DUMMY_ITEMS[poCode] || []);
-        }, 400);
-        return;
-    }
-
-    POLevelsApproveService.GetPOItems(poCode)
-        .then(function (items) { RenderModalItems(items); })
-        .catch(function () {
-            $('#modalItemsBody').html(
-                '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
-                '<i class="fa fa-exclamation-triangle me-1"></i>Error loading items.</td></tr>'
+            // PO header info grid
+            $('#modalPOHeader').html(
+                '<div class="pla-info-grid">' +
+                BuildInfoItem('PO Number', EscHtml(poNo), 'fa-file-invoice') +
+                BuildInfoItem('Vendor', EscHtml(vendor), 'fa-building') +
+                BuildInfoItem('PO Date', EscHtml(poDate || '—'), 'fa-calendar-alt') +
+                BuildInfoItem('Total Amount', amount, 'fa-rupee-sign', '#667eea') +
+                BuildInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +
+                BuildInfoItem('Status', EscHtml(status), 'fa-info-circle') +
+                '</div>'
             );
-        });
+
+            // Approval level stepper
+            $('#modalApprovalStepper').html(BuildDetailStepper(G_CurrentPO));
+
+            // Show/hide approve & reject buttons
+            const isPending = status.toLowerCase() === 'pending';
+            $('#btnApproveAction').toggle(isPending);
+            $('#btnRejectAction').toggle(isPending);
+
+            // Items placeholder
+            $('#modalItemsBody').html(
+                '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+                '<i class="fa fa-spinner fa-spin me-1"></i>Loading items\u2026</td></tr>'
+            );
+
+            $('#modalPODetail').modal({ backdrop: 'static' });
+            $('#modalPODetail').modal('show');
+
+            // Load items async
+            if (USE_DUMMY) {
+                setTimeout(function () {
+                    RenderModalItems(DUMMY_ITEMS[poCode] || []);
+                }, 400);
+                return;
+            }
+
+            POLevelsApproveService.GetPOItems(poCode)
+                .then(function (items) { RenderModalItems(items); })
+                .catch(function () {
+                    $('#modalItemsBody').html(
+                        '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                        '<i class="fa fa-exclamation-triangle me-1"></i>Error loading items.</td></tr>'
+                    );
+                });
+      
+   
 }
 
 function BuildInfoItem(label, value, icon, valueColor) {

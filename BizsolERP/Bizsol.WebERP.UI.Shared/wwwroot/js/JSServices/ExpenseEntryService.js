@@ -114,6 +114,16 @@ const ExpenseEntryService = {
             }
         );
     },
-    
+    GetConfigExpenseEntryParameter: function GetConfigExpenseEntryParameter() {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_EXPENSE_ENTRY + `/GetConfigExpenseEntryParameter`;
+        
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     }
     export { ExpenseEntryService }

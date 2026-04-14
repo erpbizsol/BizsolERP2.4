@@ -1,0 +1,334 @@
+import { ExpenseEntryApprovalConfigurationService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryApprovalConfigurationService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+
+var baseUrl = sessionStorage.getItem('AppBaseURL');
+
+let G_LevelList = [];
+let G_GroupList = [];
+let G_EditMode = 'New';
+
+$(document).ready(function () {
+    $('#ERPHeading').text('Expense Entry Approval Configuration');
+    $('#btnBackToExpenseEntryList').on('click', function () {
+        window.location = baseUrl + '/CRMTransactions/ExpenseEntry/ExpenseEntryList';
+    });
+    InitPage();
+});
+
+function CheckRight(optionName) {
+    const ModuleName = $('#ERPHeading').text().trim();
+    const FinYear = BizSolHelperFunction.getFinancialYear();
+    return MenuService.CheckModuleOptionRight(ModuleName, optionName, 'Y', FinYear);
+}
+
+async function InitPage() {
+    Showloader();
+    try {
+        await Promise.all([LoadGroupList(), LoadLevelList()]);
+    } finally {
+        HideLoader();
+    }
+}
+
+async function LoadGroupList() {
+    try {
+        const result = await ExpenseEntryApprovalConfigurationService.GetApproverGroupList();
+        G_GroupList = result || [];
+    } catch (e) {
+        G_GroupList = [];
+    }
+    PopulateGroupSelect();
+}
+
+function PopulateGroupSelect() {
+    const sel = document.getElementById('frmGroup');
+    sel.innerHTML = '<option value=""></option>';
+    G_GroupList.forEach(function (g) {
+        const opt = document.createElement('option');
+        opt.value = g.Code;
+        opt.textContent = g.GroupName;
+        sel.appendChild(opt);
+    });
+    InitSelect2();
+}
+
+function InitSelect2() {
+    try {
+        const $el = $('#frmGroup');
+        if ($el.data('select2')) {
+            $el.select2('destroy');
+        }
+        $el.select2({
+            placeholder: 'Search and select group...',
+            allowClear: false,
+            width: '100%'
+        });
+    } catch (e) { /* Select2 unavailable */ }
+}
+
+async function LoadLevelList() {
+    try {
+        const result = await ExpenseEntryApprovalConfigurationService.GetLevelList();
+        G_LevelList = result || [];
+    } catch (e) {
+        G_LevelList = [];
+    }
+    RenderTable();
+}
+
+function RenderTable() {
+    const tbody = document.getElementById('tblLevelsBody');
+    const badge = document.getElementById('levelCountBadge');
+    const statCount = document.getElementById('statLevelCount');
+    const count = G_LevelList.length;
+
+    badge.textContent = count + ' Level' + (count !== 1 ? 's' : '');
+    statCount.textContent = count;
+
+    if (count === 0) {
+        tbody.innerHTML =
+            '<tr><td colspan="5" class="empty-levels">' +
+            '<i class="fa fa-layer-group"></i>' +
+            'No approval levels configured yet.<br>' +
+            'Click <strong>Add Level</strong> to get started.' +
+            '</td></tr>';
+        return;
+    }
+
+    const lastCode = G_LevelList[count - 1].Code;
+
+    tbody.innerHTML = G_LevelList.map(function (item, idx) {
+        const isLast = item.Code === lastCode;
+
+        const groups = item.GroupName
+            ? '<span class="group-tag">' + EscapeHtml(String(item.GroupName).trim()) + '</span>'
+            : '<span style="color:#94a3b8;font-size:0.75rem;">—</span>';
+
+        const delBtn = isLast
+            ? '<button type="button" class="btn-del-level ms-1"' +
+              ' onclick="OpenDeleteModal(' + item.Code + ',\'' + EscapeAttr(item.LevelDesp) + '\')"' +
+              ' title="Delete last level"><i class="fa fa-trash"></i></button>'
+            : '';
+
+        return '<tr>' +
+            '<td style="text-align:center;color:#94a3b8;font-size:0.75rem;">' + (idx + 1) + '</td>' +
+            '<td style="text-align:center;"><span class="level-badge">' + item.Level + '</span></td>' +
+            '<td style="font-weight:600;">' + EscapeHtml(item.LevelDesp) + '</td>' +
+            '<td>' + groups + '</td>' +
+            '<td style="text-align:center;white-space:nowrap;">' +
+                '<button type="button" class="btn-edit-level"' +
+                ' onclick="OpenEditForm(' + item.Code + ')" title="Edit level">' +
+                '<i class="fa fa-edit"></i></button>' +
+                delBtn +
+            '</td>' +
+        '</tr>';
+    }).join('');
+}
+
+function OpenAddForm() {
+    CheckRight('New').then(function () {
+        G_EditMode = 'New';
+
+        const nextLevel = G_LevelList.length > 0
+            ? Math.max.apply(null, G_LevelList.map(function (l) { return l.Level; })) + 1
+            : 1;
+
+        document.getElementById('frmCode').value = '0';
+        document.getElementById('frmLevel').value = nextLevel;
+        document.getElementById('frmLevelDesc').value = '';
+
+        try { $('#frmGroup').val('').trigger('change'); } catch (e) { }
+
+        document.getElementById('formTitle').textContent = 'Add New Level';
+        HideInfoBar();
+        ShowForm();
+    });
+}
+
+async function OpenEditForm(code) {
+    const respCheck = await CheckRight('Edit');
+    if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+        toastr.error(respCheck.Msg);
+        return;
+    }
+
+    G_EditMode = 'Edit';
+    Showloader();
+    try {
+        const result = await ExpenseEntryApprovalConfigurationService.GetLevelById(code);
+        const item = Array.isArray(result) ? result[0] : result;
+        if (!item) {
+            toastr.error('Could not load level data. Please try again.');
+            return;
+        }
+
+        document.getElementById('frmCode').value = item.Code;
+        document.getElementById('frmLevel').value = item.Level;
+        document.getElementById('frmLevelDesc').value = item.LevelDesp || '';
+
+        const gc = item.GroupMaster_Code != null && item.GroupMaster_Code !== ''
+            ? String(item.GroupMaster_Code)
+            : '';
+        try {
+            $('#frmGroup').val(gc || '').trigger('change');
+        } catch (e) { }
+
+        document.getElementById('formTitle').textContent = 'Edit Level ' + item.Level + ' — ' + (item.LevelDesp || '');
+        HideInfoBar();
+        ShowForm();
+    } finally {
+        HideLoader();
+    }
+}
+
+function ShowForm() {
+    const form = document.getElementById('divLevelForm');
+    form.style.display = 'block';
+    setTimeout(function () {
+        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 80);
+}
+
+function CancelForm() {
+    document.getElementById('divLevelForm').style.display = 'none';
+    HideInfoBar();
+}
+
+function ShowInfoBar(msg) {
+    document.getElementById('formInfoMsg').textContent = msg;
+    document.getElementById('formInfoBar').style.display = 'block';
+}
+
+function HideInfoBar() {
+    document.getElementById('formInfoBar').style.display = 'none';
+}
+
+async function SaveLevel() {
+    const code = parseInt(document.getElementById('frmCode').value) || 0;
+    const levelDesc = document.getElementById('frmLevelDesc').value.trim();
+
+    let groupCode = '0';
+    try { groupCode = $('#frmGroup').val() || '0'; } catch (e) { }
+
+    if (!levelDesc) {
+        ShowInfoBar('Level Description is required.');
+        document.getElementById('frmLevelDesc').focus();
+        return;
+    }
+    if (!groupCode || groupCode === '0') {
+        ShowInfoBar('Group is mandatory.');
+        try {
+            $('#frmGroup').select2('open');
+        } catch (e) {
+            const g = document.getElementById('frmGroup');
+            if (g) g.focus();
+        }
+        return;
+    }
+
+    HideInfoBar();
+
+    const payload = JSON.stringify({
+        Code: code,
+        LevelDesp: levelDesc,
+        GroupMaster_Code: groupCode
+    });
+
+    Showloader();
+    try {
+        const result = await ExpenseEntryApprovalConfigurationService.SaveConfig(payload);
+        if (result && result.Status === 'Y') {
+            toastr.success(result.Msg || 'Approval level saved successfully.');
+            CancelForm();
+            await LoadLevelList();
+        } else {
+            toastr.error(result && result.Msg ? result.Msg : 'Failed to save approval level.');
+        }
+    } finally {
+        HideLoader();
+    }
+}
+
+function OpenDeleteModal(code, levelDesc) {
+    if (G_LevelList.length === 0) return;
+
+    const lastItem = G_LevelList[G_LevelList.length - 1];
+    if (lastItem.Code != code) {
+        toastr.warning('Only the last level can be deleted. You cannot delete levels in between.');
+        return;
+    }
+
+    document.getElementById('deleteCode').value = code;
+
+    const reasonEl = document.getElementById('txtDeleteReason');
+    const reasonErrEl = document.getElementById('deleteReasonError');
+    if (reasonEl) reasonEl.value = '';
+    if (reasonErrEl) reasonErrEl.style.display = 'none';
+
+    document.getElementById('deleteConfirmMsg').innerHTML =
+        'Are you sure you want to delete level <strong>&ldquo;' + EscapeHtml(levelDesc) + '&rdquo;</strong>?' +
+        '<br><small style="color:#94a3b8;margin-top:4px;display:block;">This action cannot be undone.</small>';
+
+    const modal = new bootstrap.Modal(document.getElementById('modalDeleteLevel'));
+    modal.show();
+    document.getElementById('modalDeleteLevel').addEventListener('shown.bs.modal', function focusReason() {
+        const el = document.getElementById('txtDeleteReason');
+        if (el) el.focus();
+        document.getElementById('modalDeleteLevel').removeEventListener('shown.bs.modal', focusReason);
+    });
+}
+
+async function ConfirmDeleteLevel() {
+    const code = parseInt(document.getElementById('deleteCode').value) || 0;
+    const reasonEl = document.getElementById('txtDeleteReason');
+    const errEl = document.getElementById('deleteReasonError');
+    const reason = reasonEl ? reasonEl.value.trim() : '';
+    if (code === 0) return;
+
+    if (!reason) {
+        if (errEl) errEl.style.display = 'block';
+        if (reasonEl) reasonEl.focus();
+        return;
+    }
+    if (errEl) errEl.style.display = 'none';
+
+    const modalEl = document.getElementById('modalDeleteLevel');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+    Showloader();
+    try {
+        const result = await ExpenseEntryApprovalConfigurationService.DeleteConfig(code, reason);
+        if (result && result.Status === 'Y') {
+            toastr.success(result.Msg || 'Approval level deleted successfully.');
+            await LoadLevelList();
+        } else {
+            toastr.error(result && result.Msg ? result.Msg : 'Failed to delete approval level.');
+        }
+    } finally {
+        HideLoader();
+    }
+}
+
+function EscapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function EscapeAttr(str) {
+    if (!str) return '';
+    return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+window.OpenAddForm = OpenAddForm;
+window.OpenEditForm = OpenEditForm;
+window.OpenDeleteModal = OpenDeleteModal;
+window.ConfirmDeleteLevel = ConfirmDeleteLevel;
+window.SaveLevel = SaveLevel;
+window.CancelForm = CancelForm;
