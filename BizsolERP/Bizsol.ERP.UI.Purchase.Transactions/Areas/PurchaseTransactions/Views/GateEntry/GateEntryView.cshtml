@@ -132,6 +132,11 @@
         line-height: 1.4;
     }
     .btn-po-save:hover { transform: translateY(-1px); color: #fff; box-shadow: 0 6px 18px rgba(102,126,234,0.5); }
+    .btn-po-save:disabled, .btn-po-save[disabled] {
+        background: linear-gradient(135deg,#9ca3af,#6b7280) !important;
+        box-shadow: none !important; opacity: 0.6;
+        cursor: not-allowed; transform: none; pointer-events: all;
+    }
     .btn-po-cancel {
         background: linear-gradient(135deg,#f59e0b,#d97706);
         border: none; color: #fff;
@@ -142,6 +147,11 @@
         line-height: 1.4;
     }
     .btn-po-cancel:hover { transform: translateY(-1px); color: #fff; }
+    .btn-po-cancel:disabled, .btn-po-cancel[disabled] {
+        background: linear-gradient(135deg,#9ca3af,#6b7280) !important;
+        box-shadow: none !important; opacity: 0.6;
+        cursor: not-allowed; transform: none; pointer-events: all;
+    }
     .btn-ge-secondary {
         background: linear-gradient(135deg,#64748b,#475569);
         border: none; color: #fff;

@@ -58,6 +58,19 @@ const StockAgeingReportService = {
             }
         );
     },
+    GetStockData: function GetStockData(Level, Code, GodownMasterCode, FilterPayload) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var payload = FilterPayload || {};
+        payload.level            = Level;
+        payload.code             = Code;
+        payload.godownMasterCode = GodownMasterCode;
+        var URL = UrlService.API_DOCUMENT_StockAgeingReport + '/GetStockWithChart';
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload)).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 
 }
 
