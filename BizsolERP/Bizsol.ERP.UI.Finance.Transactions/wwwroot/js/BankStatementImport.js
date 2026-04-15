@@ -1,12 +1,11 @@
 import { BankStatementService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BankStatementService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
-// ── State ─────────────────────────────────────────────────────────────────────
-var parsedRows    = [];   // all rows parsed from CSV
-var fileHeaders   = [];   // header row from CSV
-var columnMappers = {};   // { fieldName: colIndex }
+var parsedRows    = [];   
+var fileHeaders   = [];   
+var columnMappers = {};   
 var deleteBatchNo = '';
 
-// Standard bank-statement fields — names match TY_BankStatement columns exactly
 var FIELD_DEFS = [
     { field: 'TxnDate',
       label: 'Date',
@@ -45,6 +44,8 @@ var FIELD_DEFS = [
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 $(document).ready(function () {
+    BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+
     LoadBankMasterDropdown();
     LoadImportHistory();
     BindEvents();
