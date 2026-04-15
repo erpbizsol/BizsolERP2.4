@@ -1,5 +1,11 @@
 import { ExpenseEntryLevelsApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryLevelsApprovalService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+
+function CheckRight(optionName) {
+    const FinYear = BizSolHelperFunction.getFinancialYear();
+    return MenuService.CheckModuleOptionRight('Expense Entry', optionName, 'Y', FinYear);
+}
 
 let G_EntryList = [];
 let G_CurrentEntry = null;
@@ -51,25 +57,30 @@ function normalizeListResponse(data) {
 }
 
 function getExpenseMasterCode(p) {
-    const c = p.ExpenseEntryMaster_Code ?? p.Code ?? p.code;
+    const c = p.Code ?? p.ExpenseEntryMaster_Code ?? p.code;
     const n = parseInt(c, 10);
     return Number.isFinite(n) ? n : 0;
 }
 
 function getEntryNo(p) {
-    return p.EntryNo ?? p['Entry No'] ?? p['PO No'] ?? p.Entry_No ?? '—';
+    return p['Entry No'] ?? p.EntryNo ?? p.Entry_No ?? p['PO No'] ?? '—';
 }
 
 function getPersonName(p) {
-    return p['Party Name'] ?? p['Person Name'] ?? p.PersonName ?? p.PartyName ?? '—';
+    return p['Person Name'] ?? p.PersonName ?? p['Party Name'] ?? p.PartyName ?? '—';
 }
 
 function getEntryDate(p) {
-    return p.EntryDate ?? p['PO Date'] ?? p['Entry Date'] ?? '';
+    return p['Entry Date'] ?? p.EntryDate ?? p['PO Date'] ?? '';
 }
 
 function getTotalAmount(p) {
-    const v = p.Amount ?? p['Total Amount'] ?? p.TotalAmount ?? 0;
+    const v = p['Total Expended Amount'] ?? p['Total Amount'] ?? p.TotalAmount ?? p.Amount ?? 0;
+    return v;
+}
+
+function getTotalAllowedAmount(p) {
+    const v = p['Total Allowed Amount'] ?? p.TotalAllowedAmount ?? p.AllowedAmount ?? 0;
     return v;
 }
 
@@ -166,7 +177,8 @@ function BuildEntryCard(p) {
     const entryNo = EscHtml(entryPlain);
     const person = EscHtml(personPlain);
     const entryDate = FmtDateDisplay(getEntryDate(p));
-    const amount = FmtCurrency(getTotalAmount(p));
+    const expendedAmt = FmtCurrency(getTotalAmount(p));
+    const allowedAmt = FmtCurrency(getTotalAllowedAmount(p));
     const totalLvl = parseInt(p.TotalLevels ?? p.MaxLevel ?? 3, 10) || 1;
     const curLvlNo = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
     const lvlDesc = EscHtml(p.CurrentLevelDesc ?? p.LevelDesc ?? ('Level ' + curLvlNo));
@@ -208,7 +220,8 @@ function BuildEntryCard(p) {
                 </div>
             </div>
             <div class="gpa-pay-card-right">
-                <div class="gpa-pay-amount">${amount}</div>
+                <div class="gpa-pay-amount">${expendedAmt}</div>
+                <div style="font-size:0.72rem;color:#059669;font-weight:600;">Allowed: ${allowedAmt}</div>
                 <div class="gpa-pay-status-badge" style="color:${statusClr};background:${statusBg};">${EscHtml(status)}</div>
             </div>
         </div>
@@ -375,7 +388,8 @@ function paintModalFromEntry(entry) {
     const entryNo = EscHtml(getEntryNo(entry));
     const person = EscHtml(getPersonName(entry));
     const entryDate = EscHtml(FmtDateDisplay(getEntryDate(entry)) || '—');
-    const amount = FmtCurrency(getTotalAmount(entry));
+    const expendedAmt = FmtCurrency(getTotalAmount(entry));
+    const allowedAmt = FmtCurrency(getTotalAllowedAmount(entry));
     const curLvlNo = parseInt(entry.CurrentLevelNo ?? entry.CurrentLevel ?? 1, 10) || 1;
     const totalLvl = parseInt(entry.TotalLevels ?? entry.MaxLevel ?? 3, 10) || 1;
     const status = EscHtml(getApprovalStatus(entry));
@@ -385,7 +399,8 @@ function paintModalFromEntry(entry) {
             BuildEeaInfoItem('Entry Number', entryNo, 'fa-file-invoice') +
             BuildEeaInfoItem('Person', person, 'fa-user') +
             BuildEeaInfoItem('Entry Date', entryDate, 'fa-calendar-alt') +
-            BuildEeaInfoItem('Amount', amount, 'fa-rupee-sign', '#667eea') +
+            BuildEeaInfoItem('Expended Amount', expendedAmt, 'fa-rupee-sign', '#667eea') +
+            BuildEeaInfoItem('Allowed Amount', allowedAmt, 'fa-rupee-sign', '#059669') +
             BuildEeaInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +
             BuildEeaInfoItem('Status', status, 'fa-info-circle') +
         '</div>'
@@ -487,6 +502,16 @@ function RenderEeaModalItems(items) {
 }
 
 function SubmitApproval(action) {
+    CheckRight('Verify').then(function (respCheck) {
+        if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+            if (typeof toastr !== 'undefined') toastr.error(respCheck.Msg);
+            return;
+        }
+        _DoSubmitApproval(action);
+    });
+}
+
+function _DoSubmitApproval(action) {
     const entryCode = parseInt($('#hfEeaEntryCode').val() || '0', 10);
     const levelCode = parseInt($('#hfEeaLevelCode').val() || '0', 10);
     const remarks = ($('#eeaFrmRemarks').val() || '').trim();

@@ -1,0 +1,778 @@
+/*
+ * BankStatement.css — BOM-matched colour scheme
+ * Uses the same CSS variables as BOM.cshtml:
+ *   var(--primary-gradient), var(--accent-primary), var(--white-bg),
+ *   var(--border-color), var(--border-light), var(--text-dark),
+ *   var(--text-muted), var(--text-primary), var(--light-bg),
+ *   var(--shadow-md), var(--shadow-primary)
+ */
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   PAGE
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-page {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding: 4px 0 32px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   HEADER  (matches .bom-hero pattern)
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-header { margin-bottom: 20px; }
+
+.bs-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.bs-header-title-block { display: flex; flex-direction: column; gap: 2px; }
+
+.bs-header-title {
+    font-size: 21px;
+    font-weight: 800;
+    color: var(--text-dark);
+    letter-spacing: -.025em;
+    line-height: 1.25;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Icon inside h2 — matches .bom-hero-icon */
+.bs-header-title i {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+    background: var(--primary-gradient);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 20px;
+    box-shadow: var(--shadow-primary);
+    flex-shrink: 0;
+}
+
+.bs-header-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 0 60px;
+}
+
+.bs-header-actions { display: flex; align-items: center; gap: 10px; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   STATS STRIP
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-stats-strip {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 14px 0;
+}
+
+.bs-stat-chip {
+    background: var(--white-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 8px 20px;
+    min-width: 100px;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+}
+
+.bs-stat-chip .val {
+    display: block;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--accent-primary);
+    line-height: 1.2;
+}
+
+.bs-stat-chip .lbl {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-top: 1px;
+}
+
+.bs-stat-chip--success .val { color: #16a34a; }
+.bs-stat-chip--warning .val { color: #d97706; }
+.bs-stat-chip--danger  .val { color: #dc2626; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   CARDS  (matches .bom-card)
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-card {
+    background: var(--white-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 20px;
+}
+
+/* gradient top accent — identical to .bom-card::before */
+.bs-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--primary-gradient);
+    border-radius: 20px 20px 0 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   STEP LABEL  (card section header — matches .bom-card-toolbar pattern)
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-step-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-dark);
+    padding: 14px 22px 12px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+/* numbered circle — matches .bom-hero-icon at small size */
+.bs-step-no {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.bs-preview-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-left: 4px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   FORM INPUTS  (matches .bom-fg select / input)
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-step-card .row.g-3 {
+    padding: 16px 22px;
+}
+
+.bs-label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 5px;
+    display: block;
+}
+
+.bs-input {
+    padding: 9px 13px !important;
+    border-radius: 10px !important;
+    border: 1.5px solid var(--border-color) !important;
+    font-size: 13.5px !important;
+    outline: none !important;
+    background: var(--white-bg) !important;
+    color: var(--text-dark) !important;
+    transition: border-color .2s, box-shadow .2s !important;
+    height: auto !important;
+}
+
+.bs-input:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, .15) !important;
+}
+
+/* Account Number is always editable — override any disabled/readonly appearance
+   that Bootstrap or the shared layout might apply after a programmatic .val() */
+#txtAccountNumber,
+#txtAccountNumber:disabled,
+#txtAccountNumber[readonly] {
+    background: var(--white-bg) !important;
+    color: var(--text-dark) !important;
+    opacity: 1 !important;
+    cursor: text !important;
+    pointer-events: auto !important;
+}
+
+/* Suppress browser autofill yellow / blue tint on all .bs-input fields */
+.bs-input:-webkit-autofill,
+.bs-input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px var(--white-bg) inset !important;
+    -webkit-text-fill-color: var(--text-dark) !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   FILE UPLOAD BUTTON
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-upload-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.bs-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, .32);
+    transition: transform .14s, box-shadow .14s;
+    white-space: nowrap;
+    border: none;
+    user-select: none;
+    line-height: 1;
+}
+
+.bs-upload-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(14, 165, 233, .42);
+}
+
+.bs-upload-filename {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   COLUMN MAPPING AREA
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-mapping-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+#divColumnMapping {
+    padding: 14px 22px 12px;
+    background: var(--light-bg);
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+}
+
+#divColumnMapping label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 4px;
+}
+
+#divColumnMapping select,
+#divColumnMapping .form-control {
+    border-radius: 8px !important;
+    border: 1.5px solid var(--border-color) !important;
+    font-size: 12.5px !important;
+    color: var(--text-dark) !important;
+    background: var(--white-bg) !important;
+    padding: 6px 10px !important;
+    height: auto !important;
+}
+
+#divColumnMapping select:focus,
+#divColumnMapping .form-control:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, .18) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   STEP ACTION BUTTONS BAR
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-step-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 14px 22px;
+    border-top: 1px solid var(--border-light);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SELECT / DESELECT TOOLBAR
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 22px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--white-bg);
+}
+
+.bs-selected-count {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   TABLE WRAPPER
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(100vh - 320px);
+    overflow-y: auto;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   PREVIEW TABLE  (matches .bom-table)
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-preview-table {
+    width: 100%;
+    border-collapse: collapse !important;
+    font-size: 13px;
+    min-width: 920px;
+    margin-bottom: 0 !important;
+}
+
+.bs-preview-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+}
+
+.bs-preview-table thead th {
+    color: #fff !important;
+    background: transparent !important;
+    font-weight: 700;
+    padding: 11px 10px;
+    text-align: left;
+    white-space: nowrap;
+    border: none !important;
+    font-size: 11.5px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.bs-preview-table thead th.text-end { text-align: right !important; }
+
+.bs-preview-table tbody tr:nth-child(even) { background: var(--light-bg) !important; }
+.bs-preview-table tbody tr:nth-child(odd)  { background: #fff !important; }
+.bs-preview-table tbody tr:hover           { background: rgba(102, 126, 234, .07) !important; }
+.bs-preview-table tbody tr.bs-row-dup td   { background: #fffbeb !important; }
+.bs-preview-table tbody tr.bs-row-err td   { background: #fef2f2 !important; }
+
+.bs-preview-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border-light) !important;
+    color: var(--text-dark) !important;
+    background: transparent !important;
+    vertical-align: middle;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bs-col-check { width: 38px; text-align: center !important; }
+
+.bs-preview-table input[type="checkbox"],
+#chkSelectAll {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--accent-primary, #4f46e5);
+    cursor: pointer;
+}
+
+.bs-tfoot-totals td {
+    padding: 9px 10px !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    background: rgba(102, 126, 234, .07) !important;
+    border-top: 2px solid var(--border-color) !important;
+    color: var(--text-dark) !important;
+    border-bottom: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   HISTORY TABLE  (matches .pm-table)
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-history-table {
+    width: 100%;
+    border-collapse: collapse !important;
+    font-size: 13px;
+    min-width: 700px;
+    margin-bottom: 0 !important;
+}
+
+.bs-history-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+}
+
+.bs-history-table thead th {
+    color: #fff !important;
+    background: transparent !important;
+    font-weight: 700;
+    padding: 12px 14px;
+    text-align: left;
+    white-space: nowrap;
+    border: none !important;
+    font-size: 11.5px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.bs-history-table thead th.text-center { text-align: center !important; }
+
+.bs-history-table tbody tr:nth-child(even) { background: var(--light-bg) !important; }
+.bs-history-table tbody tr:nth-child(odd)  { background: #fff !important; }
+.bs-history-table tbody tr:hover           { background: rgba(102, 126, 234, .07) !important; }
+
+.bs-history-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-light) !important;
+    color: var(--text-dark) !important;
+    background: transparent !important;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bs-history-table tbody tr:last-child td { border-bottom: none !important; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   BUTTONS  (matches .bom-btn family)
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-btn-primary,
+.bs-btn-import,
+.bs-btn-secondary,
+.bs-btn-ghost,
+.bs-btn-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    outline: none;
+    border-radius: 10px;
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform .13s, box-shadow .13s;
+    line-height: 1;
+}
+
+/* Primary — indigo (matches .bom-btn.save → var(--primary-gradient)) */
+.bs-btn-primary {
+    background: var(--primary-gradient);
+    color: #fff;
+    box-shadow: var(--shadow-primary);
+}
+
+.bs-btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, .45);
+}
+
+/* Import — green */
+.bs-btn-import {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, .32);
+}
+
+.bs-btn-import:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(22, 163, 74, .42);
+}
+
+/* Secondary / "View List" — indigo outline look */
+.bs-btn-secondary {
+    background: var(--primary-gradient);
+    color: #fff;
+    box-shadow: var(--shadow-primary);
+}
+
+.bs-btn-secondary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, .45);
+}
+
+/* Ghost — matches .bom-btn.secondary */
+.bs-btn-ghost {
+    background: var(--light-bg);
+    color: var(--text-dark);
+    border: 1.5px solid var(--border-color) !important;
+    box-shadow: none;
+}
+
+.bs-btn-ghost:hover:not(:disabled) {
+    border-color: var(--accent-primary) !important;
+    background: rgba(102, 126, 234, .06);
+}
+
+/* Danger — red (matches .bom-btn.icon.del) */
+.bs-btn-danger {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, .32);
+}
+
+.bs-btn-danger:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(239, 68, 68, .42);
+}
+
+/* Small variant */
+.bs-btn-sm { padding: 5px 12px !important; font-size: 12px !important; }
+
+/* Disabled state for all buttons */
+.bs-btn-primary:disabled,
+.bs-btn-import:disabled,
+.bs-btn-secondary:disabled,
+.bs-btn-ghost:disabled,
+.bs-btn-danger:disabled {
+    opacity: .52;
+    cursor: default;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   ICON ACTION BUTTONS  (matches .bom-btn.icon)
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    border: none;
+    outline: none;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform .14s, box-shadow .14s;
+}
+
+.bs-icon-btn:hover { transform: translateY(-2px); }
+
+.bs-icon-btn--view {
+    background: rgba(6, 182, 212, .1);
+    color: #0891b2;
+    border: 1px solid rgba(6, 182, 212, .22);
+}
+
+.bs-icon-btn--view:hover {
+    background: rgba(6, 182, 212, .2);
+    box-shadow: 0 3px 10px rgba(6, 182, 212, .3);
+}
+
+.bs-icon-btn--danger {
+    background: rgba(239, 68, 68, .1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, .2);
+}
+
+.bs-icon-btn--danger:hover {
+    background: rgba(239, 68, 68, .2);
+    box-shadow: 0 3px 10px rgba(239, 68, 68, .28);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   STATUS BADGES
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-badge-ok,
+.bs-badge-dup,
+.bs-badge-err {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+
+.bs-badge-ok  { background: rgba(22,163,74,.12);  color: #166534; border: 1px solid rgba(22,163,74,.25); }
+.bs-badge-dup { background: rgba(217,119,6,.12);  color: #92400e; border: 1px solid rgba(217,119,6,.25); }
+.bs-badge-err { background: rgba(239,68,68,.12);  color: #991b1b; border: 1px solid rgba(239,68,68,.2);  }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   MODAL BACKDROP  (custom — not Bootstrap)
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .55);
+    z-index: 1055;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+}
+
+.bs-backdrop.active { display: flex; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   CONFIRM MODAL  (matches BOM delete modal look)
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-confirm-modal {
+    background: var(--white-bg);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .22);
+    width: min(400px, 92vw);
+    padding: 28px 28px 24px;
+    text-align: center;
+    position: relative;
+    animation: bsModalIn .2s ease;
+}
+
+@keyframes bsModalIn {
+    from { opacity: 0; transform: scale(.93) translateY(12px); }
+    to   { opacity: 1; transform: scale(1)  translateY(0); }
+}
+
+.bs-confirm-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 24px;
+}
+
+.bs-confirm-icon--danger { background: rgba(239, 68, 68, .1); color: #ef4444; }
+
+.bs-confirm-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.bs-confirm-text {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 22px;
+}
+
+.bs-confirm-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   RESULT MODAL
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-result-modal {
+    background: var(--white-bg);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .22);
+    width: min(400px, 92vw);
+    padding: 28px 28px 24px;
+    text-align: center;
+    position: relative;
+    animation: bsModalIn .2s ease;
+}
+
+.bs-result-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(22, 163, 74, .1);
+    color: #16a34a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    font-size: 26px;
+}
+
+.bs-result-icon.error { background: rgba(239, 68, 68, .1); color: #ef4444; }
+
+.bs-result-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin-bottom: 14px;
+}
+
+.bs-result-body {
+    text-align: left;
+    background: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+}
+
+.bs-result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 13.5px;
+    color: var(--text-dark);
+}
+
+.bs-result-row:last-child { border-bottom: none; }
+.bs-result-row span { color: var(--text-muted); font-weight: 600; }
+.bs-result-row strong { font-weight: 800; }
+.bs-result-row--success strong { color: #16a34a; }
+.bs-result-row--warning strong { color: #d97706; }
+.bs-result-row--danger  strong { color: #dc2626; }
+
+.bs-result-batch {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.bs-result-batch span { color: var(--accent-primary); font-weight: 700; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .bs-header-sub { margin-left: 0; margin-top: 4px; }
+    .bs-step-label,
+    .bs-step-actions,
+    .bs-toolbar { padding-left: 14px; padding-right: 14px; }
+    .bs-step-card .row.g-3 { padding: 12px 14px; }
+    #divColumnMapping { padding-left: 14px; padding-right: 14px; }
+    .bs-confirm-modal,
+    .bs-result-modal { padding: 22px 18px 18px; }
+}
