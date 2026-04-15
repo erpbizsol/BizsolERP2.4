@@ -1,0 +1,18 @@
+using Microsoft.AspNetCore.Mvc;
+
+namespace Bizsol.ERP.UI.Finance.Transactions.Areas.FinanceTransactions.Controllers
+{
+    [Area("FinanceTransactions")]
+    public class BankStatementController : Controller
+    {
+        public IActionResult BankStatementImport()
+        {
+            return View();
+        }
+
+        public IActionResult BankStatementList()
+        {
+            return View();
+        }
+    }
+}

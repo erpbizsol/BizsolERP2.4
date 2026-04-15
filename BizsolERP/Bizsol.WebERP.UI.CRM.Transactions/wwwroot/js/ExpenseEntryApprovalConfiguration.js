@@ -253,29 +253,36 @@ async function SaveLevel() {
 function OpenDeleteModal(code, levelDesc) {
     if (G_LevelList.length === 0) return;
 
-    const lastItem = G_LevelList[G_LevelList.length - 1];
-    if (lastItem.Code != code) {
-        toastr.warning('Only the last level can be deleted. You cannot delete levels in between.');
-        return;
-    }
+    CheckRight('Edit').then(function (respCheck) {
+        if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+            toastr.error(respCheck.Msg);
+            return;
+        }
 
-    document.getElementById('deleteCode').value = code;
+        const lastItem = G_LevelList[G_LevelList.length - 1];
+        if (lastItem.Code != code) {
+            toastr.warning('Only the last level can be deleted. You cannot delete levels in between.');
+            return;
+        }
 
-    const reasonEl = document.getElementById('txtDeleteReason');
-    const reasonErrEl = document.getElementById('deleteReasonError');
-    if (reasonEl) reasonEl.value = '';
-    if (reasonErrEl) reasonErrEl.style.display = 'none';
+        document.getElementById('deleteCode').value = code;
 
-    document.getElementById('deleteConfirmMsg').innerHTML =
-        'Are you sure you want to delete level <strong>&ldquo;' + EscapeHtml(levelDesc) + '&rdquo;</strong>?' +
-        '<br><small style="color:#94a3b8;margin-top:4px;display:block;">This action cannot be undone.</small>';
+        const reasonEl = document.getElementById('txtDeleteReason');
+        const reasonErrEl = document.getElementById('deleteReasonError');
+        if (reasonEl) reasonEl.value = '';
+        if (reasonErrEl) reasonErrEl.style.display = 'none';
 
-    const modal = new bootstrap.Modal(document.getElementById('modalDeleteLevel'));
-    modal.show();
-    document.getElementById('modalDeleteLevel').addEventListener('shown.bs.modal', function focusReason() {
-        const el = document.getElementById('txtDeleteReason');
-        if (el) el.focus();
-        document.getElementById('modalDeleteLevel').removeEventListener('shown.bs.modal', focusReason);
+        document.getElementById('deleteConfirmMsg').innerHTML =
+            'Are you sure you want to delete level <strong>&ldquo;' + EscapeHtml(levelDesc) + '&rdquo;</strong>?' +
+            '<br><small style="color:#94a3b8;margin-top:4px;display:block;">This action cannot be undone.</small>';
+
+        const modal = new bootstrap.Modal(document.getElementById('modalDeleteLevel'));
+        modal.show();
+        document.getElementById('modalDeleteLevel').addEventListener('shown.bs.modal', function focusReason() {
+            const el = document.getElementById('txtDeleteReason');
+            if (el) el.focus();
+            document.getElementById('modalDeleteLevel').removeEventListener('shown.bs.modal', focusReason);
+        });
     });
 }
 

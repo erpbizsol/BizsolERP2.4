@@ -1,0 +1,271 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Finance.Transactions/css/BankStatement.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Finance.Transactions/js/BankStatementImport.js"></script>
+
+<div class="bs-page">
+
+    <!-- ── Page Header ─────────────────────────────────────────────────── -->
+    <div class="bs-header section-entry-animation">
+        <div class="bs-header-top">
+            <div class="bs-header-title-block">
+                <h2 class="bs-header-title">
+                    <i class="fa fa-file-import me-2" aria-hidden="true"></i>Bank Statement Import
+                </h2>
+                <small class="bs-header-sub">Upload and import bank statement CSV/Excel files into ERP.</small>
+            </div>
+            <div class="bs-header-actions">
+                <button type="button" id="btnViewList" class="bs-btn-secondary" title="View imported statements">
+                    <i class="fas fa-list me-1"></i>View List
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats strip (filled by JS after import) -->
+        <div class="bs-stats-strip" role="group" aria-label="Import Summary" id="bsStatsStrip" style="display:none;">
+            <div class="bs-stat-chip">
+                <span class="val" id="bsStatTotal">0</span>
+                <span class="lbl">Total Rows</span>
+            </div>
+            <div class="bs-stat-chip bs-stat-chip--success">
+                <span class="val" id="bsStatSuccess">0</span>
+                <span class="lbl">Imported</span>
+            </div>
+            <div class="bs-stat-chip bs-stat-chip--warning">
+                <span class="val" id="bsStatSkipped">0</span>
+                <span class="lbl">Skipped</span>
+            </div>
+            <div class="bs-stat-chip bs-stat-chip--danger">
+                <span class="val" id="bsStatFailed">0</span>
+                <span class="lbl">Failed</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Step 1: Bank & File Selection ───────────────────────────────── -->
+    <div class="bs-card bs-step-card" id="cardStep1">
+        <div class="bs-step-label">
+            <span class="bs-step-no">1</span>
+            <span>Select Bank &amp; Upload File</span>
+        </div>
+
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <label class="bs-label" for="ddlBankMaster">
+                    Bank Name <span class="text-danger">*</span>
+                </label>
+                <select id="ddlBankMaster" class="form-control form-control-sm bs-input">
+                    <option value="">-- Select Bank --</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <label class="bs-label" for="txtAccountNumber">
+                    Account Number <span class="text-danger">*</span>
+                </label>
+                <input type="text" id="txtAccountNumber" class="form-control form-control-sm bs-input"
+                       placeholder="Enter account number" autocomplete="off" maxlength="50" />
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <label class="bs-label" for="ddlFileType">
+                    File Format
+                </label>
+                <select id="ddlFileType" class="form-control form-control-sm bs-input">
+                    <option value="csv">CSV (comma / tab delimited)</option>
+                    <option value="excel">Excel (.xlsx / .xls) — coming soon</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-sm-12 col-md-8 col-lg-3">
+                <label class="bs-label" for="fileStatementUpload">
+                    Statement File <span class="text-danger">*</span>
+                </label>
+                <div class="bs-upload-wrap">
+                    <label class="bs-upload-btn" for="fileStatementUpload">
+                        <i class="fas fa-cloud-upload-alt me-1"></i>Choose File
+                    </label>
+                    <span class="bs-upload-filename" id="lblFileName">No file chosen</span>
+                    <input type="file" id="fileStatementUpload" accept=".csv,.txt,.xlsx,.xls" style="display:none;" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Column Mapping (shown after file is parsed) -->
+        <div id="divColumnMapping" style="display:none;" class="mt-3">
+            <div class="bs-mapping-title">
+                <i class="fas fa-sliders me-1"></i>Column Mapping
+                <small class="text-muted ms-2">(Map your file columns to statement fields)</small>
+            </div>
+            <div class="row g-2 mt-1" id="divMappingRow">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <div class="bs-step-actions mt-3">
+            <button type="button" id="btnParseFile" class="bs-btn-primary" disabled>
+                <i class="fas fa-table me-1"></i>Parse &amp; Preview
+            </button>
+            <button type="button" id="btnClearFile" class="bs-btn-ghost">
+                <i class="fas fa-times me-1"></i>Clear
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Step 2: Preview Table ────────────────────────────────────────── -->
+    <div class="bs-card bs-step-card" id="cardStep2" style="display:none;">
+        <div class="bs-step-label">
+            <span class="bs-step-no">2</span>
+            <span>Preview &amp; Validate</span>
+            <span class="bs-preview-count" id="lblPreviewCount"></span>
+        </div>
+
+        <div class="bs-toolbar mb-2">
+            <button type="button" id="btnSelectAll" class="bs-btn-ghost bs-btn-sm">
+                <i class="fas fa-check-square me-1"></i>Select All
+            </button>
+            <button type="button" id="btnDeselectAll" class="bs-btn-ghost bs-btn-sm">
+                <i class="far fa-square me-1"></i>Deselect All
+            </button>
+            <span class="ms-auto bs-selected-count" id="lblSelectedCount">0 selected</span>
+        </div>
+
+        <div class="bs-table-wrapper">
+            <table class="table table-sm bs-preview-table" id="tblPreview">
+                <thead>
+                    <tr>
+                        <th class="bs-col-check">
+                            <input type="checkbox" id="chkSelectAll" title="Select / deselect all" />
+                        </th>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Narration</th>
+                        <th>Chq / Ref No</th>
+                        <th>Value Date</th>
+                        <th class="text-end">Withdrawal (Dr)</th>
+                        <th class="text-end">Deposit (Cr)</th>
+                        <th class="text-end">Closing Balance</th>
+                        <th>Dr / Cr</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tblPreviewBody"></tbody>
+                <tfoot>
+                    <tr class="bs-tfoot-totals">
+                        <td colspan="6" class="text-end fw-semibold">Totals:</td>
+                        <td class="text-end fw-semibold" id="tdTotalWithdrawal">0.00</td>
+                        <td class="text-end fw-semibold" id="tdTotalDeposit">0.00</td>
+                        <td colspan="3"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="bs-step-actions mt-3">
+            <button type="button" id="btnImport" class="bs-btn-import" disabled>
+                <i class="fas fa-database me-1"></i>Import Selected Records
+            </button>
+            <button type="button" id="btnBackToStep1" class="bs-btn-ghost">
+                <i class="fas fa-arrow-left me-1"></i>Back
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Import History ───────────────────────────────────────────────── -->
+    <div class="bs-card bs-history-card" id="cardHistory">
+        <div class="bs-step-label">
+            <span class="bs-step-no"><i class="fas fa-history"></i></span>
+            <span>Recent Import History</span>
+            <button type="button" id="btnRefreshHistory" class="ms-auto bs-btn-ghost bs-btn-sm" title="Refresh">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+        <div class="bs-table-wrapper">
+            <table class="table table-sm bs-history-table" id="tblHistory">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Batch No</th>
+                        <th>Bank</th>
+                        <th>Account</th>
+                        <th>File Name</th>
+                        <th class="text-center">Total</th>
+                        <th class="text-center">Success</th>
+                        <th class="text-center">Failed</th>
+                        <th>Import Date</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tblHistoryBody">
+                    <tr><td colspan="10" class="text-center py-3 text-muted">
+                        <i class="fas fa-spinner fa-spin me-2"></i>Loading history…
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div><!-- /.bs-page -->
+
+<!-- ── Delete Batch Confirmation Modal ─────────────────────────────────── -->
+<div id="bsDeleteBackdrop" class="bs-backdrop">
+    <div class="bs-confirm-modal">
+        <div class="bs-confirm-icon bs-confirm-icon--danger">
+            <i class="fas fa-trash-alt"></i>
+        </div>
+        <div class="bs-confirm-title">Delete Import Batch?</div>
+        <div class="bs-confirm-text">
+            All records in batch <strong id="lblDeleteBatchNo"></strong> will be removed
+            along with the import log entry.<br>
+            This action <strong style="color:#ef4444;">cannot be undone</strong>.
+        </div>
+
+        <div style="text-align:left; margin-top:14px;">
+            <label for="reasonForDeleteInput"
+                   style="font-size:12.5px; font-weight:700; color:var(--text-primary);
+                          margin-bottom:6px; display:block;">
+                Reason for Deletion <span class="text-danger">*</span>
+            </label>
+            <input type="text" id="reasonForDeleteInput" autocomplete="off"
+                   placeholder="Enter reason for deletion"
+                   style="width:100%; padding:10px 13px; border-radius:10px;
+                          border:1.5px solid var(--border-color); font-size:13.5px;
+                          outline:none; background:#fff; color:var(--text-dark);
+                          transition:border-color .2s, box-shadow .2s; box-sizing:border-box;"
+                   onfocus="this.style.borderColor='var(--accent-primary)'; this.style.boxShadow='0 0 0 3px rgba(102,126,234,.15)';"
+                   onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none';" />
+        </div>
+
+        <div class="bs-confirm-actions" style="margin-top:18px;">
+            <button type="button" class="bs-btn-ghost" id="btnCancelDelete">
+                <i class="fas fa-ban"></i> Cancel
+            </button>
+            <button type="button" class="bs-btn-danger" id="btnConfirmDelete">
+                <i class="fas fa-trash-alt"></i> Yes, Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Success / Error Modal ────────────────────────────────────────────── -->
+<div id="bsResultBackdrop" class="bs-backdrop">
+    <div class="bs-result-modal">
+        <div class="bs-result-icon" id="bsResultIcon">
+            <i class="fas fa-circle-check"></i>
+        </div>
+        <div class="bs-result-title" id="bsResultTitle">Done!</div>
+        <div class="bs-result-body" id="bsResultBody">
+            <div class="bs-result-row"><span>Total rows processed:</span><strong id="bsResTotal">0</strong></div>
+            <div class="bs-result-row bs-result-row--success"><span>Successfully imported:</span><strong id="bsResSuccess">0</strong></div>
+            <div class="bs-result-row bs-result-row--warning"><span>Skipped (duplicates):</span><strong id="bsResSkipped">0</strong></div>
+            <div class="bs-result-row bs-result-row--danger"><span>Failed rows:</span><strong id="bsResFailed">0</strong></div>
+            <div class="bs-result-batch"><i class="fas fa-hashtag me-1"></i>Batch: <span id="bsResBatch"></span></div>
+        </div>
+        <button type="button" class="bs-btn-primary mt-2" id="btnResultClose">
+            <i class="fas fa-check me-1"></i>OK
+        </button>
+    </div>
+</div>
