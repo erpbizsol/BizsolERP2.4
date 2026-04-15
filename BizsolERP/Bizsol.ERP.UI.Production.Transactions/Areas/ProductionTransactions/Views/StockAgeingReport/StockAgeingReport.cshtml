@@ -68,6 +68,20 @@
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(102,126,234,.35);
     }
+    #btnSizeControl {
+        background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+        border: none;
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: .4px;
+        transition: all .2s;
+    }
+    #btnSizeControl:hover, #btnSizeControl:focus {
+        background: linear-gradient(135deg, #ea6c0a 0%, #dc2626 100%);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(249,115,22,.4);
+        transform: translateY(-1px);
+    }
 </style>
 <div class="card">
     <div class="card-body">
@@ -101,10 +115,10 @@
                 <select id="ddlSizeParameter" name="ddlSizeParameter" class="form-control form-control-sm box_border" multiple style="width: 300px;" placeholder="Select.." autocomplete="off" required></select>
             </div>
             <div class="col-md-3" style="margin-top: 27px;">
-                <button id="btnSizeControl" class="btn btn-primary btn-height" onclick="ShowSizeControlModal();">Size Parameter Filter</button>
+                <button type="button" id="btnStockAgeingReportShow" class="btn btn-primary btn-height">Show</button>
             </div>
             <div class="col-md-12" style="text-align:right">
-                <button type="button" id="btnStockAgeingReportShow" class="btn btn-primary btn-height">Show</button>
+                <button id="btnSizeControl" class="btn btn-height" onclick="ShowSizeControlModal();">Size Parameter Filter</button>
                 <button type="button" id="btn" class="btn btn-primary btn-height" onclick="ExportExcel();">Download</button>
             </div>
         </div>
@@ -131,22 +145,24 @@
 <!-- Stock With Chart section (shown only when Report Option = Stock With Chart) -->
 <div id="StockWithChart" style="display:none;">
     <div class="row g-3 mb-3">
-        <div class="col-md-6">
-            <div class="swc-chart-card h-100">
+        <div class="col-12">
+            <div class="swc-chart-card">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <div class="swc-chart-title">STOCKS</div>
                     <button class="swc-btn-reset" id="swcBtnResetFilters">&#8635; Reset</button>
                 </div>
-                <div id="swcChartCategory" style="min-height:280px;"></div>
+                <div id="swcChartCategory" style="min-height:320px;"></div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="swc-chart-card h-100">
+    </div>
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <div class="swc-chart-card">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div class="swc-chart-title">Warehouse</div>
+                    <div class="swc-chart-title">WAREHOUSE</div>
                     <span id="swcLblGodownFilter" class="swc-badge-filter" style="display:none;"></span>
                 </div>
-                <div id="swcChartGodown" style="min-height:280px;"></div>
+                <div id="swcChartGodown" style="min-height:360px;"></div>
             </div>
         </div>
     </div>
