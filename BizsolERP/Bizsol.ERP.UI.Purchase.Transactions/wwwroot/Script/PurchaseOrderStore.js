@@ -1939,3 +1939,25 @@ window.ConfirmCancelPO = ConfirmCancelPO;
 window.OpenAddSiteRepModal = OpenAddSiteRepModal;
 window.SaveSiteRepresentative = SaveSiteRepresentative;
 
+// ── Vendor Master Modal ──────────────────────────────────────────────────────
+
+function OpenVendorModal() {
+    const baseUrl = sessionStorage.getItem('AppBaseURL') || '';
+    document.getElementById('iframeVendorMaster').src = baseUrl + '/MarketingMasters/VendorMaster/VendorMaster?embedded=1&ModuleDesp=Vendor%20Master';
+    var modal = new bootstrap.Modal(document.getElementById('modalAddVendor'), {
+        backdrop: 'static',
+        keyboard: false
+    });
+    modal.show();
+}
+
+// When vendor modal closes, reload vendor dropdown to pick up newly added vendor
+document.getElementById('modalAddVendor').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('iframeVendorMaster').src = '';
+    if (typeof LoadVendorDropdown === 'function') {
+        LoadVendorDropdown();
+    }
+});
+
+window.OpenVendorModal = OpenVendorModal;
+

@@ -1112,6 +1112,27 @@
             to   { opacity: 1; }
         }
 
+        /* ── Embedded / iframe mode ─────────────────────────────────────────
+           When the page is loaded with ?embedded=1 (e.g. inside a modal iframe)
+           the header, sidebar, footer and mobile nav are hidden and the content
+           area fills the full viewport with no extra margins.
+        ─────────────────────────────────────────────────────────────────── */
+        body.erp-embedded .modern-header,
+        body.erp-embedded .modern-sidebar,
+        body.erp-embedded footer.modern-footer,
+        body.erp-embedded .mobile-bottom-nav,
+        body.erp-embedded #sidebar-overlay {
+            display: none !important;
+        }
+
+        body.erp-embedded .modern-content {
+            margin-left: 0 !important;
+            margin-top: 0 !important;
+            padding: 1rem !important;
+            padding-bottom: 1rem !important;
+            min-height: 100vh;
+        }
+
         /* ERP Heading */
         .erp-heading-wrapper {
             flex: 1;
@@ -1435,7 +1456,7 @@
             }
     </style>
 </head>
-<body>
+<body class="@(Context.Request.Query["embedded"] == "1" ? "erp-embedded" : "")">
     <!-- Loader (hidden by default) -->
     <div id="loader" class="loader-overlay">
         <img src="~/assets/images/loader2.gif" alt="Loading..." class="loader-img">
