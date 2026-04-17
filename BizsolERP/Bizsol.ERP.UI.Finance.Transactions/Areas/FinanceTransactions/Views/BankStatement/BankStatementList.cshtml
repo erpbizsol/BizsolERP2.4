@@ -1,0 +1,116 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Finance.Transactions/css/BankStatement.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Finance.Transactions/js/BankStatementList.js"></script>
+
+<div class="bs-page">
+
+    <!-- ── Page Header ─────────────────────────────────────────────────── -->
+    <div class="bs-header section-entry-animation">
+        <div class="bs-header-top">
+            <div class="bs-header-title-block">
+                <h2 class="bs-header-title">
+                    <i class="fa fa-university me-2" aria-hidden="true"></i>Bank Statement List
+                </h2>
+                <small class="bs-header-sub">View and manage imported bank statement records.</small>
+            </div>
+            <div class="bs-header-actions">
+                <button type="button" id="btnImportNew" class="bs-btn-primary" title="Import new statement">
+                    <i class="fas fa-file-import me-1"></i>Import New
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Filters ─────────────────────────────────────────────────────── -->
+    <div class="bs-card bs-step-card" id="cardFilters">
+        <div class="bs-step-label">
+            <span class="bs-step-no"><i class="fas fa-filter"></i></span>
+            <span>Filters</span>
+        </div>
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-sm-6 col-md-3">
+                <label class="bs-label" for="ddlFilterBank">Bank Name</label>
+                <select id="ddlFilterBank" class="form-control form-control-sm bs-input">
+                    <option value="0">-- All Banks --</option>
+                </select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-2">
+                <label class="bs-label" for="txtFilterBatchNo">Batch No</label>
+                <input type="text" id="txtFilterBatchNo" class="form-control form-control-sm bs-input"
+                       placeholder="e.g. BS20260413..." autocomplete="off" />
+            </div>
+            <div class="col-12 col-sm-6 col-md-2">
+                <label class="bs-label" for="txtFilterFromDate">From Date</label>
+                <input type="date" id="txtFilterFromDate" class="form-control form-control-sm bs-input" autocomplete="off" />
+            </div>
+            <div class="col-12 col-sm-6 col-md-2">
+                <label class="bs-label" for="txtFilterToDate">To Date</label>
+                <input type="date" id="txtFilterToDate" class="form-control form-control-sm bs-input" autocomplete="off" />
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="bs-step-actions">
+                    <button type="button" id="btnSearch" class="bs-btn-primary">
+                        <i class="fas fa-search me-1"></i>Search
+                    </button>
+                    <button type="button" id="btnClearFilter" class="bs-btn-ghost">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Records Table ───────────────────────────────────────────────── -->
+    <div class="bs-card" id="cardList">
+        <div class="bs-step-label">
+            <span class="bs-step-no"><i class="fas fa-table"></i></span>
+            <span>Bank Statement Records</span>
+            <span class="bs-preview-count ms-2" id="lblRecordCount"></span>
+            <button type="button" id="btnRefreshList" class="ms-auto bs-btn-ghost bs-btn-sm" title="Refresh">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+
+        <div class="bs-table-wrapper">
+            <table class="table table-sm bs-preview-table" id="tblStatements">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Bank</th>
+                        <th>Account No</th>
+                        <th>Narration</th>
+                        <th>Chq / Ref No</th>
+                        <th>Value Date</th>
+                        <th class="text-end">Withdrawal (Dr)</th>
+                        <th class="text-end">Deposit (Cr)</th>
+                        <th class="text-end">Closing Balance</th>
+                        <th>Dr / Cr</th>
+                        <th>Batch No</th>
+                        <th>Reconciled</th>
+                    </tr>
+                </thead>
+                <tbody id="tblStatementsBody">
+                    <tr>
+                        <td colspan="13" class="text-center py-3 text-muted">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Loading…
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="bs-tfoot-totals">
+                        <td colspan="7" class="text-end fw-semibold">Totals:</td>
+                        <td class="text-end fw-semibold" id="tdTotalWithdrawal">—</td>
+                        <td class="text-end fw-semibold" id="tdTotalDeposit">—</td>
+                        <td colspan="4"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+</div><!-- /.bs-page -->
