@@ -153,32 +153,18 @@
     }
 
     @@media (max-height: 800px) {
-        #current-stock,
-        #unApproved-planned,
-        #slitted-coil-stock,
-        #dispatch,
-        #slitted,
-        #job-work,
-        #stock-summary {
-            max-height: calc(100vh - 150px);
-        }
+        /* Only restrict the inner table wrapper, NOT the tab pane.
+           Setting max-height on tab panes without overflow clips content. */
         .table-wrapper {
-            min-height: 280px;
+            max-height: calc(100vh - 290px);
+            min-height: 240px;
         }
     }
 
     @@media (max-height: 600px) {
-        #current-stock,
-        #unApproved-planned,
-        #slitted-coil-stock,
-        #dispatch,
-        #slitted,
-        #job-work,
-        #stock-summary {
-            max-height: calc(100vh - 120px);
-        }
         .table-wrapper {
-            min-height: 220px;
+            max-height: calc(100vh - 240px);
+            min-height: 180px;
         }
     }
 
@@ -188,7 +174,7 @@
         border: 1px solid var(--border-color) !important;
         border-radius: 20px;
         box-shadow: var(--shadow-md);
-        overflow: hidden;
+        overflow: visible;   /* was hidden — that clipped scrollable content on small screens */
         position: relative;
     }
 
@@ -201,6 +187,7 @@
         border-radius: 20px 20px 0 0;
         z-index: 1;
         pointer-events: none;
+        overflow: hidden;
     }
 
     #rmStockTabContent > .tab-content {
@@ -527,8 +514,32 @@
     }
 
     @@media (max-width: 767.98px) {
+        /* On mobile the tab panes must NOT be height-constrained — let the
+           page itself scroll. Only the inner table wrapper gets a cap. */
+        #current-stock,
+        #unApproved-planned,
+        #slitted-coil-stock,
+        #dispatch,
+        #slitted,
+        #job-work,
+        #stock-summary {
+            max-height: none !important;
+            overflow-y: visible !important;
+        }
+
+        /* Allow the shell card to grow and the browser to scroll the page */
+        #rmStockTabContent.rms-shell {
+            overflow: visible !important;
+            max-height: none !important;
+        }
+
+        /* Table wrapper handles its own scroll with touch support */
         .table-wrapper {
-            max-height: calc(100vh - 220px);
+            max-height: 55vh;
+            min-height: 180px;
+            overflow-y: auto;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         #rmStockTabs .nav-link {
@@ -790,6 +801,14 @@
                                         <label for="txtToDateJobWork" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
                                         <input type="date" id="txtToDateJobWork" name="txtToDateJobWork" class="box_border form-control form-control-sm" required />
                                     </div>
+                                    <div class="col-12 col-sm-auto">
+                                        <label for="txtStatus" class="col-form-label-sm fw-bold">Status:<span class="text-danger">*</span></label>
+                                        <select id="txtStatus" name="txtStatus" class="box_border form-control form-control-sm" required>
+                                            <option value="All">All</option>
+                                            <option value="Pending">Pending</option>
+                                            <option value="Completed">Completed</option>
+                                        </select>
+                                    </div>
                                     <div class="col-12 col-sm-auto mb-2">
                                         <div><button type="button" onclick="ShowJobWorkList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button></div>
                                     </div>
@@ -829,7 +848,7 @@
                     <div class="tab-pane fade" id="stock-summary" role="tabpanel" aria-labelledby="stock-summary-tab">
                         <div id="tblSummaryData">
                             <div class="row g-2">
-                                <div class="col-12 col-md-5">
+                                <div class="col-12 col-md-7">
                                     <div class="table-responsive">
                                         <div class="table-wrapper">
                                             <table id="SummaryData" class="fixed-width-table table" style="min-width:300px; width: 100%;">
@@ -839,11 +858,12 @@
                                                 </tbody>
                                                 <tfoot>
                                                     <tr>
-                                                        <td colspan="1" class="text-end">Totals</td>
-                                                        <td id="totalNoOFPCCoil" class="text-end">0</td>
-                                                        <td id="totalWeightStock" class="text-end">0.000</td>
-                                                        <td id="totalNoOFPC" class="text-end">0</td>
-                                                        <td id="totalWtStock" class="text-end">0.000</td>
+                                                        <td class="text-end fw-bold">Totals</td>
+                                                        <td id="totalPCSGreterThen" class="text-end">0</td>
+                                                        <td id="totalWeightGreterThen" class="text-end">0.000</td>
+                                                        <td id="totalPCSLessThen" class="text-end">0</td>
+                                                        <td id="totalWeightLessThen" class="text-end">0.000</td>
+                                                        <td id="totalPendingJobWork" class="text-end">0.000</td>
                                                     </tr>
                                                 </tfoot>
                                             </table>
@@ -851,7 +871,7 @@
                                         <div class="paginator" id="paginator-SummaryData"></div>
                                     </div>
                                 </div>
-                                <div class="col-12 col-md-4">
+                                <div class="col-12 col-md-5">
                                     <div class="table-responsive">
                                         <div class="table-wrapper">
                                             <table id="SlittedCoilsStockSummary" class="fixed-width-table table" style="min-width:300px; width: 100%;">

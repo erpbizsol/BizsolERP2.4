@@ -1581,7 +1581,7 @@ function loadTabData(tabId) {
             $('#tblJobWorkData').hide();
             $('#job-work').show();
             setCurrentDateDispatch();
-            loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork);
+            loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, $('#txtStatus').val() || 'All');
             break;
         case '#stock-summary':
             $('#tblReport tbody').empty();
@@ -1745,12 +1745,13 @@ function calculateTotalFooterSlitted(rows) {
 }
 function ShowJobWorkList() {
     G_FromDateValueJobWork = $('#txtFromDateJobWork').val();
-    G_ToDateValueJobWork = $('#txtToDateJobWork').val();
-    loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork);
+    G_ToDateValueJobWork   = $('#txtToDateJobWork').val();
+    var status             = $('#txtStatus').val() || 'All';
+    loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, status);
 }
-function loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork) {
+function loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, Status) {
     Showloader();
-    RMStockService.GetRMStockJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork).then(function (response) {
+    RMStockService.GetRMStockJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, Status).then(function (response) {
         HideLoader();
         if (response.length > 0) {
             response = response.map(item => {
@@ -1769,7 +1770,7 @@ function loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork) {
                 return item;
             });
             $('#tblJobWorkData').show();
-            const stringFilterColumn = ["Entry No","Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %", "Width Loss %", "Party Name"];
+            const stringFilterColumn = ["Entry No", "Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %", "Width Loss %", "Party Name","Job Worker"];
             const numericFilterColumn = [];
             const dateFilterColumn = ["Entry Date"];
             const button = false;
@@ -1816,104 +1817,165 @@ function calculateTotalFooterJobWork(rows) {
     }
 }
 function loadStockSummaryData() {
-    calculateStockSummary(); 
+    calculateStockSummary();
     Showloader();
     RMStockService.GetRMStockSummaryData().then(function (response) {
         HideLoader();
         if (response.length > 0) {
             $('#tblSummaryData').show();
-            const stringFilterColumn = ["Item Name", "No OF PC/Coil", "Total Weight", "No OF PC","Weight"];
-            const numericFilterColumn = [];
-            const dateFilterColumn = [];
-            const button = false;
-            const stringDoubleFilterColumn = [];
-            const showButtons = [];
-            let hiddenColumns = []
+
+            // Actual column names as returned by the API (confirmed from grid display)
+            const COL_ITEM      = 'Item Name';
+            const COL_PCS_GR    = 'PCS/Coil';                     // >= 400 pieces
+            const COL_WT_GR     = 'Total Weight';                  // >= 400 weight
+            const COL_PCS_LT    = 'PCS';                           // < 400 pieces
+            const COL_WT_LT     = 'Weight';                        // < 400 weight
+            const COL_PENDING   = 'Pending Weight';
+
+            const stringFilterColumn  = [COL_ITEM, COL_PCS_GR, COL_WT_GR, COL_PCS_LT, COL_WT_LT, COL_PENDING];
+            const numericFilterColumn = [COL_PCS_GR, COL_WT_GR, COL_PCS_LT, COL_WT_LT, COL_PENDING];
             const columnAlignment = {
-                "Item Name":";width:20px",
-                "No OF PC/Coil":"right;width:20px",
-                "Total Weight":"right;width:20px",
-                "No OF PC":"right;width:20px",
-                "Weight":"right;width:20px",
+                [COL_ITEM]:    ';min-width:130px',
+                [COL_PCS_GR]:  'right;min-width:70px',
+                [COL_WT_GR]:   'right;min-width:100px',
+                [COL_PCS_LT]:  'right;min-width:70px',
+                [COL_WT_LT]:   'right;min-width:100px',
+                [COL_PENDING]: 'right;min-width:130px',
             };
-            calculateTotalFooterStockSummary(response);
-            BizsolCustomFilterGrid.CreateDataTable("table-header-SummaryData", "table-body-SummaryData", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+
+            calculateTotalFooterStockSummary(response, COL_PCS_GR, COL_WT_GR, COL_PCS_LT, COL_WT_LT, COL_PENDING);
+            BizsolCustomFilterGrid.CreateDataTable(
+                'table-header-SummaryData', 'table-body-SummaryData',
+                response, false, [],
+                stringFilterColumn, numericFilterColumn, [], [], [], columnAlignment, false
+            );
+
+            // Inject split group-header row with widths matched to rendered columns
+            setTimeout(function () {
+                var $thead = $('#table-header-SummaryData');
+                if ($thead.find('.rms-group-header').length) return; // guard re-inject
+
+                // Measure actual rendered column widths from the generated header row
+                var $ths = $thead.find('tr:last th');
+                var w0  = ($ths.eq(0).outerWidth() || 130);
+                var w12 = ($ths.eq(1).outerWidth() || 80) + ($ths.eq(2).outerWidth() || 100);
+                var w34 = ($ths.eq(3).outerWidth() || 80) + ($ths.eq(4).outerWidth() || 100);
+                var w5  = ($ths.eq(5).outerWidth() || 130);
+
+                var base = 'background:var(--pm-table-header-gradient);color:#fff;text-align:center;' +
+                           'font-size:12px;font-weight:700;letter-spacing:.04em;white-space:nowrap;padding:5px 10px;';
+
+                var groupRow =
+                    '<tr class="rms-group-header">' +
+                        '<th style="' + base + 'width:' + w0  + 'px;"></th>' +
+                        '<th colspan="2" style="' + base + 'width:' + w12 + 'px;background:rgba(79,70,229,.85);">' +
+                            '&#8805;&nbsp;400&nbsp;Width</th>' +
+                        '<th colspan="2" style="' + base + 'width:' + w34 + 'px;background:rgba(102,126,234,.70);">' +
+                            '&lt;&nbsp;400&nbsp;Width</th>' +
+                        '<th style="' + base + 'width:' + w5  + 'px;"> Job Work</th>' +
+                    '</tr>';
+
+                $thead.prepend(groupRow);
+
+                // The existing CSS has "border: none !important" on thead th elements.
+                // setProperty with 'important' is the only way to override it.
+                var W = '1px solid #ffffff';
+                var F = '1px solid #ffffff';
+
+                // --- Column header row borders ---
+                $ths.eq(0)[0].style.setProperty('border-right', W, 'important'); // after Item Name
+                $ths.eq(1)[0].style.setProperty('border-right', F, 'important'); // PCS/Coil | Total Weight (inner)
+                $ths.eq(2)[0].style.setProperty('border-right', W, 'important'); // after Total Weight (group split)
+                $ths.eq(3)[0].style.setProperty('border-right', F, 'important'); // PCS | Weight (inner)
+                $ths.eq(4)[0].style.setProperty('border-right', W, 'important'); // after Weight (before Pending)
+
+                // --- Group header row borders (same positions) ---
+                var $gThs = $thead.find('.rms-group-header th');
+                $gThs.eq(0)[0].style.setProperty('border-right', W, 'important'); // after Item Name placeholder
+                $gThs.eq(1)[0].style.setProperty('border-right', W, 'important'); // after ≥400 group
+                $gThs.eq(2)[0].style.setProperty('border-right', W, 'important'); // after <400 group
+            }, 80);
+
             PopulateTableForPrint(response);
         } else {
             HideLoader();
             toastr.error('No Data Found');
             $('#tblSummaryData').hide();
         }
-    })
-        .catch(function (error) {
-            HideLoader();
-            toastr.error(error.Msg || 'Error during SummaryData');
-            $('#tblSummaryData').hide();
-
-        });
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error during SummaryData');
+        $('#tblSummaryData').hide();
+    });
 }
 function loadStockSlittedCoilsStockSummary() {
-    calculateStockSummary(); 
+    calculateStockSummary();
     Showloader();
     RMStockService.GetRMStockSlittedCoilsStockSummary().then(function (response) {
         HideLoader();
         if (response.length > 0) {
             $('#tblSummaryData').show();
-            const stringFilterColumn = ["Item Name", "No OF PC/Coil", "Total Weight", "No OF PC"];
-            const numericFilterColumn = [];
-            const dateFilterColumn = [];
-            const button = false;
-            const stringDoubleFilterColumn = [];
-            const showButtons = [];
-            let hiddenColumns = []
+
+            const stringFilterColumn  = ["Item Name"];
+            const numericFilterColumn = ["PCS", "Weight", "Pending on Job Work Weight"];
             const columnAlignment = {
-                "Item Name":";width:20px",
-                "Total Weight":"right;width:20px",
-                "No OF PC":"right;width:20px",
+                "Item Name":                   ";min-width:130px",
+                "PCS":                    "right;min-width:70px",
+                "Weight":                "right;min-width:100px",
+                "Pending on Job Work Weight":  "right;min-width:130px",
             };
-           
-            const TotalColumns = ['No OF PC', 'Total Weight'];
-            BizsolCustomFilterGrid.CreateDataTable("table-header-SlittedCoilsStockSummary", "table-body-SlittedCoilsStockSummary", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, TotalColumns);
+
+            // TotalColumns triggers the auto-total footer row in BizsolCustomFilterGrid
+            const TotalColumns = ['PCS', 'Weight', 'Pending on Job Work Weight'];
+
+            BizsolCustomFilterGrid.CreateDataTable(
+                "table-header-SlittedCoilsStockSummary", "table-body-SlittedCoilsStockSummary",
+                response, false, [],
+                stringFilterColumn, numericFilterColumn, [], [], [], columnAlignment,
+                false, TotalColumns
+            );
             PopulateTableForPrint(response);
         } else {
             HideLoader();
             toastr.error('No Data Found');
             $('#tblSummaryData').hide();
         }
-    })
-        .catch(function (error) {
-            HideLoader();
-            toastr.error(error.Msg || 'Error during SlittedCoilsStockSummary');
-            $('#tblSummaryData').hide();
-
-        });
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error during SlittedCoilsStockSummary');
+        $('#tblSummaryData').hide();
+    });
 }
-function calculateTotalFooterStockSummary(rows) {
+function calculateTotalFooterStockSummary(rows, pcCoilGreterKey, totalWtGreterKey, pcLessThenKey, weightLessKey, pendingKey) {
     try {
-        let totalWeightStock = 0;
-        let totalNoOFPC = 0;
-        let totalNoOFPCCoil = 0;
-        let totalWtStock = 0;
+        // Actual API column names (fallback to confirmed names when called without args)
+        var colPcsGreter  = pcCoilGreterKey  || 'PCS/Coil';
+        var colWtGreter   = totalWtGreterKey || 'Total Weight';
+        var colPcsLess    = pcLessThenKey    || 'PCS';
+        var colWtLess     = weightLessKey    || 'Weight';
+        var colPending    = pendingKey       || 'Pending on Job Work Weight';
+
+        let totalPcsGreter  = 0;
+        let totalWtGreter   = 0;
+        let totalPcsLess    = 0;
+        let totalWtLess     = 0;
+        let totalPending    = 0;
+
         if (rows && rows.length) {
             rows.forEach(function (r) {
-                totalWeightStock += parseFloat(r['Total Weight']) || 0;
-                totalNoOFPCCoil += parseFloat(r['No OF PC/Coil']) || 0;
-                totalNoOFPC += parseFloat(r['No OF PC']) || 0;
-                totalWtStock += parseFloat(r['Weight']) || 0;
+                totalPcsGreter  += parseFloat(r[colPcsGreter])  || 0;
+                totalWtGreter   += parseFloat(r[colWtGreter])   || 0;
+                totalPcsLess    += parseFloat(r[colPcsLess])    || 0;
+                totalWtLess     += parseFloat(r[colWtLess])     || 0;
+                totalPending    += parseFloat(r[colPending])    || 0;
             });
         }
-        if ($('#totalWeightStock').length) {
-            $('#totalWeightStock').text(totalWeightStock.toFixed(3));
-        }
-        if ($('#totalWtStock').length) {
-            $('#totalWtStock').text(totalWtStock.toFixed(3));
-        }
-        if ($('#totalNoOFPCCoil').length) {
-            $('#totalNoOFPCCoil').text(totalNoOFPCCoil);
-        }
-        if ($('#totalNoOFPC').length) {
-            $('#totalNoOFPC').text(totalNoOFPC);
-        }
+
+        if ($('#totalPCSGreterThen').length)  $('#totalPCSGreterThen').text(totalPcsGreter);
+        if ($('#totalWeightGreterThen').length) $('#totalWeightGreterThen').text(totalWtGreter.toFixed(3));
+        if ($('#totalPCSLessThen').length)    $('#totalPCSLessThen').text(totalPcsLess);
+        if ($('#totalWeightLessThen').length) $('#totalWeightLessThen').text(totalWtLess.toFixed(3));
+        if ($('#totalPendingJobWork').length) $('#totalPendingJobWork').text(totalPending.toFixed(3));
     } catch (e) {
     }
 }
@@ -2060,13 +2122,26 @@ function getActiveTabFooterContext() {
         '#slitted-coil-stock': { tableId: 'Slitted_Coil_Stock', calculator: calculateTotalFooterSlitted_Coil_Stock },
         '#slitted': { tableId: 'Slitted', calculator: calculateTotalFooterSlitted },
         '#job-work': { tableId: 'JobWorkData', calculator: calculateTotalFooterJobWork },
-        '#stock-summary': { tableId: 'SummaryData', calculator: calculateTotalFooterStockSummary }
+        '#stock-summary': {
+            tableId: 'SummaryData',
+            calculator: function (rows) {
+                calculateTotalFooterStockSummary(
+                    rows,
+                    'PCS/Coil',
+                    'Total Weight',
+                    'PCS',
+                    'Weight',
+                    'Pending on Job Work Weight'
+                );
+            }
+        }
     };
     return tabContexts[targetTab] || null;
 }
 
 document.addEventListener("DOMContentLoaded", function () {
     setInterval(ChangecolorTr, 1000); 
+    setInterval(ChangecolorTrYeald, 1000); 
 });
 function ChangecolorTr() {
     const tbody = document.getElementById("table-body-UnApproved_Planned");
@@ -2098,6 +2173,45 @@ function ChangecolorTr() {
                 break;
             case (yieldValue >= 99):
                 color = "#07bb72"; 
+                break;
+            default:
+                color = "";
+                break;
+        }
+        tds[statusColIndex].style.backgroundColor = color || "";
+    });
+}
+
+function ChangecolorTrYeald() {
+    const tbody = document.getElementById("table-body-JobWorkData");
+    if (!tbody) return;
+    const statusColIndex = 15;
+
+    const rows = tbody.querySelectorAll("tr");
+    rows.forEach((row) => {
+        const tds = row.querySelectorAll("td");
+        if (tds.length <= statusColIndex) {
+            return;
+        }
+        tds[statusColIndex].style.backgroundColor = "";
+
+        const rawText = tds[statusColIndex].textContent.trim();
+        const yieldValue = parseFloat(rawText);
+
+        if (isNaN(yieldValue)) {
+            return;
+        }
+
+        let color = "";
+        switch (true) {
+            case (yieldValue < 98):
+                color = "#f87171";
+                break;
+            case (yieldValue >= 98 && yieldValue < 99):
+                color = "#ebb861";
+                break;
+            case (yieldValue >= 99):
+                color = "#07bb72";
                 break;
             default:
                 color = "";
