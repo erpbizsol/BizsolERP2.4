@@ -3,8 +3,31 @@ window.escapeId = function escapeId(id) {
     return id.replace(/([\/.:\[\]#@$%^&*()+=,!~`{}'"<>?|\\])/g, '\\$1');
 }
 
+/**
+ * Format a number with Indian comma grouping  e.g. 2,00,000.00
+ * @param {number|string} value    - numeric value
+ * @param {number}        decimals - decimal places (default 2)
+ * @returns {string}
+ */
+window.formatIndianNumber = function formatIndianNumber(value, decimals) {
+    decimals = (decimals === undefined || decimals === null) ? 2 : decimals;
+    var num = parseFloat(value);
+    if (isNaN(num)) return String(value);
+    var fixed = num.toFixed(decimals);
+    var parts = fixed.split('.');
+    var intPart = parts[0];
+    var decPart = parts[1];
+    var sign = '';
+    if (intPart.charAt(0) === '-') { sign = '-'; intPart = intPart.slice(1); }
+    // Indian grouping: last 3 digits, then groups of 2 from right
+    var lastThree = intPart.length > 3 ? intPart.slice(-3) : intPart;
+    var rest = intPart.length > 3 ? intPart.slice(0, intPart.length - 3) : '';
+    var grouped = rest.length > 0 ? rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree : lastThree;
+    return sign + grouped + (decPart !== undefined ? '.' + decPart : '');
+};
+
 const BizsolCustomFilterGrid = {
-    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null, FixedDecimalvalue = null) {
+    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null, FixedDecimalvalue = null, CommaColumns = null) {
         const columns = Object.keys(data[0]);
         const tableId = $('#' + bodyId).closest('table').attr('id');
         renderTableHeader(HiddenColumns, headerId, bodyId, columns, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
@@ -12,6 +35,7 @@ const BizsolCustomFilterGrid = {
         window[`columnAlignment_${bodyId}`] = ColumnAlignment;
         window[`totalColumns_${bodyId}`] = TotalColumns;
         window[`fixedDecimalvalue_${bodyId}`] = FixedDecimalvalue;
+        window[`commaColumns_${bodyId}`] = Array.isArray(CommaColumns) ? CommaColumns : [];
         renderTable(data, bodyId);
         window[`button_${tableId}`] = Button;
         window[`ShowButtons_${bodyId}`] = ShowButtons;
@@ -753,21 +777,33 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
                 ? 'display:none'
                 : `text-align:${alignment}`;
 
-            // Format numeric values based on FixedDecimalvalue parameter
+            // Format numeric values based on FixedDecimalvalue / CommaColumns parameters
             let cellValue = item[key];
             const fixedDecimalConfig = window[`fixedDecimalvalue_${bodyId}`];
+            const commaColumns = window[`commaColumns_${bodyId}`] || [];
 
-            if (cellValue !== null && cellValue !== undefined && cellValue.toString().includes('.')==true && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
-                // Check if FixedDecimalvalue is configured and if current column is in the config
+            const isNumeric = cellValue !== null && cellValue !== undefined
+                              && !isNaN(parseFloat(cellValue)) && isFinite(cellValue);
+            // Determine whether this column needs decimal / comma formatting
+            const needsDecimalFormat = isNumeric && (
+                commaColumns.includes(key) ||
+                (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && fixedDecimalConfig.hasOwnProperty(key)) ||
+                (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') ||
+                (typeof cellValue === 'number' ? String(cellValue).includes('.') : String(cellValue).includes('.'))
+            );
+
+            if (needsDecimalFormat) {
+                let decimalPlaces = 3; // default
                 if (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && fixedDecimalConfig.hasOwnProperty(key)) {
-                    const decimalPlaces = fixedDecimalConfig[key];
-                    cellValue = parseFloat(cellValue).toFixed(decimalPlaces);
+                    decimalPlaces = fixedDecimalConfig[key];
                 } else if (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') {
-                    // If FixedDecimalvalue is a number, apply to all numeric columns
-                    cellValue = parseFloat(cellValue).toFixed(fixedDecimalConfig);
+                    decimalPlaces = fixedDecimalConfig;
+                }
+                // Apply Indian comma formatting if this column is in CommaColumns
+                if (commaColumns.includes(key)) {
+                    cellValue = formatIndianNumber(parseFloat(item[key]), decimalPlaces);
                 } else {
-                    // Default behavior: show 3 decimal places
-                    cellValue = parseFloat(cellValue).toFixed(3);
+                    cellValue = parseFloat(cellValue).toFixed(decimalPlaces);
                 }
             }
 
@@ -829,7 +865,10 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
                 } else if (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') {
                     decimalPlaces = fixedDecimalConfig;
                 }
-                const totalValue = columnTotals[key].toFixed(decimalPlaces);
+                const commaColumns = window[`commaColumns_${bodyId}`] || [];
+                const totalValue = commaColumns.includes(key)
+                    ? formatIndianNumber(columnTotals[key], decimalPlaces)
+                    : columnTotals[key].toFixed(decimalPlaces);
                 cellContent = `<strong>${totalValue}</strong>`;
             }
 
@@ -904,7 +943,10 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
             } else if (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') {
                 decimalPlaces = fixedDecimalConfig;
             }
-            const totalValue = grandTotals[key].toFixed(decimalPlaces);
+            const commaColumns = window[`commaColumns_${bodyId}`] || [];
+            const totalValue = commaColumns.includes(key)
+                ? formatIndianNumber(grandTotals[key], decimalPlaces)
+                : grandTotals[key].toFixed(decimalPlaces);
             cellContent = `<strong>${totalValue}</strong>`;
         }
 
