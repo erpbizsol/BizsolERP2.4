@@ -5,6 +5,8 @@ var parsedRows    = [];
 var fileHeaders   = [];   
 var columnMappers = {};   
 var deleteBatchNo = '';
+/** Full grid from the last successful parse (incl. header/metadata) — used to re-check bank / account on import. */
+var lastParsedFullRows = null;
 
 var FIELD_DEFS = [
     { field: 'TxnDate',
@@ -64,13 +66,16 @@ function LoadBankMasterDropdown() {
                 $.each(list, function (i, b) {
                     var code    = b.Code || b.BankMaster_Code || 0;
                     var name    = (b.BankName || '').trim();
-                    var short   = b.BankShortCode ? ' (' + b.BankShortCode + ')' : '';
+                    var shortC  = (b.BankShortCode || '').trim();
+                    var short   = shortC ? ' (' + shortC + ')' : '';
                     var account = (b.AccountNo || '').trim();
                     $ddl.append(
                         $('<option></option>')
                             .val(code)
                             .text(name + short)
                             .attr('data-account', account)
+                            .attr('data-bank-name', name)
+                            .attr('data-bank-short', shortC)
                     );
                 });
             }
@@ -205,54 +210,64 @@ function BindEvents() {
 
     // Result modal close button
     $('#btnResultClose').on('click', function () { CloseResultModal(); });
+
+    // File format — changing type clears the current file so extension and format stay aligned
+    $('#ddlFileType').on('change', function () {
+        $('#fileStatementUpload').val('');
+        $('#lblFileName').text('No file chosen');
+        $('#btnParseFile').prop('disabled', true);
+        ResetPreview();
+    });
 }
 
-// ── Parse CSV file ────────────────────────────────────────────────────────────
+// ── Parse statement file (CSV / TXT or Excel) ─────────────────────────────────
 function ParseFile() {
     var file = $('#fileStatementUpload')[0].files[0];
     if (!file) { toastr.warning('Please select a file first.'); return; }
 
     if (!ValidateStep1()) return;
+    if (!ValidateFileFormatMatchesExtension(file)) return;
 
+    var fmt = $('#ddlFileType').val() || 'csv';
+    if (fmt === 'excel') {
+        ParseExcelFile(file);
+    } else {
+        ParseCsvFile(file);
+    }
+}
+
+function ValidateFileFormatMatchesExtension(file) {
+    var fmt = $('#ddlFileType').val() || 'csv';
+    var ext = (file.name.split('.').pop() || '').toLowerCase();
+    var isExcel = ext === 'xls' || ext === 'xlsx';
+    var isCsvish = ext === 'csv' || ext === 'txt';
+
+    if (fmt === 'excel' && !isExcel) {
+        toastr.warning('File Format is Excel, but the selected file is not .xls or .xlsx.');
+        return false;
+    }
+    if (fmt === 'csv' && isExcel) {
+        toastr.warning('File Format is CSV, but the selected file is Excel. Switch File Format to Excel or pick a CSV/TXT file.');
+        return false;
+    }
+    if (fmt === 'csv' && !isCsvish) {
+        toastr.warning('Please choose a .csv or .txt file, or change File Format to Excel.');
+        return false;
+    }
+    return true;
+}
+
+function ParseCsvFile(file) {
     Showloader && Showloader();
     var reader = new FileReader();
     reader.onload = function (e) {
-        HideLoader && HideLoader();
         try {
             var text = e.target.result;
             var rows = ParseCSV(text);
-
-            if (!rows || rows.length < 2) {
-                toastr.error('File appears to be empty or has only a header row.');
-                return;
-            }
-
-            // Auto-detect the real header row — many bank CSVs have 5-20 lines of
-            // account metadata before the actual column headers (Date, Narration, …)
-            var headerIdx = FindHeaderRow(rows);
-            fileHeaders   = rows[headerIdx];
-
-            var dataRows = rows.slice(headerIdx + 1).filter(function (r) {
-                // Drop completely blank rows
-                if (!r.some(function (c) { return c && c.trim() !== ''; })) return false;
-                // Drop bank separator / filler rows (all cells are only *, -, =, _, ~, / etc.)
-                return !IsGarbageRow(r);
-            });
-
-            if (!dataRows.length) {
-                toastr.error('No data rows found after the header.');
-                return;
-            }
-
-            parsedRows = dataRows;
-            BuildColumnMappingUI(fileHeaders);
-            AutoMapColumns(fileHeaders);
-            RenderPreviewTable();
-            $('#cardStep2').show();
-            $('#cardStep1').hide();
-
+            FinalizeStatementParse(rows);
         } catch (ex) {
-            toastr.error('Failed to parse file: ' + ex.message);
+            HideLoader && HideLoader();
+            toastr.error('Failed to parse CSV: ' + ex.message);
         }
     };
     reader.onerror = function () {
@@ -260,6 +275,181 @@ function ParseFile() {
         toastr.error('Failed to read file.');
     };
     reader.readAsText(file);
+}
+
+function ParseExcelFile(file) {
+    if (typeof window.XLSX === 'undefined') {
+        toastr.error('Excel reader (SheetJS) is not loaded. Refresh the page and try again.');
+        return;
+    }
+    Showloader && Showloader();
+    var reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            var data = new Uint8Array(e.target.result);
+            var wb = window.XLSX.read(data, { type: 'array', cellDates: true });
+            if (!wb.SheetNames || !wb.SheetNames.length) {
+                HideLoader && HideLoader();
+                toastr.error('The workbook has no sheets.');
+                return;
+            }
+            var ws = wb.Sheets[wb.SheetNames[0]];
+            var rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+            FinalizeStatementParse(rows);
+        } catch (ex) {
+            HideLoader && HideLoader();
+            toastr.error('Failed to parse Excel: ' + ex.message);
+        }
+    };
+    reader.onerror = function () {
+        HideLoader && HideLoader();
+        toastr.error('Failed to read file.');
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+/** Normalise ragged rows and cell values to trimmed strings (dates → DD/MM/YY). */
+function NormalizeStatementGrid(rows) {
+    if (!rows || !rows.length) return [];
+    return rows.map(function (row) {
+        if (!row) return [];
+        return row.map(function (cell) {
+            if (cell == null || cell === '') return '';
+            if (Object.prototype.toString.call(cell) === '[object Date]') {
+                var d = cell.getDate();
+                var mo = cell.getMonth() + 1;
+                var y = cell.getFullYear();
+                var pad = function (n) { return String(n).padStart(2, '0'); };
+                return pad(d) + '/' + pad(mo) + '/' + String(y).slice(-2);
+            }
+            return String(cell).trim();
+        });
+    });
+}
+
+function JoinRowsForIdentityScan(rows, maxRows) {
+    var lim = Math.min(rows.length, maxRows || 55);
+    var parts = [];
+    for (var i = 0; i < lim; i++) {
+        var r = rows[i];
+        if (!r) continue;
+        for (var j = 0; j < r.length; j++) {
+            var c = r[j];
+            if (c != null && String(c).trim() !== '') parts.push(String(c));
+        }
+    }
+    return parts.join(' ');
+}
+
+function digitsOnly(s) {
+    return (s || '').replace(/\D/g, '');
+}
+
+function extractAccountFromStatement(rows) {
+    var blob = JoinRowsForIdentityScan(rows, 60);
+    var patterns = [
+        /account\s*(?:number|no\.?)?\s*[:#.\s]+\s*([0-9][0-9\s\-]{7,22})/i,
+        /a\/\s*c\s*(?:number|no\.?)?\s*[:#.\s]*\s*([0-9][0-9\s\-]{7,22})/i,
+        /\bacct\s*no\.?\s*[:#.\s]*\s*([0-9][0-9\s\-]{7,22})/i
+    ];
+    for (var p = 0; p < patterns.length; p++) {
+        var m = blob.match(patterns[p]);
+        if (m) return m[1].replace(/\s/g, '').replace(/-/g, '');
+    }
+    return null;
+}
+
+function getSelectedBankContext() {
+    var $opt = $('#ddlBankMaster option:selected');
+    return {
+        name: ($opt.data('bank-name') || '').trim() || ($opt.text() || '').trim(),
+        shortCode: ($opt.data('bank-short') || '').trim()
+    };
+}
+
+function bankNameFromFileMatchesSelection(rows) {
+    var blobLower = JoinRowsForIdentityScan(rows, 65).toLowerCase();
+    var ctx = getSelectedBankContext();
+
+    if (ctx.shortCode && ctx.shortCode.length >= 3) {
+        var sc = ctx.shortCode.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (sc.length >= 3 && blobLower.indexOf(sc) >= 0) return true;
+    }
+
+    var bankLabel = (ctx.name || '').split('(')[0].trim();
+    var words = (bankLabel.match(/[a-z0-9]+/gi) || []).map(function (w) { return w.toLowerCase(); });
+    var stop = { bank: true, ltd: true, limited: true, the: true, of: true, and: true, co: true };
+    var keywords = words.filter(function (w) { return w.length >= 3 && !stop[w]; });
+    if (!keywords.length) keywords = words.filter(function (w) { return w.length >= 4; });
+    if (!keywords.length) keywords = words.filter(function (w) { return w.length >= 2; });
+    if (!keywords.length) return false;
+
+    return keywords.every(function (kw) { return blobLower.indexOf(kw) >= 0; });
+}
+
+function ValidateStatementIdentity(rows) {
+    var expectedAcct = digitsOnly($('#txtAccountNumber').val());
+    if (!expectedAcct) {
+        toastr.warning('Please enter the account number.');
+        $('#txtAccountNumber').focus();
+        return false;
+    }
+
+    var fileAcct = extractAccountFromStatement(rows);
+    if (!fileAcct) {
+        toastr.error('Could not read an account number from the statement header. Check the file or your File Format selection.');
+        return false;
+    }
+    if (digitsOnly(fileAcct) !== expectedAcct) {
+        toastr.error('The account number in the file does not match the Account Number you entered. Import is not allowed.');
+        return false;
+    }
+
+    if (!bankNameFromFileMatchesSelection(rows)) {
+        toastr.error('The bank details in the file do not match the Bank you selected. Import is not allowed.');
+        return false;
+    }
+    return true;
+}
+
+function FinalizeStatementParse(rawRows) {
+    HideLoader && HideLoader();
+    try {
+        var rows = NormalizeStatementGrid(rawRows);
+
+        if (!rows || rows.length < 2) {
+            toastr.error('File appears to be empty or has only a header row.');
+            return;
+        }
+
+        if (!ValidateStatementIdentity(rows)) return;
+
+        lastParsedFullRows = rows;
+
+        var headerIdx = FindHeaderRow(rows);
+        fileHeaders = rows[headerIdx];
+
+        var dataRows = rows.slice(headerIdx + 1).filter(function (r) {
+            if (!r.some(function (c) { return c && String(c).trim() !== ''; })) return false;
+            return !IsGarbageRow(r);
+        });
+
+        if (!dataRows.length) {
+            toastr.error('No data rows found after the header.');
+            lastParsedFullRows = null;
+            return;
+        }
+
+        parsedRows = dataRows;
+        BuildColumnMappingUI(fileHeaders);
+        AutoMapColumns(fileHeaders);
+        RenderPreviewTable();
+        $('#cardStep2').show();
+        $('#cardStep1').hide();
+    } catch (ex) {
+        lastParsedFullRows = null;
+        toastr.error('Failed to process file: ' + ex.message);
+    }
 }
 
 // ── CSV parser — handles quoted fields and common delimiters ──────────────────
@@ -338,14 +528,14 @@ function BuildColumnMappingUI(headers) {
 // Returns true for rows whose non-empty cells consist entirely of non-data
 // characters like *** ---- === ~~~ (common bank statement dividers).
 function IsGarbageRow(row) {
-    var nonEmpty = row.filter(function (c) { return (c || '').trim() !== ''; });
+    var nonEmpty = row.filter(function (c) { return String(c || '').trim() !== ''; });
     if (!nonEmpty.length) return true;
 
     // Characters that, when a cell contains ONLY them, mark it as filler
     var garbageRe = /^[*\-=_~.\/\\| \t]+$/;
 
     var garbageCount = nonEmpty.filter(function (c) {
-        return garbageRe.test((c || '').trim());
+        return garbageRe.test(String(c || '').trim());
     }).length;
 
     // Row is garbage when ≥ 70 % of its non-empty cells are filler chars
@@ -369,7 +559,7 @@ function FindHeaderRow(rows) {
     for (var i = 0; i < limit; i++) {
         var score = 0;
         rows[i].forEach(function (cell) {
-            var lower = (cell || '').toLowerCase().trim();
+            var lower = String(cell || '').toLowerCase().trim();
             if (!lower) return;
             headerKeywords.forEach(function (kw) {
                 if (lower === kw || lower.indexOf(kw) >= 0) score++;
@@ -502,6 +692,11 @@ function DoImport() {
     if (!checked.length) { toastr.warning('Please select at least one row to import.'); return; }
 
     if (!ValidateStep1()) return;
+
+    if (!lastParsedFullRows || !ValidateStatementIdentity(lastParsedFullRows)) {
+        toastr.error('The statement file no longer matches the selected bank or account number. Go back, correct the values, and parse again.');
+        return;
+    }
 
     var bankCode  = parseInt($('#ddlBankMaster').val() || '0', 10);
     var accountNo = $('#txtAccountNumber').val().trim();
@@ -636,6 +831,7 @@ function ResetPreview() {
     parsedRows    = [];
     fileHeaders   = [];
     columnMappers = {};
+    lastParsedFullRows = null;
     $('#divColumnMapping').hide();
     $('#tblPreviewBody').empty();
     $('#cardStep2').hide();

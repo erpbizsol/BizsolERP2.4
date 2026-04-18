@@ -442,6 +442,65 @@
         color: var(--text-primary);
     }
 
+    /* Checkbox cells: same vertical rhythm as label + text field */
+    .uom-fg.uom-fg-check {
+        min-height: 0;
+    }
+
+    .uom-check-row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 42px;
+        padding: 10px 13px;
+        margin-top: auto;
+        margin-left: 0;
+        margin-right: 0;
+        margin-bottom: 0;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        background: var(--white-bg);
+        cursor: pointer;
+        user-select: none;
+        box-sizing: border-box;
+        transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+
+    .uom-check-row:hover {
+        border-color: #c7d2fe;
+        background: #fafbff;
+    }
+
+    .uom-check-row:focus-within {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
+    }
+
+    .uom-check-row .uom-check-text {
+        flex: 1;
+        min-width: 0;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-dark);
+        line-height: 1.35;
+    }
+
+    .uom-fg input[type="checkbox"].uom-checkbox {
+        width: 20px;
+        height: 20px;
+        min-width: 20px;
+        accent-color: #4f46e5;
+        cursor: pointer;
+        flex-shrink: 0;
+        margin: 0;
+    }
+
+    .uom-fg.uom-span-full {
+        grid-column: 1 / -1;
+    }
+
     .uom-fg input[type="text"],
     .uom-fg input[type="number"],
     .uom-fg select {
@@ -528,6 +587,23 @@
     #uomDetailPanel.uom-readonly .uom-fg select {
         background: var(--light-bg);
         cursor: default;
+    }
+
+    #uomDetailPanel.uom-readonly .uom-check-row {
+        cursor: default;
+        background: var(--light-bg);
+        border-color: var(--border-color);
+        pointer-events: none;
+    }
+
+    #uomDetailPanel.uom-readonly .uom-check-row:hover {
+        background: var(--light-bg);
+        border-color: var(--border-color);
+    }
+
+    #uomDetailPanel.uom-readonly .uom-fg input[type="checkbox"].uom-checkbox {
+        cursor: default;
+        opacity: 0.9;
     }
 
     #uomDetailPanel.uom-readonly .select2-container--default .select2-selection--single {
@@ -718,16 +794,32 @@
             <div class="uom-ci-po-step-body">
                 <div class="uom-form-grid">
                     <div class="uom-fg">
-                        <label for="txtUOM">UOM Name <span class="text-danger">*</span></label>
-                        <input type="text" id="txtUOM" autocomplete="off" maxlength="100" placeholder="e.g. KG, MTR, PCS" />
+                        <label for="txtUOM">UOM Desp <span class="text-danger">*</span></label>
+                        <input type="text" id="txtUOM" autocomplete="off" maxlength="100" placeholder="e.g. MR, KG, PCS" />
                     </div>
                     <div class="uom-fg">
-                        <label for="ddlGSTUOM">GST UOM <span class="text-danger">*</span></label>
-                        <select id="ddlGSTUOM"></select>
+                        <label for="txtGSTUOM">GST UOM Desp <span class="text-danger">*</span></label>
+                        <input type="text" id="txtGSTUOM" autocomplete="off" maxlength="50" placeholder="e.g. MTR" />
                     </div>
                     <div class="uom-fg">
-                        <label for="txtDecimalPoints">Decimal Points <span class="text-danger">*</span></label>
+                        <label for="txtDecimalPoints">Digits After Decimal <span class="text-danger">*</span></label>
                         <input type="text" id="txtDecimalPoints" inputmode="numeric" maxlength="1" placeholder="0–4" autocomplete="off" />
+                    </div>
+                    <div class="uom-fg">
+                        <label for="txtLengthTypes">Length Type (comma separated)</label>
+                        <input type="text" id="txtLengthTypes" autocomplete="off" maxlength="250" placeholder="e.g. MTR, KG" />
+                    </div>
+                    <div class="uom-fg uom-fg-check">
+                        <label class="uom-check-row" for="chkLengthTypeMandatory">
+                            <input type="checkbox" id="chkLengthTypeMandatory" class="uom-checkbox" />
+                            <span class="uom-check-text">Length Type Mandatory</span>
+                        </label>
+                    </div>
+                    <div class="uom-fg uom-fg-check">
+                        <label class="uom-check-row" for="chkIsMasterPacking">
+                            <input type="checkbox" id="chkIsMasterPacking" class="uom-checkbox" />
+                            <span class="uom-check-text">Is Master Packing</span>
+                        </label>
                     </div>
                 </div>
             </div>
