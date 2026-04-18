@@ -312,6 +312,32 @@ select.im-input {
     margin-bottom: 14px;
 }
 
+/* Subproject multi-select (Select2; same UX as Sub Project Master GRN Check) */
+.um-sp2-wrap .select2-container { width: 100% !important; }
+.um-sp2-wrap .select2-container--default .select2-selection--multiple {
+    min-height: 40px;
+    border-radius: 9px;
+    border: 1.5px solid #dde0ee !important;
+    background: #f8f9fc;
+    padding: 2px 4px;
+}
+.um-sp2-wrap .select2-container--default.select2-container--focus .select2-selection--multiple,
+.um-sp2-wrap .select2-container--default.select2-container--open .select2-selection--multiple {
+    border-color: #5b5ef4 !important;
+    box-shadow: 0 0 0 3px rgba(91,94,244,0.12);
+    background: #fff;
+}
+.um-sp2-wrap .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    border-radius: 6px;
+    border: 1px solid #c7d2fe;
+    background: #eef2ff;
+    font-size: 12px;
+}
+.um-sp2-wrap .select2-container--default .select2-selection--multiple .select2-selection__placeholder {
+    color: #94a3b8;
+    font-size: 13px;
+}
+
 /* ── Email Settings Button ── */
 .um-btn-email {
     width: 100%; padding: 9px 14px; border-radius: 9px; margin-top: auto;
@@ -868,6 +894,10 @@ select.im-input {
                         <option value="">— Select Company —</option>
                     </select>
                 </div>
+                <div class="im-form-group um-sp2-wrap">
+                    <label for="ddlUserSubProjects">Subproject</label>
+                    <select id="ddlUserSubProjects" multiple="multiple" style="width:100%;"></select>
+                </div>
             </div>
 
 
@@ -949,6 +979,13 @@ select.im-input {
                     <div class="im-view-field-info">
                         <div class="im-view-field-label">Default Company</div>
                         <div class="im-view-field-value" id="vf_Company">—</div>
+                    </div>
+                </div>
+                <div class="im-view-field">
+                    <div class="im-view-field-icon"><i class="fas fa-diagram-project"></i></div>
+                    <div class="im-view-field-info">
+                        <div class="im-view-field-label">Subproject</div>
+                        <div class="im-view-field-value" id="vf_SubProjects">—</div>
                     </div>
                 </div>
             </div>
