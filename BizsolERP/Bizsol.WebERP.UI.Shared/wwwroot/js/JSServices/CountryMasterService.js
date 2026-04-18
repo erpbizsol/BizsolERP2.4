@@ -10,32 +10,32 @@ function authUserCode() {
     }
 }
 
-const StateMasterService = {
-    GetStateMasterList: function GetStateMasterList(CountryName) {
+const CountryMasterService = {
+    GetCountryMasterList: function GetCountryMasterList() {
+        const Mode = 'LOCATE';
         const URL =
-            UrlService.API_ENDPOINT_STATE +
-            `/GetStateList?CountryName=${encodeURIComponent(CountryName || 'All')}&UserId=${encodeURIComponent(authUserCode())}`;
+            UrlService.API_ENDPOINT_COUNTRY + `/GetCountryMasterList?Mode=${encodeURIComponent(Mode)}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });
     },
-    GetStateMasterByCode: function GetStateMasterByCode(code) {
-        const URL = UrlService.API_ENDPOINT_STATE + '/' + encodeURIComponent(code);
+    GetCountryMasterByCode: function GetCountryMasterByCode(code) {
+        const URL = UrlService.API_ENDPOINT_COUNTRY + '/' + encodeURIComponent(code);
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });
     },
-    SaveStateMaster: function SaveStateMaster(data) {
-        const URL = UrlService.API_ENDPOINT_STATE + '/SaveStateMaster';
+    SaveCountryMaster: function SaveCountryMaster(data) {
+        const URL = UrlService.API_ENDPOINT_COUNTRY + '/SaveCountryMaster';
         return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(data)).then(function (value) {
             return value;
         });
     },
-    DeleteStateMaster: function DeleteStateMaster(code, reason) {
+    DeleteCountryMaster: function DeleteCountryMaster(code, reason) {
         const userCode = authUserCode();
         const URL =
-            UrlService.API_ENDPOINT_STATE +
-            '/DeleteStateMaster?Code=' +
+            UrlService.API_ENDPOINT_COUNTRY +
+            '/DeleteCountryMaster?Code=' +
             encodeURIComponent(code) +
             '&UserMaster_Code=' +
             encodeURIComponent(userCode) +
@@ -48,4 +48,4 @@ const StateMasterService = {
     },
 };
 
-export { StateMasterService };
+export { CountryMasterService };
