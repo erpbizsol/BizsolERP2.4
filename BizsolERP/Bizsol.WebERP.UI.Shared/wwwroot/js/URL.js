@@ -142,6 +142,10 @@ let UrlService = {
 
     //Finance Transactions API Service EndPoints
     API_ENDPOINT_BANK_STATEMENT: `${environment.BASE_URL}/BankStatement`
+    API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL: `${environment.BASE_URL}/ExpenseEntryLevelsApproval`,
+    API_ENDPOINT_GROUPMASTER: `${environment.BASE_URL}/Group`,
+    API_ENDPOINT_USERMASTER: `${environment.BASE_URL}/UserMaster`,
+    API_ENDPOINT_USERRIGHTDASHBOARD: `${environment.BASE_URL}/UserRightDashboard`
 }
 
 export { UrlService  }

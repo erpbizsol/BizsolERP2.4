@@ -870,7 +870,7 @@
 ════════════════════════════════════════════════════════ -->
 <div class="modal fade pm-modal" id="dvSubProjectModal" tabindex="-1" role="dialog"
      aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width:700px;">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width:780px;">
         <div class="modal-content">
 
             <div class="modal-header">
@@ -925,6 +925,12 @@
                             <div class="pm-fg">
                                 <label for="txtEstimatedDays">Est. Days <span class="text-danger">*</span></label>
                                 <input type="number" id="txtEstimatedDays" autocomplete="off" min="0" placeholder="0" style="text-align:right;" />
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="pm-fg">
+                                <label for="ddlGRNCheckUsers">GRN Check</label>
+                                <select id="ddlGRNCheckUsers" multiple="multiple" style="width:100%;"></select>
                             </div>
                         </div>
                         </div>
@@ -1013,6 +1019,11 @@
                     <div class="pm-view-row">
                         <span class="pm-view-lbl">Estimated Days</span>
                         <span class="pm-view-val" id="viewEstDays">—</span>
+                    </div>
+                    <div class="pm-view-divider"></div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">GRN Check</span>
+                        <span class="pm-view-val" id="viewGRNCheckUsers">—</span>
                     </div>
                     <div class="pm-view-divider"></div>
                     <div class="pm-view-row" style="align-items:flex-start;">

@@ -450,6 +450,17 @@
         border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.15); outline: none;
     }
     .bts-panel .select2-container--default .select2-selection--single .select2-selection__placeholder { color: #94a3b8; }
+    /* ── VENDOR ADD BUTTON ───────────────────────────── */
+    .vendor-add-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px; border-radius: 8px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none; color: #fff; cursor: pointer; flex-shrink: 0;
+        font-size: 0.85rem; box-shadow: 0 2px 8px rgba(102,126,234,0.35);
+        transition: all 0.18s;
+    }
+    .vendor-add-btn:hover { transform: scale(1.12); box-shadow: 0 4px 12px rgba(102,126,234,0.5); }
+
     /* ── PAYMENT TERMS ADD BUTTON ──────────────────── */
     .pt-add-btn {
         display: inline-flex; align-items: center; justify-content: center;
@@ -572,8 +583,13 @@
                         </div>
                         <div class="po-field-row">
                             <span class="po-field-lbl">Vendor Name <span class="req">*</span></span>
-                            <div class="po-field-ctrl">
-                                <select id="frmDdlVendor" class="form-control form-control-sm"></select>
+                            <div class="po-field-ctrl d-flex align-items-center gap-2">
+                                <div style="flex:1;min-width:0;">
+                                    <select id="frmDdlVendor" class="form-control form-control-sm"></select>
+                                </div>
+                                <button type="button" class="vendor-add-btn" onclick="OpenVendorModal()" title="Add New Vendor">
+                                    <i class="fa fa-plus"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -917,11 +933,25 @@
         <a  class="btn-po-cancel" onclick="ClosePOForm()">
             <i class="fa fa-arrow-left me-1"></i>Back
         </a>
+        <div style="position:relative;display:inline-flex;">
+            <a class="btn-po-cancel" onclick="openPOAttachmentControl()" title="Attachments"
+                    style="background:linear-gradient(135deg,#0ea5e9,#0284c7);">
+                <i class="fa fa-paperclip me-1"></i> Attachment
+            </a>
+            <span id="poTempAttachBadge"
+                  style="display:none;position:absolute;top:-7px;right:-7px;
+                         min-width:18px;height:18px;border-radius:9px;
+                         background:#ef4444;color:#fff;font-size:0.68rem;font-weight:800;
+                         align-items:center;justify-content:center;
+                         padding:0 4px;border:2px solid #fff;z-index:10;">0</span>
+        </div>
         <a  class="btn-po-save" onclick="SavePO()">
             <i class="fa fa-save me-2"></i>Save Purchase Order
         </a>
     </div>
 </div>
+
+<div id="PurchaseOrderStore_AttachmentControlmodal"></div>
 
 <!-- ══════════════════════════════════════════════════
      DELETE MODAL
@@ -1186,6 +1216,84 @@
                     <i class="fa fa-save me-1"></i>Save
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     ADD VENDOR MODAL (iframe)
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalAddVendor" tabindex="-1" aria-labelledby="modalAddVendorLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:96vw;width:96vw;">
+        <div class="modal-content" style="height:90vh;border-radius:16px;overflow:hidden;border:none;display:flex;flex-direction:column;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:12px 18px;flex-shrink:0;">
+                <h5 class="modal-title mb-0" id="modalAddVendorLabel" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-user-tie me-2"></i>Add New Vendor
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="flex:1;overflow:hidden;">
+                <iframe id="iframeVendorMaster"
+                        src=""
+                        style="width:100%;height:100%;border:none;display:block;"
+                        title="Vendor Master">
+                </iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     PRINT OPTIONS MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalPrintOptions" tabindex="-1" aria-labelledby="modalPrintOptionsLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;width:calc(100% - 24px);margin:auto;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+
+            <div class="modal-header" style="background:linear-gradient(135deg,#1a2a6c,#4f46e5);color:#fff;border:none;padding:14px 20px;">
+                <h5 class="modal-title mb-0" id="modalPrintOptionsLabel" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-print me-2"></i>Print Options
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body" style="padding:20px 22px;">
+
+                <!-- Checkbox: General Terms & Conditions -->
+                <div class="form-check" style="margin-bottom:10px;">
+                    <input class="form-check-input" type="checkbox" id="chkIncludeGeneralTerms" checked
+                           style="width:1.1em;height:1.1em;margin-top:3px;cursor:pointer;" />
+                    <label class="form-check-label" for="chkIncludeGeneralTerms"
+                           style="font-size:0.85rem;font-weight:600;color:#1e293b;cursor:pointer;padding-left:4px;">
+                        Include General Terms &amp; Conditions
+                    </label>
+                    <div style="font-size:0.75rem;color:#64748b;margin-top:3px;padding-left:26px;">
+                        <i class="fa fa-info-circle me-1 text-primary"></i>
+                        Terms are auto-selected based on Work Type:<br>
+                        <b>Goods</b> &rarr; Purchase Conditions &nbsp;|&nbsp;
+                        <b>Service/Work</b> &rarr; Work Order Conditions
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer" style="border:none;padding:10px 20px 16px;background:#fafafa;gap:8px;justify-content:flex-end;flex-wrap:wrap;justify-content:center;">
+                <a  class="btn btn-secondary btn-sm" data-bs-dismiss="modal"
+                        style="border:none;color:#fff;
+                               border-radius:8px;padding:7px 18px;font-size:0.82rem;font-weight:700;
+                               box-shadow:0 3px 10px rgba(2,132,199,0.3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;">
+                    <i class="fa fa-times me-1"></i>Cancel
+                </a>
+                <a  onclick="ConfirmPrintPO()"
+                        style="background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;color:#fff;
+                               border-radius:8px;padding:7px 18px;font-size:0.82rem;font-weight:700;
+                               box-shadow:0 3px 10px rgba(2,132,199,0.3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;">
+                    <i class="fa fa-search-plus me-1"></i>Preview / Print
+                </a>
+            </div>
+
         </div>
     </div>
 </div>

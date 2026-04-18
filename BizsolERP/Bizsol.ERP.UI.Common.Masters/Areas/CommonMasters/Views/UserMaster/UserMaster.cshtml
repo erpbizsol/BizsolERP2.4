@@ -1,0 +1,1012 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.im-page-wrapper {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 0px 18px 30px;
+    min-height: 100%;
+    background: #f1f3fb;
+}
+
+/* ── Main Card ── */
+.im-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e5e7f0;
+    box-shadow: 0 4px 24px rgba(99,102,241,0.09), 0 1px 4px rgba(0,0,0,0.04);
+    overflow: hidden;
+}
+
+/* ── Card Header ── */
+.im-card-header {
+    background: linear-gradient(130deg, #5b5ef4 0%, #8b5cf6 55%, #a855f7 100%);
+    padding: 5px 26px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+    position: relative; overflow: hidden;
+}
+.im-card-header::before {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 160px; height: 160px; border-radius: 50%;
+    background: rgba(255,255,255,0.07); pointer-events: none;
+}
+.im-card-header::after {
+    content: ''; position: absolute; bottom: -50px; right: 90px;
+    width: 110px; height: 110px; border-radius: 50%;
+    background: rgba(255,255,255,0.05); pointer-events: none;
+}
+.im-header-left { display: flex; align-items: center; gap: 14px; position: relative; z-index: 1; }
+.im-header-icon {
+    width: 46px; height: 46px; border-radius: 13px;
+    background: rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: #fff; flex-shrink: 0;
+}
+.im-header-title { color: #fff; font-size: 18px; font-weight: 700; line-height: 1.2; }
+.im-header-sub   { color: rgba(255,255,255,0.68); font-size: 12px; margin-top: 2px; }
+
+.im-btn-new {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 20px; border-radius: 999px;
+    border: 2px solid rgba(255,255,255,0.48);
+    background: rgba(255,255,255,0.14);
+    color: #fff; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.14s;
+    white-space: nowrap; position: relative; z-index: 1;
+}
+.im-btn-new:hover { background: rgba(255,255,255,0.26); border-color: rgba(255,255,255,0.80); transform: translateY(-1px); }
+
+/* ── Card Body ── */
+.im-card-body { padding: 18px 20px 26px; }
+
+/* ── Grid ── */
+.im-table-wrapper {
+    border-radius: 12px; border: 1px solid #e4e7f0;
+    height: 388px; overflow-x: auto; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: 0 2px 12px rgba(91,94,244,0.06);
+    background: #fff;
+}
+.im-table-wrapper thead th { position: sticky; top: 0; z-index: 10; }
+.im-table-wrapper table { width: 100%; border-collapse: collapse; min-width: 700px; }
+
+th {
+    background: linear-gradient(90deg, #6f5bf5 0%, #7c6ef7 100%) !important;
+    color: #fff !important; font-size: 11.5px !important; font-weight: 700 !important;
+    padding: 5px 14px !important; white-space: nowrap; cursor: default;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    border-right: 1px solid rgba(255,255,255,0.12) !important;
+}
+th:first-child { border-radius: 12px 0 0 0 !important; }
+th:last-child  { border-radius: 0 12px 0 0 !important; border-right: none !important; }
+th:hover { background: linear-gradient(90deg, #e6091f 0%, #6b5ee6 100%) !important; }
+
+td {
+    padding: 5px 10px !important; font-size: 13px; color: #374151;
+    border-bottom: 1px solid #f0f2f9; vertical-align: middle;
+    border-right: 1px solid #f5f6fb; white-space: nowrap;
+}
+td:last-child { border-right: none; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) { background: #f8f9ff; }
+tbody tr:nth-child(odd)  { background: #ffffff; }
+tbody tr:hover { background: linear-gradient(90deg, #eef0ff, #f3f4ff) !important; transition: background 0.15s; }
+tbody tr:hover td { color: #1e1b4b; }
+
+.im-btn-view, .im-btn-edit, .im-btn-delete {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 6px;
+    border: none; cursor: pointer; transition: all 0.13s;
+    margin-right: 2px; font-size: 11px;
+}
+.im-btn-view   { background: #ecfeff; color: #0891b2; }
+.im-btn-edit   { background: #eef2ff; color: #5b5ef4; }
+.im-btn-delete { background: #fef2f2; color: #ef4444; }
+.im-btn-view:hover   { background: #0891b2; color: #fff; transform: scale(1.10); box-shadow: 0 3px 10px rgba(8,145,178,0.30); }
+.im-btn-edit:hover   { background: #5b5ef4; color: #fff; transform: scale(1.10); box-shadow: 0 3px 10px rgba(91,94,244,0.30); }
+.im-btn-delete:hover { background: #ef4444; color: #fff; transform: scale(1.10); box-shadow: 0 3px 10px rgba(239,68,68,0.30); }
+
+.paginator { margin-top: 14px; }
+
+/* ── Backdrop ── */
+.im-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(8,12,36,0.54);
+    backdrop-filter: blur(5px);
+    display: none; align-items: flex-start; justify-content: center;
+    z-index: 1050; padding: 20px 12px; overflow-y: auto;
+}
+.im-backdrop.show { display: flex; }
+.im-modal, .im-view-modal, .im-delete-modal, .im-success-modal { margin: auto; }
+
+@@keyframes im-up {
+    from { transform: translateY(22px) scale(0.97); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+@@keyframes im-pop {
+    from { transform: scale(0.55); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+}
+
+/* ── Form Modal ── */
+.im-modal {
+    width: 1160px;
+    max-width: calc(100vw - 20px);
+    background: #fff; border-radius: 18px;
+    box-shadow: 0 20px 56px rgba(8,12,36,0.24);
+    display: flex; flex-direction: column;
+    animation: im-up 0.24s cubic-bezier(0.34,1.46,0.64,1);
+    overflow: hidden;
+}
+.im-modal-header {
+    background: linear-gradient(130deg, #5b5ef4, #a855f7);
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; position: relative; overflow: hidden;
+}
+.im-modal-header::before {
+    content: ''; position: absolute; top: -18px; right: -18px;
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(255,255,255,0.08); pointer-events: none;
+}
+.im-modal-header-title {
+    color: #fff; font-size: 15px; font-weight: 700;
+    display: flex; align-items: center; gap: 9px;
+    position: relative; z-index: 1;
+}
+.im-modal-close {
+    width: 30px; height: 30px; border-radius: 50%; border: none;
+    background: rgba(255,255,255,0.18); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; transition: background 0.13s; position: relative; z-index: 1;
+}
+.im-modal-close:hover { background: rgba(255,255,255,0.32); }
+
+.im-modal-body {
+    padding: 18px 22px 14px; overflow-y: auto;
+    max-height: calc(100vh - 180px);
+}
+.im-modal-body::-webkit-scrollbar { width: 5px; }
+.im-modal-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+/* ── Form Fields ── */
+.im-form-group { display: flex; flex-direction: column; gap: 5px; }
+.im-form-group label {
+    font-size: 11px; font-weight: 700; color: #4b5563;
+    letter-spacing: 0.04em; text-transform: uppercase;
+}
+.im-required { color: #ef4444; margin-left: 2px; }
+.im-input {
+    width: 100%; padding: 9px 12px;
+    border-radius: 9px; border: 1.5px solid #dde0ee;
+    font-size: 13px; color: #111827;
+    background: #f8f9fc; outline: none;
+    transition: border-color 0.13s, box-shadow 0.13s, background 0.13s;
+    appearance: none; -webkit-appearance: none;
+}
+.im-input:focus { border-color: #5b5ef4; box-shadow: 0 0 0 3px rgba(91,94,244,0.12); background: #fff; }
+.im-input.im-input-error { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.10); }
+select.im-input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 11px center;
+    padding-right: 30px; cursor: pointer;
+}
+.im-err-text {
+    font-size: 11px; color: #ef4444; display: none; align-items: center; gap: 4px;
+}
+
+/* ── Section Label ── */
+.um-section-label {
+    font-size: 10px; font-weight: 800; color: #9ca3af;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    margin-bottom: 10px; margin-top: 16px;
+    display: flex; align-items: center; gap: 10px;
+}
+.um-section-label:first-child { margin-top: 0; }
+.um-section-label i { color: #5b5ef4; }
+.um-section-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, #e5e7eb, transparent); }
+
+/* ── Credential + Photo ── */
+.um-top-layout {
+    display: grid;
+    grid-template-columns: 1fr 120px;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+.um-cred-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 12px 14px;
+}
+
+/* ── Photo Panel ── */
+.um-photo-panel {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+}
+.um-photo-wrap {
+    width: 110px; height: 110px; border-radius: 14px;
+    border: 2px dashed #c4c9e5;
+    background: #f4f5fc;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; cursor: pointer; position: relative;
+    transition: border-color 0.13s;
+}
+.um-photo-wrap:hover { border-color: #5b5ef4; }
+.um-photo-wrap img { width: 100%; height: 100%; object-fit: cover; display: none; }
+.um-photo-placeholder { color: #c4c9e5; font-size: 36px; transition: color 0.13s; }
+.um-photo-wrap:hover .um-photo-placeholder { color: #5b5ef4; }
+.um-btn-sm {
+    padding: 5px 10px; border-radius: 7px; width: 110px;
+    border: 1.5px solid #5b5ef4; background: #eef2ff;
+    color: #5b5ef4; font-size: 11px; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    justify-content: center; transition: all 0.12s;
+}
+.um-btn-sm:hover { background: #5b5ef4; color: #fff; }
+.um-btn-sm-danger {
+    padding: 5px 10px; border-radius: 7px; width: 110px;
+    border: 1.5px solid #ef4444; background: #fef2f2;
+    color: #ef4444; font-size: 11px; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    justify-content: center; transition: all 0.12s;
+}
+.um-btn-sm-danger:hover { background: #ef4444; color: #fff; }
+
+/* ── Flags / Toggle Row ── */
+.um-flags-row {
+    display: flex; align-items: center; gap: 22px;
+    flex-wrap: wrap; padding: 10px 16px;
+    background: linear-gradient(90deg, #f8f9ff, #faf5ff);
+    border-radius: 11px; border: 1px solid #e5e7f0;
+    margin-bottom: 14px;
+}
+.um-check-label {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12.5px; font-weight: 600; color: #374151; cursor: pointer;
+    user-select: none;
+}
+.um-check-label input[type="checkbox"] {
+    width: 15px; height: 15px; accent-color: #5b5ef4; cursor: pointer;
+}
+.um-radio-group {
+    display: flex; align-items: center; gap: 6px;
+}
+.um-radio-group-label {
+    font-size: 11px; font-weight: 700; color: #4b5563;
+    letter-spacing: 0.04em; text-transform: uppercase; margin-right: 4px;
+}
+.um-radio-option {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 999px;
+    border: 1.5px solid #dde0ee; background: #fff;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: all 0.12s; user-select: none;
+}
+.um-radio-option input[type="radio"] { display: none; }
+.um-radio-option.active-opt  { border-color: #10b981; background: #d1fae5; color: #059669; }
+.um-radio-option.inactive-opt { border-color: #f59e0b; background: #fef3c7; color: #d97706; }
+.um-divider-v {
+    width: 1px; height: 22px; background: #e5e7f0; flex-shrink: 0;
+}
+
+/* ── Contact Grid ── */
+.um-form-grid-4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 12px 14px;
+    margin-bottom: 14px;
+}
+.um-form-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px 14px;
+    margin-bottom: 14px;
+}
+
+/* ── Email Settings Button ── */
+.um-btn-email {
+    width: 100%; padding: 9px 14px; border-radius: 9px; margin-top: auto;
+    border: 1.5px solid #0891b2; background: #ecfeff;
+    color: #0891b2; font-size: 12px; font-weight: 700;
+    cursor: pointer; display: inline-flex; align-items: center;
+    justify-content: center; gap: 7px; transition: all 0.12s;
+}
+.um-btn-email:hover { background: #0891b2; color: #fff; box-shadow: 0 4px 14px rgba(8,145,178,0.28); }
+
+/* ── Auto Lock Row ── */
+.um-lock-row {
+    display: flex; align-items: center; gap: 20px;
+    flex-wrap: wrap; padding: 10px 16px;
+    background: #fffbeb; border-radius: 11px;
+    border: 1px solid #fde68a; margin-bottom: 14px;
+}
+.um-lock-inline {
+    display: flex; align-items: center; gap: 10px;
+}
+.um-lock-days-input {
+    width: 64px; padding: 7px 10px;
+    border-radius: 8px; border: 1.5px solid #fcd34d;
+    font-size: 13px; text-align: center; background: #fff;
+    outline: none; font-weight: 600;
+}
+.um-lock-days-input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
+.um-lock-label { font-size: 12.5px; font-weight: 600; color: #92400e; }
+.um-lock-separator { color: #fcd34d; font-size: 16px; }
+
+/* ── Rights Panels ── */
+.um-rights-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.um-panel {
+    border-radius: 11px; border: 1px solid #e5e7f0;
+    overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 2px 8px rgba(91,94,244,0.06);
+}
+.um-panel-header {
+    background: linear-gradient(90deg, #6f5bf5 0%, #7c6ef7 100%);
+    padding: 8px 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.um-panel-title {
+    color: #fff; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 6px;
+}
+.um-panel-count {
+    background: rgba(255,255,255,0.22); color: #fff;
+    border-radius: 999px; font-size: 10px; font-weight: 700;
+    padding: 2px 9px;
+}
+.um-select-all {
+    padding: 2px 9px; border-radius: 999px; border: none;
+    background: rgba(255,255,255,0.22); color: #fff;
+    font-size: 10px; font-weight: 700; cursor: pointer;
+    transition: background 0.12s;
+}
+.um-select-all:hover { background: rgba(255,255,255,0.38); }
+.um-listbox {
+    flex: 1; overflow-y: auto; background: #fff;
+    min-height: 170px; max-height: 170px;
+}
+.um-listbox::-webkit-scrollbar { width: 4px; }
+.um-listbox::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+.um-rights-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 12px; border-bottom: 1px solid #f3f4f9;
+    cursor: pointer; transition: background 0.12s; font-size: 12.5px; color: #374151;
+}
+.um-rights-item:last-child { border-bottom: none; }
+.um-rights-item:hover { background: #eef2ff; color: #4338ca; }
+.um-rights-item.selected { background: linear-gradient(90deg,#eef2ff,#f5f3ff); color: #4f46e5; font-weight: 600; }
+.um-rights-item-check { width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #d1d5db; font-size: 13px; }
+.um-rights-item.selected .um-rights-item-check { color: #5b5ef4; }
+.um-rights-item input[type="checkbox"] { width: 14px; height: 14px; accent-color: #5b5ef4; pointer-events: none; }
+
+.um-listbox-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 80px; color: #9ca3af; font-size: 12px; gap: 6px;
+}
+.um-listbox-empty i { font-size: 20px; color: #d1d5db; }
+
+/* ── Bottom Section ── */
+.um-bottom-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+/* Dashboard panel */
+.um-dash-panel {
+    border-radius: 11px; border: 1px solid #e5e7f0;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(91,94,244,0.06);
+}
+.um-dash-header {
+    background: linear-gradient(90deg, #6f5bf5 0%, #7c6ef7 100%);
+    padding: 8px 12px;
+    display: flex; align-items: center; gap: 8px;
+    color: #fff; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.05em; text-transform: uppercase;
+}
+.um-dash-body {
+    padding: 10px 14px; background: #fff;
+    display: flex; flex-direction: column; gap: 9px;
+}
+.um-dash-item {
+    display: flex; align-items: flex-start; gap: 9px;
+    padding: 7px 10px; border-radius: 8px;
+    border: 1px solid #f0f1f6; background: #f9fafb;
+    cursor: pointer; transition: all 0.12s;
+}
+.um-dash-item:hover { background: #eef2ff; border-color: #c7d2fe; }
+.um-dash-item.checked { background: linear-gradient(90deg, #eef2ff, #f5f3ff); border-color: #c7d2fe; }
+.um-dash-item input[type="checkbox"] { width: 14px; height: 14px; accent-color: #5b5ef4; margin-top: 1px; flex-shrink: 0; cursor: pointer; }
+.um-dash-item-text { font-size: 12.5px; font-weight: 500; color: #374151; line-height: 1.4; }
+.um-dash-item.checked .um-dash-item-text { color: #4f46e5; font-weight: 600; }
+
+/* Right side of bottom */
+.um-right-bottom { display: flex; flex-direction: column; gap: 12px; }
+
+/* Other Details card */
+.um-detail-card {
+    border-radius: 11px; border: 1px solid #e5e7f0;
+    overflow: hidden; box-shadow: 0 2px 8px rgba(91,94,244,0.06);
+}
+.um-detail-header {
+    background: linear-gradient(90deg, #6f5bf5 0%, #7c6ef7 100%);
+    padding: 8px 12px;
+    display: flex; align-items: center; gap: 8px;
+    color: #fff; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.05em; text-transform: uppercase;
+}
+.um-detail-body {
+    padding: 12px 14px; background: #fff;
+    display: flex; flex-direction: column; gap: 10px;
+}
+.um-detail-field { display: flex; flex-direction: column; gap: 4px; }
+.um-detail-field label {
+    font-size: 10.5px; font-weight: 700; color: #6b7280;
+    letter-spacing: 0.04em; text-transform: uppercase;
+}
+
+/* Access panel */
+.um-access-panel {
+    border-radius: 11px; border: 1px solid #e5e7f0;
+    overflow: hidden; box-shadow: 0 2px 8px rgba(91,94,244,0.06);
+}
+.um-access-header {
+    background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+    padding: 8px 12px;
+    display: flex; align-items: center; gap: 8px;
+    color: #fff; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.05em; text-transform: uppercase;
+}
+.um-access-body {
+    padding: 10px 14px; background: #fff;
+    display: flex; flex-direction: column; gap: 8px;
+}
+.um-access-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: 8px;
+    border: 1px solid #f0f1f6; background: #f0fdf4;
+    cursor: pointer; transition: all 0.12s;
+}
+.um-access-item:hover { border-color: #6ee7b7; }
+.um-access-item.checked { background: #d1fae5; border-color: #6ee7b7; }
+.um-access-item input[type="checkbox"] { width: 14px; height: 14px; accent-color: #059669; cursor: pointer; }
+.um-access-item-label { font-size: 12.5px; font-weight: 600; color: #374151; }
+.um-access-item.checked .um-access-item-label { color: #059669; }
+.um-access-item-icon { width: 28px; height: 28px; border-radius: 7px; background: #d1fae5; color: #059669; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+
+/* Signature panel */
+.um-sign-card {
+    border-radius: 11px; border: 1px dashed #c4c9e5;
+    background: #f8f9fc; padding: 12px 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.um-sign-label { font-size: 10.5px; font-weight: 700; color: #6b7280; letter-spacing: 0.04em; text-transform: uppercase; }
+.um-sign-preview {
+    width: 100%; height: 54px; border-radius: 8px;
+    background: #fff; border: 1px solid #e5e7f0;
+    display: flex; align-items: center; justify-content: center;
+    color: #9ca3af; font-size: 11.5px; overflow: hidden;
+}
+.um-sign-preview img { max-height: 52px; max-width: 100%; object-fit: contain; display: none; }
+.um-sign-btn-row { display: flex; gap: 7px; width: 100%; }
+.um-btn-sign-browse {
+    flex: 1; padding: 6px 10px; border-radius: 7px;
+    border: 1.5px solid #5b5ef4; background: #eef2ff;
+    color: #5b5ef4; font-size: 11px; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    justify-content: center; transition: all 0.12s;
+}
+.um-btn-sign-browse:hover { background: #5b5ef4; color: #fff; }
+.um-btn-sign-remove {
+    flex: 1; padding: 6px 10px; border-radius: 7px;
+    border: 1.5px solid #ef4444; background: #fef2f2;
+    color: #ef4444; font-size: 11px; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    justify-content: center; transition: all 0.12s;
+}
+.um-btn-sign-remove:hover { background: #ef4444; color: #fff; }
+
+/* ── Modal Footer ── */
+.im-modal-footer {
+    padding: 12px 22px 18px;
+    display: flex; justify-content: flex-end; gap: 10px;
+    border-top: 1px solid #f0f1f8; flex-shrink: 0;
+}
+.im-btn-cancel {
+    padding: 8px 20px; border-radius: 999px;
+    border: 1.5px solid #d4d7e8; background: #fff;
+    color: #374151; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.12s;
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.im-btn-cancel:hover { background: #f5f5fb; border-color: #9ca3af; }
+.im-btn-save {
+    padding: 8px 22px; border-radius: 999px; border: none;
+    background: linear-gradient(130deg, #5b5ef4, #a855f7);
+    color: #fff; font-size: 13px; font-weight: 600;
+    cursor: pointer; box-shadow: 0 5px 16px rgba(91,94,244,0.34);
+    transition: all 0.14s; display: inline-flex; align-items: center; gap: 7px;
+}
+.im-btn-save:hover { box-shadow: 0 7px 22px rgba(91,94,244,0.50); transform: translateY(-1px); }
+.im-btn-save:disabled { opacity: 0.60; cursor: not-allowed; transform: none; }
+
+/* ── View Modal ── */
+.im-view-modal {
+    width: 820px; max-width: calc(100vw - 20px); max-height: 88vh;
+    background: #fff; border-radius: 18px;
+    box-shadow: 0 20px 56px rgba(8,12,36,0.24);
+    display: flex; flex-direction: column;
+    animation: im-up 0.24s cubic-bezier(0.34,1.46,0.64,1); overflow: hidden;
+}
+.im-view-header {
+    background: linear-gradient(130deg, #4f46e5, #7c3aed, #a855f7);
+    padding: 18px 48px 16px 20px;
+    display: flex; align-items: center; gap: 16px;
+    position: relative; overflow: hidden; flex-shrink: 0;
+}
+.im-view-header::before {
+    content: ''; position: absolute; top: -35px; right: -35px;
+    width: 130px; height: 130px; border-radius: 50%;
+    background: rgba(255,255,255,0.07); pointer-events: none;
+}
+.im-view-close-btn {
+    position: absolute; top: 12px; right: 12px;
+    width: 30px; height: 30px; border-radius: 50%;
+    border: none; background: rgba(255,255,255,0.16);
+    color: #fff; cursor: pointer; z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; transition: background 0.13s;
+}
+.im-view-close-btn:hover { background: rgba(255,255,255,0.30); }
+.im-view-avatar {
+    width: 56px; height: 56px; border-radius: 14px;
+    background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.28);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; color: #fff; flex-shrink: 0; position: relative; z-index: 1;
+    overflow: hidden;
+}
+.im-view-avatar img { width: 100%; height: 100%; object-fit: cover; display: none; }
+.im-view-header-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
+.im-view-header-code { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.58); letter-spacing: 0.10em; text-transform: uppercase; margin-bottom: 3px; }
+.im-view-header-name { font-size: 17px; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.im-view-badges { display: flex; gap: 7px; flex-wrap: wrap; }
+.im-view-badge { padding: 3px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.16); color: #fff; border: 1.5px solid rgba(255,255,255,0.26); }
+.im-view-badge.badge-active { background: rgba(16,185,129,0.28); border-color: rgba(16,185,129,0.50); }
+.im-view-badge.badge-inactive { background: rgba(245,158,11,0.28); border-color: rgba(245,158,11,0.50); }
+
+.im-view-body { flex: 1; overflow-y: auto; padding: 18px 20px 12px; }
+.im-view-body::-webkit-scrollbar { width: 4px; }
+.im-view-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+.im-view-section-label {
+    font-size: 10px; font-weight: 800; color: #9ca3af;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    margin-bottom: 10px; margin-top: 16px;
+    display: flex; align-items: center; gap: 10px;
+}
+.im-view-section-label:first-child { margin-top: 0; }
+.im-view-section-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, #e5e7eb, transparent); }
+
+.im-view-fields-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
+.im-view-field {
+    display: flex; align-items: center; gap: 11px;
+    background: #f9fafb; border-radius: 11px; padding: 11px 14px;
+    border: 1px solid #f0f1f6; position: relative; overflow: hidden;
+    transition: all 0.13s;
+}
+.im-view-field::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 0 3px 3px 0; }
+.im-view-field:nth-child(1)::before { background: linear-gradient(#5b5ef4,#818cf8); }
+.im-view-field:nth-child(2)::before { background: linear-gradient(#a855f7,#c084fc); }
+.im-view-field:nth-child(3)::before { background: linear-gradient(#0891b2,#22d3ee); }
+.im-view-field:nth-child(4)::before { background: linear-gradient(#10b981,#6ee7b7); }
+.im-view-field:nth-child(5)::before { background: linear-gradient(#f59e0b,#fcd34d); }
+.im-view-field:nth-child(6)::before { background: linear-gradient(#ef4444,#f87171); }
+.im-view-field:hover { background: #fff; box-shadow: 0 3px 12px rgba(91,94,244,0.09); transform: translateX(2px); border-color: #e5e7eb; }
+
+.im-view-field-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.im-view-field:nth-child(1) .im-view-field-icon { background: #eef2ff; color: #5b5ef4; }
+.im-view-field:nth-child(2) .im-view-field-icon { background: #faf5ff; color: #a855f7; }
+.im-view-field:nth-child(3) .im-view-field-icon { background: #ecfeff; color: #0891b2; }
+.im-view-field:nth-child(4) .im-view-field-icon { background: #f0fdf4; color: #10b981; }
+.im-view-field:nth-child(5) .im-view-field-icon { background: #fffbeb; color: #f59e0b; }
+.im-view-field:nth-child(6) .im-view-field-icon { background: #fef2f2; color: #ef4444; }
+
+.im-view-field-info { min-width: 0; flex: 1; }
+.im-view-field-label { font-size: 10px; font-weight: 700; color: #9ca3af; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 2px; }
+.im-view-field-value { font-size: 13px; font-weight: 700; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.im-view-footer {
+    padding: 12px 20px 18px;
+    display: flex; justify-content: flex-end; gap: 10px;
+    border-top: 1px solid #f3f4f6; flex-shrink: 0;
+}
+.im-btn-view-edit {
+    padding: 8px 20px; border-radius: 999px; border: none;
+    background: linear-gradient(130deg, #5b5ef4, #a855f7);
+    color: #fff; font-size: 13px; font-weight: 600;
+    cursor: pointer; box-shadow: 0 5px 16px rgba(91,94,244,0.32);
+    transition: all 0.14s; display: inline-flex; align-items: center; gap: 7px;
+}
+.im-btn-view-edit:hover { box-shadow: 0 7px 22px rgba(91,94,244,0.48); transform: translateY(-1px); }
+.im-btn-view-close {
+    padding: 8px 20px; border-radius: 999px;
+    border: 1.5px solid #d4d7e8; background: #fff;
+    color: #374151; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.13s; display: inline-flex; align-items: center; gap: 7px;
+}
+.im-btn-view-close:hover { background: #f5f5fb; border-color: #9ca3af; }
+
+/* ── Delete Modal ── */
+.im-delete-modal {
+    width: 370px; max-width: calc(100vw - 20px);
+    background: #fff; border-radius: 18px;
+    box-shadow: 0 20px 56px rgba(8,12,36,0.24);
+    text-align: center; padding: 32px 24px 24px;
+    animation: im-up 0.24s cubic-bezier(0.34,1.46,0.64,1);
+}
+.im-delete-icon-wrap {
+    width: 62px; height: 62px; border-radius: 50%;
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; color: #ef4444; margin: 0 auto 14px;
+    box-shadow: 0 5px 16px rgba(239,68,68,0.16);
+}
+.im-delete-title { font-size: 17px; font-weight: 700; color: #111827; margin-bottom: 7px; }
+.im-delete-text  { font-size: 13px; color: #6b7280; line-height: 1.5; margin-bottom: 22px; }
+.im-delete-reason { margin: 0 0 18px; text-align: left; }
+.im-delete-reason-label { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #4b5563; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
+.im-delete-reason-input {
+    width: 100%; padding: 9px 12px; border-radius: 9px;
+    border: 1.5px solid #dde0ee; font-size: 13px; color: #111827;
+    background: #f8f9fc; outline: none; transition: border-color 0.13s, box-shadow 0.13s;
+}
+.im-delete-reason-input:focus { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.10); background: #fff; }
+.im-delete-reason-input::placeholder { color: #9ca3af; }
+.im-delete-actions { display: flex; gap: 10px; justify-content: center; }
+.im-btn-confirm-delete {
+    padding: 9px 22px; border-radius: 999px; border: none;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff; font-size: 13px; font-weight: 600;
+    cursor: pointer; box-shadow: 0 5px 16px rgba(239,68,68,0.32);
+    transition: all 0.14s; display: inline-flex; align-items: center; gap: 6px;
+}
+.im-btn-confirm-delete:hover { box-shadow: 0 7px 22px rgba(239,68,68,0.48); transform: translateY(-1px); }
+
+/* ── Success Modal ── */
+.im-success-modal {
+    width: 370px; max-width: calc(100vw - 20px);
+    background: #fff; border-radius: 18px;
+    box-shadow: 0 20px 56px rgba(8,12,36,0.24);
+    text-align: center; padding: 32px 24px 24px;
+    animation: im-up 0.24s cubic-bezier(0.34,1.46,0.64,1);
+}
+.im-success-icon-wrap {
+    width: 68px; height: 68px; border-radius: 50%;
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; color: #059669; margin: 0 auto 16px;
+    box-shadow: 0 6px 20px rgba(5,150,105,0.18);
+    animation: im-pop 0.28s cubic-bezier(0.34,1.56,0.64,1) 0.14s both;
+}
+.im-success-title { font-size: 17px; font-weight: 700; color: #111827; margin-bottom: 7px; }
+.im-success-text  { font-size: 13px; color: #6b7280; line-height: 1.5; margin-bottom: 22px; }
+.im-btn-success-ok {
+    padding: 9px 34px; border-radius: 999px; border: none;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff; font-size: 13px; font-weight: 600;
+    cursor: pointer; box-shadow: 0 5px 16px rgba(5,150,105,0.32);
+    transition: all 0.14s; display: inline-flex; align-items: center; gap: 7px;
+}
+.im-btn-success-ok:hover { box-shadow: 0 7px 22px rgba(5,150,105,0.48); transform: translateY(-1px); }
+
+/* ── Hidden file inputs ── */
+#photoFileInput, #signFileInput { display: none; }
+
+@@media (max-width: 1000px) {
+    .um-cred-grid { grid-template-columns: 1fr 1fr; }
+    .um-form-grid-4 { grid-template-columns: 1fr 1fr; }
+    .um-rights-row { grid-template-columns: 1fr; }
+    .um-bottom-row { grid-template-columns: 1fr; }
+    .im-view-fields-grid { grid-template-columns: 1fr 1fr; }
+}
+@@media (max-width: 640px) {
+    .im-page-wrapper { padding: 10px 10px 20px; }
+    .um-top-layout { grid-template-columns: 1fr; }
+    .um-cred-grid { grid-template-columns: 1fr; }
+    .um-form-grid-4 { grid-template-columns: 1fr; }
+    .um-form-grid-3 { grid-template-columns: 1fr; }
+    .um-flags-row { gap: 12px; }
+    .im-modal-footer { flex-direction: column-reverse; }
+    .im-btn-cancel, .im-btn-save { width: 100%; justify-content: center; }
+    .im-view-fields-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<!-- ════════════════ MAIN PAGE ════════════════ -->
+<div class="im-page-wrapper">
+    <span id="ERPHeading" style="display:none"></span>
+    <div class="im-card">
+
+        <!-- Header -->
+        <div class="im-card-header">
+            <div class="im-header-left">
+                <div class="im-header-icon"><i class="fas fa-user-tie"></i></div>
+                <div>
+                    <div class="im-header-title">User Master</div>
+                    <div class="im-header-sub">Manage users, access rights &amp; permissions</div>
+                </div>
+            </div>
+            <button type="button" class="im-btn-new" onclick="OpenNewUser()">
+                <i class="fas fa-plus"></i>
+                <span>New User</span>
+            </button>
+        </div>
+
+        <!-- Grid -->
+        <div class="im-card-body">
+            <div id="tblUserMaster">
+                <div class="im-table-wrapper">
+                    <table id="UserMasterGrid" style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead id="UserMaster-header"></thead>
+                        <tbody id="UserMaster-body"></tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-UserMasterGrid"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ════════════════ FORM MODAL ════════════════ -->
+<div id="userDialogBackdrop" class="im-backdrop">
+    <div class="im-modal">
+
+        <div class="im-modal-header">
+            <div class="im-modal-header-title">
+                <i class="fas fa-user-tie"></i>
+                <span id="formModalTitle">Add New User</span>
+            </div>
+            <button type="button" class="im-modal-close" id="btnModalClose" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="im-modal-body">
+
+            <!-- ── Section: Credentials + Photo ── -->
+            <div class="um-section-label"><i class="fas fa-key"></i> User Credentials</div>
+            <div class="um-top-layout">
+                <!-- Left: form fields -->
+                <div class="um-cred-grid">
+                    <div class="im-form-group">
+                        <label for="txtUserID">User ID <span class="im-required">*</span></label>
+                        <input type="text" id="txtUserID" class="im-input" placeholder="Enter user ID…" autocomplete="off" maxlength="50" />
+                        <span class="im-err-text" id="err_UserID"><i class="fas fa-circle-exclamation"></i> User ID is required.</span>
+                    </div>
+                    <div class="im-form-group">
+                        <label for="txtUserName">User Name <span class="im-required">*</span></label>
+                        <input type="text" id="txtUserName" class="im-input" placeholder="Full name…" autocomplete="off" maxlength="100" />
+                        <span class="im-err-text" id="err_UserName"><i class="fas fa-circle-exclamation"></i> User Name is required.</span>
+                    </div>
+                    <div class="im-form-group">
+                        <label for="txtPassword">Password <span class="im-required">*</span></label>
+                        <input type="password" id="txtPassword" class="im-input" placeholder="Password…" autocomplete="new-password" maxlength="50" />
+                        <span class="im-err-text" id="err_Password"><i class="fas fa-circle-exclamation"></i> Password is required.</span>
+                    </div>
+                    <div class="im-form-group">
+                        <label for="txtConfirmPassword">Confirm Password <span class="im-required">*</span></label>
+                        <input type="password" id="txtConfirmPassword" class="im-input" placeholder="Re-enter password…" autocomplete="new-password" maxlength="50" />
+                        <span class="im-err-text" id="err_ConfirmPassword"><i class="fas fa-circle-exclamation"></i> Passwords do not match.</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ── Section: Status & Options ── -->
+            <div class="um-flags-row">
+                <!-- BIZSOL USER -->
+                <label class="um-check-label">
+                    <input type="checkbox" id="chkBizsolUser" />
+                    <i class="fas fa-building" style="color:#5b5ef4;font-size:13px;"></i>
+                    BIZSOL User
+                </label>
+                <div class="um-divider-v"></div>
+
+                <!-- Active / Inactive -->
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:11px;font-weight:700;color:#4b5563;letter-spacing:0.04em;text-transform:uppercase;">Status:</span>
+                    <label class="um-radio-option active-opt" id="lblActive" onclick="SetStatus('Active')">
+                        <input type="radio" name="rdoStatus" id="rdoActive" value="Active" checked />
+                        <i class="fas fa-circle-check" style="font-size:11px;"></i> Active
+                    </label>
+                    <label class="um-radio-option inactive-opt" id="lblInactive" onclick="SetStatus('Inactive')">
+                        <input type="radio" name="rdoStatus" id="rdoInactive" value="Inactive" />
+                        <i class="fas fa-circle-xmark" style="font-size:11px;"></i> Inactive
+                    </label>
+                </div>
+                <div class="um-divider-v"></div>
+
+            </div>
+
+            <!-- ── Section: Contact & Configuration ── -->
+            <div class="um-section-label"><i class="fas fa-address-card"></i> Contact &amp; Configuration</div>
+            <div class="um-form-grid-4">
+                <div class="im-form-group">
+                    <label for="txtMobileNo">Mobile No</label>
+                    <input type="text" id="txtMobileNo" class="im-input" placeholder="Mobile number…" autocomplete="off" maxlength="15" />
+                </div>
+              
+                <div class="im-form-group">
+                    <label for="ddlGroupName">Group Name <span class="im-required">*</span></label>
+                    <select id="ddlGroupName" class="im-input">
+                        <option value="">— Select Group —</option>
+                    </select>
+                    <span class="im-err-text" id="err_GroupName"><i class="fas fa-circle-exclamation"></i> Group Name is required.</span>
+                </div>
+                <div class="im-form-group">
+                    <label for="ddlDefaultCompany">Default Company</label>
+                    <select id="ddlDefaultCompany" class="im-input">
+                        <option value="">— Select Company —</option>
+                    </select>
+                </div>
+            </div>
+
+
+        </div><!-- /modal-body -->
+
+        <div class="im-modal-footer">
+            <button type="button" class="im-btn-cancel" id="btnCancelUser">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="im-btn-save" id="btnSaveUser" onclick="SaveUser()">
+                <i class="fas fa-floppy-disk"></i>
+                <span id="btnSaveText">Save User</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ════════════════ VIEW MODAL ════════════════ -->
+<div id="viewUserBackdrop" class="im-backdrop">
+    <div class="im-view-modal">
+
+        <div class="im-view-header">
+            <button type="button" class="im-view-close-btn" onclick="CloseViewModal()" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="im-view-avatar">
+                <i class="fas fa-user-tie" id="viewAvatarIcon"></i>
+                <img id="viewAvatarImg" src="" alt="User Photo" />
+            </div>
+            <div class="im-view-header-text">
+                <div class="im-view-header-code">
+                    <i class="fas fa-hashtag" style="margin-right:3px;"></i>
+                    <span id="viewUserCode">—</span>
+                </div>
+                <div class="im-view-header-name" id="viewUserName"></div>
+                <div class="im-view-badges">
+                    <span class="im-view-badge" id="vf_UserIDLabel"><i class="fas fa-fingerprint" style="margin-right:4px;"></i><span id="vf_UserID">—</span></span>
+                    <span class="im-view-badge" id="vf_StatusBadge"></span>
+                    <span class="im-view-badge" id="vf_GroupBadge" style="display:none;"><i class="fas fa-users-gear" style="margin-right:4px;"></i><span id="vf_GroupLabel">—</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="im-view-body">
+
+            <div class="im-view-section-label">User Information</div>
+            <div class="im-view-fields-grid">
+                <div class="im-view-field">
+                    <div class="im-view-field-icon"><i class="fas fa-id-badge"></i></div>
+                    <div class="im-view-field-info">
+                        <div class="im-view-field-label">User ID</div>
+                        <div class="im-view-field-value" id="vf_UserIDVal">—</div>
+                    </div>
+                </div>
+                <div class="im-view-field">
+                    <div class="im-view-field-icon"><i class="fas fa-user"></i></div>
+                    <div class="im-view-field-info">
+                        <div class="im-view-field-label">User Name</div>
+                        <div class="im-view-field-value" id="vf_UserName">—</div>
+                    </div>
+                </div>
+                <div class="im-view-field">
+                    <div class="im-view-field-icon"><i class="fas fa-phone"></i></div>
+                    <div class="im-view-field-info">
+                        <div class="im-view-field-label">Mobile No</div>
+                        <div class="im-view-field-value" id="vf_MobileNo">—</div>
+                    </div>
+                </div>
+                <div class="im-view-field">
+                    <div class="im-view-field-icon"><i class="fas fa-users-gear"></i></div>
+                    <div class="im-view-field-info">
+                        <div class="im-view-field-label">Group</div>
+                        <div class="im-view-field-value" id="vf_Group">—</div>
+                    </div>
+                </div>
+                <div class="im-view-field">
+                    <div class="im-view-field-icon"><i class="fas fa-building"></i></div>
+                    <div class="im-view-field-info">
+                        <div class="im-view-field-label">Default Company</div>
+                        <div class="im-view-field-value" id="vf_Company">—</div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <div class="im-view-footer">
+            <button type="button" class="im-btn-view-close" onclick="CloseViewModal()">
+                <i class="fas fa-times"></i> Close
+            </button>
+            <button type="button" class="im-btn-view-edit" onclick="EditFromView()">
+                <i class="fas fa-pen"></i> Edit User
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ════════════════ DELETE CONFIRM ════════════════ -->
+<div id="deleteConfirmBackdrop" class="im-backdrop">
+    <div class="im-delete-modal">
+        <div class="im-delete-icon-wrap"><i class="fas fa-user-minus"></i></div>
+        <div class="im-delete-title">Delete this User?</div>
+        <div class="im-delete-text">
+            This action cannot be undone.<br>The user account and all associated access rights will be permanently removed.
+        </div>
+        <div class="im-delete-reason">
+            <label class="im-delete-reason-label">
+                <i class="fas fa-comment-dots"></i> Reason for Delete <span class="im-required">*</span>
+            </label>
+            <input type="text" id="reasonForDeleteInput" class="im-delete-reason-input"
+                   placeholder="Enter reason for deletion…" autocomplete="off" />
+        </div>
+        <div class="im-delete-actions">
+            <button type="button" class="im-btn-cancel" id="btnCancelDelete">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="im-btn-confirm-delete" onclick="DoDelete()">
+                <i class="fas fa-user-minus"></i> Yes, Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════ SUCCESS MODAL ════════════════ -->
+<div id="successBackdrop" class="im-backdrop">
+    <div class="im-success-modal">
+        <div class="im-success-icon-wrap">
+            <i id="successModalIcon" class="fas fa-circle-check"></i>
+        </div>
+        <div class="im-success-title" id="successModalTitle">Done!</div>
+        <div class="im-success-text" id="successModalText">Operation completed successfully.</div>
+        <button type="button" class="im-btn-success-ok" onclick="CloseSuccessModal()">
+            <i class="fas fa-check"></i> OK
+        </button>
+    </div>
+</div>
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserMaster.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
