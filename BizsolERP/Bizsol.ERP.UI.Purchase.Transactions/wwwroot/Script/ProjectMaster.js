@@ -608,20 +608,18 @@ function callSaveProjectApi() {
     const newBudget = $('#txtBudget').val()
         ? parseFloat($('#txtBudget').val().toString().replace(/,/g, ''))
         : 0;
-    const newDays   = $('#txtEstimatedDays').val()
-        ? parseInt($('#txtEstimatedDays').val(), 10)
-        : 0;
 
     if (code > 0 && G_SubProjectsCache && G_SubProjectsCache.length) {
         const subs = G_SubProjectsCache.filter(function (s) {
             return String(s.ProjectMaster_Code || s.MasterProjectCode || 0) === String(code);
         });
-        let sumSubBud  = 0;
-        let sumSubDays = 0;
+
+        // Budget: combined sub-project budgets must not exceed the project budget
+        let sumSubBud = 0;
         subs.forEach(function (s) {
-            sumSubBud  += parseFloat(s.Budget || s.SubProjectBudget || 0) || 0;
-            sumSubDays += parseInt(s.EstimatedCompletionDays || s.EstimatedDays || 0, 10) || 0;
+            sumSubBud += parseFloat(s.Budget || s.SubProjectBudget || 0) || 0;
         });
+
         if (newBudget > 0 && sumSubBud > 0 && newBudget < sumSubBud) {
             toastr.warning(
                 'Project budget cannot be less than the combined sub-project budgets (total ₹ '
@@ -631,13 +629,43 @@ function callSaveProjectApi() {
             $('#txtBudget').focus();
             return;
         }
-        if (newDays > 0 && sumSubDays > 0 && newDays < sumSubDays) {
-            toastr.warning(
-                'Project estimated days cannot be less than the combined sub-project days (total '
-                    + sumSubDays + ' days).'
-            );
-            $('#txtEstimatedDays').focus();
-            return;
+
+        // Dates: when updating project dates, existing sub-projects must still fit within the new range.
+        // No sum-of-days check — only start/end date boundary is enforced.
+        // Use YYYY-MM-DD string comparison to avoid timezone/time-component issues.
+        const newStartStr = ($('#txtStartDate').val() || '').trim();
+        const newEndStr   = ($('#txtEstimatedDate').val() || '').trim();
+
+        if (newStartStr) {
+            const offender = subs.find(function (s) {
+                const sd = extractYMD(s.ProjectStartDate);
+                return sd && sd < newStartStr;
+            });
+            if (offender) {
+                toastr.warning(
+                    'Cannot move project start date forward: sub-project "' +
+                        (offender.SubProjectDesp || offender.SubProjectName || offender.Code) +
+                        '" starts before the new project start date (' + newStartStr + '). Adjust sub-projects first.'
+                );
+                $('#txtStartDate').focus();
+                return;
+            }
+        }
+
+        if (newEndStr) {
+            const offender = subs.find(function (s) {
+                const ed = extractYMD(s.EstimatedCompletionDate);
+                return ed && ed > newEndStr;
+            });
+            if (offender) {
+                toastr.warning(
+                    'Cannot move project end date backward: sub-project "' +
+                        (offender.SubProjectDesp || offender.SubProjectName || offender.Code) +
+                        '" ends after the new project end date (' + newEndStr + '). Adjust sub-projects first.'
+                );
+                $('#txtEstimatedDate').focus();
+                return;
+            }
         }
     }
 
@@ -899,6 +927,14 @@ function calcEstimatedDateFromDays() {
     const estDate = new Date(start);
     estDate.setDate(estDate.getDate() + days);
     $('#txtEstimatedDate').val(formatDate(estDate));
+}
+
+/* Returns the YYYY-MM-DD portion of any date string/value without timezone shift.
+   Works correctly for both '2026-04-01' and '2026-04-01T00:00:00' API formats. */
+function extractYMD(dateVal) {
+    if (!dateVal) return null;
+    const m = String(dateVal).trim().match(/^(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : null;
 }
 
 function escHtml(str) {

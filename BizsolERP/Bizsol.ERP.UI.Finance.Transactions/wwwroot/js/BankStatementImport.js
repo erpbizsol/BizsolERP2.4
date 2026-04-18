@@ -1,6 +1,6 @@
 import { BankStatementService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BankStatementService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
-
+var baseUrl = sessionStorage.getItem('AppBaseURL');
 var parsedRows    = [];   
 var fileHeaders   = [];   
 var columnMappers = {};   
@@ -193,7 +193,7 @@ function BindEvents() {
 
     // View List button — navigate to bank statement list (relative URL, no baseUrl needed)
     $('#btnViewList').on('click', function () {
-        window.location.href = '/FinanceTransactions/BankStatement/BankStatementList';
+        window.location = baseUrl + '/FinanceTransactions/BankStatement/BankStatementList';
     });
 
     // Refresh history
@@ -697,7 +697,9 @@ function DoDeleteBatch() {
 
 // View batch — navigate to list filtered by batch no
 window.ViewBatch = function (batchNo) {
-    window.location.href = '/FinanceTransactions/BankStatement/BankStatementList?BatchNo=' + encodeURIComponent(batchNo);
+    window.location = baseUrl + '/FinanceTransactions/BankStatement/BankStatementList?BatchNo=' + encodeURIComponent(batchNo);
+
+    //window.location.href = '/FinanceTransactions/BankStatement/BankStatementList?BatchNo=' + encodeURIComponent(batchNo);
 };
 
 // ── Result modal ──────────────────────────────────────────────────────────────
