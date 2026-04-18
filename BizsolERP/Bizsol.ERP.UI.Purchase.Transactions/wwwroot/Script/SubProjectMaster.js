@@ -3,6 +3,7 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 import { BOMService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BOMService.js';
+import { UserMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_UserMasterService.js';
 
 let G_SubProjectList    = [];
 let G_ProjectList       = [];
@@ -64,6 +65,14 @@ $(document).ready(function () {
             applySubProjectFilters();
         }
     });
+
+    $('#dvSubProjectModal').on('shown.bs.modal', function () {
+        if (G_UserList && G_UserList.length > 0) {
+            refreshGRNCheckSelectPreserveSelection();
+        } else {
+            loadUserListForSubProject().catch(function () {});
+        }
+    });
 });
 
 /* ── Financial year ──────────────────────────────────────── */
@@ -94,15 +103,189 @@ function loadProjectDropdown() {
         });
 }
 
-/* ── Load user list ───────────────────────────────────────── */
-function loadUserDropdown() {
-    SubProjectMasterService.GetUserList()
+/* ── User list (wrapped API + User Master fallback) ──────── */
+function normalizeUserListResponse(response) {
+    if (!response) return [];
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response.Data)) return response.Data;
+    if (Array.isArray(response.value)) return response.value;
+    if (Array.isArray(response.Value)) return response.Value;
+    if (Array.isArray(response.UserList)) return response.UserList;
+    if (Array.isArray(response.userList)) return response.userList;
+    if (Array.isArray(response.UserMasterList)) return response.UserMasterList;
+    if (Array.isArray(response.userMasterList)) return response.userMasterList;
+    if (Array.isArray(response.userMasterData)) return response.userMasterData;
+    if (Array.isArray(response.UserMasterData)) return response.UserMasterData;
+    if (response.Table && Array.isArray(response.Table)) return response.Table;
+    if (response.table && Array.isArray(response.table)) return response.table;
+    if (typeof response === 'object') {
+        var keys = Object.keys(response);
+        for (var i = 0; i < keys.length; i++) {
+            var arr = response[keys[i]];
+            if (!Array.isArray(arr) || !arr.length) continue;
+            var first = arr[0];
+            if (first && typeof first === 'object' && !Array.isArray(first)) {
+                if ('userName' in first || 'UserName' in first || 'userID' in first || 'UserID' in first
+                    || 'code' in first || 'Code' in first
+                    || 'userMaster_Code' in first || 'UserMaster_Code' in first) {
+                    return arr;
+                }
+            }
+        }
+    }
+    return [];
+}
+
+function pickUserRowCode(u) {
+    if (!u) return '';
+    const v = u.Code ?? u.code
+        ?? u.UserMaster_Code ?? u.userMaster_Code
+        ?? u.ID ?? u.id
+        ?? u.UserCode ?? u.userCode
+        ?? u.EmployeeMaster_Code ?? u.employeeMaster_Code;
+    if (v === null || v === undefined || v === '') return '';
+    const s = String(v).trim();
+    return s === '0' ? '' : s;
+}
+
+function pickUserDisplayName(u, val) {
+    if (!u) return val || '';
+    return u.UserName || u.userName
+        || u.Name || u.name
+        || u.FullName || u.fullName
+        || u.UserID || u.userID
+        || u.Email || u.email
+        || val;
+}
+
+function bindGRNCheckUserSelect() {
+    const $sel = $('#ddlGRNCheckUsers');
+    if (!$sel.length) return;
+    try { $sel.select2('destroy'); } catch (e) {}
+    let opts = '';
+    (G_UserList || []).forEach(function (u) {
+        const val  = pickUserRowCode(u);
+        if (!val) return;
+        const text = pickUserDisplayName(u, val);
+        opts += `<option value="${val}">${escHtml(text)}</option>`;
+    });
+    $sel.empty().append(opts);
+    if (typeof $.fn.select2 === 'function') {
+        try {
+            $sel.select2({
+                placeholder  : 'Select user(s)\u2026',
+                allowClear   : true,
+                width        : '100%',
+                dropdownParent: $('#dvSubProjectModal')
+            });
+        } catch (e) {}
+    }
+}
+
+function refreshGRNCheckSelectPreserveSelection() {
+    const $sel = $('#ddlGRNCheckUsers');
+    if (!$sel.length) return;
+    let prev = [];
+    try {
+        prev = ($sel.val() || []).slice();
+    } catch (e0) {}
+    bindGRNCheckUserSelect();
+    if (prev.length) {
+        try {
+            $sel.val(prev).trigger('change');
+        } catch (e1) {}
+    }
+}
+
+function loadUserListForSubProject() {
+    return SubProjectMasterService.GetUserList()
         .then(function (response) {
-            G_UserList = Array.isArray(response) ? response : [];
-        })
+            var list = normalizeUserListResponse(response);
+            if (list.length) {
+                G_UserList = list;
+                bindGRNCheckUserSelect();
+                return;
+            }
+            return UserMasterService.GetUserMasterList()
+                .then(function (r2) {
+                    G_UserList = normalizeUserListResponse(r2);
+                    bindGRNCheckUserSelect();
+                });
+        });
+}
+
+function loadUserDropdown() {
+    loadUserListForSubProject()
         .catch(function () {
             toastr.error('Error loading user list.');
         });
+}
+
+function grnCheckCodesFromRow(row) {
+    if (!row) return '';
+    var list = row.UserMasterForGRNDetails || row.userMasterForGRNDetails
+        || row.UserMasterForGRN || row.userMasterForGRN;
+    if (Array.isArray(list) && list.length) {
+        var parts = [];
+        list.forEach(function (g) {
+            if (!g) return;
+            var um = g.UserMaster_Code ?? g.userMaster_Code
+                ?? g.UserMaster_Code_For_GRN ?? g.userMaster_Code_For_GRN;
+            if (um != null && um !== '' && !isNaN(Number(um))) {
+                parts.push(String(Number(um)));
+                return;
+            }
+            var raw = g.UserMaster_Code_For_GRN || g.userMaster_Code_For_GRN || '';
+            if (!raw) return;
+            String(raw).split(',').forEach(function (p) {
+                var t = p.trim();
+                if (t) parts.push(t);
+            });
+        });
+        if (parts.length) return parts.join(',');
+    }
+    return row.UserMaster_Code_For_GRN
+        || row.userMaster_Code_For_GRN
+        || row.GRNCheck
+        || row.UserMaster_Codes_GRNCheck
+        || row.userMaster_Codes_GRNCheck
+        || '';
+}
+
+/** TVP TY_UserMasterFor_GRN columns: SubProjectMaster_Code, UserMaster_Code (C# must match). */
+function buildUserMasterForGRNPayload() {
+    const subProjectCode = parseInt($('#hfSubProjectCode').val() || '0', 10) || 0;
+    const raw            = $('#ddlGRNCheckUsers').val();
+    const codes          = Array.isArray(raw) ? raw : (raw != null && raw !== '' ? [raw] : []);
+    const out            = [];
+    codes.forEach(function (c) {
+        const n = parseInt(String(c == null ? '' : c).trim(), 10);
+        if (isNaN(n) || n <= 0) return;
+        out.push({
+            SubProjectMaster_Code: subProjectCode,
+            UserMaster_Code:       n
+        });
+    });
+    return out;
+}
+
+function userCodesCsvToDisplayNames(csv) {
+    const codes = String(csv || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    if (!codes.length) return '—';
+    const names = codes.map(function (c) {
+        const u = (G_UserList || []).find(function (x) { return pickUserRowCode(x) === c; });
+        return u ? pickUserDisplayName(u, c) : c;
+    }).filter(Boolean);
+    return names.join(', ') || '—';
+}
+
+function ensureUserListForSubProjectForm() {
+    if (G_UserList && G_UserList.length > 0) {
+        bindGRNCheckUserSelect();
+        return Promise.resolve();
+    }
+    return loadUserListForSubProject();
 }
 
 /* ── Load PO approval levels list ────────────────────────── */
@@ -145,8 +328,9 @@ function renderPOLevelsFormTable(existingDetails) {
 
         let opts = '';
         (G_UserList || []).forEach(function (u) {
-            const val  = String(u.Code || u.UserMaster_Code || u.ID || 0);
-            const text = u.UserName || u.Name || u.FullName || '';
+            const val  = pickUserRowCode(u);
+            if (!val) return;
+            const text = pickUserDisplayName(u, val);
             const sel  = preSelected.includes(val) ? ' selected' : '';
             opts += `<option value="${val}"${sel}>${escHtml(text)}</option>`;
         });
@@ -183,8 +367,9 @@ function renderPOLevelsFormTable(existingDetails) {
         const selectId = 'ddlLevelUsers_' + levelCode;
         let opts = '';
         (G_UserList || []).forEach(function (u) {
-            const val  = String(u.Code || u.UserMaster_Code || u.ID || 0);
-            const text = u.UserName || u.Name || u.FullName || '';
+            const val  = pickUserRowCode(u);
+            if (!val) return;
+            const text = pickUserDisplayName(u, val);
             const sel  = preSelected.includes(val) ? ' selected' : '';
             opts += `<option value="${val}"${sel}>${escHtml(text)}</option>`;
         });
@@ -287,6 +472,10 @@ function parseSubProjectByCodeResponse(response) {
         if (Array.isArray(response[0])) {
             row          = (response[0] || [])[0] || null;
             levelDetails = Array.isArray(response[1]) ? response[1] : [];
+            var grnList  = Array.isArray(response[2]) ? response[2] : [];
+            if (row && grnList.length) {
+                row.UserMasterForGRNDetails = grnList;
+            }
             return { row: row, levelDetails: levelDetails };
         }
         row = response[0];
@@ -298,6 +487,18 @@ function parseSubProjectByCodeResponse(response) {
         levelDetails = response.PurchaseOrderLevelsApprovalProjectUserDetails;
     } else if (row && Array.isArray(row.PurchaseOrderLevelsApprovalProjectUserDetails)) {
         levelDetails = row.PurchaseOrderLevelsApprovalProjectUserDetails;
+    }
+
+    if (row) {
+        if (Array.isArray(response.UserMasterForGRNDetails)) {
+            row.UserMasterForGRNDetails = response.UserMasterForGRNDetails;
+        } else if (Array.isArray(response.userMasterForGRNDetails)) {
+            row.UserMasterForGRNDetails = response.userMasterForGRNDetails;
+        } else if (Array.isArray(row.UserMasterForGRNDetails)) {
+            /* already on row */
+        } else if (Array.isArray(row.userMasterForGRNDetails)) {
+            row.UserMasterForGRNDetails = row.userMasterForGRNDetails;
+        }
     }
 
     return { row: row, levelDetails: levelDetails };
@@ -319,37 +520,57 @@ function SubProjectMaster_EditData(code) {
         Showloader && Showloader();
         SubProjectMasterService.GetSubProjectByCode(code)
             .then(function (res) {
-                HideLoader && HideLoader();
                 var parsed       = parseSubProjectByCodeResponse(res);
                 var row          = parsed.row;
                 var levelDetails = parsed.levelDetails;
 
-                if (!row) { toastr.warning('Sub Project not found.'); return; }
-
-                resetSubProjectForm();
-
-                $('#hfSubProjectCode').val(row.Code);
-                $('#ddlMasterProject').val(row.ProjectMaster_Code || '');
-                $('#txtSubProjectName').val(row.SubProjectDesp || '');
-
-                var budgetVal = row.Budget || 0;
-                $('#txtBudget').val(budgetVal ? formatBudgetRaw(String(budgetVal)) : '');
-
-                if (row.ProjectStartDate) {
-                    var d = new Date(row.ProjectStartDate);
-                    if (!isNaN(d.getTime())) $('#txtStartDate').val(formatDate(d));
+                if (!row) {
+                    HideLoader && HideLoader();
+                    toastr.warning('Sub Project not found.');
+                    return;
                 }
 
-                if (row.EstimatedCompletionDate) {
-                    var ed = new Date(row.EstimatedCompletionDate);
-                    if (!isNaN(ed.getTime())) $('#txtEstimatedDate').val(formatDate(ed));
-                }
+                ensureUserListForSubProjectForm()
+                    .then(function () {
+                        HideLoader && HideLoader();
 
-                $('#txtEstimatedDays').val(row.EstimatedCompletionDays || '');
+                        resetSubProjectForm();
 
-                renderPOLevelsFormTable(levelDetails);
-                $('#spm-modal-title').text('Edit Sub Project');
-                showModal('dvSubProjectModal');
+                        $('#hfSubProjectCode').val(row.Code);
+                        $('#ddlMasterProject').val(row.ProjectMaster_Code || '');
+                        $('#txtSubProjectName').val(row.SubProjectDesp || '');
+
+                        var budgetVal = row.Budget || 0;
+                        $('#txtBudget').val(budgetVal ? formatBudgetRaw(String(budgetVal)) : '');
+
+                        if (row.ProjectStartDate) {
+                            var d = new Date(row.ProjectStartDate);
+                            if (!isNaN(d.getTime())) $('#txtStartDate').val(formatDate(d));
+                        }
+
+                        if (row.EstimatedCompletionDate) {
+                            var ed = new Date(row.EstimatedCompletionDate);
+                            if (!isNaN(ed.getTime())) $('#txtEstimatedDate').val(formatDate(ed));
+                        }
+
+                        $('#txtEstimatedDays').val(row.EstimatedCompletionDays || '');
+
+                        const grnArr = String(grnCheckCodesFromRow(row) || '')
+                            .split(',')
+                            .map(function (x) { return x.trim(); })
+                            .filter(Boolean);
+                        try {
+                            $('#ddlGRNCheckUsers').val(grnArr.length ? grnArr : null).trigger('change');
+                        } catch (e) {}
+
+                        renderPOLevelsFormTable(levelDetails);
+                        $('#spm-modal-title').text('Edit Sub Project');
+                        showModal('dvSubProjectModal');
+                    })
+                    .catch(function () {
+                        HideLoader && HideLoader();
+                        toastr.error('Error loading user list.');
+                    });
             })
             .catch(function () {
                 HideLoader && HideLoader();
@@ -398,6 +619,7 @@ function viewSubProject(code) {
             }
             $('#viewEstimatedDate').text(estDateTxt);
             $('#viewEstDays').text((row.EstimatedCompletionDays || 0) + ' days');
+            $('#viewGRNCheckUsers').text(userCodesCsvToDisplayNames(grnCheckCodesFromRow(row)));
 
             if (levelDetails.length > 0) {
                 var tbl = '<table style="width:100%;border-collapse:collapse;font-size:12.5px;">';
@@ -408,8 +630,8 @@ function viewSubProject(code) {
                 levelDetails.forEach(function (d) {
                     var codes = String(d.UserMaster_Codes_RightToVerifyPO || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
                     var names = codes.map(function (c) {
-                        var u = (G_UserList || []).find(function (x) { return String(x.Code || x.UserMaster_Code || x.ID) === c; });
-                        return u ? (u.UserName || u.Name || u.FullName || c) : c;
+                        var u = (G_UserList || []).find(function (x) { return pickUserRowCode(x) === c; });
+                        return u ? pickUserDisplayName(u, c) : c;
                     }).filter(Boolean);
                     tbl += '<tr>' +
                            '<td style="padding:5px 10px;border:1px solid #e2e8f0;font-weight:600;white-space:nowrap;">' + escHtml(d.LevelDesp || '') + '</td>' +
@@ -481,6 +703,9 @@ function resetSubProjectForm() {
     $('#txtStartDate').val(getTodayForInput());
     $('#txtEstimatedDate').val(getTodayForInput());
     $('#txtEstimatedDays').val('');
+    try {
+        $('#ddlGRNCheckUsers').val(null).trigger('change');
+    } catch (e) {}
     renderPOLevelsFormTable([]);
 }
 
@@ -602,6 +827,7 @@ function callSaveSubProjectApi() {
         EstimatedCompletionDays: $('#txtEstimatedDays').val()
                                      ? parseInt($('#txtEstimatedDays').val(), 10)
                                      : 0,
+        UserMasterForGRNDetails: buildUserMasterForGRNPayload(),
         PurchaseOrderLevelsApprovalProjectUserDetails: collectPOLevelDetails()
     };
 
