@@ -838,6 +838,25 @@ window.LoadSubProjects = function (selectedCode) {
             html += `<option value="${s.Code}" ${sel}>${s.Name}</option>`;
         });
         $('#frmDdlSubProject').html(html);
+
+        // Auto-set default Site Representative when user picks a Sub Project
+        $('#frmDdlSubProject').off('change.siterepdefault').on('change.siterepdefault', function () {
+            const subCode = $(this).val();
+            const sub = G_SubProjectList.find(s => String(s.Code) === String(subCode));
+            if (sub && sub.SiteRepresentativeMaster_Code) {
+                if (G_SiteRepList.length > 0) {
+                    if ($('#frmDdlSiteRep').data('select2')) {
+                        $('#frmDdlSiteRep').val(sub.SiteRepresentativeMaster_Code).trigger('change');
+                    } else {
+                        $('#frmDdlSiteRep').val(sub.SiteRepresentativeMaster_Code);
+                        ShowSiteRepDetails(sub.SiteRepresentativeMaster_Code);
+                    }
+                } else {
+                    LoadSiteRepDropdown(sub.SiteRepresentativeMaster_Code);
+                }
+            }
+        });
+
         RefreshAllItemDropdowns();
     }).catch(() => { $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>'); });
 };
@@ -1081,7 +1100,7 @@ window.ShowPOListGrid = function () {
                        <button class="btn btn-danger icon-height mb-1 ms-1" title="Delete" onclick="InitDeletePO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-trash"></i></button>
                        <button class="btn btn-secondary icon-height mb-1 ms-1" title="Print Preview" onclick="PrintPO('${item.Code}','preview')"><i class="fa fa-search-plus"></i></button>
                        <button class="btn btn-dark icon-height mb-1 ms-1" title="Print" onclick="PrintPO('${item.Code}','print')"><i class="fa fa-print"></i></button>
-                       <button class="btn icon-height mb-1 ms-1" title="Attachments" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;" onclick="openPOListAttachmentControl('${item.Code}','${item.PONo || item.PO_No || ''}','${(item.PODate || item.PO_Date || '').substring(0, 10)}')"><i class="fa fa-paperclip"></i></button>
+                       <button class="btn icon-height mb-1 ms-1" title="Attachments" style="background:${(item.HasAttach || '').toUpperCase() === 'Y' ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#0ea5e9,#0284c7)'};color:#fff;border:none;" onclick="openPOListAttachmentControl('${item.Code}','${item.PONo || item.PO_No || ''}','${(item.PODate || item.PO_Date || '').substring(0, 10)}')"><i class="fa fa-paperclip"></i></button>
                        ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;" title="Cancel PO" onclick="InitCancelPO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-ban"></i></button>` : ''}`
         }));
         BizsolCustomFilterGrid.CreateDataTable('tblPOListHeader', 'tblPOListBody', displayData, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, [], hiddenColumns, columnAlignment, true, TotalColumns, null, commaColumns);

@@ -36,6 +36,12 @@ const UserMasterService = {
         var URL = UrlService.API_ENDPOINT_USERMASTER + '/GetCompanyMasterList';
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
+    GetSubProjectMasterList: function (CompanyCode) {
+        var code = encodeURIComponent(CompanyCode == null ? '' : String(CompanyCode));
+        var URL = UrlService.API_ENDPOINT_USERMASTER + '/GetSubProjectMasterList?CompanyCode=' + code;
+        return promiseAjaxCallApi.CallAPI('GET', URL, '');
+    },
+    
 };
 
 export { UserMasterService };
