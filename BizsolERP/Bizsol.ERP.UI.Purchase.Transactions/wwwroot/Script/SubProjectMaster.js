@@ -10,6 +10,8 @@ let G_ProjectList       = [];
 let G_UserList          = [];
 let G_POLevelList       = [];
 let G_ActiveStatusFilter = 'all'; // 'all' | 'running' | 'pending'
+/** GRN Check codes to apply after modal is visible (Select2 multi in hidden modal often keeps only one if set earlier). */
+let G_SubProjectModalGRNPendingCodes = null;
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
@@ -67,10 +69,16 @@ $(document).ready(function () {
     });
 
     $('#dvSubProjectModal').on('shown.bs.modal', function () {
-        if (G_UserList && G_UserList.length > 0) {
+        function finishGrnCheckAfterModalVisible() {
             refreshGRNCheckSelectPreserveSelection();
+            applyPendingGrnCheckIfAny();
+        }
+        if (G_UserList && G_UserList.length > 0) {
+            finishGrnCheckAfterModalVisible();
         } else {
-            loadUserListForSubProject().catch(function () {});
+            loadUserListForSubProject()
+                .then(finishGrnCheckAfterModalVisible)
+                .catch(function () {});
         }
     });
 });
@@ -188,7 +196,10 @@ function refreshGRNCheckSelectPreserveSelection() {
     if (!$sel.length) return;
     let prev = [];
     try {
-        prev = ($sel.val() || []).slice();
+        var rawVal = $sel.val();
+        prev = Array.isArray(rawVal)
+            ? rawVal.slice()
+            : (rawVal != null && rawVal !== '' ? [String(rawVal)] : []);
     } catch (e0) {}
     bindGRNCheckUserSelect();
     if (prev.length) {
@@ -196,6 +207,20 @@ function refreshGRNCheckSelectPreserveSelection() {
             $sel.val(prev).trigger('change');
         } catch (e1) {}
     }
+}
+
+/** Apply GRN multi-select saved from edit open, once modal + Select2 are visible (see G_SubProjectModalGRNPendingCodes). */
+function applyPendingGrnCheckIfAny() {
+    if (!G_SubProjectModalGRNPendingCodes || !G_SubProjectModalGRNPendingCodes.length) return;
+    const $sel = $('#ddlGRNCheckUsers');
+    if (!$sel.length) {
+        G_SubProjectModalGRNPendingCodes = null;
+        return;
+    }
+    try {
+        $sel.val(G_SubProjectModalGRNPendingCodes).trigger('change');
+    } catch (e) {}
+    G_SubProjectModalGRNPendingCodes = null;
 }
 
 function loadUserListForSubProject() {
@@ -224,33 +249,40 @@ function loadUserDropdown() {
 
 function grnCheckCodesFromRow(row) {
     if (!row) return '';
+    var parts = [];
+    var seen = Object.create(null);
+    function pushCode(t) {
+        if (t == null || t === '') return;
+        var s = String(t).trim();
+        if (!s) return;
+        if (!isNaN(Number(s)) && s !== '') s = String(Number(s));
+        if (seen[s]) return;
+        seen[s] = 1;
+        parts.push(s);
+    }
+    function addFromCsv(csv) {
+        String(csv || '').split(',').forEach(function (p) { pushCode(p); });
+    }
     var list = row.UserMasterForGRNDetails || row.userMasterForGRNDetails
         || row.UserMasterForGRN || row.userMasterForGRN;
+    if (list && !Array.isArray(list)) list = [list];
     if (Array.isArray(list) && list.length) {
-        var parts = [];
         list.forEach(function (g) {
             if (!g) return;
             var um = g.UserMaster_Code ?? g.userMaster_Code
+                ?? g.Code ?? g.code
                 ?? g.UserMaster_Code_For_GRN ?? g.userMaster_Code_For_GRN;
-            if (um != null && um !== '' && !isNaN(Number(um))) {
-                parts.push(String(Number(um)));
+            if (um != null && um !== '' && String(um).trim() !== '' && !isNaN(Number(um))) {
+                pushCode(String(Number(um)));
                 return;
             }
-            var raw = g.UserMaster_Code_For_GRN || g.userMaster_Code_For_GRN || '';
-            if (!raw) return;
-            String(raw).split(',').forEach(function (p) {
-                var t = p.trim();
-                if (t) parts.push(t);
-            });
+            addFromCsv(g.UserMaster_Code_For_GRN || g.userMaster_Code_For_GRN || '');
         });
-        if (parts.length) return parts.join(',');
     }
-    return row.UserMaster_Code_For_GRN
-        || row.userMaster_Code_For_GRN
-        || row.GRNCheck
-        || row.UserMaster_Codes_GRNCheck
-        || row.userMaster_Codes_GRNCheck
-        || '';
+    addFromCsv(row.UserMaster_Code_For_GRN || row.userMaster_Code_For_GRN);
+    addFromCsv(row.GRNCheck);
+    addFromCsv(row.UserMaster_Codes_GRNCheck || row.userMaster_Codes_GRNCheck);
+    return parts.length ? parts.join(',') : '';
 }
 
 /** TVP TY_UserMasterFor_GRN columns: SubProjectMaster_Code, UserMaster_Code (C# must match). */
@@ -559,9 +591,7 @@ function SubProjectMaster_EditData(code) {
                             .split(',')
                             .map(function (x) { return x.trim(); })
                             .filter(Boolean);
-                        try {
-                            $('#ddlGRNCheckUsers').val(grnArr.length ? grnArr : null).trigger('change');
-                        } catch (e) {}
+                        G_SubProjectModalGRNPendingCodes = grnArr.length ? grnArr.slice() : null;
 
                         renderPOLevelsFormTable(levelDetails);
                         $('#spm-modal-title').text('Edit Sub Project');
@@ -696,6 +726,7 @@ function callDeleteSubProjectApi(code, reason) {
 
 /* ── Reset form ──────────────────────────────────────────── */
 function resetSubProjectForm() {
+    G_SubProjectModalGRNPendingCodes = null;
     $('#hfSubProjectCode').val(0);
     $('#ddlMasterProject').val('');
     $('#txtSubProjectName').val('');
