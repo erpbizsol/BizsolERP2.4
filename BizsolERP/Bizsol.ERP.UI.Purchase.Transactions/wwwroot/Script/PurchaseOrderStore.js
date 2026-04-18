@@ -838,6 +838,25 @@ window.LoadSubProjects = function (selectedCode) {
             html += `<option value="${s.Code}" ${sel}>${s.Name}</option>`;
         });
         $('#frmDdlSubProject').html(html);
+
+        // Auto-set default Site Representative when user picks a Sub Project
+        $('#frmDdlSubProject').off('change.siterepdefault').on('change.siterepdefault', function () {
+            const subCode = $(this).val();
+            const sub = G_SubProjectList.find(s => String(s.Code) === String(subCode));
+            if (sub && sub.SiteRepresentativeMaster_Code) {
+                if (G_SiteRepList.length > 0) {
+                    if ($('#frmDdlSiteRep').data('select2')) {
+                        $('#frmDdlSiteRep').val(sub.SiteRepresentativeMaster_Code).trigger('change');
+                    } else {
+                        $('#frmDdlSiteRep').val(sub.SiteRepresentativeMaster_Code);
+                        ShowSiteRepDetails(sub.SiteRepresentativeMaster_Code);
+                    }
+                } else {
+                    LoadSiteRepDropdown(sub.SiteRepresentativeMaster_Code);
+                }
+            }
+        });
+
         RefreshAllItemDropdowns();
     }).catch(() => { $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>'); });
 };
