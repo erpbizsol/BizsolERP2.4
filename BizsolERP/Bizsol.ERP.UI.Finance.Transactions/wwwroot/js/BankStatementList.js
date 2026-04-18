@@ -1,5 +1,5 @@
 import { BankStatementService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BankStatementService.js';
-
+var baseUrl = sessionStorage.getItem('AppBaseURL');
 // ── Date helpers (same pattern as ProjectMaster) ──────────────────────────────
 function formatDate(date) {
     var day   = String(date.getDate()).padStart(2, '0');
@@ -71,7 +71,7 @@ function BindEvents() {
         LoadStatements();
     });
     $('#btnImportNew').on('click', function () {
-        window.location.href = '/FinanceTransactions/BankStatement/BankStatementImport';
+        window.location = baseUrl + '/FinanceTransactions/BankStatement/BankStatementImport';
     });
 
     // Allow Enter key in filter inputs to trigger search

@@ -735,20 +735,17 @@ function validateSubProjectForm() {
     const editingCode   = parseInt($('#hfSubProjectCode').val() || '0', 10) || 0;
     const parent        = (G_ProjectList || []).find(function (p) { return String(p.Code) === String(masterCodeNum); });
     if (parent) {
-        const pBud  = parseFloat(parent.Budget || parent.ProjectBudget || 0) || 0;
-        const pDays = parseInt(parent.EstimatedCompletionDays || parent.EstimatedDays || 0, 10) || 0;
-        const sBud  = $('#txtBudget').val()
+        const pBud = parseFloat(parent.Budget || parent.ProjectBudget || 0) || 0;
+        const sBud = $('#txtBudget').val()
             ? parseFloat($('#txtBudget').val().toString().replace(/,/g, ''))
             : 0;
-        const sDays = parseInt(estimatedDays, 10) || 0;
 
-        let sumOtherBud  = 0;
-        let sumOtherDays = 0;
+        // Sum of sub-project budgets must not exceed the parent project budget
+        let sumOtherBud = 0;
         (G_SubProjectList || []).forEach(function (s) {
             if (String(s.ProjectMaster_Code || s.MasterProjectCode || 0) !== String(masterCodeNum)) return;
             if (editingCode > 0 && String(s.Code || 0) === String(editingCode)) return;
-            sumOtherBud  += parseFloat(s.Budget || s.SubProjectBudget || 0) || 0;
-            sumOtherDays += parseInt(s.EstimatedCompletionDays || s.EstimatedDays || 0, 10) || 0;
+            sumOtherBud += parseFloat(s.Budget || s.SubProjectBudget || 0) || 0;
         });
 
         if (pBud > 0 && (sumOtherBud + sBud) > pBud) {
@@ -762,12 +759,30 @@ function validateSubProjectForm() {
             $('#txtBudget').focus();
             return false;
         }
-        if (pDays > 0 && (sumOtherDays + sDays) > pDays) {
+
+        // Sub-project dates must fall within the parent project date range.
+        // No sum-of-days check — only start/end date boundary is enforced.
+        // Use YYYY-MM-DD string comparison to avoid timezone/time-component issues.
+        const subStartStr = ($('#txtStartDate').val() || '').trim();
+        const subEndStr   = ($('#txtEstimatedDate').val() || '').trim();
+        const pStartStr   = extractYMD(parent.ProjectStartDate);
+        const pEndStr     = extractYMD(parent.EstimatedCompletionDate);
+
+        if (pStartStr && subStartStr && subStartStr < pStartStr) {
             toastr.warning(
-                'Combined sub-project estimated days cannot exceed parent project (' + pDays
-                    + ' days). Other sub-projects already total ' + sumOtherDays + ' days.'
+                'Sub-project start date (' + subStartStr
+                    + ') cannot be before parent project start date (' + pStartStr + ').'
             );
-            $('#txtEstimatedDays').focus();
+            $('#txtStartDate').focus();
+            return false;
+        }
+
+        if (pEndStr && subEndStr && subEndStr > pEndStr) {
+            toastr.warning(
+                'Sub-project end date (' + subEndStr
+                    + ') cannot be after parent project end date (' + pEndStr + ').'
+            );
+            $('#txtEstimatedDate').focus();
             return false;
         }
     }
@@ -1113,6 +1128,14 @@ function calcEstimatedDateFromDays() {
     const estDate = new Date(start);
     estDate.setDate(estDate.getDate() + days);
     $('#txtEstimatedDate').val(formatDate(estDate));
+}
+
+/* Returns the YYYY-MM-DD portion of any date string/value without timezone shift.
+   Works correctly for both '2026-04-01' and '2026-04-01T00:00:00' API formats. */
+function extractYMD(dateVal) {
+    if (!dateVal) return null;
+    const m = String(dateVal).trim().match(/^(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : null;
 }
 
 function escHtml(str) {
