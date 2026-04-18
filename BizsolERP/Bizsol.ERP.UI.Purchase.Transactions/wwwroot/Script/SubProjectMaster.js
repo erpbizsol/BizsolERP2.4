@@ -4,11 +4,13 @@ import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServ
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 import { BOMService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BOMService.js';
 import { UserMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_UserMasterService.js';
+import { PurchaseOrderStoreService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseOrderStoreServices.js';
 
 let G_SubProjectList    = [];
 let G_ProjectList       = [];
 let G_UserList          = [];
 let G_POLevelList       = [];
+let G_SiteRepList       = [];
 let G_ActiveStatusFilter = 'all'; // 'all' | 'running' | 'pending'
 
 $(document).ready(function () {
@@ -16,6 +18,7 @@ $(document).ready(function () {
 
     loadUserDropdown();
     loadPOLevelList();
+    loadSiteRepDropdown(null);
     // Chain: load master projects first, then sub-projects (avoids race where grid binds before G_ProjectList is ready)
     loadProjectDropdown().finally(function () {
         loadSubProjects();
@@ -287,6 +290,97 @@ function ensureUserListForSubProjectForm() {
     }
     return loadUserListForSubProject();
 }
+
+/* ── Site Representative ─────────────────────────────────── */
+function loadSiteRepDropdown(selectedCode) {
+    PurchaseOrderStoreService.GetSiteRepresentativeList().then(function (data) {
+        G_SiteRepList = data || [];
+        populateSiteRepDropdown(selectedCode);
+    }).catch(function () {
+        G_SiteRepList = [];
+        populateSiteRepDropdown(selectedCode);
+    });
+}
+
+function populateSiteRepDropdown(selectedCode) {
+    let opts = '<option value="">-- Select Site Representative --</option>';
+    G_SiteRepList.forEach(function (r) {
+        opts += '<option value="' + r.Code + '">' + escHtml(r.Name) + '</option>';
+    });
+    if ($('#frmDdlSiteRepSPM').data('select2')) $('#frmDdlSiteRepSPM').select2('destroy');
+    $('#frmDdlSiteRepSPM').html(opts);
+    if ($.fn.select2) {
+        $('#frmDdlSiteRepSPM').select2({
+            placeholder   : '-- Select Site Representative --',
+            allowClear    : true,
+            width         : '100%',
+            dropdownParent: $('body')
+        });
+        $('#frmDdlSiteRepSPM').off('change.srepspm').on('change.srepspm', function () {
+            showSiteRepDetailsSPM($(this).val());
+        });
+    }
+    if (selectedCode) {
+        $('#frmDdlSiteRepSPM').val(selectedCode).trigger('change');
+    }
+}
+
+function showSiteRepDetailsSPM(code) {
+    if (!code) { $('#divSiteRepDetailsSPM').hide(); return; }
+    const rep = G_SiteRepList.find(function (r) { return String(r.Code) === String(code); });
+    if (!rep) { $('#divSiteRepDetailsSPM').hide(); return; }
+    $('#siteRepSPMName').text(rep.Name || '');
+    $('#siteRepSPMMobile').text(rep.Mobile || rep.MobileNo || '');
+    $('#siteRepSPMEmail').text(rep.Email || '');
+    $('#divSiteRepDetailsSPM').show();
+}
+
+window.OpenAddSiteRepModalSPM = function () {
+    const selectedCode = $('#frmDdlSiteRepSPM').val();
+    const existingRep  = selectedCode
+        ? G_SiteRepList.find(function (r) { return String(r.Code) === String(selectedCode); })
+        : null;
+    // Pre-fill with existing rep data so user can edit it; empty for a brand-new rep
+    $('#hfSiteRepSPMCode').val(existingRep ? existingRep.Code : 0);
+    $('#siteRepSPMTxtName').val(existingRep ? (existingRep.Name || '') : '');
+    $('#siteRepSPMTxtMobile').val(existingRep ? (existingRep.Mobile || existingRep.MobileNo || '') : '');
+    $('#siteRepSPMTxtEmail').val(existingRep ? (existingRep.Email || '') : '');
+    const title = existingRep ? 'Edit Site Representative' : 'Add Site Representative';
+    $('#modalAddSiteRepSPM .modal-title').html('<i class="fa fa-user-tie me-2"></i>' + title);
+    $('#modalAddSiteRepSPM').modal('show');
+};
+
+window.SaveSiteRepresentativeSPM = function () {
+    const name   = $('#siteRepSPMTxtName').val().trim();
+    const mobile = $('#siteRepSPMTxtMobile').val().trim();
+    const email  = $('#siteRepSPMTxtEmail').val().trim();
+    const code   = parseInt($('#hfSiteRepSPMCode').val() || '0', 10) || 0;
+    if (!name) { toastr.warning('Please enter Name.'); return; }
+    if (mobile && !/^[6-9]\d{9}$/.test(mobile)) {
+        toastr.warning('Please enter a valid 10-digit Mobile No (starting with 6\u20139).');
+        $('#siteRepSPMTxtMobile').focus();
+        return;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        toastr.warning('Please enter a valid Email address.');
+        $('#siteRepSPMTxtEmail').focus();
+        return;
+    }
+    const payload = JSON.stringify({ Code: code, siteRepresentatives: [{ Code: code, Name: name, MobileNo: mobile, Email: email }] });
+    PurchaseOrderStoreService.SaveSiteRepresentative(payload).then(function (res) {
+        if (res && res.Status === 'Y') {
+            toastr.success(res.Msg || 'Site Representative saved.');
+            $('#modalAddSiteRepSPM').modal('hide');
+            const newCode = res.Code || res.NewCode || code || null;
+            loadSiteRepDropdown(newCode);
+        } else {
+            toastr.error(res ? res.Msg : 'Failed to save Site Representative.');
+        }
+    }).catch(function (err) {
+        toastr.error('Error saving Site Representative.');
+        console.error(err);
+    });
+};
 
 /* ── Load PO approval levels list ────────────────────────── */
 function loadPOLevelList() {
@@ -563,6 +657,14 @@ function SubProjectMaster_EditData(code) {
                             $('#ddlGRNCheckUsers').val(grnArr.length ? grnArr : null).trigger('change');
                         } catch (e) {}
 
+                        // Set site representative
+                        const siteRepCode = row.SiteRepresentativeMaster_Code || row.siteRepresentativeMaster_Code || null;
+                        if (G_SiteRepList.length > 0) {
+                            populateSiteRepDropdown(siteRepCode);
+                        } else {
+                            loadSiteRepDropdown(siteRepCode);
+                        }
+
                         renderPOLevelsFormTable(levelDetails);
                         $('#spm-modal-title').text('Edit Sub Project');
                         showModal('dvSubProjectModal');
@@ -619,6 +721,10 @@ function viewSubProject(code) {
             }
             $('#viewEstimatedDate').text(estDateTxt);
             $('#viewEstDays').text((row.EstimatedCompletionDays || 0) + ' days');
+            // Site Representative
+            const siteRepCode = row.SiteRepresentativeMaster_Code || row.siteRepresentativeMaster_Code || null;
+            const siteRepObj  = siteRepCode ? (G_SiteRepList || []).find(function (r) { return String(r.Code) === String(siteRepCode); }) : null;
+            $('#viewSiteRepresentative').text(siteRepObj ? siteRepObj.Name : '—');
             $('#viewGRNCheckUsers').text(userCodesCsvToDisplayNames(grnCheckCodesFromRow(row)));
 
             if (levelDetails.length > 0) {
@@ -706,6 +812,12 @@ function resetSubProjectForm() {
     try {
         $('#ddlGRNCheckUsers').val(null).trigger('change');
     } catch (e) {}
+    // Reset site representative
+    try {
+        if ($('#frmDdlSiteRepSPM').data('select2')) $('#frmDdlSiteRepSPM').val(null).trigger('change');
+        else $('#frmDdlSiteRepSPM').val('');
+    } catch (e) {}
+    $('#divSiteRepDetailsSPM').hide();
     renderPOLevelsFormTable([]);
 }
 
@@ -827,6 +939,7 @@ function callSaveSubProjectApi() {
         EstimatedCompletionDays: $('#txtEstimatedDays').val()
                                      ? parseInt($('#txtEstimatedDays').val(), 10)
                                      : 0,
+        SiteRepresentativeMaster_Code: parseInt($('#frmDdlSiteRepSPM').val()) || 0,
         UserMasterForGRNDetails: buildUserMasterForGRNPayload(),
         PurchaseOrderLevelsApprovalProjectUserDetails: collectPOLevelDetails()
     };
