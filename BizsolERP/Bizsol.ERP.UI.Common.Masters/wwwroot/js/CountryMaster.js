@@ -8,7 +8,9 @@ var G_UserMasterCode = authKeyData.UserMaster_Code || 0;
 var G_COUNTRY_SourceRows = [];
 var G_COUNTRY_ApiColumnKeys = null;
 var G_COUNTRY_DetailMode = 'list';
-var COUNTRY_GRID_HIDDEN_COLUMNS = ['Code', 'UserName', 'CreateDate', 'UpdateDate', 'Remarks'];
+var COUNTRY_GRID_HIDDEN_COLUMNS = ['Code', 'UserName', 'CreateDate', 'UpdateDate', 'Remarks', 'PhoneNoLength'];
+var COUNTRY_PINCODE_LEN_MAX = 2147483647;
+var COUNTRY_PINCODE_LEN_MAX_DIGITS = 10;
 
 function getFinancialYear() {
     return BizSolHelperFunction.getFinancialYear();
@@ -258,17 +260,101 @@ function clearAllFieldErrors() {
     $('#countryDetailPanel .country-input-error').removeClass('country-input-error');
     $('#countryDetailPanel .country-field-error').remove();
 }
+function sanitizePincodeLengthDigits(raw) {
+    var s = raw != null ? String(raw) : '';
+    s = s.replace(/\D/g, '');
+    if (s.length > COUNTRY_PINCODE_LEN_MAX_DIGITS) {
+        s = s.slice(0, COUNTRY_PINCODE_LEN_MAX_DIGITS);
+    }
+    return s;
+}
+function normalizePincodeLengthFieldValue() {
+    var el = document.getElementById('txtPincodeLength');
+    if (!el) return;
+    var s = sanitizePincodeLengthDigits(el.value);
+    el.value = s;
+}
+function pincodeLengthKeydown(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var k = e.key;
+    if (k === 'Backspace' || k === 'Tab' || k === 'Enter' || k === 'Escape' || k === 'Delete') return;
+    if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown' || k === 'Home' || k === 'End') return;
+    if (k.length === 1 && k >= '0' && k <= '9') return;
+    e.preventDefault();
+}
+function bindPincodeLengthField() {
+    var $el = $('#txtPincodeLength');
+    if (!$el.length) return;
+    $el
+        .off('input.countryPin blur.countryPin keydown.countryPin paste.countryPin')
+        .on('keydown.countryPin', pincodeLengthKeydown)
+        .on('paste.countryPin', function () {
+            var self = this;
+            setTimeout(function () {
+                var s = sanitizePincodeLengthDigits(self.value);
+                if (self.value !== s) self.value = s;
+                clearFieldError('txtPincodeLength');
+            }, 0);
+        })
+        .on('input.countryPin', function () {
+            var s = sanitizePincodeLengthDigits(this.value);
+            if (this.value !== s) this.value = s;
+            clearFieldError('txtPincodeLength');
+        })
+        .on('blur.countryPin', function () {
+            var s = sanitizePincodeLengthDigits(this.value);
+            if (s === '') {
+                this.value = '0';
+            } else {
+                var n = parseInt(s, 10);
+                if (!isFinite(n) || n < 0) this.value = '0';
+                else if (n > COUNTRY_PINCODE_LEN_MAX) this.value = String(COUNTRY_PINCODE_LEN_MAX);
+                else this.value = String(n);
+            }
+            clearFieldError('txtPincodeLength');
+        });
+}
+function validatePincodeLengthForSave() {
+    var el = document.getElementById('txtPincodeLength');
+    if (!el) return true;
+    var raw = (el.value || '').trim();
+    if (raw === '') {
+        el.value = '0';
+        raw = '0';
+    }
+    if (!/^\d+$/.test(raw)) {
+        showFieldError('txtPincodeLength', 'Pincode length must contain digits only.');
+        $('#txtPincodeLength').focus();
+        return false;
+    }
+    var n = parseInt(raw, 10);
+    if (!isFinite(n) || n < 0) {
+        showFieldError('txtPincodeLength', 'Enter a valid number (0 or greater).');
+        $('#txtPincodeLength').focus();
+        return false;
+    }
+    if (n > COUNTRY_PINCODE_LEN_MAX) {
+        showFieldError('txtPincodeLength', 'Value is too large.');
+        $('#txtPincodeLength').focus();
+        return false;
+    }
+    el.value = String(n);
+    clearFieldError('txtPincodeLength');
+    return true;
+}
 function clearForm() {
     clearAllFieldErrors();
     $('#hfCountryMaster_Code').val('0');
     $('#txtCountryName').val('');
     $('#txtCountryCode').val('');
+    $('#txtPincodeLength').val('0');
+    $('#txtCountryTerms').val('');
 }
 function setDetailFormMode(mode) {
     G_COUNTRY_DetailMode = mode;
     var ro = mode === 'view';
     $('#countryDetailPanel').toggleClass('country-readonly', ro);
-    $('#txtCountryName, #txtCountryCode').prop('disabled', ro);
+    $('#txtCountryName, #txtCountryCode, #txtPincodeLength, #txtCountryTerms').prop('disabled', ro);
     if (!ro) {
         $('#btnSaveCountry, #btnClearCountry').show();
     } else {
@@ -298,6 +384,13 @@ function loadEditRecord(code, mode) {
             $('#hfCountryMaster_Code').val(rec.Code != null ? rec.Code : 0);
             $('#txtCountryName').val(rec.CountryName != null ? String(rec.CountryName).trim() : '');
             $('#txtCountryCode').val(rec.CountryCode != null ? String(rec.CountryCode).trim() : '');
+            var pinLen = rec.PincodeLength != null ? rec.PincodeLength : rec.pincodeLength;
+            var pinNum = pinLen != null && pinLen !== '' ? parseInt(pinLen, 10) : 0;
+            if (!isFinite(pinNum) || pinNum < 0) pinNum = 0;
+            if (pinNum > COUNTRY_PINCODE_LEN_MAX) pinNum = COUNTRY_PINCODE_LEN_MAX;
+            $('#txtPincodeLength').val(String(pinNum));
+            var terms = rec.Remarks != null ? rec.Remarks : rec.remarks;
+            $('#txtCountryTerms').val(terms != null ? String(terms) : '');
             setDetailFormMode(mode || 'edit');
         })
         .catch(function () {
@@ -305,11 +398,17 @@ function loadEditRecord(code, mode) {
         });
 }
 function buildSavePayload() {
+    var pinRaw = ($('#txtPincodeLength').val() || '').trim();
+    var pinNum = pinRaw === '' ? 0 : parseInt(pinRaw, 10);
+    if (!isFinite(pinNum) || pinNum < 0) pinNum = 0;
+    // camelCase matches typical ASP.NET Core JSON input; avoids 400 "field is required" when server is case-sensitive
     return {
-        Code: parseInt($('#hfCountryMaster_Code').val() || '0', 10) || 0,
-        CountryName: ($('#txtCountryName').val() || '').trim(),
-        CountryCode: ($('#txtCountryCode').val() || '').trim(),
-        UserMaster_Code: G_UserMasterCode,
+        code: parseInt($('#hfCountryMaster_Code').val() || '0', 10) || 0,
+        countryName: ($('#txtCountryName').val() || '').trim(),
+        countryCode: ($('#txtCountryCode').val() || '').trim(),
+        pincodeLength: pinNum,
+        remarks: ($('#txtCountryTerms').val() || '').trim(),
+        userMaster_Code: G_UserMasterCode,
     };
 }
 function saveCountry() {
@@ -329,6 +428,9 @@ function saveCountry() {
         if (!cc) {
             showFieldError('txtCountryCode', 'Country Code is required.');
             $('#txtCountryCode').focus();
+            return;
+        }
+        if (!validatePincodeLengthForSave()) {
             return;
         }
         CountryMasterService.SaveCountryMaster(buildSavePayload())
@@ -414,6 +516,7 @@ function confirmCountryDelete() {
         });
 }
 $(document).ready(function () {
+    bindPincodeLengthField();
     BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
     if (!$('#ERPHeading').text().trim()) {
         $('#ERPHeading').text('Country Master');

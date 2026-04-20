@@ -51,28 +51,12 @@ function hideModal(id) {
         }
     } catch (e) { $('#' + id).modal('hide'); }
 }
-function bindGSTUOMDropdown(rows) {
-    var $sel = $('#ddlGSTUOM');
-    $sel.empty();
-    $sel.append(new Option('-- Select GST UOM --', ''));
-    var seen = {};
-    $.each(rows, function (_, item) {
-        var gstUom = (item.GSTUOM || item.Desp || item.Description || '').toString().trim();
-        if (!gstUom || seen[gstUom]) return;   
-        seen[gstUom] = true;
-        $sel.append(new Option(gstUom, gstUom));
-    });
-    if ($sel.data('select2')) $sel.select2('destroy');
-    $sel.select2({ width: '100%', placeholder: '-- Select GST UOM --', allowClear: true });
+function ynFromCheckbox($el) {
+    return $el.length && $el.prop('checked') ? 'Y' : 'N';
 }
-function loadGSTUOMDropdown() {
-    return UOMMasterService.GetGSTUOMDropDown()
-        .then(function (res) {
-            bindGSTUOMDropdown(firstArray(res));
-        })
-        .catch(function () {
-            bindGSTUOMDropdown([]);
-        });
+function setCheckboxFromYn($el, v) {
+    var s = v != null ? String(v).trim().toUpperCase() : '';
+    $el.prop('checked', s === 'Y' || s === '1' || s === 'T');
 }
 function showFieldError(fieldId, message) {
     var $field = $('#' + fieldId);
@@ -97,16 +81,18 @@ function clearForm() {
     clearAllFieldErrors();
     $('#hfUOMMaster_Code').val('0');
     $('#txtUOM').val('');
-    $('#ddlGSTUOM').val('').trigger('change');
+    $('#txtGSTUOM').val('');
     $('#txtDecimalPoints').val('0');
+    $('#txtLengthTypes').val('');
+    $('#chkLengthTypeMandatory').prop('checked', false);
+    $('#chkIsMasterPacking').prop('checked', false);
 }
 function setDetailFormMode(mode) {
     G_UOM_DetailMode = mode;
     var ro = mode === 'view';
     $('#uomDetailPanel').toggleClass('uom-readonly', ro);
-    $('#txtUOM, #txtDecimalPoints').prop('disabled', ro);
-    $('#ddlGSTUOM').prop('disabled', ro);
-    try { if ($('#ddlGSTUOM').data('select2')) $('#ddlGSTUOM').prop('disabled', ro); } catch (e) {}
+    $('#txtUOM, #txtGSTUOM, #txtDecimalPoints, #txtLengthTypes').prop('disabled', ro);
+    $('#chkLengthTypeMandatory, #chkIsMasterPacking').prop('disabled', ro);
     if (!ro) {
         $('#btnSaveUOM, #btnClearUOM').show();
     } else {
@@ -148,7 +134,7 @@ function mapRowForGrid(item, idx) {
         'S.No.'         : idx + 1,
         'UOM'           : item.UOM          != null ? String(item.UOM).trim()          : '',
         'GST UOM'       : item.GSTUOM       != null ? String(item.GSTUOM).trim()       : '',
-        'Decimal Points': item.DecimalPoints != null ? Number(item.DecimalPoints)       : 0,
+        'Decimal Points'   : item.DecimalPoints != null ? Number(item.DecimalPoints)       : 0,
         'Activity By'   : item.ActivityBy   != null ? String(item.ActivityBy).trim()   : '',
         'Create Date'   : formatDate(item.CreateDate),
         'Update Date'   : formatDate(item.UpdateDate),
@@ -189,7 +175,7 @@ function bindUOMGridData(filteredRows) {
     var hiddenColumns = ['Code', 'Activity By', 'Create Date', 'Update Date'];
     var ColumnAlignment         = {
         'S.No.'         : 'center;min-width:52px;white-space:nowrap;',
-        'Decimal Points': 'center;min-width:90px;',
+        'Decimal Points'   : 'center;min-width:90px;',
         'Action'        : 'center;min-width:128px;white-space:nowrap;',
     };
 
@@ -235,14 +221,10 @@ function loadEditRecord(code, mode) {
                 $('#hfUOMMaster_Code').val(rec.Code != null ? rec.Code : 0);
                 $('#txtUOM').val(rec.UOM != null ? String(rec.UOM).trim() : '');
                 $('#txtDecimalPoints').val(rec.DecimalPoints != null ? rec.DecimalPoints : 0);
-
-                // GSTUOM is stored as the description string (e.g. "KGS", "MTS-METRIC TON").
-                // Our dropdown uses Desp as value, so a direct .val() match works.
-                var gst = rec.GSTUOM != null ? String(rec.GSTUOM).trim() : '';
-                $('#ddlGSTUOM').val(gst);
-                if ($('#ddlGSTUOM').data('select2')) {
-                    $('#ddlGSTUOM').trigger('change.select2');
-                }
+                $('#txtGSTUOM').val(rec.GSTUOM != null ? String(rec.GSTUOM).trim() : '');
+                $('#txtLengthTypes').val(rec.LengthTypes != null ? String(rec.LengthTypes).trim() : '');
+                setCheckboxFromYn($('#chkLengthTypeMandatory'), rec.LengthTypeMandatory);
+                setCheckboxFromYn($('#chkIsMasterPacking'), rec.IsMasterPacking);
             }
             setDetailFormMode(mode || 'edit');
         })
@@ -251,13 +233,15 @@ function loadEditRecord(code, mode) {
         });
 }
 function buildSavePayload() {
-    // ddlGSTUOM value IS the Desp string (e.g. "KGS") — that's what the SP stores.
     return {
-        Code          : parseInt($('#hfUOMMaster_Code').val() || '0', 10) || 0,
-        UOM           : ($('#txtUOM').val() || '').trim(),
-        GSTUOM        : ($('#ddlGSTUOM').val() || '').trim(),
-        DecimalPoints : parseInt($('#txtDecimalPoints').val() || '0', 10),
-        UserMaster_Code: G_UserMasterCode,
+        Code                 : parseInt($('#hfUOMMaster_Code').val() || '0', 10) || 0,
+        UOM                  : ($('#txtUOM').val() || '').trim(),
+        GSTUOM               : ($('#txtGSTUOM').val() || '').trim(),
+        DecimalPoints        : parseInt($('#txtDecimalPoints').val() || '0', 10),
+        LengthTypes          : ($('#txtLengthTypes').val() || '').trim(),
+        LengthTypeMandatory  : ynFromCheckbox($('#chkLengthTypeMandatory')),
+        IsMasterPacking      : ynFromCheckbox($('#chkIsMasterPacking')),
+        UserMaster_Code      : G_UserMasterCode,
     };
 }
 function saveUOM() {
@@ -275,25 +259,22 @@ function saveUOM() {
             // ── Validation ────────────────────────────────────────────────
             var uom = ($('#txtUOM').val() || '').trim();
             if (!uom) {
-                showFieldError('txtUOM', 'UOM Name is required.');
+                showFieldError('txtUOM', 'UOM Desp is required.');
                 $('#txtUOM').focus();
                 return;
             }
 
-            var gstVal = ($('#ddlGSTUOM').val() || '').trim();
+            var gstVal = ($('#txtGSTUOM').val() || '').trim();
             if (!gstVal) {
-                if (typeof toastr !== 'undefined') toastr.warning('Please select a GST UOM.');
-                try {
-                    if ($('#ddlGSTUOM').data('select2')) $('#ddlGSTUOM').select2('open');
-                    else $('#ddlGSTUOM').focus();
-                } catch (e) { $('#ddlGSTUOM').focus(); }
+                showFieldError('txtGSTUOM', 'GST UOM Desp is required.');
+                $('#txtGSTUOM').focus();
                 return;
             }
 
             var dpRaw = $('#txtDecimalPoints').val().trim();
             var dp = parseInt(dpRaw, 10);
             if (dpRaw === '' || isNaN(dp) || dp < 0 || dp > 4) {
-                showFieldError('txtDecimalPoints', 'Decimal Points must be between 0 and 4.');
+                showFieldError('txtDecimalPoints', 'Digits after decimal must be between 0 and 4.');
                 $('#txtDecimalPoints').focus();
                 return;
             }
@@ -322,10 +303,8 @@ function UOM_OpenView(code) {
                 return;
             }
             showDetailPanel('view');
-            loadGSTUOMDropdown().then(function () {
-                clearForm();
-                loadEditRecord(code, 'view');
-            });
+            clearForm();
+            loadEditRecord(code, 'view');
         });
 }
 function UOM_OpenEdit(code) {
@@ -336,10 +315,8 @@ function UOM_OpenEdit(code) {
                 return;
             }
             showDetailPanel('edit');
-            loadGSTUOMDropdown().then(function () {
-                clearForm();
-                loadEditRecord(code, 'edit');
-            });
+            clearForm();
+            loadEditRecord(code, 'edit');
         });
 }
 function UOM_OpenDelete(code) {
@@ -386,10 +363,8 @@ $(document).ready(function () {
     }
 
     $('#btnCreateUOM').on('click', function () {
-        loadGSTUOMDropdown().then(function () {
-            clearForm();
-            showDetailPanel('new');
-        });
+        clearForm();
+        showDetailPanel('new');
     });
 
     $('#btnBackToUOMList').on('click', function () { showListPanel(); });
@@ -400,9 +375,16 @@ $(document).ready(function () {
     // ── Live validation ───────────────────────────────────────────────────
     $('#txtUOM').on('blur', function () {
         clearFieldError('txtUOM');
-        if (!$(this).val().trim()) showFieldError('txtUOM', 'UOM Name is required.');
+        if (!$(this).val().trim()) showFieldError('txtUOM', 'UOM Desp is required.');
     }).on('input', function () {
         if ($(this).val().trim()) clearFieldError('txtUOM');
+    });
+
+    $('#txtGSTUOM').on('blur', function () {
+        clearFieldError('txtGSTUOM');
+        if (!$(this).val().trim()) showFieldError('txtGSTUOM', 'GST UOM Desp is required.');
+    }).on('input', function () {
+        if ($(this).val().trim()) clearFieldError('txtGSTUOM');
     });
 
     $('#txtDecimalPoints').on('keypress', function (e) {
@@ -420,12 +402,12 @@ $(document).ready(function () {
         if (raw !== '' && !isNaN(n) && n >= 0 && n <= 4) {
             clearFieldError('txtDecimalPoints');
         } else if (raw !== '') {
-            showFieldError('txtDecimalPoints', 'Decimal Points must be between 0 and 4.');
+            showFieldError('txtDecimalPoints', 'Digits after decimal must be between 0 and 4.');
         }
     }).on('blur', function () {
         var v = $(this).val().trim(), n = parseInt(v, 10);
         if (v === '' || isNaN(n) || n < 0 || n > 4)
-            showFieldError('txtDecimalPoints', 'Decimal Points must be between 0 and 4.');
+            showFieldError('txtDecimalPoints', 'Digits after decimal must be between 0 and 4.');
         else
             clearFieldError('txtDecimalPoints');
     });
@@ -445,11 +427,9 @@ $(document).ready(function () {
 
     if (isFinite(codeFromUrl) && codeFromUrl > 0) {
         showDetailPanel('edit');
-        loadGSTUOMDropdown().then(function () {
-            clearForm();
-            $('#hfUOMMaster_Code').val(String(codeFromUrl));
-            loadEditRecord(codeFromUrl, 'edit');
-        });
+        clearForm();
+        $('#hfUOMMaster_Code').val(String(codeFromUrl));
+        loadEditRecord(codeFromUrl, 'edit');
     } else {
         refreshUOMGrid();
     }
