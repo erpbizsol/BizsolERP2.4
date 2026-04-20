@@ -161,7 +161,7 @@ function GetRollingPlanSheetList() {
         if (response && response.length > 0) {
             HideLoader();
 
-            const stringFilterColumn = ["Order No", "Item Name", "Size", "Thk", "Mkt_Man", "Status","Against Stock"];
+            const stringFilterColumn = ["Order No", "Item Name", "Size", "Thk", "Mkt_Man", "Status","Against Rolling"];
             const dateFilterColumn = ["Order Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
@@ -236,6 +236,7 @@ function GetRollingPlanSheetList() {
                 addTotalsRow(totals, hiddenColumns);
                 adjustFilterDropdownPosition();
                 applyTooltipsToGridCells();
+                if (typeof window.fitTableToViewport === 'function') window.fitTableToViewport();
             }, 500);
         } else {
             HideLoader();
@@ -946,10 +947,9 @@ function adjustFilterDropdownPosition() {
             left: auto !important;
         }
         
-        /* Ensure filter content is visible and not cut off */
+        /* Scroll inside wrapper; overflow-y:visible broke vertical scroll (html/body are overflow:hidden on this page) */
         .table-wrapper {
-            overflow-x: auto;
-            overflow-y: visible;
+            overflow: auto;
         }
         
         #tblTable {
@@ -1590,7 +1590,7 @@ function bindItemDropdown(list) {
     }
 
     $itemName.off('change select2:select');
-    $itemName.off('select2:open select2:close');
+    $itemName.off('select2:opening select2:open select2:close');
 
     let options = '<option value="0">Please select..</option>';
 
@@ -1616,31 +1616,7 @@ function bindItemDropdown(list) {
                 dropdownParent: $(document.body)
             });
 
-            if (typeof attachSelect2ScrollPrevention === 'function') {
-                attachSelect2ScrollPrevention($itemName);
-            } else {
-                function preventScroll() {
-                    const scrollY = window.scrollY || window.pageYOffset;
-                    document.documentElement.style.overflow = 'hidden';
-                    document.body.style.position = 'fixed';
-                    document.body.style.top = `-${scrollY}px`;
-                    document.body.style.width = '100%';
-                    document.body.setAttribute('data-scroll-y', scrollY);
-                }
-
-                function restoreScroll() {
-                    const scrollY = document.body.getAttribute('data-scroll-y') || '0';
-                    document.documentElement.style.overflow = '';
-                    document.body.style.position = '';
-                    document.body.style.top = '';
-                    document.body.style.width = '';
-                    window.scrollTo(0, parseInt(scrollY));
-                    document.body.removeAttribute('data-scroll-y');
-                }
-
-                $itemName.on('select2:open', preventScroll);
-                $itemName.on('select2:close', restoreScroll);
-            }
+            BizSolHelperFunction.attachSelect2ScrollPrevention($itemName);
         }
     } catch (e) {
         toastr.error('Error initializing select2 for Item Name');
@@ -1894,6 +1870,16 @@ window.onSizeFilterApplied = function (response) {
     }
 };
 
+function OpenVendorModal() {
+    const baseUrl = sessionStorage.getItem('AppBaseURL') || '';
+    document.getElementById('iframeVendorMaster').src = baseUrl + '/PurchaseTransactions/RMIndent/RMIndent?embedded=1&ModuleDesp=Indent%20(Raw%20Material)';
+    var modal = new bootstrap.Modal(document.getElementById('modalAddVendor'), {
+        backdrop: 'static',
+        keyboard: false
+    });
+    modal.show();
+}
+
 window.ExportExcel = ExportExcel;
 window.OpenModal = OpenModal;
 window.CloseModal = CloseModal;
@@ -1905,3 +1891,4 @@ window.GetRollingPlanProductionDetails = GetRollingPlanProductionDetails;
 window.ProductionDetailsCloseModal = ProductionDetailsCloseModal;
 window.GetAgeingReportList = GetAgeingReportList;
 window.ShowSizeControlModal = ShowSizeControlModal;
+window.OpenVendorModal = OpenVendorModal;

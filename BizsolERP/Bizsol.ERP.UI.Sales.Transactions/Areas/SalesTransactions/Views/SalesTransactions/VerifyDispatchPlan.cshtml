@@ -4,31 +4,34 @@
 
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Sales.Transactions/Script/VerifyDispatchPlan.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-    /* Hide page scrollbar and prevent page-level scrolling */
+    /* Allow vertical page scroll when content exceeds the viewport */
     html {
-        overflow: hidden !important;
-        height: 100% !important;
+        overflow-x: hidden;
+        overflow-y: auto;
+        min-height: 100%;
     }
-    
+
     body {
-        overflow: hidden !important;
-        height: 100vh !important;
+        overflow-x: hidden;
+        overflow-y: auto;
+        min-height: 100vh;
         margin: 0 !important;
         padding: 0 !important;
     }
-    
-    /* Ensure main content area fits viewport without scrolling */
-    .row {
+
+    .row.vdp-page {
         margin: 0 !important;
-        height: 100% !important;
+        min-height: 0;
     }
-    
-    .col-sm-12 {
-        height: 100% !important;
+
+    .row.vdp-page > .col-sm-12 {
         display: flex !important;
         flex-direction: column !important;
-        overflow: hidden;
+        overflow: visible;
+        min-height: 0;
+        flex: 1 1 auto;
     }
 
     .filter-card {
@@ -303,13 +306,44 @@
         z-index: 2;
     }
 
-    /* Card: height comes from JS (tableWrapper) so it stops above fixed footer — avoid vh calc fighting script */
+    /* Card: inner table areas still scroll; page can scroll when needed */
     #dvTableDispatch {
-        flex: 1;
-        min-height: 0;
+        flex: 1 1 auto;
+        min-height: 420px;
         flex-direction: column;
-        overflow: hidden;
+        overflow: visible;
         display: flex;
+    }
+
+    #dvTransporterReportTwinGrids {
+        flex: 1 1 auto;
+        min-height: 380px;
+        overflow: visible;
+        gap: 10px;
+    }
+
+    .transporter-rpt-block {
+        min-height: 180px;
+    }
+
+    #tableWrapperTransporterR1,
+    #tableWrapperTransporterR2 {
+        position: relative;
+        overflow-x: auto;
+        overflow-y: auto;
+        flex: 1 1 auto;
+        min-height: 0;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #tblTransporterReport1 thead th,
+    #tblTransporterReport2 thead th {
+        position: sticky;
+        top: 0;
+        z-index: 11;
+        background-color: #558bc0 !important;
+        color: #fff !important;
+        border: 1px solid #fff;
     }
     
     /* Ensure flex layout when element is shown (override inline display:none) */
@@ -391,8 +425,315 @@
             overflow-y: auto;
         }
     }
+
+    /* Approved Transporter Dashboard — slate / indigo, compact height */
+    #dvApprovedTransporterDashboard .modal-dialog.atd-modal-dialog {
+        max-width: min(1100px, 100vw - 1rem);
+        max-height: calc(100vh - 1rem);
+        margin: 0.5rem auto;
+    }
+    #dvApprovedTransporterDashboard .modal-content.atd-dashboard {
+        background: linear-gradient(160deg, #1e293b 0%, #0f172a 42%, #172554 100%);
+        color: #e2e8f0;
+        border: 1px solid rgba(129, 140, 248, 0.22);
+        border-radius: 14px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+        overflow: hidden;
+        max-height: calc(100vh - 1rem);
+        display: flex;
+        flex-direction: column;
+    }
+    #dvApprovedTransporterDashboard .atd-modal-header {
+        position: relative;
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(129, 140, 248, 0.2);
+        padding: 0.5rem 0.9rem;
+        min-height: 2.5rem;
+        background: linear-gradient(180deg, #334155 0%, #1e293b 55%, #0f172a 100%);
+    }
+    #dvApprovedTransporterDashboard .atd-close-btn {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 8px;
+        background: rgba(30, 41, 59, 0.8);
+        color: #cbd5e1;
+        font-size: 1.2rem;
+        line-height: 1;
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    #dvApprovedTransporterDashboard .atd-close-btn:hover {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: rgba(129, 140, 248, 0.45);
+        color: #fff;
+    }
+    #dvApprovedTransporterDashboard .atd-title {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        margin: 0;
+        font-size: 0.98rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        color: #a5b4fc;
+        text-shadow: 0 1px 2px rgba(15, 23, 42, 0.5);
+        pointer-events: none;
+        white-space: nowrap;
+    }
+    @@media (max-width: 576px) {
+        #dvApprovedTransporterDashboard .atd-title {
+            font-size: 0.95rem;
+            white-space: normal;
+            text-align: center;
+            max-width: 70%;
+        }
+    }
+    #dvApprovedTransporterDashboard .atd-header-spacer {
+        width: 30px;
+        flex-shrink: 0;
+    }
+    #dvApprovedTransporterDashboard .modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0.5rem 0.9rem 0.75rem;
+    }
+    #dvApprovedTransporterDashboard .atd-toolbar {
+        margin-bottom: 0.45rem;
+    }
+    #dvApprovedTransporterDashboard .atd-toolbar-inner {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+        row-gap: 8px;
+    }
+    #dvApprovedTransporterDashboard .atd-kpi-card {
+        flex: 0 0 auto;
+        width: 104px;
+        background: rgba(99, 102, 241, 0.1);
+        border-radius: 8px;
+        padding: 5px 9px 7px;
+        border: 1px solid rgba(129, 140, 248, 0.2);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    #dvApprovedTransporterDashboard .atd-kpi-label {
+        font-size: 0.58rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #94a3b8;
+        margin-bottom: 2px;
+        line-height: 1.2;
+    }
+    #dvApprovedTransporterDashboard .atd-kpi-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #f1f5f9;
+        line-height: 1.15;
+    }
+    #dvApprovedTransporterDashboard .atd-field {
+        flex: 0 1 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    #dvApprovedTransporterDashboard .atd-field-indent {
+        min-width: 120px;
+        max-width: 160px;
+    }
+    #dvApprovedTransporterDashboard .atd-field-transporter {
+        flex: 1 1 180px;
+        min-width: 160px;
+    }
+    #dvApprovedTransporterDashboard .atd-field label {
+        display: block;
+        font-size: 0.58rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+    #dvApprovedTransporterDashboard .atd-select {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        background: rgba(15, 23, 42, 0.85);
+        color: #f1f5f9;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 6px;
+        font-size: 0.78rem;
+        padding: 0.25rem 0.45rem;
+        height: auto;
+        line-height: 1.35;
+    }
+    #dvApprovedTransporterDashboard .atd-select:focus {
+        border-color: rgba(129, 140, 248, 0.55);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        outline: none;
+        background: rgba(30, 41, 59, 0.95);
+        color: #fff;
+    }
+    @@media (max-width: 576px) {
+        #dvApprovedTransporterDashboard .atd-toolbar-inner {
+            align-items: stretch;
+        }
+        #dvApprovedTransporterDashboard .atd-field-transporter {
+            flex: 1 1 100%;
+            min-width: 100%;
+        }
+        #dvApprovedTransporterDashboard .atd-kpi-card {
+            width: calc(50% - 6px);
+        }
+    }
+    #dvApprovedTransporterDashboard .atd-main-row {
+        margin-top: 0;
+    }
+    #dvApprovedTransporterDashboard .atd-panel {
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        border-radius: 10px;
+        padding: 8px 10px 10px;
+        height: 100%;
+    }
+    #dvApprovedTransporterDashboard .atd-panel-title {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+        margin-bottom: 6px;
+    }
+    #dvApprovedTransporterDashboard .atd-table-wrap {
+        max-height: 260px;
+        overflow: auto;
+        border-radius: 8px;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        background: rgba(15, 23, 42, 0.4);
+    }
+    #dvApprovedTransporterDashboard table.atd-matrix-table {
+        margin-bottom: 0;
+        font-size: 0.8rem;
+        color: #e2e8f0;
+    }
+    #dvApprovedTransporterDashboard table.atd-matrix-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #334155 !important;
+        color: #f8fafc !important;
+        border-color: rgba(148, 163, 184, 0.15) !important;
+        padding: 7px 8px;
+        font-weight: 600;
+        font-size: 0.72rem;
+    }
+    #dvApprovedTransporterDashboard table.atd-matrix-table thead th.atd-th-name {
+        min-width: 150px;
+        max-width: 220px;
+        white-space: normal;
+        line-height: 1.25;
+        text-align: left;
+    }
+    #dvApprovedTransporterDashboard table.atd-matrix-table thead th.atd-th-num {
+        white-space: nowrap;
+        text-align: right;
+    }
+    #dvApprovedTransporterDashboard table.atd-matrix-table tbody td {
+        border-color: rgba(148, 163, 184, 0.08);
+        padding: 6px 8px;
+        vertical-align: middle;
+    }
+    #dvApprovedTransporterDashboard table.atd-matrix-table tbody tr:nth-child(odd) {
+        background: rgba(30, 41, 59, 0.35);
+    }
+    #dvApprovedTransporterDashboard table.atd-matrix-table tbody tr:nth-child(even) {
+        background: rgba(15, 23, 42, 0.5);
+    }
+    #dvApprovedTransporterDashboard table.atd-matrix-table tbody tr.atd-grand-row {
+        font-weight: 700;
+        background: rgba(99, 102, 241, 0.14) !important;
+        border-top: 2px solid rgba(129, 140, 248, 0.35);
+        color: #f8fafc;
+    }
+    #dvApprovedTransporterDashboard table.atd-matrix-table td.atd-num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+    #dvApprovedTransporterDashboard table.atd-matrix-table td.atd-text {
+        text-align: left;
+        min-width: 150px;
+        max-width: 260px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    #dvApprovedTransporterDashboard table.atd-matrix-table td.atd-col-total {
+        font-weight: 600;
+    }
+    #dvApprovedTransporterDashboard .atd-chart-wrap {
+        min-height: 200px;
+        max-height: 240px;
+        position: relative;
+        padding: 4px 2px;
+    }
+    #dvApprovedTransporterDashboard .atd-donut-legend-hint {
+        color: #94a3b8;
+        min-height: 0;
+    }
+    #dvApprovedTransporterDashboard .atd-legend-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(148, 163, 184, 0.1);
+        font-size: 0.72rem;
+        color: #cbd5e1;
+    }
+    #dvApprovedTransporterDashboard .atd-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    #dvApprovedTransporterDashboard .atd-legend-swatch {
+        width: 11px;
+        height: 11px;
+        border-radius: 3px;
+        flex-shrink: 0;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+    }
+    #dvApprovedTransporterDashboard .atd-decline-title {
+        color: #94a3b8;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-top: 10px;
+        margin-bottom: 6px;
+    }
+    #dvApprovedTransporterDashboard .atd-footer {
+        flex-shrink: 0;
+        border-top: 1px solid rgba(148, 163, 184, 0.12);
+        background: rgba(15, 23, 42, 0.55);
+        padding: 0.45rem 0.9rem;
+    }
+    #dvApprovedTransporterDashboard .atd-footer .btn-secondary {
+        background: rgba(99, 102, 241, 0.2);
+        border: 1px solid rgba(129, 140, 248, 0.35);
+        color: #e2e8f0;
+        border-radius: 8px;
+        padding: 0.28rem 1rem;
+    }
+    #dvApprovedTransporterDashboard .atd-footer .btn-secondary:hover {
+        background: rgba(99, 102, 241, 0.32);
+        color: #fff;
+    }
 </style>
-<div class="row">
+<div class="row vdp-page">
     <div class="col-sm-12">
         <div class="filter-card">
             @* <div class="filter-title">
@@ -408,6 +749,7 @@
                         <option value="C">Approved Dispatch Plan</option>
                         <option value="T">Approved Quotation</option>
                         <option value="R">Dispatch Activity Report</option>
+                        <option value="TR">Transporter Report</option>
                     </select>
                 </div>
                 <div class="col-auto despatch-activity-filter d-none">
@@ -425,18 +767,42 @@
                     <button type="button" id="btnExportExcel" class="btn btn-primary btn-height" onclick="ExportExcel();">
                         <i class="fas fa-download"></i> Download
                     </button>
+                    <button type="button" id="btnApprovedTransporterDashboard" class="btn btn-primary btn-height ms-1" onclick="openApprovedTransporterDashboard();" title="Approved Transporter Dashboard">
+                        <i class="fas fa-chart-pie"></i> Approved Transporter
+                    </button>
                 </div>
             </div>
         </div>
         <div class="card p-1" id="dvTableDispatch" style="display:none;">
-            
-            <div class="table-wrapper" id="tableWrapper">
+            <div class="table-wrapper flex-grow-1" id="tableWrapper" style="min-height:0;">
                 <table id="tblDispatchPlan" class="fixed-width-table table table-bordered">
                     <thead id="table-head">
                     </thead>
                     <tbody id="table-body">
                     </tbody>
                 </table>
+            </div>
+            <div id="dvTransporterReportTwinGrids" class="d-none flex-column flex-grow-1" style="min-height:0;overflow:hidden;">
+                <div class="transporter-rpt-block d-flex flex-column" style="min-height:0;">
+                    <div class="transporter-rpt-label small fw-semibold text-secondary px-1 pb-1">Transporter approved details</div>
+                    <div id="transporterR1NoData" class="d-none small text-muted px-2 py-2">No data</div>
+                    <div class="table-wrapper" id="tableWrapperTransporterR1">
+                        <table id="tblTransporterReport1" class="fixed-width-table table table-bordered">
+                            <thead id="table-head-transporter-r1"></thead>
+                            <tbody id="table-body-transporter-r1"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="transporter-rpt-block d-flex flex-column" style="min-height:0;">
+                    <div class="transporter-rpt-label small fw-semibold text-secondary px-1 pb-1">Transporter summary</div>
+                    <div id="transporterR2NoData" class="d-none small text-muted px-2 py-2">No data</div>
+                    <div class="table-wrapper" id="tableWrapperTransporterR2">
+                        <table id="tblTransporterReport2" class="fixed-width-table table table-bordered">
+                            <thead id="table-head-transporter-r2"></thead>
+                            <tbody id="table-body-transporter-r2"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -596,6 +962,74 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger icon-height" onclick="CloseShowRemarksModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade rps-detail-modal" id="dvApprovedTransporterDashboard" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable atd-modal-dialog">
+        <div class="modal-content atd-dashboard">
+            <div class="modal-header atd-modal-header border-0">
+                <button type="button" class="atd-close-btn" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                <h5 class="modal-title atd-title">Approved Transporter Dashboard</h5>
+                <span class="atd-header-spacer" aria-hidden="true"></span>
+            </div>
+            <div class="modal-body">
+                <div class="atd-toolbar">
+                    <div class="atd-toolbar-inner">
+                        <div class="atd-kpi-card">
+                            <div class="atd-kpi-label">Quote Status</div>
+                            <div class="atd-kpi-value" id="atdKpiQuote">—</div>
+                        </div>
+                        <div id="atdWrapIndent" class="atd-field atd-field-indent d-none">
+                            <label for="atdFilterIndent">Indent ID</label>
+                            <select id="atdFilterIndent" class="form-control form-control-sm atd-select">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                        <div class="atd-field atd-field-transporter">
+                            <label for="atdFilterTransporter">Transporter</label>
+                            <select id="atdFilterTransporter" class="form-control form-control-sm atd-select">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-2 atd-main-row">
+                    <div class="col-lg-5">
+                        <div class="atd-panel">
+                            <div class="atd-panel-title">Share by transporter</div>
+                            <div class="atd-chart-wrap">
+                                <canvas id="atdDonutCanvas" aria-label="Transporter distribution"></canvas>
+                            </div>
+                            <div id="atdDonutLegend" class="small mt-1 atd-donut-legend-hint"></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="atd-panel">
+                            <div class="atd-panel-title">Quote status / record count</div>
+                            <div class="atd-table-wrap">
+                                <table class="table table-bordered atd-matrix-table mb-0" id="atdMatrixTable">
+                                    <thead id="atdMatrixHead"></thead>
+                                    <tbody id="atdMatrixBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="atd-legend-grid" id="atdCategoryLegend"></div>
+                <div id="atdDeclineBlock" class="d-none">
+                    <div class="atd-decline-title">Decline Transporter's Stats</div>
+                    <div class="atd-table-wrap" style="max-height:160px;">
+                        <table class="table table-bordered atd-matrix-table mb-0" id="atdDeclineTable">
+                            <thead id="atdDeclineHead"></thead>
+                            <tbody id="atdDeclineBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer atd-footer border-0">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

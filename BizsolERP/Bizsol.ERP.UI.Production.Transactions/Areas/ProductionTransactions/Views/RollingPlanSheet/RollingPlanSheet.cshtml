@@ -8,29 +8,21 @@
 
 <style>
 
-    /* Hide page scrollbar */
-    html {
+    /* Lock this page's main content area to viewport height so only the
+       table wrapper scrolls — body/page scroll is disabled for this page */
+    .modern-content {
         overflow: hidden !important;
-        height: 100% !important;
+        padding-bottom: 0 !important;
     }
-    
-    body {
-        overflow: hidden !important;
-        height: 100vh !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    
-    /* Ensure main content area fits viewport without scrolling */
+
     .row {
         margin: 0 !important;
-        height: 100% !important;
     }
-    
+
     .col-sm-12 {
-        height: 100% !important;
         display: flex !important;
         flex-direction: column !important;
+        min-height: 0;
     }
 
     /* Tab design */
@@ -65,14 +57,12 @@
         flex-shrink: 0;
     }
     
-    #rmStockTabContent { 
+    #rmStockTabContent {
         margin-top: .5rem;
         display: flex;
         flex-direction: column;
-        height: calc(100vh - 150px);
-        min-height: 400px;
-        overflow: hidden;
-        flex: 1;
+        flex: 1 1 auto;
+        overflow: visible;
     }
 
     /* Prevent filter bars and buttons from growing */
@@ -200,38 +190,24 @@
         font-weight: 600;
     }
 
-    /* Fixed header styles for all tables */
+    /* Wide tables scroll horizontally */
     .table-wrapper {
         position: relative;
-        overflow: auto;
-        flex: 1;
-        min-height: 0;
-        /* Table wrapper takes remaining space and scrolls internally */
+        overflow-x: auto;
+        overflow-y: auto;
+        width: 100%;
     }
 
-    /* Ensure table takes full width and height of wrapper */
+    /* Main table wrapper height is set precisely by JS (fitTableToViewport) */
+    #rmStockTabContent > .table-wrapper {
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+
+    /* Ensure table takes full width */
     #tblTable {
         width: 100%;
         margin-bottom: 0;
-    }
-
-    /* Responsive height adjustments for smaller screens */
-    @@media (max-height: 800px) {
-        #rmStockTabContent {
-            max-height: calc(100vh - 150px);
-        }
-        .table-wrapper {
-            min-height: 300px;
-        }
-    }
-
-    @@media (max-height: 600px) {
-        #rmStockTabContent {
-            max-height: calc(100vh - 120px);
-        }
-        .table-wrapper {
-            min-height: 250px;
-        }
     }
 
     /* Fixed header for main table */
@@ -349,7 +325,11 @@
                     <i class="fas fa-clipboard-list"></i> Ageing Report
                 </button>
             </div>
-            
+            <div class="nav-item" role="presentation">
+                <button class="nav-link" id="vendor-master-tab" type="button" role="tab" aria-selected="false" onclick="OpenVendorModal()">
+                    <i class="fas fa-boxes"></i> Indent (Raw Material)
+                </button>
+            </div>
 
         </div>
         <div class="card p-1" id="rmStockTabContent">
@@ -507,4 +487,51 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="modalAddVendor" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="height:90vh;">
+            <div class="modal-header" style="background:#1f6fb2;color:#fff;padding:8px 12px;">
+                <h5 class="modal-title" style="font-size:13px;font-weight:600;">Indent (Raw Material)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="flex:1;overflow:hidden;">
+                <iframe id="iframeVendorMaster" src="" style="width:100%;height:100%;border:none;" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+    (function () {
+        function fitTableToViewport() {
+            var wrapper = document.querySelector('#rmStockTabContent > .table-wrapper');
+            var paginator = document.getElementById('paginator-tblTable');
+            var footer   = document.querySelector('.modern-footer');
+            if (!wrapper) return;
+
+            // Clear height so rect.top reflects natural document position
+            wrapper.style.height = '';
+
+            var rect       = wrapper.getBoundingClientRect();
+            var paginatorH = paginator ? paginator.offsetHeight : 0;
+            var footerH    = footer   ? footer.offsetHeight    : 35;
+
+            // Exact height = space from wrapper top down to just above the fixed footer
+            var h = window.innerHeight - rect.top - paginatorH - footerH - 6;
+            wrapper.style.height = Math.max(120, h) + 'px';
+        }
+
+        window.addEventListener('resize', fitTableToViewport);
+        document.addEventListener('DOMContentLoaded', fitTableToViewport);
+
+        // Re-calculate after tab switch (filter bars change height)
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (btn) {
+            btn.addEventListener('shown.bs.tab', function () {
+                setTimeout(fitTableToViewport, 50);
+            });
+        });
+
+        // Expose globally so JS can call after data loads
+        window.fitTableToViewport = fitTableToViewport;
+    })();
+</script>

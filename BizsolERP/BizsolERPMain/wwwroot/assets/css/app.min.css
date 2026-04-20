@@ -6270,7 +6270,7 @@ label {
 
 .modal {
     --bs-modal-margin: 0 !important;
-    padding: 9px;
+    padding: 0px;
     /*margin-top: 4rem;*/
 }
 
