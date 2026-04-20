@@ -118,6 +118,26 @@ const VerifyDispatchPlanService = {
             }
         );
     },
+    GetTransporterReport: function GetTransporterReport() {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetTransporterReport";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetApprovedTransporterReport: function GetApprovedTransporterReport(fromDate, toDate) {
+        var q = '';
+        if (fromDate && toDate) {
+            q = '?FromDate=' + encodeURIComponent(fromDate) + '&ToDate=' + encodeURIComponent(toDate);
+        }
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetApprovedTransporterReport" + q;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VerifyDispatchPlanService }
