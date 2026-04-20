@@ -3,18 +3,24 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 import { BOMService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BOMService.js';
+import { UserMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_UserMasterService.js';
+import { PurchaseOrderStoreService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseOrderStoreServices.js';
 
 let G_SubProjectList    = [];
 let G_ProjectList       = [];
 let G_UserList          = [];
 let G_POLevelList       = [];
+let G_SiteRepList       = [];
 let G_ActiveStatusFilter = 'all'; // 'all' | 'running' | 'pending'
+/** GRN Check codes to apply after modal is visible (Select2 multi in hidden modal often keeps only one if set earlier). */
+let G_SubProjectModalGRNPendingCodes = null;
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
     loadUserDropdown();
     loadPOLevelList();
+    loadSiteRepDropdown(null);
     // Chain: load master projects first, then sub-projects (avoids race where grid binds before G_ProjectList is ready)
     loadProjectDropdown().finally(function () {
         loadSubProjects();
@@ -64,6 +70,20 @@ $(document).ready(function () {
             applySubProjectFilters();
         }
     });
+
+    $('#dvSubProjectModal').on('shown.bs.modal', function () {
+        function finishGrnCheckAfterModalVisible() {
+            refreshGRNCheckSelectPreserveSelection();
+            applyPendingGrnCheckIfAny();
+        }
+        if (G_UserList && G_UserList.length > 0) {
+            finishGrnCheckAfterModalVisible();
+        } else {
+            loadUserListForSubProject()
+                .then(finishGrnCheckAfterModalVisible)
+                .catch(function () {});
+        }
+    });
 });
 
 /* ── Financial year ──────────────────────────────────────── */
@@ -94,16 +114,305 @@ function loadProjectDropdown() {
         });
 }
 
-/* ── Load user list ───────────────────────────────────────── */
-function loadUserDropdown() {
-    SubProjectMasterService.GetUserList()
+/* ── User list (wrapped API + User Master fallback) ──────── */
+function normalizeUserListResponse(response) {
+    if (!response) return [];
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response.Data)) return response.Data;
+    if (Array.isArray(response.value)) return response.value;
+    if (Array.isArray(response.Value)) return response.Value;
+    if (Array.isArray(response.UserList)) return response.UserList;
+    if (Array.isArray(response.userList)) return response.userList;
+    if (Array.isArray(response.UserMasterList)) return response.UserMasterList;
+    if (Array.isArray(response.userMasterList)) return response.userMasterList;
+    if (Array.isArray(response.userMasterData)) return response.userMasterData;
+    if (Array.isArray(response.UserMasterData)) return response.UserMasterData;
+    if (response.Table && Array.isArray(response.Table)) return response.Table;
+    if (response.table && Array.isArray(response.table)) return response.table;
+    if (typeof response === 'object') {
+        var keys = Object.keys(response);
+        for (var i = 0; i < keys.length; i++) {
+            var arr = response[keys[i]];
+            if (!Array.isArray(arr) || !arr.length) continue;
+            var first = arr[0];
+            if (first && typeof first === 'object' && !Array.isArray(first)) {
+                if ('userName' in first || 'UserName' in first || 'userID' in first || 'UserID' in first
+                    || 'code' in first || 'Code' in first
+                    || 'userMaster_Code' in first || 'UserMaster_Code' in first) {
+                    return arr;
+                }
+            }
+        }
+    }
+    return [];
+}
+
+function pickUserRowCode(u) {
+    if (!u) return '';
+    const v = u.Code ?? u.code
+        ?? u.UserMaster_Code ?? u.userMaster_Code
+        ?? u.ID ?? u.id
+        ?? u.UserCode ?? u.userCode
+        ?? u.EmployeeMaster_Code ?? u.employeeMaster_Code;
+    if (v === null || v === undefined || v === '') return '';
+    const s = String(v).trim();
+    return s === '0' ? '' : s;
+}
+
+function pickUserDisplayName(u, val) {
+    if (!u) return val || '';
+    return u.UserName || u.userName
+        || u.Name || u.name
+        || u.FullName || u.fullName
+        || u.UserID || u.userID
+        || u.Email || u.email
+        || val;
+}
+
+function bindGRNCheckUserSelect() {
+    const $sel = $('#ddlGRNCheckUsers');
+    if (!$sel.length) return;
+    try { $sel.select2('destroy'); } catch (e) {}
+    let opts = '';
+    (G_UserList || []).forEach(function (u) {
+        const val  = pickUserRowCode(u);
+        if (!val) return;
+        const text = pickUserDisplayName(u, val);
+        opts += `<option value="${val}">${escHtml(text)}</option>`;
+    });
+    $sel.empty().append(opts);
+    if (typeof $.fn.select2 === 'function') {
+        try {
+            $sel.select2({
+                placeholder  : 'Select user(s)\u2026',
+                allowClear   : true,
+                width        : '100%',
+                dropdownParent: $('#dvSubProjectModal')
+            });
+        } catch (e) {}
+    }
+}
+
+function refreshGRNCheckSelectPreserveSelection() {
+    const $sel = $('#ddlGRNCheckUsers');
+    if (!$sel.length) return;
+    let prev = [];
+    try {
+        var rawVal = $sel.val();
+        prev = Array.isArray(rawVal)
+            ? rawVal.slice()
+            : (rawVal != null && rawVal !== '' ? [String(rawVal)] : []);
+    } catch (e0) {}
+    bindGRNCheckUserSelect();
+    if (prev.length) {
+        try {
+            $sel.val(prev).trigger('change');
+        } catch (e1) {}
+    }
+}
+
+/** Apply GRN multi-select saved from edit open, once modal + Select2 are visible (see G_SubProjectModalGRNPendingCodes). */
+function applyPendingGrnCheckIfAny() {
+    if (!G_SubProjectModalGRNPendingCodes || !G_SubProjectModalGRNPendingCodes.length) return;
+    const $sel = $('#ddlGRNCheckUsers');
+    if (!$sel.length) {
+        G_SubProjectModalGRNPendingCodes = null;
+        return;
+    }
+    try {
+        $sel.val(G_SubProjectModalGRNPendingCodes).trigger('change');
+    } catch (e) {}
+    G_SubProjectModalGRNPendingCodes = null;
+}
+
+function loadUserListForSubProject() {
+    return SubProjectMasterService.GetUserList()
         .then(function (response) {
-            G_UserList = Array.isArray(response) ? response : [];
-        })
+            var list = normalizeUserListResponse(response);
+            if (list.length) {
+                G_UserList = list;
+                bindGRNCheckUserSelect();
+                return;
+            }
+            return UserMasterService.GetUserMasterList()
+                .then(function (r2) {
+                    G_UserList = normalizeUserListResponse(r2);
+                    bindGRNCheckUserSelect();
+                });
+        });
+}
+
+function loadUserDropdown() {
+    loadUserListForSubProject()
         .catch(function () {
             toastr.error('Error loading user list.');
         });
 }
+
+function grnCheckCodesFromRow(row) {
+    if (!row) return '';
+    var parts = [];
+    var seen = Object.create(null);
+    function pushCode(t) {
+        if (t == null || t === '') return;
+        var s = String(t).trim();
+        if (!s) return;
+        if (!isNaN(Number(s)) && s !== '') s = String(Number(s));
+        if (seen[s]) return;
+        seen[s] = 1;
+        parts.push(s);
+    }
+    function addFromCsv(csv) {
+        String(csv || '').split(',').forEach(function (p) { pushCode(p); });
+    }
+    var list = row.UserMasterForGRNDetails || row.userMasterForGRNDetails
+        || row.UserMasterForGRN || row.userMasterForGRN;
+    if (list && !Array.isArray(list)) list = [list];
+    if (Array.isArray(list) && list.length) {
+        list.forEach(function (g) {
+            if (!g) return;
+            var um = g.UserMaster_Code ?? g.userMaster_Code
+                ?? g.Code ?? g.code
+                ?? g.UserMaster_Code_For_GRN ?? g.userMaster_Code_For_GRN;
+            if (um != null && um !== '' && String(um).trim() !== '' && !isNaN(Number(um))) {
+                pushCode(String(Number(um)));
+                return;
+            }
+            addFromCsv(g.UserMaster_Code_For_GRN || g.userMaster_Code_For_GRN || '');
+        });
+    }
+    addFromCsv(row.UserMaster_Code_For_GRN || row.userMaster_Code_For_GRN);
+    addFromCsv(row.GRNCheck);
+    addFromCsv(row.UserMaster_Codes_GRNCheck || row.userMaster_Codes_GRNCheck);
+    return parts.length ? parts.join(',') : '';
+}
+
+/** TVP TY_UserMasterFor_GRN columns: SubProjectMaster_Code, UserMaster_Code (C# must match). */
+function buildUserMasterForGRNPayload() {
+    const subProjectCode = parseInt($('#hfSubProjectCode').val() || '0', 10) || 0;
+    const raw            = $('#ddlGRNCheckUsers').val();
+    const codes          = Array.isArray(raw) ? raw : (raw != null && raw !== '' ? [raw] : []);
+    const out            = [];
+    codes.forEach(function (c) {
+        const n = parseInt(String(c == null ? '' : c).trim(), 10);
+        if (isNaN(n) || n <= 0) return;
+        out.push({
+            SubProjectMaster_Code: subProjectCode,
+            UserMaster_Code:       n
+        });
+    });
+    return out;
+}
+
+function userCodesCsvToDisplayNames(csv) {
+    const codes = String(csv || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    if (!codes.length) return '—';
+    const names = codes.map(function (c) {
+        const u = (G_UserList || []).find(function (x) { return pickUserRowCode(x) === c; });
+        return u ? pickUserDisplayName(u, c) : c;
+    }).filter(Boolean);
+    return names.join(', ') || '—';
+}
+
+function ensureUserListForSubProjectForm() {
+    if (G_UserList && G_UserList.length > 0) {
+        bindGRNCheckUserSelect();
+        return Promise.resolve();
+    }
+    return loadUserListForSubProject();
+}
+
+/* ── Site Representative ─────────────────────────────────── */
+function loadSiteRepDropdown(selectedCode) {
+    PurchaseOrderStoreService.GetSiteRepresentativeList().then(function (data) {
+        G_SiteRepList = data || [];
+        populateSiteRepDropdown(selectedCode);
+    }).catch(function () {
+        G_SiteRepList = [];
+        populateSiteRepDropdown(selectedCode);
+    });
+}
+
+function populateSiteRepDropdown(selectedCode) {
+    let opts = '<option value="">-- Select Site Representative --</option>';
+    G_SiteRepList.forEach(function (r) {
+        opts += '<option value="' + r.Code + '">' + escHtml(r.Name) + '</option>';
+    });
+    if ($('#frmDdlSiteRepSPM').data('select2')) $('#frmDdlSiteRepSPM').select2('destroy');
+    $('#frmDdlSiteRepSPM').html(opts);
+    if ($.fn.select2) {
+        $('#frmDdlSiteRepSPM').select2({
+            placeholder   : '-- Select Site Representative --',
+            allowClear    : true,
+            width         : '100%',
+            dropdownParent: $('body')
+        });
+        $('#frmDdlSiteRepSPM').off('change.srepspm').on('change.srepspm', function () {
+            showSiteRepDetailsSPM($(this).val());
+        });
+    }
+    if (selectedCode) {
+        $('#frmDdlSiteRepSPM').val(selectedCode).trigger('change');
+    }
+}
+
+function showSiteRepDetailsSPM(code) {
+    if (!code) { $('#divSiteRepDetailsSPM').hide(); return; }
+    const rep = G_SiteRepList.find(function (r) { return String(r.Code) === String(code); });
+    if (!rep) { $('#divSiteRepDetailsSPM').hide(); return; }
+    $('#siteRepSPMName').text(rep.Name || '');
+    $('#siteRepSPMMobile').text(rep.Mobile || rep.MobileNo || '');
+    $('#siteRepSPMEmail').text(rep.Email || '');
+    $('#divSiteRepDetailsSPM').show();
+}
+
+window.OpenAddSiteRepModalSPM = function () {
+    const selectedCode = $('#frmDdlSiteRepSPM').val();
+    const existingRep  = selectedCode
+        ? G_SiteRepList.find(function (r) { return String(r.Code) === String(selectedCode); })
+        : null;
+    // Pre-fill with existing rep data so user can edit it; empty for a brand-new rep
+    $('#hfSiteRepSPMCode').val(existingRep ? existingRep.Code : 0);
+    $('#siteRepSPMTxtName').val(existingRep ? (existingRep.Name || '') : '');
+    $('#siteRepSPMTxtMobile').val(existingRep ? (existingRep.Mobile || existingRep.MobileNo || '') : '');
+    $('#siteRepSPMTxtEmail').val(existingRep ? (existingRep.Email || '') : '');
+    const title = existingRep ? 'Edit Site Representative' : 'Add Site Representative';
+    $('#modalAddSiteRepSPM .modal-title').html('<i class="fa fa-user-tie me-2"></i>' + title);
+    $('#modalAddSiteRepSPM').modal('show');
+};
+
+window.SaveSiteRepresentativeSPM = function () {
+    const name   = $('#siteRepSPMTxtName').val().trim();
+    const mobile = $('#siteRepSPMTxtMobile').val().trim();
+    const email  = $('#siteRepSPMTxtEmail').val().trim();
+    const code   = parseInt($('#hfSiteRepSPMCode').val() || '0', 10) || 0;
+    if (!name) { toastr.warning('Please enter Name.'); return; }
+    if (mobile && !/^[6-9]\d{9}$/.test(mobile)) {
+        toastr.warning('Please enter a valid 10-digit Mobile No (starting with 6\u20139).');
+        $('#siteRepSPMTxtMobile').focus();
+        return;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        toastr.warning('Please enter a valid Email address.');
+        $('#siteRepSPMTxtEmail').focus();
+        return;
+    }
+    const payload = JSON.stringify({ Code: code, siteRepresentatives: [{ Code: code, Name: name, MobileNo: mobile, Email: email }] });
+    PurchaseOrderStoreService.SaveSiteRepresentative(payload).then(function (res) {
+        if (res && res.Status === 'Y') {
+            toastr.success(res.Msg || 'Site Representative saved.');
+            $('#modalAddSiteRepSPM').modal('hide');
+            const newCode = res.Code || res.NewCode || code || null;
+            loadSiteRepDropdown(newCode);
+        } else {
+            toastr.error(res ? res.Msg : 'Failed to save Site Representative.');
+        }
+    }).catch(function (err) {
+        toastr.error('Error saving Site Representative.');
+        console.error(err);
+    });
+};
 
 /* ── Load PO approval levels list ────────────────────────── */
 function loadPOLevelList() {
@@ -145,8 +454,9 @@ function renderPOLevelsFormTable(existingDetails) {
 
         let opts = '';
         (G_UserList || []).forEach(function (u) {
-            const val  = String(u.Code || u.UserMaster_Code || u.ID || 0);
-            const text = u.UserName || u.Name || u.FullName || '';
+            const val  = pickUserRowCode(u);
+            if (!val) return;
+            const text = pickUserDisplayName(u, val);
             const sel  = preSelected.includes(val) ? ' selected' : '';
             opts += `<option value="${val}"${sel}>${escHtml(text)}</option>`;
         });
@@ -183,8 +493,9 @@ function renderPOLevelsFormTable(existingDetails) {
         const selectId = 'ddlLevelUsers_' + levelCode;
         let opts = '';
         (G_UserList || []).forEach(function (u) {
-            const val  = String(u.Code || u.UserMaster_Code || u.ID || 0);
-            const text = u.UserName || u.Name || u.FullName || '';
+            const val  = pickUserRowCode(u);
+            if (!val) return;
+            const text = pickUserDisplayName(u, val);
             const sel  = preSelected.includes(val) ? ' selected' : '';
             opts += `<option value="${val}"${sel}>${escHtml(text)}</option>`;
         });
@@ -287,6 +598,10 @@ function parseSubProjectByCodeResponse(response) {
         if (Array.isArray(response[0])) {
             row          = (response[0] || [])[0] || null;
             levelDetails = Array.isArray(response[1]) ? response[1] : [];
+            var grnList  = Array.isArray(response[2]) ? response[2] : [];
+            if (row && grnList.length) {
+                row.UserMasterForGRNDetails = grnList;
+            }
             return { row: row, levelDetails: levelDetails };
         }
         row = response[0];
@@ -298,6 +613,18 @@ function parseSubProjectByCodeResponse(response) {
         levelDetails = response.PurchaseOrderLevelsApprovalProjectUserDetails;
     } else if (row && Array.isArray(row.PurchaseOrderLevelsApprovalProjectUserDetails)) {
         levelDetails = row.PurchaseOrderLevelsApprovalProjectUserDetails;
+    }
+
+    if (row) {
+        if (Array.isArray(response.UserMasterForGRNDetails)) {
+            row.UserMasterForGRNDetails = response.UserMasterForGRNDetails;
+        } else if (Array.isArray(response.userMasterForGRNDetails)) {
+            row.UserMasterForGRNDetails = response.userMasterForGRNDetails;
+        } else if (Array.isArray(row.UserMasterForGRNDetails)) {
+            /* already on row */
+        } else if (Array.isArray(row.userMasterForGRNDetails)) {
+            row.UserMasterForGRNDetails = row.userMasterForGRNDetails;
+        }
     }
 
     return { row: row, levelDetails: levelDetails };
@@ -319,37 +646,63 @@ function SubProjectMaster_EditData(code) {
         Showloader && Showloader();
         SubProjectMasterService.GetSubProjectByCode(code)
             .then(function (res) {
-                HideLoader && HideLoader();
                 var parsed       = parseSubProjectByCodeResponse(res);
                 var row          = parsed.row;
                 var levelDetails = parsed.levelDetails;
 
-                if (!row) { toastr.warning('Sub Project not found.'); return; }
-
-                resetSubProjectForm();
-
-                $('#hfSubProjectCode').val(row.Code);
-                $('#ddlMasterProject').val(row.ProjectMaster_Code || '');
-                $('#txtSubProjectName').val(row.SubProjectDesp || '');
-
-                var budgetVal = row.Budget || 0;
-                $('#txtBudget').val(budgetVal ? formatBudgetRaw(String(budgetVal)) : '');
-
-                if (row.ProjectStartDate) {
-                    var d = new Date(row.ProjectStartDate);
-                    if (!isNaN(d.getTime())) $('#txtStartDate').val(formatDate(d));
+                if (!row) {
+                    HideLoader && HideLoader();
+                    toastr.warning('Sub Project not found.');
+                    return;
                 }
 
-                if (row.EstimatedCompletionDate) {
-                    var ed = new Date(row.EstimatedCompletionDate);
-                    if (!isNaN(ed.getTime())) $('#txtEstimatedDate').val(formatDate(ed));
-                }
+                ensureUserListForSubProjectForm()
+                    .then(function () {
+                        HideLoader && HideLoader();
 
-                $('#txtEstimatedDays').val(row.EstimatedCompletionDays || '');
+                        resetSubProjectForm();
 
-                renderPOLevelsFormTable(levelDetails);
-                $('#spm-modal-title').text('Edit Sub Project');
-                showModal('dvSubProjectModal');
+                        $('#hfSubProjectCode').val(row.Code);
+                        $('#ddlMasterProject').val(row.ProjectMaster_Code || '');
+                        $('#txtSubProjectName').val(row.SubProjectDesp || '');
+
+                        var budgetVal = row.Budget || 0;
+                        $('#txtBudget').val(budgetVal ? formatBudgetRaw(String(budgetVal)) : '');
+
+                        if (row.ProjectStartDate) {
+                            var d = new Date(row.ProjectStartDate);
+                            if (!isNaN(d.getTime())) $('#txtStartDate').val(formatDate(d));
+                        }
+
+                        if (row.EstimatedCompletionDate) {
+                            var ed = new Date(row.EstimatedCompletionDate);
+                            if (!isNaN(ed.getTime())) $('#txtEstimatedDate').val(formatDate(ed));
+                        }
+
+                        $('#txtEstimatedDays').val(row.EstimatedCompletionDays || '');
+
+                        const grnArr = String(grnCheckCodesFromRow(row) || '')
+                            .split(',')
+                            .map(function (x) { return x.trim(); })
+                            .filter(Boolean);
+                        G_SubProjectModalGRNPendingCodes = grnArr.length ? grnArr.slice() : null;
+
+                        // Set site representative
+                        const siteRepCode = row.SiteRepresentativeMaster_Code || row.siteRepresentativeMaster_Code || null;
+                        if (G_SiteRepList.length > 0) {
+                            populateSiteRepDropdown(siteRepCode);
+                        } else {
+                            loadSiteRepDropdown(siteRepCode);
+                        }
+
+                        renderPOLevelsFormTable(levelDetails);
+                        $('#spm-modal-title').text('Edit Sub Project');
+                        showModal('dvSubProjectModal');
+                    })
+                    .catch(function () {
+                        HideLoader && HideLoader();
+                        toastr.error('Error loading user list.');
+                    });
             })
             .catch(function () {
                 HideLoader && HideLoader();
@@ -398,6 +751,11 @@ function viewSubProject(code) {
             }
             $('#viewEstimatedDate').text(estDateTxt);
             $('#viewEstDays').text((row.EstimatedCompletionDays || 0) + ' days');
+            // Site Representative
+            const siteRepCode = row.SiteRepresentativeMaster_Code || row.siteRepresentativeMaster_Code || null;
+            const siteRepObj  = siteRepCode ? (G_SiteRepList || []).find(function (r) { return String(r.Code) === String(siteRepCode); }) : null;
+            $('#viewSiteRepresentative').text(siteRepObj ? siteRepObj.Name : '—');
+            $('#viewGRNCheckUsers').text(userCodesCsvToDisplayNames(grnCheckCodesFromRow(row)));
 
             if (levelDetails.length > 0) {
                 var tbl = '<table style="width:100%;border-collapse:collapse;font-size:12.5px;">';
@@ -408,8 +766,8 @@ function viewSubProject(code) {
                 levelDetails.forEach(function (d) {
                     var codes = String(d.UserMaster_Codes_RightToVerifyPO || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
                     var names = codes.map(function (c) {
-                        var u = (G_UserList || []).find(function (x) { return String(x.Code || x.UserMaster_Code || x.ID) === c; });
-                        return u ? (u.UserName || u.Name || u.FullName || c) : c;
+                        var u = (G_UserList || []).find(function (x) { return pickUserRowCode(x) === c; });
+                        return u ? pickUserDisplayName(u, c) : c;
                     }).filter(Boolean);
                     tbl += '<tr>' +
                            '<td style="padding:5px 10px;border:1px solid #e2e8f0;font-weight:600;white-space:nowrap;">' + escHtml(d.LevelDesp || '') + '</td>' +
@@ -474,6 +832,7 @@ function callDeleteSubProjectApi(code, reason) {
 
 /* ── Reset form ──────────────────────────────────────────── */
 function resetSubProjectForm() {
+    G_SubProjectModalGRNPendingCodes = null;
     $('#hfSubProjectCode').val(0);
     $('#ddlMasterProject').val('');
     $('#txtSubProjectName').val('');
@@ -481,6 +840,15 @@ function resetSubProjectForm() {
     $('#txtStartDate').val(getTodayForInput());
     $('#txtEstimatedDate').val(getTodayForInput());
     $('#txtEstimatedDays').val('');
+    try {
+        $('#ddlGRNCheckUsers').val(null).trigger('change');
+    } catch (e) {}
+    // Reset site representative
+    try {
+        if ($('#frmDdlSiteRepSPM').data('select2')) $('#frmDdlSiteRepSPM').val(null).trigger('change');
+        else $('#frmDdlSiteRepSPM').val('');
+    } catch (e) {}
+    $('#divSiteRepDetailsSPM').hide();
     renderPOLevelsFormTable([]);
 }
 
@@ -510,20 +878,17 @@ function validateSubProjectForm() {
     const editingCode   = parseInt($('#hfSubProjectCode').val() || '0', 10) || 0;
     const parent        = (G_ProjectList || []).find(function (p) { return String(p.Code) === String(masterCodeNum); });
     if (parent) {
-        const pBud  = parseFloat(parent.Budget || parent.ProjectBudget || 0) || 0;
-        const pDays = parseInt(parent.EstimatedCompletionDays || parent.EstimatedDays || 0, 10) || 0;
-        const sBud  = $('#txtBudget').val()
+        const pBud = parseFloat(parent.Budget || parent.ProjectBudget || 0) || 0;
+        const sBud = $('#txtBudget').val()
             ? parseFloat($('#txtBudget').val().toString().replace(/,/g, ''))
             : 0;
-        const sDays = parseInt(estimatedDays, 10) || 0;
 
-        let sumOtherBud  = 0;
-        let sumOtherDays = 0;
+        // Sum of sub-project budgets must not exceed the parent project budget
+        let sumOtherBud = 0;
         (G_SubProjectList || []).forEach(function (s) {
             if (String(s.ProjectMaster_Code || s.MasterProjectCode || 0) !== String(masterCodeNum)) return;
             if (editingCode > 0 && String(s.Code || 0) === String(editingCode)) return;
-            sumOtherBud  += parseFloat(s.Budget || s.SubProjectBudget || 0) || 0;
-            sumOtherDays += parseInt(s.EstimatedCompletionDays || s.EstimatedDays || 0, 10) || 0;
+            sumOtherBud += parseFloat(s.Budget || s.SubProjectBudget || 0) || 0;
         });
 
         if (pBud > 0 && (sumOtherBud + sBud) > pBud) {
@@ -537,12 +902,30 @@ function validateSubProjectForm() {
             $('#txtBudget').focus();
             return false;
         }
-        if (pDays > 0 && (sumOtherDays + sDays) > pDays) {
+
+        // Sub-project dates must fall within the parent project date range.
+        // No sum-of-days check — only start/end date boundary is enforced.
+        // Use YYYY-MM-DD string comparison to avoid timezone/time-component issues.
+        const subStartStr = ($('#txtStartDate').val() || '').trim();
+        const subEndStr   = ($('#txtEstimatedDate').val() || '').trim();
+        const pStartStr   = extractYMD(parent.ProjectStartDate);
+        const pEndStr     = extractYMD(parent.EstimatedCompletionDate);
+
+        if (pStartStr && subStartStr && subStartStr < pStartStr) {
             toastr.warning(
-                'Combined sub-project estimated days cannot exceed parent project (' + pDays
-                    + ' days). Other sub-projects already total ' + sumOtherDays + ' days.'
+                'Sub-project start date (' + subStartStr
+                    + ') cannot be before parent project start date (' + pStartStr + ').'
             );
-            $('#txtEstimatedDays').focus();
+            $('#txtStartDate').focus();
+            return false;
+        }
+
+        if (pEndStr && subEndStr && subEndStr > pEndStr) {
+            toastr.warning(
+                'Sub-project end date (' + subEndStr
+                    + ') cannot be after parent project end date (' + pEndStr + ').'
+            );
+            $('#txtEstimatedDate').focus();
             return false;
         }
     }
@@ -602,6 +985,8 @@ function callSaveSubProjectApi() {
         EstimatedCompletionDays: $('#txtEstimatedDays').val()
                                      ? parseInt($('#txtEstimatedDays').val(), 10)
                                      : 0,
+        SiteRepresentativeMaster_Code: parseInt($('#frmDdlSiteRepSPM').val()) || 0,
+        UserMasterForGRNDetails: buildUserMasterForGRNPayload(),
         PurchaseOrderLevelsApprovalProjectUserDetails: collectPOLevelDetails()
     };
 
@@ -887,6 +1272,14 @@ function calcEstimatedDateFromDays() {
     const estDate = new Date(start);
     estDate.setDate(estDate.getDate() + days);
     $('#txtEstimatedDate').val(formatDate(estDate));
+}
+
+/* Returns the YYYY-MM-DD portion of any date string/value without timezone shift.
+   Works correctly for both '2026-04-01' and '2026-04-01T00:00:00' API formats. */
+function extractYMD(dateVal) {
+    if (!dateVal) return null;
+    const m = String(dateVal).trim().match(/^(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : null;
 }
 
 function escHtml(str) {

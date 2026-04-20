@@ -5,10 +5,10 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/StateMaster.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/CityMaster.js"></script>
 
 <style>
-    #StateMasterPage {
+    #CityMasterPage {
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         max-width: 100%;
         width: 100%;
@@ -22,14 +22,14 @@
     }
 
     /* ── List header gradient bar ── */
-    .state-po-list-header {
+    .city-po-list-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 14px 14px 0 0;
         padding: 16px 22px 14px;
         margin-bottom: 0;
     }
 
-    .state-po-header-top {
+    .city-po-header-top {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -37,14 +37,14 @@
         flex-wrap: wrap;
     }
 
-    .state-po-list-header .state-hero-left {
+    .city-po-list-header .city-hero-left {
         display: flex;
         align-items: center;
         gap: 14px;
         min-width: 0;
     }
 
-    .state-po-list-header .state-hero-icon {
+    .city-po-list-header .city-hero-icon {
         width: 50px;
         height: 50px;
         border-radius: 14px;
@@ -58,7 +58,7 @@
         flex-shrink: 0;
     }
 
-    .state-po-list-header .state-hero-title {
+    .city-po-list-header .city-hero-title {
         font-size: 1.05rem;
         font-weight: 800;
         color: #fff;
@@ -67,14 +67,14 @@
         margin: 0;
     }
 
-    .state-po-list-header .state-hero-sub {
+    .city-po-list-header .city-hero-sub {
         font-size: 0.78rem;
         color: rgba(255, 255, 255, 0.78);
         margin-top: 4px;
         font-weight: 500;
     }
 
-    .state-po-create-btn {
+    .city-po-create-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -94,13 +94,13 @@
         font-size: 0.85rem;
     }
 
-    .state-po-create-btn:hover {
+    .city-po-create-btn:hover {
         background: #f0f4ff;
         border-color: #667eea;
         color: #667eea;
     }
 
-    .state-po-create-btn .pm-plus {
+    .city-po-create-btn .pm-plus {
         width: 22px;
         height: 22px;
         border-radius: 6px;
@@ -114,7 +114,7 @@
     }
 
     /* ── List panel fills remaining height ── */
-    #stateListPanel {
+    #cityListPanel {
         flex: 1;
         min-height: 0;
         overflow: hidden;
@@ -123,7 +123,7 @@
     }
 
     /* ── Grid card ── */
-    .state-list-grid-wrap {
+    .city-list-grid-wrap {
         background: #fff;
         border: 1px solid #e2e8f0;
         border-top: none;
@@ -131,14 +131,14 @@
         box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
         overflow: hidden;
         margin-bottom: 0;
-        /* Grow to fill whatever vertical space #stateListPanel has left */
+        /* Grow to fill whatever vertical space #cityListPanel has left */
         flex: 1;
         min-height: 0;
         display: flex;
         flex-direction: column;
     }
 
-    .state-list-grid-wrap .pm-card-toolbar {
+    .city-list-grid-wrap .pm-card-toolbar {
         flex-shrink: 0;
         display: flex;
         align-items: flex-end;
@@ -149,7 +149,7 @@
         border-bottom: 1px solid var(--border-light);
     }
 
-    .state-list-grid-wrap .pm-table-wrap {
+    .city-list-grid-wrap .pm-table-wrap {
         flex: 1;
         min-height: 0;
         overflow-x: auto;
@@ -157,14 +157,14 @@
         -webkit-overflow-scrolling: touch;
     }
 
-    .state-list-grid-wrap .paginator {
+    .city-list-grid-wrap .paginator {
         flex-shrink: 0;
         padding: 10px 16px 14px;
         border-top: 1px solid #eef2ff;
         background: #fafbff;
     }
 
-    .state-toolbar-filter {
+    .city-toolbar-filter {
         display: flex;
         flex-direction: column;
         gap: 6px;
@@ -172,13 +172,13 @@
         max-width: 280px;
     }
 
-    .state-filter-label {
+    .city-filter-label {
         font-size: 12px;
         font-weight: 700;
         color: var(--text-primary, #334155);
     }
 
-    .state-filter-select {
+    .city-filter-select {
         padding: 9px 12px;
         border-radius: 10px;
         border: 1.5px solid var(--border-color);
@@ -206,7 +206,7 @@
         pointer-events: none;
     }
 
-    #stateSearch {
+    #citySearch {
         width: 100%;
         padding: 9px 14px 9px 38px;
         border-radius: 10px;
@@ -219,7 +219,7 @@
         box-sizing: border-box;
     }
 
-    #stateSearch:focus {
+    #citySearch:focus {
         border-color: var(--accent-primary);
         background: #fff;
         box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
@@ -323,7 +323,7 @@
     }
 
     /* ── Detail panel ── */
-    #stateDetailPanel {
+    #cityDetailPanel {
         flex: 1;
         min-height: 0;
         max-width: 100%;
@@ -331,7 +331,7 @@
         overflow-y: auto;
     }
 
-    #stateDetailPanel .state-ci-po-list-header {
+    #cityDetailPanel .city-ci-po-list-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 14px 14px 0 0;
         padding: 16px 22px 14px;
@@ -340,21 +340,21 @@
         gap: 10px;
     }
 
-    #stateDetailPanel .state-ci-entry-title {
+    #cityDetailPanel .city-ci-entry-title {
         margin: 0;
         color: #fff;
         font-weight: 700;
         font-size: 1rem;
     }
 
-    #stateDetailPanel .state-ci-entry-sub {
+    #cityDetailPanel .city-ci-entry-sub {
         color: rgba(255, 255, 255, 0.75);
         font-size: 0.78rem;
         display: block;
         margin-top: 4px;
     }
 
-    #stateDetailPanel .state-ci-po-header-top {
+    #cityDetailPanel .city-ci-po-header-top {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -362,7 +362,7 @@
         flex-wrap: wrap;
     }
 
-    #stateDetailPanel .state-ci-po-back-btn {
+    #cityDetailPanel .city-ci-po-back-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -382,20 +382,20 @@
         font-size: 0.85rem;
     }
 
-    #stateDetailPanel .state-ci-po-back-btn:hover {
+    #cityDetailPanel .city-ci-po-back-btn:hover {
         background: #f0f4ff;
         border-color: #667eea;
         color: #667eea;
     }
 
-    #stateDetailPanel .state-ci-po-footer-right {
+    #cityDetailPanel .city-ci-po-footer-right {
         display: flex;
         align-items: center;
         gap: 10px;
         flex-wrap: wrap;
     }
 
-    #stateDetailPanel .state-ci-po-step-card {
+    #cityDetailPanel .city-ci-po-step-card {
         background: #fff;
         border: 1px solid #e2e8f0;
         border-top: none;
@@ -404,7 +404,7 @@
         overflow: hidden;
     }
 
-    #stateDetailPanel .state-ci-po-step-header {
+    #cityDetailPanel .city-ci-po-step-header {
         display: flex;
         align-items: center;
         gap: 12px;
@@ -414,7 +414,7 @@
         border-left: 4px solid #667eea;
     }
 
-    #stateDetailPanel .state-ci-po-step-num {
+    #cityDetailPanel .city-ci-po-step-num {
         width: 26px;
         height: 26px;
         border-radius: 50%;
@@ -429,7 +429,7 @@
         box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
     }
 
-    #stateDetailPanel .state-ci-po-step-title {
+    #cityDetailPanel .city-ci-po-step-title {
         font-weight: 700;
         font-size: 0.84rem;
         color: #1e293b;
@@ -438,37 +438,37 @@
         flex: 1;
     }
 
-    #stateDetailPanel .state-ci-po-step-icon {
+    #cityDetailPanel .city-ci-po-step-icon {
         color: #667eea;
         font-size: 1rem;
         margin-left: auto;
     }
 
-    #stateDetailPanel .state-ci-po-step-body {
+    #cityDetailPanel .city-ci-po-step-body {
         padding: 20px 22px 24px;
     }
 
-    /* ── State detail form (Bootstrap row / col-md-4) ── */
-    .state-detail-form {
+    /* ── City detail form (Bootstrap row / col-md-4) ── */
+    .city-detail-form {
         --bs-gutter-x: 1.25rem;
         --bs-gutter-y: 1rem;
     }
 
-    .state-fg {
+    .city-fg {
         display: flex;
         flex-direction: column;
         gap: 6px;
     }
 
-    .state-fg label {
+    .city-fg label {
         font-size: 12.5px;
         font-weight: 700;
         color: var(--text-primary);
     }
 
-    .state-fg input[type="text"],
-    .state-fg input[type="number"],
-    .state-fg select {
+    .city-fg input[type="text"],
+    .city-fg input[type="number"],
+    .city-fg select {
         padding: 10px 13px;
         border-radius: 10px;
         border: 1.5px solid var(--border-color);
@@ -481,17 +481,17 @@
         box-sizing: border-box;
     }
 
-    .state-fg input:focus,
-    .state-fg select:focus {
+    .city-fg input:focus,
+    .city-fg select:focus {
         border-color: var(--accent-primary);
         box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
     }
 
-    #stateDetailPanel .select2-container {
+    #cityDetailPanel .select2-container {
         width: 100% !important;
     }
 
-    #stateDetailPanel .select2-container--default .select2-selection--single {
+    #cityDetailPanel .select2-container--default .select2-selection--single {
         min-height: 42px;
         padding: 4px 10px;
         border-radius: 10px;
@@ -500,24 +500,24 @@
         transition: border-color .2s, box-shadow .2s;
     }
 
-    #stateDetailPanel .select2-container--default.select2-container--focus .select2-selection--single {
+    #cityDetailPanel .select2-container--default.select2-container--focus .select2-selection--single {
         border-color: var(--accent-primary) !important;
         box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
     }
 
-    #stateDetailPanel .select2-container--default .select2-selection--single .select2-selection__rendered {
+    #cityDetailPanel .select2-container--default .select2-selection--single .select2-selection__rendered {
         line-height: 32px;
         padding-left: 2px;
         font-size: 13.5px;
         color: var(--text-dark);
     }
 
-    #stateDetailPanel .select2-container--default .select2-selection--single .select2-selection__arrow {
+    #cityDetailPanel .select2-container--default .select2-selection--single .select2-selection__arrow {
         height: 40px;
     }
 
     /* ── Save button ── */
-    .btn-state-save {
+    .btn-city-save {
         display: inline-flex;
         align-items: center;
         gap: 8px;
@@ -534,13 +534,13 @@
         line-height: 1.4;
     }
 
-    .btn-state-save:hover {
+    .btn-city-save:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
         color: #fff;
     }
 
-    .btn-state-save:disabled {
+    .btn-city-save:disabled {
         opacity: 0.55;
         cursor: not-allowed;
         transform: none;
@@ -548,26 +548,26 @@
     }
 
     /* ── Readonly state ── */
-    #stateDetailPanel.state-readonly .state-fg input,
-    #stateDetailPanel.state-readonly .state-fg select {
+    #cityDetailPanel.city-readonly .city-fg input,
+    #cityDetailPanel.city-readonly .city-fg select {
         background: var(--light-bg);
         cursor: default;
     }
 
-    #stateDetailPanel.state-readonly .select2-container--default .select2-selection--single {
+    #cityDetailPanel.city-readonly .select2-container--default .select2-selection--single {
         background: var(--light-bg) !important;
         cursor: default !important;
     }
 
     /* ── Inline validation ── */
-    .state-fg input.state-input-error,
-    .state-fg select.state-input-error {
+    .city-fg input.city-input-error,
+    .city-fg select.city-input-error {
         border-color: #ef4444 !important;
         box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
         background: #fff8f8 !important;
     }
 
-    .state-field-error {
+    .city-field-error {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -579,12 +579,12 @@
         font-size: 12px;
         font-weight: 600;
         margin-top: 3px;
-        animation: state-err-in .15s ease;
+        animation: city-err-in .15s ease;
     }
 
-    .state-field-error i { font-size: 13px; flex-shrink: 0; }
+    .city-field-error i { font-size: 13px; flex-shrink: 0; }
 
-    @@keyframes state-err-in {
+    @@keyframes city-err-in {
         from { opacity: 0; transform: translateY(-4px); }
         to   { opacity: 1; transform: translateY(0); }
     }
@@ -656,112 +656,123 @@
     }
 
     @@media (max-width: 600px) {
-        #StateMasterPage { padding-left: 8px; padding-right: 8px; }
-        .state-po-create-btn .state-po-create-label { display: none; }
-        .state-po-create-btn { padding: 8px 12px; }
-        #stateDetailPanel .state-ci-po-footer-right { flex-direction: column; align-items: stretch; }
-        #stateDetailPanel .state-ci-po-footer-right .state-ci-po-back-btn,
-        #stateDetailPanel .state-ci-po-footer-right .btn-state-save { flex: 1; justify-content: center; }
+        #CityMasterPage { padding-left: 8px; padding-right: 8px; }
+        .city-po-create-btn .city-po-create-label { display: none; }
+        .city-po-create-btn { padding: 8px 12px; }
+        #cityDetailPanel .city-ci-po-footer-right { flex-direction: column; align-items: stretch; }
+        #cityDetailPanel .city-ci-po-footer-right .city-ci-po-back-btn,
+        #cityDetailPanel .city-ci-po-footer-right .btn-city-save { flex: 1; justify-content: center; }
     }
 </style>
 
-<div id="StateMasterPage">
+<div id="CityMasterPage">
 
     <!-- ═══ LIST PANEL ═══ -->
-    <div id="stateListPanel">
-        <div class="state-po-list-header">
-            <div class="state-po-header-top">
-                <div class="state-hero-left">
-                    <div class="state-hero-icon">
-                        <i class="fas fa-map"></i>
+    <div id="cityListPanel">
+        <div class="city-po-list-header">
+            <div class="city-po-header-top">
+                <div class="city-hero-left">
+                    <div class="city-hero-icon">
+                        <i class="fas fa-city"></i>
                     </div>
                     <div>
-                        <div class="state-hero-title">State Master</div>
-                        <div class="state-hero-sub">Maintain states with country, initials and numeric code</div>
+                        <div class="city-hero-title">City Master</div>
+                        <div class="city-hero-sub">Maintain cities with pin, STD code and state</div>
                     </div>
                 </div>
-                <button type="button" class="state-po-create-btn" id="btnCreateState">
+                <button type="button" class="city-po-create-btn" id="btnCreateCity">
                     <span class="pm-plus">+</span>
-                    <span class="state-po-create-label">Create New</span>
+                    <span class="city-po-create-label">Create New</span>
                 </button>
             </div>
         </div>
 
-        <div class="state-list-grid-wrap">
+        <div class="city-list-grid-wrap">
             <div class="pm-card-toolbar">
                 <div class="pm-search-wrap">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="stateSearch" placeholder="Search by state, country, code…" autocomplete="off" />
+                    <input type="text" id="citySearch" placeholder="Search by city, state, pin…" autocomplete="off" />
                 </div>
-                <div class="state-toolbar-filter">
-                    <label for="ddlListCountryFilter" class="state-filter-label">Country</label>
-                    <select id="ddlListCountryFilter" class="state-filter-select"></select>
+                <div class="city-toolbar-filter">
+                    <label for="ddlListCountryFilter" class="city-filter-label">Country</label>
+                    <select id="ddlListCountryFilter" class="city-filter-select"></select>
+                </div>
+                <div class="city-toolbar-filter">
+                    <label for="ddlListStateFilter" class="city-filter-label">State</label>
+                    <select id="ddlListStateFilter" class="city-filter-select"></select>
                 </div>
             </div>
             <div class="pm-table-wrap table-wrapper">
-                <table class="pm-table" id="StateMaster">
-                    <thead id="table-header-StateMaster"></thead>
-                    <tbody id="table-body-StateMaster"></tbody>
+                <table class="pm-table" id="CityMaster">
+                    <thead id="table-header-CityMaster"></thead>
+                    <tbody id="table-body-CityMaster"></tbody>
                 </table>
             </div>
-            <div class="paginator" id="paginator-StateMaster"></div>
+            <div class="paginator" id="paginator-CityMaster"></div>
         </div>
     </div>
 
     <!-- ═══ DETAIL PANEL ═══ -->
-    <div id="stateDetailPanel" style="display:none;">
-        <input type="hidden" id="hfStateMaster_Code" value="0" />
+    <div id="cityDetailPanel" style="display:none;">
+        <input type="hidden" id="hfCityMaster_Code" value="0" />
 
-        <div class="state-ci-po-list-header">
-            <div class="state-ci-po-header-top">
+        <div class="city-ci-po-list-header">
+            <div class="city-ci-po-header-top">
                 <div>
-                    <h5 class="state-ci-entry-title">State Master</h5>
-                    <small class="state-ci-entry-sub">Select country and enter state name, initial and code</small>
+                    <h5 class="city-ci-entry-title">City Master</h5>
+                    <small class="city-ci-entry-sub">Enter city name, pin, STD code and state</small>
                 </div>
-                <div class="state-ci-po-footer-right">
-                    <button type="button" class="state-ci-po-back-btn" id="btnBackToStateList" title="Back to list">
+                <div class="city-ci-po-footer-right">
+                    <button type="button" class="city-ci-po-back-btn" id="btnBackToCityList" title="Back to list">
                         <i class="fas fa-arrow-left"></i> <span>Back</span>
                     </button>
-                    <button type="button" class="state-ci-po-back-btn" id="btnClearState">
+                    <button type="button" class="city-ci-po-back-btn" id="btnClearCity">
                         <i class="fas fa-eraser"></i> Clear
                     </button>
-                    <button type="button" class="btn-state-save" id="btnSaveState">
+                    <button type="button" class="btn-city-save" id="btnSaveCity">
                         <i class="fas fa-check"></i> Save
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="state-ci-po-step-card">
-            <div class="state-ci-po-step-header">
-                <span class="state-ci-po-step-num">1</span>
-                <span class="state-ci-po-step-title">State Details</span>
-                <i class="fas fa-map-marked-alt state-ci-po-step-icon" aria-hidden="true"></i>
+        <div class="city-ci-po-step-card">
+            <div class="city-ci-po-step-header">
+                <span class="city-ci-po-step-num">1</span>
+                <span class="city-ci-po-step-title">City Details</span>
+                <i class="fas fa-map-location-dot city-ci-po-step-icon" aria-hidden="true"></i>
             </div>
-            <div class="state-ci-po-step-body">
-                <div class="row g-3 state-detail-form">
+            <div class="city-ci-po-step-body">
+                <div class="row g-3 city-detail-form">
                     <div class="col-12 col-md-3">
-                        <div class="state-fg">
-                            <label for="ddlCountry">Country Name <span class="text-danger">*</span></label>
-                            <select id="ddlCountry"></select>
+                        <div class="city-fg">
+                            <label for="ddlDetailCountry">Country</label>
+                            <select id="ddlDetailCountry"></select>
                         </div>
                     </div>
                     <div class="col-12 col-md-3">
-                        <div class="state-fg">
-                            <label for="txtState">State Name <span class="text-danger">*</span></label>
-                            <input type="text" id="txtState" autocomplete="off" maxlength="100" placeholder="State name" />
+                        <div class="city-fg">
+                            <label for="txtCityName">City Name <span class="text-danger">*</span></label>
+                            <input type="text" id="txtCityName" autocomplete="off" maxlength="50" placeholder="City name" />
                         </div>
                     </div>
                     <div class="col-12 col-md-3">
-                        <div class="state-fg">
-                            <label for="txtStateInitial">State Initial</label>
-                            <input type="text" id="txtStateInitial" autocomplete="off" maxlength="10" placeholder="Optional abbreviation" />
+                        <div class="city-fg">
+                            <label for="txtPin">Pin Code</label>
+                            <input type="text" id="txtPin" name="PostalCode" inputmode="numeric" maxlength="6" autocomplete="postal-code"
+                                   title="Optional. India PIN: 6 digits, first digit 1–9. Leave blank to save as 0." placeholder="e.g. 560001" />
                         </div>
                     </div>
                     <div class="col-12 col-md-3">
-                        <div class="state-fg">
-                            <label for="txtStateCode">State Code <span class="text-danger">*</span></label>
-                            <input type="text" id="txtStateCode" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="1–2 digits" />
+                        <div class="city-fg">
+                            <label for="txtSTDCode">STD Code</label>
+                            <input type="text" id="txtSTDCode" autocomplete="off" maxlength="15" placeholder="0" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <div class="city-fg">
+                            <label for="ddlStateName">State Name <span class="text-danger">*</span></label>
+                            <select id="ddlStateName"></select>
                         </div>
                     </div>
                 </div>
@@ -772,7 +783,7 @@
 </div>
 
 <!-- ═══ DELETE MODAL ═══ -->
-<div class="modal fade pm-modal" id="dvStateDeleteModal" tabindex="-1" role="dialog" aria-hidden="true"
+<div class="modal fade pm-modal" id="dvCityDeleteModal" tabindex="-1" role="dialog" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
         <div class="modal-content">
@@ -783,19 +794,19 @@
                 </button>
             </div>
             <div class="modal-body" style="background:#fff; padding:22px 24px 18px;">
-                <p class="mb-3" style="color:var(--text-dark); font-size:14px;">Delete this state record?</p>
-                <label for="stateReasonForDelete" class="form-label" style="font-size:12.5px;font-weight:700;">
+                <p class="mb-3" style="color:var(--text-dark); font-size:14px;">Delete this city record?</p>
+                <label for="cityReasonForDelete" class="form-label" style="font-size:12.5px;font-weight:700;">
                     Reason for deletion <span class="text-danger">*</span>
                 </label>
-                <input type="text" id="stateReasonForDelete" class="form-control" autocomplete="off"
+                <input type="text" id="cityReasonForDelete" class="form-control" autocomplete="off"
                        placeholder="Enter reason" />
-                <input type="hidden" id="hfStateDeleteCode" value="0" />
+                <input type="hidden" id="hfCityDeleteCode" value="0" />
             </div>
             <div class="modal-footer" style="border-top:1px solid var(--border-color);">
                 <button type="button" class="pm-btn secondary" data-bs-dismiss="modal">
                     <i class="fas fa-ban"></i> Cancel
                 </button>
-                <button type="button" class="pm-btn danger" id="btnStateConfirmDelete">
+                <button type="button" class="pm-btn danger" id="btnCityConfirmDelete">
                     <i class="fas fa-trash-alt me-1"></i> Delete
                 </button>
             </div>
