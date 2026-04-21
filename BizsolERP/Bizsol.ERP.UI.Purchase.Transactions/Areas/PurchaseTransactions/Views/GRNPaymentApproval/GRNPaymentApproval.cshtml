@@ -459,6 +459,50 @@
         font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s; margin-right: 4px;
     }
     .im-btn-attach:hover { background: #0284c7; color: #fff; border-color: #0284c7; box-shadow: 0 2px 8px rgba(2,132,199,0.3); }
+    /* HasAttachment = Yes: green row + green attachment button (list grid) */
+    #gpaListTable tbody tr.gpa-grid-row-has-attachment,
+    #gpaListTable tbody tr.gpa-grid-row-has-attachment td {
+        background-color: #d1fae5 !important;
+    }
+    #gpaListTable tbody tr.gpa-grid-row-has-attachment:nth-child(even),
+    #gpaListTable tbody tr.gpa-grid-row-has-attachment:nth-child(even) td {
+        background-color: #bbf7d0 !important;
+    }
+    #gpaListTable tbody tr.gpa-grid-row-has-attachment:hover,
+    #gpaListTable tbody tr.gpa-grid-row-has-attachment:hover td {
+        background-color: #a7f3d0 !important;
+    }
+    #gpaListTable .im-btn-attach.im-btn-attach--has-attachment {
+        background: #bbf7d0;
+        color: #047857;
+        border-color: #6ee7b7;
+    }
+    #gpaListTable .im-btn-attach.im-btn-attach--has-attachment:hover {
+        background: #059669;
+        color: #fff;
+        border-color: #059669;
+        box-shadow: 0 2px 8px rgba(5,150,105,0.35);
+    }
+    /* Float bar Attachment: blue default; HasAttachment Yes, files on server, or pending uploads → green */
+    #floatBar .btn-gpa-footer-attach {
+        background: linear-gradient(135deg,#0ea5e9,#0284c7) !important;
+        box-shadow: 0 4px 14px rgba(14,165,233,0.35);
+        color: #fff !important;
+    }
+    #floatBar .btn-gpa-footer-attach:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(14,165,233,0.45);
+        color: #fff !important;
+        filter: brightness(1.03);
+    }
+    #floatBar .btn-gpa-footer-attach.btn-gpa-footer-attach--yes {
+        background: linear-gradient(135deg,#10b981,#059669) !important;
+        box-shadow: 0 4px 14px rgba(16,185,129,0.4);
+    }
+    #floatBar .btn-gpa-footer-attach.btn-gpa-footer-attach--yes:hover {
+        box-shadow: 0 6px 20px rgba(5,150,105,0.45);
+        filter: brightness(1.03);
+    }
     /* Print / Print Preview — same idea as Purchase Order (Store) list */
     .im-btn-print-preview {
         display: inline-flex; align-items: center; justify-content: center;
@@ -767,8 +811,7 @@
             <i class="fa fa-undo me-1"></i> Reset
         </button>
         <div class="gpa-attach-btn-wrap">
-            <button type="button" class="btn-po-cancel" onclick="openGpaAttachmentControl()" title="Attachments"
-                    style="background:linear-gradient(135deg,#0ea5e9,#0284c7);">
+            <button type="button" id="btnGpaFooterAttach" class="btn-po-cancel btn-gpa-footer-attach" onclick="openGpaAttachmentControl()" title="Attachments">
                 <i class="fa fa-paperclip me-1"></i> Attachment
             </button>
             <span id="gpaTempAttachBadge" class="gpa-temp-badge">0</span>

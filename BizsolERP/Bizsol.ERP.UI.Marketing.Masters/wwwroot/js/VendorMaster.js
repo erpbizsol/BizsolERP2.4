@@ -108,6 +108,11 @@ function vmApplyVendorAttachmentFromApi(raw, item) {
             legacyRow.style.display = "none";
         }
     }
+    if (item && typeof item === "object") {
+        window.vmVendorFormHasAttachmentYes =
+            vmVendorHasAttachmentYesFromItem(item) || vmVendorResolveHasAttachmentYesFromGridList(item);
+    }
+    vmSyncVendorFormAttachBarState(0);
 }
 
 function vmFileUploadChange(event) {
@@ -743,6 +748,9 @@ $(document).ready(function () {
         if (!badge) return;
         badge.textContent = String(count);
         badge.style.display = count > 0 ? "inline-flex" : "none";
+        if (typeof vmSyncVendorFormAttachBarState === "function") {
+            vmSyncVendorFormAttachBarState(count);
+        }
     };
 
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
@@ -921,6 +929,13 @@ $(document).ready(function () {
             vmSaveNewIndustryType();
         }
     });
+
+    $(document).on("hidden.bs.modal", "#AttachmentControlmodal", function () {
+        window.vmVendorAttachmentHighlightCode = 0;
+        if (typeof refreshVendorMasterGrid === "function" && (window.G_VendorMasterSourceRows || []).length) {
+            refreshVendorMasterGrid();
+        }
+    });
 });
 
 function rowIsVerified(item) {
@@ -1058,6 +1073,110 @@ function resolveVendorVerifyRight() {
 window.G_VendorMasterSourceRows = window.G_VendorMasterSourceRows || [];
 
 window.G_VendorStatFilter = window.G_VendorStatFilter || "all";
+/** Vendor row to highlight while attachment modal is open (matches `Code`). */
+window.vmVendorAttachmentHighlightCode = window.vmVendorAttachmentHighlightCode || 0;
+
+function vmBizsolMetaKey(k) {
+    return typeof k === "string" && k.indexOf("__bizsol") === 0;
+}
+
+function vmVendorAttachmentYesFromRaw(raw) {
+    if (raw === undefined || raw === null) return false;
+    var s = String(raw).trim().toLowerCase();
+    return s === "yes" || s === "y" || s === "true" || s === "1";
+}
+
+function vmVendorHasAttachmentYesFromItem(item) {
+    if (!item || typeof item !== "object") return false;
+    var k = vmVendorFindHasAttachmentColumnKey(item);
+    return k ? vmVendorAttachmentYesFromRaw(item[k]) : false;
+}
+
+/** SHOWDATA row often omits HASATTACHMENT; list grid (`G_VendorMasterSourceRows`) still has it — use for edit footer + sync. */
+function vmVendorResolveHasAttachmentYesFromGridList(item) {
+    if (!item || typeof item !== "object") return false;
+    var code = parseInt(String(item.Code != null ? item.Code : 0), 10);
+    if (!code) return false;
+    var rows = window.G_VendorMasterSourceRows;
+    if (!Array.isArray(rows)) return false;
+    var i;
+    for (i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        if (!r || typeof r !== "object") continue;
+        var rc = parseInt(String(r.Code != null ? r.Code : 0), 10);
+        if (rc !== code) continue;
+        return vmVendorHasAttachmentYesFromItem(r);
+    }
+    return false;
+}
+
+/** API list / edit form: HasAttachment Yes (or saved blob / pending queue) → green footer Attachment button */
+window.vmVendorFormHasAttachmentYes = window.vmVendorFormHasAttachmentYes || false;
+
+function vmSyncVendorFormAttachBarState(pendingQueueCount) {
+    var $btn = $("#vendorDialogBackdrop .vm-btn-attach-bar");
+    if (!$btn.length) return;
+    var pending =
+        pendingQueueCount !== undefined && pendingQueueCount !== null
+            ? parseInt(String(pendingQueueCount), 10) || 0
+            : parseInt(String(($("#vmTempAttachBadge").text() || "0").trim()), 10) || 0;
+    var hasBlob = typeof vmVendorAttachmentHasData === "function" && vmVendorAttachmentHasData(vmVendorExistingImageData);
+    var yesList = !!window.vmVendorFormHasAttachmentYes;
+    if (yesList || hasBlob || pending > 0) {
+        $btn.addClass("vm-btn-attach-bar--yes");
+    } else {
+        $btn.removeClass("vm-btn-attach-bar--yes");
+    }
+}
+
+function vmVendorFindHasAttachmentColumnKey(item) {
+    if (!item || typeof item !== "object") return null;
+    var direct = [
+        "HASATTACHMENT",
+        "HasAttachment",
+        "hasAttachment",
+        "HAS_ATTACH",
+        "Has_Attachment",
+        "Has Attachment",
+    ];
+    var i;
+    for (i = 0; i < direct.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(item, direct[i])) return direct[i];
+    }
+    for (var k in item) {
+        if (!Object.prototype.hasOwnProperty.call(item, k) || vmBizsolMetaKey(k)) continue;
+        var kn = String(k).replace(/\s+/g, "");
+        if (/hasattachment/i.test(kn)) return k;
+    }
+    return null;
+}
+
+function vmVendorFormatHasAttachmentDisplayCell(yes, raw) {
+    if (yes) return '<span class="vm-has-attachment-yes">Yes</span>';
+    var t =
+        raw !== undefined && raw !== null && String(raw).trim() !== ""
+            ? String(raw).trim()
+            : "No";
+    return '<span class="vm-has-attachment-no">' + escapeVendorAttr(t) + "</span>";
+}
+
+function vmVendorApplyAttachmentGridPatch(row) {
+    var item = row || {};
+    var attKey = vmVendorFindHasAttachmentColumnKey(item);
+    var rawAtt = attKey ? item[attKey] : null;
+    var yes = attKey ? vmVendorAttachmentYesFromRaw(rawAtt) : false;
+    var classes = [];
+    if (yes) classes.push("vm-grid-row-has-attachment");
+    var hl = parseInt(String(window.vmVendorAttachmentHighlightCode || 0), 10) || 0;
+    var code = parseInt(String(item.Code != null ? item.Code : 0), 10) || 0;
+    if (hl > 0 && code === hl) classes.push("vm-grid-row-attachment-modal-open");
+    var patch = { __bizsolRowClass: classes.join(" ") };
+    if (attKey) {
+        patch[attKey] = vmVendorFormatHasAttachmentDisplayCell(yes, rawAtt);
+    }
+    return Object.assign({}, item, patch);
+}
+
 function filterVendorRowsByStat(rows, mode) {
     var list = Array.isArray(rows) ? rows : [];
     if (!window.G_PartyVerificationBeforeOrderY) return list.slice();
@@ -1081,9 +1200,12 @@ function mapVendorRowsToGrid(rows) {
             if (shouldShowVendorPartyVerifyColumn()) {
                 clientPatch.Verify = verifyCell;
             }
-            return Object.assign({}, item, clientPatch);
+            return vmVendorApplyAttachmentGridPatch(Object.assign({}, item, clientPatch));
         }
 
+        var attKeyBtn = vmVendorFindHasAttachmentColumnKey(item);
+        var attYesBtn = attKeyBtn ? vmVendorAttachmentYesFromRaw(item[attKeyBtn]) : false;
+        var attachBtnClass = attYesBtn ? "vm-btn-attach vm-btn-attach--yes" : "vm-btn-attach";
         var btns =
             '<span class="vm-action-btns">' +
             '<button class="vm-btn-view" title="View" onclick="ViewVendor(' + item.Code + ')">' +
@@ -1099,7 +1221,9 @@ function mapVendorRowsToGrid(rows) {
             ',\'print\')">' +
             '<i class="fas fa-print"></i>' +
             "</button>" +
-            '<button type="button" class="vm-btn-attach" title="Attachment" onclick="openVendorMasterListAttachmentControl(' +
+            '<button type="button" class="' +
+            attachBtnClass +
+            '" title="Attachment" onclick="openVendorMasterListAttachmentControl(' +
             item.Code +
             "," +
             item.Code +
@@ -1118,7 +1242,7 @@ function mapVendorRowsToGrid(rows) {
             patch.Verify = verifyCell;
         }
         patch.Action = btns;
-        return Object.assign({}, item, patch);
+        return vmVendorApplyAttachmentGridPatch(Object.assign({}, item, patch));
     });
 }
 function applyVendorMasterClientModeUi() {
@@ -1152,6 +1276,7 @@ function getVendorMasterHiddenColumns() {
         "Address Line 1",
         "Address Line 2",
         "Pin Code",
+        "HasAttachment"
     ];
     if (G_IsClientOrVendor === "C") {
         cols.push("Action");
@@ -1408,6 +1533,11 @@ function EditVendor(code) {
 
             // ── Show modal AFTER data is loaded ──────────────────────────
             $("#vendorDialogBackdrop").addClass("show");
+            setTimeout(function () {
+                if (typeof vmSyncVendorFormAttachBarState === "function") {
+                    vmSyncVendorFormAttachBarState(0);
+                }
+            }, 0);
 
             // ── Set dropdowns (Nation → State → City) ────────────────────
             G_VendorSuppressCityAddressFill = true;
@@ -1681,6 +1811,10 @@ function InitAttachmentControl(masterTableName, masterTableCode, detailTableName
 
 function openVendorMasterAttachmentControl() {
     var masterCode = parseInt(String(G_EditCode || 0), 10) || 0;
+    window.vmVendorAttachmentHighlightCode = masterCode > 0 ? masterCode : 0;
+    if (typeof refreshVendorMasterGrid === "function" && (window.G_VendorMasterSourceRows || []).length) {
+        refreshVendorMasterGrid();
+    }
     var entryNo = masterCode;
     var entryDate = new Date().toISOString().split("T")[0];
     InitAttachmentControl(VM_ATTACHMENT_MASTER_TABLE, masterCode, "", 0, entryNo, entryDate, "all", "");
@@ -1691,6 +1825,10 @@ function openVendorMasterListAttachmentControl(code, entryNo, entryDate) {
     if (masterCode <= 0) {
         toastr.warning("Invalid record. Cannot open attachments.");
         return;
+    }
+    window.vmVendorAttachmentHighlightCode = masterCode;
+    if (typeof refreshVendorMasterGrid === "function" && (window.G_VendorMasterSourceRows || []).length) {
+        refreshVendorMasterGrid();
     }
     var en = parseInt(entryNo, 10) || 0;
     if (en <= 0) en = masterCode;
@@ -2288,6 +2426,7 @@ function ClearVendorForm() {
     G_VendorSuppressCityAddressFill = true;
     G_VendorProgrammaticNationStateCity = true;
     G_BillNameSyncedWithVendorName = true;
+    window.vmVendorFormHasAttachmentYes = false;
     vmResetVendorAttachment();
     $("#AccountDesp").removeData("vm-had-chars");
     // Text inputs (Address1/Address2 must clear on New; Pin uses id PinCode, not Pin)
@@ -2346,12 +2485,19 @@ function ClearVendorForm() {
     $("#vmBtnSaveVendor").show().prop("disabled", false);
     $("#vmBtnCancelVendor").html('<i class="fas fa-times"></i> Cancel');
     updatePanRequiredUi();
+    if (typeof vmSyncVendorFormAttachBarState === "function") {
+        vmSyncVendorFormAttachBarState(0);
+    }
 }
 function CloseVendorForm() {
     ClearVendorForm();
     G_EditCode = 0;
     G_ViewCode = 0;
+    window.vmVendorAttachmentHighlightCode = 0;
     $("#vendorDialogBackdrop").removeClass("show");
+    if (typeof refreshVendorMasterGrid === "function" && (window.G_VendorMasterSourceRows || []).length) {
+        refreshVendorMasterGrid();
+    }
 }
 function ShowVendorSuccessModal(title, text, iconClass) {
     $("#vmSuccessModalTitle").text(title || "Done!");
