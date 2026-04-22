@@ -404,6 +404,7 @@ function getGRNListHiddenColumns() {
         "HasAttachment",
     ];
     cols.push("Verify");
+    cols.push("__bizsolRowClass");
     return cols;
 }
 

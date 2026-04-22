@@ -1276,7 +1276,8 @@ function getVendorMasterHiddenColumns() {
         "Address Line 1",
         "Address Line 2",
         "Pin Code",
-        "HasAttachment"
+        "HasAttachment",
+        "__bizsolRowClass"
     ];
     if (G_IsClientOrVendor === "C") {
         cols.push("Action");
