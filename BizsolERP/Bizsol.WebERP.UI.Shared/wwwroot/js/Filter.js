@@ -1,4 +1,4 @@
-﻿// Helper function to escape special characters in IDs for jQuery selectors
+// Helper function to escape special characters in IDs for jQuery selectors
 window.escapeId = function escapeId(id) {
     return id.replace(/([\/.:\[\]#@$%^&*()+=,!~`{}'"<>?|\\])/g, '\\$1');
 }
@@ -836,7 +836,12 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
             buttons += '</td>';
         }
 
-        return `<tr data-index="${index}">${row}${buttons}</tr>`;
+        const _bizsolRC = item.__bizsolRowClass;
+        const _trClass =
+            _bizsolRC != null && String(_bizsolRC).trim() !== ''
+                ? ` class="${String(_bizsolRC).replace(/"/g, '')}"`
+                : '';
+        return `<tr data-index="${index}"${_trClass}>${row}${buttons}</tr>`;
     }).join('');
 
     // Add total row if totalColumns is specified and not skipping

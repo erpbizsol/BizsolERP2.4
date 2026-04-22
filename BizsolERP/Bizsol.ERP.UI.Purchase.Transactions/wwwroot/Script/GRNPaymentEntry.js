@@ -222,7 +222,7 @@ function mapGpaListRow(item) {
         Action: btns,
         Code: code,
         StatusCode: normalizeGpaListStatusCode(item),
-    };
+    }; 
     if (hasAttachmentYes) row.__bizsolRowClass = 'gpa-grid-row-has-attachment';
     return row;
 }
@@ -288,7 +288,7 @@ function renderGpaListGridForActiveTab() {
     const Button = false;
     const showButtons = [];
     const StringdoubleFilterColumn = [];
-    const hiddenColumns = ['Code', 'StatusCode'];
+    const hiddenColumns = ['Code', 'StatusCode', '__bizsolRowClass'];
     const ColumnAlignment = { Action: 'center;width:268px;' };
 
     updateGpaStatusTabStrip();
