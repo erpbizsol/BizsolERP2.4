@@ -670,6 +670,7 @@ function callSaveProjectApi() {
     }
 
     const companyParameter_Code = parseInt($('#ddlCompanyInfo').val() || '0', 10) || 0;
+    const newDays = parseInt(($('#txtEstimatedDays').val() || '').trim(), 10) || 0;
 
     const payload = {
         Code:                    code,

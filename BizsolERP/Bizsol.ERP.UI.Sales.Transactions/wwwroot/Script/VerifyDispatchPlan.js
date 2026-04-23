@@ -30,9 +30,38 @@ function getFooterViewportOverlapHeight() {
     return overlap > 0 && isFinite(overlap) ? overlap : 0;
 }
 function adjustVerifyDispatchPlanTableHeight() {
+    const twin = document.getElementById('dvTransporterReportTwinGrids');
+    if (twin && !twin.classList.contains('d-none') && twin.offsetParent !== null) {
+        const dv = document.getElementById('dvTableDispatch');
+        if (!dv || dv.offsetParent === null) return;
+        const viewportHeight = getViewportHeight();
+        const footerHeight = getFooterViewportOverlapHeight();
+        const bottomGap = 8;
+        const minHalf = 220;
+        const rect = dv.getBoundingClientRect();
+        let availableHeight = viewportHeight - rect.top - footerHeight - bottomGap;
+        if (!isFinite(availableHeight)) return;
+        availableHeight = Math.max(minHalf * 2 + 48, Math.floor(availableHeight));
+        twin.style.height = availableHeight + 'px';
+        twin.style.maxHeight = availableHeight + 'px';
+        const gap = 8;
+        const labelReserve = 28;
+        const half = Math.max(minHalf, Math.floor((availableHeight - gap - labelReserve * 2) / 2));
+        const w1 = document.getElementById('tableWrapperTransporterR1');
+        const w2 = document.getElementById('tableWrapperTransporterR2');
+        if (w1) {
+            w1.style.height = half + 'px';
+            w1.style.maxHeight = half + 'px';
+        }
+        if (w2) {
+            w2.style.height = half + 'px';
+            w2.style.maxHeight = half + 'px';
+        }
+        return;
+    }
     const tableWrapper = document.getElementById('tableWrapper');
     if (!tableWrapper) return;
-    if (tableWrapper.offsetParent === null) return; // hidden (display:none)
+    if (tableWrapper.offsetParent === null) return;
 
     const rect = tableWrapper.getBoundingClientRect();
     const viewportHeight = getViewportHeight();
@@ -101,6 +130,9 @@ $(document).ready(function () {
     if (initialStatus === 'R' || initialStatus === 'T') {
         $(".despatch-activity-filter").removeClass('d-none');
         $("#dvTableDispatch").hide();
+    } else if (initialStatus === 'TR') {
+        $(".despatch-activity-filter").addClass('d-none');
+        ShowTransporterReportList();
     } else {
         $(".despatch-activity-filter").addClass('d-none');
         GetDispatchAdvicePlanList(initialStatus);
@@ -110,6 +142,9 @@ $(document).ready(function () {
         if (status === 'R' || status === 'T') {
             $(".despatch-activity-filter").removeClass('d-none');
             $("#dvTableDispatch").hide();
+        } else if (status === 'TR') {
+            $(".despatch-activity-filter").addClass('d-none');
+            ShowTransporterReportList();
         } else {
             $(".despatch-activity-filter").addClass('d-none');
             GetDispatchAdvicePlanList(status);
@@ -126,7 +161,22 @@ $(document).ready(function () {
         }
     });
 });
+function ensureStandardGridLayout() {
+    $('#dvTransporterReportTwinGrids').addClass('d-none').removeClass('d-flex');
+    $('#tableWrapper').removeClass('d-none');
+}
+
+function ensureTransporterTwinLayout() {
+    $('#tableWrapper').addClass('d-none');
+    $('#dvTransporterReportTwinGrids').removeClass('d-none').addClass('d-flex');
+}
+
 function GetDispatchAdvicePlanList(Status, fromdate, todate) {
+    if (Status === 'TR') {
+        ShowTransporterReportList();
+        return;
+    }
+    ensureStandardGridLayout();
     if (fromdate == undefined) {
         fromdate = '';
     }
@@ -148,7 +198,7 @@ function GetDispatchAdvicePlanList(Status, fromdate, todate) {
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"
-                , "Remarks", "Marketing Remark", "PPC Remark","CityMaster_Code_Freight"];
+                , "Remarks", "Marketing Remark", "PPC Remark","CityMaster_Code_Freight", "DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
             const columnAlignment = {
                 "Ord Qty Pc": "right;max-width:30px;",
                 "Ord Qty MT": "right",
@@ -947,7 +997,7 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
         totals.creditDays = domTotals.creditDays;
         totals.creditLimit = domTotals.creditLimit;
         totals.availableLimit = domTotals.availableLimit;
-        const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
+        const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode", "DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
         addTotalsRow(totals, hiddenColumns);
         applyFixedWidthsByIndex();
         applyTableBorders();
@@ -973,7 +1023,7 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
         totals.creditDays = domTotals.creditDays;
         totals.creditLimit = domTotals.creditLimit;
         totals.availableLimit = domTotals.availableLimit;
-        const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
+        const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode", "DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
         addTotalsRow(totals, hiddenColumns);
         applyFixedWidthsByIndex();
         applyTableBorders();
@@ -981,6 +1031,36 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
 });
 function ExportExcel() {
     var status = $("#ddlStatus").val();
+    if (status === 'TR') {
+        Showloader();
+        VerifyDispatchPlanService.GetTransporterReport().then(function (response) {
+            HideLoader();
+            const parsed = parseTransporterReportResults(response);
+            const has1 = parsed.result1 && parsed.result1.length > 0;
+            const has2 = parsed.result2 && parsed.result2.length > 0;
+            if (!has1 && !has2) {
+                toastr.info('No data to export.');
+                return;
+            }
+            if (typeof XLSX === 'undefined') {
+                toastr.error('Excel export is not available.');
+                return;
+            }
+            const wb = XLSX.utils.book_new();
+            if (has1) {
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(omitTransporterHiddenExportColumns(parsed.result1)), 'Result1_DO');
+            }
+            if (has2) {
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(omitTransporterHiddenExportColumns(parsed.result2)), 'Result2_Transporter');
+            }
+            XLSX.writeFile(wb, 'TransporterReport.xlsx');
+            toastr.success('Export completed successfully.');
+        }).catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || error.message || 'Error during export.');
+        });
+        return;
+    }
     if (status === 'R' || status === 'T') {
         var fromDate = $('#txtFromDate').val();
         var toDate = $('#txtToDate').val();
@@ -1009,7 +1089,7 @@ function ExportExcel() {
             return;
         }
         if (status === 'T') {
-            const hiddenFields = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
+            const hiddenFields = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
             Showloader();
             VerifyDispatchPlanService.GetDispatchAdvicePlanList(status, fromDate, toDate).then(function (response) {
                 HideLoader();
@@ -1026,7 +1106,7 @@ function ExportExcel() {
         }
         return;
     }
-    const hiddenFields = ["Code","AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
+    const hiddenFields = ["Code","AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
     VerifyDispatchPlanService.GetDispatchAdvicePlanList(status).then(function (response) {
         if (response && response.length > 0) {
             ExportToExcelControl.ExportToExcel(response, hiddenFields, "DispatchAdvicePlan");
@@ -1964,6 +2044,7 @@ function setCurrentDateDespatchActivity() {
     $('#txtToDate').val(formatDate(today));
 }
 function ShowDespatchActivityList(fromDate, toDate) {
+    ensureStandardGridLayout();
     Showloader();
     VerifyDispatchPlanService.GetDespatchActivityReportList(fromDate, toDate).then(function (response) {
         HideLoader();
@@ -1998,6 +2079,10 @@ function ShowDespatchActivityList(fromDate, toDate) {
     });
 }
 function ShowFilteredList() {
+    if ($("#ddlStatus").val() === 'TR') {
+        ShowTransporterReportList();
+        return;
+    }
     var fromDate = $('#txtFromDate').val();
     var toDate = $('#txtToDate').val();
     if (!fromDate || !toDate) {
@@ -2042,3 +2127,658 @@ window.CloseUpdateAreaModal = CloseUpdateAreaModal;
 window.SaveArea = SaveArea;
 window.ShowDespatchActivityList = ShowDespatchActivityList;
 window.ShowFilteredList = ShowFilteredList;
+
+function parseTransporterReportResults(response) {
+    var result1 = [];
+    var result2 = [];
+    if (!response) {
+        return { result1: result1, result2: result2 };
+    }
+    if (typeof response === 'object' && response !== null && !Array.isArray(response)) {
+        var r1 = response.Result1 != null ? response.Result1 : response.result1;
+        var r2 = response.Result2 != null ? response.Result2 : response.result2;
+        if (Array.isArray(r1)) result1 = r1;
+        if (Array.isArray(r2)) result2 = r2;
+        return { result1: result1, result2: result2 };
+    }
+    if (Array.isArray(response) && response.length > 0) {
+        var first = response[0];
+        if (first !== null && typeof first === 'object' && !Array.isArray(first)) {
+            return { result1: response, result2: [] };
+        }
+        if (Array.isArray(first)) {
+            return { result1: first, result2: [] };
+        }
+    }
+    return { result1: result1, result2: result2 };
+}
+
+function mapNullsToEmptyStrings(rows) {
+    if (!rows || !rows.length) return rows || [];
+    return rows.map(function (row) {
+        var out = {};
+        Object.keys(row).forEach(function (k) {
+            var v = row[k];
+            if (v === null || v === undefined) {
+                out[k] = '';
+            } else if (typeof v === 'string') {
+                var t = v.trim();
+                if (t === '' || t.toLowerCase() === 'null') {
+                    out[k] = '';
+                } else {
+                    out[k] = v;
+                }
+            } else {
+                out[k] = v;
+            }
+        });
+        return out;
+    });
+}
+
+function omitTransporterHiddenExportColumns(rows) {
+    var hide = ['DespatchAdviceMaster_Code', 'despatchAdviceMaster_Code'];
+    return mapNullsToEmptyStrings(rows).map(function (row) {
+        var o = {};
+        Object.keys(row).forEach(function (k) {
+            if (hide.indexOf(k) < 0) {
+                o[k] = row[k];
+            }
+        });
+        return o;
+    });
+}
+
+function getTransporterReportColumnFilters(rows) {
+    if (!rows || rows.length === 0) {
+        return { stringFilterColumn: [], numericFilterColumn: [], dateFilterColumn: [] };
+    }
+    const keys = Object.keys(rows[0]);
+    const dateFilterColumn = keys.filter(function (k) { return /date/i.test(k); });
+    const numericFilterColumn = keys.filter(function (k) {
+        if (dateFilterColumn.indexOf(k) >= 0) return false;
+        let sample = null;
+        for (let i = 0; i < Math.min(rows.length, 30); i++) {
+            const v = rows[i][k];
+            if (v !== null && v !== undefined && v !== '') {
+                sample = v;
+                break;
+            }
+        }
+        if (sample === null || sample === undefined) return false;
+        const n = typeof sample === 'number' ? sample : Number(String(sample).replace(/,/g, ''));
+        return !isNaN(n) && isFinite(n);
+    });
+    const stringFilterColumn = keys.filter(function (k) {
+        return dateFilterColumn.indexOf(k) < 0 && numericFilterColumn.indexOf(k) < 0;
+    });
+    return { stringFilterColumn: stringFilterColumn, numericFilterColumn: numericFilterColumn, dateFilterColumn: dateFilterColumn };
+}
+
+function bindTransporterResultGrid(headId, bodyId, rows, noDataElId) {
+    if (!rows || rows.length === 0) {
+        $('#' + headId).empty();
+        $('#' + bodyId).empty();
+        $('#' + noDataElId).removeClass('d-none');
+        $('#' + headId).closest('.table-wrapper').addClass('d-none');
+        return;
+    }
+    $('#' + noDataElId).addClass('d-none');
+    $('#' + headId).closest('.table-wrapper').removeClass('d-none');
+    const hiddenColumns = ["DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
+    let filters = getTransporterReportColumnFilters(rows);
+    filters.stringFilterColumn = filters.stringFilterColumn.filter(function (c) { return hiddenColumns.indexOf(c) < 0; });
+    filters.numericFilterColumn = filters.numericFilterColumn.filter(function (c) { return hiddenColumns.indexOf(c) < 0; });
+    filters.dateFilterColumn = filters.dateFilterColumn.filter(function (c) { return hiddenColumns.indexOf(c) < 0; });
+    const button = false;
+    const stringDoubleFilterColumn = [];
+    const showButtons = [];
+    const columnAlignment = {};
+    BizsolCustomFilterGrid.CreateDataTable(headId, bodyId, rows, button, showButtons, filters.stringFilterColumn, filters.numericFilterColumn, filters.dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+    const tableHead = document.getElementById(headId);
+    if (tableHead) {
+        const totalsRow = tableHead.querySelector('.totals-row');
+        if (totalsRow) totalsRow.remove();
+    }
+}
+
+function ShowTransporterReportList() {
+    Showloader();
+    VerifyDispatchPlanService.GetTransporterReport().then(function (response) {
+        HideLoader();
+        ensureTransporterTwinLayout();
+        const parsed = parseTransporterReportResults(response);
+        const hasR1 = parsed.result1 && parsed.result1.length > 0;
+        const hasR2 = parsed.result2 && parsed.result2.length > 0;
+        if (!hasR1 && !hasR2) {
+            $("#dvTableDispatch").hide();
+            toastr.info('No data found for Transporter Report.');
+            return;
+        }
+        const r1Clean = mapNullsToEmptyStrings(parsed.result1 || []);
+        const r2Clean = mapNullsToEmptyStrings(parsed.result2 || []);
+        G_DispatchPlanlist = hasR2 ? r2Clean : r1Clean;
+        bindTransporterResultGrid('table-head-transporter-r1', 'table-body-transporter-r1', r1Clean, 'transporterR1NoData');
+        bindTransporterResultGrid('table-head-transporter-r2', 'table-body-transporter-r2', r2Clean, 'transporterR2NoData');
+        $("#dvTableDispatch").show();
+        scheduleVerifyDispatchPlanTableHeightAdjust();
+    }).catch(function (error) {
+        HideLoader();
+        $("#dvTableDispatch").hide();
+        toastr.error(error.Msg || error.message || 'Error loading Transporter Report.');
+    });
+}
+
+window.ShowTransporterReportList = ShowTransporterReportList;
+
+/* --- Approved Transporter Dashboard (modal + GetApprovedTransporterReport) --- */
+var ATD_CHART = null;
+var ATD_RAW_RESPONSE = null;
+var ATD_NORMALIZED = null;
+var ATD_COLORS = ['#818cf8', '#38bdf8', '#a78bfa', '#34d399', '#f472b6', '#fbbf24', '#94a3b8', '#64748b', '#c084fc', '#2dd4bf'];
+
+function closeApprovedTransporterDashboard() {
+    if (ATD_CHART) {
+        try {
+            ATD_CHART.destroy();
+        } catch (e) { /* ignore */ }
+        ATD_CHART = null;
+    }
+    $('#dvApprovedTransporterDashboard').modal('hide');
+}
+
+function atdPick(obj, keys) {
+    for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') {
+            return obj[k];
+        }
+    }
+    return null;
+}
+
+function atdExtractArray(resp) {
+    if (!resp) return [];
+    if (Array.isArray(resp)) {
+        if (resp.length && Array.isArray(resp[0])) return resp[0];
+        return resp;
+    }
+    if (typeof resp !== 'object') return [];
+    var order = ['QuoteStatusMatrix', 'Matrix', 'Data', 'Rows', 'Table', 'Items', 'Result1', 'result1', 'Result', 'TransporterMatrix'];
+    for (var i = 0; i < order.length; i++) {
+        var v = resp[order[i]];
+        if (Array.isArray(v) && v.length) return v;
+    }
+    if (Array.isArray(resp.Result2) && resp.Result2.length) return resp.Result2;
+    return [];
+}
+
+function atdExtractDeclineArray(resp) {
+    if (!resp || typeof resp !== 'object') return [];
+    var order = ['DeclineStats', 'DeclineTransporterStats', 'Result3', 'result3', 'DeclineMatrix'];
+    for (var i = 0; i < order.length; i++) {
+        var v = resp[order[i]];
+        if (Array.isArray(v) && v.length) return v;
+    }
+    return [];
+}
+
+function atdIsGrandRow(row, nameKey) {
+    var n = row && nameKey ? row[nameKey] : '';
+    var s = n !== undefined && n !== null ? String(n).trim().toLowerCase() : '';
+    if (/^grand|^gran|^total/i.test(s)) return true;
+    if (row && (row.IsGrandTotal === true || row.isGrandTotal === true)) return true;
+    return false;
+}
+
+function atdGuessNameKey(sampleRow) {
+    if (!sampleRow || typeof sampleRow !== 'object') return null;
+    var keys = Object.keys(sampleRow);
+    var prefer = ['Transporter', 'TransporterName', 'Account Desp', 'AccountDesp', 'Transpo', 'Name', 'Account'];
+    for (var p = 0; p < prefer.length; p++) {
+        if (keys.indexOf(prefer[p]) >= 0) return prefer[p];
+    }
+    for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (/transporter|transpo|account|name|desp/i.test(k) && !/code|master/i.test(k)) return k;
+    }
+    return keys[0] || null;
+}
+
+function atdNumericKeys(row, nameKey) {
+    var keys = Object.keys(row);
+    var out = [];
+    for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (k === nameKey) continue;
+        if (/indent\s*id|^indentid$/i.test(k)) continue;
+        var v = row[k];
+        if (v === null || v === undefined || v === '') continue;
+        var n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, ''));
+        if (!isNaN(n) && isFinite(n)) out.push(k);
+    }
+    return out;
+}
+
+function normalizeApprovedTransporterReport(resp) {
+    var indentKpi = null;
+    var quoteKpi = null;
+    if (resp && typeof resp === 'object' && !Array.isArray(resp)) {
+        indentKpi = atdPick(resp, ['IndentIdCount', 'indentIdCount', 'TotalIndentId', 'IndentId', 'IndentCount', 'KPI_IndentId']);
+        quoteKpi = atdPick(resp, ['QuoteStatusCount', 'quoteStatusCount', 'TotalQuoteStatus', 'QuoteCount', 'KPI_QuoteStatus']);
+    }
+    var rows = atdExtractArray(resp).map(function (r) {
+        return typeof r === 'object' && r !== null ? r : {};
+    });
+    var declineRows = atdExtractDeclineArray(resp);
+    if (!rows.length) {
+        return {
+            indentKpi: indentKpi,
+            quoteKpi: quoteKpi,
+            nameKey: null,
+            valueKeys: [],
+            dataRows: [],
+            grandRow: null,
+            declineRows: declineRows
+        };
+    }
+    var nameKey = atdGuessNameKey(rows[0]);
+    var valueKeys = atdNumericKeys(rows[0], nameKey);
+    if (!valueKeys.length) {
+        valueKeys = Object.keys(rows[0]).filter(function (k) {
+            return k !== nameKey && k !== 'IndentId' && k !== 'Indent ID';
+        });
+    }
+    var dataRows = [];
+    var grandRow = null;
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        if (atdIsGrandRow(row, nameKey)) {
+            grandRow = row;
+        } else {
+            dataRows.push(row);
+        }
+    }
+    return {
+        indentKpi: indentKpi,
+        quoteKpi: quoteKpi,
+        nameKey: nameKey,
+        valueKeys: valueKeys,
+        dataRows: dataRows,
+        grandRow: grandRow,
+        declineRows: declineRows
+    };
+}
+
+function atdFormatInt(v) {
+    if (v === null || v === undefined || v === '') return '—';
+    var n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, ''));
+    if (isNaN(n)) return String(v);
+    return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+}
+
+/** True for API columns that are already row totals (exclude from sum-for-chart / KPI sum). */
+function atdIsTotalColumnKey(k) {
+    if (k === undefined || k === null) return false;
+    var s = String(k).trim().toLowerCase().replace(/\s+/g, '');
+    return s === 'grandtotal' || s.indexOf('grandtotal') === 0;
+}
+
+function atdKeysForDetailSum(valueKeys) {
+    if (!valueKeys || !valueKeys.length) return [];
+    return valueKeys.filter(function (k) {
+        return !atdIsTotalColumnKey(k);
+    });
+}
+
+function atdRowTotal(row, valueKeys) {
+    var keys = atdKeysForDetailSum(valueKeys);
+    var t = 0;
+    for (var i = 0; i < keys.length; i++) {
+        var v = row[keys[i]];
+        if (v === null || v === undefined || v === '') continue;
+        var n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, ''));
+        if (!isNaN(n) && isFinite(n)) t += n;
+    }
+    return t;
+}
+
+function atdGetFilteredDataRows(norm) {
+    if (!norm || !norm.dataRows) return [];
+    var nameKey = norm.nameKey;
+    var trans = ($('#atdFilterTransporter').val() || '').trim();
+    var indentVal = ($('#atdFilterIndent').val() || '').trim();
+    return norm.dataRows.filter(function (r) {
+        if (trans) {
+            var nm = nameKey ? String(r[nameKey] || '').trim() : '';
+            if (nm.toLowerCase() !== trans.toLowerCase()) return false;
+        }
+        if (indentVal) {
+            var hasIndent = r['IndentId'] !== undefined || r['Indent ID'] !== undefined;
+            if (hasIndent) {
+                var iv = r['IndentId'] !== undefined ? String(r['IndentId']) : String(r['Indent ID']);
+                if (iv !== indentVal) return false;
+            }
+        }
+        return true;
+    });
+}
+
+function atdVisibleValueKeys(norm) {
+    return norm.valueKeys || [];
+}
+
+function atdHasRowFilters() {
+    var trans = ($('#atdFilterTransporter').val() || '').trim();
+    var indentVal = ($('#atdFilterIndent').val() || '').trim();
+    return !!(trans || indentVal);
+}
+
+function atdBuildComputedGrandRow(filteredRows, nameKey, vkeys) {
+    var agg = {};
+    vkeys.forEach(function (k) {
+        agg[k] = 0;
+    });
+    filteredRows.forEach(function (r) {
+        vkeys.forEach(function (k) {
+            var v = r[k];
+            var n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, ''));
+            if (!isNaN(n) && isFinite(n)) agg[k] += n;
+        });
+    });
+    var row = {};
+    row[nameKey || 'Name'] = 'Grand Total';
+    vkeys.forEach(function (k) {
+        row[k] = agg[k];
+    });
+    return row;
+}
+
+function atdFillFilterDropdowns(norm) {
+    var $t = $('#atdFilterTransporter');
+    var $i = $('#atdFilterIndent');
+    var nameKey = norm.nameKey;
+    var prevT = $t.val();
+    var prevI = $i.val();
+    $t.empty().append('<option value="">All</option>');
+    $i.empty().append('<option value="">All</option>');
+    var names = [];
+    var indents = [];
+    norm.dataRows.forEach(function (r) {
+        if (nameKey) {
+            var n = r[nameKey];
+            if (n !== undefined && n !== null && String(n).trim() !== '') names.push(String(n).trim());
+        }
+        if (r['IndentId'] !== undefined && r['IndentId'] !== null && String(r['IndentId']).trim() !== '') indents.push(String(r['IndentId']).trim());
+        if (r['Indent ID'] !== undefined && r['Indent ID'] !== null && String(r['Indent ID']).trim() !== '') indents.push(String(r['Indent ID']).trim());
+    });
+    names.sort();
+    indents.sort();
+    var seenN = {};
+    names.forEach(function (n) {
+        if (seenN[n]) return;
+        seenN[n] = true;
+        $t.append($('<option></option>').attr('value', n).text(n));
+    });
+    var seenI = {};
+    indents.forEach(function (n) {
+        if (seenI[n]) return;
+        seenI[n] = true;
+        $i.append($('<option></option>').attr('value', n).text(n));
+    });
+    if (prevT && $t.find('option[value="' + prevT.replace(/"/g, '\\"') + '"]').length) $t.val(prevT);
+    if (prevI && $i.find('option[value="' + prevI.replace(/"/g, '\\"') + '"]').length) $i.val(prevI);
+    if (!$i.find('option').length || $i.find('option').length === 1) {
+        $('#atdWrapIndent').addClass('d-none');
+    } else {
+        $('#atdWrapIndent').removeClass('d-none');
+    }
+}
+
+function atdRenderKpis(norm) {
+    $('#atdKpiIndent').text(atdFormatInt(norm.indentKpi));
+    $('#atdKpiQuote').text(atdFormatInt(norm.quoteKpi));
+    if (norm.dataRows && norm.dataRows.length && (norm.indentKpi === null || norm.indentKpi === undefined)) {
+        $('#atdKpiIndent').text(atdFormatInt(norm.dataRows.length));
+    }
+    if (norm.dataRows && norm.dataRows.length && (norm.quoteKpi === null || norm.quoteKpi === undefined)) {
+        var sum = 0;
+        norm.dataRows.forEach(function (r) {
+            sum += atdRowTotal(r, norm.valueKeys);
+        });
+        $('#atdKpiQuote').text(atdFormatInt(sum));
+    }
+}
+
+function atdRenderMatrix(norm) {
+    var head = document.getElementById('atdMatrixHead');
+    var body = document.getElementById('atdMatrixBody');
+    if (!head || !body) return;
+    head.innerHTML = '';
+    body.innerHTML = '';
+    var nameKey = norm.nameKey || 'Name';
+    var vkeys = atdVisibleValueKeys(norm);
+    var filteredRows = atdGetFilteredDataRows(norm);
+    var useFilteredGrand = atdHasRowFilters();
+    var grandForDisplay = useFilteredGrand ? atdBuildComputedGrandRow(filteredRows, nameKey, vkeys) : norm.grandRow;
+    if (!grandForDisplay && filteredRows.length) {
+        grandForDisplay = atdBuildComputedGrandRow(filteredRows, nameKey, vkeys);
+    }
+    var hr = document.createElement('tr');
+    var th0 = document.createElement('th');
+    th0.className = 'atd-th-name';
+    th0.textContent = nameKey.length > 18 ? nameKey.slice(0, 16) + '…' : nameKey;
+    th0.title = nameKey;
+    hr.appendChild(th0);
+    vkeys.forEach(function (k) {
+        var th = document.createElement('th');
+        th.className = 'atd-th-num';
+        th.textContent = k;
+        th.title = k;
+        hr.appendChild(th);
+    });
+    head.appendChild(hr);
+    filteredRows.forEach(function (row) {
+        var tr = document.createElement('tr');
+        var td0 = document.createElement('td');
+        td0.className = 'atd-text';
+        td0.textContent = row[nameKey] !== undefined && row[nameKey] !== null ? String(row[nameKey]) : '';
+        td0.title = td0.textContent;
+        tr.appendChild(td0);
+        vkeys.forEach(function (k) {
+            var td = document.createElement('td');
+            td.className = atdIsTotalColumnKey(k) ? 'atd-num atd-col-total' : 'atd-num';
+            var v = row[k];
+            td.textContent = v === undefined || v === null || v === '' ? '' : atdFormatInt(v);
+            tr.appendChild(td);
+        });
+        body.appendChild(tr);
+    });
+    if (grandForDisplay) {
+        var gtr = document.createElement('tr');
+        gtr.className = 'atd-grand-row';
+        var gtd0 = document.createElement('td');
+        gtd0.className = 'atd-text';
+        gtd0.textContent = grandForDisplay[nameKey] !== undefined ? String(grandForDisplay[nameKey]) : 'Grand Total';
+        gtr.appendChild(gtd0);
+        vkeys.forEach(function (k) {
+            var td = document.createElement('td');
+            td.className = atdIsTotalColumnKey(k) ? 'atd-num atd-col-total' : 'atd-num';
+            var v = grandForDisplay[k];
+            td.textContent = v === undefined || v === null || v === '' ? '' : atdFormatInt(v);
+            gtr.appendChild(td);
+        });
+        body.appendChild(gtr);
+    }
+}
+
+function atdRenderDecline(norm) {
+    var block = document.getElementById('atdDeclineBlock');
+    var dh = document.getElementById('atdDeclineHead');
+    var db = document.getElementById('atdDeclineBody');
+    if (!block || !dh || !db) return;
+    dh.innerHTML = '';
+    db.innerHTML = '';
+    var rows = norm.declineRows || [];
+    if (!rows.length) {
+        block.classList.add('d-none');
+        return;
+    }
+    block.classList.remove('d-none');
+    var keys = Object.keys(rows[0]);
+    var hr = document.createElement('tr');
+    keys.forEach(function (k) {
+        var th = document.createElement('th');
+        th.textContent = k;
+        hr.appendChild(th);
+    });
+    dh.appendChild(hr);
+    rows.forEach(function (row) {
+        var tr = document.createElement('tr');
+        keys.forEach(function (k) {
+            var td = document.createElement('td');
+            td.textContent = row[k] !== undefined && row[k] !== null ? String(row[k]) : '';
+            tr.appendChild(td);
+        });
+        db.appendChild(tr);
+    });
+}
+
+function atdRenderCategoryLegend(vkeys) {
+    var el = document.getElementById('atdCategoryLegend');
+    if (!el) return;
+    el.innerHTML = '';
+    var keys = atdKeysForDetailSum(vkeys || []);
+    keys.forEach(function (k, i) {
+        var d = document.createElement('div');
+        d.className = 'atd-legend-item';
+        var sw = document.createElement('span');
+        sw.className = 'atd-legend-swatch';
+        sw.style.background = ATD_COLORS[i % ATD_COLORS.length];
+        var lb = document.createElement('span');
+        lb.textContent = k;
+        d.appendChild(sw);
+        d.appendChild(lb);
+        el.appendChild(d);
+    });
+}
+
+function atdRenderDonut(norm) {
+    var canvas = document.getElementById('atdDonutCanvas');
+    var leg = document.getElementById('atdDonutLegend');
+    if (!canvas || typeof Chart === 'undefined') {
+        if (leg) leg.textContent = typeof Chart === 'undefined' ? 'Chart library not loaded.' : '';
+        return;
+    }
+    if (ATD_CHART) {
+        try {
+            ATD_CHART.destroy();
+        } catch (e) { /* ignore */ }
+        ATD_CHART = null;
+    }
+    var nameKey = norm.nameKey;
+    var vkeys = atdVisibleValueKeys(norm);
+    var filteredRows = atdGetFilteredDataRows(norm);
+    var labels = [];
+    var data = [];
+    filteredRows.forEach(function (r) {
+        var nm = nameKey ? String(r[nameKey] || '').trim() : '';
+        if (!nm) nm = '—';
+        var t = atdRowTotal(r, vkeys);
+        if (t > 0) {
+            labels.push(nm.length > 22 ? nm.slice(0, 20) + '…' : nm);
+            data.push(t);
+        }
+    });
+    if (!data.length) {
+        if (leg) leg.textContent = 'No numeric data for chart.';
+        return;
+    }
+    var ctx = canvas.getContext('2d');
+    ATD_CHART = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: labels.map(function (_, i) {
+                    return ATD_COLORS[i % ATD_COLORS.length];
+                }),
+                borderWidth: 2,
+                borderColor: 'rgba(15, 23, 42, 0.95)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'right',
+                    labels: {
+                        color: '#cbd5e1',
+                        boxWidth: 10,
+                        padding: 8,
+                        font: { size: 10, family: "'Segoe UI', system-ui, sans-serif" }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (ctx) {
+                            var sum = data.reduce(function (a, b) {
+                                return a + b;
+                            }, 0);
+                            var val = ctx.parsed || 0;
+                            var pct = sum ? ((val / sum) * 100).toFixed(1) : '0';
+                            return ctx.label + ': ' + atdFormatInt(val) + ' (' + pct + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+    if (leg) leg.textContent = '';
+}
+
+function atdRenderAll() {
+    if (!ATD_NORMALIZED) return;
+    atdFillFilterDropdowns(ATD_NORMALIZED);
+    atdRenderKpis(ATD_NORMALIZED);
+    atdRenderMatrix(ATD_NORMALIZED);
+    atdRenderCategoryLegend(atdVisibleValueKeys(ATD_NORMALIZED));
+    atdRenderDonut(ATD_NORMALIZED);
+    atdRenderDecline(ATD_NORMALIZED);
+}
+
+function openApprovedTransporterDashboard() {
+    $('#dvApprovedTransporterDashboard').modal('show');
+    Showloader();
+    VerifyDispatchPlanService.GetApprovedTransporterReport().then(function (response) {
+        HideLoader();
+        ATD_RAW_RESPONSE = response;
+        ATD_NORMALIZED = normalizeApprovedTransporterReport(response);
+        if (!ATD_NORMALIZED.dataRows.length && !ATD_NORMALIZED.grandRow && !(ATD_NORMALIZED.declineRows && ATD_NORMALIZED.declineRows.length)) {
+            toastr.info('No data returned for Approved Transporter report.');
+        }
+        atdRenderAll();
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error((error && error.Msg) || (error && error.message) || 'Error loading Approved Transporter report.');
+    });
+}
+
+$(document).on('change', '#atdFilterTransporter, #atdFilterIndent', function () {
+    if (ATD_NORMALIZED) atdRenderAll();
+});
+
+$(document).on('hidden.bs.modal', '#dvApprovedTransporterDashboard', function () {
+    if (ATD_CHART) {
+        try {
+            ATD_CHART.destroy();
+        } catch (e) { /* ignore */ }
+        ATD_CHART = null;
+    }
+});
+
+window.openApprovedTransporterDashboard = openApprovedTransporterDashboard;
+window.closeApprovedTransporterDashboard = closeApprovedTransporterDashboard;
