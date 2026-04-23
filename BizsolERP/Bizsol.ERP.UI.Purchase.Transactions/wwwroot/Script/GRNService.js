@@ -1,4 +1,5 @@
 import { GRNService }          from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_GRNService.js';
+import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService }          from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 
@@ -26,6 +27,8 @@ let editCode          = 0;
 let grnVerifyPendingCode = 0;
 let grnHasVerifyRight = false;
 let grnMasterSourceRows = [];
+/** Edit/New form: master already has attachment(s) — footer Attachment button green with list/API */
+let grnFormHasAttachmentYes = false;
 /** @type {null|string} null = all rows, 'N' = not verified (Pending), 'Y' = verified */
 let grnListVerifiedFilter = null;
 
@@ -262,6 +265,101 @@ function buildGrnVerifiedBadgeHtml(item) {
     );
 }
 
+function grnBizsolMetaKey(k) {
+    return typeof k === "string" && k.indexOf("__bizsol") === 0;
+}
+
+function grnAttachmentYesFromRaw(raw) {
+    if (raw === undefined || raw === null) return false;
+    var s = String(raw).trim().toLowerCase();
+    return s === "yes" || s === "y" || s === "true" || s === "1";
+}
+
+function grnFindHasAttachmentColumnKey(item) {
+    if (!item || typeof item !== "object") return null;
+    var direct = [
+        "HASATTACHMENT",
+        "HasAttachment",
+        "hasAttachment",
+        "HAS_ATTACH",
+        "Has_Attachment",
+        "Has Attachment",
+    ];
+    var i;
+    for (i = 0; i < direct.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(item, direct[i])) return direct[i];
+    }
+    for (var k in item) {
+        if (!Object.prototype.hasOwnProperty.call(item, k) || grnBizsolMetaKey(k)) continue;
+        var kn = String(k).replace(/\s+/g, "");
+        if (/hasattachment/i.test(kn)) return k;
+    }
+    return null;
+}
+
+function grnItemHasAttachmentYes(item) {
+    if (!item || typeof item !== "object") return false;
+    var k = grnFindHasAttachmentColumnKey(item);
+    return k ? grnAttachmentYesFromRaw(item[k]) : false;
+}
+
+/** SHOWDATA sometimes omits HasAttachment; list row still has it */
+function grnResolveHasAttachmentYesFromList(masterCode) {
+    var c = parseInt(String(masterCode != null ? masterCode : 0), 10) || 0;
+    if (!c) return false;
+    var rows = grnMasterSourceRows;
+    if (!Array.isArray(rows)) return false;
+    var i;
+    for (i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        if (!r || typeof r !== "object") continue;
+        var rc = parseInt(String(r.Code != null ? r.Code : r.code != null ? r.code : 0), 10) || 0;
+        if (rc !== c) continue;
+        return grnItemHasAttachmentYes(r);
+    }
+    return false;
+}
+
+function syncGrnFooterAttachmentButtonState(pendingQueueCount) {
+    var btn = document.getElementById("btnGrnFooterAttach");
+    if (!btn) return;
+    var pending = pendingQueueCount;
+    if (pending === undefined || pending === null) {
+        var badge = document.getElementById("grnTempAttachBadge");
+        pending = badge ? parseInt(String(badge.textContent || "0").trim(), 10) || 0 : 0;
+    } else {
+        pending = parseInt(String(pendingQueueCount), 10) || 0;
+    }
+    var yes = !!grnFormHasAttachmentYes || pending > 0;
+    btn.classList.toggle("btn-grn-footer-attach--yes", yes);
+}
+
+function grnNormalizeAttachmentApiRows(resp) {
+    if (Array.isArray(resp)) return resp;
+    if (!resp || typeof resp !== "object") return [];
+    if (Array.isArray(resp.Data)) return resp.Data;
+    if (Array.isArray(resp.data)) return resp.data;
+    if (Array.isArray(resp.Table)) return resp.Table;
+    return [];
+}
+
+/** Edit form: HasAttachment from master/list + same GetAllDocumentAttachment source as Attachment control */
+async function grnSyncFooterAttachmentFromApis(master, masterCode) {
+    var c = parseInt(String(masterCode != null ? masterCode : 0), 10) || 0;
+    grnFormHasAttachmentYes =
+        grnItemHasAttachmentYes(master || {}) || grnResolveHasAttachmentYesFromList(c);
+    if (c > 0) {
+        try {
+            var resp = await AttachmentControlService.GetAttachmentUploadFiles("MRNMaster", c, "", 0);
+            var rows = grnNormalizeAttachmentApiRows(resp);
+            if (rows.length > 0) grnFormHasAttachmentYes = true;
+        } catch (err) {
+            console.warn("grnSyncFooterAttachmentFromApis:", err);
+        }
+    }
+    syncGrnFooterAttachmentButtonState();
+}
+
 function mapGRNRowsToGrid(rows) {
     return rows.map(function (item) {
         const code = item.Code ?? item.code ?? 0;
@@ -269,10 +367,12 @@ function mapGRNRowsToGrid(rows) {
         const enNum = parseInt(mrnRaw, 10) || 0;
         const rd = item.ReceiveDate ?? item.receiveDate ?? '';
         const rawRdStr = rd ? String(rd).substring(0, 10) : '';
+        const hasAttachmentYes = grnItemHasAttachmentYes(item);
+        const attachBtnClass = hasAttachmentYes ? "im-btn-attach im-btn-attach--has-attachment" : "im-btn-attach";
         var btns =
             '<button class="im-btn-edit" title="Edit" onclick="editGRN(' + code + ')">' +
             '<i class="fas fa-pen"></i></button>' +
-            '<button type="button" class="im-btn-attach" title="Attachment" onclick="openGrnServiceListAttachmentControl(' + code + ',' + enNum + ',\'' + rawRdStr + '\')">' +
+            '<button type="button" class="' + attachBtnClass + '" title="Attachment" onclick="openGrnServiceListAttachmentControl(' + code + ',' + enNum + ',\'' + rawRdStr + '\')">' +
             '<i class="fas fa-paperclip"></i></button>' +
             '<button class="im-btn-delete" title="Delete" onclick="confirmDeleteGRN(' + code + ', \'' + (item.GRNo ?? item.MRNNo ?? '') + '\')">' +
             '<i class="fas fa-trash-can"></i></button>';
@@ -281,7 +381,9 @@ function mapGRNRowsToGrid(rows) {
                 ? buildGrnVerifiedBadgeHtml(item)
                 : '<button type="button" class="grn-btn-verify" title="Verify" aria-label="Verify" onclick="VerifyGRN(' + code + ')"><i class="fas fa-check" aria-hidden="true"></i></button>';
         }
-        return Object.assign({}, item, { Action: btns });
+        var patch = { Action: btns };
+        if (hasAttachmentYes) patch.__bizsolRowClass = "grn-grid-row-has-attachment";
+        return Object.assign({}, item, patch);
     });
 }
 
@@ -299,8 +401,10 @@ function getGRNListHiddenColumns() {
         "Verified By",
         "Verified ON",
         "Verified On",
+        "HasAttachment",
     ];
     cols.push("Verify");
+    cols.push("__bizsolRowClass");
     return cols;
 }
 
@@ -418,6 +522,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!badge) return;
         badge.textContent = String(count);
         badge.style.display = count > 0 ? 'inline-flex' : 'none';
+        syncGrnFooterAttachmentButtonState(count);
     };
 
     await Promise.all([
@@ -485,6 +590,7 @@ function showFormView() {
     syncFloatBarMargin();
     // Fill Grid: only in New mode, always hidden in Edit
     showFillGridCheckbox(!editMode);
+    syncGrnFooterAttachmentButtonState();
 }
 
 function syncFloatBarMargin() {
@@ -1830,6 +1936,7 @@ async function editGRN(code) {
                 document.getElementById('floatModeBadge').textContent = 'EDIT';
                 document.getElementById('floatModeBadge').className = 'po-mode-badge badge bg-warning text-dark';
                 updateFloatBar();
+                await grnSyncFooterAttachmentFromApis(master, code);
                 showFillGridCheckbox(false);  // Ensure hidden in Edit before showing form
                 showFormView();
                 showToast('GRN loaded for editing.', 'success');
@@ -2161,6 +2268,8 @@ function resetForm() {
 
     rowIndex = 0;
     editMode = false; editCode = 0;
+    grnFormHasAttachmentYes = false;
+    syncGrnFooterAttachmentButtonState(0);
     // Against Project ON by default in Create → hide hint, show project fields, show grid hint
     const hint = document.getElementById('divProjectHint');
     if (hint) hint.style.display = 'none';
@@ -2348,6 +2457,7 @@ window.closeGrnVerifyDetailPopover = closeGrnVerifyDetailPopover;
 window.InitAttachmentControl = InitAttachmentControl;
 window.openGrnServiceAttachmentControl = openGrnServiceAttachmentControl;
 window.openGrnServiceListAttachmentControl = openGrnServiceListAttachmentControl;
+window.syncGrnFooterAttachmentButtonState = syncGrnFooterAttachmentButtonState;
 window.showAllItems         = showAllItems;
 window.onAddItemClick       = onAddItemClick;
 window.onPartyChange        = onPartyChange;

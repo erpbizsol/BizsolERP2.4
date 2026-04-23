@@ -1,4 +1,4 @@
-﻿// Helper function to escape special characters in IDs for jQuery selectors
+// Helper function to escape special characters in IDs for jQuery selectors
 window.escapeId = function escapeId(id) {
     return id.replace(/([\/.:\[\]#@$%^&*()+=,!~`{}'"<>?|\\])/g, '\\$1');
 }
@@ -718,26 +718,31 @@ columns.forEach(col => {
 }
 window.sortable = function sortable(element) {
     var column = $(element).data('column');
-    var index = $(element).closest('th').index();
     var order = $(element).data('order');
     var tbodyId = $(element).closest('table').find('tbody').attr('id');
-    $(element).data('order', order);
-    sortTable(index, order, tbodyId);
+    sortTable(column, order, tbodyId);
 };
-window.sortTable = function sortTable(columnIndex, order, tbodyId) {
-    var rows = $(`#${tbodyId} tr`).get();
-    rows.sort(function (a, b) {
-        var keyA = $(a).children('td').eq(columnIndex).text().trim();
-        var keyB = $(b).children('td').eq(columnIndex).text().trim();
+window.sortTable = function sortTable(column, order, tbodyId) {
+    const tableId = $('#' + tbodyId).closest('table').attr('id');
+    var data = window[`filteredData_${tableId}`];
+
+    data.sort(function (a, b) {
+        var keyA = a[column] !== undefined && a[column] !== null ? String(a[column]).trim() : '';
+        var keyB = b[column] !== undefined && b[column] !== null ? String(b[column]).trim() : '';
         if ($.isNumeric(keyA) && $.isNumeric(keyB)) {
-            return (order === 'asc') ? keyA - keyB : keyB - keyA;
+            return (order === 'asc') ? parseFloat(keyA) - parseFloat(keyB) : parseFloat(keyB) - parseFloat(keyA);
         } else {
             return (order === 'asc') ? keyA.localeCompare(keyB) : keyB.localeCompare(keyA);
         }
     });
-    $.each(rows, function (index, row) {
-        $(`#${tbodyId}`).append(row);
-    });
+
+    window[`filteredData_${tableId}`] = data;
+    renderTable(data, tbodyId);
+    if (window[`Paginator_${tableId}`]) {
+        window[`currentPage_${tableId}`] = 1;
+        createPaginator(tableId, tbodyId);
+        renderTableWithPagination(tableId, tbodyId);
+    }
     CloseFilter();
 }
 window.stopPropagationdouble = function stopPropagationdouble(event) {
@@ -836,7 +841,12 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
             buttons += '</td>';
         }
 
-        return `<tr data-index="${index}">${row}${buttons}</tr>`;
+        const _bizsolRC = item.__bizsolRowClass;
+        const _trClass =
+            _bizsolRC != null && String(_bizsolRC).trim() !== ''
+                ? ` class="${String(_bizsolRC).replace(/"/g, '')}"`
+                : '';
+        return `<tr data-index="${index}"${_trClass}>${row}${buttons}</tr>`;
     }).join('');
 
     // Add total row if totalColumns is specified and not skipping

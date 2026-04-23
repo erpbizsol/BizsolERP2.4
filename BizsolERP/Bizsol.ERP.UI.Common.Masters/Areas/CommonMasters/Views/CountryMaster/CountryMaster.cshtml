@@ -468,7 +468,8 @@
 
     .country-fg input[type="text"],
     .country-fg input[type="number"],
-    .country-fg select {
+    .country-fg select,
+    .country-fg textarea {
         padding: 10px 13px;
         border-radius: 10px;
         border: 1.5px solid var(--border-color);
@@ -481,8 +482,15 @@
         box-sizing: border-box;
     }
 
+    .country-fg textarea {
+        min-height: 100px;
+        resize: vertical;
+        line-height: 1.45;
+    }
+
     .country-fg input:focus,
-    .country-fg select:focus {
+    .country-fg select:focus,
+    .country-fg textarea:focus {
         border-color: var(--accent-primary);
         box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
     }
@@ -549,7 +557,8 @@
 
     /* ── Readonly state ── */
     #countryDetailPanel.country-readonly .country-fg input,
-    #countryDetailPanel.country-readonly .country-fg select {
+    #countryDetailPanel.country-readonly .country-fg select,
+    #countryDetailPanel.country-readonly .country-fg textarea {
         background: var(--light-bg);
         cursor: default;
     }
@@ -561,7 +570,8 @@
 
     /* ── Inline validation ── */
     .country-fg input.country-input-error,
-    .country-fg select.country-input-error {
+    .country-fg select.country-input-error,
+    .country-fg textarea.country-input-error {
         border-color: #ef4444 !important;
         box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
         background: #fff8f8 !important;
@@ -712,7 +722,7 @@
             <div class="country-ci-po-header-top">
                 <div>
                     <h5 class="country-ci-entry-title">Country Master</h5>
-                    <small class="country-ci-entry-sub">Enter country name and country code</small>
+                    <small class="country-ci-entry-sub">Enter country name, code, pincode length, and optional terms</small>
                 </div>
                 <div class="country-ci-po-footer-right">
                     <button type="button" class="country-ci-po-back-btn" id="btnBackToCountryList" title="Back to list">
@@ -746,6 +756,18 @@
                         <div class="country-fg">
                             <label for="txtCountryCode">Country Code <span class="text-danger">*</span></label>
                             <input type="text" id="txtCountryCode" autocomplete="off" maxlength="4" placeholder="e.g. IN" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="country-fg">
+                            <label for="txtPincodeLength">Pincode Length</label>
+                            <input type="text" id="txtPincodeLength" class="country-pincode-length" inputmode="numeric" pattern="[0-9]*" maxlength="10" autocomplete="off" placeholder="0" value="0" title="Digits only (0 or greater)" />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="country-fg">
+                            <label for="txtCountryTerms">Terms &amp; Conditions</label>
+                            <textarea id="txtCountryTerms" rows="4" maxlength="8000" placeholder="Optional terms and conditions" spellcheck="true"></textarea>
                         </div>
                     </div>
                 </div>
