@@ -1482,7 +1482,7 @@ function renderNBDCRROrderDetailsTable(data) {
         'ManifestedWeight': 'right'
     };
 
-    const TotalColumns = ['Weight', 'Invoice Amount', 'Manifested Weight']; // Pass column names to show totals
+    const TotalColumns = ['Weight', 'Invoice Amount']; // Pass column names to show totals
     if (typeof BizsolCustomFilterGrid !== 'undefined') {
         BizsolCustomFilterGrid.CreateDataTable("nbdCrrOrderDetailsTableHeader", "nbdCrrOrderDetailsTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, true, TotalColumns);
     }
