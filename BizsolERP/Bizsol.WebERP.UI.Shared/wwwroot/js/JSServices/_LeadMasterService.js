@@ -417,6 +417,19 @@ const LeadMasterService = {
             }
         );
     },
+    GetEnquiryMasterConfig: function GetEnquiryMasterConfig() {
+        var URL = UrlService.API_ENDPOINT_ENQUIRY + `/GetEnquiryMasterConfig`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) {
+            return value;
+        });
+    },
+    SaveEnquiryMasterConfig: function SaveEnquiryMasterConfig(configData) {
+        var json_data = JSON.stringify(configData);
+        var URL = UrlService.API_ENDPOINT_ENQUIRY + `/SaveEnquiryMasterConfig`;
+        return promiseAjaxCallApi.CallAPI('POST', URL, json_data).then(function (value) {
+            return value;
+        });
+    },
 }
 export { LeadMasterService }
 

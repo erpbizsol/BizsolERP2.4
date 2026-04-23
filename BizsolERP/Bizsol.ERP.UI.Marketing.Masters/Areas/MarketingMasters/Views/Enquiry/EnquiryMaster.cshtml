@@ -63,6 +63,107 @@
         transform: translateY(-1px);
         color: #fff !important;
     }
+    .btn-enq-settings {
+        display: inline-flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #64748b, #475569);
+        color: #fff !important;
+        border-radius: 10px;
+        padding: 7px 12px;
+        font-size: 0.875rem;
+        border: none;
+        box-shadow: 0 3px 10px rgba(71, 85, 105, 0.35);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s;
+        line-height: 1;
+        width: 36px; height: 36px;
+    }
+    .btn-enq-settings:hover {
+        color: #fff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 14px rgba(71, 85, 105, 0.45);
+    }
+    /* Enquiry Configuration Modal */
+    #EnquiryConfigurationModal .modal-dialog { max-width: 520px; }
+    #EnquiryConfigurationModal .modal-content {
+        border: none; border-radius: 18px; overflow: hidden;
+        box-shadow: 0 20px 56px rgba(8, 12, 36, 0.24);
+    }
+    #EnquiryConfigurationModal .enq-config-modal-header {
+        background: linear-gradient(130deg, #558bc0, #334155);
+        border: none; padding: 12px 16px;
+        position: relative; overflow: hidden;
+    }
+    #EnquiryConfigurationModal .enq-config-modal-header::before {
+        content: '';
+        position: absolute; top: -18px; right: -18px;
+        width: 80px; height: 80px; border-radius: 50%;
+        background: rgba(255,255,255,0.08); pointer-events: none;
+    }
+    #EnquiryConfigurationModal .enq-config-modal-title {
+        color: #fff; font-size: 15px; font-weight: 700;
+        display: flex; align-items: center; gap: 9px;
+        position: relative; z-index: 1; margin: 0;
+    }
+    #EnquiryConfigurationModal .enq-config-modal-close {
+        width: 30px; height: 30px; border-radius: 50%;
+        border: none; background: rgba(255,255,255,0.18);
+        color: #fff; font-size: 14px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.13s; position: relative; z-index: 1; flex-shrink: 0;
+    }
+    #EnquiryConfigurationModal .enq-config-modal-close:hover { background: rgba(255,255,255,0.32); }
+    #EnquiryConfigurationModal .enq-config-modal-body {
+        padding: 20px 22px 14px; max-height: 420px; overflow-y: auto;
+    }
+    #EnquiryConfigurationModal .enq-config-modal-body::-webkit-scrollbar { width: 8px; }
+    #EnquiryConfigurationModal .enq-config-modal-body::-webkit-scrollbar-thumb { background: #c4c8d4; border-radius: 4px; }
+    #EnquiryConfigurationModal .enq-config-checks > [class*="col-"] {
+        display: flex; align-items: flex-start; gap: 8px;
+        font-size: 13px; color: #374151; padding: 6px 4px;
+    }
+    #EnquiryConfigurationModal .enq-config-checks input[type="checkbox"] {
+        margin-top: 0.2rem; flex-shrink: 0; width: 1rem; height: 1rem; cursor: pointer;
+    }
+    #EnquiryConfigurationModal .enq-config-checks label { font-weight: 500; line-height: 1.35; cursor: pointer; margin: 0; }
+    #EnquiryConfigurationModal .enq-config-modal-footer {
+        padding: 12px 22px 18px; border-top: 1px solid #eef2ff; justify-content: flex-end;
+    }
+    #EnquiryConfigurationModal .enq-config-btn-close {
+        padding: 9px 20px; border-radius: 999px; border: 1.5px solid #d4d7e8;
+        background: #fff; color: #374151; font-size: 13px; font-weight: 600; cursor: pointer;
+        transition: all 0.13s; display: inline-flex; align-items: center; gap: 7px;
+    }
+    #EnquiryConfigurationModal .enq-config-btn-close:hover { background: #f5f5fb; border-color: #9ca3af; }
+    #EnquiryConfigurationModal .enq-config-section-title {
+        font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+        color: #558bc0; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 4px;
+        display: flex; align-items: center; gap: 6px;
+    }
+    #EnquiryConfigurationModal .enq-config-section + .enq-config-section { margin-top: 16px; }
+    #EnquiryConfigurationModal .enq-config-checks input[type="radio"] {
+        margin-top: 0.2rem; flex-shrink: 0; width: 1rem; height: 1rem; cursor: pointer;
+    }
+    #EnquiryConfigurationModal .enq-config-btn-save {
+        padding: 9px 22px; border-radius: 999px; border: none;
+        background: linear-gradient(135deg, #558bc0, #334155);
+        color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+        transition: all 0.18s; display: inline-flex; align-items: center; gap: 7px;
+        box-shadow: 0 3px 10px rgba(85,139,192,0.35);
+    }
+    #EnquiryConfigurationModal .enq-config-btn-save:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    #EnquiryConfigurationModal .enq-config-btn-save:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+    #EnquiryConfigurationModal .enq-config-mandatory-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px;
+    }
+    #EnquiryConfigurationModal .enq-config-mandatory-item {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 13px; color: #374151; padding: 5px 4px;
+    }
+    #EnquiryConfigurationModal .enq-config-mandatory-item input[type="checkbox"] {
+        flex-shrink: 0; width: 1rem; height: 1rem; cursor: pointer; margin: 0;
+    }
+    #EnquiryConfigurationModal .enq-config-mandatory-item label { font-weight: 500; cursor: pointer; margin: 0; line-height: 1.3; }
 
     .enq-filter-bar {
         background: #fff;
@@ -152,6 +253,11 @@
     }
     #table.enq-list-table.table-hover tbody tr:hover {
         background-color: #e8f4fd !important;
+    }
+    /* Overdue row — overrides table-hover !important so colour persists on hover */
+    #table.enq-list-table tbody tr.enq-row-overdue,
+    #table.enq-list-table.table-hover tbody tr.enq-row-overdue:hover {
+        background-color: #fecaca !important;
     }
     /* Action column: flex cell + display:contents wrapper = all buttons one row, centered */
     #dvLoad #table.enq-list-table thead th:last-child {
@@ -562,12 +668,11 @@
         color: #fff !important;
         min-height: 32px;
         height: 32px;
-        max-height: 32px;
         padding: 0 !important;
         font-size: 1.05rem;
         font-weight: 700;
         line-height: 1;
-        border-radius: 8px;
+        border-radius: 0 6px 6px 0;
         box-shadow: 0 2px 6px rgba(85, 139, 192, 0.35);
     }
     #dvFollowup .btn-enq-icon-add:hover {
@@ -1019,22 +1124,30 @@
                 <h5><i class="fa fa-clipboard-list me-2"></i>Enquiries</h5>
                 <small>View, filter, and manage sales enquiries</small>
             </div>
-            <button type="button" class="btn-enq-new" onclick="CreateNew()">
-                <i class="fa fa-plus-circle"></i>
-                <span class="ms-1">New Enquiry</span>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn-enq-new" onclick="CreateNew()">
+                    <i class="fa fa-plus-circle"></i>
+                    <span class="ms-1">New Enquiry</span>
+                </button>
+                <button type="button" class="btn-enq-settings" id="btnEnquiryConfiguration" onclick="ShowEnquiryConfigurationModal()" title="Settings">
+                    <i class="fa fa-gear"></i>
+                </button>
+            </div>
         </div>
     </div>
     <div class="enq-filter-bar">
         <div class="row">
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
                 <label for="ddlSalesPerson" class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Sales Person <span class="req">*</span></label>
                 <select id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border"></select>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
                 <label for="ddlStatus" class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Status <span class="req">*</span></label>
-                <input list="ddlStatusList" id="ddlStatus" name="ddlStatus" class="form-control form-control-sm box_border" placeholder="" autocomplete="off" value="All">
-                <datalist id="ddlStatusList"></datalist>
+                <select id="ddlStatus" name="ddlStatus" class="form-control form-control-sm box_border"></select>
+            </div>
+            <div class="col-12 col-md-3">
+                <label for="ddlfilterLeadType" class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Lead Type <span class="req">*</span></label>
+                <select id="ddlfilterLeadType" name="ddlfilterLeadType" class="form-control form-control-sm box_border"></select>
             </div>
         </div>
     </div>
@@ -1304,37 +1417,37 @@
                     <label for="txtCustomerRemarks" class="form-label">Customer Remarks<span class="text-danger">*</span></label>
                     <textarea id="txtCustomerRemarks" name="txtCustomerRemarks" class="form-control form-control-sm box_border" placeholder="" autocomplete="off" maxlength="500"></textarea>
                 </div>
-                <div class="col-12 col-md-6 col-lg-5">
+                <div class="col-12 col-md-4">
                     <label for="ddlCustomerContactPersonName" class="form-label">Customer Contact Person Name<span class="text-danger">*</span></label>
-                    <select id="ddlCustomerContactPersonName" class="form-control form-control-sm box_border">
-                    </select>
+                    <div class="input-group input-group-sm">
+                        <select id="ddlCustomerContactPersonName" class="form-control form-control-sm box_border">
+                        </select>
+                        <button type="button" class="btn btn-enq-icon-add" onclick="OpenContactPersonModal()" title="Add contact" style="width:38px;flex-shrink:0;">+</button>
+                    </div>
                 </div>
-                <div class="col-12 col-md-6 col-lg-2 d-flex align-items-end pb-1">
-                    <button type="button" class="btn btn-enq-icon-add w-100" onclick="OpenContactPersonModal()" title="Add contact">+</button>
-                </div>
-                <div class="col-12 col-md-6 col-lg-4">
+                <div class="col-12 col-md-4">
                     <label for="txtFollowUpDateFollowUp" class="form-label">Follow Up Date <span class="text-danger">*</span></label>
                     <input type="date" id="txtFollowUpDateFollowUp" name="txtFollowUpDateFollowUp" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
                 </div>
-                <div class="col-12 col-md-6 col-lg-4">
+                <div class="col-12 col-md-4 col-lg-4">
                     <label for="ddlFollowUpModeFollowUp" class="form-label">Follow Up Mode <span class="text-danger">*</span></label>
                     <select id="ddlFollowUpModeFollowUp" class="form-control form-control-sm box_border">
                     </select>
                 </div>
-                <div class="col-12 col-md-6 col-lg-4 d-flex align-items-center" style="margin-top:0;padding-top:1.1rem;">
+                <div class="col-12 col-md-4 col-lg-4 d-flex align-items-center" style="margin-top:0;padding-top:1.1rem;">
                     <input type="checkbox" checked id="chkFollowUpRequired" name="chkFollowUpRequired" autocomplete="off" class="me-2">
                     <label for="chkFollowUpRequired" class="form-label mb-0">Next Follow-up Required</label>
                 </div>
-                <div class="col-12 col-md-6 col-lg-4" id="dvNextFollowUpDateFollowUp" style="display:block">
+                <div class="col-12 col-md-4 col-lg-4" id="dvNextFollowUpDateFollowUp" style="display:block">
                     <label for="txtNextFollowUpDateFollowUp" class="form-label">Next Follow Up Date <span class="text-danger">*</span></label>
                     <input type="date" id="txtNextFollowUpDateFollowUp" name="txtNextFollowUpDateFollowUp" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
                 </div>
-                <div class="col-12 col-md-6 col-lg-4" id="dvNextFollowUpModeFollowUp" style="display:block">
+                <div class="col-12 col-md-4 col-lg-4" id="dvNextFollowUpModeFollowUp" style="display:block">
                     <label for="ddlNextFollowUpModeFollowUp" class="form-label">Next Follow Up Mode <span class="text-danger">*</span></label>
                     <select id="ddlNextFollowUpModeFollowUp" class="form-control form-control-sm box_border">
                     </select>
                 </div>
-                <div class="col-12 col-md-6 col-lg-4" id="dvddlLeadStatus" style="display:block">
+                <div class="col-12 col-md-4 col-lg-4" id="dvddlLeadStatus" style="display:block">
                     <label for="ddlLeadStatus" class="form-label">Status<span class="text-danger">*</span></label>
                     <select id="ddlLeadStatus" class="form-control form-control-sm box_border">
                     </select>
@@ -1554,4 +1667,55 @@
     </div>
 </div>
 <div id="EnquiryMaster_AttachmentControlmodal"></div>
+
+<div class="modal fade" id="EnquiryConfigurationModal" tabindex="-1" aria-labelledby="EnquiryConfigurationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header enq-config-modal-header">
+                <h5 class="modal-title enq-config-modal-title" id="EnquiryConfigurationModalLabel">
+                    <i class="fa fa-sliders-h" aria-hidden="true"></i> Set Configuration
+                </h5>
+                <button type="button" class="enq-config-modal-close" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fa fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="modal-body enq-config-modal-body">
+                <!-- Mandatory Fields (hidden — kept for payload compatibility) -->
+                <div style="display:none;">
+                    <input type="checkbox" id="chkMandatoryAddress" />
+                    <input type="checkbox" id="chkMandatoryPinCode" />
+                    <input type="checkbox" id="chkMandatoryIndustryType" />
+                    <input type="checkbox" id="chkMandatoryPhoneNo" />
+                    <input type="checkbox" id="chkMandatoryEmail" />
+                </div>
+                <!-- Default Lead Status (radio — single selection) -->
+                <div class="enq-config-section">
+                    <div class="enq-config-section-title">
+                        <i class="fa fa-tags"></i> Default Lead Status
+                    </div>
+                    <div id="DivChkLeadStatusConfig" class="row g-1 enq-config-checks mt-1">
+                        <span class="text-muted" style="font-size:12px;">Loading…</span>
+                    </div>
+                </div>
+                <!-- Default Status (radio — single selection) -->
+                <div class="enq-config-section">
+                    <div class="enq-config-section-title">
+                        <i class="fa fa-circle-check"></i> Default Status
+                    </div>
+                    <div id="DivChkStatusConfig" class="row g-1 enq-config-checks mt-1">
+                        <span class="text-muted" style="font-size:12px;">Loading…</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer enq-config-modal-footer border-0 d-flex gap-2 justify-content-end">
+                <button type="button" class="enq-config-btn-save" id="btnSaveEnquiryConfig" onclick="SaveEnquiryConfig()">
+                    <i class="fa fa-floppy-disk"></i> Save
+                </button>
+                <button type="button" class="enq-config-btn-close" data-bs-dismiss="modal">
+                    <i class="fa fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 

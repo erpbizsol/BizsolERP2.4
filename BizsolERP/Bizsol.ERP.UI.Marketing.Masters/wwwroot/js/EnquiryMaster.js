@@ -15,12 +15,15 @@ let G_CompanyNation = "";
 let G_Status = "";
 var ENQUIRY_FILTER_SS_KEY_SP = "EnquiryMaster_ddlSalesPerson";
 var ENQUIRY_FILTER_SS_KEY_ST = "EnquiryMaster_ddlStatus";
+var ENQUIRY_FILTER_SS_KEY_LT = "EnquiryMaster_ddlLeadType";
 function saveEnquiryListFilters() {
     try {
         var sp = $("#ddlSalesPerson").val();
         var st = $("#ddlStatus").val();
+        var lt = $("#ddlfilterLeadType").val();
         if (sp != null && sp !== "") sessionStorage.setItem(ENQUIRY_FILTER_SS_KEY_SP, sp);
         if (st != null && st !== "") sessionStorage.setItem(ENQUIRY_FILTER_SS_KEY_ST, st);
+        if (lt != null) sessionStorage.setItem(ENQUIRY_FILTER_SS_KEY_LT, lt);
     } catch (e) { /* ignore quota / private mode */ }
 }
 function restoreEnquirySalesPersonSelect() {
@@ -39,6 +42,14 @@ function restoreEnquiryStatusInput() {
         var saved = sessionStorage.getItem(ENQUIRY_FILTER_SS_KEY_ST);
         if (saved != null && saved !== "") {
             $("#ddlStatus").val(saved);
+        }
+    } catch (e) { /* ignore */ }
+}
+function restoreEnquiryLeadTypeSelect() {
+    try {
+        var saved = sessionStorage.getItem(ENQUIRY_FILTER_SS_KEY_LT);
+        if (saved != null) {
+            $("#ddlfilterLeadType").val(saved);
         }
     } catch (e) { /* ignore */ }
 }
@@ -86,13 +97,71 @@ function scheduleSalesPersonSelect2LayoutFix() {
 $(document).ready(function () {
     GetDepartmentlist();
     GetCompanyParameter();
+
     $("#ERPHeading").text("Enquiry Master");
     $('#btnSubmit').click(function (e) {
         SaveData();
     });
-    GetStatuslist().then(function () {
+
+    // Load Status list, Lead Status list and saved Config in parallel,
+    // then populate dropdowns and apply the saved default values.
+    Promise.all([
+        LeadMasterService.GetStatuslist().catch(function () { return []; }),
+        LeadMasterService.GetLeadStatuslist().catch(function () { return []; }),
+        LeadMasterService.GetEnquiryMasterConfig().catch(function () { return null; })
+    ]).then(function (results) {
+        var statusList  = results[0] || [];
+        var leadList    = results[1] || [];
+        var config      = results[2];
+
+        // ── Populate #ddlStatus ────────────────────────────────────────────
+        var statusOption = '<option value="All">All</option>';
+        for (var i = 0; i < statusList.length; i++) {
+            statusOption += '<option value="' + statusList[i].Desp + '">' + statusList[i].Desp + '</option>';
+        }
+        $('#ddlStatus').empty().append(statusOption);
+
+        // ── Populate #ddlfilterLeadType & #ddlLeadStatus ──────────────────
+        var leadOption = '<option value="">All</option>';
+        $.each(leadList, function (key, val) {
+            leadOption += '<option value="' + val.Value + '">' + val.Value + '</option>';
+        });
+        $('#ddlLeadStatus').empty().append(leadOption);
+        $('#ddlfilterLeadType').empty().append(leadOption);
+
+        // ── Normalise config (handles array or object response) ───────────
+        var rawCfg = {};
+        if (Array.isArray(config) && config.length > 0) rawCfg = config[0];
+        else if (config && typeof config === 'object') rawCfg = config;
+
+        function cfgVal(key) {
+            if (!rawCfg) return '';
+            var lk = key.toLowerCase();
+            var found = Object.keys(rawCfg).find(function (k) { return k.toLowerCase() === lk; });
+            return found ? (rawCfg[found] || '') : '';
+        }
+
+        var defaultStatus   = cfgVal('defaultStatus').trim();
+        var defaultLeadType = cfgVal('defaultLeadType').trim();
+
+        // ── Apply config → #ddlStatus ─────────────────────────────────────
+        if (defaultStatus && $('#ddlStatus option').filter(function () { return $(this).val() === defaultStatus; }).length) {
+            $('#ddlStatus').val(defaultStatus);
+        } else {
+            restoreEnquiryStatusInput();
+        }
+
+        // ── Apply config → #ddlfilterLeadType ────────────────────────────
+        if (defaultLeadType && $('#ddlfilterLeadType option').filter(function () { return $(this).val() === defaultLeadType; }).length) {
+            $('#ddlfilterLeadType').val(defaultLeadType);
+        } else {
+            restoreEnquiryLeadTypeSelect();
+        }
+
         GetNestedMarketingManList();
     }).catch(function () {
+        Bind_ddlLeadStatus();
+        GetStatuslist();
         GetNestedMarketingManList();
     });
     if (G_UserType == 'A') {
@@ -104,13 +173,12 @@ $(document).ready(function () {
         saveEnquiryListFilters();
         var SalesPerson = $(this).val();
         if (G_originalData && G_originalData.length > 0) {
-            const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, SalesPerson, $("#ddlStatus").val());
+            const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, SalesPerson, $("#ddlStatus").val(), $("#ddlfilterLeadType").val());
             renderEnquiryListGridFromFilteredData(filteredData);
         } else {
             GetLeadMasterList(SalesPerson);
         }
     });
-    $("#ddlStatus").on("blur", saveEnquiryListFilters);
     $("#ddlStatus").change(function () {
         saveEnquiryListFilters();
         var SalesPerson = $("#ddlSalesPerson").val();
@@ -118,7 +186,18 @@ $(document).ready(function () {
         if (!G_originalData || G_originalData.length === 0) {
             return;
         }
-        const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, SalesPerson, Status);
+        const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, SalesPerson, Status, $("#ddlfilterLeadType").val());
+        renderEnquiryListGridFromFilteredData(filteredData);
+    });
+    $("#ddlfilterLeadType").change(function () {
+        saveEnquiryListFilters();
+        var SalesPerson = $("#ddlSalesPerson").val();
+        var Status = $("#ddlStatus").val();
+        var LeadType = $(this).val();
+        if (!G_originalData || G_originalData.length === 0) {
+            return;
+        }
+        const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, SalesPerson, Status, LeadType);
         renderEnquiryListGridFromFilteredData(filteredData);
     });
     Bind_ddlCustomer();
@@ -530,24 +609,21 @@ function GetNestedMarketingManList() {
 }
 function GetStatuslist() {
     return LeadMasterService.GetStatuslist().then(function (response) {
-        if (response.length > 0) {
-            $('#ddlStatusList option').empty();
-            var option = '<option data-code="0">All</option>';
-            for (var i = 0; i < response.length; i++) {
-
-                option += '<option data-code="' + response[i].Desp + '">' + response[i].Desp + '</option>'
-
-            }
-            $('#ddlStatusList')[0].innerHTML = option;
+        $('#ddlStatus').empty();
+        var option = '<option value="All">All</option>';
+        for (var i = 0; i < response.length; i++) {
+            option += '<option value="' + response[i].Desp + '">' + response[i].Desp + '</option>';
         }
-        restoreEnquiryStatusInput();
+        $('#ddlStatus')[0].innerHTML = option;
+        //restoreEnquiryStatusInput();
     });
 }
-function filterEnquiryListBySalesAndStatus(data, salesPerson, status) {
+function filterEnquiryListBySalesAndStatus(data, salesPerson, status, leadType) {
     if (!data || !data.length) return [];
     const sp = String(salesPerson ?? "all").toLowerCase();
     const st = String(status ?? "all").toLowerCase();
-    if (sp === "all" && st === "all") {
+    const lt = String(leadType ?? "").toLowerCase();
+    if (sp === "all" && st === "all" && (lt === "" || lt === "all")) {
         return data.slice();
     }
     return data.filter(item => {
@@ -555,7 +631,9 @@ function filterEnquiryListBySalesAndStatus(data, salesPerson, status) {
             || item["Sales Person"]?.toLowerCase() === sp;
         const statusMatch = st === "all"
             || item["Status"]?.toLowerCase() === st;
-        return salesMatch && statusMatch;
+        const leadMatch = (lt === "" || lt === "all")
+            || item["Lead Type"]?.toLowerCase() === lt;
+        return salesMatch && statusMatch && leadMatch;
     });
 }
 function mapEnquiryItemToGridRow(item) {
@@ -590,8 +668,8 @@ function mapEnquiryItemToGridRow(item) {
         Action: `<div class="enq-action-wrap">${followUpBtn + editBtn + whatsappbtn + dropdown}</div>`,
     };
 
-    if (IsInvalidDate(item["Next Follow Up Date"])) {
-        updatedItem["Next Follow Up Date"] = "";
+    if (item["Next FollowUp Date"] !== undefined && IsInvalidDate(item["Next FollowUp Date"])) {
+        updatedItem["Next FollowUp Date"] = "";
     }
     if (item["Next Followup Date"] !== undefined && IsInvalidDate(item["Next Followup Date"])) {
         updatedItem["Next Followup Date"] = "";
@@ -620,7 +698,7 @@ function renderEnquiryListGridFromFilteredData(filteredData) {
     BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
     setTimeout(function () {
         applyEnquiryListOverdueNextFollowUpRowHighlight();
-    }, 0);
+    }, 100);
     scheduleSalesPersonSelect2LayoutFix();
 }
 function GetLeadMasterList(SalesPerson) {
@@ -628,7 +706,7 @@ function GetLeadMasterList(SalesPerson) {
         $("#table").show();
         if (response.length > 0) {
             G_originalData = response;
-            const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, $("#ddlSalesPerson").val(), $("#ddlStatus").val());
+            const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, $("#ddlSalesPerson").val(), $("#ddlStatus").val(), $("#ddlfilterLeadType").val());
             renderEnquiryListGridFromFilteredData(filteredData);
         }
         else {
@@ -2581,12 +2659,15 @@ function BackEnquiry() {
 }
 function Bind_ddlLeadStatus() {
     $("#ddlLeadStatus").empty();
+    $("#ddlfilterLeadType").empty();
     LeadMasterService.GetLeadStatuslist().then(function (resObj) {
-        let option = '<option value="" >Select</option>';
+        let option = '<option value="" >All</option>';
         $.each(resObj, function (key, val) {
             option += '<option value="' + val.Value + '" >' + val.Value + '</option>';
         });
         $("#ddlLeadStatus").append(option);
+        $("#ddlfilterLeadType").append(option);
+        restoreEnquiryLeadTypeSelect();
     });
 }
 
@@ -2856,8 +2937,9 @@ function CloseEnquiryDetails() {
 function getEnquiryListNextFollowUpDateColumnIndex() {
     const headers = document.querySelectorAll("#table-header th");
     for (let i = 0; i < headers.length; i++) {
-        const t = (headers[i].textContent || "").replace(/\s+/g, " ").trim().toUpperCase();
-        if (t.indexOf("NEXT FOLLOW UP DATE") !== -1) {
+        // Collapse all whitespace and compare — handles "Next FollowUp Date", "Next Follow Up Date", etc.
+        const t = (headers[i].textContent || "").replace(/\s+/g, "").toUpperCase();
+        if (t.indexOf("NEXTFOLLOWUPDATE") !== -1) {
             return i;
         }
     }
@@ -2867,11 +2949,34 @@ function getEnquiryListNextFollowUpDateColumnIndex() {
 function parseEnquiryListGridDateCell(text) {
     if (!text || !String(text).trim()) return null;
     const s = String(text).trim();
-    if (IsInvalidDate(s)) return null;
-    const d = new Date(s);
-    if (isNaN(d.getTime())) return null;
-    if (d.getFullYear() <= 1900) return null;
-    return d;
+    if (!s) return null;
+
+    // DD-MMM-YYYY  e.g. "22-Apr-2026"
+    const dmy = s.match(/^(\d{1,2})[-\/\s]([A-Za-z]{3})[-\/\s](\d{4})$/);
+    if (dmy) {
+        const months = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
+        const m = months[dmy[2].toLowerCase()];
+        if (m !== undefined) {
+            const d = new Date(parseInt(dmy[3]), m, parseInt(dmy[1]));
+            if (!isNaN(d.getTime()) && d.getFullYear() > 1900) return d;
+        }
+    }
+
+    // DD/MM/YYYY or DD-MM-YYYY
+    const dmy2 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmy2) {
+        const d = new Date(parseInt(dmy2[3]), parseInt(dmy2[2]) - 1, parseInt(dmy2[1]));
+        if (!isNaN(d.getTime()) && d.getFullYear() > 1900) return d;
+    }
+
+    // ISO YYYY-MM-DD
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) {
+        const d = new Date(parseInt(iso[1]), parseInt(iso[2]) - 1, parseInt(iso[3]));
+        if (!isNaN(d.getTime()) && d.getFullYear() > 1900) return d;
+    }
+
+    return null;
 }
 
 /** If Next Follow Up Date is strictly before today, highlight the whole row (light red) */
@@ -2884,6 +2989,7 @@ function applyEnquiryListOverdueNextFollowUpRowHighlight() {
     today.setHours(0, 0, 0, 0);
     const rows = tbody.querySelectorAll("tr");
     rows.forEach(function (row) {
+        row.classList.remove("enq-row-overdue");
         row.style.backgroundColor = "";
         const tds = row.querySelectorAll("td");
         if (tds.length <= colIdx) return;
@@ -2893,26 +2999,38 @@ function applyEnquiryListOverdueNextFollowUpRowHighlight() {
         const cd = new Date(cellDate.getTime());
         cd.setHours(0, 0, 0, 0);
         if (cd.getFullYear() > 1900 && cd < today) {
-            row.style.backgroundColor = "#fecaca";
+            row.classList.add("enq-row-overdue");
         }
     });
 }
 
-(function initEnquiryListOverdueHighlightTimer() {
-    function tick() {
-        if (document.getElementById("table-body") && document.getElementById("dvLoad") && $("#dvLoad").is(":visible")) {
-            applyEnquiryListOverdueNextFollowUpRowHighlight();
-        }
+(function initEnquiryListOverdueHighlightObserver() {
+    var debounceTimer = null;
+    function scheduleHighlight() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function () {
+            if (document.getElementById("dvLoad") && $("#dvLoad").is(":visible")) {
+                applyEnquiryListOverdueNextFollowUpRowHighlight();
+            }
+        }, 50);
     }
-    function start() {
-        setInterval(tick, 1000);
+    function attachObserver() {
+        var tbody = document.getElementById("table-body");
+        if (!tbody) {
+            setTimeout(attachObserver, 300);
+            return;
+        }
+        var observer = new MutationObserver(scheduleHighlight);
+        observer.observe(tbody, { childList: true, subtree: true });
     }
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", start);
+        document.addEventListener("DOMContentLoaded", attachObserver);
     } else {
-        start();
+        attachObserver();
     }
 })();
+
+
 
 window.ViewAttachment = ViewAttachment;
 window.ChangeContact = ChangeContact;
@@ -2963,6 +3081,133 @@ window.SaveModalContactPersonDetails = SaveModalContactPersonDetails;
 window.ResetEnquiryFollowUp = ResetEnquiryFollowUp;
 window.BackEnquiry = BackEnquiry;
 window.WhatsApp = WhatsApp;
+// ─── Enquiry Configuration Modal ──────────────────────────────────────────────
+
+function ShowEnquiryConfigurationModal() {
+    var $leadDiv   = $('#DivChkLeadStatusConfig');
+    var $statusDiv = $('#DivChkStatusConfig');
+    var $saveBtn   = $('#btnSaveEnquiryConfig');
+
+    $leadDiv.html('<span class="text-muted" style="font-size:12px;">Loading…</span>');
+    $statusDiv.html('<span class="text-muted" style="font-size:12px;">Loading…</span>');
+    $saveBtn.prop('disabled', true);
+
+    // Reset mandatory checkboxes
+    $('#chkMandatoryAddress').prop('checked', false);
+    $('#chkMandatoryPinCode').prop('checked', false);
+    $('#chkMandatoryIndustryType').prop('checked', false);
+    $('#chkMandatoryPhoneNo').prop('checked', false);
+    $('#chkMandatoryEmail').prop('checked', false);
+
+    $("#EnquiryConfigurationModal").modal({ backdrop: 'static' });
+    $("#EnquiryConfigurationModal").modal('show');
+
+    // Load all three in parallel: saved config + both dropdown lists
+    Promise.all([
+        LeadMasterService.GetEnquiryMasterConfig().catch(function () { return null; }),
+        LeadMasterService.GetLeadStatuslist().catch(function () { return []; }),
+        LeadMasterService.GetStatuslist().catch(function () { return []; })
+    ]).then(function (results) {
+        var config     = results[0];
+        var leadList   = results[1] || [];
+        var statusList = results[2] || [];
+
+        // Normalise saved config (API may return array or object)
+        var rawCfg = {};
+        if (Array.isArray(config) && config.length > 0) rawCfg = config[0];
+        else if (config && typeof config === 'object') rawCfg = config;
+
+        // Case-insensitive property lookup helper
+        function cfgVal(key) {
+            if (!rawCfg) return '';
+            var lk = key.toLowerCase();
+            var found = Object.keys(rawCfg).find(function (k) { return k.toLowerCase() === lk; });
+            return found ? (rawCfg[found] || '') : '';
+        }
+
+        // ── Mandatory field checkboxes ────────────────────────────────────
+        $('#chkMandatoryAddress').prop('checked',      cfgVal('isMandatoryAddress').toUpperCase()      === 'Y');
+        $('#chkMandatoryPinCode').prop('checked',      cfgVal('isMandatoryPinCode').toUpperCase()      === 'Y');
+        $('#chkMandatoryIndustryType').prop('checked', cfgVal('isMandatoryIndustryType').toUpperCase() === 'Y');
+        $('#chkMandatoryPhoneNo').prop('checked',      cfgVal('isMandatoryPhoneNo').toUpperCase()      === 'Y');
+        $('#chkMandatoryEmail').prop('checked',        cfgVal('isMandatoryEmail').toUpperCase()        === 'Y');
+
+        // ── Default Lead Status — radio buttons ───────────────────────────
+        var savedLead = cfgVal('defaultLeadType').trim().toLowerCase();
+        if (!leadList.length) {
+            $leadDiv.html('<span class="text-muted" style="font-size:12px;">No data found.</span>');
+        } else {
+            var html = '';
+            $.each(leadList, function (i, item) {
+                var val   = (item.Value || item.value || item.Desp || item.desp || '').trim();
+                var label = item.Value  || item.Desp  || item.desp || val;
+                var uid   = 'rdoLead_' + i;
+                var chk   = (val && val.toLowerCase() === savedLead) ? 'checked' : '';
+                html += '<div class="col-6">'
+                      + '<input type="radio" name="rdoEnqLeadStatus" id="' + uid + '" value="' + val + '" ' + chk
+                      + ' onchange="SaveEnquiryConfig()" />'
+                      + '&nbsp;<label for="' + uid + '">' + label + '</label>'
+                      + '</div>';
+            });
+            $leadDiv.html(html);
+        }
+
+        // ── Default Status — radio buttons ────────────────────────────────
+        var savedStatus = cfgVal('defaultStatus').trim().toLowerCase();
+        if (!statusList.length) {
+            $statusDiv.html('<span class="text-muted" style="font-size:12px;">No data found.</span>');
+        } else {
+            var html2 = '';
+            $.each(statusList, function (i, item) {
+                var val   = (item.Value || item.value || item.Desp || item.desp || '').trim();
+                var label = item.Value  || item.Desp  || item.desp || val;
+                var uid   = 'rdoStatus_' + i;
+                var chk   = (val && val.toLowerCase() === savedStatus) ? 'checked' : '';
+                html2 += '<div class="col-6">'
+                       + '<input type="radio" name="rdoEnqStatus" id="' + uid + '" value="' + val + '" ' + chk
+                       + ' onchange="SaveEnquiryConfig()" />'
+                       + '&nbsp;<label for="' + uid + '">' + label + '</label>'
+                       + '</div>';
+            });
+            $statusDiv.html(html2);
+        }
+
+        $saveBtn.prop('disabled', false);
+    });
+}
+
+function SaveEnquiryConfig() {
+    var $saveBtn = $('#btnSaveEnquiryConfig');
+    $saveBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Saving…');
+
+    var payload = [{
+        isMandatoryAddress:      $('#chkMandatoryAddress').is(':checked')      ? 'Y' : 'N',
+        isMandatoryPinCode:      $('#chkMandatoryPinCode').is(':checked')      ? 'Y' : 'N',
+        isMandatoryIndustryType: $('#chkMandatoryIndustryType').is(':checked') ? 'Y' : 'N',
+        isMandatoryPhoneNo:      $('#chkMandatoryPhoneNo').is(':checked')      ? 'Y' : 'N',
+        isMandatoryEmail:        $('#chkMandatoryEmail').is(':checked')        ? 'Y' : 'N',
+        defaultLeadType:  $('input[name="rdoEnqLeadStatus"]:checked').val() || '',
+        defaultStatus:    $('input[name="rdoEnqStatus"]:checked').val()     || ''
+    }];
+
+    LeadMasterService.SaveEnquiryMasterConfig(payload).then(function (res) {
+        $saveBtn.prop('disabled', false).html('<i class="fa fa-floppy-disk"></i> Save');
+        if (res && (res.Status === 'Y' || res.status === 'Y' || res.Status === 'S')) {
+            toastr.success(res.Msg || res.msg || 'Configuration saved successfully.');
+        } else if (res && (res.Status === 'N' || res.status === 'N')) {
+            toastr.error(res.Msg || res.msg || 'Failed to save configuration.');
+        } else {
+            toastr.success('Configuration saved successfully.');
+        }
+    }).catch(function () {
+        $saveBtn.prop('disabled', false).html('<i class="fa fa-floppy-disk"></i> Save');
+        toastr.error('An error occurred while saving configuration.');
+    });
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
 window.GetEnquiryDetailsForViewByCode = GetEnquiryDetailsForViewByCode;
 window.CloseEnquiryDetails = CloseEnquiryDetails;
+window.ShowEnquiryConfigurationModal = ShowEnquiryConfigurationModal;
+window.SaveEnquiryConfig = SaveEnquiryConfig;
 window.BackFolloupMaster = BackFolloupMaster;
