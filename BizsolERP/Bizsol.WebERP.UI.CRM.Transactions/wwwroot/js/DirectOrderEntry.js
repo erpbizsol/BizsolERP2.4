@@ -1402,12 +1402,14 @@ function ValidateData() {
         let StockInMT = "N";
         let StockInMTRS = "N";
         let StockInPC = "N";
+        let AlowCRMOrderBookingWithOutStock = 'N';
 
         let ItemSelectedObj = ItemMasterTable.find(x => x.Code === parseInt(ItemMaster_Code));
         if (typeof ItemSelectedObj !== "undefined") {
             StockInMT = ItemSelectedObj.StockInMT;
             StockInMTRS = ItemSelectedObj.StockInMTRS;
             StockInPC = ItemSelectedObj.StockInPC;
+            AlowCRMOrderBookingWithOutStock = ItemSelectedObj.AlowCRMOrderBookingWithOutStock || 'N';
         }
 
         if (QtyMT == undefined || QtyMT == '') {
@@ -1499,7 +1501,7 @@ function ValidateData() {
                 Valid = false;
             }
 
-            if (Stock > 0 && QtyMT > 0 && !isOEMClient) {
+            if (Stock > 0 && QtyMT > 0 && !isOEMClient && AlowCRMOrderBookingWithOutStock !== 'Y') {
                 if (CheckLogicalStockLimit == 'Y') {
                     if (parseFloat(QtyMT) > parseFloat(Stock)) {
                         MsgStr += "* Qty value shouldn't be greater than the stock value at Row No " + rowNo + "!" + newLine;
@@ -1607,7 +1609,7 @@ function ValidateData() {
 
 
 
-            if (Stock <= 0 && AllowOrderOnlyAvailableStock == 'Y' && !isOEMClient) {
+            if (Stock <= 0 && AllowOrderOnlyAvailableStock == 'Y' && !isOEMClient && AlowCRMOrderBookingWithOutStock !== 'Y') {
 
                 MsgStr += "* Stock not Available at Row No " + rowNo + "!" + newLine;
                 Valid = false;
@@ -6399,14 +6401,24 @@ function SelectStockCheck(x) {
     var Bal_Qty = ObjCurrRow.find("label").text();
     var isOEMClient = GetSelectedCustomerAccountNature() === 'OEM';
 
-    if (CRM_Config.CheckLogicalStockLimit == 'Y' && !isOEMClient) {
+    var AlowCRMOrderBookingWithOutStock = 'N';
+    try {
+        var ItemMasterTable = JSON.parse(sessionStorage.getItem('ItemMasterTable'));
+        var ItemMaster_Code = parseInt(ObjCurrRow[0].cells[Indx_Stock.ItemMaster_Code].innerText);
+        var ItemSelectedObj = ItemMasterTable.find(function (i) { return i.Code === ItemMaster_Code; });
+        if (typeof ItemSelectedObj !== 'undefined') {
+            AlowCRMOrderBookingWithOutStock = ItemSelectedObj.AlowCRMOrderBookingWithOutStock || 'N';
+        }
+    } catch (e) { }
+
+    if (CRM_Config.CheckLogicalStockLimit == 'Y' && !isOEMClient && AlowCRMOrderBookingWithOutStock !== 'Y') {
         if (parseFloat($(x).val()) > parseFloat(Bal_Qty)) {
             toastr.error("Qty Value shouldn't be greater than Balance Qty");
             $(x).val(0);
             ObjCurrRow.find('td:eq(0)')[0].getElementsByTagName('input')[0].checked = false;
         }
     }
-   
+
 }
 function ResetStockQty(x) {
     var ObjCurrRow = $(x).closest('tr');
