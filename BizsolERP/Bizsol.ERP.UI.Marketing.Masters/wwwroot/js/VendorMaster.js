@@ -1166,7 +1166,6 @@ function vmVendorApplyAttachmentGridPatch(row) {
     var rawAtt = attKey ? item[attKey] : null;
     var yes = attKey ? vmVendorAttachmentYesFromRaw(rawAtt) : false;
     var classes = [];
-    if (yes) classes.push("vm-grid-row-has-attachment");
     var hl = parseInt(String(window.vmVendorAttachmentHighlightCode || 0), 10) || 0;
     var code = parseInt(String(item.Code != null ? item.Code : 0), 10) || 0;
     if (hl > 0 && code === hl) classes.push("vm-grid-row-attachment-modal-open");
@@ -1293,9 +1292,11 @@ function getVendorMasterColumnAlignment() {
         ca.Verify = "center;min-width:96px;white-space:nowrap;";
     }
     if (G_IsClientOrVendor === "V") {
-        ca.Action = "center;width:1%;max-width:118px;white-space:normal;vertical-align:middle;";
+        ca.Action =
+            "center;min-width:106px;max-width:124px;white-space:normal;vertical-align:middle;";
     }
-    ca.SNo = "min-width:10px;";
+    /* Must start with a text-align value — Filter.js builds style as text-align:${alignment} */
+    ca.SNo = "center;min-width:100px;white-space:nowrap;";
     return ca;
 }
 function syncVendorStatChipClasses() {

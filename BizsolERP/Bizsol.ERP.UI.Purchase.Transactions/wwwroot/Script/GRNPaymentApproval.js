@@ -1,8 +1,12 @@
 import { GRNPaymentApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GRNPaymentApprovalService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 
 let G_PaymentList = [];
 let G_CurrentPayment = null;
+/** When true, card list shows only entries pending approval on the current user (see paymentIsPendingOnMe). */
+let G_OnlyPendingOnMe = false;
 
 BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
 
@@ -85,7 +89,7 @@ function levelRowIsApproved(lvl) {
 function allLevelsApprovedFromDetails(p) {
     const total = parseInt(p.TotalLevels ?? p.MaxLevel ?? 0, 10) || 0;
     if (total < 1) return false;
-    const levels = Array.isArray(p.LevelDetails) ? p.LevelDetails : [];
+    const levels = parseLevelDetailsToArray(p.LevelDetails);
     if (!levels.length) return false;
     for (let i = 1; i <= total; i++) {
         const lvl = levels.find(function (l) {
@@ -132,17 +136,186 @@ function getLevelCode(p) {
     return Number.isFinite(n) ? n : 0;
 }
 
+function getSessionUserMasterCodeGpa() {
+    try {
+        const a = JSON.parse(sessionStorage.getItem('authKey'));
+        return parseInt(a && a.UserMaster_Code, 10) || 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function getSessionGroupMasterCodeGpa() {
+    try {
+        const d = JSON.parse(sessionStorage.getItem('UserDetails'));
+        if (Array.isArray(d) && d[0] != null) {
+            return parseInt(d[0].GroupMaster_Code, 10) || 0;
+        }
+    } catch (e) { /* ignore */ }
+    return 0;
+}
+
+function pickFirstPositiveInt(obj, keys) {
+    if (!obj || typeof obj !== 'object') return 0;
+    for (let i = 0; i < keys.length; i++) {
+        const v = obj[keys[i]];
+        if (v == null || v === '') continue;
+        const n = parseInt(v, 10);
+        if (Number.isFinite(n) && n > 0) return n;
+    }
+    return 0;
+}
+
+/** Level row matching the payment's current approval step (for approver user/group). */
+function getCurrentLevelRowForGpa(p) {
+    const cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
+    const levels = parseLevelDetailsToArray(p.LevelDetails);
+    const row = levels.find(function (l) {
+        return levelNoFromRow(l) === cur;
+    });
+    if (row) return row;
+    if (levels.length && cur >= 1 && cur <= levels.length) return levels[cur - 1];
+    return null;
+}
+
+function truthyFlagGpa(v) {
+    if (v === true || v === 1) return true;
+    const s = (v != null ? String(v) : '').trim().toLowerCase();
+    return s === 'y' || s === '1' || s === 'true';
+}
+
+/**
+ * True when this entry is in Pending workflow and the current user/group is assigned to act
+ * at the current level (or API explicitly flags the row). If assignee fields are absent, treats
+ * as pending-on-me when the list is not explicitly assigned to someone else (common when API
+ * already scopes the list to the user).
+ */
+function paymentIsPendingOnMe(p) {
+    if (getApprovalStatus(p).toLowerCase() !== 'pending') return false;
+
+    if (truthyFlagGpa(p.IsPendingForMe) || truthyFlagGpa(p.PendingForMe) || truthyFlagGpa(p.CanApproveNow)
+        || truthyFlagGpa(p.IsMyApproval) || truthyFlagGpa(p.PendingOnMe)) {
+        return true;
+    }
+
+    const me = getSessionUserMasterCodeGpa();
+    const myG = getSessionGroupMasterCodeGpa();
+
+    const lvl = getCurrentLevelRowForGpa(p);
+    const ru = pickFirstPositiveInt(lvl, [
+        'UserMaster_Code', 'userMaster_Code', 'ApproverUserMaster_Code', 'ApproverUser_Code',
+        'AssignedUserMaster_Code', 'ApprovalUserMaster_Code', 'Approver_Code'
+    ]);
+    const rg = pickFirstPositiveInt(lvl, [
+        'GroupMaster_Code', 'groupMaster_Code', 'ApproverGroupMaster_Code',
+        'AssignedGroupMaster_Code', 'ApprovalGroupMaster_Code'
+    ]);
+
+    if (me > 0 && ru > 0 && ru === me) return true;
+    if (myG > 0 && rg > 0 && rg === myG) return true;
+
+    const mu = pickFirstPositiveInt(p, [
+        'CurrentApproverUserMaster_Code', 'ApproverUserMaster_Code', 'NextApproverUserMaster_Code',
+        'PendingApproverUserMaster_Code'
+    ]);
+    const mg = pickFirstPositiveInt(p, [
+        'CurrentApproverGroupMaster_Code', 'ApproverGroupMaster_Code', 'NextApproverGroupMaster_Code',
+        'PendingApproverGroupMaster_Code'
+    ]);
+    if (me > 0 && mu > 0 && mu === me) return true;
+    if (myG > 0 && mg > 0 && mg === myG) return true;
+
+    const hasAssignee = (ru + rg + mu + mg) > 0;
+    if (!hasAssignee) {
+        return true;
+    }
+    return false;
+}
+
+function getFilteredPaymentListForRender() {
+    if (!G_OnlyPendingOnMe) return G_PaymentList;
+    return G_PaymentList.filter(paymentIsPendingOnMe);
+}
+
+function syncGpaPendingOnMeChipActive() {
+    const chip = document.getElementById('gpaStatChipPendingOnMe');
+    if (chip) {
+        chip.classList.toggle('gpa-stat-chip--onme-active', !!G_OnlyPendingOnMe);
+    }
+}
+
+function getLevelRowRemarks(lvlInfo) {
+    if (!lvlInfo || typeof lvlInfo !== 'object') return '';
+    const r = lvlInfo.Remarks ?? lvlInfo.Remark ?? lvlInfo.ApprovalRemarks ?? lvlInfo.LevelRemarks
+        ?? lvlInfo.Comments ?? lvlInfo.RejectionRemarks;
+    const s = r != null ? String(r).trim() : '';
+    return s;
+}
+
+/** Same idea as PO list: API may send LevelDetails as JSON string or array. */
+function parseLevelDetailsToArray(v) {
+    if (Array.isArray(v)) return v;
+    if (v == null) return [];
+    if (typeof v === 'string') {
+        const t = v.trim();
+        if (!t) return [];
+        try {
+            const j = JSON.parse(t);
+            return Array.isArray(j) ? j : [];
+        } catch (e) {
+            return [];
+        }
+    }
+    return [];
+}
+
+/**
+ * After GetGRNPaymentDetail, master often overwrites list LevelDetails with [] or empty strings
+ * and remarks from the pending list are lost. Merge API row with list row by LevelNo (PO pattern).
+ */
+function levelNoFromRow(r) {
+    const n = parseInt(r.LevelNo ?? r.Level ?? r.LevelOrder ?? 0, 10);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function mergeLevelDetailsLists(fromList, fromApi) {
+    const a = Array.isArray(fromList) ? fromList : [];
+    const b = Array.isArray(fromApi) ? fromApi : [];
+    if (!b.length) return a.slice();
+    if (!a.length) return b.slice();
+
+    const map = new Map();
+    a.forEach(function (row) {
+        const n = levelNoFromRow(row);
+        if (n > 0) map.set(n, { ...row });
+    });
+    b.forEach(function (row) {
+        const n = levelNoFromRow(row);
+        if (n < 1) return;
+        const prev = map.get(n) || {};
+        const next = { ...prev, ...row };
+        next.LevelDesc = row.LevelDesc || prev.LevelDesc || row.LevelName || prev.LevelName;
+        next.Remarks = getLevelRowRemarks(row) || getLevelRowRemarks(prev) || '';
+
+        const hasApprover = (x) => x && String(x.ApproverName ?? x.UserName ?? '').trim() !== '';
+        if (!hasApprover(row) && hasApprover(prev)) {
+            next.ApproverName = prev.ApproverName;
+            next.UserName = prev.UserName;
+        }
+        const hasDate = (x) => x && String(x.ApprovedOn ?? '').trim() !== '';
+        if (!hasDate(row) && hasDate(prev)) {
+            next.ApprovedOn = prev.ApprovedOn;
+        }
+
+        map.set(n, next);
+    });
+    return [...map.keys()].sort(function (x, y) { return x - y; }).map(function (k) { return map.get(k); });
+}
+
 function NormalizePaymentList(list) {
     return (list || []).map(function (row) {
         const p = { ...row };
-        if (typeof p.LevelDetails === 'string') {
-            try {
-                p.LevelDetails = JSON.parse(p.LevelDetails);
-            } catch (e) {
-                p.LevelDetails = [];
-            }
-        }
-        if (!Array.isArray(p.LevelDetails)) p.LevelDetails = [];
+        p.LevelDetails = parseLevelDetailsToArray(p.LevelDetails);
         if (!p.TotalLevels && p.LevelDetails.length > 0) {
             p.TotalLevels = p.LevelDetails.length;
         }
@@ -155,6 +328,9 @@ function LoadPaymentList() {
     const toDate = document.getElementById('gpaToDate')?.value || '';
     const status = document.getElementById('gpaDdlStatus')?.value || 'A';
 
+    G_OnlyPendingOnMe = false;
+    syncGpaPendingOnMeChipActive();
+
     ShowGpaLoading(true);
     ShowGpaEmpty(false);
     const container = document.getElementById('gpaPendingList');
@@ -165,7 +341,9 @@ function LoadPaymentList() {
             ShowGpaLoading(false);
             G_PaymentList = NormalizePaymentList(normalizeListResponse(data));
             UpdateGpaStatChips();
-            RenderPaymentCards(G_PaymentList);
+            RenderPaymentCards();
+            const searchEl = document.getElementById('gpaLstSearch');
+            FilterGpaCards(searchEl ? searchEl.value : '');
         })
         .catch(function (err) {
             console.error('LoadPaymentList', err);
@@ -188,9 +366,16 @@ function UpdateGpaStatChips() {
     const elO = document.getElementById('gpaStatProcessed');
     if (elP) elP.textContent = pending > 0 ? String(pending) : (G_PaymentList.length ? '0' : '—');
     if (elO) elO.textContent = other > 0 ? String(other) : '—';
+
+    const onMe = G_PaymentList.filter(paymentIsPendingOnMe).length;
+    const elOnMe = document.getElementById('gpaStatPendingOnMe');
+    if (elOnMe) {
+        elOnMe.textContent = G_PaymentList.length === 0 ? '—' : String(onMe);
+    }
 }
 
-function RenderPaymentCards(list) {
+function RenderPaymentCards() {
+    const list = getFilteredPaymentListForRender();
     const container = document.getElementById('gpaPendingList');
     if (!container) return;
     if (!list || list.length === 0) {
@@ -200,6 +385,14 @@ function RenderPaymentCards(list) {
     }
     ShowGpaEmpty(false);
     container.innerHTML = list.map(function (p) { return BuildPaymentCard(p); }).join('');
+}
+
+function ToggleGpaPendingOnMeFilter() {
+    G_OnlyPendingOnMe = !G_OnlyPendingOnMe;
+    syncGpaPendingOnMeChipActive();
+    RenderPaymentCards();
+    const searchEl = document.getElementById('gpaLstSearch');
+    FilterGpaCards(searchEl ? searchEl.value : '');
 }
 
 function BuildPaymentCard(p) {
@@ -314,14 +507,21 @@ function FilterGpaCards(query) {
 
 function mergeDetailIntoPayment(root, basePayment) {
     const p = { ...basePayment };
+    const fromList = parseLevelDetailsToArray(basePayment.LevelDetails);
+
     if (Array.isArray(root)) {
         p._detailLines = root;
+        p.LevelDetails = fromList.length ? fromList.slice() : [];
         return p;
     }
     const data = root?.Data ?? root?.data ?? root;
-    if (!data || typeof data !== 'object') return p;
+    if (!data || typeof data !== 'object') {
+        p.LevelDetails = fromList.length ? fromList.slice() : parseLevelDetailsToArray(p.LevelDetails);
+        return p;
+    }
     if (Array.isArray(data)) {
         p._detailLines = data;
+        p.LevelDetails = fromList.length ? fromList.slice() : parseLevelDetailsToArray(p.LevelDetails);
         return p;
     }
 
@@ -335,12 +535,10 @@ function mergeDetailIntoPayment(root, basePayment) {
         Object.assign(p, master);
     }
 
-    if (typeof p.LevelDetails === 'string') {
-        try { p.LevelDetails = JSON.parse(p.LevelDetails); } catch (e) { p.LevelDetails = []; }
-    }
-    if (data.LevelDetails && !p.LevelDetails?.length) {
-        p.LevelDetails = Array.isArray(data.LevelDetails) ? data.LevelDetails : p.LevelDetails;
-    }
+    const fromApi = parseLevelDetailsToArray(
+        (data && data.LevelDetails != null) ? data.LevelDetails : p.LevelDetails
+    );
+    p.LevelDetails = mergeLevelDetailsLists(fromList, fromApi);
 
     const lines = data.GRNPaymentDetails ?? data.Details ?? data.BillLines ?? data.Items ?? data.Lines;
     if (Array.isArray(lines)) p._detailLines = lines;
@@ -362,18 +560,24 @@ function unwrapGpaActionResponse(res) {
     if (!res || typeof res !== 'object') return res;
     return res.Data ?? res.data ?? res.Result ?? res.result ?? res;
 }
-
+function getFinancialYear() {
+    var d = new Date();
+    var month = d.getMonth();
+    var year = d.getFullYear();
+    if (month < 3) year = year - 1;
+    return year + "-" + (year + 1);
+}
 function OpenDetailModal(paymentCode) {
-    var ModuleName = 'Payment Entry',
-        OptionName = 'Verify',
-        ShowMsg = 'Y',
-        FinYear = getFinancialYear();
+    //var ModuleName = 'Payment Entry',
+    //    OptionName = 'Verify',
+    //    ShowMsg = 'Y',
+    //    FinYear = getFinancialYear();
 
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(async function (response) {
-        if (response.CheckModuleOptionRight === 'N') {
-            toastr.error(response.Msg);
-            return;
-        } else {
+    //MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(async function (response) {
+    //    if (response.CheckModuleOptionRight === 'N') {
+    //        toastr.error(response.Msg);
+    //        return;
+    //    } else {
             const code = parseInt(paymentCode, 10);
             if (!Number.isFinite(code) || code <= 0) return;
 
@@ -424,8 +628,8 @@ function OpenDetailModal(paymentCode) {
                         '<i class="fa fa-exclamation-triangle me-1"></i>Error loading bill lines.</td></tr>'
                     );
                 });
-        }
-    });
+        //}
+   /* });*/
    
 }
 
@@ -465,7 +669,7 @@ function BuildGpaDetailStepper(po) {
     const totalLvl = parseInt(po.TotalLevels ?? po.MaxLevel ?? 3, 10) || 1;
     const status = getApprovalStatus(po);
     const st = status.toLowerCase();
-    const levels = Array.isArray(po.LevelDetails) ? po.LevelDetails : [];
+    const levels = parseLevelDetailsToArray(po.LevelDetails);
 
     let html = '<div class="gpa-detail-stepper">';
     for (let i = 1; i <= totalLvl; i++) {
@@ -475,6 +679,10 @@ function BuildGpaDetailStepper(po) {
         const lvlName = EscHtml(lvlInfo.LevelDesc ?? lvlInfo.LevelName ?? ('Level ' + i));
         const approver = EscHtml(lvlInfo.ApproverName ?? lvlInfo.UserName ?? '');
         const approvedOn = lvlInfo.ApprovedOn ? FmtDateDisplay(lvlInfo.ApprovedOn) : '';
+        const lvlRemarksRaw = getLevelRowRemarks(lvlInfo);
+        const remarksHtml = lvlRemarksRaw
+            ? '<div class="gpa-dstep-remarks"><i class="fa fa-comment me-1"></i>' + EscHtml(lvlRemarksRaw) + '</div>'
+            : '';
 
         let stepState;
         if (st === 'approved' || i < curLvlNo) stepState = 'done';
@@ -503,6 +711,7 @@ function BuildGpaDetailStepper(po) {
             '<div class="gpa-dstep-body">' +
             '<div class="gpa-dstep-title">' + lvlName + '</div>' +
             approverHtml +
+            remarksHtml +
             '<div class="gpa-dstep-badge gpa-dstep-badge-' + stepState + '">' + badgeLabel + '</div>' +
             '</div>' +
             '</div>';
@@ -672,3 +881,4 @@ window.SubmitApproval = SubmitApproval;
 window.CloseDetailModal = CloseDetailModal;
 window.CloseConfirmModal = CloseConfirmModal;
 window.NavigateToGRNService = NavigateToGRNService;
+window.ToggleGpaPendingOnMeFilter = ToggleGpaPendingOnMeFilter;

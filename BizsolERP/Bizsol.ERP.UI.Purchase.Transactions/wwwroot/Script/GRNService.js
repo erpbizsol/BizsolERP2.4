@@ -382,7 +382,6 @@ function mapGRNRowsToGrid(rows) {
                 : '<button type="button" class="grn-btn-verify" title="Verify" aria-label="Verify" onclick="VerifyGRN(' + code + ')"><i class="fas fa-check" aria-hidden="true"></i></button>';
         }
         var patch = { Action: btns };
-        if (hasAttachmentYes) patch.__bizsolRowClass = "grn-grid-row-has-attachment";
         return Object.assign({}, item, patch);
     });
 }
