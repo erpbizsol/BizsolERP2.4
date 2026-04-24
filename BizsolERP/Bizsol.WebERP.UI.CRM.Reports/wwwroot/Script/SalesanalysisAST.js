@@ -372,10 +372,11 @@ function renderSummaryReport() {
 
     Showloader();
 
-    SalesanalysisASTService.GetSalesAnalysisData('SUMMARY_REPORT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
+    //SalesanalysisASTService.GetSalesAnalysisData('SUMMARY_REPORT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
+    SalesanalysisASTService.GetMultipleTableSalesAnalysisData('SUMMARY_REPORT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
         HideLoader();
 
-        if (!response || response.length === 0) {
+        if (!response || response[0].length === 0) {
             console.warn('No summary report data received');
             // Clear KPIs
             document.getElementById('kpi-parties').textContent = '0';
@@ -383,6 +384,7 @@ function renderSummaryReport() {
             document.getElementById('kpi-lost-client').textContent = '0';
             document.getElementById('kpi-manifested-sales').textContent = '0';
             document.getElementById('kpi-actual-sale').textContent = '0';
+            document.getElementById('kpi-total-manifested').textContent = '0';
             updateReportDateRangeDisplay();
             return;
         }
@@ -394,7 +396,7 @@ function renderSummaryReport() {
         let manifestedSalesTotal = 0;
         let actualSaleTotal = 0;
 
-        response.forEach(function (row) {
+        response[0].forEach(function (row) {
             // Count unique parties
             const partyName = row['Party Name'] || row.PartyName || '';
             if (partyName) {
@@ -426,12 +428,22 @@ function renderSummaryReport() {
             }
         });
 
+        // Read TotalManifested from response[1]
+        let totalManifested = 0;
+        if (response[1]) {
+            const r1 = Array.isArray(response[1]) ? response[1][0] : response[1];
+            if (r1 && r1.TotalManifested !== undefined && r1.TotalManifested !== null) {
+                totalManifested = parseFloat(r1.TotalManifested) || 0;
+            }
+        }
+
         // Update KPI values
         document.getElementById('kpi-parties').textContent = uniqueParties.size.toString();
         document.getElementById('kpi-high-gp').textContent = highGPCount.toString();
         document.getElementById('kpi-lost-client').textContent = lostClientCount.toString();
         document.getElementById('kpi-manifested-sales').textContent = formatNumber(manifestedSalesTotal);
         document.getElementById('kpi-actual-sale').textContent = formatNumber(actualSaleTotal);
+        document.getElementById('kpi-total-manifested').textContent = formatNumber(totalManifested);
 
         // Update date range display
         updateReportDateRangeDisplay();
@@ -452,7 +464,7 @@ function renderSummaryReport() {
         };
 
         if (typeof BizsolCustomFilterGrid !== 'undefined') {
-            BizsolCustomFilterGrid.CreateDataTable("summaryReportTableHeader", "summaryReportTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            BizsolCustomFilterGrid.CreateDataTable("summaryReportTableHeader", "summaryReportTableBody", response[0], Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
         }
     }).catch(function (err) {
         HideLoader();
@@ -1446,6 +1458,7 @@ function renderNBDCRRBaseWeekTable(data) {
 
     // Right align all numeric columns (weeks, percentages, counts)
     const ColumnAlignment = {};
+    const TotalColumns = ['Total Actual Weight', 'Weekly Manifested'];
     Object.keys(data[0] || {}).forEach(key => {
         const lowerKey = key.toLowerCase();
         if (lowerKey !== 'mgkt_person' && lowerKey !== 'mgkt person' &&
@@ -1456,7 +1469,7 @@ function renderNBDCRRBaseWeekTable(data) {
     });
 
     if (typeof BizsolCustomFilterGrid !== 'undefined') {
-        BizsolCustomFilterGrid.CreateDataTable("nbdCrrBaseWeekTableHeader", "nbdCrrBaseWeekTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        BizsolCustomFilterGrid.CreateDataTable("nbdCrrBaseWeekTableHeader", "nbdCrrBaseWeekTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment,true, TotalColumns);
     }
 }
 
