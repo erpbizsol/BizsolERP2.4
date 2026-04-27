@@ -546,6 +546,8 @@ let G_SiteRepList = [];
 let G_ItemWithoutProjectList = [];
 let G_CompanyInfoList = [];
 
+const DEFAULT_SERVICE_SCOPE_OF_WORK = '';
+
 BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
 // ─── FLOAT BAR MARGIN — tracks sidebar collapsed state ───────────────────────
@@ -599,6 +601,21 @@ $(document).ready(function () {
             .observe(sidebarEl, { attributes: true, attributeFilter: ['class'] });
     }
     window.addEventListener('resize', SyncFloatBarMargin);
+
+    // Auto-fill Scope of Work default when Work Type is Service on a New PO
+    $('#frmDdlWorkType').on('change', function () {
+        if (G_POStoreEditMode !== 'New') return;
+        const selectedText = $(this).find('option:selected').text().trim().toLowerCase();
+        if (selectedText.includes('service')) {
+            if (!$('#frmTxtScopeOfWork').val()) {
+                $('#frmTxtScopeOfWork').val(DEFAULT_SERVICE_SCOPE_OF_WORK);
+            }
+        } else {
+            if ($('#frmTxtScopeOfWork').val() === DEFAULT_SERVICE_SCOPE_OF_WORK) {
+                $('#frmTxtScopeOfWork').val('');
+            }
+        }
+    });
 });
 
 function FormatDateInput(d) {
@@ -2236,12 +2253,13 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
         const docTitle     = workTypeName.toLowerCase().includes('goods') ? 'PURCHASE ORDER' : 'WORK ORDER';
 
         // ── Company info from session ──────────────────────────────────────────
-        let companyName = '', companyAddr = '', companyPhone = '', companyEmail = '', companyWeb = '', companyGST = '';
+        let companyName = '', companyAliasName='', companyAddr = '', companyPhone = '', companyEmail = '', companyWeb = '', companyGST = '';
         try {
             //const ud = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
             const ud = res[3]||[];
             if (ud && ud[0]) {
                 companyName  = ud[0].CompanyName    || ud[0].CompanyNameForShow || '';
+                companyAliasName = ud[0].CompanyAliasName || '';
                 companyAddr  = ud[0].CompanyAddress || '';
                 companyPhone = ud[0].PhoneNo        || ud[0].CompanyPhone       || '';
                 companyEmail = ud[0].Email          || ud[0].CompanyEmail       || '';
@@ -2364,19 +2382,69 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
         // ── General Terms & Conditions (controlled by checkbox) ──────────────
         const isGoods = workTypeName.toLowerCase().includes('goods');
         const generalTermsText = isGoods ? PURCHASE_CONDITION : WORK_ORDER_CONDITION;
-        //const generalTermsTitle = isGoods ? 'Purchase Terms &amp; Conditions :-' : 'Work Order Terms &amp; Conditions :-';
-        const generalTermsTitle = isGoods ? 'General Terms &amp; Conditions :-' : 'General Terms &amp; Conditions :-';
-        const generalTermsHtml = includeGeneralTerms
-            ? '<div class="pt-box"><b>' + generalTermsTitle + '</b><br>'
-              + generalTermsText.split('\n').map(function (line) { return line.trim(); }).filter(Boolean).join('<br>')
-              + '</div>'
-            : '';
+
+        function BuildGeneralTermsHTML(rawText) {
+            // Patterns
+            const headingRe  = /^(\d+[a-z]?\.\s+[A-Z].{2,}[:/]?\s*)$/;   // "1. Scope:"
+            const listRe     = /^(\s*((\d+st|\d+nd|\d+rd|\d+th|[a-z]\.|[ivxlcdm]+\.|[A-Z]\.|[-\u2013\u2014\u2022*]|\(\w+\))\s+).{1,})/; // 1st / a. / i. / – / (a)
+            const annexureRe = /^(Annexure\s+\d+)/i;
+
+            const lines = rawText.split('\n');
+            let out = '<div class="gtc-section">'
+                    + '<div class="gtc-main-title">GENERAL TERMS &amp; CONDITIONS</div>';
+
+            lines.forEach(function (raw) {
+                const line = raw.trim();
+                if (!line) return; // skip blank lines
+
+                // ── Annexure title line ───────────────────────────────────────
+                if (annexureRe.test(line)) {
+                    out += '<div class="gtc-annexure-title">' + _esc(line) + '</div>';
+                    return;
+                }
+
+                // ── Numbered section headings (e.g. "1. Scope:") ─────────────
+                if (/^\d+[a-z]?\.\s+[A-Z]/.test(line) && line.length < 80) {
+                    out += '<div class="gtc-heading">' + _esc(line) + '</div>';
+                    return;
+                }
+
+                // ── Sub-list items deeply indented (raw leading spaces ≥ 8) ──
+                if (raw.length > raw.trimStart().length + 7) {
+                    out += '<div class="gtc-sublist">' + _esc(line) + '</div>';
+                    return;
+                }
+
+                // ── List-style items (moderate indent or list marker) ─────────
+                if ((raw.length > raw.trimStart().length + 3) || listRe.test(line)) {
+                    out += '<div class="gtc-list">' + _esc(line) + '</div>';
+                    return;
+                }
+
+                // ── Normal paragraph ──────────────────────────────────────────
+                out += '<div class="gtc-para">' + _esc(line) + '</div>';
+            });
+
+            out += '</div>';
+            return out;
+        }
+
+        function _esc(s) {
+            return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        const generalTermsHtml = includeGeneralTerms ? BuildGeneralTermsHTML(generalTermsText) : '';
 
         let nowParts = [];
         if (againstProj && header.ProjectName)    nowParts.push(header.ProjectName);
         if (againstProj && header.SubProjectName) nowParts.push(header.SubProjectName);
+        //const sectionBand = againstProj
+        //    ? 'ASSIGNMENT DETAILS' + (nowParts.length ? ' &bull; '+ 'Nature of Work : ' + nowParts.join(' &mdash; ') : '')
+        //    : 'ITEM DETAILS';
+
+        const NatureOfWorkText = isGoods ? ' supply of material' : ' I & C'
         const sectionBand = againstProj
-            ? 'ASSIGNMENT DETAILS' + (nowParts.length ? ' &bull; Nature of Work : ' + nowParts.join(' &mdash; ') : '')
+            ? 'ASSIGNMENT DETAILS' + (nowParts.length ? ' &bull; Nature of Work :' + NatureOfWorkText + ' : ' + nowParts.join(' &mdash; ') : '')
             : 'ITEM DETAILS';
 
         // ── Compose full print document ──────────────────────────────────────────
@@ -2388,6 +2456,16 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
             + 'body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;color:#000;background:#fff;}'
             + '.no-print{margin-bottom:5mm;}'
             + '@media print{.no-print{display:none!important;}}'
+            + '.gtc-section{page-break-before:always;padding:6px 2px;font-size:8.5pt;color:#000;}'
+            + '.gtc-main-title{text-align:center;font-size:11pt;font-weight:800;text-decoration:underline;letter-spacing:1.5px;margin-bottom:10px;margin-top:4px;}'
+            + '.gtc-heading{font-weight:800;font-size:9pt;text-decoration:underline;margin:9px 0 3px;}'
+            + '.gtc-para{text-align:justify;line-height:1.6;margin-bottom:4px;font-weight:600;}'
+            + '.gtc-list{text-align:justify;line-height:1.6;margin-left:32px;margin-bottom:2px;font-weight:600;}'
+            + '.gtc-sublist{text-align:justify;line-height:1.6;margin-left:56px;margin-bottom:2px;font-weight:600;}'
+            + '.gtc-annexure-title{font-weight:800;font-size:9pt;margin:8px 0 3px;}'
+            + '.gtc-table{width:100%;border-collapse:collapse;margin:4px 0 6px;}'
+            + '.gtc-table th,.gtc-table td{border:1px solid #555;padding:3px 6px;font-size:8.5pt;font-weight:600;}'
+            + '.gtc-table th{background:#f0f0f0;font-weight:800;text-align:center;}'
             + '.po-hdr{display:flex;align-items:flex-start;padding-bottom:5px;border-bottom:2.5px solid #000;margin-bottom:5px;}'
             + '.hdr-co{flex:1;}'
             + '.hdr-name{font-size:15pt;font-weight:800;color:#000;letter-spacing:0.3px;line-height:1.2;}'
@@ -2416,7 +2494,7 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
             + '.words-box{border:1.5px solid #555;padding:5px 9px;margin:5px 0;font-size:9pt;font-weight:600;color:#000;}'
             + '.pt-box{border:1.5px solid #555;padding:5px 9px;margin:5px 0;font-size:9pt;font-weight:600;color:#000;}'
             + '.sig-row{display:flex;gap:0;margin-top:12px;border:1.5px solid #000;}'
-            + '.sig-box{flex:1;border-right:1.5px solid #000;display:flex;flex-direction:column;justify-content:flex-end;min-height:90px;min-width:0;}'
+            + '.sig-box{flex:1;border-right:1.5px solid #000;display:flex;flex-direction:column;justify-content:flex-end;min-height:160px;min-width:0;}'
             + '.sig-box:last-child{border-right:none;}'
             + '.sig-title{font-weight:800;font-size:8.5pt;color:#000;text-align:center;padding:5px 4px;border-top:1.5px solid #000;letter-spacing:0.02em;}'
             + '.sig-name{font-size:7.5pt;color:#000;font-weight:600;}'
@@ -2450,7 +2528,7 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
             + '<tbody><tr><td class="page-body-cell">'
             // Header
             + '<div class="po-hdr">'
-            + '<div class="hdr-left">' + (showLogo ? '<img class="hdr-logo" src="' + logoUrl + '" alt="Logo">' : '') + '<div class="hdr-co"><div class="hdr-name">' + (companyName || 'COMPANY NAME') + '</div><div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div></div>'
+            + '<div class="hdr-left">' + (showLogo ? '<img class="hdr-logo" src="' + logoUrl + '" alt="Logo">' : '') + '<div class="hdr-co"><div class="hdr-name">' + (companyAliasName || 'COMPANY NAME') + '</div><div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div></div>'
             + '<div class="hdr-contact">' + hdrContact + '</div>'
             + '</div>'
             // PO title bar
@@ -2496,14 +2574,14 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
             + ptHtml
             // Terms & Condition and Scope of Work
             + (termsHtml || scopeHtml
-                ? '<div style="display:flex;gap:6px;margin:5px 0;">' + (termsHtml ? '<div style="flex:1;">' + termsHtml + '</div>' : '') + (scopeHtml ? '<div style="flex:1;">' + scopeHtml + '</div>' : '') + '</div>'
+                ? '<div style="margin:5px 0;">' + (termsHtml ? '<div>' + termsHtml + '</div>' : '') + (scopeHtml ? '<div>' + scopeHtml + '</div>' : '') + '</div>'
                 : '')
             
             // Signatures
             + '<div class="sig-row">'
-            + '<div class="sig-box"><div class="sig-title">Approved By P.M</div></div>'
+            + '<div class="sig-box"><div class="sig-title">Approved By HOD</div></div>'
+            + '<div class="sig-box"><div class="sig-title">Approved By COO</div></div>'
             + '<div class="sig-box"><div class="sig-title">Approved By Finance</div></div>'
-            + '<div class="sig-box"><div class="sig-title">Approved By Management</div></div>'
             + '</div>'
             // General Terms & Conditions (included only when checkbox is checked)
             + generalTermsHtml
