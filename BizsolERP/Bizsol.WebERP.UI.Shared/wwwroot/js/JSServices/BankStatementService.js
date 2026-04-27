@@ -97,6 +97,46 @@ const BankStatementService = {
         return promiseAjaxCallApi.CallAPI('POST', URL, '').then(function (value) {
             return value;
         });
+    },
+
+    // ── AUTORECONFROMGRN : Bulk match GRNPaymentMaster (P) to withdrawals ────
+    AutoReconcileFromGrn: function AutoReconcileFromGrn() {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_BANK_STATEMENT
+            + `/AutoReconcileFromGrn?UserMaster_Code=${encodeURIComponent(userMasterCode)}`;
+        return promiseAjaxCallApi.CallAPI('POST', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
+    // ── SAVEDATA : Insert / update one row (TVP body matches VM_BankStatementSaveRequest) ─
+    SaveBankStatement: function SaveBankStatement(payload) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        if (payload && typeof payload === 'object' && payload.UserMaster_Code == null) {
+            payload.UserMaster_Code = userMasterCode;
+        }
+        var json_data = JSON.stringify(payload, null, 2);
+        var URL = UrlService.API_ENDPOINT_BANK_STATEMENT + `/SaveBankStatement`;
+        return promiseAjaxCallApi.CallAPI('POST', URL, json_data).then(function (value) {
+            return value;
+        });
+    },
+
+    /** Y/N save — add POST on API; UI falls back to ReconcileBankStatement when only setting Y. */
+    SetBankStatementReconciliation: function SetBankStatementReconciliation(code, isY) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var body = JSON.stringify({
+            Code: code,
+            IsReconciled: isY ? 'Y' : 'N',
+            UserMaster_Code: userMasterCode
+        });
+        var URL = UrlService.API_ENDPOINT_BANK_STATEMENT + '/SetBankStatementReconciliation';
+        return promiseAjaxCallApi.CallAPI('POST', URL, body).then(function (value) {
+            return value;
+        });
     }
 };
 

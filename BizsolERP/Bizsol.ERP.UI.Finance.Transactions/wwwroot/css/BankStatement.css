@@ -65,6 +65,213 @@
 
 .bs-header-actions { display: flex; align-items: center; gap: 10px; }
 
+/* Filter card top bar: title + “Filters” on the left, Import New on the right */
+.bs-filters-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    margin-bottom: 18px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-light, #e8e8f0);
+}
+
+.bs-filters-card-head__left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    min-width: 0;
+}
+
+.bs-filters-card-head__right {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.bs-header-title--filter-bar {
+    font-size: 1.15rem;
+    gap: 10px;
+}
+
+.bs-header-title--filter-bar i {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    border-radius: 11px;
+}
+
+.bs-step-label--inline {
+    margin: 0;
+    padding: 0;
+}
+
+/* ── Bank Statement filter bar: align Select2 with date inputs, show “Filters” / dropdowns ─ */
+#cardFilters.bs-card {
+    overflow: visible;
+}
+
+#cardFilters .bs-step-label {
+    position: relative;
+    z-index: 2;
+    overflow: visible;
+    color: var(--text-dark);
+}
+
+/* Row: top-align so every column’s label+control block starts on the same baseline
+   (avoid .align-items-end, which drags short columns down and misaligns labels) */
+#cardFilters .bs-filter-row {
+    align-items: flex-start;
+}
+
+/* Row: shared baseline; no stray margin on bank column (removes devtools “margin-bottom: 9px” effect) */
+#cardFilters .bs-filter-row .bs-bank-select2-wrap {
+    margin-bottom: 0;
+}
+
+/* One label line height in the filter — spacer must match so buttons sit with date/Select2 */
+#cardFilters .bs-filter-row .bs-label,
+#cardFilters .bs-label--filter-spacer {
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.2;
+    min-height: 20px;
+    margin-bottom: 5px;
+    box-sizing: content-box;
+}
+
+#cardFilters .bs-label--filter-spacer {
+    visibility: hidden;
+    user-select: none;
+    display: block;
+    width: 100%;
+}
+
+/* Button row: not the full-width .bs-step-actions toolbar (no top border / extra padding) */
+#cardFilters .bs-filter-btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    width: 100%;
+    align-items: center;
+    min-height: 40px;
+    box-sizing: border-box;
+}
+
+#cardFilters .bs-btn-primary,
+#cardFilters .bs-btn-ghost {
+    min-height: 40px;
+    height: 40px;
+    padding-top: 0;
+    padding-bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+/* Bank filter: Select2 (same 40px box as date inputs) */
+#cardFilters .bs-bank-select2-wrap .select2-container {
+    width: 100% !important;
+    max-width: 100%;
+    margin: 0 !important;
+    vertical-align: top;
+}
+
+#cardFilters .bs-bank-select2-wrap .select2-container--default .select2-selection--multiple {
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    border-radius: 10px !important;
+    border: 1.5px solid var(--border-color, #d1d5db) !important;
+    background: var(--white-bg, #fff) !important;
+    padding: 0 6px 0 4px;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+#cardFilters .bs-bank-select2-wrap .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    margin: 0;
+    padding: 0 2px 0 0;
+    line-height: 1.2;
+    width: 100%;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* Select2: __remove is position:absolute; left:0 — the choice must keep padding-left so text does not sit under the × */
+#cardFilters .bs-bank-select2-wrap .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    position: relative;
+    display: inline-block;
+    box-sizing: border-box;
+    margin: 0 4px 0 0;
+    margin-top: 0;
+    line-height: 1.3;
+    padding: 0 6px 0 0;
+    padding-left: 22px;
+    max-height: 28px;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#cardFilters .bs-bank-select2-wrap .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    padding: 0 0 0 2px;
+    line-height: 1.3;
+}
+
+#cardFilters .bs-bank-select2-wrap .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    min-width: 20px;
+    margin: 0;
+    padding: 0 2px;
+    border: none;
+    background-color: rgba(0, 0, 0, 0.04);
+    border-right: 1px solid var(--border-color, #c5c5c5);
+    border-radius: 3px 0 0 3px;
+    color: #666;
+    line-height: 1;
+    font-size: 0.9em;
+}
+
+#cardFilters .bs-bank-select2-wrap .select2-container--default .select2-selection--multiple .select2-search--inline {
+    min-height: 0;
+    max-height: 24px;
+}
+
+#cardFilters .bs-bank-select2-wrap .select2-container--default .select2-selection--multiple .select2-search--inline .select2-search__field {
+    margin: 0;
+    line-height: 1.2;
+    font-size: 13.5px;
+    padding: 0 2px;
+    min-height: 0;
+    height: 24px;
+}
+
+/* Keep date pickers the same 40px box (override .bs-input { height: auto !important } on this page) */
+#cardFilters input[type="date"].bs-input {
+    min-height: 40px;
+    height: 40px !important;
+    line-height: 1.2;
+    padding: 0 2.2rem 0 13px !important;
+    box-sizing: border-box;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    STATS STRIP
 ══════════════════════════════════════════════════════════════════════════════ */
@@ -349,7 +556,7 @@
     width: 100%;
     border-collapse: collapse !important;
     font-size: 13px;
-    min-width: 920px;
+    min-width: 1100px;
     margin-bottom: 0 !important;
 }
 
@@ -619,9 +826,184 @@
     letter-spacing: .3px;
 }
 
+/* Hidden columns (remain in DOM — dr / cr / batch per spec) */
+.bs-col-hidden {
+    display: none !important;
+}
+
+/* List statement grid (10 visible cols): no vertical rules — matches reference layout */
+#cardList .bs-stmt-list-table {
+    min-width: 960px;
+    border: 1px solid var(--border-light, #e2e8f0);
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+}
+
+#cardList .bs-stmt-list-table thead th,
+#cardList .bs-stmt-list-table td {
+    border-left: none !important;
+    border-right: none !important;
+}
+
+#cardList .bs-stmt-list-table .bs-narration-cell {
+    max-width: 22rem;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.35;
+}
+
+#cardList .bs-stmt-list-table .bs-closing-balance,
+#cardList .bs-stmt-list-table tfoot .text-end {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Reconciliation status — strong yes / no colours */
+.bs-badge--recon-yes {
+    background: rgba(22, 163, 74, 0.18);
+    color: #14532d;
+    border: 1px solid rgba(22, 163, 74, 0.45);
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+}
+.bs-badge--recon-no {
+    background: rgba(220, 38, 38, 0.12);
+    color: #991b1b;
+    border: 1px solid rgba(220, 38, 38, 0.35);
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+}
+
+/* Statement list: row tint by IsReconciled (overrides .bs-preview-table zebra on #cardList) */
+#cardList .bs-stmt-list-table tbody tr.bs-row-recon-yes td {
+    background: rgba(34, 197, 94, 0.16) !important;
+}
+#cardList .bs-stmt-list-table tbody tr.bs-row-recon-yes:hover td {
+    background: rgba(34, 197, 94, 0.26) !important;
+}
+#cardList .bs-stmt-list-table tbody tr.bs-row-recon-no td {
+    background: rgba(248, 113, 113, 0.14) !important;
+}
+#cardList .bs-stmt-list-table tbody tr.bs-row-recon-no:hover td {
+    background: rgba(248, 113, 113, 0.22) !important;
+}
+
+/* Reconciliation: badge-styled control (avoids <button> look drift) */
+#cardList button.bs-recon-toggle {
+    font: inherit;
+    line-height: inherit;
+    border: none;
+    background: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+#cardList button.bs-recon-toggle:hover {
+    filter: brightness(0.95);
+}
+
+#cardList button.bs-recon-toggle:focus-visible {
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
+}
+
+#cardList .bs-narration-cell {
+    min-width: 12rem;
+    max-width: 20rem;
+}
+
 .bs-badge-ok  { background: rgba(22,163,74,.12);  color: #166534; border: 1px solid rgba(22,163,74,.25); }
 .bs-badge-dup { background: rgba(217,119,6,.12);  color: #92400e; border: 1px solid rgba(217,119,6,.25); }
 .bs-badge-err { background: rgba(239,68,68,.12);  color: #991b1b; border: 1px solid rgba(239,68,68,.2);  }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   IMPORT WIZARD  –  full-screen overlay that lives on the list page
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-import-modal-backdrop {
+    z-index: 1060;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px 16px 32px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.bs-import-modal-panel {
+    background: var(--white-bg);
+    border-radius: 18px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, .22);
+    width: min(1100px, 100%);
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    margin: 0 auto;
+    border: 1px solid var(--border-color, rgba(0, 0, 0, .06));
+    overflow: hidden;
+}
+
+.bs-import-modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    background: linear-gradient(180deg, var(--light-bg, #f8fafc) 0%, var(--white-bg, #fff) 100%);
+    flex-shrink: 0;
+}
+
+.bs-import-modal-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-dark, #0f172a);
+    margin: 0 0 4px;
+    line-height: 1.3;
+}
+
+.bs-import-modal-sub {
+    font-size: 0.8rem;
+    color: var(--text-muted, #64748b);
+    line-height: 1.45;
+}
+
+.bs-import-modal-close {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 9px;
+    background: var(--light-bg, #f1f5f9);
+    color: var(--text-dark, #334155);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    flex-shrink: 0;
+}
+
+.bs-import-modal-close:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.bs-import-modal-body {
+    padding: 16px 18px 20px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Delete, result, and batch-history dialogs must sit above the import overlay */
+#bsResultBackdrop,
+#bsDeleteBackdrop,
+#bsHistoryDetailBackdrop,
+#bsReconConfirmBackdrop {
+    z-index: 1080;
+}
 
 /* ══════════════════════════════════════════════════════════════════════════════
    MODAL BACKDROP  (custom — not Bootstrap)
@@ -764,6 +1146,113 @@
 .bs-result-batch span { color: var(--accent-primary); font-weight: 700; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
+   IMPORT BATCH HISTORY (eye icon — detail modal)
+══════════════════════════════════════════════════════════════════════════════ */
+.bs-history-detail-modal {
+    background: var(--white-bg);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .22);
+    width: min(920px, 96vw);
+    max-height: min(92vh, 880px);
+    padding: 22px 24px 18px;
+    text-align: left;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: bsModalIn .2s ease;
+}
+
+.bs-history-detail-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 12px;
+    background: var(--light-bg);
+    color: var(--text-muted);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s, color .15s;
+}
+
+.bs-history-detail-close:hover {
+    background: var(--border-light);
+    color: var(--text-dark);
+}
+
+.bs-history-detail-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin: 0 48px 0 0;
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.bs-history-detail-summary {
+    background: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+}
+
+.bs-hist-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px 16px;
+}
+
+.bs-hist-summary-grid dt {
+    margin: 0;
+    font-weight: 700;
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.bs-hist-summary-grid dd {
+    margin: 0 0 6px;
+    font-weight: 700;
+    color: var(--text-dark);
+    word-break: break-word;
+}
+
+.bs-history-detail-scroll {
+    flex: 1;
+    min-height: 120px;
+    max-height: min(48vh, 400px);
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+.bs-history-detail-scroll .table { margin-bottom: 0; }
+
+.bs-history-detail-modal .bs-narration-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bs-history-detail-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 4px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
@@ -774,5 +1263,6 @@
     .bs-step-card .row.g-3 { padding: 12px 14px; }
     #divColumnMapping { padding-left: 14px; padding-right: 14px; }
     .bs-confirm-modal,
-    .bs-result-modal { padding: 22px 18px 18px; }
+    .bs-result-modal,
+    .bs-history-detail-modal { padding: 22px 18px 18px; }
 }
