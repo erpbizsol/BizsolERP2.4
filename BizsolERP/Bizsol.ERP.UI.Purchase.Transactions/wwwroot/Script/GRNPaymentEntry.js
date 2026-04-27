@@ -3,14 +3,17 @@ import { GRNPaymentApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSSe
 import { GRNService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_GRNService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 
 $(document).ready(async function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     window.AttachmentControl_onQueueChange = function (count) {
         const badge = document.getElementById('gpaTempAttachBadge');
-        if (!badge) return;
-        badge.textContent = String(count);
-        badge.style.display = count > 0 ? 'inline-flex' : 'none';
+        if (badge) {
+            badge.textContent = String(count);
+            badge.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+        syncGpaFooterAttachmentButtonState(count);
     };
 });
 
@@ -35,6 +38,10 @@ let editMode = false;
 let gpaAddBillModalBillRowsCache = [];
 /** Full list rows (all statuses); tabs filter client-side. Matches DDL: U Pending, P Approved, R Rejected. */
 let gpaListFullRows = [];
+/** Raw API rows (same order as list load); used when GetByCode omits HasAttachment. */
+let gpaListSourceRows = [];
+/** Edit/New form: master has attachment(s) or files on server — footer Attachment button green. */
+let gpaFormHasAttachmentYes = false;
 /** Cached from GetVendor — used for print voucher party lookup. */
 let gpaVendorListCache = [];
 /** Cached from GetBankPayment — used for print voucher payment mode label. */
@@ -45,6 +52,8 @@ let gpaProjectListCache = [];
 let gpaEmployeeListCache = [];
 /** Active list tab: 'U' | 'P' | 'R' */
 let gpaListActiveStatusTab = 'U';
+/** When true, list grid shows only entries pending approval on the current user (same rules as GRN Payment Approval). */
+let gpaListOnlyPendingOnMe = false;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // LIST VIEW (GetGRNPaymentApprovalList → BizsolCustomFilterGrid, same as GRNService)
@@ -69,13 +78,159 @@ function normalizeGpaListStatusCode(item) {
     return 'U';
 }
 
-/** Same labels as SQL: CASE WHEN pom.Status = 'P' THEN 'Approved' WHEN 'R' THEN 'Rejected' ELSE 'Pending' */
-function formatGpaApprovalStatusLabel(statusCode) {
-    const c = (statusCode || 'U').toString().trim().toUpperCase();
-    if (c === 'P') return 'Approved';
-    if (c === 'R') return 'Rejected';
-    return 'Pending';
+/** Same as GRNPaymentApproval.js — LevelDetails may be JSON string or array. */
+function gpaListParseLevelDetailsToArray(v) {
+    if (Array.isArray(v)) return v;
+    if (v == null) return [];
+    if (typeof v === 'string') {
+        const t = v.trim();
+        if (!t) return [];
+        try {
+            const j = JSON.parse(t);
+            return Array.isArray(j) ? j : [];
+        } catch (e) {
+            return [];
+        }
+    }
+    return [];
 }
+
+function gpaListLevelNoFromRow(r) {
+    const n = parseInt(r.LevelNo ?? r.Level ?? r.LevelOrder ?? 0, 10);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function gpaListGetCurrentLevelRow(p) {
+    const cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
+    const levels = gpaListParseLevelDetailsToArray(p.LevelDetails);
+    const row = levels.find(function (l) {
+        return gpaListLevelNoFromRow(l) === cur;
+    });
+    if (row) return row;
+    if (levels.length && cur >= 1 && cur <= levels.length) return levels[cur - 1];
+    return null;
+}
+
+function gpaListTruthyFlag(v) {
+    if (v === true || v === 1) return true;
+    const s = (v != null ? String(v) : '').trim().toLowerCase();
+    return s === 'y' || s === '1' || s === 'true';
+}
+
+function gpaListSessionUserMasterCode() {
+    try {
+        const a = JSON.parse(sessionStorage.getItem('authKey'));
+        return parseInt(a && a.UserMaster_Code, 10) || 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function gpaListSessionGroupMasterCode() {
+    try {
+        const d = JSON.parse(sessionStorage.getItem('UserDetails'));
+        if (Array.isArray(d) && d[0] != null) {
+            return parseInt(d[0].GroupMaster_Code, 10) || 0;
+        }
+    } catch (e) { /* ignore */ }
+    return 0;
+}
+
+function gpaListPickFirstPositiveInt(obj, keys) {
+    if (!obj || typeof obj !== 'object') return 0;
+    for (let i = 0; i < keys.length; i++) {
+        const v = obj[keys[i]];
+        if (v == null || v === '') continue;
+        const n = parseInt(v, 10);
+        if (Number.isFinite(n) && n > 0) return n;
+    }
+    return 0;
+}
+
+/**
+ * True when list row is pending (U) and current user/group should act (aligned with GRNPaymentApproval.js paymentIsPendingOnMe).
+ */
+function gpaListEntryIsPendingOnMeFromRaw(p) {
+    if (!p || typeof p !== 'object') return false;
+    if (normalizeGpaListStatusCode(p) !== 'U') return false;
+
+    if (gpaListTruthyFlag(p.IsPendingForMe) || gpaListTruthyFlag(p.PendingForMe) || gpaListTruthyFlag(p.CanApproveNow)
+        || gpaListTruthyFlag(p.IsMyApproval) || gpaListTruthyFlag(p.PendingOnMe)) {
+        return true;
+    }
+
+    const me = gpaListSessionUserMasterCode();
+    const myG = gpaListSessionGroupMasterCode();
+
+    const lvl = gpaListGetCurrentLevelRow(p);
+    const ru = gpaListPickFirstPositiveInt(lvl, [
+        'UserMaster_Code', 'userMaster_Code', 'ApproverUserMaster_Code', 'ApproverUser_Code',
+        'AssignedUserMaster_Code', 'ApprovalUserMaster_Code', 'Approver_Code',
+    ]);
+    const rg = gpaListPickFirstPositiveInt(lvl, [
+        'GroupMaster_Code', 'groupMaster_Code', 'ApproverGroupMaster_Code',
+        'AssignedGroupMaster_Code', 'ApprovalGroupMaster_Code',
+    ]);
+
+    if (me > 0 && ru > 0 && ru === me) return true;
+    if (myG > 0 && rg > 0 && rg === myG) return true;
+
+    const mu = gpaListPickFirstPositiveInt(p, [
+        'CurrentApproverUserMaster_Code', 'ApproverUserMaster_Code', 'NextApproverUserMaster_Code',
+        'PendingApproverUserMaster_Code',
+    ]);
+    const mg = gpaListPickFirstPositiveInt(p, [
+        'CurrentApproverGroupMaster_Code', 'ApproverGroupMaster_Code', 'NextApproverGroupMaster_Code',
+        'PendingApproverGroupMaster_Code',
+    ]);
+    if (me > 0 && mu > 0 && mu === me) return true;
+    if (myG > 0 && mg > 0 && mg === myG) return true;
+
+    const hasAssignee = (ru + rg + mu + mg) > 0;
+    if (!hasAssignee) {
+        return true;
+    }
+    return false;
+}
+
+function gpaListEntryIsPendingOnMe(row) {
+    const raw = row && row._gpaRaw;
+    return gpaListEntryIsPendingOnMeFromRaw(raw || {});
+}
+
+function syncGpaListPendingOnMeChipActive() {
+    const chip = document.getElementById('gpaListChipPendingOnMe');
+    if (chip) {
+        chip.classList.toggle('gpa-list-chip-onme--active', !!gpaListOnlyPendingOnMe);
+    }
+}
+
+function updateGpaListPendingOnMeCount() {
+    const el = document.getElementById('gpaListCountPendingOnMe');
+    if (!el) return;
+    if (!gpaListFullRows.length) {
+        el.textContent = '—';
+        return;
+    }
+    let n = 0;
+    for (let i = 0; i < gpaListFullRows.length; i++) {
+        if (gpaListEntryIsPendingOnMe(gpaListFullRows[i])) n++;
+    }
+    el.textContent = String(n);
+}
+
+function toggleGpaListPendingOnMeFilter() {
+    gpaListOnlyPendingOnMe = !gpaListOnlyPendingOnMe;
+    syncGpaListPendingOnMeChipActive();
+    renderGpaListGridForActiveTab();
+}
+window.toggleGpaListPendingOnMeFilter = toggleGpaListPendingOnMeFilter;
+
+function applyGpaListPendingOnMeFilter() {
+    const a = document.getElementById('gpaLinkGrnPayment');
+    if (a && a.href) window.location.href = a.href;
+}
+window.applyGpaListPendingOnMeFilter = applyGpaListPendingOnMeFilter;
 
 function formatGpaListDate(val) {
     if (val === undefined || val === null || val === '') return '';
@@ -93,6 +248,99 @@ function formatGpaListDate(val) {
     return s;
 }
 
+function gpaBizsolMetaKey(k) {
+    return typeof k === 'string' && k.indexOf('__bizsol') === 0;
+}
+
+function gpaAttachmentYesFromRaw(raw) {
+    if (raw === undefined || raw === null) return false;
+    const s = String(raw).trim().toLowerCase();
+    return s === 'yes' || s === 'y' || s === 'true' || s === '1';
+}
+
+function gpaFindHasAttachmentColumnKey(item) {
+    if (!item || typeof item !== 'object') return null;
+    const direct = [
+        'HASATTACHMENT',
+        'HasAttachment',
+        'hasAttachment',
+        'HAS_ATTACH',
+        'Has_Attachment',
+        'Has Attachment',
+    ];
+    let i;
+    for (i = 0; i < direct.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(item, direct[i])) return direct[i];
+    }
+    for (const k in item) {
+        if (!Object.prototype.hasOwnProperty.call(item, k) || gpaBizsolMetaKey(k)) continue;
+        const kn = String(k).replace(/\s+/g, '');
+        if (/hasattachment/i.test(kn)) return k;
+    }
+    return null;
+}
+
+function gpaItemHasAttachmentYes(item) {
+    if (!item || typeof item !== 'object') return false;
+    const k = gpaFindHasAttachmentColumnKey(item);
+    return k ? gpaAttachmentYesFromRaw(item[k]) : false;
+}
+
+function gpaResolveHasAttachmentYesFromList(masterCode) {
+    const c = parseInt(String(masterCode != null ? masterCode : 0), 10) || 0;
+    if (!c) return false;
+    const rows = gpaListSourceRows;
+    if (!Array.isArray(rows)) return false;
+    for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || typeof r !== 'object') continue;
+        const rc = parseInt(String(r.Code != null ? r.Code : r.code != null ? r.code : 0), 10) || 0;
+        if (rc !== c) continue;
+        return gpaItemHasAttachmentYes(r);
+    }
+    return false;
+}
+
+function syncGpaFooterAttachmentButtonState(pendingQueueCount) {
+    const btn = document.getElementById('btnGpaFooterAttach');
+    if (!btn) return;
+    let pending = pendingQueueCount;
+    if (pending === undefined || pending === null) {
+        const badge = document.getElementById('gpaTempAttachBadge');
+        pending = badge ? parseInt(String(badge.textContent || '0').trim(), 10) || 0 : 0;
+    } else {
+        pending = parseInt(String(pendingQueueCount), 10) || 0;
+    }
+    const yes = !!gpaFormHasAttachmentYes || pending > 0;
+    btn.classList.toggle('btn-gpa-footer-attach--yes', yes);
+}
+
+function gpaNormalizeAttachmentApiRows(resp) {
+    if (Array.isArray(resp)) return resp;
+    if (!resp || typeof resp !== 'object') return [];
+    if (Array.isArray(resp.Data)) return resp.Data;
+    if (Array.isArray(resp.data)) return resp.data;
+    if (Array.isArray(resp.Table)) return resp.Table;
+    return [];
+}
+
+/** Edit form: HasAttachment from master/list + GetAttachmentUploadFiles (same source as Attachment control). */
+async function gpaSyncFooterAttachmentFromApis(master, masterCode) {
+    const c = parseInt(String(masterCode != null ? masterCode : 0), 10) || 0;
+    gpaFormHasAttachmentYes =
+        gpaItemHasAttachmentYes(master || {}) || gpaResolveHasAttachmentYesFromList(c);
+    if (c > 0) {
+        try {
+            const resp = await AttachmentControlService.GetAttachmentUploadFiles('GRNPaymentMaster', c, '', 0);
+            const rows = gpaNormalizeAttachmentApiRows(resp);
+            if (rows.length > 0) gpaFormHasAttachmentYes = true;
+        } catch (err) {
+            console.warn('gpaSyncFooterAttachmentFromApis:', err);
+        }
+    }
+    syncGpaFooterAttachmentButtonState();
+}
+
 function mapGpaListRow(item) {
     const code = item.Code ?? item.code ?? 0;
     const entryNo = item.EntryNo ?? item.entryNo ?? '';
@@ -107,30 +355,32 @@ function mapGpaListRow(item) {
     const label = String(entryNo || code || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     const rawEdStr = ed ? String(ed).substring(0, 10) : '';
     const enNum = parseInt(entryNo, 10) || 0;
+    const hasAttachmentYes = gpaItemHasAttachmentYes(item);
+    const attachBtnClass = hasAttachmentYes ? 'im-btn-attach im-btn-attach--has-attachment' : 'im-btn-attach';
     const btns =
-        '<button type="button" class="im-btn-print-preview" title="Print Preview" onclick="PrintGRNPaymentVoucher(' + code + ',\'preview\')">' +
+        '<button type="button" class="im-btn-print-preview" title="Print Preview" onclick="window.PrintGRNPaymentVoucher(' + code + ',\'preview\')">' +
         '<i class="fa fa-search-plus"></i></button>' +
-        '<button type="button" class="im-btn-print" title="Print" onclick="PrintGRNPaymentVoucher(' + code + ',\'print\')">' +
+        '<button type="button" class="im-btn-print" title="Print" onclick="window.PrintGRNPaymentVoucher(' + code + ',\'print\')">' +
         '<i class="fa fa-print"></i></button>' +
-        '<button type="button" class="im-btn-edit" title="Edit" onclick="editGRNPaymentApproval(' + code + ')">' +
+        '<button type="button" class="im-btn-edit" title="Edit" onclick="window.editGRNPaymentApproval(' + code + ')">' +
         '<i class="fas fa-pen"></i></button>' +
-        '<button type="button" class="im-btn-attach" title="Attachment" onclick="openGpaListAttachmentControl(' + code + ',' + enNum + ',\'' + rawEdStr + '\')">' +
+        '<button type="button" class="' + attachBtnClass + '" title="Attachment" onclick="window.openGpaListAttachmentControl(' + code + ',' + enNum + ',\'' + rawEdStr + '\')">' +
         '<i class="fas fa-paperclip"></i></button>' +
-        '<button type="button" class="im-btn-delete" title="Delete" onclick="confirmDeleteGRNPaymentApproval(' + code + ', \'' + label + '\')">' +
+        '<button type="button" class="im-btn-delete" title="Delete" onclick="window.confirmDeleteGRNPaymentApproval(' + code + ', \'' + label + '\')">' +
         '<i class="fas fa-trash-can"></i></button>';
-    const statusCode = normalizeGpaListStatusCode(item);
-    return {
+    const row = {
         'Entry No': entryNo,
         'Entry Date': formatGpaListDate(ed),
         'Party Name': party,
         Employee: employee,
         'Amount': amt,
         'Ref No': ref,
-        'Approval Status': formatGpaApprovalStatusLabel(statusCode),
         Action: btns,
         Code: code,
-        StatusCode: statusCode,
+        StatusCode: normalizeGpaListStatusCode(item),
+        _gpaRaw: item,
     };
+    return row;
 }
 
 function showListView() {
@@ -161,7 +411,6 @@ function gpaListEmptyTabPlaceholderRow() {
         Employee: '',
         'Amount': '',
         'Ref No': '',
-        'Approval Status': '',
         Action: '',
         Code: '__gpa_empty__',
         StatusCode: gpaListActiveStatusTab,
@@ -180,6 +429,7 @@ function updateGpaStatusTabStrip() {
     if (elU) elU.textContent = String(counts.U);
     if (elP) elP.textContent = String(counts.P);
     if (elR) elR.textContent = String(counts.R);
+    updateGpaListPendingOnMeCount();
     document.querySelectorAll('.gpa-status-tab').forEach((btn) => {
         const st = btn.getAttribute('data-gpa-status');
         const on = st === gpaListActiveStatusTab;
@@ -189,13 +439,13 @@ function updateGpaStatusTabStrip() {
 }
 
 function renderGpaListGridForActiveTab() {
-    const StringFilterColumn = ['Party Name', 'Employee', 'Ref No', 'Approval Status'];
+    const StringFilterColumn = ['Party Name', 'Employee', 'Ref No'];
     const NumericFilterColumn = ['Entry No', 'Amount'];
     const DateFilterColumn = ['Entry Date'];
     const Button = false;
     const showButtons = [];
     const StringdoubleFilterColumn = [];
-    const hiddenColumns = ['Code', 'StatusCode'];
+    const hiddenColumns = ['Code', 'StatusCode', '__bizsolRowClass', '_gpaRaw'];
     const ColumnAlignment = { Action: 'center;width:268px;' };
 
     updateGpaStatusTabStrip();
@@ -208,6 +458,9 @@ function renderGpaListGridForActiveTab() {
 
     const tab = gpaListActiveStatusTab || 'U';
     let filtered = gpaListFullRows.filter((r) => (r.StatusCode || 'U') === tab);
+    if (gpaListOnlyPendingOnMe) {
+        filtered = filtered.filter((r) => gpaListEntryIsPendingOnMe(r));
+    }
     if (filtered.length === 0) filtered = [gpaListEmptyTabPlaceholderRow()];
 
     $('#gpaListTable').show();
@@ -229,13 +482,20 @@ function renderGpaListGridForActiveTab() {
 function onGpaListStatusTabClick(code) {
     const c = code === 'P' || code === 'R' ? code : 'U';
     gpaListActiveStatusTab = c;
+    gpaListOnlyPendingOnMe = false;
+    syncGpaListPendingOnMeChipActive();
     renderGpaListGridForActiveTab();
 }
+window.onGpaListStatusTabClick = onGpaListStatusTabClick;
 
 function loadGRNPaymentApprovalList() {
+    gpaListOnlyPendingOnMe = false;
+    syncGpaListPendingOnMeChipActive();
     return GRNPaymentApprovalService.GetGRNPaymentApprovalList()
         .then(function (response) {
-            gpaListFullRows = normalizeApiRows(response).map(mapGpaListRow);
+            const raw = normalizeApiRows(response);
+            gpaListSourceRows = raw;
+            gpaListFullRows = raw.map(mapGpaListRow);
             if (gpaListFullRows.length === 0) {
                 if (typeof toastr !== 'undefined') toastr.warning('No payment entries found.');
                 $('#gpaListTable').hide();
@@ -247,6 +507,9 @@ function loadGRNPaymentApprovalList() {
         })
         .catch(function () {
             gpaListFullRows = [];
+            gpaListSourceRows = [];
+            gpaListOnlyPendingOnMe = false;
+            syncGpaListPendingOnMeChipActive();
             if (typeof toastr !== 'undefined') toastr.error('Failed to load payment list.');
             $('#gpaListTable').hide();
             updateGpaStatusTabStrip();
@@ -777,11 +1040,11 @@ function billRowTemplate() {
     <td><select class="form-control form-control-sm inp-project-ddl" style="min-width:140px;"><option value="">-- Project --</option></select></td>
     <td><select class="form-control form-control-sm inp-subproject-ddl" style="min-width:140px;"><option value="">-- Sub project --</option></select></td>
     <td><input type="date" class="form-control form-control-sm inp-bill-date" autocomplete="off"></td>
-    <td><input type="number" class="form-control form-control-sm inp-bill-amt" min="0" step="0.01" placeholder="0" onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this)"></td>
+    <td><input type="number" class="form-control form-control-sm inp-bill-amt" min="0" step="0.01" placeholder="0" onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this)"></td>
     <td><input type="number" class="form-control form-control-sm inp-payable" min="0" step="0.01" placeholder="0" readonly style="background:#ede9fe;border-color:#c4b5fd;"></td>
-    <td><input type="number" class="form-control form-control-sm inp-payment" min="0" step="0.01" placeholder="0" onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this)"></td>
+    <td><input type="number" class="form-control form-control-sm inp-payment" min="0" step="0.01" placeholder="0" onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this)"></td>
     <td style="text-align:center;vertical-align:middle;">
-        <button type="button" class="del-row-btn" onclick="removeGpaBillRow(this)" title="Remove row"><i class="fa fa-trash"></i></button>
+        <button type="button" class="del-row-btn" onclick="window.removeGpaBillRow(this)" title="Remove row"><i class="fa fa-trash"></i></button>
     </td>
 </tr>`;
 }
@@ -2241,6 +2504,7 @@ async function loadGRNPaymentApprovalByCode(Code) {
         }
         gpaShowFillGridCheckbox(false);
         syncGpaPartyEmployeeUI();
+        await gpaSyncFooterAttachmentFromApis(master, codeNum);
     } catch (e) {
         showToast('Failed to load Payment Entry.', 'error');
     }
@@ -2511,6 +2775,8 @@ function resetGRNPaymentApprovalForm() {
     if (typeof window.ClearPendingAttachments_AttachmentControl === 'function') {
         window.ClearPendingAttachments_AttachmentControl();
     }
+    gpaFormHasAttachmentYes = false;
+    syncGpaFooterAttachmentButtonState(0);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2888,4 +3154,8 @@ window.cancelGRNPaymentApproval = cancelGRNPaymentApproval;
 window.editGRNPaymentApproval = editGRNPaymentApproval;
 window.confirmDeleteGRNPaymentApproval = confirmDeleteGRNPaymentApproval;
 window.onGpaListStatusTabClick = onGpaListStatusTabClick;
+window.toggleGpaListPendingOnMeFilter = toggleGpaListPendingOnMeFilter;
+window.applyGpaListPendingOnMeFilter = applyGpaListPendingOnMeFilter;
 window.PrintGRNPaymentVoucher = PrintGRNPaymentVoucher;
+window.syncGpaFooterAttachmentButtonState = syncGpaFooterAttachmentButtonState;
+window.gpaSyncFooterAttachmentFromApis = gpaSyncFooterAttachmentFromApis;
