@@ -5,15 +5,60 @@ var parsedRows    = [];
 var fileHeaders   = [];   
 var columnMappers = {};   
 var deleteBatchNo = '';
+/** Batch no for “Open full list” from history detail modal */
+var historyDetailBatchNo = '';
 /** Full grid from the last successful parse (incl. header/metadata) — used to re-check bank / account on import. */
 var lastParsedFullRows = null;
+
+var LOCK_STORAGE_KEY = 'BizSol_BankStmt_DayLocks';
+
+/** One-time: old BankStatementList merged every list date into locks → preview showed 0 importable. */
+(function migrateStaleDayLocksOnce() {
+    try {
+        if (!localStorage.getItem('BizSol_BankStmt_LockMig_v1')) {
+            localStorage.removeItem(LOCK_STORAGE_KEY);
+            localStorage.setItem('BizSol_BankStmt_LockMig_v1', '1');
+        }
+    } catch (e) { /* ignore */ }
+})();
+
+function lockStorageKey(bankCode, accountNo) {
+    return String(bankCode || 0) + '|' + String(accountNo || '').replace(/\s/g, '');
+}
+
+function getDayLocks() {
+    try {
+        return JSON.parse(localStorage.getItem(LOCK_STORAGE_KEY) || '{}');
+    } catch (e) {
+        return {};
+    }
+}
+
+function mergeImportedDays(bankCode, accountNo, isoDateKeys) {
+    if (!isoDateKeys || !isoDateKeys.length) return;
+    var k = lockStorageKey(bankCode, accountNo);
+    var all = getDayLocks();
+    all[k] = all[k] || {};
+    isoDateKeys.forEach(function (key) {
+        if (key) all[k][key] = true;
+    });
+    localStorage.setItem(LOCK_STORAGE_KEY, JSON.stringify(all));
+}
+
+function isDayLocked(bankCode, accountNo, isoDateKey) {
+    if (!isoDateKey) return false;
+    var all = getDayLocks();
+    return !!(all[lockStorageKey(bankCode, accountNo)] || {})[isoDateKey];
+}
 
 var FIELD_DEFS = [
     { field: 'TxnDate',
       label: 'Date',
-      patterns: ['date','txn date','trans date','transaction date','tran date',
-                 'posting date','tran. date','transaction dt','valuedate',
-                 'trndate','trn date'] },
+      /* Specific first: substring "date" matches "Value Date" before "Date" → empty txn dates. */
+      patterns: ['transaction date', 'txn date', 'trans date', 'tran date', 'tran. date',
+                 'transaction dt', 'posting date', 'book date', 'statement date',
+                 'trndate', 'trn date', 'valuedate',
+                 'date'] },
     { field: 'Narration',
       label: 'Narration',
       patterns: ['narration','description','particulars','details','remarks',
@@ -27,6 +72,10 @@ var FIELD_DEFS = [
     { field: 'ValueDate',
       label: 'Value Date',
       patterns: ['value date','val date','value dt','valuedate'] },
+    { field: 'OpeningBalance',
+      label: 'Opening Balance',
+      patterns: ['opening balance','opening bal','opening','op bal','op. bal','obl',
+                 'ob','opening amt'] },
     { field: 'WithdrawalAmt',
       label: 'Withdrawal (Dr)',
       patterns: ['withdrawal amt.','withdrawal amt','withdrawal amount','withdrawal',
@@ -109,13 +158,16 @@ function LoadImportHistory() {
                         <td class="text-center ${row.FailedRecords > 0 ? 'text-danger' : ''}">${row.FailedRecords}</td>
                         <td>${FormatDateTime(row.ImportDate)}</td>
                         <td class="text-center">
-                            <button class="bs-icon-btn bs-icon-btn--view me-1" title="View records"
-                                onclick="ViewBatch('${escHtml(row.ImportBatchNo)}')">
+                            <button type="button" class="bs-icon-btn bs-icon-btn--view bs-history-view-btn" title="View batch history"
+                                data-batch="${escHtml(String(row.ImportBatchNo || ''))}"
+                                data-bank="${escHtml(String(row.BankName || ''))}"
+                                data-account="${escHtml(String(row.AccountNo || ''))}"
+                                data-file="${escHtml(String(row.FileName || ''))}"
+                                data-total="${escHtml(String(row.TotalRecords != null ? row.TotalRecords : ''))}"
+                                data-success="${escHtml(String(row.SuccessRecords != null ? row.SuccessRecords : ''))}"
+                                data-failed="${escHtml(String(row.FailedRecords != null ? row.FailedRecords : ''))}"
+                                data-import-date="${escHtml(FormatDateTime(row.ImportDate))}">
                                 <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="bs-icon-btn bs-icon-btn--danger" title="Delete batch"
-                                onclick="ConfirmDeleteBatch('${escHtml(row.ImportBatchNo)}')">
-                                <i class="fas fa-trash-can"></i>
                             </button>
                         </td>
                     </tr>`);
@@ -123,6 +175,132 @@ function LoadImportHistory() {
         })
         .catch(function () {
             $body.html('<tr><td colspan="10" class="text-center py-3 text-danger">Failed to load history.</td></tr>');
+        });
+}
+
+// ── Import history: batch detail modal (eye icon) ───────────────────────────
+function normalizeStatementListForModal(data) {
+    if (Array.isArray(data)) return data;
+    if (data == null) return [];
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.Data)) return data.Data;
+    if (Array.isArray(data.result)) return data.result;
+    if (Array.isArray(data.Result)) return data.Result;
+    if (Array.isArray(data.list)) return data.list;
+    if (Array.isArray(data.List)) return data.List;
+    return [];
+}
+
+function sortRowsForHistoryModal(list) {
+    return list.slice().sort(function (a, b) {
+        var ia = ConvertToIsoDate(a.TxnDate);
+        var ib = ConvertToIsoDate(b.TxnDate);
+        if (ia && ib) {
+            var c = ia.localeCompare(ib);
+            if (c !== 0) return c;
+        } else if (ia) return -1;
+        else if (ib) return 1;
+        var ca = parseInt(a.Code, 10) || 0;
+        var cb = parseInt(b.Code, 10) || 0;
+        return ca - cb;
+    });
+}
+
+function readHistorySummaryFromBtn($btn) {
+    return {
+        batchNo: ($btn.attr('data-batch') || '').trim(),
+        bankName: $btn.attr('data-bank') || '',
+        accountNo: $btn.attr('data-account') || '',
+        fileName: $btn.attr('data-file') || '',
+        total: $btn.attr('data-total') || '—',
+        success: $btn.attr('data-success') || '—',
+        failed: $btn.attr('data-failed') || '—',
+        importDate: $btn.attr('data-import-date') || '—'
+    };
+}
+
+function renderHistoryDetailSummary(s) {
+    var safe = function (x) { return escHtml(x == null || x === '' ? '—' : String(x)); };
+    var html = ''
+        + '<dl class="bs-hist-summary-grid">'
+        + '<div><dt>Batch no</dt><dd>' + safe(s.batchNo) + '</dd></div>'
+        + '<div><dt>Bank</dt><dd>' + safe(s.bankName) + '</dd></div>'
+        + '<div><dt>Account</dt><dd>' + safe(s.accountNo) + '</dd></div>'
+        + '<div><dt>File name</dt><dd>' + safe(s.fileName) + '</dd></div>'
+        + '<div><dt>Total rows</dt><dd>' + safe(s.total) + '</dd></div>'
+        + '<div><dt>Success</dt><dd>' + safe(s.success) + '</dd></div>'
+        + '<div><dt>Failed</dt><dd>' + safe(s.failed) + '</dd></div>'
+        + '<div><dt>Import date</dt><dd>' + safe(s.importDate) + '</dd></div>'
+        + '</dl>';
+    $('#bsHistDetailSummary').html(html);
+}
+
+function fmtAmtCell(v) {
+    var n = parseFloat(String(v == null ? '' : v).replace(/,/g, '').trim());
+    if (isNaN(n) || n === 0) return '—';
+    return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function populateHistoryDetailLines(list) {
+    var $tb = $('#tblHistDetailBody');
+    $tb.empty();
+    if (!list || !list.length) {
+        $tb.html('<tr><td colspan="8" class="text-center py-3 text-muted">No statement rows returned for this batch.</td></tr>');
+        return;
+    }
+    var sorted = sortRowsForHistoryModal(list);
+    $.each(sorted, function (i, row) {
+        var w = fmtAmtCell(row.WithdrawalAmt);
+        var d = fmtAmtCell(row.DepositAmt);
+        var c = fmtAmtCell(row.ClosingBalance);
+        $tb.append(
+            '<tr>'
+            + '<td>' + (i + 1) + '</td>'
+            + '<td>' + escHtml(row.TxnDate != null ? String(row.TxnDate) : '—') + '</td>'
+            + '<td>' + escHtml(row.AccountNo != null ? String(row.AccountNo) : '—') + '</td>'
+            + '<td class="bs-narration-cell" title="' + escHtml(row.Narration || '') + '">' + escHtml(TruncStr(row.Narration || '', 48)) + '</td>'
+            + '<td>' + escHtml(row.ChequeRefNo != null && row.ChequeRefNo !== '' ? String(row.ChequeRefNo) : '—') + '</td>'
+            + '<td class="text-end">' + w + '</td>'
+            + '<td class="text-end">' + d + '</td>'
+            + '<td class="text-end">' + c + '</td>'
+            + '</tr>'
+        );
+    });
+}
+
+function closeImportBatchHistoryModal() {
+    $('#bsHistoryDetailBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    historyDetailBatchNo = '';
+    $('#tblHistDetailBody').empty();
+}
+
+function openImportBatchHistoryModal(summary) {
+    if (!summary || !summary.batchNo) {
+        toastr && toastr.warning('Missing batch number.');
+        return;
+    }
+    historyDetailBatchNo = summary.batchNo;
+    $('#bsHistoryDetailBackdrop').addClass('active').attr('aria-hidden', 'false');
+    renderHistoryDetailSummary(summary);
+    $('#tblHistDetailBody').html(
+        '<tr><td colspan="8" class="text-center py-3 text-muted">'
+        + '<i class="fas fa-spinner fa-spin me-2"></i>Loading statement lines…</td></tr>'
+    );
+
+    var fromD = '01/01/2000';
+    var toD = '31/12/2099';
+
+    Showloader && Showloader();
+    BankStatementService.GetBankStatementList(0, '', fromD, toD, summary.batchNo)
+        .then(function (data) {
+            HideLoader && HideLoader();
+            populateHistoryDetailLines(normalizeStatementListForModal(data));
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            $('#tblHistDetailBody').html(
+                '<tr><td colspan="8" class="text-center py-3 text-danger">Could not load lines for this batch.</td></tr>'
+            );
         });
 }
 
@@ -171,24 +349,38 @@ function BindEvents() {
         $('#cardStep1').show();
     });
 
-    // Select / deselect all checkboxes via header checkbox
-    $('#chkSelectAll').on('change', function () {
+    // Preview checkboxes — scope to #tblPreviewBody; .off namespaced (list page loads this module twice)
+    $('#chkSelectAll').off('change.bsPreviewChk').on('change.bsPreviewChk', function () {
         var checked = $(this).prop('checked');
-        $('.row-chk:not(:disabled)').prop('checked', checked);
+        $(this).prop('indeterminate', false);
+        $('#tblPreviewBody .row-chk').prop('checked', checked);
+        syncPreviewSelectAllHeader();
         UpdateSelectedCount();
         UpdateImportButton();
     });
 
-    $('#btnSelectAll').on('click', function () {
-        $('.row-chk:not(:disabled)').prop('checked', true);
-        $('#chkSelectAll').prop('checked', true);
+    $('#btnSelectAll').off('click.bsPreviewChk').on('click.bsPreviewChk', function (e) {
+        e.preventDefault();
+        var $body = $('#tblPreviewBody');
+        var $allChk = $body.find('.row-chk');
+        if (!$allChk.length) {
+            $('#chkSelectAll').prop({ checked: false, indeterminate: false });
+            UpdateSelectedCount();
+            UpdateImportButton();
+            return;
+        }
+        $allChk.prop('checked', true);
+        $('#chkSelectAll').prop({ checked: true, indeterminate: false });
+        syncPreviewSelectAllHeader();
         UpdateSelectedCount();
         UpdateImportButton();
     });
 
-    $('#btnDeselectAll').on('click', function () {
-        $('.row-chk').prop('checked', false);
-        $('#chkSelectAll').prop('checked', false);
+    $('#btnDeselectAll').off('click.bsPreviewChk').on('click.bsPreviewChk', function (e) {
+        e.preventDefault();
+        $('#tblPreviewBody .row-chk').prop('checked', false);
+        $('#chkSelectAll').prop({ checked: false, indeterminate: false });
+        syncPreviewSelectAllHeader();
         UpdateSelectedCount();
         UpdateImportButton();
     });
@@ -196,17 +388,64 @@ function BindEvents() {
     // Import button
     $('#btnImport').on('click', function () { DoImport(); });
 
-    // View List button — navigate to bank statement list (relative URL, no baseUrl needed)
-    $('#btnViewList').on('click', function () {
-        window.location = baseUrl + '/FinanceTransactions/BankStatement/BankStatementList';
+    // Close the import overlay (or navigate back if running as a standalone page)
+    function closeImportModal() {
+        var $b = $('#bsImportBackdrop');
+        if ($b.length) {
+            $b.removeClass('active').attr('aria-hidden', 'true');
+        } else {
+            window.location = baseUrl + '/FinanceTransactions/BankStatement/BankStatementList';
+        }
+    }
+    $('#btnViewList').on('click', closeImportModal);
+    $('#btnCloseImportModal').on('click', closeImportModal);
+
+    // Clicking the dimmed area behind the panel closes the overlay
+    $('#bsImportBackdrop').on('click', function (e) {
+        if (e.target === this) closeImportModal();
     });
+
+    // Escape closes the import overlay (unless a nested dialog is open)
+    $(document).on('keydown.bsImportModal', function (e) {
+        if (e.key !== 'Escape') return;
+        if ($('#bsHistoryDetailBackdrop').hasClass('active')) {
+            e.preventDefault();
+            closeImportBatchHistoryModal();
+            return;
+        }
+        if ($('#bsResultBackdrop').hasClass('active') || $('#bsDeleteBackdrop').hasClass('active')) return;
+        if ($('#bsImportBackdrop').hasClass('active')) {
+            e.preventDefault();
+            closeImportModal();
+        }
+    });
+
+    // Delete dialog buttons
+    $('#btnCancelDelete').on('click', function () { CloseDeleteModal(); });
+    $('#btnConfirmDelete').on('click', function () { DoDeleteBatch(); });
 
     // Refresh history
     $('#btnRefreshHistory').on('click', function () { LoadImportHistory(); });
 
-    // Delete confirmation modal buttons
-    $('#btnCancelDelete').on('click', function () { CloseDeleteModal(); });
-    $('#btnConfirmDelete').on('click', function () { DoDeleteBatch(); });
+    // Recent Import History — view batch in modal (namespaced: list page loads this module with BankStatementList.js)
+    $('#tblHistoryBody').off('click.bsHistView').on('click.bsHistView', '.bs-history-view-btn', function (e) {
+        e.preventDefault();
+        openImportBatchHistoryModal(readHistorySummaryFromBtn($(this)));
+    });
+
+    $('#btnCloseHistoryDetail, #btnHistDetailOk').off('click.bsHistModal').on('click.bsHistModal', function () {
+        closeImportBatchHistoryModal();
+    });
+
+    $('#btnHistDetailOpenList').off('click.bsHistModalOpen').on('click.bsHistModalOpen', function () {
+        var b = historyDetailBatchNo;
+        closeImportBatchHistoryModal();
+        if (b) window.ViewBatch(b);
+    });
+
+    $('#bsHistoryDetailBackdrop').off('click.bsHistBackdrop').on('click.bsHistBackdrop', function (e) {
+        if (e.target === this) closeImportBatchHistoryModal();
+    });
 
     // Result modal close button
     $('#btnResultClose').on('click', function () { CloseResultModal(); });
@@ -443,6 +682,7 @@ function FinalizeStatementParse(rawRows) {
         parsedRows = dataRows;
         BuildColumnMappingUI(fileHeaders);
         AutoMapColumns(fileHeaders);
+        inferTxnDateColumnIfNeeded();
         RenderPreviewTable();
         $('#cardStep2').show();
         $('#cardStep1').hide();
@@ -517,8 +757,7 @@ function BuildColumnMappingUI(headers) {
 
     $('#divColumnMapping').show();
 
-    // Re-render preview whenever mapping changes
-    $('.map-select').on('change', function () {
+    $('.map-select').off('change.bsMap').on('change.bsMap', function () {
         columnMappers[$(this).data('field')] = parseInt($(this).val(), 10);
         RenderPreviewTable();
     });
@@ -549,7 +788,7 @@ function FindHeaderRow(rows) {
     var headerKeywords = [
         'date', 'narration', 'description', 'particulars',
         'debit', 'credit', 'withdrawal', 'deposit',
-        'balance', 'closing', 'ref', 'chq', 'cheque', 'amount', 'value'
+        'balance', 'closing', 'opening', 'ref', 'chq', 'cheque', 'amount', 'value'
     ];
 
     var bestScore = 0;
@@ -574,6 +813,22 @@ function FindHeaderRow(rows) {
     return (bestScore >= 2) ? bestIdx : 0;
 }
 
+/** Avoid mapping TxnDate to "Value Date" when using generic pattern "date". */
+function autoMapHeaderMatchesField(field, lh, p) {
+    if (!lh || !p) return false;
+    if (lh === p) return true;
+    if (lh.indexOf(p) >= 0) {
+        if (field === 'TxnDate' && p === 'date') {
+            var norm = lh.replace(/\s+/g, ' ').trim();
+            if (norm === 'value date' || norm === 'val date' || norm === 'value dt') return false;
+            if (norm.indexOf('value date') === 0) return false;
+            if (norm.indexOf('value ') === 0 && norm.indexOf('date') >= 0) return false;
+        }
+        return true;
+    }
+    return lh.length >= 3 && p.indexOf(lh) >= 0;
+}
+
 // ── Auto-detect column mapping from header names ──────────────────────────────
 function AutoMapColumns(headers) {
     var lowerHeaders = headers.map(function (h) { return (h || '').toLowerCase().trim(); });
@@ -585,10 +840,7 @@ function AutoMapColumns(headers) {
             lowerHeaders.forEach(function (lh, idx) {
                 if (matched >= 0) return;
                 if (!lh) return; // skip empty header cells — avoids false matches
-                // exact match OR header contains pattern OR pattern contains header (min 3 chars)
-                if (lh === p
-                    || lh.indexOf(p) >= 0
-                    || (lh.length >= 3 && p.indexOf(lh) >= 0)) {
+                if (autoMapHeaderMatchesField(fd.field, lh, p)) {
                     matched = idx;
                 }
             });
@@ -603,33 +855,47 @@ function RenderPreviewTable() {
     var $body = $('#tblPreviewBody');
     $body.empty();
 
+    var bankCode  = parseInt($('#ddlBankMaster').val() || '0', 10) || 0;
+    var accountNo = ($('#txtAccountNumber').val() || '').trim();
+
     var totalWithdrawal = 0, totalDeposit = 0;
     var validCount = 0;
+    var invalidDateRows = 0;
+    var lockedRows = 0;
 
     parsedRows.forEach(function (row, idx) {
         var mapped  = MapRow(row);
         var dateRaw = mapped.TxnDate ? mapped.TxnDate.trim() : '';
 
-        // Try to parse the date immediately — same as ProjectMaster (format at display time)
-        var txnIso     = dateRaw ? ConvertToIsoDate(dateRaw) : null;
-        var dateDisplay = txnIso ? IsoToDMY(txnIso) : (dateRaw || '');
-
-        // ValueDate display
         var valRaw     = mapped.ValueDate ? mapped.ValueDate.trim() : '';
         var valIso     = valRaw ? ConvertToIsoDate(valRaw) : null;
         var valDisplay = valIso ? IsoToDMY(valIso) : (valRaw || '');
 
-        // A row is valid (selectable) only when the date cell maps to a recognisable date.
-        // Rows with non-date text (totals, opening balance lines) are excluded automatically.
-        var isValid  = !!txnIso;
-        var rowClass = isValid ? 'bs-row-ok' : 'bs-row-error';
-        var badge    = isValid
-            ? '<span class="bs-badge bs-badge--ok">OK</span>'
-            : (dateRaw
-                ? '<span class="bs-badge bs-badge--error">Invalid Date</span>'
-                : '<span class="bs-badge bs-badge--error">Date Missing</span>');
+        var rawTxnIso   = dateRaw ? ConvertToIsoDate(dateRaw) : null;
+        var txnIso      = resolveStatementTxnIso(mapped);
+        var dateDisplay = rawTxnIso ? IsoToDMY(rawTxnIso) : (txnIso ? IsoToDMY(txnIso) : (dateRaw || valRaw || ''));
 
-        if (isValid) {
+        var isValid  = !!txnIso;
+        var isoKey   = txnIso ? txnIso.substring(0, 10) : '';
+        var locked   = isValid && isDayLocked(bankCode, accountNo, isoKey);
+
+        if (!txnIso) invalidDateRows++;
+        else if (locked) lockedRows++;
+
+        var rowClass = isValid ? (locked ? 'bs-row-error' : 'bs-row-ok') : 'bs-row-error';
+        var badge;
+        if (locked) {
+            badge = '<span class="bs-badge bs-badge-dup">Day locked</span>';
+        } else if (isValid) {
+            badge = '<span class="bs-badge bs-badge--ok">OK</span>';
+        } else {
+            badge = dateRaw
+                ? '<span class="bs-badge bs-badge--error">Invalid Date</span>'
+                : '<span class="bs-badge bs-badge--error">Date Missing</span>';
+        }
+
+        var canSelect = isValid && !locked;
+        if (canSelect) {
             totalWithdrawal += parseFloat(mapped.WithdrawalAmt) || 0;
             totalDeposit    += parseFloat(mapped.DepositAmt)    || 0;
             validCount++;
@@ -638,13 +904,14 @@ function RenderPreviewTable() {
         $body.append(`
             <tr class="${rowClass}" data-idx="${idx}">
                 <td class="bs-col-check text-center">
-                    <input type="checkbox" class="row-chk" data-idx="${idx}" ${isValid ? 'checked' : 'disabled'} />
+                    <input type="checkbox" class="row-chk" data-idx="${idx}" ${canSelect ? 'checked' : ''} />
                 </td>
                 <td>${idx + 1}</td>
                 <td>${escHtml(dateDisplay)}</td>
                 <td class="bs-narration-cell" title="${escHtml(mapped.Narration)}">${escHtml(TruncStr(mapped.Narration, 55))}</td>
                 <td>${escHtml(mapped.ChequeRefNo)}</td>
                 <td>${escHtml(valDisplay)}</td>
+                <td class="text-end">${FormatAmount(mapped.OpeningBalance)}</td>
                 <td class="text-end">${FormatAmount(mapped.WithdrawalAmt)}</td>
                 <td class="text-end">${FormatAmount(mapped.DepositAmt)}</td>
                 <td class="text-end">${FormatAmount(mapped.ClosingBalance)}</td>
@@ -653,42 +920,174 @@ function RenderPreviewTable() {
             </tr>`);
     });
 
-    $('#tdTotalWithdrawal').text(FormatAmount(totalWithdrawal));
-    $('#tdTotalDeposit').text(FormatAmount(totalDeposit));
-    $('#lblPreviewCount').text('(' + validCount + ' valid / ' + parsedRows.length + ' total rows)');
+    $('#tdImportTotalWithdrawal').text(FormatAmount(totalWithdrawal));
+    $('#tdImportTotalDeposit').text(FormatAmount(totalDeposit));
+    $('#lblPreviewCount').text('(' + validCount + ' importable / ' + parsedRows.length + ' total rows)');
 
-    $body.find('.row-chk').on('change', function () {
+    $('#cardStep2').data('bsPreviewBlock', {
+        total: parsedRows.length,
+        invalid: invalidDateRows,
+        locked: lockedRows,
+        importable: validCount
+    });
+
+    $body.find('.row-chk').off('change.bsPreviewRow').on('change.bsPreviewRow', function () {
+        syncPreviewSelectAllHeader();
         UpdateSelectedCount();
         UpdateImportButton();
     });
 
+    syncPreviewSelectAllHeader();
     UpdateSelectedCount();
     UpdateImportButton();
 }
 
+/** Align #chkSelectAll with all preview row checkboxes. */
+function syncPreviewSelectAllHeader() {
+    var $all = $('#tblPreviewBody .row-chk');
+    var n = $all.length;
+    var $h = $('#chkSelectAll');
+    if (!n) {
+        $h.prop({ checked: false, indeterminate: false });
+        return;
+    }
+    var c = $all.filter(':checked').length;
+    if (c === 0) {
+        $h.prop({ checked: false, indeterminate: false });
+    } else if (c === n) {
+        $h.prop({ checked: true, indeterminate: false });
+    } else {
+        $h.prop({ checked: false, indeterminate: true });
+    }
+}
+
+/** Excel serial day number → ISO (SheetJS / cells sometimes stay numeric). */
+function excelSerialToIso(serial) {
+    var n = Math.floor(Number(serial));
+    if (!isFinite(n) || n < 1 || n > 1000000) return null;
+    var epoch = Date.UTC(1899, 11, 30);
+    var t = epoch + n * 86400000;
+    var d = new Date(t);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+}
+
+/** Normalize odd spaces / unicode dashes so DD-MM-YYYY parses reliably. */
+function sanitizeDateInput(str) {
+    str = String(str == null ? '' : str).replace(/^\uFEFF/, '');
+    str = str.replace(/\u00A0/g, ' ').trim();
+    str = str.replace(/^['"]+|['"]+$/g, '');
+    str = str.replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, '-');
+    try {
+        if (typeof str.normalize === 'function') str = str.normalize('NFKC');
+    } catch (e) { /* ignore */ }
+    return str.trim();
+}
+
 // ── Map one raw CSV row to field object ───────────────────────────────────────
 function MapRow(row) {
-    var get = function (field) {
+    var get = function (field, treatExcelSerialAsDate) {
         var idx = columnMappers[field];
         if (idx === undefined || idx < 0 || idx >= row.length) return '';
-        return (row[idx] || '').trim();
+        var v = row[idx];
+        if (v == null || v === '') return '';
+        if (treatExcelSerialAsDate && typeof v === 'number' && isFinite(v)) {
+            var fl = Math.floor(v);
+            if (fl >= 200 && fl < 800000) {
+                var iso = excelSerialToIso(fl);
+                if (iso) return iso.substring(0, 10);
+            }
+        }
+        return String(v).replace(/\u00A0/g, ' ').trim();
     };
     return {
-        TxnDate:        get('TxnDate'),
-        ValueDate:      get('ValueDate'),
-        Narration:      get('Narration'),
-        ChequeRefNo:    get('ChequeRefNo'),
-        WithdrawalAmt:  CleanAmount(get('WithdrawalAmt')),
-        DepositAmt:     CleanAmount(get('DepositAmt')),
-        ClosingBalance: CleanAmount(get('ClosingBalance')),
-        BalanceType:    get('BalanceType'),
-        Remarks:        ''
+        TxnDate:         get('TxnDate', true),
+        ValueDate:       get('ValueDate', true),
+        Narration:       get('Narration', false),
+        ChequeRefNo:     get('ChequeRefNo', false),
+        OpeningBalance:  CleanAmount(get('OpeningBalance', false)),
+        WithdrawalAmt:   CleanAmount(get('WithdrawalAmt', false)),
+        DepositAmt:      CleanAmount(get('DepositAmt', false)),
+        ClosingBalance:  CleanAmount(get('ClosingBalance', false)),
+        BalanceType:     get('BalanceType', false),
+        Remarks:         ''
     };
+}
+
+/** Effective transaction date for validation/import (Value Date fallback if Txn column blank / wrong map). */
+function resolveStatementTxnIso(mapped) {
+    if (!mapped) return null;
+    var t = mapped.TxnDate ? ConvertToIsoDate(mapped.TxnDate) : null;
+    if (t) return t;
+    var v = mapped.ValueDate ? ConvertToIsoDate(mapped.ValueDate) : null;
+    return v || null;
+}
+
+/** Raw cell → string for date probing (same rules as MapRow date fields). */
+function cellToStringForDateProbe(v) {
+    if (v == null || v === '') return '';
+    if (typeof v === 'number' && isFinite(v)) {
+        var fl = Math.floor(v);
+        if (fl >= 200 && fl < 800000) {
+            var iso = excelSerialToIso(fl);
+            if (iso) return iso.substring(0, 10);
+        }
+        return String(v);
+    }
+    return String(v).replace(/\u00A0/g, ' ').trim();
+}
+
+/**
+ * If auto-map leaves almost no parseable dates, pick the column that parses best as dates.
+ */
+function inferTxnDateColumnIfNeeded() {
+    var sample = Math.min(parsedRows.length, 80);
+    if (sample < 5) return;
+
+    function scoreCurrentMapper() {
+        var ok = 0;
+        for (var i = 0; i < sample; i++) {
+            if (resolveStatementTxnIso(MapRow(parsedRows[i]))) ok++;
+        }
+        return ok;
+    }
+
+    var base = scoreCurrentMapper();
+    if (base >= Math.ceil(sample * 0.75)) return;
+
+    var maxCol = 0;
+    for (var i = 0; i < sample; i++) {
+        var r = parsedRows[i];
+        if (r && r.length) maxCol = Math.max(maxCol, r.length);
+    }
+
+    var bestCol = columnMappers.TxnDate;
+    var bestScore = base;
+    for (var c = 0; c < maxCol; c++) {
+        var sc = 0;
+        for (var i = 0; i < sample; i++) {
+            var row = parsedRows[i];
+            if (!row || c >= row.length) continue;
+            var s = cellToStringForDateProbe(row[c]);
+            if (s && ConvertToIsoDate(s)) sc++;
+        }
+        if (sc > bestScore) {
+            bestScore = sc;
+            bestCol = c;
+        }
+    }
+
+    var need = Math.max(8, Math.floor(sample * 0.35));
+    if (bestCol >= 0 && bestScore >= need && bestScore > base) {
+        columnMappers.TxnDate = bestCol;
+        var $sel = $('#map_TxnDate');
+        if ($sel.length) $sel.val(String(bestCol));
+    }
 }
 
 // ── Import selected rows ──────────────────────────────────────────────────────
 function DoImport() {
-    var checked = $('.row-chk:checked');
+    var checked = $('#tblPreviewBody .row-chk:checked');
     if (!checked.length) { toastr.warning('Please select at least one row to import.'); return; }
 
     if (!ValidateStep1()) return;
@@ -702,19 +1101,59 @@ function DoImport() {
     var accountNo = $('#txtAccountNumber').val().trim();
     var fileName  = $('#fileStatementUpload')[0].files[0]?.name || '';
     var batchNo   = GenerateBatchNo();
-    var rows      = [];
 
-    checked.each(function () {
-        var idx    = parseInt($(this).data('idx'), 10);
+    var indices = [];
+    checked.each(function () { indices.push(parseInt($(this).data('idx'), 10)); });
+    indices.sort(function (a, b) {
+        var ma = MapRow(parsedRows[a]);
+        var mb = MapRow(parsedRows[b]);
+        var ia = resolveStatementTxnIso(ma);
+        var ib = resolveStatementTxnIso(mb);
+        if (!ia && !ib) return a - b;
+        if (!ia) return 1;
+        if (!ib) return -1;
+        return ia.localeCompare(ib) || (a - b);
+    });
+
+    for (var z = 0; z < indices.length; z++) {
+        var mz = MapRow(parsedRows[indices[z]]);
+        var iz = resolveStatementTxnIso(mz);
+        if (iz && isDayLocked(bankCode, accountNo, iz.substring(0, 10))) {
+            toastr.warning('A selected row falls on a date that is already locked for this bank and account. Deselect those rows.');
+            return;
+        }
+    }
+
+    var rows = [];
+    var lastClosing = null;
+    var dateKeysForLock = {};
+
+    for (var i = 0; i < indices.length; i++) {
+        var idx = indices[i];
         var mapped = MapRow(parsedRows[idx]);
+        var txnDateIso = resolveStatementTxnIso(mapped);
+        if (!txnDateIso) continue;
 
-        // Convert dates to ISO 8601 — required for ASP.NET Core JSON→DateTime binding
-        // (Rows with un-parseable dates are already unchecked in the preview, so this
-        //  guard is a safety net only.)
-        var txnDateIso   = ConvertToIsoDate(mapped.TxnDate);
         var valueDateIso = mapped.ValueDate ? ConvertToIsoDate(mapped.ValueDate) : null;
+        var dep = parseFloat(mapped.DepositAmt) || 0;
+        var w = parseFloat(mapped.WithdrawalAmt) || 0;
 
-        if (!txnDateIso) return;
+        var lineOp;
+        if (lastClosing === null) {
+            lineOp = parseFloat(mapped.OpeningBalance);
+            if (isNaN(lineOp)) {
+                var cl0 = parseFloat(mapped.ClosingBalance);
+                lineOp = !isNaN(cl0) ? cl0 - dep + w : 0;
+            }
+        } else {
+            lineOp = lastClosing;
+        }
+
+        var closing = lineOp + dep - w;
+        lastClosing = closing;
+
+        var isoDay = txnDateIso.substring(0, 10);
+        dateKeysForLock[isoDay] = true;
 
         rows.push({
             BankMaster_Code: bankCode,
@@ -723,28 +1162,29 @@ function DoImport() {
             ValueDate:       valueDateIso,
             Narration:       mapped.Narration  || '',
             ChequeRefNo:     mapped.ChequeRefNo || '',
-            WithdrawalAmt:   parseFloat(mapped.WithdrawalAmt)  || 0,
-            DepositAmt:      parseFloat(mapped.DepositAmt)     || 0,
-            ClosingBalance:  parseFloat(mapped.ClosingBalance) || 0,
+            WithdrawalAmt:   w,
+            DepositAmt:      dep,
+            ClosingBalance:  closing,
             BalanceType:     (mapped.BalanceType || '').substring(0, 2),
             ImportBatchNo:   batchNo,
             UserID:          0,
-            Remarks:         ''
+            Remarks:         '',
+            ServiceTaxNo:    String(lineOp),
+            IsReconciled:    dep > 0 ? 'Y' : 'N'
         });
-    });
+    }
 
     if (!rows.length) {
         toastr.warning('No valid rows with parseable dates found to import.');
         return;
     }
 
-    // Payload property names must match VM_BankStatementImportRequest exactly
     var payload = {
         BankMaster_Code: bankCode,
         AccountNo:       accountNo,
         ImportBatchNo:   batchNo,
         FileName:        fileName,
-        BankStatements:  rows          // "BankStatements" — NOT "Rows"
+        BankStatements:  rows
     };
 
     Showloader && Showloader();
@@ -754,11 +1194,11 @@ function DoImport() {
         .then(function (result) {
             HideLoader && HideLoader();
 
-            // API returns spOutputParameter: { Status, Msg, Code }
-            // Code = SuccessRecords count from the SP
             if (result && result.Status === 'Y') {
                 var successCount = result.Code || 0;
                 var skippedCount = Math.max(0, rows.length - successCount);
+
+                mergeImportedDays(bankCode, accountNo, Object.keys(dateKeysForLock));
 
                 ShowResultModal({
                     TotalRecords:   rows.length,
@@ -817,12 +1257,12 @@ function UpdateStats(total, success, skipped, failed) {
 
 // ── Selected-count helper ─────────────────────────────────────────────────────
 function UpdateSelectedCount() {
-    var count = $('.row-chk:checked').length;
+    var count = $('#tblPreviewBody .row-chk:checked').length;
     $('#lblSelectedCount').text(count + ' selected');
 }
 
 function UpdateImportButton() {
-    var count = $('.row-chk:checked').length;
+    var count = $('#tblPreviewBody .row-chk:checked').length;
     $('#btnImport').prop('disabled', count === 0);
 }
 
@@ -834,6 +1274,10 @@ function ResetPreview() {
     lastParsedFullRows = null;
     $('#divColumnMapping').hide();
     $('#tblPreviewBody').empty();
+    $('#chkSelectAll').prop({ checked: false, indeterminate: false });
+    $('#lblPreviewCount').text('');
+    $('#lblSelectedCount').text('0 selected');
+    $('#btnImport').prop('disabled', true);
     $('#cardStep2').hide();
 }
 
@@ -852,13 +1296,13 @@ window.ConfirmDeleteBatch = function (batchNo) {
     deleteBatchNo = batchNo;
     $('#lblDeleteBatchNo').text(batchNo);
     $('#reasonForDeleteInput').val('');
-    $('#bsDeleteBackdrop').addClass('active');
+    $('#bsDeleteBackdrop').addClass('active').attr('aria-hidden', 'false');
     // Focus the reason input after a brief animation delay
     setTimeout(function () { $('#reasonForDeleteInput').focus(); }, 200);
 };
 
 function CloseDeleteModal() {
-    $('#bsDeleteBackdrop').removeClass('active');
+    $('#bsDeleteBackdrop').removeClass('active').attr('aria-hidden', 'true');
     $('#reasonForDeleteInput').val('');
     deleteBatchNo = '';
 }
@@ -881,6 +1325,9 @@ function DoDeleteBatch() {
             if (result && result.Status === 'Y') {
                 toastr.success(result.Msg || 'Batch deleted successfully.');
                 LoadImportHistory();
+                if (typeof window.refreshBankStatementList === 'function') {
+                    window.refreshBankStatementList();
+                }
             } else {
                 toastr.error(result?.Msg || 'Delete failed.');
             }
@@ -891,11 +1338,9 @@ function DoDeleteBatch() {
         });
 }
 
-// View batch — navigate to list filtered by batch no
+// View batch — navigate to list with batch filter
 window.ViewBatch = function (batchNo) {
     window.location = baseUrl + '/FinanceTransactions/BankStatement/BankStatementList?BatchNo=' + encodeURIComponent(batchNo);
-
-    //window.location.href = '/FinanceTransactions/BankStatement/BankStatementList?BatchNo=' + encodeURIComponent(batchNo);
 };
 
 // ── Result modal ──────────────────────────────────────────────────────────────
@@ -909,11 +1354,14 @@ function ShowResultModal(result, isError) {
     $('#bsResSkipped').text(result.SkippedRecords || 0);
     $('#bsResFailed').text(result.FailedRecords  || 0);
     $('#bsResBatch').text(result.ImportBatchNo   || '—');
-    $('#bsResultBackdrop').addClass('active');
+    $('#bsResultBackdrop').addClass('active').attr('aria-hidden', 'false');
 }
 
 function CloseResultModal() {
-    $('#bsResultBackdrop').removeClass('active');
+    $('#bsResultBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    if (typeof window.refreshBankStatementList === 'function') {
+        window.refreshBankStatementList();
+    }
 }
 
 window.CloseResultModal = CloseResultModal;
@@ -935,10 +1383,23 @@ function GenerateBatchNo() {
 // ── IsoToDMY : ISO string → "DD-MM-YYYY"  (same style as ProjectMaster display) ─
 function IsoToDMY(iso) {
     if (!iso) return '';
+    var m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+        return m[3] + '-' + m[2] + '-' + m[1];
+    }
     var dt = new Date(iso);
     if (isNaN(dt.getTime())) return '';
     var pad = function (n) { return String(n).padStart(2, '0'); };
     return pad(dt.getDate()) + '-' + pad(dt.getMonth() + 1) + '-' + dt.getFullYear();
+}
+
+/** Calendar Y/M/D → UTC midnight ISO so substring(0,10) is stable (avoids TZ shift from local Date). */
+function calendarYmdToUtcIso(y, mo, d) {
+    if (y == null || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    var ms = Date.UTC(y, mo - 1, d);
+    var dt = new Date(ms);
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+    return dt.toISOString();
 }
 
 // ── ConvertToIsoDate : parse any common bank-statement date string → ISO 8601 ──
@@ -947,17 +1408,32 @@ function IsoToDMY(iso) {
 var _MON = { jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12 };
 
 function ConvertToIsoDate(str) {
-    if (!str || !str.trim()) return null;
-    str = str.trim();
+    if (str == null || str === '') return null;
+    if (typeof str === 'number' && isFinite(str)) {
+        var fln = Math.floor(str);
+        if (fln >= 200 && fln < 800000) {
+            var ex0 = excelSerialToIso(fln);
+            if (ex0) return ex0;
+        }
+        return null;
+    }
+    str = sanitizeDateInput(str);
+    if (!str) return null;
 
     var d, mo, y, dt;
+
+    // ── 0. Plain Excel serial as string (e.g. "45291" or "45291.0")
+    if (/^\d{5,7}(\.\d+)?$/.test(str)) {
+        var ex1 = excelSerialToIso(Math.floor(parseFloat(str)));
+        if (ex1) return ex1;
+    }
 
     // ── 1. DD/MM/YYYY  or  DD-MM-YYYY  or  DD.MM.YYYY  (4-digit year)
     var m1 = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
     if (m1) {
         d = parseInt(m1[1], 10); mo = parseInt(m1[2], 10); y = parseInt(m1[3], 10);
         if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12)
-            return new Date(y, mo - 1, d, 0, 0, 0).toISOString();
+            return calendarYmdToUtcIso(y, mo, d);
     }
 
     // ── 2. DD-MMM-YYYY  or  DD/MMM/YYYY  or  DD MMM YYYY  (e.g. "01-Apr-2026")
@@ -968,7 +1444,7 @@ function ConvertToIsoDate(str) {
         y  = parseInt(m2[3], 10);
         if (y < 100) y += 2000;
         if (mo && d >= 1 && d <= 31)
-            return new Date(y, mo - 1, d, 0, 0, 0).toISOString();
+            return calendarYmdToUtcIso(y, mo, d);
     }
 
     // ── 3. DD/MM/YY  or  DD-MM-YY  or  DD.MM.YY  (2-digit year)
@@ -976,7 +1452,7 @@ function ConvertToIsoDate(str) {
     if (m3) {
         d = parseInt(m3[1], 10); mo = parseInt(m3[2], 10); y = parseInt(m3[3], 10) + 2000;
         if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12)
-            return new Date(y, mo - 1, d, 0, 0, 0).toISOString();
+            return calendarYmdToUtcIso(y, mo, d);
     }
 
     // ── 4. YYYY-MM-DD  or  YYYY/MM/DD  (ISO / Excel export)
@@ -984,7 +1460,7 @@ function ConvertToIsoDate(str) {
     if (m4) {
         y = parseInt(m4[1], 10); mo = parseInt(m4[2], 10); d = parseInt(m4[3], 10);
         if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12)
-            return new Date(y, mo - 1, d, 0, 0, 0).toISOString();
+            return calendarYmdToUtcIso(y, mo, d);
     }
 
     // ── 5. YYYYMMDD  (compact 8-digit, e.g. Excel numeric export)
@@ -992,7 +1468,7 @@ function ConvertToIsoDate(str) {
     if (m5) {
         y = parseInt(m5[1], 10); mo = parseInt(m5[2], 10); d = parseInt(m5[3], 10);
         if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12)
-            return new Date(y, mo - 1, d, 0, 0, 0).toISOString();
+            return calendarYmdToUtcIso(y, mo, d);
     }
 
     // ── 6. Browser fallback (handles ISO 8601 and many locale strings)

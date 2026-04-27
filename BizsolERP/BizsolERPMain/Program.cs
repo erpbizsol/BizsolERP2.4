@@ -94,7 +94,7 @@ namespace BizsolERPMain
             app.MapAreaControllerRoute(
                name: "FinanceTransactions",
                areaName: "FinanceTransactions",
-               pattern: "FinanceTransactions/{controller=BankStatement}/{action=BankStatementImport}/{id?}");
+               pattern: "FinanceTransactions/{controller=BankStatement}/{action=BankStatementList}/{id?}");
 
             app.Run();
         }
