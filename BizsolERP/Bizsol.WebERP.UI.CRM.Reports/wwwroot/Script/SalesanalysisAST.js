@@ -1018,10 +1018,13 @@ function renderManifestation() {
             }
         }
 
+        const actualVsManifestData = Array.isArray(response) && Array.isArray(response[0]) ? (response[4] || []) : [];
+
         renderWeekWeightTable(weekWeightData);
         renderManifesteTable(manifesteData);
         renderOrderSheetTable(orderSheetData);
         renderItemWeightTable(itemWeightData);
+        renderActualVsManifestTable(actualVsManifestData);
 
     }).catch(function (err) {
         HideLoader();
@@ -1046,6 +1049,10 @@ function clearManifestationTables() {
     // Clear Item / WEIGHT table
     document.getElementById('itemWeightTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
     document.getElementById('itemWeightTableHeader').innerHTML = '';
+
+    // Clear Actual vs Manifested table
+    document.getElementById('actualVsManifestTableBody').innerHTML = '<tr><td colspan="5" class="text-center">No data available</td></tr>';
+    document.getElementById('actualVsManifestTableHeader').innerHTML = '';
 }
 
 function separateAndRenderManifestationData(data) {
@@ -1329,6 +1336,49 @@ function renderItemWeightTable(data) {
 
     if (typeof BizsolCustomFilterGrid !== 'undefined') {
         BizsolCustomFilterGrid.CreateDataTable("itemWeightTableHeader", "itemWeightTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+    }
+}
+
+function renderActualVsManifestTable(data) {
+    const tbody = document.getElementById('actualVsManifestTableBody');
+    const tfoot = document.getElementById('actualVsManifestTableFoot');
+    if (!tbody) return;
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No data available</td></tr>';
+        if (tfoot) tfoot.innerHTML = '';
+        return;
+    }
+
+    const StringFilterColumn = ["Marketing Man", "Party Name"];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = [];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = [];
+    const ColumnAlignment = {
+        'Manifest': 'right',
+        'Actual': 'right'
+    };
+    const TotalColumns = ['Manifest', 'Actual'];
+
+    if (typeof BizsolCustomFilterGrid !== 'undefined') {
+        BizsolCustomFilterGrid.CreateDataTable(
+            "actualVsManifestTableHeader",
+            "actualVsManifestTableBody",
+            data,
+            Button,
+            showButtons,
+            StringFilterColumn,
+            NumericFilterColumn,
+            DateFilterColumn,
+            StringdoubleFilterColumn,
+            hiddenColumns,
+            ColumnAlignment,
+            true,
+            TotalColumns
+        );
     }
 }
 
