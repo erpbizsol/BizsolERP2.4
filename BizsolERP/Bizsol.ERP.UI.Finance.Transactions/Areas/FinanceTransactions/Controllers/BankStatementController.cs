@@ -5,14 +5,10 @@ namespace Bizsol.ERP.UI.Finance.Transactions.Areas.FinanceTransactions.Controlle
     [Area("FinanceTransactions")]
     public class BankStatementController : Controller
     {
-        public IActionResult BankStatementImport()
-        {
-            return View();
-        }
+        public IActionResult BankStatementList() => View();
 
-        public IActionResult BankStatementList()
-        {
-            return View();
-        }
+        public IActionResult BankStatementImport() => View("BankStatementList");
+
+        public IActionResult BankStatementUpload() => View("BankStatementImport");
     }
 }

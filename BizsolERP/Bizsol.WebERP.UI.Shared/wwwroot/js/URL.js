@@ -145,7 +145,9 @@ let UrlService = {
     API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL: `${environment.BASE_URL}/ExpenseEntryLevelsApproval`,
     API_ENDPOINT_GROUPMASTER: `${environment.BASE_URL}/Group`,
     API_ENDPOINT_USERMASTER: `${environment.BASE_URL}/UserMaster`,
-    API_ENDPOINT_USERRIGHTDASHBOARD: `${environment.BASE_URL}/UserRightDashboard`
+    API_ENDPOINT_USERRIGHTDASHBOARD: `${environment.BASE_URL}/UserRightDashboard`,
+    API_ENDPOINT_REASON_MASTER: `${environment.BASE_URL}/ReasonMaster`,
+    API_ENDPOINT_AREA_MASTER: `${environment.BASE_URL}/AreaMaster`
 }
 
 export { UrlService  }
