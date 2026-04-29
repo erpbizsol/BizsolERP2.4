@@ -56,17 +56,18 @@ const GRNService = {
 
     // ── Project / Sub-Project helpers ──────────────────────────────────────
 
-    GetProjectList: function GetProjectList() {
-        let url = UrlService.API_ENDPOINT_GRNService + `/GetProjectList`;
+    GetProjectList: function GetProjectList(SubProjectCode) {
+        const code = SubProjectCode != null && SubProjectCode !== undefined ? String(SubProjectCode) : '';
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetProjectList?SubProjectCode=${encodeURIComponent(code)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
             });
     },
 
-    GetSubProjectList: function GetSubProjectList(ProjectCode) {
+    GetSubProjectList: function GetSubProjectList(UserMaster_Code) {
         let url = UrlService.API_ENDPOINT_GRNService +
-            `/GetSubProjectList?ProjectCode=${ProjectCode}`;
+            `/GetSubProjectList?UserMaster_Code=${UserMaster_Code}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
@@ -88,7 +89,7 @@ const GRNService = {
                 return value;
             });
     },
-
+    
     /** Marks GRN/MRN as verified (same contract as VerifySolarVendorMaster). */
     VerifyGRNService: function VerifyGRNService(Code) {
         let url = UrlService.API_ENDPOINT_GRNService + `/VerifyGRNServiceMaster?Code=${Code}`;
@@ -105,6 +106,7 @@ const GRNService = {
                 return value;
             });
     },
+   
 
 }
 

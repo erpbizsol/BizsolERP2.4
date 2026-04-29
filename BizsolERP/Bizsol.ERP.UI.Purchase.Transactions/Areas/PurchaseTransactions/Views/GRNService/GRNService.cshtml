@@ -1381,8 +1381,8 @@
                     Select <strong style="color:#0891b2;">Party Name</strong>,
                     turn <strong style="color:#0891b2;">Against Project</strong> toggle
                     <strong style="color:#0891b2;">ON</strong>,
-                    then select <strong style="color:#0891b2;">Project Name</strong> and
-                    <strong style="color:#0891b2;">Sub Project</strong>.
+                    then choose <strong style="color:#0891b2;">Sub Project</strong>
+                    (assigned to your login; shown after Project Name); <strong style="color:#0891b2;">Project Name</strong> fills automatically.
                     Items will auto-fill from the selected project.
                 </span>
             </div>
@@ -1391,16 +1391,16 @@
         <div class="po-step-body" id="divProjectFields" style="display:none;">
             <div class="row g-2">
                 <div class="col-md-6">
-                    <label class="po-field-lbl d-block mb-1">Project Name <span class="req">*</span></label>
-                    <select id="frmDdlProject" class="form-control form-control-sm" onchange="loadSubProjects()" onfocus="onProjectFieldFocus(this)" autocomplete="off">
-                        <option value="">-- Select Project --</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
                     <label class="po-field-lbl d-block mb-1">Sub Project <span class="req">*</span></label>
                     <select id="frmDdlSubProject" class="form-control form-control-sm"
                             onchange="onSubProjectChange()" onfocus="onProjectFieldFocus(this)" autocomplete="off">
                         <option value="">-- Select Sub Project --</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="po-field-lbl d-block mb-1">Project Name <span class="req">*</span></label>
+                    <select id="frmDdlProject" class="form-control form-control-sm" onchange="onProjectChange()" onfocus="onProjectFieldFocus(this)" autocomplete="off">
+                        <option value="">-- Select Project --</option>
                     </select>
                 </div>
             </div>
