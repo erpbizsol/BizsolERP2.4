@@ -10,25 +10,15 @@
 
 <!-- Main: statement list -->
 <div class="bs-page" id="bsStatementListPage">
-    <div class="bs-header section-entry-animation">
-        <div class="bs-header-top">
-            <div class="bs-header-title-block">
-                <h2 class="bs-header-title">
-                    <i class="fa fa-university me-2" aria-hidden="true"></i>Bank Statement
-                </h2>
-            </div>
-            <div class="bs-header-actions">
+    <div class="bs-card bs-step-card" id="cardFilters">
+        <div class="bs-step-label">
+            <span class="bs-step-no"><i class="fa fa-university" aria-hidden="true"></i></span>
+            <span>Bank Statement</span>
+            <div class="bs-header-actions ms-auto flex-shrink-0">
                 <button type="button" id="btnImportNew" class="bs-btn-primary" title="Import new statement">
                     <i class="fas fa-file-import me-1"></i>Import New
                 </button>
             </div>
-        </div>
-    </div>
-
-    <div class="bs-card bs-step-card" id="cardFilters">
-        <div class="bs-step-label">
-            <span class="bs-step-no"><i class="fas fa-filter"></i></span>
-            <span>Filters</span>
         </div>
         <div class="row g-3 align-items-start bs-filter-row">
             <div class="col-12 col-sm-6 col-md-4 col-lg-4 bs-bank-select2-wrap">
@@ -43,7 +33,15 @@
                 <label class="bs-label" for="txtFilterToDate">To Date</label>
                 <input type="date" id="txtFilterToDate" class="form-control form-control-sm bs-input" autocomplete="off" />
             </div>
-            <div class="col-12 col-sm-6 col-md-3 d-flex flex-column">
+            <div class="col-12 col-sm-6 col-md-2">
+                <label class="bs-label" for="ddlFilterStatement">Statement</label>
+                <select id="ddlFilterStatement" class="form-control form-control-sm bs-input" autocomplete="off">
+                    <option value="All">All</option>
+                    <option value="Unreconciled">Un reconciled</option>
+                    <option value="BankStatement">Reconciled</option>
+                </select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-2 d-flex flex-column">
                 <label class="bs-label bs-label--filter-spacer" for="btnSearch" aria-hidden="true">&nbsp;</label>
                 <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end bs-filter-btn-row">
                     <button type="button" id="btnSearch" class="bs-btn-primary">Show</button>
@@ -61,6 +59,10 @@
             <span>Bank Statement Records</span>
             <span class="bs-preview-count ms-2" id="lblRecordCount"></span>
             <div class="ms-auto d-flex flex-wrap gap-2 align-items-center">
+                <div class="bs-list-opening-banner bs-stmt-opening-hdr text-end me-1 pe-2 border-end border-secondary border-opacity-25" title="Opening for the first row after your From date: closing balance as of the previous calendar day (per bank & account), then running within the filtered list.">
+                    <span class="text-muted small text-nowrap d-block">Opening balance</span>
+                    <span class="fw-semibold text-nowrap js-bs-list-opening">—</span>
+                </div>
                 <button type="button" id="btnAutoReconcileGrn" class="bs-btn-ghost bs-btn-sm" title="Match pending GRN payments to withdrawals by amount">
                     <i class="fas fa-link me-1"></i>Auto-match GRN
                 </button>
@@ -78,10 +80,9 @@
                         <th>Account No</th>
                         <th>Narration</th>
                         <th>Chq / Ref No</th>
-                        <th class="text-end" title="Opening for this line">Opening</th>
                         <th class="text-end">Withdrawal (Dr)</th>
-                        <th class="text-end">Deposit (Cr)</th>
-                        <th class="text-end">Closing balance</th>
+                        <th class="text-end bs-stmt-col-deposit">Deposit (Cr)</th>
+                        <th class="text-end bs-stmt-col-closing">Closing balance</th>
                         <th class="bs-col-hidden bs-col-drcr">Dr / Cr</th>
                         <th class="bs-col-hidden bs-col-batch">Batch No</th>
                         <th>Reconciled</th>
@@ -89,21 +90,32 @@
                 </thead>
                 <tbody id="tblStatementsBody">
                     <tr>
-                        <td colspan="12" class="text-center py-3 text-muted">
+                        <td colspan="11" class="text-center py-3 text-muted">
                             <i class="fas fa-spinner fa-spin me-2"></i>Loading…
                         </td>
                     </tr>
                 </tbody>
                 <tfoot>
-                    <tr class="bs-tfoot-totals">
-                        <td colspan="5" class="text-end fw-semibold">Totals:</td>
-                        <td class="text-end">—</td>
-                        <td class="text-end fw-semibold" id="tdTotalWithdrawal">—</td>
-                        <td class="text-end fw-semibold" id="tdTotalDeposit">—</td>
-                        <td class="text-end">—</td>
+                    <tr class="bs-tfoot-totals bs-tfoot-stmt-summary">
+                        <td colspan="5" class="bs-tfoot-metric-cell bs-stmt-foot-opening text-end" title="Opening for the first row after your From date: closing balance as of the previous calendar day (per bank & account), then running within the filtered list.">
+                            <span class="text-muted small text-nowrap d-block">Opening balance</span>
+                            <span class="fw-semibold text-nowrap js-bs-list-opening">—</span>
+                        </td>
+                        <td class="bs-tfoot-metric-cell text-end">
+                            <span class="text-muted small text-nowrap d-block">Withdrawal</span>
+                            <span class="fw-semibold text-nowrap" id="tdTotalWithdrawal">—</span>
+                        </td>
+                        <td class="bs-tfoot-metric-cell bs-stmt-foot-deposit text-end">
+                            <span class="text-muted small text-nowrap d-block">Deposit</span>
+                            <span class="fw-semibold text-nowrap" id="tdTotalDeposit">—</span>
+                        </td>
+                        <td class="bs-tfoot-metric-cell bs-stmt-foot-closing text-end" title="Same as list logic: opening balance (above) + total deposit − total withdrawal for all rows shown.">
+                            <span class="text-muted small text-nowrap d-block">Closing balance</span>
+                            <span class="fw-semibold text-nowrap" id="tdTotalClosingBalance">—</span>
+                        </td>
                         <td class="bs-col-hidden bs-col-drcr"></td>
                         <td class="bs-col-hidden bs-col-batch"></td>
-                        <td class="text-center">—</td>
+                        <td class="text-end text-muted bs-tfoot-recon-dash">—</td>
                     </tr>
                 </tfoot>
             </table>
@@ -126,6 +138,68 @@
             <button type="button" class="bs-btn-primary" id="btnReconConfirmOk">
                 <i class="fas fa-check me-1"></i>Yes, continue
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- Second step: confirm delete of linked GRN payment (after first modal Yes, continue) -->
+<div id="bsGrnUnreconcileDeleteBackdrop" class="bs-backdrop" aria-hidden="true">
+    <div class="bs-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="bsGrnUnreconcileDeleteTitle">
+        <div class="bs-confirm-icon" style="background: rgba(220, 38, 38, 0.12); color: #b91c1c;">
+            <i class="fas fa-trash-can"></i>
+        </div>
+        <div class="bs-confirm-title" id="bsGrnUnreconcileDeleteTitle">Delete linked payment entry?</div>
+        <div class="bs-confirm-text" id="bsGrnUnreconcileDeleteText"></div>
+        <div class="bs-confirm-actions">
+            <button type="button" class="bs-btn-ghost" id="btnGrnUnreconcileDeleteCancel">
+                <i class="fas fa-ban me-1"></i>Cancel
+            </button>
+            <button type="button" class="bs-btn-primary" id="btnGrnUnreconcileDeleteOk" style="background: linear-gradient(135deg, #b91c1c, #991b1b); border: none;">
+                <i class="fas fa-check me-1"></i>Yes, delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-match GRN — same confirm pattern as reconciliation (no browser confirm()) -->
+<div id="bsGrnAutoMatchConfirmBackdrop" class="bs-backdrop" aria-hidden="true">
+    <div class="bs-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="bsGrnAutoMatchConfirmTitle">
+        <div class="bs-confirm-icon" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5;">
+            <i class="fas fa-scale-balanced"></i>
+        </div>
+        <div class="bs-confirm-title" id="bsGrnAutoMatchConfirmTitle">Auto-match GRN?</div>
+        <div class="bs-confirm-text" id="bsGrnAutoMatchConfirmText">
+            Match pending GRN payments (Status <strong>P</strong>) to bank withdrawals and mark matched lines <strong>reconciled</strong>?
+        </div>
+        <div class="bs-confirm-actions">
+            <button type="button" class="bs-btn-ghost" id="btnGrnAutoMatchConfirmCancel">
+                <i class="fas fa-ban me-1"></i>Cancel
+            </button>
+            <button type="button" class="bs-btn-primary" id="btnGrnAutoMatchConfirmOk">
+                <i class="fas fa-check me-1"></i>Yes, continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- GRN Payment Entry — embedded in modal when user clicks Reconciled = No (vendor / + flows stay inside iframe) -->
+<div id="bsGrnPaymentEmbedBackdrop" class="bs-backdrop bs-grn-embed-backdrop" aria-hidden="true">
+    <div class="bs-grn-embed-panel" role="dialog" aria-modal="true" aria-labelledby="bsGrnEmbedTitle">
+        <div class="bs-import-modal-head">
+            <div>
+                <h2 id="bsGrnEmbedTitle" class="bs-import-modal-title">
+                    <i class="fas fa-file-invoice-dollar me-2" aria-hidden="true"></i>Payment entry
+                </h2>
+                <p class="bs-import-modal-sub mb-0">
+                    The <strong>Payment Entry</strong> form opens here. Choose party, amount, and bills, then save. Close this window and refresh the bank statement list when done.
+                </p>
+            </div>
+            <button type="button" id="btnCloseGrnPaymentEmbed" class="bs-import-modal-close" title="Close" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="bs-grn-embed-body">
+            <iframe id="iframeBankStmtGrnEmbed" class="bs-grn-embed-iframe" title="GRN payment entry"></iframe>
         </div>
     </div>
 </div>

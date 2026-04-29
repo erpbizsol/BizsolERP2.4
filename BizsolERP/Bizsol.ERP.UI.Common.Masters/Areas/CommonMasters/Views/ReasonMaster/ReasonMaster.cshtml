@@ -557,12 +557,6 @@
         cursor: default;
     }
 
-    #reasonDetailPanel.reason-readonly .reason-fg-checkbox .form-check-input {
-        pointer-events: none;
-        cursor: default;
-        opacity: 0.9;
-    }
-
     #reasonDetailPanel.reason-readonly .select2-container--default .select2-selection--single {
         background: var(--light-bg) !important;
         cursor: default !important;
@@ -717,6 +711,9 @@
     <!-- ═══ DETAIL PANEL ═══ -->
     <div id="reasonDetailPanel" style="display:none;">
         <input type="hidden" id="hfReasonMaster_Code" value="0" />
+        <input type="hidden" id="hfReason_DataBaseLocation_Code" value="0" />
+        <input type="hidden" id="hfReason_ReasonCode" value="" />
+        <input type="hidden" id="hfReason_DoNotShowInFollowUp" value="N" />
 
         <div class="reason-ci-po-list-header">
             <div class="reason-ci-po-header-top">
@@ -754,12 +751,6 @@
                     </div>
                     <div class="col-12 col-md-6 col-lg-4">
                         <div class="reason-fg">
-                            <label for="txtReasonCode">Reason Code</label>
-                            <input type="text" id="txtReasonCode" autocomplete="off" maxlength="10" placeholder="Leave blank to use first 10 chars of name" title="If empty, server sets from reason name" />
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <div class="reason-fg">
                             <label for="ddlReasonTypeMaster">Reason Type <span class="text-danger">*</span></label>
                             <select id="ddlReasonTypeMaster"></select>
                         </div>
@@ -776,26 +767,10 @@
                             <select id="ddlEmployeeResponsible"></select>
                         </div>
                     </div>
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <div class="reason-fg">
-                            <label for="ddlDataBaseLocation">Database location</label>
-                            <select id="ddlDataBaseLocation"></select>
-                        </div>
-                    </div>
                     <div class="col-12 col-md-12">
                         <div class="reason-fg">
                             <label for="txtReasonDesp">Reason Description <span class="text-danger">*</span></label>
                             <textarea id="txtReasonDesp" rows="4" maxlength="255" class="form-control" style="border-radius:10px;border:1.5px solid var(--border-color);resize:vertical;" placeholder="Description"></textarea>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="reason-fg reason-fg-checkbox">
-                            <div class="form-check" style="padding-top:4px;">
-                                <input class="form-check-input" type="checkbox" id="chkDoNotShowInFollowUp" value="Y" />
-                                <label class="form-check-label" for="chkDoNotShowInFollowUp" style="font-weight:600;color:var(--text-dark);">
-                                    Do not show in follow-up
-                                </label>
-                            </div>
                         </div>
                     </div>
                 </div>
