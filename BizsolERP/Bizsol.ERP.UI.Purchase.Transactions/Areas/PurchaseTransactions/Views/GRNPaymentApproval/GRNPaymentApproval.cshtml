@@ -195,6 +195,14 @@
         align-items: center;
         gap: 6px;
     }
+    /* Same as GRN Service float bar — NEW / EDIT / SAVED / UPDATED */
+    .po-mode-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.05em;
+    }
     .btn-po-save {
         background: linear-gradient(170deg, #ffffff, #ffffff);
         border: none;
@@ -462,9 +470,8 @@
         top: 0;
         z-index: 2;
     }
-    /* GRN payment link + New — same full pill button (height, padding, flex) */
-    .po-list-header-actions .vm-btn-new,
-    .po-list-header-actions .vm-btn-approval-link {
+    /* New — full pill button (height, padding, flex) */
+    .po-list-header-actions .vm-btn-new {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -484,12 +491,9 @@
         line-height: 1.2;
         white-space: nowrap;
         -webkit-tap-highlight-color: transparent;
-    }
-    .po-list-header-actions .vm-btn-new {
         font-family: inherit;
     }
-    .po-list-header-actions .vm-btn-new:hover,
-    .po-list-header-actions .vm-btn-approval-link:hover {
+    .po-list-header-actions .vm-btn-new:hover {
         background: rgba(255, 255, 255, 0.34);
         border-color: rgba(255, 255, 255, 0.95);
         color: #fff !important;
@@ -628,10 +632,6 @@
                 </a>
             </div>
             <div class="po-list-header-actions">
-                <a id="gpaLinkGrnPayment" href="@Url.Action("GRNPaymentApproval", "GRNService", new { area = "PurchaseTransactions", returnUrl = Url.Action("GRNPaymentApproval", "GRNPaymentApproval", new { area = "PurchaseTransactions" }) })"
-                   class="vm-btn-approval-link" role="button" title="Open GRN payment approvals">
-                    <i class="fa fa-check-double" aria-hidden="true"></i><span>GRN payment</span>
-                </a>
                 <button type="button" class="vm-btn-new" onclick="window.newGRNPaymentApproval()">
                     <i class="fa fa-plus" aria-hidden="true"></i><span>New</span>
                 </button>
@@ -661,15 +661,15 @@
         <div class="po-step-body">
             <div class="row g-2 align-items-end">
                 <input type="hidden" id="hdnGRNPaymentMasterCode" value="0" />
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="po-field-lbl d-block mb-1">Entry No</label>
                     <input type="text" id="txtEntryNo" class="form-control form-control-sm" autocomplete="off" placeholder="Auto Generate" readonly>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="po-field-lbl d-block mb-1">Date <span class="req">*</span></label>
                     <input type="date" id="dtPaymentDate" class="form-control form-control-sm" autocomplete="off">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="form-check mb-1">
                         <input type="checkbox" class="form-check-input" id="chkGpaPayToParty" checked onchange="window.onGpaPartyEmployeeModeChange()">
                         <label class="form-check-label po-field-lbl mb-0" for="chkGpaPayToParty" style="font-size:0.8rem;font-weight:600;">Pay to party (vendor)</label>
@@ -687,7 +687,13 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <label class="po-field-lbl d-block mb-1">Bank name</label>
+                    <select id="ddlBankName" class="form-control form-control-sm" autocomplete="off" title="GetBankList (API)">
+                        <option value="">-- Select Bank --</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="po-field-lbl d-block mb-1">Payment mode</label>
                     <select id="ddlPaymentMode" class="form-control form-control-sm" title="BANKPAYMENTTYPE (API)" onchange="window.syncRefNoRequiredUI()">
                         <option value="">-- Select --</option>
@@ -851,6 +857,7 @@
             <span class="text-muted small ms-1">·</span>
             <span id="floatPayTitle">Payment Entry</span>
         </div>
+        <span class="po-mode-badge badge bg-success" id="gpaFloatModeBadge">NEW</span>
     </div>
     <div class="po-float-bar-right">
         <button type="button" class="btn-po-cancel" onclick="window.cancelGRNPaymentApproval()">

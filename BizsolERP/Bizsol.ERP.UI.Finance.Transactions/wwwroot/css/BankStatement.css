@@ -15,6 +15,46 @@
     padding: 4px 0 32px;
 }
 
+/* Same idea as #UOMMasterPage: fixed viewport height, no document scrollbar; grid scrolls inside */
+#bsStatementListPage.bs-page {
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 4px 12px 0;
+    height: calc(100vh - 174px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#bsStatementListPage.bs-page > #cardFilters.bs-card {
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+
+#bsStatementListPage.bs-page > #cardList.bs-card {
+    flex: 1;
+    min-height: 0;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#bsStatementListPage.bs-page #cardList .bs-step-label {
+    flex-shrink: 0;
+}
+
+#bsStatementListPage.bs-page #cardList .bs-table-wrapper {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    HEADER  (matches .bom-hero pattern)
 ══════════════════════════════════════════════════════════════════════════════ */
@@ -362,6 +402,12 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+}
+
+/* Utility margins on icons (e.g. me-2) break optical centering in the circle */
+.bs-step-no > i {
+    margin: 0 !important;
+    line-height: 1;
 }
 
 .bs-preview-count {
@@ -831,12 +877,39 @@
     display: none !important;
 }
 
-/* List statement grid (10 visible cols): no vertical rules — matches reference layout */
+/* List statement grid (10 visible cols): no vertical rules — matches reference layout.
+   border-collapse: separate + no overflow:hidden on table so thead th can position:sticky inside .bs-table-wrapper */
 #cardList .bs-stmt-list-table {
     min-width: 960px;
     border: 1px solid var(--border-light, #e2e8f0);
     border-radius: 0 0 8px 8px;
-    overflow: hidden;
+    border-collapse: separate !important;
+    border-spacing: 0;
+}
+
+/* Sticky header: scroll is on .bs-table-wrapper; each th sticks (collapse breaks sticky in most engines) */
+#cardList .bs-stmt-list-table thead {
+    position: static;
+}
+
+#cardList .bs-stmt-list-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.12);
+}
+
+#bsStatementListPage #cardList .bs-table-wrapper {
+    border-radius: 0 0 8px 8px;
+}
+
+/* Sticky totals row at bottom of scroll area (matches sticky thead pattern) */
+#cardList .bs-stmt-list-table tfoot.bs-tfoot-totals td {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    box-shadow: 0 -1px 0 rgba(15, 23, 42, 0.1);
 }
 
 #cardList .bs-stmt-list-table thead th,
@@ -853,8 +926,57 @@
 }
 
 #cardList .bs-stmt-list-table .bs-closing-balance,
-#cardList .bs-stmt-list-table tfoot .text-end {
+#cardList .bs-stmt-list-table tfoot .text-end,
+#cardList .bs-stmt-list-table tfoot .bs-tfoot-metric-cell .fw-semibold {
     font-variant-numeric: tabular-nums;
+}
+
+/* Statement list footer: label above value (Opening / Withdrawal / Deposit / Closing) — no “Totals:” row */
+#cardList .bs-stmt-list-table tfoot.bs-tfoot-stmt-summary td {
+    text-align: right !important;
+    vertical-align: middle;
+}
+
+#cardList .bs-stmt-list-table tfoot.bs-tfoot-stmt-summary .bs-tfoot-metric-cell {
+    padding-right: 10px !important;
+    padding-left: 6px !important;
+}
+
+#cardList .bs-stmt-list-table tfoot.bs-tfoot-stmt-summary .bs-tfoot-metric-cell .text-muted {
+    font-weight: 500 !important;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
+#cardList .bs-stmt-list-table tfoot.bs-tfoot-stmt-summary .bs-tfoot-metric-cell .fw-semibold {
+    font-size: 13px;
+    color: var(--text-dark, #0f172a);
+}
+
+#cardList .bs-stmt-list-table tfoot.bs-tfoot-stmt-summary .bs-tfoot-recon-dash {
+    font-weight: 600;
+}
+
+/* Statement = Un reconciled | Reconciled: hide deposit & closing columns + header opening; hide deposit/closing footer cells */
+#cardList.bs-stmt-hide-fin-summary .bs-stmt-opening-hdr,
+#cardList.bs-stmt-hide-fin-summary .bs-stmt-col-deposit,
+#cardList.bs-stmt-hide-fin-summary .bs-stmt-col-closing,
+#cardList.bs-stmt-hide-fin-summary .bs-stmt-foot-deposit,
+#cardList.bs-stmt-hide-fin-summary .bs-stmt-foot-closing {
+    display: none !important;
+}
+
+/*
+ * Keep .bs-stmt-foot-opening <td> in the layout (colspan 5) but hide its text only.
+ * Hiding the whole td was shifting the Withdrawal total left under # / Date; it must sit under WITHDRAWAL (Dr).
+ */
+#cardList.bs-stmt-hide-fin-summary .bs-stmt-foot-opening > span {
+    display: none !important;
+}
+
+#cardList.bs-stmt-hide-fin-summary .bs-stmt-foot-opening {
+    border: none !important;
+    box-shadow: none !important;
 }
 
 /* Reconciliation status — strong yes / no colours */
@@ -875,6 +997,13 @@
     padding: 0.2rem 0.55rem;
     border-radius: 6px;
     font-size: 0.75rem;
+}
+
+/* Reconciled Yes on credit (deposit) rows — not actionable */
+.bs-recon-yes--locked {
+    cursor: default;
+    opacity: 0.92;
+    user-select: none;
 }
 
 /* Statement list: row tint by IsReconciled (overrides .bs-preview-table zebra on #cardList) */
@@ -997,12 +1126,55 @@
     min-height: 0;
 }
 
-/* Delete, result, and batch-history dialogs must sit above the import overlay */
+/* Delete, result, batch-history, recon, GRN auto-confirm, GRN embed — above import overlay */
 #bsResultBackdrop,
 #bsDeleteBackdrop,
 #bsHistoryDetailBackdrop,
-#bsReconConfirmBackdrop {
+#bsReconConfirmBackdrop,
+#bsGrnAutoMatchConfirmBackdrop,
+#bsGrnPaymentEmbedBackdrop {
     z-index: 1080;
+}
+
+/* GRN Payment page inside bank statement (iframe — same shell idea as import wizard) */
+.bs-grn-embed-backdrop {
+    align-items: center;
+    justify-content: center;
+    padding: 12px 10px 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.bs-grn-embed-panel {
+    background: var(--white-bg);
+    border-radius: 18px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, .22);
+    width: min(1240px, 100%);
+    max-width: 100%;
+    height: min(90vh, 920px);
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    margin: 0 auto;
+    border: 1px solid var(--border-color, rgba(0, 0, 0, .06));
+    overflow: hidden;
+}
+
+.bs-grn-embed-body {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    background: var(--light-bg, #f1f5f9);
+}
+
+.bs-grn-embed-iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    background: #fff;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════

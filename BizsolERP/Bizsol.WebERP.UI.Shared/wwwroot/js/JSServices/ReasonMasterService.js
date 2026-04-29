@@ -27,10 +27,6 @@ const ReasonMasterService = {
             return value;
         });
     },
-    /**
-     * Category list for F_CommonValues_Code_Category (Reason Master).
-     * Wire the API to your F_CommonValues / category source for Reason Master.
-     */
     GetReasonCategoryList: function GetReasonCategoryList() {
         const URL =
             UrlService.API_ENDPOINT_REASON_MASTER +
