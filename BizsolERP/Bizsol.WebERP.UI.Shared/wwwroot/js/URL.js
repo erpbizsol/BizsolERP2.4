@@ -147,7 +147,8 @@ let UrlService = {
     API_ENDPOINT_USERMASTER: `${environment.BASE_URL}/UserMaster`,
     API_ENDPOINT_USERRIGHTDASHBOARD: `${environment.BASE_URL}/UserRightDashboard`,
     API_ENDPOINT_REASON_MASTER: `${environment.BASE_URL}/ReasonMaster`,
-    API_ENDPOINT_AREA_MASTER: `${environment.BASE_URL}/AreaMaster`
+    API_ENDPOINT_AREA_MASTER: `${environment.BASE_URL}/AreaMaster`,
+    API_ENDPOINT_SendMail: `${environment.BASE_URL}/SendMail`
 }
 
 export { UrlService  }

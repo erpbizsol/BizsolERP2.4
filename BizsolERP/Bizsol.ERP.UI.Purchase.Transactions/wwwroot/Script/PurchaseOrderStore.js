@@ -586,6 +586,10 @@ $(document).ready(function () {
     LoadPOStatCounts();
     window.ShowPOListGrid();
 
+    // Initialise generic email modal
+    var _emailControlUrl = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/') + 'CustomControl/EmailControl';
+    $('#PurchaseOrderStore_EmailControlContainer').load(_emailControlUrl);
+
     // Attachment badge: update count when files are queued in the shared control
     window.AttachmentControl_onQueueChange = function (count) {
         const badge = document.getElementById('poTempAttachBadge');
@@ -1118,7 +1122,8 @@ window.ShowPOListGrid = function () {
                        <button class="btn btn-secondary icon-height mb-1 ms-1" title="Print Preview" onclick="PrintPO('${item.Code}','preview')"><i class="fa fa-search-plus"></i></button>
                        <button class="btn btn-dark icon-height mb-1 ms-1" title="Print" onclick="PrintPO('${item.Code}','print')"><i class="fa fa-print"></i></button>
                        <button class="btn icon-height mb-1 ms-1" title="Attachments" style="background:${(item.HasAttach || '').toUpperCase() === 'Y' ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#0ea5e9,#0284c7)'};color:#fff;border:none;" onclick="openPOListAttachmentControl('${item.Code}','${item.PONo || item.PO_No || ''}','${(item.PODate || item.PO_Date || '').substring(0, 10)}')"><i class="fa fa-paperclip"></i></button>
-                       ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;" title="Cancel PO" onclick="InitCancelPO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-ban"></i></button>` : ''}`
+                       ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;" title="Cancel PO" onclick="InitCancelPO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-ban"></i></button>` : ''}
+                       ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;border:none;" title="Send Email" onclick="SendMailPO('${item.Code}')"><i class="fa fa-envelope"></i></button>` : ''}`
         }));
         BizsolCustomFilterGrid.CreateDataTable('tblPOListHeader', 'tblPOListBody', displayData, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, [], hiddenColumns, columnAlignment, true, TotalColumns, null, commaColumns);
     }).catch(err => {
@@ -2243,6 +2248,9 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
         const header  = res[0][0];
         const details = res[1] || [];
 
+        // ── PO is fully approved when header.Status === 'Approved' ───────────────
+        const isPoApproved = (header.Status || '').trim().toLowerCase() === 'approved';
+
         // ── Resolve related data ──────────────────────────────────────────────────
         const vendorObj    = G_VendorList.find(v => v.Code == header.VendorMaster_Code) || {};
         const payTermsName = (G_PaymentTermsList.find(p => p.Code == header.PaymentTermsMaster_Code) || {}).Name || '';
@@ -2444,12 +2452,26 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
 
         const NatureOfWorkText = isGoods ? ' supply of material' : ' I & C'
         const sectionBand = againstProj
-            ? 'ASSIGNMENT DETAILS' + (nowParts.length ? ' &bull; Nature of Work :' + NatureOfWorkText + ' : ' + nowParts.join(' &mdash; ') : '')
+            ? '' + (nowParts.length ? ' &bull; Nature of Work :' + NatureOfWorkText + ' : ' + nowParts.join(' &mdash; ') : '')
             : 'ITEM DETAILS';
 
         // ── Compose full print document ──────────────────────────────────────────
         //const logoUrl = ((sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/')) + 'assets/images/logo-full.jpeg';
-        const logoUrl = ((sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/')) + 'assets/images/pppllog.jpeg';
+        const logoUrl  = ((sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/')) + 'assets/images/pppllog.jpeg';
+        const _base = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/');
+        const stampUrlHOD     = _base + 'assets/images/PPPL_Stamp_HOD.jpeg';
+        const stampUrlCEO     = _base + 'assets/images/PPPL_Stamp_CEO.jpeg';
+        const stampUrlFinance = _base + 'assets/images/PPPL_Stamp_Finance.jpeg';
+
+        // ── Build one signature box — stamp shown when PO status is Approved ────
+        function BuildSigBox(labelTitle, stampImgUrl) {
+            const stampHtml = isPoApproved
+                ? '<div class="sig-stamp-wrap">'
+                  + '<img class="sig-stamp" src="' + stampImgUrl + '" alt="Approved">'
+                  + '</div>'
+                : '<div class="sig-stamp-wrap"></div>';
+            return stampHtml + '<div class="sig-title">' + labelTitle + '</div>';
+        }
         const showLogo = companyName.trim().toUpperCase() === 'PURSHOTAM PROFILES PVT.LTD.';
         const css = '@page{size:A4 portrait;margin:8mm 10mm 10mm 10mm;}'
             + '*{box-sizing:border-box;margin:0;padding:0;}'
@@ -2498,6 +2520,10 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
             + '.sig-box:last-child{border-right:none;}'
             + '.sig-title{font-weight:800;font-size:8.5pt;color:#000;text-align:center;padding:5px 4px;border-top:1.5px solid #000;letter-spacing:0.02em;}'
             + '.sig-name{font-size:7.5pt;color:#000;font-weight:600;}'
+            + '.sig-stamp-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px 2px;}'
+            + '.sig-stamp{width:100px;height:100px;object-fit:contain;display:block;margin:0 auto 4px;opacity:0.88;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+            + '.sig-approved-name{font-size:7pt;font-weight:700;color:#1a7a45;text-align:center;padding:0 4px 1px;}'
+            + '.sig-approved-date{font-size:6.5pt;color:#555;text-align:center;padding:0 4px 3px;font-weight:600;}'
             + '.page-wrap{width:100%;border-collapse:collapse;border-spacing:0;}'
             + '.page-footer-cell{padding:0;}'
             + '.page-body-cell{padding:0;vertical-align:top;}'
@@ -2577,11 +2603,11 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
                 ? '<div style="margin:5px 0;">' + (termsHtml ? '<div>' + termsHtml + '</div>' : '') + (scopeHtml ? '<div>' + scopeHtml + '</div>' : '') + '</div>'
                 : '')
             
-            // Signatures
+            // Signatures — stamp shown in all boxes when PO Status = Approved
             + '<div class="sig-row">'
-            + '<div class="sig-box"><div class="sig-title">Approved By HOD</div></div>'
-            + '<div class="sig-box"><div class="sig-title">Approved By COO</div></div>'
-            + '<div class="sig-box"><div class="sig-title">Approved By Finance</div></div>'
+            + '<div class="sig-box">' + BuildSigBox('Approved By HOD',     stampUrlHOD)     + '</div>'
+            + '<div class="sig-box">' + BuildSigBox('Approved By COO',     stampUrlCEO)     + '</div>'
+            + '<div class="sig-box">' + BuildSigBox('Approved By Finance', stampUrlFinance) + '</div>'
             + '</div>'
             // General Terms & Conditions (included only when checkbox is checked)
             + generalTermsHtml
@@ -2665,6 +2691,23 @@ function openPOListAttachmentControl(code, poNo, poDate) {
     InitAttachmentControl('PurchaseOrderMaster', masterCode, '', 0, parseInt(poNo, 10) || 0, poDate || '', 'all', '');
 }
 
+// ─── SEND MAIL (Approved PO) ─────────────────────────────────────────────────
+
+window.SendMailPO = function (code) {
+    const poItem = G_POStoreList.find(function (i) { return String(i.Code) === String(code); });
+    const vendor = G_VendorList.find(function (v) { return poItem && v.Code == poItem.VendorMaster_Code; }) || {};
+    const vendorEmail = vendor.Email || '';
+    const poNo = poItem ? (poItem.PONo || poItem.PO_No || '') : '';
+    const poDateStr = poItem ? FormatDateDisplay(poItem.PODate || poItem.PO_Date) : '';
+
+    EmailControl_Open({
+        to: vendorEmail,
+        subject: 'Purchase Order #' + poNo + (poDateStr ? ' dated ' + poDateStr : ''),
+        body: 'Dear Sir/Madam,\n\nPlease find attached the Purchase Order #' + poNo + (poDateStr ? ' dated ' + poDateStr : '') + '.\n\nKindly acknowledge receipt and confirm acceptance.\n\nRegards,',
+        callBack: ''
+    });
+};
+
 window.InitAttachmentControl = InitAttachmentControl;
 window.openPOAttachmentControl = openPOAttachmentControl;
 window.openPOListAttachmentControl = openPOListAttachmentControl;
@@ -2690,4 +2733,5 @@ document.getElementById('modalAddVendor').addEventListener('hidden.bs.modal', fu
 });
 
 window.OpenVendorModal = OpenVendorModal;
+window.SendMailPO = SendMailPO;
 
