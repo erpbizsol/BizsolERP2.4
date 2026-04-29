@@ -4,18 +4,18 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <link href="~/_content/Bizsol.WebERP.UI.Finance.Transactions/css/BankStatement.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Finance.Transactions/js/BankStatementList.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Finance.Transactions/js/BankStatementImport.js"></script>
 
-<div class="bs-page">
-
-    <!-- ── Page Header ─────────────────────────────────────────────────── -->
+<!-- Main: statement list -->
+<div class="bs-page" id="bsStatementListPage">
     <div class="bs-header section-entry-animation">
         <div class="bs-header-top">
             <div class="bs-header-title-block">
                 <h2 class="bs-header-title">
-                    <i class="fa fa-university me-2" aria-hidden="true"></i>Bank Statement List
+                    <i class="fa fa-university me-2" aria-hidden="true"></i>Bank Statement
                 </h2>
-                <small class="bs-header-sub">View and manage imported bank statement records.</small>
             </div>
             <div class="bs-header-actions">
                 <button type="button" id="btnImportNew" class="bs-btn-primary" title="Import new statement">
@@ -25,23 +25,15 @@
         </div>
     </div>
 
-    <!-- ── Filters ─────────────────────────────────────────────────────── -->
     <div class="bs-card bs-step-card" id="cardFilters">
         <div class="bs-step-label">
             <span class="bs-step-no"><i class="fas fa-filter"></i></span>
             <span>Filters</span>
         </div>
-        <div class="row g-3 align-items-end">
-            <div class="col-12 col-sm-6 col-md-3">
+        <div class="row g-3 align-items-start bs-filter-row">
+            <div class="col-12 col-sm-6 col-md-4 col-lg-4 bs-bank-select2-wrap">
                 <label class="bs-label" for="ddlFilterBank">Bank Name</label>
-                <select id="ddlFilterBank" class="form-control form-control-sm bs-input">
-                    <option value="0">-- All Banks --</option>
-                </select>
-            </div>
-            <div class="col-12 col-sm-6 col-md-2">
-                <label class="bs-label" for="txtFilterBatchNo">Batch No</label>
-                <input type="text" id="txtFilterBatchNo" class="form-control form-control-sm bs-input"
-                       placeholder="e.g. BS20260413..." autocomplete="off" />
+                <select id="ddlFilterBank" class="form-control form-control-sm bs-input" autocomplete="off" style="width: 100%;"></select>
             </div>
             <div class="col-12 col-sm-6 col-md-2">
                 <label class="bs-label" for="txtFilterFromDate">From Date</label>
@@ -51,11 +43,10 @@
                 <label class="bs-label" for="txtFilterToDate">To Date</label>
                 <input type="date" id="txtFilterToDate" class="form-control form-control-sm bs-input" autocomplete="off" />
             </div>
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="bs-step-actions">
-                    <button type="button" id="btnSearch" class="bs-btn-primary">
-                        <i class="fas fa-search me-1"></i>Search
-                    </button>
+            <div class="col-12 col-sm-6 col-md-3 d-flex flex-column">
+                <label class="bs-label bs-label--filter-spacer" for="btnSearch" aria-hidden="true">&nbsp;</label>
+                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end bs-filter-btn-row">
+                    <button type="button" id="btnSearch" class="bs-btn-primary">Show</button>
                     <button type="button" id="btnClearFilter" class="bs-btn-ghost">
                         <i class="fas fa-times me-1"></i>Clear
                     </button>
@@ -64,53 +55,345 @@
         </div>
     </div>
 
-    <!-- ── Records Table ───────────────────────────────────────────────── -->
     <div class="bs-card" id="cardList">
         <div class="bs-step-label">
             <span class="bs-step-no"><i class="fas fa-table"></i></span>
             <span>Bank Statement Records</span>
             <span class="bs-preview-count ms-2" id="lblRecordCount"></span>
-            <button type="button" id="btnRefreshList" class="ms-auto bs-btn-ghost bs-btn-sm" title="Refresh">
-                <i class="fas fa-sync-alt"></i>
-            </button>
+            <div class="ms-auto d-flex flex-wrap gap-2 align-items-center">
+                <button type="button" id="btnAutoReconcileGrn" class="bs-btn-ghost bs-btn-sm" title="Match pending GRN payments to withdrawals by amount">
+                    <i class="fas fa-link me-1"></i>Auto-match GRN
+                </button>
+                <button type="button" id="btnRefreshList" class="bs-btn-ghost bs-btn-sm" title="Refresh">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
         </div>
-
         <div class="bs-table-wrapper">
-            <table class="table table-sm bs-preview-table" id="tblStatements">
+            <table class="table table-sm bs-preview-table bs-stmt-list-table" id="tblStatements">
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>Date</th>
-                        <th>Bank</th>
                         <th>Account No</th>
                         <th>Narration</th>
                         <th>Chq / Ref No</th>
-                        <th>Value Date</th>
+                        <th class="text-end" title="Opening for this line">Opening</th>
                         <th class="text-end">Withdrawal (Dr)</th>
                         <th class="text-end">Deposit (Cr)</th>
-                        <th class="text-end">Closing Balance</th>
-                        <th>Dr / Cr</th>
-                        <th>Batch No</th>
+                        <th class="text-end">Closing balance</th>
+                        <th class="bs-col-hidden bs-col-drcr">Dr / Cr</th>
+                        <th class="bs-col-hidden bs-col-batch">Batch No</th>
                         <th>Reconciled</th>
                     </tr>
                 </thead>
                 <tbody id="tblStatementsBody">
                     <tr>
-                        <td colspan="13" class="text-center py-3 text-muted">
+                        <td colspan="12" class="text-center py-3 text-muted">
                             <i class="fas fa-spinner fa-spin me-2"></i>Loading…
                         </td>
                     </tr>
                 </tbody>
                 <tfoot>
                     <tr class="bs-tfoot-totals">
-                        <td colspan="7" class="text-end fw-semibold">Totals:</td>
+                        <td colspan="5" class="text-end fw-semibold">Totals:</td>
+                        <td class="text-end">—</td>
                         <td class="text-end fw-semibold" id="tdTotalWithdrawal">—</td>
                         <td class="text-end fw-semibold" id="tdTotalDeposit">—</td>
-                        <td colspan="4"></td>
+                        <td class="text-end">—</td>
+                        <td class="bs-col-hidden bs-col-drcr"></td>
+                        <td class="bs-col-hidden bs-col-batch"></td>
+                        <td class="text-center">—</td>
                     </tr>
                 </tfoot>
             </table>
         </div>
     </div>
+</div>
 
-</div><!-- /.bs-page -->
+<!-- Reconciliation toggle — confirm before calling API -->
+<div id="bsReconConfirmBackdrop" class="bs-backdrop" aria-hidden="true">
+    <div class="bs-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="bsReconConfirmTitle">
+        <div class="bs-confirm-icon" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5;">
+            <i class="fas fa-scale-balanced"></i>
+        </div>
+        <div class="bs-confirm-title" id="bsReconConfirmTitle">Change reconciliation?</div>
+        <div class="bs-confirm-text" id="bsReconConfirmText"></div>
+        <div class="bs-confirm-actions">
+            <button type="button" class="bs-btn-ghost" id="btnReconConfirmCancel">
+                <i class="fas fa-ban me-1"></i>Cancel
+            </button>
+            <button type="button" class="bs-btn-primary" id="btnReconConfirmOk">
+                <i class="fas fa-check me-1"></i>Yes, continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ Import Wizard — Modal Overlay ══════════════════════════════════════════ -->
+<div id="bsImportBackdrop" class="bs-backdrop bs-import-modal-backdrop" aria-hidden="true">
+    <div class="bs-import-modal-panel" role="dialog" aria-modal="true" aria-labelledby="bsImportModalTitle">
+
+        <!-- Modal header -->
+        <div class="bs-import-modal-head">
+            <div>
+                <h2 id="bsImportModalTitle" class="bs-import-modal-title">
+                    <i class="fa fa-file-import me-2" aria-hidden="true"></i>Bank Statement Import
+                </h2>
+                <p class="bs-import-modal-sub mb-0">Upload and import bank statement CSV/Excel files into ERP.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                <button type="button" id="btnViewList" class="bs-btn-secondary bs-btn-sm" title="Return to list">
+                    <i class="fas fa-list me-1"></i>View List
+                </button>
+                <button type="button" id="btnCloseImportModal" class="bs-import-modal-close" title="Close" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal body (scrollable) -->
+        <div class="bs-import-modal-body">
+
+            <!-- Stats strip -->
+            <div class="bs-stats-strip mb-3" id="bsStatsStrip" style="display:none;" role="group" aria-label="Import summary">
+                <div class="bs-stat-chip"><span class="val" id="bsStatTotal">0</span><span class="lbl">Total Rows</span></div>
+                <div class="bs-stat-chip bs-stat-chip--success"><span class="val" id="bsStatSuccess">0</span><span class="lbl">Imported</span></div>
+                <div class="bs-stat-chip bs-stat-chip--warning"><span class="val" id="bsStatSkipped">0</span><span class="lbl">Skipped</span></div>
+                <div class="bs-stat-chip bs-stat-chip--danger"><span class="val" id="bsStatFailed">0</span><span class="lbl">Failed</span></div>
+            </div>
+
+            <!-- Step 1 -->
+            <div class="bs-card bs-step-card" id="cardStep1">
+                <div class="bs-step-label">
+                    <span class="bs-step-no">1</span>
+                    <span>Select Bank &amp; Upload File</span>
+                </div>
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                        <label class="bs-label" for="ddlBankMaster">Bank Name <span class="text-danger">*</span></label>
+                        <select id="ddlBankMaster" class="form-control form-control-sm bs-input">
+                            <option value="">-- Select Bank --</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                        <label class="bs-label" for="txtAccountNumber">Account Number <span class="text-danger">*</span></label>
+                        <input type="text" id="txtAccountNumber" class="form-control form-control-sm bs-input"
+                               placeholder="Enter account number" autocomplete="off" maxlength="50" />
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                        <label class="bs-label" for="ddlFileType">File Format <span class="text-danger">*</span></label>
+                        <select id="ddlFileType" class="form-control form-control-sm bs-input">
+                            <option value="csv">CSV (comma / tab delimited)</option>
+                            <option value="excel">Excel (.xlsx / .xls)</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-12 col-md-8 col-lg-3">
+                        <label class="bs-label" for="fileStatementUpload">Statement File <span class="text-danger">*</span></label>
+                        <div class="bs-upload-wrap">
+                            <label class="bs-upload-btn" for="fileStatementUpload">
+                                <i class="fas fa-cloud-upload-alt me-1"></i>Choose File
+                            </label>
+                            <span class="bs-upload-filename" id="lblFileName">No file chosen</span>
+                            <input type="file" id="fileStatementUpload" accept=".csv,.txt,.xlsx,.xls" style="display:none;" />
+                        </div>
+                    </div>
+                </div>
+                <div id="divColumnMapping" style="display:none;" class="mt-3">
+                    <div class="bs-mapping-title">
+                        <i class="fas fa-sliders me-1"></i>Column Mapping
+                        <small class="text-muted ms-2">(Map your file columns to statement fields)</small>
+                    </div>
+                    <div class="row g-2 mt-1" id="divMappingRow"></div>
+                </div>
+                <div class="bs-step-actions mt-3">
+                    <button type="button" id="btnParseFile" class="bs-btn-primary" disabled>
+                        <i class="fas fa-table me-1"></i>Parse &amp; Preview
+                    </button>
+                    <button type="button" id="btnClearFile" class="bs-btn-ghost">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="bs-card bs-step-card" id="cardStep2" style="display:none;">
+                <div class="bs-step-label">
+                    <span class="bs-step-no">2</span>
+                    <span>Preview &amp; Validate</span>
+                    <span class="bs-preview-count" id="lblPreviewCount"></span>
+                </div>
+                <div class="bs-toolbar mb-2">
+                    <button type="button" id="btnSelectAll" class="bs-btn-ghost bs-btn-sm">
+                        <i class="fas fa-check-square me-1"></i>Select All
+                    </button>
+                    <button type="button" id="btnDeselectAll" class="bs-btn-ghost bs-btn-sm">
+                        <i class="far fa-square me-1"></i>Deselect All
+                    </button>
+                    <span class="ms-auto bs-selected-count" id="lblSelectedCount">0 selected</span>
+                </div>
+                <div class="bs-table-wrapper">
+                    <table class="table table-sm bs-preview-table" id="tblPreview">
+                        <thead>
+                            <tr>
+                                <th class="bs-col-check">
+                                    <input type="checkbox" id="chkSelectAll" title="Select / deselect all" />
+                                </th>
+                                <th>#</th>
+                                <th>Date</th>
+                                <th>Narration</th>
+                                <th>Chq / Ref No</th>
+                                <th>Value Date</th>
+                                <th class="text-end">Opening Balance</th>
+                                <th class="text-end">Withdrawal (Dr)</th>
+                                <th class="text-end">Deposit (Cr)</th>
+                                <th class="text-end">Closing Balance</th>
+                                <th>Dr / Cr</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblPreviewBody"></tbody>
+                        <tfoot>
+                            <tr class="bs-tfoot-totals">
+                                <td colspan="7" class="text-end fw-semibold">Totals:</td>
+                                <td class="text-end fw-semibold" id="tdImportTotalWithdrawal">0.00</td>
+                                <td class="text-end fw-semibold" id="tdImportTotalDeposit">0.00</td>
+                                <td colspan="3"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="bs-step-actions mt-3">
+                    <button type="button" id="btnImport" class="bs-btn-import" disabled>
+                        <i class="fas fa-database me-1"></i>Import Selected Records
+                    </button>
+                    <button type="button" id="btnBackToStep1" class="bs-btn-ghost">
+                        <i class="fas fa-arrow-left me-1"></i>Back
+                    </button>
+                </div>
+            </div>
+
+            <!-- Import History -->
+            <div class="bs-card bs-history-card mb-0" id="cardHistory">
+                <div class="bs-step-label">
+                    <span class="bs-step-no"><i class="fas fa-history"></i></span>
+                    <span>Recent Import History</span>
+                    <button type="button" id="btnRefreshHistory" class="ms-auto bs-btn-ghost bs-btn-sm" title="Refresh">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="bs-table-wrapper">
+                    <table class="table table-sm bs-history-table" id="tblHistory">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Batch No</th>
+                                <th>Bank</th>
+                                <th>Account</th>
+                                <th>File Name</th>
+                                <th class="text-center">Total</th>
+                                <th class="text-center">Success</th>
+                                <th class="text-center">Failed</th>
+                                <th>Import Date</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblHistoryBody">
+                            <tr>
+                                <td colspan="10" class="text-center py-3 text-muted">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Loading history…
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div><!-- /.bs-import-modal-body -->
+    </div><!-- /.bs-import-modal-panel -->
+</div><!-- /#bsImportBackdrop -->
+
+<!-- Delete confirmation (hidden per policy) -->
+<div id="bsDeleteBackdrop" class="bs-backdrop" aria-hidden="true">
+    <div class="bs-confirm-modal">
+        <div class="bs-confirm-icon bs-confirm-icon--danger"><i class="fas fa-trash-alt"></i></div>
+        <div class="bs-confirm-title">Delete Import Batch?</div>
+        <div class="bs-confirm-text">
+            All records in batch <strong id="lblDeleteBatchNo"></strong> will be removed along with the import log entry.<br>
+            <strong class="text-danger">This cannot be undone.</strong>
+        </div>
+        <div class="text-start my-3">
+            <label for="reasonForDeleteInput" class="form-label small fw-bold mb-1">
+                Reason for Deletion <span class="text-danger">*</span>
+            </label>
+            <input type="text" id="reasonForDeleteInput" class="form-control form-control-sm"
+                   placeholder="Enter reason for deletion" autocomplete="off" />
+        </div>
+        <div class="bs-confirm-actions">
+            <button type="button" class="bs-btn-ghost" id="btnCancelDelete"><i class="fas fa-ban me-1"></i>Cancel</button>
+            <button type="button" class="bs-btn-danger" id="btnConfirmDelete"><i class="fas fa-trash-alt me-1"></i>Yes, Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Import batch history (eye icon on Recent Import History) -->
+<div id="bsHistoryDetailBackdrop" class="bs-backdrop" aria-hidden="true">
+    <div class="bs-history-detail-modal" role="dialog" aria-modal="true" aria-labelledby="bsHistDetailTitle">
+        <button type="button" class="bs-history-detail-close" id="btnCloseHistoryDetail" title="Close" aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+        <h2 id="bsHistDetailTitle" class="bs-history-detail-title">
+            <i class="fas fa-history me-2" aria-hidden="true"></i>Import batch history
+        </h2>
+        <div class="bs-history-detail-summary" id="bsHistDetailSummary" aria-live="polite"></div>
+        <div class="bs-table-wrapper bs-history-detail-scroll">
+            <table class="table table-sm bs-preview-table" id="tblHistDetailLines">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Account</th>
+                        <th>Narration</th>
+                        <th>Chq / Ref</th>
+                        <th class="text-end">Withdrawal (Dr)</th>
+                        <th class="text-end">Deposit (Cr)</th>
+                        <th class="text-end">Closing</th>
+                    </tr>
+                </thead>
+                <tbody id="tblHistDetailBody">
+                    <tr>
+                        <td colspan="8" class="text-center py-3 text-muted">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Loading…
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="bs-history-detail-footer">
+            <!-- <button type="button" class="bs-btn-secondary bs-btn-sm" id="btnHistDetailOpenList" title="Open statement list filtered by this batch">
+                <i class="fas fa-external-link-alt me-1"></i>Open full list
+            </button> -->
+            <button type="button" class="bs-btn-primary" id="btnHistDetailOk">
+                <i class="fas fa-check me-1"></i>Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Success / Error result modal -->
+<div id="bsResultBackdrop" class="bs-backdrop" aria-hidden="true">
+    <div class="bs-result-modal">
+        <div class="bs-result-icon" id="bsResultIcon"><i class="fas fa-circle-check"></i></div>
+        <div class="bs-result-title" id="bsResultTitle">Done!</div>
+        <div class="bs-result-body" id="bsResultBody">
+            <div class="bs-result-row"><span>Total rows processed:</span><strong id="bsResTotal">0</strong></div>
+            <div class="bs-result-row bs-result-row--success"><span>Successfully imported:</span><strong id="bsResSuccess">0</strong></div>
+            <div class="bs-result-row bs-result-row--warning"><span>Skipped (duplicates):</span><strong id="bsResSkipped">0</strong></div>
+            <div class="bs-result-row bs-result-row--danger"><span>Failed rows:</span><strong id="bsResFailed">0</strong></div>
+            <div class="bs-result-batch"><i class="fas fa-hashtag me-1"></i>Batch: <span id="bsResBatch"></span></div>
+        </div>
+        <button type="button" class="bs-btn-primary mt-2" id="btnResultClose">
+            <i class="fas fa-check me-1"></i>OK
+        </button>
+    </div>
+</div>

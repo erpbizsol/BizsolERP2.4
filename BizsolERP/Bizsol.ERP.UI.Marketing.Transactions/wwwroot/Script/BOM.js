@@ -838,9 +838,14 @@ function addNewBomRow() {
                 </select>
             </td>
             <td>
-                <select class="bom-select bom-item">
-                    <option value="">Select</option>
-                </select>
+                <div style="display:flex;align-items:center;gap:4px;">
+                    <select class="bom-select bom-item" style="flex:1;min-width:0;">
+                        <option value="">Select</option>
+                    </select>
+                    <button type="button" class="item-add-btn js-open-item-master" title="Add New Item">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
             </td>
             <td>
                 <input type="text" class="bom-input bom-uom" readonly />
@@ -1410,3 +1415,30 @@ function hideModal(id) {
         }
     } catch (e) { $(`#${id}`).modal('hide'); }
 }
+
+// ── Item Master Modal ────────────────────────────────────────────────────────
+
+function openItemMasterModal() {
+    const baseUrl = sessionStorage.getItem('AppBaseURL') || '';
+    document.getElementById('iframeItemMaster').src =
+        baseUrl + '/MarketingMasters/ItemMaster/ItemMaster?embedded=1&ModuleDesp=Item%20Master';
+    if (window.bootstrap && window.bootstrap.Modal) {
+        bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('modalAddItemMaster'),
+            { backdrop: 'static', keyboard: false }
+        ).show();
+    } else {
+        $('#modalAddItemMaster').modal('show');
+    }
+}
+
+document.getElementById('modalAddItemMaster').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('iframeItemMaster').src = '';
+    // Clear item cache so newly added items are fetched on next work-type selection
+    G_ItemCacheByWorkType = {};
+});
+
+// Delegate click on any + button next to an item dropdown (rows added dynamically)
+$(document).on('click', '.js-open-item-master', function () {
+    openItemMasterModal();
+});
