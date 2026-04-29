@@ -86,21 +86,35 @@ const GRNPaymentApprovalService = {
                 return value;
             });
     },
-    GetProjectMaster: function GetProjectMaster() {
-        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetProjectMaster`;
+    GetProjectMasterList: function GetProjectMasterList() {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetProjectMasterList`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
             });
     },
-    GetSubProjectMaster: function GetSubProjectMaster() {
-        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetSubProjectMaster`;
+    GetSubProjectMasterList: function GetSubProjectMasterList(ProjectMaster_Code) {
+        const code = ProjectMaster_Code != null && ProjectMaster_Code !== undefined
+            ? String(ProjectMaster_Code).trim()
+            : '';
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry +
+            `/GetSubProjectMasterList?ProjectMaster_Code=${encodeURIComponent(code)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
             });
     },
-    
+    /** Alias used by GRN modal / legacy callers — same endpoint as {@link GetSubProjectMasterList}. */
+    GetSubProjectMaster: function GetSubProjectMaster(ProjectMaster_Code) {
+        return GRNPaymentApprovalService.GetSubProjectMasterList(ProjectMaster_Code);
+    },
+    GetBankList: function GetBankList() {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetBankList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
 };
 
 export { GRNPaymentApprovalService };

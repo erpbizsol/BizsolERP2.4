@@ -130,6 +130,21 @@ function getApprovalStatus(p) {
     return raw || 'Pending';
 }
 
+/**
+ * Pill next to the date on list cards — Ln for current approval step, then Approved/Rejected (not DB level Description like “test”).
+ */
+function getGpaCardLevelChipLabel(p) {
+    const status = getApprovalStatus(p);
+    const st = status.toLowerCase();
+    if (st === 'approved') return 'Approved';
+    if (st === 'rejected') return 'Rejected';
+    const totalLvl = parseInt(p.TotalLevels ?? p.MaxLevel ?? 1, 10) || 1;
+    let cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
+    if (cur < 1) cur = 1;
+    if (totalLvl > 0 && cur > totalLvl) return 'Approved';
+    return 'L' + cur;
+}
+
 function getLevelCode(p) {
     const c = p.LevelCode ?? p.Level_Code ?? p.ApprovalLevel_Code ?? p.GRNPaymentLevel_Code ?? 0;
     const n = parseInt(c, 10);
@@ -405,7 +420,7 @@ function BuildPaymentCard(p) {
     const amount = FmtCurrency(getTotalAmount(p));
     const totalLvl = parseInt(p.TotalLevels ?? p.MaxLevel ?? 3, 10) || 1;
     const curLvlNo = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
-    const lvlDesc = EscHtml(p.CurrentLevelDesc ?? p.LevelDesc ?? ('Level ' + curLvlNo));
+    const levelChip = EscHtml(getGpaCardLevelChipLabel(p));
     const status = getApprovalStatus(p);
 
     let statusClr, statusBg;
@@ -439,7 +454,7 @@ function BuildPaymentCard(p) {
                 <div class="gpa-pay-card-meta">
                     <span><i class="fa fa-calendar-alt me-1"></i>${entryDate || '—'}</span>
                     <span class="gpa-pay-level-chip">
-                        <i class="fa fa-layer-group me-1"></i>${lvlDesc}
+                        <i class="fa fa-layer-group me-1"></i>${levelChip}
                     </span>
                 </div>
             </div>
