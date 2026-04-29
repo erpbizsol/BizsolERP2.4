@@ -2,8 +2,6 @@ import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFun
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { ReasonMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ReasonMasterService.js';
 import { EmployeeMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/EmployeeMasterServices.js';
-import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
-
 var G_REASON_SourceRows = [];
 var G_REASON_ApiColumnKeys = null;
 var G_REASON_DetailMode = 'list';
@@ -120,7 +118,16 @@ function bindReasonCategoryDropdown(rows, selectedCode) {
     $.each(rows || [], function (_, item) {
         var code = item.Code != null ? String(item.Code) : '';
         if (!code || code === '0') return;
-        var label = (item.Desp || item.Name || item.CommonValueDesp || '').toString().trim();
+        var label = (
+            item.Desp ||
+            item.Name ||
+            item.CommonValueDesp ||
+            item.value ||
+            item.Value ||
+            ''
+        )
+            .toString()
+            .trim();
         if (!label) label = 'Category ' + code;
         $sel.append(new Option(label, code));
     });
@@ -167,29 +174,6 @@ function bindEmployeeResponsibleDropdown(rows, selectedCode) {
         $sel.trigger('change.select2');
     }
 }
-function bindDataBaseLocationDropdown(rows, selectedCode) {
-    var $sel = $('#ddlDataBaseLocation');
-    $sel.empty();
-    $sel.append(new Option('-- Select Database Location --', ''));
-    $.each(rows || [], function (_, item) {
-        var code = item.Code != null ? String(item.Code) : '';
-        if (!code || code === '0') return;
-        var label = (item.Desp || item.Name || item.CompanyInfo || '').toString().trim() || 'Location ' + code;
-        $sel.append(new Option(label, code));
-    });
-    destroySelect2IfAny($sel);
-    $sel.select2({
-        width: '100%',
-        placeholder: 'Search or select location…',
-        allowClear: true,
-        minimumResultsForSearch: 0,
-    });
-    var v = selectedCode != null && selectedCode !== '' ? String(selectedCode) : '';
-    $sel.val(v);
-    if ($sel.data('select2')) {
-        $sel.trigger('change.select2');
-    }
-}
 function loadReasonTypes(selectedCode) {
     return ReasonMasterService.GetReasonTypeMasterList()
         .then(function (res) {
@@ -208,7 +192,16 @@ function loadReasonCategories(selectedCode) {
             var rows = firstArray(res).map(function (c) {
                 return {
                     Code: c.Code,
-                    Desp: (c.Desp || c.Name || c.CommonValueDesp || '').toString().trim(),
+                    Desp: (
+                        c.Desp ||
+                        c.Name ||
+                        c.CommonValueDesp ||
+                        c.value ||
+                        c.Value ||
+                        ''
+                    )
+                        .toString()
+                        .trim(),
                 };
             });
             bindReasonCategoryDropdown(rows, selectedCode);
@@ -231,31 +224,13 @@ function loadEmployeesForReason(selectedCode) {
             return [];
         });
 }
-function loadDbLocationsForReason(selectedCode) {
-    return ProjectMasterService.GetCompanyInfoList()
-        .then(function (res) {
-            var rows = firstArray(res).map(function (c) {
-                return {
-                    Code: c.Code,
-                    Desp: (c.Name || c.CompanyInfo || c.Desp || '').toString().trim(),
-                };
-            });
-            bindDataBaseLocationDropdown(rows, selectedCode);
-            return rows;
-        })
-        .catch(function () {
-            bindDataBaseLocationDropdown([], selectedCode);
-            return [];
-        });
-}
-/** @param {Object} sel - optional keys: ReasonTypeMaster_Code, F_CommonValues_Code_Category, EmployeeMaster_Code, DataBaseLocation_Code */
+/** @param {Object} sel - optional keys: ReasonTypeMaster_Code, F_CommonValues_Code_Category, EmployeeMaster_Code */
 function loadAllReasonDetailDropdowns(sel) {
     sel = sel || {};
     return Promise.all([
         loadReasonTypes(sel.ReasonTypeMaster_Code),
         loadReasonCategories(sel.F_CommonValues_Code_Category),
         loadEmployeesForReason(sel.EmployeeMaster_Code),
-        loadDbLocationsForReason(sel.DataBaseLocation_Code),
     ]);
 }
 function showFieldError(fieldId, message) {
@@ -281,10 +256,11 @@ function clearAllFieldErrors() {
 function clearForm() {
     clearAllFieldErrors();
     $('#hfReasonMaster_Code').val('0');
+    $('#hfReason_DataBaseLocation_Code').val('0');
+    $('#hfReason_ReasonCode').val('');
+    $('#hfReason_DoNotShowInFollowUp').val('N');
     $('#txtReasonName').val('');
-    $('#txtReasonCode').val('');
     $('#txtReasonDesp').val('');
-    $('#chkDoNotShowInFollowUp').prop('checked', false);
     $('#ddlReasonTypeMaster').val('').trigger('change');
     try {
         if ($('#ddlReasonTypeMaster').data('select2')) {
@@ -305,26 +281,17 @@ function clearForm() {
             $('#ddlEmployeeResponsible').val('');
         }
     } catch (e) {}
-    try {
-        if ($('#ddlDataBaseLocation').data('select2')) {
-            $('#ddlDataBaseLocation').val('').trigger('change.select2');
-        } else {
-            $('#ddlDataBaseLocation').val('');
-        }
-    } catch (e) {}
 }
 function setDetailFormMode(mode) {
     G_REASON_DetailMode = mode;
     var ro = mode === 'view';
     $('#reasonDetailPanel').toggleClass('reason-readonly', ro);
-    $('#txtReasonName, #txtReasonDesp, #txtReasonCode').prop('disabled', ro);
-    $('#ddlReasonTypeMaster, #ddlReasonCategory, #ddlEmployeeResponsible, #ddlDataBaseLocation').prop('disabled', ro);
-    $('#chkDoNotShowInFollowUp').prop('disabled', ro);
+    $('#txtReasonName, #txtReasonDesp').prop('disabled', ro);
+    $('#ddlReasonTypeMaster, #ddlReasonCategory, #ddlEmployeeResponsible').prop('disabled', ro);
     try {
         if ($('#ddlReasonTypeMaster').data('select2')) $('#ddlReasonTypeMaster').prop('disabled', ro);
         if ($('#ddlReasonCategory').data('select2')) $('#ddlReasonCategory').prop('disabled', ro);
         if ($('#ddlEmployeeResponsible').data('select2')) $('#ddlEmployeeResponsible').prop('disabled', ro);
-        if ($('#ddlDataBaseLocation').data('select2')) $('#ddlDataBaseLocation').prop('disabled', ro);
     } catch (e) {}
     if (!ro) {
         $('#btnSaveReason, #btnClearReason').show();
@@ -540,9 +507,6 @@ function refreshReasonGrid() {
             if (typeof toastr !== 'undefined') toastr.error('Could not load reason list.');
         });
 }
-function followUpCharFromCheckbox() {
-    return $('#chkDoNotShowInFollowUp').is(':checked') ? 'Y' : 'N';
-}
 function loadEditRecord(code, mode) {
     return ReasonMasterService.GetReasonMasterByCode(code)
         .then(function (res) {
@@ -554,22 +518,22 @@ function loadEditRecord(code, mode) {
             }
             $('#hfReasonMaster_Code').val(rec.Code != null ? rec.Code : 0);
             $('#txtReasonName').val(rec.ReasonName != null ? String(rec.ReasonName).trim() : '');
-            $('#txtReasonCode').val(rec.ReasonCode != null ? String(rec.ReasonCode).trim() : '');
             $('#txtReasonDesp').val(rec.ReasonDesp != null ? String(rec.ReasonDesp).trim() : '');
+            var dblNum = rec.DataBaseLocation_Code != null ? Number(rec.DataBaseLocation_Code) : 0;
+            $('#hfReason_DataBaseLocation_Code').val(isFinite(dblNum) && dblNum > 0 ? String(dblNum) : '0');
+            $('#hfReason_ReasonCode').val(rec.ReasonCode != null ? String(rec.ReasonCode).trim() : '');
             var dns =
                 rec.DoNotShowInFollowUp != null
                     ? String(rec.DoNotShowInFollowUp).trim().toUpperCase()
                     : 'N';
-            $('#chkDoNotShowInFollowUp').prop('checked', dns === 'Y');
+            $('#hfReason_DoNotShowInFollowUp').val(dns === 'Y' ? 'Y' : 'N');
             var rtc = rec.ReasonTypeMaster_Code != null ? rec.ReasonTypeMaster_Code : '';
             var cat = rec.F_CommonValues_Code_Category != null ? rec.F_CommonValues_Code_Category : '';
             var emp = rec.EmployeeMaster_Code != null ? rec.EmployeeMaster_Code : '';
-            var dbl = rec.DataBaseLocation_Code != null ? rec.DataBaseLocation_Code : '';
             return loadAllReasonDetailDropdowns({
                 ReasonTypeMaster_Code: rtc,
                 F_CommonValues_Code_Category: cat,
                 EmployeeMaster_Code: emp,
-                DataBaseLocation_Code: dbl,
             }).then(function () {
                 setDetailFormMode(mode || 'edit');
             });
@@ -579,15 +543,16 @@ function loadEditRecord(code, mode) {
         });
 }
 function buildSavePayload() {
+    var dns = (($('#hfReason_DoNotShowInFollowUp').val() || '') + '').trim().toUpperCase();
     return {
         Code: parseInt($('#hfReasonMaster_Code').val() || '0', 10) || 0,
         ReasonName: ($('#txtReasonName').val() || '').trim(),
         ReasonDesp: ($('#txtReasonDesp').val() || '').trim(),
         ReasonTypeMaster_Code: parseInt($('#ddlReasonTypeMaster').val() || '0', 10) || 0,
-        DataBaseLocation_Code: parseInt($('#ddlDataBaseLocation').val() || '0', 10) || 0,
-        DoNotShowInFollowUp: followUpCharFromCheckbox(),
+        DataBaseLocation_Code: parseInt($('#hfReason_DataBaseLocation_Code').val() || '0', 10) || 0,
+        DoNotShowInFollowUp: dns === 'Y' ? 'Y' : 'N',
         F_CommonValues_Code_Category: parseInt($('#ddlReasonCategory').val() || '0', 10) || 0,
-        ReasonCode: ($('#txtReasonCode').val() || '').trim(),
+        ReasonCode: ($('#hfReason_ReasonCode').val() || '').trim(),
         EmployeeMaster_Code: parseInt($('#ddlEmployeeResponsible').val() || '0', 10) || 0,
     };
 }

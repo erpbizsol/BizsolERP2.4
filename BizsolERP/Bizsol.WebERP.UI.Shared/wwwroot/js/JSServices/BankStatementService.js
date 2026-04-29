@@ -87,12 +87,46 @@ const BankStatementService = {
         });
     },
 
-    // ── RECONCILE : Mark record as reconciled ─────────────────────────────────
-    ReconcileBankStatement: function ReconcileBankStatement(code) {
+    /**
+     * RECONCILE — optional grnPaymentMasterCode on query string maps to @GRNPaymentMaster_Code on SP RECONCILE.
+     */
+    ReconcileBankStatement: function ReconcileBankStatement(code, grnPaymentMasterCode) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
         var URL = UrlService.API_ENDPOINT_BANK_STATEMENT
             + `/ReconcileBankStatement?Code=${encodeURIComponent(code)}`
+            + `&UserMaster_Code=${encodeURIComponent(userMasterCode)}`;
+        var grn = parseInt(String(grnPaymentMasterCode == null ? 0 : grnPaymentMasterCode), 10) || 0;
+        if (grn > 0) {
+            URL += `&GRNPaymentMaster_Code=${encodeURIComponent(grn)}`;
+        }
+        return promiseAjaxCallApi.CallAPI('POST', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
+    /** Same as ReconcileBankStatement + GRN link (no separate /LinkAndReconcile… route). */
+    LinkAndReconcileBankStatement: function LinkAndReconcileBankStatement(code, grnPaymentMasterCode) {
+        return BankStatementService.ReconcileBankStatement(code, grnPaymentMasterCode);
+    },
+
+    /**
+     * After GRN delete: IsReconciled = N, GRNPaymentMaster_Code = 0 — uses SetBankStatementReconciliation body.
+     * WebAPI should map to USP @Mode UNLINKBANKSTATEMENTGRN / CLEARGRNLINK or equivalent UPDATE.
+     */
+    UnlinkBankStatementGrn: function UnlinkBankStatementGrn(code) {
+        return BankStatementService.SetBankStatementReconciliation(code, false, { clearGrnLink: true });
+    },
+
+    /**
+     * Unreconcile a withdrawal line: WebAPI should call USP_WebAPI_BankStatement @Mode = UNRECONCILEWITHGRN —
+     * deletes matching pending GRN payment (if found) and sets IsReconciled = N.
+     */
+    UnreconcileWithdrawalWithGrn: function UnreconcileWithdrawalWithGrn(code) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_BANK_STATEMENT
+            + `/UnreconcileWithdrawalWithGrn?Code=${encodeURIComponent(code)}`
             + `&UserMaster_Code=${encodeURIComponent(userMasterCode)}`;
         return promiseAjaxCallApi.CallAPI('POST', URL, '').then(function (value) {
             return value;
@@ -124,15 +158,22 @@ const BankStatementService = {
         });
     },
 
-    /** Y/N save — add POST on API; UI falls back to ReconcileBankStatement when only setting Y. */
-    SetBankStatementReconciliation: function SetBankStatementReconciliation(code, isY) {
+    /**
+     * Y/N reconciliation save. options.clearGrnLink: send GRNPaymentMaster_Code = 0 (bank line unlink + Not reconciled).
+     * WebAPI must persist both fields on BankStatement (see SP UNLINKBANKSTATEMENTGRN / CLEARGRNLINK).
+     */
+    SetBankStatementReconciliation: function SetBankStatementReconciliation(code, isY, options) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var body = JSON.stringify({
+        var payload = {
             Code: code,
             IsReconciled: isY ? 'Y' : 'N',
             UserMaster_Code: userMasterCode
-        });
+        };
+        if (options && options.clearGrnLink === true) {
+            payload.GRNPaymentMaster_Code = 0;
+        }
+        var body = JSON.stringify(payload);
         var URL = UrlService.API_ENDPOINT_BANK_STATEMENT + '/SetBankStatementReconciliation';
         return promiseAjaxCallApi.CallAPI('POST', URL, body).then(function (value) {
             return value;

@@ -55,6 +55,110 @@ let gpaListActiveStatusTab = 'U';
 /** When true, list grid shows only entries pending approval on the current user (same rules as GRN Payment Approval). */
 let gpaListOnlyPendingOnMe = false;
 
+const BS_EMBED_STORAGE_KEY = 'BizsolBankStmtGrnEmbed';
+
+function gpaIsBankStatementEmbed() {
+    try {
+        return new URLSearchParams(window.location.search).get('embedded') === '1';
+    } catch (e) {
+        return false;
+    }
+}
+
+function gpaGetEmbedBankStatementCode() {
+    try {
+        const n = parseInt(String(new URLSearchParams(window.location.search).get('bankStatementCode') || '').trim(), 10);
+        return Number.isFinite(n) && n > 0 ? n : 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function gpaParseStmtTxnDateToInputValue(txn) {
+    const s = String(txn || '').trim();
+    const m = s.match(/^(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})$/);
+    if (m) return `${m[3]}-${String(m[2]).padStart(2, '0')}-${String(m[1]).padStart(2, '0')}`;
+    const m2 = s.match(/^(\d{4})[\-\/](\d{1,2})[\-\/](\d{1,2})$/);
+    if (m2) return `${m2[1]}-${String(m2[2]).padStart(2, '0')}-${String(m2[3]).padStart(2, '0')}`;
+    return '';
+}
+
+/** Pick vendor whose name appears in bank narration (longest match wins). */
+function gpaSelectPartyFromBankNarration(narration) {
+    const raw = String(narration || '').trim();
+    if (!raw) return false;
+    const n = raw.toLowerCase();
+    const ddl = document.getElementById('ddlPartyName');
+    if (!ddl || !gpaVendorListCache || !gpaVendorListCache.length) return false;
+    let bestCode = '';
+    let bestLen = 0;
+    for (let i = 0; i < gpaVendorListCache.length; i++) {
+        const v = gpaVendorListCache[i];
+        const name = String(v.VendorName ?? v.vendorName ?? '').trim();
+        if (name.length < 2) continue;
+        const nl = name.toLowerCase();
+        if (n.includes(nl) && nl.length > bestLen) {
+            bestLen = nl.length;
+            bestCode = String(v.VendorMaster_Code ?? v.vendorMaster_Code ?? v.Code ?? '');
+        }
+    }
+    if (bestCode && [...ddl.options].some(o => o.value === bestCode)) {
+        ddl.value = bestCode;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Bank Statement list stores JSON in sessionStorage before opening iframe.
+ * Prefills Amount, Ref, Date, Narration; matches Party from narration text.
+ */
+async function tryApplyBankStatementEmbedPrefill(openedNewForm) {
+    if (!gpaIsBankStatementEmbed() || !openedNewForm || !gpaGetEmbedBankStatementCode()) return;
+    let raw = null;
+    try {
+        raw = sessionStorage.getItem(BS_EMBED_STORAGE_KEY);
+    } catch (e) { /* ignore */ }
+    if (!raw) return;
+    let ctx;
+    try {
+        ctx = JSON.parse(raw);
+    } catch (e) {
+        return;
+    }
+    try {
+        sessionStorage.removeItem(BS_EMBED_STORAGE_KEY);
+    } catch (e2) { /* ignore */ }
+
+    const w = parseFloat(String(ctx.withdrawal ?? ctx.withdrawalAmt ?? '0').replace(/,/g, ''));
+    const narration = String(ctx.narration ?? '');
+    const ref = String(ctx.chequeRef ?? ctx.chequeRefNo ?? '').trim();
+    const txn = String(ctx.txnDate ?? ctx.txn ?? '').trim();
+
+    const ha = document.getElementById('txtHeaderAmount');
+    if (ha && Number.isFinite(w) && w > 0) ha.value = w.toFixed(2);
+
+    const refEl = document.getElementById('txtRefNo');
+    if (refEl && ref) refEl.value = ref;
+
+    const dtEl = document.getElementById('dtPaymentDate');
+    const iso = gpaParseStmtTxnDateToInputValue(txn);
+    if (dtEl && iso) dtEl.value = iso;
+
+    const nar = document.getElementById('txtNarration');
+    if (nar && narration) nar.value = narration;
+
+    gpaSelectPartyFromBankNarration(narration);
+
+    const chk = document.getElementById('chkGpaFillGrid');
+    if (chk && chk.checked) {
+        const cp = getGpaCounterpartyKey();
+        if (cp) await onGpaFillGridChange();
+    }
+
+    recalcFooter();
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // LIST VIEW (GetGRNPaymentApprovalList → BizsolCustomFilterGrid, same as GRNService)
 // ══════════════════════════════════════════════════════════════════════════════
@@ -618,9 +722,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncGpaPartyEmployeeUI();
     setTodayDates();
     await loadGRNPaymentApprovalList();
-    showListView();
+    let gpaOpenNew = false;
+    try {
+        const gpaOpen = new URLSearchParams(window.location.search).get('openNew');
+        gpaOpenNew = gpaOpen === '1' || gpaOpen === 'true';
+    } catch (e) { /* ignore */ }
+    if (gpaOpenNew) {
+        newGRNPaymentApproval();
+    } else {
+        showListView();
+    }
 
     initBillGrid();
+
+    if (gpaIsBankStatementEmbed() && gpaOpenNew) {
+        await tryApplyBankStatementEmbedPrefill(true);
+    }
 
     // Allow only positive numbers with decimals in amount fields (same pattern as GRN txtTotalBillAmountManual)
     const headerAmt = document.getElementById('txtHeaderAmount');
@@ -2714,10 +2831,25 @@ function saveGRNPaymentApproval() {
                 }
                 showToast(editMode ? 'Payment entry updated successfully.' : 'Payment entry saved successfully.', 'success');
                 editMode = false;
-                setTimeout(async () => {
-                    await loadGRNPaymentApprovalList();
-                    showListView();
-                }, 1200);
+                const bsEmbCode = gpaGetEmbedBankStatementCode();
+                if (bsEmbCode > 0 && gpaIsBankStatementEmbed()) {
+                    try {
+                        window.parent.postMessage({
+                            type: 'bizsol:bankStmtGrnSaved',
+                            bankStatementCode: bsEmbCode,
+                            grnPaymentMasterCode: newMasterCode
+                        }, window.location.origin);
+                    } catch (pmErr) { /* ignore */ }
+                    setTimeout(async () => {
+                        await loadGRNPaymentApprovalList();
+                        showFormView();
+                    }, 500);
+                } else {
+                    setTimeout(async () => {
+                        await loadGRNPaymentApprovalList();
+                        showListView();
+                    }, 1200);
+                }
             } else {
                 showToast(data?.Msg ?? data?.msg ?? data?.message ?? 'Save failed.', 'error');
             }

@@ -1169,6 +1169,7 @@ function DoImport() {
             ImportBatchNo:   batchNo,
             UserID:          0,
             Remarks:         '',
+            GRNPaymentMaster_Code: 0,
             ServiceTaxNo:    String(lineOp),
             IsReconciled:    dep > 0 ? 'Y' : 'N'
         });
