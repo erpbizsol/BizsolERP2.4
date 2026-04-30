@@ -1,8 +1,8 @@
 import { ItemMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_ItemMasterService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
-//var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-//var G_UserMasterCode = authKeyData.UserMaster_Code;
+var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+var G_UserMasterCode = authKeyData.UserMaster_Code;
 var G_EditCode = 0;
 var G_ViewCode = 0;
 /** Rows from GetCategoryMasterList — used to resolve group name in view when API returns only code. */
@@ -429,7 +429,7 @@ function BuildPayload() {
                 DecimalPoints: 0,
                 DutyValue: parseFloat($("#GSTRate").val()) || 0,
                 ItemSpecification: $("#ItemSpecification").val().trim(),
-                //UserMasterCode: G_UserMasterCode,
+                UserMasterCode: G_UserMasterCode,
             }
         ],
         ItemMasterOtherDetail: [

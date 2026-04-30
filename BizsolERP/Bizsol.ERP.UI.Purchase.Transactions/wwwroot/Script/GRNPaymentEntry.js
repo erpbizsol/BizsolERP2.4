@@ -3161,6 +3161,109 @@ function gpaSessionCompanyInfo() {
     return { companyName, companyAddr, companyGST, companyTag };
 }
 
+/** Header block for print: {@link GRNPaymentApprovalService.GetCompany} (fallback session). */
+function gpaCompanyFromGetCompanyApi(resp) {
+    if (resp == null) {
+        return { companyName: '', companyAddr: '', companyGST: '', companyTag: '' };
+    }
+    let row = null;
+    const rows = normalizeApiRows(resp);
+    if (rows.length && rows[0]) row = rows[0];
+    if (!row) {
+        const o = resp.Data ?? resp.data ?? resp;
+        if (o && typeof o === 'object' && !Array.isArray(o)) {
+            if (o.CompanyName != null || o.companyName != null
+                || o.CompanyInfo != null || o.Name != null || o.name != null
+                || o.OfficeAddress1 != null || o.officeAddress1 != null
+                || o.GSTNo != null || o.gSTNo != null) {
+                row = o;
+            }
+        }
+    }
+    row = row || {};
+    const phone = String(row.OfficePhones1 ?? row.officePhones1 ?? '').trim();
+    const web = String(row.WebSite ?? row.webSite ?? row.Website ?? row.website ?? '').trim();
+    let tagFromApi = '';
+    if (phone && web) tagFromApi = phone + ' · ' + web;
+    else tagFromApi = phone || web;
+    const branchTag = String(row.BranchName ?? row.branchName ?? row.CompanyTagLine ?? row.TagLine ?? row.tagLine ?? '').trim();
+    return {
+        companyName: String(row.CompanyName ?? row.companyName ?? row.CompanyInfo ?? row.Name ?? row.name ?? '').trim(),
+        companyAddr: String(
+            row.OfficeAddress1 ?? row.officeAddress1
+            ?? row.CompanyAddress ?? row.companyAddress ?? row.Address ?? row.address ?? ''
+        ).trim(),
+        companyGST: String(
+            row.GSTNo ?? row.gstNo
+            ?? row.GSTIN ?? row.gstin ?? row.CompanyGSTIN ?? row.companyGSTIN ?? ''
+        ).trim(),
+        companyTag: (tagFromApi && branchTag) ? (tagFromApi + ' · ' + branchTag) : (tagFromApi || branchTag),
+    };
+}
+
+function gpaMergePrintCompanyInfo(sessionCo, apiCo) {
+    const a = apiCo || {};
+    const s = sessionCo || {};
+    return {
+        companyName: (a.companyName || s.companyName || '').trim(),
+        companyAddr: (a.companyAddr || s.companyAddr || '').trim(),
+        companyGST: (a.companyGST || s.companyGST || '').trim(),
+        companyTag: (a.companyTag || s.companyTag || '').trim(),
+    };
+}
+
+/** Match DDL_LIST row: Code / GRNPaymentMaster_Code, else EntryNo (backend list may omit Code). */
+function gpaFindListRowForPrint(listResp, codeNum, master) {
+    const rows = normalizeApiRows(listResp);
+    if (!rows.length) return null;
+    function rowPk(r) {
+        const c = r.Code ?? r.code ?? r.GRNPaymentMaster_Code ?? r.gRNPaymentMaster_Code
+            ?? r.grnPaymentMaster_Code;
+        if (c === undefined || c === null || String(c).trim() === '') return NaN;
+        return parseInt(String(c), 10);
+    }
+    for (let i = 0; i < rows.length; i++) {
+        if (rowPk(rows[i]) === codeNum) return rows[i];
+    }
+    const enMaster = master && (master.EntryNo ?? master.entryNo);
+    if (enMaster !== undefined && enMaster !== null && String(enMaster).trim() !== '') {
+        const enStr = String(enMaster).trim();
+        for (let j = 0; j < rows.length; j++) {
+            const r = rows[j];
+            const en = r.EntryNo ?? r.entryNo;
+            if (en !== undefined && en !== null && String(en).trim() === enStr) return r;
+        }
+    }
+    return null;
+}
+
+/** Prefer non-empty scalar fields from {@link GRNPaymentApprovalService.GetList} row over GetByCode master. */
+function gpaOverlayMasterFromListRow(master, listRow) {
+    if (!master || !listRow) return master;
+    const m = Object.assign({}, master);
+    function setIf(targetKey, altKeys) {
+        for (let i = 0; i < altKeys.length; i++) {
+            const v = listRow[altKeys[i]];
+            if (v !== undefined && v !== null && String(v).trim() !== '') {
+                m[targetKey] = v;
+                return;
+            }
+        }
+    }
+    setIf('VendorName', ['PartyName', 'VendorName', 'partyName', 'AccountName', 'party', 'Party']);
+    setIf('RefNo', ['RefNo', 'refNo']);
+    setIf('EntryNo', ['EntryNo', 'entryNo']);
+    setIf('EntryDate', ['EntryDate', 'entryDate', 'PaymentDate', 'paymentDate']);
+    setIf('Amount', ['Amount', 'amount', 'HeaderAmount', 'headerAmount']);
+    setIf('BankName', ['BankName', 'bankName']);
+    setIf('Narration', ['Narration', 'narration']);
+    setIf('AdvanceAmount', ['AdvanceAmount', 'advanceAmount']);
+    setIf('F_BankPaymentTypeMaster_Code', ['F_BankPaymentTypeMaster_Code', 'f_BankPaymentTypeMaster_Code']);
+    setIf('AccountMaster_Code', ['AccountMaster_Code', 'accountMaster_Code']);
+    setIf('VendorMaster_Code', ['VendorMaster_Code', 'vendorMaster_Code']);
+    return m;
+}
+
 function gpaNumberToWords(amount) {
     const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
         'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
@@ -3258,8 +3361,23 @@ function gpaPickSiteBundleFromRow(r) {
         project: r.ProjectDesp ?? r.projectDesp ?? r.ProjectName ?? r.projectName ?? r.Project ?? '',
         site: r.SiteName ?? r.siteName ?? r.SiteDesp ?? r.SubProjectDesp ?? r.subProjectDesp ?? r.SubProject ?? '',
         siteType: r.SiteType ?? r.siteType ?? r.SiteTypeName ?? '',
-        vendorType: r.VendorType ?? r.vendorType ?? r.PartyType ?? '',
-        contact: r.ContactNo ?? r.contactNo ?? r.Mobile ?? r.mobile ?? r.Phone ?? r.phone ?? '',
+        vendorType: r.VendorType ?? r.vendorType ?? r.PartyType
+            ?? r.IndustryType ?? r.industryType ?? '',
+        contact: r.ContactNo ?? r.contactNo ?? r.Mobile ?? r.mobile ?? r.Phone ?? r.phone
+            ?? r.PhoneNo ?? r.phoneNo ?? '',
+    };
+}
+
+/** Prefer detail-row site fields; fill blanks from DDL_LIST row (ProjectDesp, SubProjectDesp, etc.). */
+function gpaMergeSiteBundlesForPrint(fromDetails, fromList) {
+    const a = fromDetails || { project: '', site: '', siteType: '', vendorType: '', contact: '' };
+    const b = fromList || { project: '', site: '', siteType: '', vendorType: '', contact: '' };
+    return {
+        project: a.project || b.project || '',
+        site: a.site || b.site || '',
+        siteType: a.siteType || b.siteType || '',
+        vendorType: a.vendorType || b.vendorType || '',
+        contact: a.contact || b.contact || '',
     };
 }
 
@@ -3269,13 +3387,25 @@ function PrintGRNPaymentVoucher(code, mode) {
         if (typeof toastr !== 'undefined') toastr.warning('Invalid payment entry.');
         return;
     }
-    GRNPaymentApprovalService.GetGRNPaymentApprovalByCode(codeNum).then(async function (res) {
+    Promise.all([
+        GRNPaymentApprovalService.GetGRNPaymentApprovalByCode(codeNum),
+        GRNPaymentApprovalService.GetCompany().catch(function () { return null; }),
+        GRNPaymentApprovalService.GetList().catch(function () { return null; }),
+    ]).then(async function (results) {
+        const res = results[0];
+        const companyApi = results[1];
+        const listApi = results[2];
         const root = peelGrnPaymentApiRoot(res);
-        const master = firstMasterFromApi(root);
+        let master = firstMasterFromApi(root);
         let details = extractGRNPaymentDetailsArray(root, master);
         if (!master) {
             if (typeof toastr !== 'undefined') toastr.error('Payment entry not found.');
             return;
+        }
+
+        const listRow = listApi ? gpaFindListRowForPrint(listApi, codeNum, master) : null;
+        if (listRow) {
+            master = gpaOverlayMasterFromListRow(master, listRow);
         }
 
         const partyKey = master.AccountMaster_Code ?? master.accountMaster_Code
@@ -3294,15 +3424,25 @@ function PrintGRNPaymentVoucher(code, mode) {
             return mergeEditDetailWithBillLookup(d, billLookup);
         });
 
-        const { companyName, companyAddr, companyGST, companyTag } = gpaSessionCompanyInfo();
-        let creditTo = gpaLookupVendorName(master);
+        const sessionCo = gpaSessionCompanyInfo();
+        const apiCo = companyApi ? gpaCompanyFromGetCompanyApi(companyApi) : null;
+        const { companyName, companyAddr, companyGST, companyTag } = gpaMergePrintCompanyInfo(sessionCo, apiCo);
+
+        let creditTo = String(master.VendorName ?? master.vendorName ?? '').trim();
+        if (!creditTo) creditTo = gpaLookupVendorName(master);
+        if (!creditTo && listRow) {
+            const p = listRow.PartyName ?? listRow.VendorName ?? listRow.AccountName
+                ?? listRow.partyName ?? listRow.Party ?? '';
+            if (p) creditTo = String(p);
+        }
         if (!creditTo && Array.isArray(gpaListFullRows)) {
             const hit = gpaListFullRows.find(function (r) { return r.Code == codeNum; });
             if (hit && hit['Party Name']) creditTo = String(hit['Party Name']);
         }
         creditTo = creditTo || '';
 
-        const refNo = master.RefNo ?? master.refNo ?? '';
+        const voucherNo = String(master.EntryNo ?? master.entryNo ?? '').trim();
+        const refNo = String(master.RefNo ?? master.refNo ?? '').trim();
         const entryDateRaw = master.EntryDate ?? master.entryDate ?? master.PaymentDate ?? master.paymentDate;
         const voucherDate = formatGpaListDate(entryDateRaw);
 
@@ -3316,7 +3456,10 @@ function PrintGRNPaymentVoucher(code, mode) {
 
         const poPair = gpaPickPoFromMergedRows(mergedDetails);
         const poDateDisp = poPair.poDate ? formatGpaListDate(poPair.poDate) : '';
-        const site0 = mergedDetails.length ? gpaPickSiteBundleFromRow(mergedDetails[0]) : gpaPickSiteBundleFromRow({});
+        const site0 = gpaMergeSiteBundlesForPrint(
+            mergedDetails.length ? gpaPickSiteBundleFromRow(mergedDetails[0]) : null,
+            listRow ? gpaPickSiteBundleFromRow(listRow) : null,
+        );
 
         let detailsLines = '';
         mergedDetails.forEach(function (row, idx) {
@@ -3368,8 +3511,9 @@ function PrintGRNPaymentVoucher(code, mode) {
             + '<div class="pv-gst">GSTIN: ' + gpaEscapeHtml(companyGST || '') + '</div>'
             + '<div class="pv-title">Payment Voucher</div>'
             + '<table class="pv-t" role="presentation">'
-            + '<tr><td class="lbl">Reference No</td><td>' + gpaEscapeHtml(String(refNo || '')) + '</td>'
+            + '<tr><td class="lbl">Voucher No</td><td>' + gpaEscapeHtml(voucherNo) + '</td>'
             + '<td class="lbl" style="width:18%;">Voucher Date</td><td style="width:22%;">' + gpaEscapeHtml(voucherDate) + '</td></tr>'
+            + '<tr><td class="lbl">Reference No</td><td colspan="3">' + gpaEscapeHtml(refNo) + '</td></tr>'
             + '<tr><td class="lbl">PO No</td><td>' + gpaEscapeHtml(poPair.poNo) + '</td>'
             + '<td class="lbl">PO Date</td><td>' + gpaEscapeHtml(poDateDisp) + '</td></tr>'
             + '<tr><td class="lbl">NEFT / Cheque / RTGS</td><td colspan="3">' + gpaEscapeHtml(payModeLabel) + '</td></tr>'

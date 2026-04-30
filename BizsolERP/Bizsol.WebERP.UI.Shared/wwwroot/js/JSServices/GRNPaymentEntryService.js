@@ -115,6 +115,20 @@ const GRNPaymentApprovalService = {
                 return value;
             });
     },
+    GetCompany: function GetCompany() {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetCompany`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+    GetList: function GetList() {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
 };
 
 export { GRNPaymentApprovalService };
