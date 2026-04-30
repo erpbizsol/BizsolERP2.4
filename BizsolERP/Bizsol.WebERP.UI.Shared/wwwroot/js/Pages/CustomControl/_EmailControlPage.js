@@ -1,17 +1,19 @@
 import { EmailControlService } from '../../JSServices/_EmailControlService.js';
 
 // ─── State ───────────────────────────────────────────────────────────────────
-let _ecTags   = { To: [], CC: [], BCC: [] };
-let _ecFiles  = [];         // [{ file: File } | null]
-let _ecCallBack = '';
+let _ecTags               = { To: [], CC: [], BCC: [] };
+let _ecFiles              = [];   // [File | null]  — user-added files
+let _ecDefaultAttachments = [];   // [{ FileName, FileBase64, ContentType }]  — pre-loaded by caller
+let _ecCallBack           = '';
 
 // ─── Open ────────────────────────────────────────────────────────────────────
 
 window.EmailControl_Open = function (options) {
     options = options || {};
-    _ecTags    = { To: [], CC: [], BCC: [] };
-    _ecFiles   = [];
-    _ecCallBack = options.callBack || '';
+    _ecTags               = { To: [], CC: [], BCC: [] };
+    _ecFiles              = [];
+    _ecDefaultAttachments = [];
+    _ecCallBack           = options.callBack || '';
 
     _ecClearAllTags();
 
@@ -28,6 +30,14 @@ window.EmailControl_Open = function (options) {
             ? options.to
             : String(options.to).split(/[,;]+/).map(function (e) { return e.trim(); }).filter(Boolean);
         toList.forEach(function (e) { if (e) _ecAddTag('To', e); });
+    }
+
+    // Pre-load default attachments (already base64, e.g. PO PDF)
+    if (options.defaultAttachments && options.defaultAttachments.length > 0) {
+        _ecDefaultAttachments = options.defaultAttachments.slice();
+        _ecDefaultAttachments.forEach(function (att, idx) {
+            _ecRenderDefaultAttachItem(att, idx);
+        });
     }
 
     bootstrap.Modal.getOrCreateInstance(document.getElementById('EmailControlModal')).show();
@@ -125,6 +135,29 @@ window.EmailControl_RemoveFile = function (idx) {
     if (el) el.remove();
 };
 
+window.EmailControl_RemoveDefault = function (idx) {
+    _ecDefaultAttachments[idx] = null;
+    const el = document.getElementById('ecDefaultAttach_' + idx);
+    if (el) el.remove();
+};
+
+function _ecRenderDefaultAttachItem(att, idx) {
+    const list = document.getElementById('ecAttachList');
+    const sizeKb = att.FileBase64
+        ? ((att.FileBase64.length * 3 / 4) / 1024).toFixed(1) + ' KB'
+        : '';
+    const div = document.createElement('div');
+    div.className = 'ec-attach-item ec-attach-default';
+    div.id = 'ecDefaultAttach_' + idx;
+    div.innerHTML = '<i class="fa fa-file-pdf" style="color:#e11d48;font-size:13px;"></i>'
+                  + '<span class="ec-attach-name">' + _ecEscHtml(att.FileName) + '</span>'
+                  + (sizeKb ? '<span class="ec-attach-size">' + sizeKb + '</span>' : '')
+                  + '<span style="font-size:0.68rem;color:#6366f1;font-weight:600;padding:1px 6px;background:#ede9fe;border-radius:4px;">default</span>'
+                  + '<button class="ec-attach-remove" onclick="EmailControl_RemoveDefault(' + idx + ')" title="Remove default attachment">'
+                  + '<i class="fa fa-times"></i></button>';
+    list.insertBefore(div, list.firstChild);
+}
+
 window.EmailControl_FileSelected = function (e) {
     _ecAddFiles(e.target.files);
     e.target.value = '';
@@ -195,9 +228,14 @@ window.EmailControl_Send = async function () {
     btn.disabled = true;
     btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Sending…';
 
-    // Convert files to base64
-    const activeFiles = _ecFiles.filter(function (f) { return f !== null; });
+    // 1. Default attachments (already base64 — e.g. PO print HTML/PDF)
     const attachments = [];
+    _ecDefaultAttachments.forEach(function (att) {
+        if (att !== null) attachments.push(att);
+    });
+
+    // 2. User-uploaded files → convert to base64
+    const activeFiles = _ecFiles.filter(function (f) { return f !== null; });
     for (const file of activeFiles) {
         const base64 = await _ecFileToBase64(file);
         attachments.push({ FileName: file.name, FileBase64: base64, ContentType: file.type || 'application/octet-stream' });
