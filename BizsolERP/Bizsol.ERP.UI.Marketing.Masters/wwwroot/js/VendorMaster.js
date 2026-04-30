@@ -2059,7 +2059,6 @@ function BuildVendorPayload() {
                 FinYear: getFinancialYear(),
                 UpdatedBy: G_UserMasterCode,
                 DatabaseLocation_Code: null,
-
                 ZoneMaster_Code: 0,
                 AreaMaster_Code: 0,
                 Verified: "N",
@@ -2144,7 +2143,8 @@ function BuildVendorPayload() {
                 TransNo_ByThirdParty: "",
                 OtherStatus: "",
                 AttachFileName: "",
-                AttachData: []
+                AttachData: [],
+                UserMasterCode: G_UserMasterCode
             }
         ],
 
@@ -2183,8 +2183,6 @@ function BuildVendorPayload() {
                 VerifiedOn: null
             }
         ],
-
-        UserMasterCode: G_UserMasterCode
     };
 }
 function ValidateVendorForm() {

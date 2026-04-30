@@ -131,7 +131,8 @@ function getApprovalStatus(p) {
 }
 
 /**
- * Pill next to the date on list cards — Ln for current approval step, then Approved/Rejected (not DB level Description like “test”).
+ * Pill next to the date on list cards — CurrentLevelDesc / matching LevelDetails.LevelDesc while pending,
+ * else Approved / Rejected. Falls back to Ln only if no description is present.
  */
 function getGpaCardLevelChipLabel(p) {
     const status = getApprovalStatus(p);
@@ -142,6 +143,14 @@ function getGpaCardLevelChipLabel(p) {
     let cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
     if (cur < 1) cur = 1;
     if (totalLvl > 0 && cur > totalLvl) return 'Approved';
+
+    const masterDesc = String(p.CurrentLevelDesc ?? '').trim();
+    if (masterDesc) return masterDesc;
+
+    const row = getCurrentLevelRowForGpa(p);
+    const rowDesc = row ? pickLevelRowTitleText(row) : '';
+    if (rowDesc) return rowDesc;
+
     return 'L' + cur;
 }
 
@@ -267,6 +276,22 @@ function getLevelRowRemarks(lvlInfo) {
     return s;
 }
 
+/** API / config may use Description, LevelDesc, LevelDesp, or LevelName for the same label. */
+function pickLevelRowTitleText(lvlInfo) {
+    if (!lvlInfo || typeof lvlInfo !== 'object') return '';
+    const c = lvlInfo.Description ?? lvlInfo.description
+        ?? lvlInfo.LevelDesc ?? lvlInfo.LevelDesp
+        ?? lvlInfo.LevelName ?? lvlInfo.levelName;
+    const s = c != null ? String(c).trim() : '';
+    return s;
+}
+
+function getLevelRowDisplayTitle(lvlInfo, levelNo) {
+    const t = pickLevelRowTitleText(lvlInfo);
+    if (t) return t;
+    return 'Level ' + levelNo;
+}
+
 /** Same idea as PO list: API may send LevelDetails as JSON string or array. */
 function parseLevelDetailsToArray(v) {
     if (Array.isArray(v)) return v;
@@ -309,7 +334,8 @@ function mergeLevelDetailsLists(fromList, fromApi) {
         if (n < 1) return;
         const prev = map.get(n) || {};
         const next = { ...prev, ...row };
-        next.LevelDesc = row.LevelDesc || prev.LevelDesc || row.LevelName || prev.LevelName;
+        next.LevelDesc = pickLevelRowTitleText(row) || pickLevelRowTitleText(prev)
+            || row.LevelDesc || prev.LevelDesc || row.LevelName || prev.LevelName || '';
         next.Remarks = getLevelRowRemarks(row) || getLevelRowRemarks(prev) || '';
 
         const hasApprover = (x) => x && String(x.ApproverName ?? x.UserName ?? '').trim() !== '';
@@ -583,16 +609,16 @@ function getFinancialYear() {
     return year + "-" + (year + 1);
 }
 function OpenDetailModal(paymentCode) {
-    //var ModuleName = 'Payment Entry',
-    //    OptionName = 'Verify',
-    //    ShowMsg = 'Y',
-    //    FinYear = getFinancialYear();
+    var ModuleName = 'Payment Entry',
+        OptionName = 'Verify',
+        ShowMsg = 'Y',
+        FinYear = getFinancialYear();
 
-    //MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(async function (response) {
-    //    if (response.CheckModuleOptionRight === 'N') {
-    //        toastr.error(response.Msg);
-    //        return;
-    //    } else {
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(async function (response) {
+        if (response.CheckModuleOptionRight === 'N') {
+            toastr.error(response.Msg);
+            return;
+        } else {
             const code = parseInt(paymentCode, 10);
             if (!Number.isFinite(code) || code <= 0) return;
 
@@ -643,8 +669,8 @@ function OpenDetailModal(paymentCode) {
                         '<i class="fa fa-exclamation-triangle me-1"></i>Error loading bill lines.</td></tr>'
                     );
                 });
-        //}
-   /* });*/
+        }
+    });
    
 }
 
@@ -691,7 +717,7 @@ function BuildGpaDetailStepper(po) {
         const lvlInfo = levels.find(function (l) {
             return (l.LevelNo ?? l.Level ?? l.LevelOrder) == i;
         }) || {};
-        const lvlName = EscHtml(lvlInfo.LevelDesc ?? lvlInfo.LevelName ?? ('Level ' + i));
+        const lvlName = EscHtml(getLevelRowDisplayTitle(lvlInfo, i));
         const approver = EscHtml(lvlInfo.ApproverName ?? lvlInfo.UserName ?? '');
         const approvedOn = lvlInfo.ApprovedOn ? FmtDateDisplay(lvlInfo.ApprovedOn) : '';
         const lvlRemarksRaw = getLevelRowRemarks(lvlInfo);
