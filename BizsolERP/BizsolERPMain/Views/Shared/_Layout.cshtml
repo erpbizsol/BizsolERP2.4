@@ -1601,18 +1601,71 @@
     <script src="~/assets/libs/select2-4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
-        var authKey = '@Html.Raw(ViewBag.AuthKey)';
-        if (authKey !== '') {
-            sessionStorage.setItem('authKey', authKey);
-            sessionStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
-            localStorage.setItem('authKey', authKey);
-            localStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
-        } else {
-            let storedauthKey = localStorage.getItem('authKey');
-            let storedAppBaseURL = localStorage.getItem('AppBaseURL');
-            sessionStorage.setItem('authKey', storedauthKey);
-            sessionStorage.setItem('AppBaseURL', storedAppBaseURL);
-        }
+        (function () {
+            var SESSION_KEY = 'authKey';
+            var SESSION_URL = 'AppBaseURL';
+
+            // --- Step 1: If this page was opened with a fresh AuthKey from server, store it ---
+            var authKey = '@Html.Raw(ViewBag.AuthKey)';
+            if (authKey && authKey !== '') {
+                sessionStorage.setItem(SESSION_KEY, authKey);
+                sessionStorage.setItem(SESSION_URL, '@Html.Raw(ViewBag.AppBaseURL)');
+            }
+
+            // --- Step 2: Cross-tab session sharing via localStorage as a temporary messenger ---
+            // Any existing tab listens for a session-request and responds with its session data.
+            window.addEventListener('storage', function (e) {
+                if (e.key === 'bizsol_session_request' && e.newValue) {
+                    // Another tab is asking for a session.
+                    // Only respond if THIS tab already has a session.
+                    var myKey = sessionStorage.getItem(SESSION_KEY);
+                    var myURL = sessionStorage.getItem(SESSION_URL);
+                    if (myKey) {
+                        // Write the response into localStorage temporarily.
+                        // Use the requestId so only the requesting tab picks it up.
+                        var req = JSON.parse(e.newValue);
+                        localStorage.setItem('bizsol_session_response_' + req.id,
+                            JSON.stringify({ authKey: myKey, appBaseURL: myURL }));
+                        // Clean up the response after a short delay
+                        setTimeout(function () {
+                            localStorage.removeItem('bizsol_session_response_' + req.id);
+                        }, 3000);
+                    }
+                }
+            });
+
+            // --- Step 3: If this tab has no session yet, request one from other open tabs ---
+            // Skip if we already reloaded once to avoid infinite reload loop
+            var alreadyReloaded = sessionStorage.getItem('bizsol_session_reloaded');
+            if (!sessionStorage.getItem(SESSION_KEY) && !alreadyReloaded) {
+                var requestId = Date.now() + '_' + Math.random().toString(36).slice(2);
+                var responseKey = 'bizsol_session_response_' + requestId;
+
+                // Listen for the response
+                window.addEventListener('storage', function onResponse(e) {
+                    if (e.key === responseKey && e.newValue) {
+                        try {
+                            var data = JSON.parse(e.newValue);
+                            if (data && data.authKey) {
+                                sessionStorage.setItem(SESSION_KEY, data.authKey);
+                                sessionStorage.setItem(SESSION_URL, data.appBaseURL || '');
+                                // Mark that we reloaded so we don't loop
+                                sessionStorage.setItem('bizsol_session_reloaded', '1');
+                                localStorage.removeItem(responseKey);
+                                window.removeEventListener('storage', onResponse);
+                                // Reload so the page initialises with the correct session
+                                location.reload();
+                            }
+                        } catch (_) {}
+                    }
+                });
+
+                // Broadcast the request — other tabs will see this via the storage event
+                localStorage.setItem('bizsol_session_request', JSON.stringify({ id: requestId }));
+                // Remove the request key after a short delay
+                setTimeout(function () { localStorage.removeItem('bizsol_session_request'); }, 500);
+            }
+        })();
     </script>
 
     <script>
