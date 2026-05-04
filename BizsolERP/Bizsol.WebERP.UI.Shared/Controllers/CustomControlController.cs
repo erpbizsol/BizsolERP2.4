@@ -112,6 +112,16 @@ namespace Bizsol.WebERP.UI.Shared.Controllers
             return PartialView("_ScanQRCodeByCameraControl");
 
         }
+
+        public ActionResult EmailControl(string ToEmail = "", string Subject = "", string Body = "", string CallBackFunctionName = "")
+        {
+            ViewBag.ToEmail = ToEmail;
+            ViewBag.Subject = Subject;
+            ViewBag.Body = Body;
+            ViewBag.CallBackFunctionName = CallBackFunctionName;
+            return PartialView("_EmailControl");
+        }
+
         public ActionResult SelectMachineToGetWeightControl(string OutputTextElementID)
         {
 
