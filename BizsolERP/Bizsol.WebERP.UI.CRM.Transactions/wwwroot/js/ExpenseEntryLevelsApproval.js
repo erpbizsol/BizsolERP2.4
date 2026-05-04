@@ -98,17 +98,132 @@ function getLevelCode(p) {
     return Number.isFinite(n) ? n : 0;
 }
 
+/** Same idea as GRN Payment Approval: API may send LevelDetails as JSON string or array. */
+function parseLevelDetailsToArray(v) {
+    if (Array.isArray(v)) return v;
+    if (v == null) return [];
+    if (typeof v === 'string') {
+        const t = v.trim();
+        if (!t) return [];
+        try {
+            const j = JSON.parse(t);
+            if (Array.isArray(j)) return j;
+            if (j && Array.isArray(j.Data)) return j.Data;
+            if (j && Array.isArray(j.data)) return j.data;
+            if (j && Array.isArray(j.Levels)) return j.Levels;
+            if (j && Array.isArray(j.levels)) return j.levels;
+            return [];
+        } catch (e) {
+            return [];
+        }
+    }
+    if (typeof v === 'object' && Array.isArray(v.LevelDetails)) return v.LevelDetails;
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+        if (Array.isArray(v.Data)) return v.Data;
+        if (Array.isArray(v.data)) return v.data;
+        if (Array.isArray(v.Levels)) return v.Levels;
+        if (Array.isArray(v.levels)) return v.levels;
+    }
+    return [];
+}
+
+function getLevelRowRemarks(lvlInfo) {
+    if (!lvlInfo || typeof lvlInfo !== 'object') return '';
+    const r = lvlInfo.Remarks ?? lvlInfo.Remark ?? lvlInfo.ApprovalRemarks ?? lvlInfo.LevelRemarks
+        ?? lvlInfo.Comments ?? lvlInfo.RejectionRemarks;
+    const s = r != null ? String(r).trim() : '';
+    return s;
+}
+
+/** API / config may use Description, LevelDesc, LevelDesp, or LevelName for the same label (GRN pattern). */
+function pickLevelRowTitleText(lvlInfo) {
+    if (!lvlInfo || typeof lvlInfo !== 'object') return '';
+    const c = lvlInfo.Description ?? lvlInfo.description
+        ?? lvlInfo.LevelDesc ?? lvlInfo.LevelDesp
+        ?? lvlInfo.levelDesc ?? lvlInfo.levelDesp
+        ?? lvlInfo.LevelName ?? lvlInfo.levelName
+        ?? lvlInfo.LevelDescription ?? lvlInfo.levelDescription;
+    const s = c != null ? String(c).trim() : '';
+    return s;
+}
+
+function getLevelRowDisplayTitle(lvlInfo, levelNo) {
+    const t = pickLevelRowTitleText(lvlInfo);
+    if (t) return t;
+    return 'Level ' + levelNo;
+}
+
+function levelNoFromRow(r) {
+    if (!r || typeof r !== 'object') return 0;
+    const keys = ['LevelNo', 'Level', 'LevelOrder', 'ApprovalLevelNo', 'Level_No', 'LevelIndex',
+        'SrNo', 'SNo', 'Sequence', 'OrderNo', 'RowNo', 'LineNo'];
+    for (let i = 0; i < keys.length; i++) {
+        const v = r[keys[i]];
+        if (v == null || v === '') continue;
+        const n = parseInt(v, 10);
+        if (Number.isFinite(n) && n > 0) return n;
+    }
+    return 0;
+}
+
+/** Match level row to step 1..n: by LevelNo first, else array order (same as GRN Payment Approval). */
+function getLevelRowByStep(levels, stepIndex) {
+    const arr = Array.isArray(levels) ? levels : [];
+    const hit = arr.find(function (l) { return levelNoFromRow(l) === stepIndex; });
+    if (hit) return hit;
+    if (stepIndex >= 1 && stepIndex <= arr.length) return arr[stepIndex - 1];
+    return null;
+}
+
+function getCurrentLevelRowForEea(p) {
+    const cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
+    return getLevelRowByStep(parseLevelDetailsToArray(p.LevelDetails), cur);
+}
+
+/**
+ * After GetExpenseEntryApprovalDetail, master may overwrite list LevelDetails with [] or lose Description.
+ * Merge list row with API row by LevelNo (same as GRN Payment Approval).
+ */
+function mergeLevelDetailsLists(fromList, fromApi) {
+    const a = Array.isArray(fromList) ? fromList : [];
+    const b = Array.isArray(fromApi) ? fromApi : [];
+    if (!b.length) return a.slice();
+    if (!a.length) return b.slice();
+
+    const map = new Map();
+    a.forEach(function (row, idx) {
+        let n = levelNoFromRow(row);
+        if (n < 1) n = idx + 1;
+        map.set(n, { ...row });
+    });
+    b.forEach(function (row, idx) {
+        let n = levelNoFromRow(row);
+        if (n < 1) n = idx + 1;
+        const prev = map.get(n) || {};
+        const next = { ...prev, ...row };
+        next.LevelDesc = pickLevelRowTitleText(row) || pickLevelRowTitleText(prev)
+            || row.LevelDesc || prev.LevelDesc || row.LevelName || prev.LevelName || '';
+        next.Remarks = getLevelRowRemarks(row) || getLevelRowRemarks(prev) || '';
+
+        const hasApprover = function (x) { return x && String(x.ApproverName ?? x.UserName ?? '').trim() !== ''; };
+        if (!hasApprover(row) && hasApprover(prev)) {
+            next.ApproverName = prev.ApproverName;
+            next.UserName = prev.UserName;
+        }
+        const hasDate = function (x) { return x && String(x.ApprovedOn ?? '').trim() !== ''; };
+        if (!hasDate(row) && hasDate(prev)) {
+            next.ApprovedOn = prev.ApprovedOn;
+        }
+
+        map.set(n, next);
+    });
+    return [...map.keys()].sort(function (x, y) { return x - y; }).map(function (k) { return map.get(k); });
+}
+
 function NormalizeEntryList(list) {
     return (list || []).map(function (row) {
         const p = { ...row };
-        if (typeof p.LevelDetails === 'string') {
-            try {
-                p.LevelDetails = JSON.parse(p.LevelDetails);
-            } catch (e) {
-                p.LevelDetails = [];
-            }
-        }
-        if (!Array.isArray(p.LevelDetails)) p.LevelDetails = [];
+        p.LevelDetails = parseLevelDetailsToArray(p.LevelDetails);
         if (!p.TotalLevels && p.LevelDetails.length > 0) {
             p.TotalLevels = p.LevelDetails.length;
         }
@@ -170,6 +285,53 @@ function RenderEntryCards(list) {
     container.innerHTML = list.map(function (p) { return BuildEntryCard(p); }).join('');
 }
 
+/**
+ * Pending only: current level remarks, else prior level (carry-forward for chip / flow when L2 row empty).
+ */
+function getEeaListCardRemarkFromLevels(p) {
+    const levels = parseLevelDetailsToArray(p.LevelDetails);
+    if (!levels.length) return '';
+    if (getApprovalStatus(p).toLowerCase() !== 'pending') return '';
+
+    const row = getCurrentLevelRowForEea(p);
+    const r = row ? getLevelRowRemarks(row) : '';
+    if (r && String(r).trim()) return String(r).trim();
+
+    const cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
+    if (cur > 1) {
+        const prevRow = getLevelRowByStep(levels, cur - 1);
+        const pr = prevRow ? getLevelRowRemarks(prevRow) : '';
+        if (pr && String(pr).trim()) return String(pr).trim();
+    }
+    return '';
+}
+
+/**
+ * Fully approved → layer chip shows “Approved”; pending → prior/current remarks then level desc (GRN-style).
+ */
+function getEeaCardLevelChipLabel(p) {
+    const status = getApprovalStatus(p);
+    const st = status.toLowerCase();
+    if (st === 'approved') return 'Approved';
+    if (st === 'rejected') return 'Rejected';
+    const totalLvl = parseInt(p.TotalLevels ?? p.MaxLevel ?? 1, 10) || 1;
+    let cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
+    if (cur < 1) cur = 1;
+    if (totalLvl > 0 && cur > totalLvl) return 'Approved';
+
+    const rmk = getEeaListCardRemarkFromLevels(p);
+    if (rmk) return rmk;
+
+    const masterDesc = String(p.CurrentLevelDesc ?? '').trim();
+    if (masterDesc) return masterDesc;
+
+    const row = getCurrentLevelRowForEea(p);
+    const rowDesc = row ? pickLevelRowTitleText(row) : '';
+    if (rowDesc) return rowDesc;
+
+    return 'L' + cur;
+}
+
 function BuildEntryCard(p) {
     const code = getExpenseMasterCode(p);
     const entryPlain = String(getEntryNo(p));
@@ -181,7 +343,7 @@ function BuildEntryCard(p) {
     const allowedAmt = FmtCurrency(getTotalAllowedAmount(p));
     const totalLvl = parseInt(p.TotalLevels ?? p.MaxLevel ?? 3, 10) || 1;
     const curLvlNo = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
-    const lvlDesc = EscHtml(p.CurrentLevelDesc ?? p.LevelDesc ?? ('Level ' + curLvlNo));
+    const lvlDesc = EscHtml(getEeaCardLevelChipLabel(p));
     const status = getApprovalStatus(p);
 
     let statusClr, statusBg;
@@ -215,7 +377,7 @@ function BuildEntryCard(p) {
                 <div class="gpa-pay-card-meta">
                     <span><i class="fa fa-calendar-alt me-1"></i>${entryDate || '—'}</span>
                     <span class="gpa-pay-level-chip">
-                        <i class="fa fa-layer-group me-1"></i>${lvlDesc}
+                        <i class="fa fa-layer-group me-1"></i><span class="eea-card-level-text" data-eea-code="${code}">${lvlDesc}</span>
                     </span>
                 </div>
             </div>
@@ -284,14 +446,21 @@ function FilterEeaCards(query) {
 
 function mergeDetailIntoEntry(root, baseEntry) {
     const p = { ...baseEntry };
+    const fromList = parseLevelDetailsToArray(baseEntry.LevelDetails);
+
     if (Array.isArray(root)) {
         p._detailLines = root;
+        p.LevelDetails = fromList.length ? fromList.slice() : [];
         return p;
     }
     const data = root?.Data ?? root?.data ?? root;
-    if (!data || typeof data !== 'object') return p;
+    if (!data || typeof data !== 'object') {
+        p.LevelDetails = fromList.length ? fromList.slice() : parseLevelDetailsToArray(p.LevelDetails);
+        return p;
+    }
     if (Array.isArray(data)) {
         p._detailLines = data;
+        p.LevelDetails = fromList.length ? fromList.slice() : parseLevelDetailsToArray(p.LevelDetails);
         return p;
     }
 
@@ -304,12 +473,10 @@ function mergeDetailIntoEntry(root, baseEntry) {
         Object.assign(p, master);
     }
 
-    if (typeof p.LevelDetails === 'string') {
-        try { p.LevelDetails = JSON.parse(p.LevelDetails); } catch (e) { p.LevelDetails = []; }
-    }
-    if (data.LevelDetails && !p.LevelDetails?.length) {
-        p.LevelDetails = Array.isArray(data.LevelDetails) ? data.LevelDetails : p.LevelDetails;
-    }
+    const fromApi = parseLevelDetailsToArray(
+        (data && data.LevelDetails != null) ? data.LevelDetails : p.LevelDetails
+    );
+    p.LevelDetails = mergeLevelDetailsLists(fromList, fromApi);
 
     const lines = data.ExpenseEntryDetails ?? data.ExpenseEntryDetail ?? data.Details ?? data.Items ?? data.Lines;
     if (Array.isArray(lines)) p._detailLines = lines;
@@ -407,6 +574,67 @@ function paintModalFromEntry(entry) {
     );
 
     $('#eeaModalApprovalStepper').html(BuildEeaDetailStepper(entry));
+    syncEeaRemarksToActiveStep();
+}
+
+/**
+ * List card layer chip for the row whose modal is open — prefer hfEeaEntryCode + .gpa-pay-card[data-code]
+ * (mergeDetailIntoEntry can change master Code so getExpenseMasterCode alone may miss).
+ */
+function getEeaListCardLevelChipEl() {
+    const fromHf = parseInt($('#hfEeaEntryCode').val() || '0', 10);
+    if (fromHf > 0) {
+        const byCard = document.querySelector('.gpa-pay-card[data-code="' + fromHf + '"] .eea-card-level-text');
+        if (byCard) return byCard;
+        const byAttr = document.querySelector('.eea-card-level-text[data-eea-code="' + fromHf + '"]');
+        if (byAttr) return byAttr;
+    }
+    if (G_CurrentEntry) {
+        const c = getExpenseMasterCode(G_CurrentEntry);
+        if (c > 0) {
+            return document.querySelector('.gpa-pay-card[data-code="' + c + '"] .eea-card-level-text')
+                || document.querySelector('.eea-card-level-text[data-eea-code="' + c + '"]');
+        }
+    }
+    return null;
+}
+
+/**
+ * Active Pending step: bubble = bottom textarea only (no other level / API fill).
+ * List + modal chips: typed || getEeaCardLevelChipLabel (chip logic unchanged — prior remark still on chip only).
+ */
+function syncEeaRemarksToActiveStep() {
+    const typed = ($('#eeaFrmRemarks').val() || '').trim();
+
+    const el = document.getElementById('eeaActiveStepComposeRemarks');
+    if (el) {
+        if (typed) {
+            el.style.display = '';
+            el.innerHTML = '<i class="fa fa-comment me-1"></i>' + EscHtml(typed);
+        } else {
+            el.style.display = 'none';
+            el.innerHTML = '';
+        }
+    }
+
+    if (!G_CurrentEntry) return;
+
+    const pend = getApprovalStatus(G_CurrentEntry).toLowerCase() === 'pending';
+    const base = getEeaCardLevelChipLabel(G_CurrentEntry);
+    const headerListLabel = pend ? (typed || base) : base;
+
+    const chipWrap = document.getElementById('eeaModalLevelChip');
+    const chipTxt = document.getElementById('eeaModalLevelChipText');
+    if (chipWrap && chipTxt) {
+        chipTxt.textContent = headerListLabel;
+        chipWrap.style.display = headerListLabel ? 'inline-flex' : 'none';
+    }
+
+    if (!pend) return;
+    const listChip = getEeaListCardLevelChipEl();
+    if (listChip) {
+        listChip.textContent = headerListLabel;
+    }
 }
 
 function BuildEeaInfoItem(label, value, icon, valueColor) {
@@ -422,21 +650,35 @@ function BuildEeaDetailStepper(entry) {
     const totalLvl = parseInt(entry.TotalLevels ?? entry.MaxLevel ?? 3, 10) || 1;
     const status = getApprovalStatus(entry);
     const st = status.toLowerCase();
-    const levels = Array.isArray(entry.LevelDetails) ? entry.LevelDetails : [];
+    const levels = parseLevelDetailsToArray(entry.LevelDetails);
 
     let html = '<div class="gpa-detail-stepper">';
     for (let i = 1; i <= totalLvl; i++) {
-        const lvlInfo = levels.find(function (l) {
-            return (l.LevelNo ?? l.Level ?? l.LevelOrder) == i;
-        }) || {};
-        const lvlName = EscHtml(lvlInfo.LevelDesc ?? lvlInfo.LevelName ?? ('Level ' + i));
-        const approver = EscHtml(lvlInfo.ApproverName ?? lvlInfo.UserName ?? '');
-        const approvedOn = lvlInfo.ApprovedOn ? FmtDateDisplay(lvlInfo.ApprovedOn) : '';
+        const lvlInfo = getLevelRowByStep(levels, i) || {};
 
         let stepState;
         if (st === 'approved' || i < curLvlNo) stepState = 'done';
         else if (i === curLvlNo) stepState = st === 'rejected' ? 'rejected' : 'active';
         else stepState = 'pending';
+
+        let lvlNameRaw = getLevelRowDisplayTitle(lvlInfo, i);
+        if (!lvlNameRaw && i === curLvlNo) {
+            lvlNameRaw = String(entry.CurrentLevelDesc ?? '').trim();
+        }
+        if (!lvlNameRaw) {
+            lvlNameRaw = i === curLvlNo ? (String(entry.CurrentLevelDesc ?? '').trim() || 'Level ' + i) : 'Level ' + i;
+        }
+        const lvlTitleHtml = '<div class="gpa-dstep-title">' + EscHtml(lvlNameRaw) + '</div>';
+        const approver = EscHtml(lvlInfo.ApproverName ?? lvlInfo.UserName ?? '');
+        const approvedOn = lvlInfo.ApprovedOn ? FmtDateDisplay(lvlInfo.ApprovedOn) : '';
+        const lvlRemarksRaw = getLevelRowRemarks(lvlInfo);
+        let remarksHtml = '';
+        let composeRemarksSlot = '';
+        if (stepState === 'active' && st === 'pending') {
+            composeRemarksSlot = '<div class="gpa-dstep-remarks" id="eeaActiveStepComposeRemarks" style="display:none;"></div>';
+        } else if (lvlRemarksRaw && (stepState === 'done' || stepState === 'rejected')) {
+            remarksHtml = '<div class="gpa-dstep-remarks"><i class="fa fa-comment me-1"></i>' + EscHtml(lvlRemarksRaw) + '</div>';
+        }
 
         const iconHtml = stepState === 'done' ? '<i class="fa fa-check"></i>'
             : stepState === 'rejected' ? '<i class="fa fa-times"></i>'
@@ -458,8 +700,10 @@ function BuildEeaDetailStepper(entry) {
         html += '<div class="gpa-dstep-item gpa-dstep-' + stepState + '">' +
             '<div class="gpa-dstep-circle">' + iconHtml + '</div>' +
             '<div class="gpa-dstep-body">' +
-            '<div class="gpa-dstep-title">' + lvlName + '</div>' +
+            lvlTitleHtml +
             approverHtml +
+            remarksHtml +
+            composeRemarksSlot +
             '<div class="gpa-dstep-badge gpa-dstep-badge-' + stepState + '">' + badgeLabel + '</div>' +
             '</div>' +
             '</div>';
@@ -485,7 +729,7 @@ function RenderEeaModalItems(items) {
         const head = EscHtml(row['Expense Head'] ?? row.ExpenseHead ?? row.ExpenseDesp ?? '—');
         const expAmt = FmtCurrency(row['Expended Amount'] ?? row.ExpendedAmount ?? 0);
         const apprAmt = FmtCurrency(row['Approved Amount'] ?? row.AllowAmount ?? 0);
-        const rem = EscHtml(row.Remarks ?? row['Remarks'] ?? '');
+        const rem = EscHtml(row.Remarks ?? row['Remarks'] ?? row.Description ?? row.LineDescription ?? row.LineDesp ?? '');
         const proj = EscHtml(row['Project Name'] ?? row.ProjectName ?? row.ProjectDesp ?? '');
         const subp = EscHtml(row['Sub Project Name'] ?? row.SubProjectName ?? row.SubProjectDesp ?? '');
         html += '<tr>' +
@@ -591,6 +835,12 @@ function ExecuteEeaApproval(entryCode, levelCode, remarks, action) {
 }
 
 function CloseDetailModal() {
+    if (G_CurrentEntry) {
+        const chip = getEeaListCardLevelChipEl();
+        if (chip && getApprovalStatus(G_CurrentEntry).toLowerCase() === 'pending') {
+            chip.textContent = getEeaCardLevelChipLabel(G_CurrentEntry);
+        }
+    }
     $('#modalEeaDetail').modal('hide');
     G_CurrentEntry = null;
 }
@@ -626,6 +876,11 @@ document.addEventListener('DOMContentLoaded', function () {
         searchEl.addEventListener('input', function () {
             FilterEeaCards(this.value);
         });
+    }
+
+    const remarksEl = document.getElementById('eeaFrmRemarks');
+    if (remarksEl) {
+        remarksEl.addEventListener('input', syncEeaRemarksToActiveStep);
     }
 });
 

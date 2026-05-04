@@ -609,16 +609,16 @@ function getFinancialYear() {
     return year + "-" + (year + 1);
 }
 function OpenDetailModal(paymentCode) {
-    var ModuleName = 'Payment Entry',
-        OptionName = 'Verify',
-        ShowMsg = 'Y',
-        FinYear = getFinancialYear();
+    //var ModuleName = 'Payment Entry',
+    //    OptionName = 'Verify',
+    //    ShowMsg = 'Y',
+    //    FinYear = getFinancialYear();
 
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(async function (response) {
-        if (response.CheckModuleOptionRight === 'N') {
-            toastr.error(response.Msg);
-            return;
-        } else {
+    //MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(async function (response) {
+    //    if (response.CheckModuleOptionRight === 'N') {
+    //        toastr.error(response.Msg);
+    //        return;
+    //    } else {
             const code = parseInt(paymentCode, 10);
             if (!Number.isFinite(code) || code <= 0) return;
 
@@ -669,8 +669,8 @@ function OpenDetailModal(paymentCode) {
                         '<i class="fa fa-exclamation-triangle me-1"></i>Error loading bill lines.</td></tr>'
                     );
                 });
-        }
-    });
+    //    }
+    //});
    
 }
 
