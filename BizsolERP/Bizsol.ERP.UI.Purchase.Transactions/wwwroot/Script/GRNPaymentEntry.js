@@ -16,6 +16,7 @@ $(document).ready(async function () {
     };
 });
 
+
 // ── Numeric input helpers ────────────────────────────────────────────────────
 // Block e, E, +, - keys that browsers allow in type="number"
 function blockNonNumeric(e) {

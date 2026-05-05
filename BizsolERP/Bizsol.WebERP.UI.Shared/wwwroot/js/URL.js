@@ -1,5 +1,6 @@
 import { environment } from './environment.js';
 
+
 let UrlService = {
     BASE_URL: environment.BASE_URL,
     ERP_SIDE_MENU: `${environment.BASE_URL}/UserModule`,
