@@ -3426,7 +3426,7 @@ function PrintGRNPaymentVoucher(code, mode) {
 
         const sessionCo = gpaSessionCompanyInfo();
         const apiCo = companyApi ? gpaCompanyFromGetCompanyApi(companyApi) : null;
-        const { companyName, companyAddr, companyGST, companyTag } = gpaMergePrintCompanyInfo(sessionCo, apiCo);
+        const { companyName, companyAddr, companyTag } = gpaMergePrintCompanyInfo(sessionCo, apiCo);
 
         let creditTo = String(master.VendorName ?? master.vendorName ?? '').trim();
         if (!creditTo) creditTo = gpaLookupVendorName(master);
@@ -3489,8 +3489,7 @@ function PrintGRNPaymentVoucher(code, mode) {
             + '.pv-wrap{max-width:780px;margin:0 auto;border:2px solid #000;padding:12px 14px;}'
             + '.pv-co{text-align:center;font-size:14pt;font-weight:800;margin-bottom:2px;}'
             + '.pv-tag{text-align:center;font-size:8.5pt;margin-bottom:4px;color:#222;}'
-            + '.pv-addr{text-align:center;font-size:9pt;margin-bottom:3px;line-height:1.35;}'
-            + '.pv-gst{text-align:center;font-size:9pt;margin-bottom:10px;}'
+            + '.pv-addr{text-align:center;font-size:9pt;margin-bottom:10px;line-height:1.35;}'
             + '.pv-title{text-align:center;font-weight:800;font-size:11pt;border:1px solid #000;padding:5px;margin:10px 0 12px;letter-spacing:0.04em;}'
             + 'table.pv-t{width:100%;border-collapse:collapse;margin-bottom:0;}'
             + 'table.pv-t td{border:1px solid #000;padding:6px 8px;font-size:9.5pt;vertical-align:top;}'
@@ -3508,7 +3507,6 @@ function PrintGRNPaymentVoucher(code, mode) {
             + '<div class="pv-co">' + gpaEscapeHtml(companyName || 'Company Name') + '</div>'
             + (companyTag ? '<div class="pv-tag">' + gpaEscapeHtml(companyTag) + '</div>' : '')
             + (companyAddr ? '<div class="pv-addr">Address: ' + gpaEscapeHtml(companyAddr) + '</div>' : '')
-            + '<div class="pv-gst">GSTIN: ' + gpaEscapeHtml(companyGST || '') + '</div>'
             + '<div class="pv-title">Payment Voucher</div>'
             + '<table class="pv-t" role="presentation">'
             + '<tr><td class="lbl">Voucher No</td><td>' + gpaEscapeHtml(voucherNo) + '</td>'
