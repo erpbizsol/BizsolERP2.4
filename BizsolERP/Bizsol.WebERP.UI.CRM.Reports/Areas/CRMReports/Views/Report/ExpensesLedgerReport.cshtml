@@ -1,0 +1,609 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker3.min.css" />
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.CRM.Transactions/css/ExpenseEntry.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/ExpensesLedgerReport.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+<style>
+    .elr-page .elr-filter-row {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
+    gap: 0.75rem 2rem;
+    align-items: end;
+}
+    .btn:not(:disabled):not(.disabled) { cursor: pointer !important; }
+
+    /* Ledger report: stat chips are display-only (not filters) */
+    .elr-page .ee-list-stats-strip .ee-list-stat-chip {
+        cursor: default;
+        pointer-events: none;
+    }
+    .elr-page .ee-list-stats-strip .ee-list-stat-chip:hover {
+        transform: none;
+        background: rgba(255, 255, 255, 0.18);
+    }
+    .elr-page .ee-list-stats-strip .ee-list-stat-chip--pending:hover,
+    .elr-page .ee-list-stats-strip .ee-list-stat-chip--onme:hover,
+    .elr-page .ee-list-stats-strip .ee-list-stat-chip--approved:hover {
+        transform: none;
+    }
+
+    #tblLedger td.num,
+    #tblLedger th.num {
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    #tblLedger tr.row-opening td,
+    #tblLedger tr.row-closing td {
+        font-weight: 700;
+        background: rgba(102, 126, 234, 0.12) !important;
+        color: #4338ca !important;
+        border-top: 1px solid rgba(79, 70, 229, 0.35);
+    }
+
+    .elr-paginator {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px 20px;
+        padding: 14px 18px 16px;
+        border-top: 1px solid #e2e8f0;
+        background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+    }
+    .elr-paginator__left {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 0.75rem;
+    }
+    .elr-paginator__label {
+        margin: 0;
+        font-size: 0.77rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+        white-space: nowrap;
+    }
+    .elr-paginator__page-size {
+        height: 38px !important;
+        min-height: 38px !important;
+        max-height: 38px !important;
+        width: auto !important;
+        min-width: 4.5rem !important;
+        padding: 0 2rem 0 0.65rem !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 10px !important;
+        background-color: #fff !important;
+        background-position: right 0.5rem center;
+        box-sizing: border-box !important;
+        box-shadow: none !important;
+    }
+    .elr-paginator__page-size:focus {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15) !important;
+        outline: none !important;
+    }
+    .elr-paginator__center {
+        flex: 1 1 auto;
+        text-align: center;
+        min-width: 10rem;
+    }
+    .elr-paginator .elr-page-info {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: #334155;
+        letter-spacing: 0.02em;
+    }
+    .elr-paginator__nav {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    /* Override app layout rules that clip paginator buttons (height/line-height/font-size) */
+    .elr-page .elr-paginator .elr-nav-btn {
+        height: auto !important;
+        min-height: 38px !important;
+        min-width: 42px !important;
+        padding: 0 12px !important;
+        margin: 0 !important;
+        line-height: 1.25 !important;
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 10px !important;
+        background: #fff !important;
+        color: #475569 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        cursor: pointer !important;
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+    .elr-page .elr-paginator .elr-nav-btn:hover:not(:disabled) {
+        background: #f1f5f9 !important;
+        border-color: #94a3b8 !important;
+        color: #1e293b !important;
+    }
+    .elr-page .elr-paginator .elr-nav-btn:focus-visible {
+        outline: 2px solid #667eea;
+        outline-offset: 2px;
+    }
+    .elr-page .elr-paginator .elr-nav-btn:active:not(:disabled) {
+        transform: scale(0.98);
+    }
+    .elr-page .elr-paginator .elr-nav-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed !important;
+    }
+    .elr-page .elr-paginator .elr-nav-btn i {
+        font-size: 1rem;
+        line-height: 1;
+        pointer-events: none;
+    }
+    @@media (max-width: 767px) {
+        .elr-paginator {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .elr-paginator__center {
+            order: 2;
+            text-align: center;
+        }
+        .elr-paginator__left {
+            order: 1;
+            justify-content: center;
+        }
+        .elr-paginator__nav {
+            order: 3;
+            justify-content: center;
+        }
+    }
+
+    /* Header toolbar: squircle icon buttons (Excel, Print, Close) */
+    .elr-page .elr-header-toolbar {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    .elr-page .elr-header-icon-btn {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        min-height: 46px;
+        padding: 0;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid rgba(255, 255, 255, 0.92);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.06);
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+        line-height: 1 !important;
+    }
+    .elr-page .elr-header-icon-btn:hover {
+        background: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.08);
+        border-color: #fff;
+    }
+    .elr-page .elr-header-icon-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    .elr-page .elr-header-icon-btn:focus-visible {
+        outline: 2px solid rgba(255, 255, 255, 0.95);
+        outline-offset: 3px;
+    }
+    .elr-page .elr-header-icon-btn i {
+        font-size: 1.15rem;
+        line-height: 1;
+    }
+    .elr-page .elr-header-icon-btn--excel i {
+        color: #0f7c3a;
+    }
+    .elr-page .elr-header-icon-btn--excel:hover i {
+        color: #0a5c2a;
+    }
+    .elr-page .elr-header-icon-btn--print i {
+        color: #334155;
+    }
+    .elr-page .elr-header-icon-btn--print:hover i {
+        color: #1e293b;
+    }
+    .elr-page .elr-header-icon-btn--close i {
+        color: #c2410c;
+    }
+    .elr-page .elr-header-icon-btn--close:hover {
+        border-color: rgba(254, 215, 170, 0.95);
+        background: #fff7ed;
+    }
+    .elr-page .elr-header-icon-btn--close:hover i {
+        color: #9a3412;
+    }
+    .elr-page .elr-header-icon-btn--closing {
+        border: 2px solid rgba(16, 185, 129, 0.8);
+    }
+    .elr-page .elr-header-icon-btn--closing i {
+        color: #047857;
+    }
+    .elr-page .elr-header-icon-btn--closing:hover {
+        background: #ecfdf5;
+        border-color: #10b981;
+    }
+    .elr-page .elr-header-icon-btn--closing:hover i {
+        color: #065f46;
+    }
+
+    /* Filter bar: equal-width fields (grid) + Show only in row */
+  /*   .elr-page .elr-filter-row {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
+        gap: 0.75rem 1rem;
+        align-items: end;
+    } */
+    .elr-page .elr-filter-field {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+    }
+    .elr-page .elr-filter-field .form-label {
+        font-size: 0.77rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0.35rem;
+        line-height: 1.25;
+    }
+    /* Same box as Select2: height, border, radius — dates + native select (pre-init) */
+    .elr-page .elr-filter-field input.form-control.form-control-sm,
+    .elr-page .elr-filter-field select.form-control.form-control-sm {
+        height: 38px !important;
+        min-height: 38px !important;
+        max-height: 38px !important;
+        padding: 0 0.65rem !important;
+        font-size: 13px !important;
+        line-height: 1.35 !important;
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 10px !important;
+        box-sizing: border-box !important;
+        background: #fff !important;
+        box-shadow: none !important;
+    }
+    .elr-page .elr-filter-field input.form-control.form-control-sm:focus,
+    .elr-page .elr-filter-field select.form-control.form-control-sm:focus {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15) !important;
+        outline: none !important;
+    }
+    .elr-page .elr-filter-field .select2-container {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+    .elr-page .elr-filter-field .select2-container--default .select2-selection--single {
+        height: 38px !important;
+        min-height: 38px !important;
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 10px !important;
+        box-sizing: border-box;
+        background: #fff;
+    }
+    .elr-page .elr-filter-field .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 34px !important;
+        padding-left: 0.65rem;
+        padding-right: 1.5rem;
+        font-size: 13px;
+        color: #1e293b;
+    }
+    .elr-page .elr-filter-field .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 34px;
+        right: 6px;
+        top: 50%;
+        margin-top: -17px;
+    }
+    .elr-page .elr-filter-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        align-self: end;
+        gap: 0.5rem;
+        justify-content: flex-end;
+        padding-bottom: 0;
+    }
+    .elr-page .elr-filter-actions .elr-btn-show-led {
+        height: 38px;
+        min-height: 38px;
+        padding-left: 1.2rem;
+        padding-right: 1.2rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    @@media (max-width: 1199px) {
+        .elr-page .elr-filter-row {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .elr-page .elr-filter-actions {
+            grid-column: 1 / -1;
+            justify-content: flex-start;
+        }
+    }
+    @@media (max-width: 767px) {
+        .elr-page .elr-filter-row {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    /* Datepicker: tighter calendar + custom footer (no empty rows) */
+    .datepicker.elr-dp-themed {
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06);
+        border: 1px solid #e2e8f0;
+        padding-bottom: 0;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    .datepicker.elr-dp-themed .datepicker-days table {
+        margin-bottom: 0;
+    }
+    .datepicker.elr-dp-themed .datepicker-days table thead tr,
+    .datepicker.elr-dp-themed .datepicker-days table tbody tr {
+        border: none;
+    }
+    .datepicker.elr-dp-themed .datepicker-days table thead th.dow {
+        background: #f1f5f9;
+        color: #475569;
+        font-weight: 700;
+        font-size: 11px;
+        padding: 0.45rem 0;
+        border-radius: 0;
+    }
+    .datepicker.elr-dp-themed .datepicker-switch {
+        font-weight: 700;
+        color: #1e293b;
+    }
+    .datepicker.elr-dp-themed .day.active,
+    .datepicker.elr-dp-themed .day.active:hover,
+    .datepicker.elr-dp-themed .day.range-start {
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        background-image: none;
+        color: #fff !important;
+        text-shadow: none;
+    }
+    .datepicker.elr-dp-themed .day.today:not(.active) {
+        background: #eef2ff !important;
+        color: #4338ca !important;
+    }
+    .datepicker.elr-dp-themed table tfoot tr:empty {
+        display: none;
+    }
+    .elr-dp-footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: stretch;
+        padding: 10px 10px 12px;
+        margin: 0;
+        border-top: 1px solid #e2e8f0;
+        background: #f8fafc;
+        border-radius: 0 0 12px 12px;
+    }
+    .elr-dp-footer .elr-dp-foot-btn {
+        flex: 1 1 auto;
+        min-height: 34px;
+        font-size: 12px;
+        font-weight: 700;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: #334155;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .elr-dp-footer .elr-dp-foot-btn:hover {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+        color: #0f172a;
+    }
+    .elr-dp-footer .elr-dp-foot-btn--primary {
+        border: none;
+        color: #fff !important;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+    }
+    .elr-dp-footer .elr-dp-foot-btn--primary:hover {
+        filter: brightness(1.05);
+        color: #fff !important;
+    }
+    .elr-dp-footer .elr-dp-foot-btn--muted {
+        color: #64748b;
+    }
+    .elr-page .elr-filter-actions .btn {
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.82rem;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .elr-page .elr-btn-show-led {
+        border: none !important;
+        color: #fff !important;
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        box-shadow: 0 3px 12px rgba(102, 126, 234, 0.4);
+    }
+    .elr-page .elr-btn-show-led:hover {
+        filter: brightness(1.05);
+        transform: translateY(-1px);
+        color: #fff !important;
+        box-shadow: 0 5px 16px rgba(102, 126, 234, 0.45);
+    }
+
+    @@media print {
+        .no-print,
+        .ee-list-header .ee-list-header-actions,
+        .ee-list-filter-bar {
+            display: none !important;
+        }
+        .elr-page .ee-list-stats-strip .ee-list-stat-chip {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .expense-entry-table-wrapper {
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        .elr-paginator {
+            display: none !important;
+        }
+        body { padding: 12px; }
+    }
+</style>
+
+<div class="ee-page elr-page">
+    <div class="ee-list-header section-entry-animation">
+        <div class="ee-list-header-top">
+            <div class="ee-list-header-title-block">
+                <h2 class="ee-list-header-title"><i class="fa fa-book me-2" aria-hidden="true"></i>Employee Expenses Ledger</h2>
+                <small class="ee-list-header-sub">View payments, expenses and running balance for the selected period and filters.</small>
+            </div>
+            <div class="ee-list-header-actions no-print elr-header-toolbar">
+                <button type="button" id="btnDownload" class="elr-header-icon-btn elr-header-icon-btn--excel" title="Export to Excel" aria-label="Export to Excel">
+                    <i class="fa-solid fa-file-excel" aria-hidden="true"></i>
+                </button>
+                <button type="button" id="btnPrint" class="elr-header-icon-btn elr-header-icon-btn--print" title="Print report" aria-label="Print">
+                    <i class="fa-solid fa-print" aria-hidden="true"></i>
+                </button>
+                <button type="button" id="btnLedgerClosing" class="elr-header-icon-btn elr-header-icon-btn--closing" title="Jump to closing balance row" aria-label="Go to closing">
+                    <i class="fas fa-flag-checkered" aria-hidden="true"></i>
+                </button>
+                <button type="button" id="btnLedgerClose" class="elr-header-icon-btn elr-header-icon-btn--close" title="Close report — clear table &amp; summary" aria-label="Close report">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+        <div class="ee-list-stats-strip" role="group" aria-label="Ledger summary">
+            <div class="ee-list-stat-chip">
+                <span class="val" id="elrStatRows">—</span>
+                <span class="lbl">Lines</span>
+            </div>
+            <div class="ee-list-stat-chip ee-list-stat-chip--pending">
+                <span class="val" id="elrStatPayment">—</span>
+                <span class="lbl">Total payment</span>
+            </div>
+            <div class="ee-list-stat-chip ee-list-stat-chip--onme">
+                <span class="val" id="elrStatExpense">—</span>
+                <span class="lbl">Total expenses</span>
+            </div>
+            <div class="ee-list-stat-chip ee-list-stat-chip--approved">
+                <span class="val" id="elrStatClosing">—</span>
+                <span class="lbl">Closing balance</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="ee-list-filter-bar no-print">
+        <div class="elr-filter-row">
+            <div class="elr-filter-field">
+                <label for="ddlReportType" class="form-label">Report type <span class="text-danger">*</span></label>
+                <select id="ddlReportType" class="form-control form-control-sm box_border w-100"></select>
+            </div>
+            <div class="elr-filter-field"style="Margin:-10px">
+                <label for="txtdateFrom" class="form-label">From date <span class="text-danger">*</span></label>
+                <input id="txtdateFrom" type="text" autocomplete="off" class="form-control form-control-sm box_border w-100" required />
+            </div>
+            <div class="elr-filter-field"style="Margin:-10px">
+                <label for="txtdateTo" class="form-label">To date <span class="text-danger">*</span></label>
+                <input id="txtdateTo" type="text" autocomplete="off" class="form-control form-control-sm box_border w-100" required />
+            </div>
+            <div class="elr-filter-field">
+                <label for="ddlEmployee" class="form-label">Employee</label>
+                <select id="ddlEmployee" class="form-control form-control-sm box_border w-100"></select>
+            </div>
+            <div class="elr-filter-field">
+                <label for="ddlProject" class="form-label">Project</label>
+                <select id="ddlProject" class="form-control form-control-sm box_border w-100"></select>
+            </div>
+            <div class="elr-filter-field">
+                <label for="ddlSubProject" class="form-label">Sub project</label>
+                <select id="ddlSubProject" class="form-control form-control-sm box_border w-100"></select>
+            </div>
+            <div class="elr-filter-actions">
+                <button type="button" id="fetchReportButton" class="btn btn-sm elr-btn-show-led">
+                    <i class="fas fa-search me-1" aria-hidden="true"></i>Show
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="expense-entry-card expense-entry-card-table ee-list-grid-wrap">
+        <div class="expense-entry-table-wrapper">
+            <table id="tblLedger" class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:3rem">S.No</th>
+                        <th style="width:7rem">Date</th>
+                        <th>Particulars</th>
+                        <th class="num">Payment</th>
+                        <th class="num">Expenses</th>
+                        <th class="num">Balance</th>
+                        <th style="width:3.5rem">Dr/Cr</th>
+                    </tr>
+                </thead>
+                <tbody id="tblLedgerBody"></tbody>
+            </table>
+        </div>
+        <div class="elr-paginator no-print" id="elrPaginator" hidden>
+            <div class="elr-paginator__left">
+                <label class="elr-paginator__label" for="elrPageSize">Lines per page</label>
+                <select id="elrPageSize" class="form-select form-select-sm elr-paginator__page-size" aria-label="Lines per page">
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="elr-paginator__center">
+                <span class="elr-page-info" id="elrPageInfo">0 – 0 of 0</span>
+            </div>
+            <div class="elr-paginator__nav" role="group" aria-label="Page navigation">
+                <button type="button" class="elr-nav-btn" id="elrBtnFirst" title="First page" aria-label="First page">
+                    <i class="fa-solid fa-angles-left" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="elr-nav-btn" id="elrBtnPrev" title="Previous page" aria-label="Previous page">
+                    <i class="fa-solid fa-angle-left" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="elr-nav-btn" id="elrBtnNext" title="Next page" aria-label="Next page">
+                    <i class="fa-solid fa-angle-right" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="elr-nav-btn" id="elrBtnLast" title="Last page" aria-label="Last page">
+                    <i class="fa-solid fa-angles-right" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table id="tblLedgerExport" hidden="hidden" style="display:none">
+    <thead><tr></tr></thead>
+    <tbody></tbody>
+</table>

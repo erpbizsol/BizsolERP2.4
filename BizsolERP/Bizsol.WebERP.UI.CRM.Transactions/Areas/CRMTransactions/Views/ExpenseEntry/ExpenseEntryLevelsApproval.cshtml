@@ -8,7 +8,7 @@
 
 <style>
     /* Back button — same as BOM / ExpenseEntryApprovalConfiguration (orange gradient) */
-    .btn-ee-back-nav {
+    .btn-ee-back-nav { 
         border: none !important;
         outline: none;
         border-radius: 8px;
@@ -519,6 +519,12 @@
                         <i class="fa fa-file-invoice-dollar me-2"></i><span id="eeaModalEntryTitle"></span>
                     </h5>
                     <small id="eeaModalParty" style="font-size:0.75rem;opacity:0.82;display:block;margin-top:2px;"></small>
+                    <div id="eeaModalLevelChip"
+                         style="display:none;margin-top:6px;font-size:0.72rem;font-weight:600;opacity:0.95;border:1px solid rgba(255,255,255,0.45);border-radius:999px;padding:3px 12px;align-items:center;gap:4px;"
+                         class="align-items-center">
+                        <i class="fa fa-layer-group"></i>
+                        <span id="eeaModalLevelChipText"></span>
+                    </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white ms-auto"
                         onclick="CloseDetailModal()" aria-label="Close"></button>
