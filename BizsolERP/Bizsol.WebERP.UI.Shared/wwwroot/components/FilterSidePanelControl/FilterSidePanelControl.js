@@ -593,6 +593,9 @@ class FilterSidePanelControl extends HTMLElement {
                 case 'text':
                     this._renderTextFilter(filterGroup, filter);
                     break;
+                case 'checkbox':
+                    this._renderCheckboxFilter(filterGroup, filter);
+                    break;
                 default:
                     console.warn('Unknown filter type:', filter.type);
             }
@@ -708,8 +711,21 @@ class FilterSidePanelControl extends HTMLElement {
         input.id = filter.id;
         input.className = 'form-control form-control-sm box_border';
         input.placeholder = filter.placeholder || '';
-        
+
         container.appendChild(input);
+    }
+
+    _renderCheckboxFilter(container, filter) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'checkbox-single-root';
+        const defaultChecked = filter.defaultChecked !== false;
+        wrapper.innerHTML = `
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                <input type="checkbox" id="${filter.id}" ${defaultChecked ? 'checked' : ''} style="cursor:pointer;" />
+                <span>${filter.checkboxLabel || filter.label || ''}</span>
+            </label>
+        `;
+        container.appendChild(wrapper);
     }
     
     /**
@@ -781,6 +797,14 @@ class FilterSidePanelControl extends HTMLElement {
                     if (inputEl) {
                         values[filter.id] = inputEl.value;
                         console.log(`Text value for ${filter.id}:`, values[filter.id]);
+                    }
+                    break;
+
+                case 'checkbox':
+                    const chkEl = this._shadow.getElementById(filter.id);
+                    if (chkEl) {
+                        values[filter.id] = chkEl.checked;
+                        console.log(`Checkbox value for ${filter.id}:`, values[filter.id]);
                     }
                     break;
             }
