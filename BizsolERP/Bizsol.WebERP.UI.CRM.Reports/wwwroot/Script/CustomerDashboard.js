@@ -41,6 +41,7 @@ function initFilterSidePanelControl() {
     // Initialize with empty filters first
     const filters = [
         { id: 'dateRange', type: 'daterange', label: 'Date Range' },
+        { id: 'chkShowRecursive', type: 'checkbox', label: 'Show Recursive Marketing Man', checkboxLabel: 'Show Recursive Marketing Man', defaultChecked: true },
         { id: 'ddlSalesPersonlist', type: 'multiselect', label: 'Sales Person', data: [] },
         { id: 'ddlDealerNamelist', type: 'multiselect', label: 'Dealer Name', data: [] },
         { id: 'ddlCitiesNamelist', type: 'multiselect', label: 'Location', data: [] },
@@ -122,6 +123,14 @@ function loadFilterDropdowns(filterPanel) {
                         });
                     });
                 }
+
+                // Re-load dealer list when Show Recursive checkbox changes
+                const recursiveChk = filterPanel.shadowRoot.getElementById('chkShowRecursive');
+                if (recursiveChk) {
+                    recursiveChk.addEventListener('change', () => {
+                        updateDealerListBasedOnSalesPerson(filterPanel);
+                    });
+                }
             }, 500);
         }
     }).catch(function (error) {
@@ -185,9 +194,11 @@ function updateDealerListBasedOnSalesPerson(filterPanel) {
         return;
     }
 
+    const isNested = filterValues.chkShowRecursive !== false ? 'Y' : 'N';
+
     const promises = salesPersonFilter.values.map(function (code) {
         try {
-            return CRMReportsServices.GetDealerList(code);
+            return CRMReportsServices.GetDealerList(code, isNested);
         } catch (e) {
             return Promise.resolve([]);
         }
@@ -244,8 +255,9 @@ function GetAllFilters() {
         const filterValues = filterPanel.getFilterValues();
         console.log('Filter values from control:', filterValues);
 
+        const rawDealerCodes = filterValues.ddlDealerNamelist?.joined || '0';
         const filters = {
-            dealerCodes: filterValues.ddlDealerNamelist?.joined || '0',
+            dealerCodes: rawDealerCodes === '0' || rawDealerCodes === '' ? '-1' : rawDealerCodes,
             salesPersons: filterValues.ddlSalesPersonlist?.joined || '0',
             cities: filterValues.ddlCitiesNamelist?.joined || '0',
             fromDate: filterValues.dateRange?.fromDate || fromDate || '0',
