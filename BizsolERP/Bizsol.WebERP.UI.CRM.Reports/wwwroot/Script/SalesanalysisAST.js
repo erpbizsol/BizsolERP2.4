@@ -1992,6 +1992,50 @@ function renderGPWiseSummaryCustomTable(data) {
     tbody.appendChild(grandTotalRow);
 }
 
+function renderHighGPLostClient() {
+    const filters = GetAllFilters();
+
+    if (filters.dealerCodes == '') {
+        return;
+    }
+
+    updateReportDateRangeDisplay();
+
+    Showloader();
+
+    SalesanalysisASTService.GetSalesAnalysisData('HIGH_GP_LOST_CLIENT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
+        HideLoader();
+
+        if (!response || response.length === 0) {
+            console.warn('No High GP Lost Client data received');
+            document.getElementById('highGPLostClientTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+            document.getElementById('highGPLostClientTableHeader').innerHTML = '';
+            return;
+        }
+
+        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location", "GP", "Status"];
+        const NumericFilterColumn = [];
+        const DateFilterColumn = [];
+        const Button = false;
+        const showButtons = [];
+        const StringdoubleFilterColumn = [];
+        const hiddenColumns = [];
+        const ColumnAlignment = {
+            'Weight': 'right',
+            'Manifestation': 'right',
+            'Total Sales': 'right',
+            'Growth (%)': 'right'
+        };
+
+        if (typeof BizsolCustomFilterGrid !== 'undefined') {
+            BizsolCustomFilterGrid.CreateDataTable("highGPLostClientTableHeader", "highGPLostClientTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        }
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching High GP Lost Client data:', err);
+    });
+}
+
 // Show report function
 function SalesanalysisAST_ShowReport() {
     const filters = GetAllFilters();
@@ -2023,6 +2067,9 @@ function SalesanalysisAST_ShowReport() {
     }
     if (document.querySelector('#gpWiseSummary')?.classList.contains('show') || document.querySelector('#gpWiseSummary')?.classList.contains('active')) {
         renderGPWiseSummary();
+    }
+    if (document.querySelector('#highGPLostClient')?.classList.contains('show') || document.querySelector('#highGPLostClient')?.classList.contains('active')) {
+        renderHighGPLostClient();
     }
 }
 
@@ -2077,6 +2124,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    const highGPLostClientTabBtn = document.getElementById('highGPLostClient-tab');
+    if (highGPLostClientTabBtn) {
+        highGPLostClientTabBtn.addEventListener('shown.bs.tab', function () {
+            renderHighGPLostClient();
+        });
+    }
+
     // Initial render if tab is already active
     setTimeout(function () {
         if (document.querySelector('#summaryReport') && document.querySelector('#summaryReport').classList.contains('show')) {
@@ -2099,6 +2153,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (document.querySelector('#gpWiseSummary') && document.querySelector('#gpWiseSummary').classList.contains('show')) {
             renderGPWiseSummary();
+        }
+        if (document.querySelector('#highGPLostClient') && document.querySelector('#highGPLostClient').classList.contains('show')) {
+            renderHighGPLostClient();
         }
     }, 300);
 });
