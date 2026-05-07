@@ -964,7 +964,7 @@ function SaveLeadEnquiryData() {
         nextFollowupdate: $('#txtNextFollowupDate').val(),
         nextFollowupmode: $('#ddlNextFollowupMode').val() || '',
         leadSourceDespName: $('#ddlLeadSource').val() || '',
-        referenceBy: '',
+        referenceBy: $('#txtReference').val(),
         website: $('#txtWebsite').val()
     }];
 
@@ -1698,7 +1698,7 @@ function SaveLeadEnquiryOnChange() {
     const data = [{
         code: $('#hfCode').val() || 0,
         enquiryDate: $('#txtEnquiryDate').val(),
-        referenceNo: '',
+        referenceNo: $('#txtReference').val(),
         referenceDate: $('#txtReferenceDate').val(),
         customerFromMaster: '',
         accountMaster_Code: 0,
