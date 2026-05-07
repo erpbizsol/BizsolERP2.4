@@ -382,7 +382,6 @@ function mapGRNRowsToGrid(rows) {
                 : '<button type="button" class="grn-btn-verify" title="Verify" aria-label="Verify" onclick="VerifyGRN(' + code + ')"><i class="fas fa-check" aria-hidden="true"></i></button>';
         }
         var patch = { Action: btns };
-        if (hasAttachmentYes) patch.__bizsolRowClass = "grn-grid-row-has-attachment";
         return Object.assign({}, item, patch);
     });
 }
@@ -527,7 +526,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await Promise.all([
         loadVendorList(),
-        loadProjectList(),
+        loadBankList(),
+        initProjectDropdownEmpty(),
         loadAllPOs(),
     ]);
     await resolveGRNVerifyRight();
@@ -631,20 +631,175 @@ async function loadVendorList() {
     }
 }
 
-async function loadProjectList() {
-    const ddl = document.getElementById('frmDdlProject');
+function normalizeGrnBankListRows(result) {
+    if (!result) return [];
+    if (Array.isArray(result)) return result;
+    if (Array.isArray(result.Data)) return result.Data;
+    if (Array.isArray(result.data)) return result.data;
+    return [];
+}
+
+async function loadBankList() {
+    const ddl = document.getElementById('ddlBankName');
     if (!ddl) return;
     try {
-        const result = await GRNService.GetProjectList();
-        ddl.innerHTML = '<option value="">-- Select Project --</option>';
-        (result || []).forEach(p => {
+        const result = await GRNService.GetBankList();
+        const rows = normalizeGrnBankListRows(result);
+        ddl.innerHTML = '<option value="">-- Select Bank --</option>';
+        rows.forEach(b => {
             const opt = document.createElement('option');
-            opt.value = p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? '';
-            opt.text  = p.ProjectName        ?? p.projectName        ?? p.Name ?? '';
+            const code = b.Code ?? b.BankMaster_Code ?? b.code ?? b.bankMaster_Code ?? '';
+            opt.value = code !== '' && code !== null && code !== undefined ? String(code) : '';
+            opt.text = String((b.BankName ?? b.bankName ?? b.Name ?? '').trim() || opt.value || '');
             ddl.appendChild(opt);
         });
     } catch (e) {
-        console.error('Failed to load projects:', e);
+        console.error('Failed to load banks:', e);
+    }
+}
+
+//function getSelectedBankNameForSave() {
+//    const ddl = document.getElementById('ddlBankName');
+//    if (!ddl || ddl.selectedIndex < 0) return '';
+//    const opt = ddl.options[ddl.selectedIndex];
+//    const v = (ddl.value || '').trim();
+//    if (!v) return '';
+//    return ((opt && opt.text) ? opt.text : '').trim();
+//}
+
+function getAuthUserMasterCode() {
+    try {
+        const raw = sessionStorage.getItem('authKey');
+        if (!raw) return 0;
+        const auth = JSON.parse(raw);
+        const c = auth.UserMaster_Code ?? auth.userMaster_Code;
+        const n = parseInt(c, 10);
+        return Number.isFinite(n) ? n : 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function normalizeApiRows(result) {
+    if (!result) return [];
+    if (Array.isArray(result)) return result;
+    if (Array.isArray(result.Data)) return result.Data;
+    if (Array.isArray(result.data)) return result.data;
+    return [];
+}
+
+/** Placeholder only — projects load only after Sub Project is chosen (see fillProjectFromSubProject). */
+function initProjectDropdownEmpty() {
+    const ddl = document.getElementById('frmDdlProject');
+    if (!ddl) return;
+    ddl.innerHTML = '<option value="">-- Select Project --</option>';
+    ddl.disabled = false;
+}
+
+async function fillProjectFromSubProject(subProjectMasterCode) {
+    const ddl = document.getElementById('frmDdlProject');
+    if (!ddl) return;
+
+    ddl.innerHTML = '<option value="">-- Select Project --</option>';
+    const code = String(subProjectMasterCode || '').trim();
+    if (!code) {
+        ddl.disabled = false;
+        return;
+    }
+
+    try {
+        const raw = await GRNService.GetProjectList(code);
+        const rows = normalizeApiRows(raw);
+        rows.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = String(p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? '');
+            opt.text  = String(p.ProjectName ?? p.projectName ?? p.Name ?? '').trim() || opt.value;
+            ddl.appendChild(opt);
+        });
+
+        if (rows.length === 1) {
+            const only = rows[0];
+            ddl.value = String(only.ProjectMaster_Code ?? only.projectMaster_Code ?? only.Code ?? '');
+        }
+        ddl.disabled = false;
+    } catch (e) {
+        console.error('fillProjectFromSubProject:', e);
+        ddl.disabled = false;
+    }
+}
+
+/** Sub projects assigned to the logged-in user (API: UserMaster_Code). Called after Party / Against Project context is set — not on initial page load. */
+async function loadSubProjectsForParty() {
+    const subDdl = document.getElementById('frmDdlSubProject');
+    const projDdl = document.getElementById('frmDdlProject');
+    if (!subDdl || !projDdl) return;
+
+    subDdl.innerHTML = '<option value="">-- Select Sub Project --</option>';
+    projDdl.innerHTML = '<option value="">-- Select Project --</option>';
+    projDdl.disabled = false;
+
+    document.getElementById('itemTbody').innerHTML = '';
+    rowIndex = 0;
+    projectItemsCache = [];
+    calcTotal();
+
+    const partyVal = document.getElementById('ddlPartyName')?.value?.trim();
+    const isAgainstProject = document.getElementById('chkAgainstProject')?.checked;
+
+    if (!isAgainstProject || !partyVal) {
+        showGridProjectHint();
+        setAddItemBtnState(false);
+        return;
+    }
+
+    const userCode = getAuthUserMasterCode();
+    if (!userCode) {
+        showToast('Login session missing UserMaster_Code.', 'warning');
+        showGridProjectHint();
+        setAddItemBtnState(false);
+        return;
+    }
+
+    try {
+        const raw = await GRNService.GetSubProjectList(userCode);
+        const rows = normalizeApiRows(raw);
+        rows.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = String(s.SubProjectMaster_Code ?? s.subProjectMaster_Code ?? s.Code ?? '');
+            opt.text  = String(s.SubProjectName ?? s.subProjectName ?? s.Name ?? '').trim() || opt.value;
+            subDdl.appendChild(opt);
+        });
+    } catch (e) {
+        console.error('Failed to load sub-projects:', e);
+    }
+
+    showGridProjectHint();
+    setAddItemBtnState(false);
+}
+
+async function reloadAgainstProjectGridIfReady() {
+    const projectCode = document.getElementById('frmDdlProject')?.value;
+    const subProjectCode = document.getElementById('frmDdlSubProject')?.value;
+
+    document.getElementById('itemTbody').innerHTML = '';
+    rowIndex = 0;
+    projectItemsCache = [];
+
+    if (!projectCode || !subProjectCode) {
+        showGridProjectHint();
+        setAddItemBtnState(false);
+        return;
+    }
+
+    setAddItemBtnState(true);
+    if (isFillGridChecked()) {
+        const partyMaster_Code = document.getElementById('ddlPartyName')?.value;
+        await loadItemsByProject(projectCode, subProjectCode, partyMaster_Code);
+    } else {
+        document.getElementById('itemTbody').innerHTML = '';
+        rowIndex = 0;
+        addItemRow();
+        loadAllPOs();
     }
 }
 
@@ -664,10 +819,15 @@ function showFillGridCheckbox(show) {
 async function onPartyChange() {
     updateProjectFieldsState();
 
-    // Always clear existing grid rows when party changes
     document.getElementById('itemTbody').innerHTML = '';
     rowIndex = 0;
     projectItemsCache = [];
+
+    const against = document.getElementById('chkAgainstProject')?.checked;
+    const partySel = document.getElementById('ddlPartyName')?.value?.trim();
+    if (against && partySel) {
+        await loadSubProjectsForParty();
+    }
 
     if (!isFillGridChecked()) {
         addItemRow();
@@ -681,10 +841,13 @@ async function onPartyChange() {
     const subProjectCode   = document.getElementById('frmDdlSubProject')?.value;
     const partyMaster_Code = document.getElementById('ddlPartyName')?.value;
 
-    if (projectCode && subProjectCode && partyMaster_Code) {
+    if (against && projectCode && subProjectCode && partyMaster_Code) {
         await loadItemsByProject(projectCode, subProjectCode, partyMaster_Code);
-    } else {
+    } else if (!against) {
         addItemRow();
+    } else {
+        showGridProjectHint();
+        setAddItemBtnState(false);
     }
 }
 
@@ -727,8 +890,8 @@ function showGridProjectHint() {
                     <i class="fa fa-info-circle" style="color:#0dcaf0;font-size:1.1rem;"></i>
                     <span style="font-size:0.82rem;color:#475569;">
                         Please select <strong style="color:#0891b2;">Party Name</strong>,
-                        <strong style="color:#0891b2;">Project Name</strong>
-                        and <strong style="color:#0891b2;">Sub Project</strong> to load items.
+                        then <strong style="color:#0891b2;">Sub Project</strong>
+                        (Project fills automatically), to load items.
                     </span>
                 </div>
             </td>
@@ -747,17 +910,17 @@ function updateProjectFieldsState() {
     const subDdl  = document.getElementById('frmDdlSubProject');
     const hasParty = !!partyVal;
 
-    if (projDdl) {
-        projDdl.disabled = !hasParty;
-        if (!hasParty) {
-            projDdl.value = '';
-        }
-    }
     if (subDdl) {
         subDdl.disabled = !hasParty;
         if (!hasParty) {
             subDdl.innerHTML = '<option value="">-- Select Sub Project --</option>';
         }
+    }
+    if (projDdl) {
+        if (!hasParty) {
+            projDdl.innerHTML = '<option value="">-- Select Project --</option>';
+        }
+        projDdl.disabled = false;
     }
 }
 
@@ -767,6 +930,15 @@ function onProjectFieldFocus(el) {
         showToast('Please select Party Name first.', 'warning');
         el.blur();
         document.getElementById('ddlPartyName')?.focus();
+        return;
+    }
+    if (el && el.id === 'frmDdlProject') {
+        const subVal = document.getElementById('frmDdlSubProject')?.value;
+        if (!subVal) {
+            showToast('Please select Sub Project first.', 'warning');
+            el.blur();
+            document.getElementById('frmDdlSubProject')?.focus();
+        }
     }
 }
 
@@ -781,17 +953,13 @@ function toggleProjectFields(chk) {
         projectItemsCache = [];
         rowIndex = 0;
         updateProjectFieldsState();
-        // Show placeholder in grid and disable Add Item until project+sub-project selected
-        showGridProjectHint();
-        setAddItemBtnState(false);
+        void loadSubProjectsForParty();
     } else {
-        // Against Project OFF → hide fields, show hint, restore all POs for manual entry
         if (fields) fields.style.display = 'none';
         if (hint)   hint.style.display   = 'block';
-        document.getElementById('frmDdlProject').value       = '';
+        initProjectDropdownEmpty();
         document.getElementById('frmDdlSubProject').innerHTML =
             '<option value="">-- Select Sub Project --</option>';
-        // Re-enable Add Item and restore normal empty row
         setAddItemBtnState(true);
         document.getElementById('itemTbody').innerHTML = '';
         rowIndex = 0;
@@ -800,71 +968,17 @@ function toggleProjectFields(chk) {
     }
 }
 
-async function loadSubProjects() {
-    const projectId = document.getElementById('frmDdlProject')?.value;
-    const subDdl    = document.getElementById('frmDdlSubProject');
-    if (!subDdl) return;
-
-    subDdl.innerHTML = '<option value="">-- Select Sub Project --</option>';
-
-    document.getElementById('itemTbody').innerHTML = '';
-    rowIndex = 0;
-    projectItemsCache = [];
-    calcTotal();
-
-    if (!projectId) {
-        const isAgainstProject = document.getElementById('chkAgainstProject')?.checked;
-        if (!isAgainstProject) {
-            await loadAllPOs();
-            addItemRow();
-        } else {
-            showGridProjectHint();
-            setAddItemBtnState(false);
-        }
-        return;
-    }
-
-    try {
-        const subResult = await GRNService.GetSubProjectList(projectId);
-        (subResult || []).forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = s.SubProjectMaster_Code ?? s.subProjectMaster_Code ?? s.Code ?? '';
-            opt.text  = s.SubProjectName        ?? s.subProjectName        ?? s.Name ?? '';
-            subDdl.appendChild(opt);
-        });
-    } catch (e) {
-        console.error('Failed to load sub-projects:', e);
-    }
-}
-
 async function onSubProjectChange() {
-    // Clear validation error
     document.getElementById('frmDdlSubProject')?.classList.remove('is-invalid');
 
-    const projectCode    = document.getElementById('frmDdlProject')?.value;
     const subProjectCode = document.getElementById('frmDdlSubProject')?.value;
+    await fillProjectFromSubProject(subProjectCode);
 
-    document.getElementById('itemTbody').innerHTML = '';
-    rowIndex = 0;
-    projectItemsCache = [];
+    await reloadAgainstProjectGridIfReady();
+}
 
-    if (!projectCode || !subProjectCode) {
-        // Not fully selected yet — show placeholder and keep Add Item disabled
-        showGridProjectHint();
-        setAddItemBtnState(false);
-        return;
-    }
-
-    setAddItemBtnState(true);
-    if (isFillGridChecked()) {
-        const partyMaster_Code = document.getElementById('ddlPartyName')?.value;
-        await loadItemsByProject(projectCode, subProjectCode, partyMaster_Code);
-    } else {
-        document.getElementById('itemTbody').innerHTML = '';
-        rowIndex = 0;
-        addItemRow();
-        loadAllPOs();
-    }
+async function onProjectChange() {
+    await reloadAgainstProjectGridIfReady();
 }
 
 async function loadItemsByProject(projectCode, subProjectCode, partyMaster_Code) {
@@ -1132,7 +1246,7 @@ async function openAddItemModalForm() {
     if (!editMode && isAgainstProject && (!partyMaster_Code || !projectCode || !subProjectCode) && isFillGridChecked()) {
         if (hintEl) hintEl.style.display = 'block';
         const hintText = document.getElementById('addItemModalHintText');
-        if (hintText) hintText.textContent = 'Please select Party Name, Project Name and Sub Project first.';
+        if (hintText) hintText.textContent = 'Please select Party Name and Sub Project first (Project fills automatically).';
         if (formEl) formEl.style.display = 'none';
     } else {
         if (hintEl) hintEl.style.display = 'none';
@@ -1422,14 +1536,14 @@ function onPOFocus(select) {
         document.getElementById('ddlPartyName')?.focus();
         return;
     }
-    if (!projectCode) {
-        showToast('Please select Project Name first.', 'warning');
-        select.blur();
-        document.getElementById('frmDdlProject')?.focus();
-        return;
-    }
     if (!subProjectCode) {
         showToast('Please select Sub Project first.', 'warning');
+        select.blur();
+        document.getElementById('frmDdlSubProject')?.focus();
+        return;
+    }
+    if (!projectCode) {
+        showToast('Project could not be resolved; choose Sub Project again.', 'warning');
         select.blur();
         document.getElementById('frmDdlSubProject')?.focus();
         return;
@@ -1465,9 +1579,10 @@ async function onPOChange(select) {
         document.getElementById('ddlPartyName')?.focus();
         return;
     }
-    if (!projectCode || !subProjectCode) {
-        showToast('Please select Project and Sub Project first.', 'warning');
+    if (!subProjectCode || !projectCode) {
+        showToast('Please select Sub Project first (Project fills automatically).', 'warning');
         select.value = '';
+        document.getElementById('frmDdlSubProject')?.focus();
         return;
     }
     itemSel.innerHTML = '<option value="">Loading…</option>';
@@ -1840,6 +1955,22 @@ async function editGRN(code) {
                 const ddlParty = document.getElementById('ddlPartyName');
                 if (ddlParty) ddlParty.value = master.PartyMaster_Code ?? '';
 
+                // Bank dropdown (SP: BankMaster_Code + BankName) — option text = name for save; ensure missing option on stale code
+                const ddlBank = document.getElementById('ddlBankName');
+                if (ddlBank) {
+                    const bcRaw = master.BankMaster_Code ?? master.bankMaster_Code ?? master.Bank_Code ?? '';
+                    const bcStr = bcRaw !== '' && bcRaw !== null && bcRaw !== undefined ? String(bcRaw).trim() : '';
+                    const bName = String(master.BankName ?? master.bankName ?? '').trim();
+                    if (bcStr) {
+                        let hasOpt = false;
+                        for (let i = 0; i < ddlBank.options.length; i++) {
+                            if (ddlBank.options[i].value === bcStr) { hasOpt = true; break; }
+                        }
+                        if (!hasOpt) ddlBank.add(new Option(bName || ('Bank #' + bcStr), bcStr));
+                    }
+                    ddlBank.value = bcStr || '';
+                }
+
                 // ── Project & Sub Project (edit case) — API: ProjectDesp, SubProjectDesp, pm.ProjectMaster_Code, pm.SubProjectMaster_Code ──
                 const projectCode = master.ProjectMaster_Code ?? master.projectMaster_Code ?? items[0]?.ProjectMaster_Code ?? items[0]?.projectMaster_Code ?? '';
                 const subProjectCode = master.SubProjectMaster_Code ?? master.subProjectMaster_Code ?? items[0]?.SubProjectMaster_Code ?? items[0]?.subProjectMaster_Code ?? '';
@@ -1848,12 +1979,13 @@ async function editGRN(code) {
                     document.getElementById('divProjectFields').style.display = 'block';
                     document.getElementById('divProjectHint').style.display = 'none';
                     updateProjectFieldsState();
-                    if (projectCode) {
-                        document.getElementById('frmDdlProject').value = projectCode;
-                        await loadSubProjects();
-                    }
+                    await loadSubProjectsForParty();
                     if (subProjectCode) {
-                        document.getElementById('frmDdlSubProject').value = subProjectCode;
+                        document.getElementById('frmDdlSubProject').value = String(subProjectCode);
+                        await fillProjectFromSubProject(subProjectCode);
+                    }
+                    if (projectCode && document.getElementById('frmDdlProject')) {
+                        document.getElementById('frmDdlProject').value = String(projectCode);
                     }
                 }
 
@@ -2039,13 +2171,13 @@ function validateGRN() {
 
     const isAgainstProject = document.getElementById('chkAgainstProject')?.checked;
     if (isAgainstProject) {
-        if (!document.getElementById('frmDdlProject')?.value) {
-            showToast('Please select Project Name.', 'warning');
-            document.getElementById('frmDdlProject')?.focus();
-            return false;
-        }
         if (!document.getElementById('frmDdlSubProject')?.value) {
             showToast('Please select Sub Project.', 'warning');
+            document.getElementById('frmDdlSubProject')?.focus();
+            return false;
+        }
+        if (!document.getElementById('frmDdlProject')?.value) {
+            showToast('Please ensure Project is set (choose Sub Project first).', 'warning');
             document.getElementById('frmDdlSubProject')?.focus();
             return false;
         }
@@ -2076,8 +2208,8 @@ function validateGRN() {
 
         if (!poVal) {
             // Instead of "select PO", guide user to select party, project and sub project first
-            showToast('Please select Party Name, Project Name and Sub Project to load PO and items.', 'warning');
-            document.getElementById('frmDdlProject')?.focus();
+            showToast('Please select Party Name and Sub Project to load PO and items.', 'warning');
+            document.getElementById('frmDdlSubProject')?.focus();
             valid = false;
         } else if (!itemVal) {
             showToast(`Row ${i + 1}: Please select an Item.`, 'warning');
@@ -2166,8 +2298,9 @@ function saveGRN() {
             });
 
             // ── GRNServiceList — maps to TY_GRNMaster TVP ────────────────────────────
-            // SP TVP columns: Code, BillNo, BillDate, ReceiveDate, PartyMaster_Code, TransporterName, Remarks,
+            // SP TVP columns: Code, BillNo, BillDate, ReceiveDate, PartyMaster_Code, BankMaster_Code, BankName, TransporterName, Remarks,
             //                 TotalBillAmountManual, Dedution, DedutionRemark, NetPayable, Attach*, ...
+            //const bankCodeVal = parseInt(document.getElementById('ddlBankName')?.value, 10) || 0;
             const GRNServiceList = [{
                 Code: editMode ? editCode : 0,
                 MRNNo: 0,
@@ -2175,6 +2308,8 @@ function saveGRN() {
                 BillDate: toDateOrFallback('dtBillDate', 'dtGRNDate'),
                 ReceiveDate: toDateOrFallback('dtRecvDate', 'dtGRNDate'),
                 PartyMaster_Code: parseInt(document.getElementById('ddlPartyName')?.value) || 0,
+                //BankMaster_Code: bankCodeVal,
+                //BankName: getSelectedBankNameForSave(),
                 TransporterName: '',
                 Remarks: document.getElementById('txtRemark')?.value || '',
                 AttachFileName: '',
@@ -2255,7 +2390,7 @@ function resetForm() {
     }
     document.getElementById('chkAgainstProject').checked      = true;  // Create: Against Project always ON
     document.getElementById('divProjectFields').style.display = 'block';
-    document.getElementById('frmDdlProject').value            = '';
+    initProjectDropdownEmpty();
     document.getElementById('frmDdlSubProject').innerHTML     = '<option value="">-- Select Sub Project --</option>';
     document.getElementById('itemTbody').innerHTML            = '';
     document.getElementById('floatModeBadge').textContent     = 'NEW';
@@ -2445,7 +2580,7 @@ window.onPOFocus            = onPOFocus;
 window.onPOChange           = onPOChange;
 window.onItemChange         = onItemChange;
 window.toggleProjectFields  = toggleProjectFields;
-window.loadSubProjects        = loadSubProjects;
+window.onProjectChange       = onProjectChange;
 window.onSubProjectChange     = onSubProjectChange;
 window.onProjectFieldFocus    = onProjectFieldFocus;
 window.loadGRNList          = loadGRNList;

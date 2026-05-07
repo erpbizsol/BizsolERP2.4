@@ -195,6 +195,14 @@
         align-items: center;
         gap: 6px;
     }
+    /* Same as GRN Service float bar — NEW / EDIT / SAVED / UPDATED */
+    .po-mode-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.05em;
+    }
     .btn-po-save {
         background: linear-gradient(170deg, #ffffff, #ffffff);
         border: none;
@@ -361,6 +369,61 @@
         font-weight: 800;
         line-height: 1.1;
     }
+    /* Pending on me — same card as GRN Payment Approval header (gold border, magenta count) */
+    #divGPAList .po-list-header .gpa-list-chip-onme {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-height: 52px;
+        min-width: 100px;
+        max-width: 132px;
+        padding: 8px 12px;
+        margin: 0;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1.5px solid rgba(251, 191, 36, 0.9);
+        cursor: pointer;
+        font-family: inherit;
+        color: inherit;
+        text-decoration: none;
+        transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+        height: auto !important;
+        line-height: normal !important;
+        font-size: inherit !important;
+        -webkit-appearance: none;
+        appearance: none;
+        flex: 0 0 auto;
+    }
+    #divGPAList .po-list-header .gpa-list-chip-onme:hover {
+        background: rgba(255, 255, 255, 0.28);
+        transform: scale(1.04);
+    }
+    #divGPAList .po-list-header .gpa-list-chip-onme--active {
+        background: rgba(255, 255, 255, 0.32);
+        border-color: #fde68a;
+        box-shadow: 0 2px 14px rgba(0, 0, 0, 0.16);
+    }
+    #divGPAList .po-list-header .gpa-list-chip-onme-val {
+        font-size: 1.15rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #c7206d;
+    }
+    #divGPAList .po-list-header .gpa-list-chip-onme-lbl {
+        font-size: 0.62rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.95);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        line-height: 1.2;
+    }
+    #divGPAList .po-list-header .gpa-list-chip-onme:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+    }
     @@media (max-width: 992px) {
         .po-list-header-left {
             order: 1;
@@ -407,9 +470,8 @@
         top: 0;
         z-index: 2;
     }
-    /* GRN Payment + New — same full pill button (height, padding, flex) */
-    .po-list-header-actions .vm-btn-new,
-    .po-list-header-actions .vm-btn-approval-link {
+    /* New — full pill button (height, padding, flex) */
+    .po-list-header-actions .vm-btn-new {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -429,12 +491,9 @@
         line-height: 1.2;
         white-space: nowrap;
         -webkit-tap-highlight-color: transparent;
-    }
-    .po-list-header-actions .vm-btn-new {
         font-family: inherit;
     }
-    .po-list-header-actions .vm-btn-new:hover,
-    .po-list-header-actions .vm-btn-approval-link:hover {
+    .po-list-header-actions .vm-btn-new:hover {
         background: rgba(255, 255, 255, 0.34);
         border-color: rgba(255, 255, 255, 0.95);
         color: #fff !important;
@@ -459,28 +518,16 @@
         font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s; margin-right: 4px;
     }
     .im-btn-attach:hover { background: #0284c7; color: #fff; border-color: #0284c7; box-shadow: 0 2px 8px rgba(2,132,199,0.3); }
-    /* HasAttachment = Yes: green row + green attachment button (list grid) */
-    #gpaListTable tbody tr.gpa-grid-row-has-attachment,
-    #gpaListTable tbody tr.gpa-grid-row-has-attachment td {
-        background-color: #d1fae5 !important;
-    }
-    #gpaListTable tbody tr.gpa-grid-row-has-attachment:nth-child(even),
-    #gpaListTable tbody tr.gpa-grid-row-has-attachment:nth-child(even) td {
-        background-color: #bbf7d0 !important;
-    }
-    #gpaListTable tbody tr.gpa-grid-row-has-attachment:hover,
-    #gpaListTable tbody tr.gpa-grid-row-has-attachment:hover td {
-        background-color: #a7f3d0 !important;
-    }
+    /* HasAttachment = Yes: green attachment button only (row keeps normal striping) */
     #gpaListTable .im-btn-attach.im-btn-attach--has-attachment {
-        background: #bbf7d0;
-        color: #047857;
-        border-color: #6ee7b7;
+        background: #10b981;
+        color: #fff;
+        border-color: #059669;
     }
     #gpaListTable .im-btn-attach.im-btn-attach--has-attachment:hover {
         background: #059669;
         color: #fff;
-        border-color: #059669;
+        border-color: #047857;
         box-shadow: 0 2px 8px rgba(5,150,105,0.35);
     }
     /* Float bar Attachment: blue default; HasAttachment Yes, files on server, or pending uploads → green */
@@ -563,27 +610,29 @@
         <div class="po-list-header-right">
             <div class="gpa-status-tabs gpa-status-tabs--in-header" id="gpaStatusTabs" role="tablist" aria-label="Payment entry status">
                 <button type="button" class="gpa-status-tab gpa-status-tab--u is-active" role="tab" data-gpa-status="U" aria-selected="true"
-                        onclick="onGpaListStatusTabClick('U')">
+                        onclick="window.onGpaListStatusTabClick('U')">
                     <span class="gpa-status-tab-count" id="gpaTabCountU">0</span>
                     <span class="gpa-status-tab-lbl">Pending</span>
                 </button>
                 <button type="button" class="gpa-status-tab gpa-status-tab--p" role="tab" data-gpa-status="P" aria-selected="false"
-                        onclick="onGpaListStatusTabClick('P')">
+                        onclick="window.onGpaListStatusTabClick('P')">
                     <span class="gpa-status-tab-count" id="gpaTabCountP">0</span>
                     <span class="gpa-status-tab-lbl">Approved</span>
                 </button>
                 <button type="button" class="gpa-status-tab gpa-status-tab--r" role="tab" data-gpa-status="R" aria-selected="false"
-                        onclick="onGpaListStatusTabClick('R')">
+                        onclick="window.onGpaListStatusTabClick('R')">
                     <span class="gpa-status-tab-count" id="gpaTabCountR">0</span>
                     <span class="gpa-status-tab-lbl">Rejected</span>
                 </button>
+                <a href="@Url.Action("GRNPaymentApproval", "GRNService", new { area = "PurchaseTransactions", returnUrl = Url.Action("GRNPaymentApproval", "GRNPaymentApproval", new { area = "PurchaseTransactions" }) })"
+                   class="gpa-list-chip-onme" id="gpaListChipPendingOnMe"
+                   title="Open GRN payment approvals">
+                    <span class="gpa-list-chip-onme-val" id="gpaListCountPendingOnMe">—</span>
+                    <span class="gpa-list-chip-onme-lbl">Pending on me</span>
+                </a>
             </div>
             <div class="po-list-header-actions">
-                <a href="@Url.Action("GRNPaymentApproval", "GRNService", new { area = "PurchaseTransactions", returnUrl = Url.Action("GRNPaymentApproval", "GRNPaymentApproval", new { area = "PurchaseTransactions" }) })"
-                   class="vm-btn-approval-link" role="button">
-                    <i class="fa fa-check-double" aria-hidden="true"></i><span>GRN Payment</span>
-                </a>
-                <button type="button" class="vm-btn-new" onclick="newGRNPaymentApproval()">
+                <button type="button" class="vm-btn-new" onclick="window.newGRNPaymentApproval()">
                     <i class="fa fa-plus" aria-hidden="true"></i><span>New</span>
                 </button>
             </div>
@@ -612,35 +661,41 @@
         <div class="po-step-body">
             <div class="row g-2 align-items-end">
                 <input type="hidden" id="hdnGRNPaymentMasterCode" value="0" />
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="po-field-lbl d-block mb-1">Entry No</label>
                     <input type="text" id="txtEntryNo" class="form-control form-control-sm" autocomplete="off" placeholder="Auto Generate" readonly>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="po-field-lbl d-block mb-1">Date <span class="req">*</span></label>
                     <input type="date" id="dtPaymentDate" class="form-control form-control-sm" autocomplete="off">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="form-check mb-1">
-                        <input type="checkbox" class="form-check-input" id="chkGpaPayToParty" checked onchange="onGpaPartyEmployeeModeChange()">
+                        <input type="checkbox" class="form-check-input" id="chkGpaPayToParty" checked onchange="window.onGpaPartyEmployeeModeChange()">
                         <label class="form-check-label po-field-lbl mb-0" for="chkGpaPayToParty" style="font-size:0.8rem;font-weight:600;">Pay to party (vendor)</label>
                     </div>
                     <div id="wrapGpaPartyName">
                         <label class="po-field-lbl d-block mb-1">Party Name <span class="req">*</span></label>
-                        <select id="ddlPartyName" class="form-control form-control-sm" autocomplete="off" onchange="onPartyChange()">
+                        <select id="ddlPartyName" class="form-control form-control-sm" autocomplete="off" onchange="window.onPartyChange()">
                             <option value="">-- Select Party --</option>
                         </select>
                     </div>
                     <div id="wrapGpaEmployeeName" style="display:none;">
                         <label class="po-field-lbl d-block mb-1">Employee <span class="req">*</span></label>
-                        <select id="ddlEmployeeName" class="form-control form-control-sm" autocomplete="off" onchange="onGpaEmployeeChange()">
+                        <select id="ddlEmployeeName" class="form-control form-control-sm" autocomplete="off" onchange="window.onGpaEmployeeChange()">
                             <option value="">-- Select Employee --</option>
                         </select>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <label class="po-field-lbl d-block mb-1">Bank name</label>
+                    <select id="ddlBankName" class="form-control form-control-sm" autocomplete="off" title="GetBankList (API)">
+                        <option value="">-- Select Bank --</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="po-field-lbl d-block mb-1">Payment mode</label>
-                    <select id="ddlPaymentMode" class="form-control form-control-sm" title="BANKPAYMENTTYPE (API)" onchange="syncRefNoRequiredUI()">
+                    <select id="ddlPaymentMode" class="form-control form-control-sm" title="BANKPAYMENTTYPE (API)" onchange="window.syncRefNoRequiredUI()">
                         <option value="">-- Select --</option>
                     </select>
                 </div>
@@ -677,10 +732,10 @@
             <span class="po-step-title">Bill allocation</span>
             <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
                 <div class="d-flex align-items-center gap-2" id="divGpaFillGridCheck" hidden style="display: none !important;">
-                    <input type="checkbox" class="form-check-input" id="chkGpaFillGrid" checked onchange="onGpaFillGridChange()">
+                    <input type="checkbox" class="form-check-input" id="chkGpaFillGrid" checked onchange="window.onGpaFillGridChange()">
                     <label class="form-check-label mb-0 po-field-lbl" for="chkGpaFillGrid" style="font-size: 0.8rem; font-weight: 600;">Fill Grid</label>
                 </div>
-                <button type="button" class="btn btn-sm btn-gpa-add-row" onclick="onAddBillRowClick()" title="Add bill">
+                <button type="button" class="btn btn-sm btn-gpa-add-row" onclick="window.onAddBillRowClick()" title="Add bill">
                     <i class="fa fa-plus me-1"></i> Add row
                 </button>
             </div>
@@ -712,7 +767,7 @@
                         <tr>
                             <td colspan="6"></td>
                             <td class="gpa-lbl">Advance / On account</td>
-                            <td class="gpa-val"><input type="number" id="txtFooterAdvance" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00" autocomplete="off" value="0.00" onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); markFooterAdvanceManual();"></td>
+                            <td class="gpa-val"><input type="number" id="txtFooterAdvance" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00" autocomplete="off" value="0.00" onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this); window.markFooterAdvanceManual();"></td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -739,25 +794,25 @@
                     <input type="hidden" id="gpaAddBillModalMrn" value="">
                     <div id="gpaAddBillModalBillWrap" class="mb-2" style="display: none;">
                         <label class="form-label mb-1 po-field-lbl">Bill</label>
-                        <select id="gpaAddBillModalBill" class="form-control form-control-sm" onchange="onGpaAddBillModalBillChange()">
+                        <select id="gpaAddBillModalBill" class="form-control form-control-sm" onchange="window.onGpaAddBillModalBillChange()">
                             <option value="">-- Select bill --</option>
                         </select>
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1 po-field-lbl">Bill no</label>
                         <input type="text" id="gpaAddBillModalBillNo" class="form-control form-control-sm" maxlength="64" autocomplete="off" placeholder="Bill no"
-                               oninput="gpaOnAddBillModalBillNoInput()">
+                               oninput="window.gpaOnAddBillModalBillNoInput()">
                     </div>
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="form-label mb-1 po-field-lbl">Project</label>
-                            <select id="gpaAddBillModalProject" class="form-control form-control-sm" onchange="onGpaAddBillModalProjectPick()">
+                            <select id="gpaAddBillModalProject" class="form-control form-control-sm" onchange="window.onGpaAddBillModalProjectPick()">
                                 <option value="">-- Project --</option>
                             </select>
                         </div>
                         <div class="col-6">
                             <label class="form-label mb-1 po-field-lbl">Sub project</label>
-                            <select id="gpaAddBillModalSubProject" class="form-control form-control-sm" onchange="onGpaAddBillModalSubPick()">
+                            <select id="gpaAddBillModalSubProject" class="form-control form-control-sm" onchange="window.onGpaAddBillModalSubPick()">
                                 <option value="">-- Sub project --</option>
                             </select>
                         </div>
@@ -770,24 +825,24 @@
                         <div class="col-6">
                             <label class="form-label mb-1 po-field-lbl">Bill amount</label>
                             <input type="number" id="gpaAddBillModalBillAmt" class="form-control form-control-sm" min="0" step="0.01" placeholder="0"
-                                   onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); onGpaAddBillModalBillAmtInput();">
+                                   onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this); window.onGpaAddBillModalBillAmtInput();">
                         </div>
                         <div class="col-6">
                             <label class="form-label mb-1 po-field-lbl">Payable amount</label>
                             <input type="number" id="gpaAddBillModalPayable" class="form-control form-control-sm" min="0" step="0.01" placeholder="0" readonly style="background: #ede9fe; border-color: #c4b5fd;"
-                                   onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this);">
+                                   onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this);">
                         </div>
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1 po-field-lbl">Payment amount <span class="req">*</span></label>
                         <input type="number" id="gpaAddBillModalPayment" class="form-control form-control-sm" min="0" step="0.01" placeholder="0"
-                               onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this);">
+                               onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this);">
                     </div>
                 </div>
             </div>
             <div class="modal-footer" style="border-top: 1px solid #e2e8f0; padding: 14px 24px;">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><i class="fa fa-times me-1"></i> Cancel</button>
-                <button type="button" class="btn btn-success btn-sm" onclick="saveGpaAddBillModalToGrid()"><i class="fa fa-check me-1"></i> Add to grid</button>
+                <button type="button" class="btn btn-success btn-sm" onclick="window.saveGpaAddBillModalToGrid()"><i class="fa fa-check me-1"></i> Add to grid</button>
             </div>
         </div>
     </div>
@@ -802,21 +857,22 @@
             <span class="text-muted small ms-1">·</span>
             <span id="floatPayTitle">Payment Entry</span>
         </div>
+        <span class="po-mode-badge badge bg-success" id="gpaFloatModeBadge">NEW</span>
     </div>
     <div class="po-float-bar-right">
-        <button type="button" class="btn-po-cancel" onclick="cancelGRNPaymentApproval()">
+        <button type="button" class="btn-po-cancel" onclick="window.cancelGRNPaymentApproval()">
             <i class="fa fa-arrow-left me-1"></i> Back to List
         </button>
-        <button type="button" class="btn-po-cancel" onclick="resetGRNPaymentApprovalForm()">
+        <button type="button" class="btn-po-cancel" onclick="window.resetGRNPaymentApprovalForm()">
             <i class="fa fa-undo me-1"></i> Reset
         </button>
         <div class="gpa-attach-btn-wrap">
-            <button type="button" id="btnGpaFooterAttach" class="btn-po-cancel btn-gpa-footer-attach" onclick="openGpaAttachmentControl()" title="Attachments">
+            <button type="button" id="btnGpaFooterAttach" class="btn-po-cancel btn-gpa-footer-attach" onclick="window.openGpaAttachmentControl()" title="Attachments">
                 <i class="fa fa-paperclip me-1"></i> Attachment
             </button>
             <span id="gpaTempAttachBadge" class="gpa-temp-badge">0</span>
         </div>
-        <button type="button" class="btn-po-save" onclick="saveGRNPaymentApproval()">
+        <button type="button" class="btn-po-save" onclick="window.saveGRNPaymentApproval()">
             <i class="fa fa-save me-1"></i> Save
         </button>
     </div>

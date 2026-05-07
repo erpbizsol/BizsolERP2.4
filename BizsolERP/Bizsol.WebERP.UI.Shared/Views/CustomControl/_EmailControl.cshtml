@@ -1,0 +1,252 @@
+<style>
+    /* ── Email Control Modal ─────────────────────────────────────────── */
+    #EmailControlModal .modal-content {
+        border: none;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 24px 64px rgba(102, 126, 234, 0.22);
+    }
+    #EmailControlModal .ec-modal-header {
+        background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+        padding: 16px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    #EmailControlModal .ec-header-left { display: flex; align-items: center; gap: 12px; }
+    #EmailControlModal .ec-header-icon {
+        width: 40px; height: 40px;
+        background: rgba(255,255,255,0.18);
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px; color: #fff; flex-shrink: 0;
+    }
+    #EmailControlModal .ec-header-title { margin: 0; font-size: 15px; font-weight: 700; color: #fff; }
+    #EmailControlModal .ec-header-subtitle { font-size: 11px; color: rgba(255,255,255,0.72); margin-top: 1px; }
+    #EmailControlModal .ec-close-btn {
+        background: rgba(255,255,255,0.15); border: none;
+        width: 32px; height: 32px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; color: #fff; font-size: 16px; flex-shrink: 0; padding: 0;
+    }
+    #EmailControlModal .ec-close-btn:hover { background: rgba(255,255,255,0.28); }
+    #EmailControlModal .modal-body { background: #f4f6fb; padding: 20px 22px 16px; }
+    #EmailControlModal .ec-field-group { margin-bottom: 13px; }
+    #EmailControlModal .ec-field-label {
+        font-size: 0.77rem; font-weight: 700; color: #475569;
+        margin-bottom: 4px; display: flex; align-items: center; gap: 5px;
+    }
+    #EmailControlModal .ec-field-label .req { color: #e11d48; }
+    #EmailControlModal .ec-input {
+        border: 1.5px solid #ddd6fe; border-radius: 8px;
+        font-size: 0.82rem; background: #fff; color: #1e1b4b;
+        width: 100%; padding: 7px 10px;
+        transition: border-color 0.15s, box-shadow 0.15s; outline: none;
+    }
+    #EmailControlModal .ec-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.13);
+    }
+    #EmailControlModal .ec-tags-wrap {
+        display: flex; flex-wrap: wrap; gap: 4px;
+        padding: 5px 8px; border: 1.5px solid #ddd6fe; border-radius: 8px;
+        background: #fff; min-height: 38px; cursor: text; align-items: center;
+    }
+    #EmailControlModal .ec-tags-wrap:focus-within {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.13);
+    }
+    #EmailControlModal .ec-tag {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: #dbeafe; color: #1d4ed8;
+        border-radius: 5px; padding: 2px 8px;
+        font-size: 0.77rem; font-weight: 600;
+    }
+    #EmailControlModal .ec-tag-remove {
+        cursor: pointer; color: #1d4ed8; font-size: 11px; opacity: 0.7; line-height: 1;
+    }
+    #EmailControlModal .ec-tag-remove:hover { opacity: 1; }
+    #EmailControlModal .ec-tag-input {
+        border: none; outline: none; font-size: 0.82rem;
+        color: #1e1b4b; flex: 1; min-width: 140px; background: transparent;
+    }
+    #EmailControlModal .ec-attach-list { margin-top: 6px; }
+    #EmailControlModal .ec-attach-item {
+        display: flex; align-items: center; gap: 8px;
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+        padding: 6px 10px; margin-bottom: 4px; font-size: 0.8rem;
+    }
+    #EmailControlModal .ec-attach-name { flex: 1; color: #334155; }
+    #EmailControlModal .ec-attach-size { color: #94a3b8; font-size: 0.73rem; }
+    #EmailControlModal .ec-attach-remove {
+        cursor: pointer; color: #e11d48; background: none; border: none; padding: 0; font-size: 13px;
+    }
+    #EmailControlModal .ec-dropzone {
+        border: 2px dashed #c7d2fe; border-radius: 10px;
+        padding: 16px 12px; text-align: center; cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+        font-size: 0.78rem; color: #64748b; background: #f8fafc;
+    }
+    #EmailControlModal .ec-dropzone:hover { border-color: #2563eb; background: #eff6ff; }
+    #EmailControlModal .ec-dropzone input[type=file] { display: none; }
+    #EmailControlModal .modal-footer {
+        background: #f8fafc; border: none; padding: 12px 22px;
+        display: flex; justify-content: flex-end; gap: 8px;
+    }
+    #EmailControlModal .ec-send-btn {
+        background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+        border: none; color: #fff; border-radius: 9px; padding: 8px 22px;
+        font-size: 0.84rem; font-weight: 700;
+        box-shadow: 0 3px 12px rgba(37,99,235,0.28);
+        cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+        transition: opacity 0.15s;
+    }
+    #EmailControlModal .ec-send-btn:hover { opacity: 0.9; }
+    #EmailControlModal .ec-send-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    #EmailControlModal .ec-cancel-btn {
+        background: #e2e8f0; border: none; color: #475569;
+        border-radius: 9px; padding: 8px 18px;
+        font-size: 0.84rem; font-weight: 600; cursor: pointer;
+    }
+    #EmailControlModal .ec-cancel-btn:hover { background: #cbd5e1; }
+    #EmailControlModal .ec-body-textarea { min-height: 130px; resize: vertical; }
+</style>
+
+<div class="modal fade" id="EmailControlModal" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered"
+         style="max-width:620px;width:calc(100% - 24px);margin:auto;">
+        <div class="modal-content">
+
+            <!-- Header -->
+            <div class="ec-modal-header">
+                <div class="ec-header-left">
+                    <div class="ec-header-icon"><i class="fa fa-envelope"></i></div>
+                    <div>
+                        <div class="ec-header-title">Send Email</div>
+                        <div class="ec-header-subtitle">Compose and send an email</div>
+                    </div>
+                </div>
+                <button class="ec-close-btn" data-bs-dismiss="modal" title="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body">
+
+                <!-- To -->
+                <div class="ec-field-group">
+                    <div class="ec-field-label">
+                        <i class="fa fa-user" style="color:#2563eb;font-size:11px;"></i>
+                        To <span class="req">*</span>
+                    </div>
+                    <div class="ec-tags-wrap" id="ecToTagsWrap"
+                         onclick="document.getElementById('ecToTagInput').focus()">
+                        <input type="text" id="ecToTagInput" class="ec-tag-input"
+                               placeholder="Enter email and press Enter or comma…"
+                               onkeydown="EmailControl_TagKeyDown('To', event)"
+                               onblur="EmailControl_TagBlur('To')" />
+                    </div>
+                </div>
+
+                <!-- CC -->
+                <div class="ec-field-group">
+                    <div class="ec-field-label">
+                        <i class="fa fa-user-plus" style="color:#7c3aed;font-size:11px;"></i>
+                        CC
+                    </div>
+                    <div class="ec-tags-wrap" id="ecCCTagsWrap"
+                         onclick="document.getElementById('ecCCTagInput').focus()">
+                        <input type="text" id="ecCCTagInput" class="ec-tag-input"
+                               placeholder="Enter email and press Enter or comma…"
+                               onkeydown="EmailControl_TagKeyDown('CC', event)"
+                               onblur="EmailControl_TagBlur('CC')" />
+                    </div>
+                </div>
+
+                <!-- BCC -->
+                <div class="ec-field-group">
+                    <div class="ec-field-label">
+                        <i class="fa fa-user-secret" style="color:#0f766e;font-size:11px;"></i>
+                        BCC
+                    </div>
+                    <div class="ec-tags-wrap" id="ecBCCTagsWrap"
+                         onclick="document.getElementById('ecBCCTagInput').focus()">
+                        <input type="text" id="ecBCCTagInput" class="ec-tag-input"
+                               placeholder="Enter email and press Enter or comma…"
+                               onkeydown="EmailControl_TagKeyDown('BCC', event)"
+                               onblur="EmailControl_TagBlur('BCC')" />
+                    </div>
+                </div>
+
+                <!-- Subject -->
+                <div class="ec-field-group">
+                    <div class="ec-field-label">
+                        <i class="fa fa-tag" style="color:#d97706;font-size:11px;"></i>
+                        Subject <span class="req">*</span>
+                    </div>
+                    <input type="text" id="ecSubject" class="ec-input"
+                           maxlength="200" placeholder="Enter subject…" />
+                </div>
+
+                <!-- Body -->
+                <div class="ec-field-group">
+                    <div class="ec-field-label">
+                        <i class="fa fa-align-left" style="color:#475569;font-size:11px;"></i>
+                        Message Body <span class="req">*</span>
+                    </div>
+                    <textarea id="ecBody" class="ec-input ec-body-textarea"
+                              placeholder="Type your message here…"></textarea>
+                </div>
+
+                <!-- Attachments -->
+                <div class="ec-field-group">
+                    <div class="ec-field-label">
+                        <i class="fa fa-paperclip" style="color:#475569;font-size:11px;"></i>
+                        Attachments
+                    </div>
+                    <div class="ec-dropzone" id="ecDropzone"
+                         ondragover="event.preventDefault();this.style.borderColor='#2563eb'"
+                         ondragleave="this.style.borderColor=''"
+                         ondrop="EmailControl_Drop(event)"
+                         onclick="document.getElementById('ecFileInput').click()">
+                        <i class="fa fa-cloud-upload-alt"
+                           style="font-size:20px;color:#93c5fd;margin-bottom:4px;display:block;"></i>
+                        Click to browse or drag &amp; drop files here
+                        <input type="file" id="ecFileInput" multiple
+                               onchange="EmailControl_FileSelected(event)" />
+                    </div>
+                    <div class="ec-attach-list" id="ecAttachList"></div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer">
+                <button class="ec-cancel-btn" data-bs-dismiss="modal">
+                    <i class="fa fa-times me-1"></i>Cancel
+                </button>
+                <button class="ec-send-btn" id="ecSendBtn" onclick="EmailControl_Send()">
+                    <i class="fa fa-paper-plane"></i>Send Email
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script type="module"
+        src="~/_content/Bizsol.WebERP.UI.Shared/js/Pages/CustomControl/_EmailControlPage.js"></script>
+<script>
+    $(document).ready(function () {
+        function initEmailControl() {
+            if (typeof window.EmailControl_Open === 'function') {
+                // modal is ready — nothing to auto-open, host page calls EmailControl_Open(options)
+            } else {
+                setTimeout(initEmailControl, 50);
+            }
+        }
+        initEmailControl();
+    });
+</script>

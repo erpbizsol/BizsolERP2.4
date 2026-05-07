@@ -1,6 +1,5 @@
 
 import { GRNPaymentApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GRNPaymentEntryService.js';
-import { GRNService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_GRNService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
@@ -16,6 +15,7 @@ $(document).ready(async function () {
         syncGpaFooterAttachmentButtonState(count);
     };
 });
+
 
 // ── Numeric input helpers ────────────────────────────────────────────────────
 // Block e, E, +, - keys that browsers allow in type="number"
@@ -46,12 +46,118 @@ let gpaFormHasAttachmentYes = false;
 let gpaVendorListCache = [];
 /** Cached from GetBankPayment — used for print voucher payment mode label. */
 let gpaBankPaymentListCache = [];
-/** Cached from GRN GetProjectList — bill row project dropdowns. */
+/** Cached from GRN Payment Entry GetProjectMaster — bill row project dropdowns. */
 let gpaProjectListCache = [];
 /** Cached from GetMarketingManMaster — employee dropdown. */
 let gpaEmployeeListCache = [];
 /** Active list tab: 'U' | 'P' | 'R' */
 let gpaListActiveStatusTab = 'U';
+/** When true, list grid shows only entries pending approval on the current user (same rules as GRN Payment Approval). */
+let gpaListOnlyPendingOnMe = false;
+
+const BS_EMBED_STORAGE_KEY = 'BizsolBankStmtGrnEmbed';
+
+function gpaIsBankStatementEmbed() {
+    try {
+        return new URLSearchParams(window.location.search).get('embedded') === '1';
+    } catch (e) {
+        return false;
+    }
+}
+
+function gpaGetEmbedBankStatementCode() {
+    try {
+        const n = parseInt(String(new URLSearchParams(window.location.search).get('bankStatementCode') || '').trim(), 10);
+        return Number.isFinite(n) && n > 0 ? n : 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function gpaParseStmtTxnDateToInputValue(txn) {
+    const s = String(txn || '').trim();
+    const m = s.match(/^(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})$/);
+    if (m) return `${m[3]}-${String(m[2]).padStart(2, '0')}-${String(m[1]).padStart(2, '0')}`;
+    const m2 = s.match(/^(\d{4})[\-\/](\d{1,2})[\-\/](\d{1,2})$/);
+    if (m2) return `${m2[1]}-${String(m2[2]).padStart(2, '0')}-${String(m2[3]).padStart(2, '0')}`;
+    return '';
+}
+
+/** Pick vendor whose name appears in bank narration (longest match wins). */
+function gpaSelectPartyFromBankNarration(narration) {
+    const raw = String(narration || '').trim();
+    if (!raw) return false;
+    const n = raw.toLowerCase();
+    const ddl = document.getElementById('ddlPartyName');
+    if (!ddl || !gpaVendorListCache || !gpaVendorListCache.length) return false;
+    let bestCode = '';
+    let bestLen = 0;
+    for (let i = 0; i < gpaVendorListCache.length; i++) {
+        const v = gpaVendorListCache[i];
+        const name = String(v.VendorName ?? v.vendorName ?? '').trim();
+        if (name.length < 2) continue;
+        const nl = name.toLowerCase();
+        if (n.includes(nl) && nl.length > bestLen) {
+            bestLen = nl.length;
+            bestCode = String(v.VendorMaster_Code ?? v.vendorMaster_Code ?? v.Code ?? '');
+        }
+    }
+    if (bestCode && [...ddl.options].some(o => o.value === bestCode)) {
+        ddl.value = bestCode;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Bank Statement list stores JSON in sessionStorage before opening iframe.
+ * Prefills Amount, Ref, Date, Narration; matches Party from narration text.
+ */
+async function tryApplyBankStatementEmbedPrefill(openedNewForm) {
+    if (!gpaIsBankStatementEmbed() || !openedNewForm || !gpaGetEmbedBankStatementCode()) return;
+    let raw = null;
+    try {
+        raw = sessionStorage.getItem(BS_EMBED_STORAGE_KEY);
+    } catch (e) { /* ignore */ }
+    if (!raw) return;
+    let ctx;
+    try {
+        ctx = JSON.parse(raw);
+    } catch (e) {
+        return;
+    }
+    try {
+        sessionStorage.removeItem(BS_EMBED_STORAGE_KEY);
+    } catch (e2) { /* ignore */ }
+
+    const w = parseFloat(String(ctx.withdrawal ?? ctx.withdrawalAmt ?? '0').replace(/,/g, ''));
+    const narration = String(ctx.narration ?? '');
+    const ref = String(ctx.chequeRef ?? ctx.chequeRefNo ?? '').trim();
+    const txn = String(ctx.txnDate ?? ctx.txn ?? '').trim();
+
+    const ha = document.getElementById('txtHeaderAmount');
+    if (ha && Number.isFinite(w) && w > 0) ha.value = w.toFixed(2);
+
+    const refEl = document.getElementById('txtRefNo');
+    if (refEl && ref) refEl.value = ref;
+
+    const dtEl = document.getElementById('dtPaymentDate');
+    const iso = gpaParseStmtTxnDateToInputValue(txn);
+    if (dtEl && iso) dtEl.value = iso;
+
+    const nar = document.getElementById('txtNarration');
+    if (nar && narration) nar.value = narration;
+
+    gpaSelectPartyFromBankNarration(narration);
+
+    const chk = document.getElementById('chkGpaFillGrid');
+    if (chk && chk.checked) {
+        const cp = getGpaCounterpartyKey();
+        if (cp) await onGpaFillGridChange();
+    }
+
+    recalcFooter();
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // LIST VIEW (GetGRNPaymentApprovalList → BizsolCustomFilterGrid, same as GRNService)
@@ -75,6 +181,160 @@ function normalizeGpaListStatusCode(item) {
     if (boolOk === true || boolOk === 1 || boolOk === 'Y' || boolOk === 'y') return 'P';
     return 'U';
 }
+
+/** Same as GRNPaymentApproval.js — LevelDetails may be JSON string or array. */
+function gpaListParseLevelDetailsToArray(v) {
+    if (Array.isArray(v)) return v;
+    if (v == null) return [];
+    if (typeof v === 'string') {
+        const t = v.trim();
+        if (!t) return [];
+        try {
+            const j = JSON.parse(t);
+            return Array.isArray(j) ? j : [];
+        } catch (e) {
+            return [];
+        }
+    }
+    return [];
+}
+
+function gpaListLevelNoFromRow(r) {
+    const n = parseInt(r.LevelNo ?? r.Level ?? r.LevelOrder ?? 0, 10);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function gpaListGetCurrentLevelRow(p) {
+    const cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
+    const levels = gpaListParseLevelDetailsToArray(p.LevelDetails);
+    const row = levels.find(function (l) {
+        return gpaListLevelNoFromRow(l) === cur;
+    });
+    if (row) return row;
+    if (levels.length && cur >= 1 && cur <= levels.length) return levels[cur - 1];
+    return null;
+}
+
+function gpaListTruthyFlag(v) {
+    if (v === true || v === 1) return true;
+    const s = (v != null ? String(v) : '').trim().toLowerCase();
+    return s === 'y' || s === '1' || s === 'true';
+}
+
+function gpaListSessionUserMasterCode() {
+    try {
+        const a = JSON.parse(sessionStorage.getItem('authKey'));
+        return parseInt(a && a.UserMaster_Code, 10) || 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function gpaListSessionGroupMasterCode() {
+    try {
+        const d = JSON.parse(sessionStorage.getItem('UserDetails'));
+        if (Array.isArray(d) && d[0] != null) {
+            return parseInt(d[0].GroupMaster_Code, 10) || 0;
+        }
+    } catch (e) { /* ignore */ }
+    return 0;
+}
+
+function gpaListPickFirstPositiveInt(obj, keys) {
+    if (!obj || typeof obj !== 'object') return 0;
+    for (let i = 0; i < keys.length; i++) {
+        const v = obj[keys[i]];
+        if (v == null || v === '') continue;
+        const n = parseInt(v, 10);
+        if (Number.isFinite(n) && n > 0) return n;
+    }
+    return 0;
+}
+
+/**
+ * True when list row is pending (U) and current user/group should act (aligned with GRNPaymentApproval.js paymentIsPendingOnMe).
+ */
+function gpaListEntryIsPendingOnMeFromRaw(p) {
+    if (!p || typeof p !== 'object') return false;
+    if (normalizeGpaListStatusCode(p) !== 'U') return false;
+
+    if (gpaListTruthyFlag(p.IsPendingForMe) || gpaListTruthyFlag(p.PendingForMe) || gpaListTruthyFlag(p.CanApproveNow)
+        || gpaListTruthyFlag(p.IsMyApproval) || gpaListTruthyFlag(p.PendingOnMe)) {
+        return true;
+    }
+
+    const me = gpaListSessionUserMasterCode();
+    const myG = gpaListSessionGroupMasterCode();
+
+    const lvl = gpaListGetCurrentLevelRow(p);
+    const ru = gpaListPickFirstPositiveInt(lvl, [
+        'UserMaster_Code', 'userMaster_Code', 'ApproverUserMaster_Code', 'ApproverUser_Code',
+        'AssignedUserMaster_Code', 'ApprovalUserMaster_Code', 'Approver_Code',
+    ]);
+    const rg = gpaListPickFirstPositiveInt(lvl, [
+        'GroupMaster_Code', 'groupMaster_Code', 'ApproverGroupMaster_Code',
+        'AssignedGroupMaster_Code', 'ApprovalGroupMaster_Code',
+    ]);
+
+    if (me > 0 && ru > 0 && ru === me) return true;
+    if (myG > 0 && rg > 0 && rg === myG) return true;
+
+    const mu = gpaListPickFirstPositiveInt(p, [
+        'CurrentApproverUserMaster_Code', 'ApproverUserMaster_Code', 'NextApproverUserMaster_Code',
+        'PendingApproverUserMaster_Code',
+    ]);
+    const mg = gpaListPickFirstPositiveInt(p, [
+        'CurrentApproverGroupMaster_Code', 'ApproverGroupMaster_Code', 'NextApproverGroupMaster_Code',
+        'PendingApproverGroupMaster_Code',
+    ]);
+    if (me > 0 && mu > 0 && mu === me) return true;
+    if (myG > 0 && mg > 0 && mg === myG) return true;
+
+    const hasAssignee = (ru + rg + mu + mg) > 0;
+    if (!hasAssignee) {
+        return true;
+    }
+    return false;
+}
+
+function gpaListEntryIsPendingOnMe(row) {
+    const raw = row && row._gpaRaw;
+    return gpaListEntryIsPendingOnMeFromRaw(raw || {});
+}
+
+function syncGpaListPendingOnMeChipActive() {
+    const chip = document.getElementById('gpaListChipPendingOnMe');
+    if (chip) {
+        chip.classList.toggle('gpa-list-chip-onme--active', !!gpaListOnlyPendingOnMe);
+    }
+}
+
+function updateGpaListPendingOnMeCount() {
+    const el = document.getElementById('gpaListCountPendingOnMe');
+    if (!el) return;
+    if (!gpaListFullRows.length) {
+        el.textContent = '—';
+        return;
+    }
+    let n = 0;
+    for (let i = 0; i < gpaListFullRows.length; i++) {
+        if (gpaListEntryIsPendingOnMe(gpaListFullRows[i])) n++;
+    }
+    el.textContent = String(n);
+}
+
+function toggleGpaListPendingOnMeFilter() {
+    gpaListOnlyPendingOnMe = !gpaListOnlyPendingOnMe;
+    syncGpaListPendingOnMeChipActive();
+    renderGpaListGridForActiveTab();
+}
+window.toggleGpaListPendingOnMeFilter = toggleGpaListPendingOnMeFilter;
+
+function applyGpaListPendingOnMeFilter() {
+    const a = document.getElementById('gpaListChipPendingOnMe');
+    if (a && a.href) window.location.href = a.href;
+}
+window.applyGpaListPendingOnMeFilter = applyGpaListPendingOnMeFilter;
 
 function formatGpaListDate(val) {
     if (val === undefined || val === null || val === '') return '';
@@ -202,15 +462,15 @@ function mapGpaListRow(item) {
     const hasAttachmentYes = gpaItemHasAttachmentYes(item);
     const attachBtnClass = hasAttachmentYes ? 'im-btn-attach im-btn-attach--has-attachment' : 'im-btn-attach';
     const btns =
-        '<button type="button" class="im-btn-print-preview" title="Print Preview" onclick="PrintGRNPaymentVoucher(' + code + ',\'preview\')">' +
+        '<button type="button" class="im-btn-print-preview" title="Print Preview" onclick="window.PrintGRNPaymentVoucher(' + code + ',\'preview\')">' +
         '<i class="fa fa-search-plus"></i></button>' +
-        '<button type="button" class="im-btn-print" title="Print" onclick="PrintGRNPaymentVoucher(' + code + ',\'print\')">' +
+        '<button type="button" class="im-btn-print" title="Print" onclick="window.PrintGRNPaymentVoucher(' + code + ',\'print\')">' +
         '<i class="fa fa-print"></i></button>' +
-        '<button type="button" class="im-btn-edit" title="Edit" onclick="editGRNPaymentApproval(' + code + ')">' +
+        '<button type="button" class="im-btn-edit" title="Edit" onclick="window.editGRNPaymentApproval(' + code + ')">' +
         '<i class="fas fa-pen"></i></button>' +
-        '<button type="button" class="' + attachBtnClass + '" title="Attachment" onclick="openGpaListAttachmentControl(' + code + ',' + enNum + ',\'' + rawEdStr + '\')">' +
+        '<button type="button" class="' + attachBtnClass + '" title="Attachment" onclick="window.openGpaListAttachmentControl(' + code + ',' + enNum + ',\'' + rawEdStr + '\')">' +
         '<i class="fas fa-paperclip"></i></button>' +
-        '<button type="button" class="im-btn-delete" title="Delete" onclick="confirmDeleteGRNPaymentApproval(' + code + ', \'' + label + '\')">' +
+        '<button type="button" class="im-btn-delete" title="Delete" onclick="window.confirmDeleteGRNPaymentApproval(' + code + ', \'' + label + '\')">' +
         '<i class="fas fa-trash-can"></i></button>';
     const row = {
         'Entry No': entryNo,
@@ -222,8 +482,8 @@ function mapGpaListRow(item) {
         Action: btns,
         Code: code,
         StatusCode: normalizeGpaListStatusCode(item),
-    }; 
-    if (hasAttachmentYes) row.__bizsolRowClass = 'gpa-grid-row-has-attachment';
+        _gpaRaw: item,
+    };
     return row;
 }
 
@@ -245,6 +505,7 @@ function showFormView() {
     if (bar) bar.style.display = 'flex';
     syncFloatBarMargin();
     gpaShowFillGridCheckbox(!editMode);
+    updateGpaFloatModeBadge(editMode ? 'edit' : undefined);
 }
 
 function gpaListEmptyTabPlaceholderRow() {
@@ -273,6 +534,7 @@ function updateGpaStatusTabStrip() {
     if (elU) elU.textContent = String(counts.U);
     if (elP) elP.textContent = String(counts.P);
     if (elR) elR.textContent = String(counts.R);
+    updateGpaListPendingOnMeCount();
     document.querySelectorAll('.gpa-status-tab').forEach((btn) => {
         const st = btn.getAttribute('data-gpa-status');
         const on = st === gpaListActiveStatusTab;
@@ -288,7 +550,7 @@ function renderGpaListGridForActiveTab() {
     const Button = false;
     const showButtons = [];
     const StringdoubleFilterColumn = [];
-    const hiddenColumns = ['Code', 'StatusCode', '__bizsolRowClass'];
+    const hiddenColumns = ['Code', 'StatusCode', '__bizsolRowClass', '_gpaRaw'];
     const ColumnAlignment = { Action: 'center;width:268px;' };
 
     updateGpaStatusTabStrip();
@@ -301,6 +563,9 @@ function renderGpaListGridForActiveTab() {
 
     const tab = gpaListActiveStatusTab || 'U';
     let filtered = gpaListFullRows.filter((r) => (r.StatusCode || 'U') === tab);
+    if (gpaListOnlyPendingOnMe) {
+        filtered = filtered.filter((r) => gpaListEntryIsPendingOnMe(r));
+    }
     if (filtered.length === 0) filtered = [gpaListEmptyTabPlaceholderRow()];
 
     $('#gpaListTable').show();
@@ -322,10 +587,15 @@ function renderGpaListGridForActiveTab() {
 function onGpaListStatusTabClick(code) {
     const c = code === 'P' || code === 'R' ? code : 'U';
     gpaListActiveStatusTab = c;
+    gpaListOnlyPendingOnMe = false;
+    syncGpaListPendingOnMeChipActive();
     renderGpaListGridForActiveTab();
 }
+window.onGpaListStatusTabClick = onGpaListStatusTabClick;
 
 function loadGRNPaymentApprovalList() {
+    gpaListOnlyPendingOnMe = false;
+    syncGpaListPendingOnMeChipActive();
     return GRNPaymentApprovalService.GetGRNPaymentApprovalList()
         .then(function (response) {
             const raw = normalizeApiRows(response);
@@ -343,6 +613,8 @@ function loadGRNPaymentApprovalList() {
         .catch(function () {
             gpaListFullRows = [];
             gpaListSourceRows = [];
+            gpaListOnlyPendingOnMe = false;
+            syncGpaListPendingOnMeChipActive();
             if (typeof toastr !== 'undefined') toastr.error('Failed to load payment list.');
             $('#gpaListTable').hide();
             updateGpaStatusTabStrip();
@@ -447,13 +719,26 @@ async function doDeleteGRNPaymentApproval(code) {
 
 // ── DOM ready ────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-    await Promise.all([loadVendorList(), loadBankPaymentList(), loadEmployeeList(), loadGpaProjectListForGrid()]);
+    await Promise.all([loadVendorList(), loadBankPaymentList(), loadGpaBankMasterList(), loadEmployeeList(), loadGpaProjectListForGrid()]);
     syncGpaPartyEmployeeUI();
     setTodayDates();
     await loadGRNPaymentApprovalList();
-    showListView();
+    let gpaOpenNew = false;
+    try {
+        const gpaOpen = new URLSearchParams(window.location.search).get('openNew');
+        gpaOpenNew = gpaOpen === '1' || gpaOpen === 'true';
+    } catch (e) { /* ignore */ }
+    if (gpaOpenNew) {
+        newGRNPaymentApproval();
+    } else {
+        showListView();
+    }
 
     initBillGrid();
+
+    if (gpaIsBankStatementEmbed() && gpaOpenNew) {
+        await tryApplyBankStatementEmbedPrefill(true);
+    }
 
     // Allow only positive numbers with decimals in amount fields (same pattern as GRN txtTotalBillAmountManual)
     const headerAmt = document.getElementById('txtHeaderAmount');
@@ -486,8 +771,27 @@ function setTodayDates() {
 // ══════════════════════════════════════════════════════════════════════════════
 function normalizeApiRows(result) {
     if (Array.isArray(result)) return result;
+    // Nested envelope: { Data: { SubProjectList: [...] } } or { Data: { value: [...] } }
+    const datum = result?.Data ?? result?.data;
+    if (datum != null && typeof datum === 'object' && !Array.isArray(datum)) {
+        const inner = normalizeApiRows(datum);
+        if (inner.length) return inner;
+    }
+    // Generic DDL payloads (e.g. DDL_SUBPROJECTLIST → { SubProjectList: [{ Code, Name }] })
+    if (Array.isArray(result?.SubProjectList)) return result.SubProjectList;
+    if (Array.isArray(result?.subProjectList)) return result.subProjectList;
+    if (Array.isArray(result?.ProjectList)) return result.ProjectList;
+    if (Array.isArray(result?.projectList)) return result.projectList;
+    if (Array.isArray(result?.Table)) return result.Table;
+    if (Array.isArray(result?.table)) return result.table;
     if (Array.isArray(result?.data)) return result.data;
     if (Array.isArray(result?.Data)) return result.Data;
+    if (Array.isArray(result?.Result)) return result.Result;
+    if (Array.isArray(result?.result)) return result.result;
+    if (Array.isArray(result?.value)) return result.value; // OData / default Web API paging
+    if (Array.isArray(result?.Value)) return result.Value;
+    if (Array.isArray(result?.List)) return result.List;
+    if (Array.isArray(result?.list)) return result.list;
     const nested = result?.Items ?? result?.items ?? result?.Details ?? result?.details ?? result?.Lines ?? result?.lines;
     if (Array.isArray(nested)) return nested;
     if (result && typeof result === 'object' && !Array.isArray(result)) {
@@ -507,6 +811,27 @@ function normalizeApiRows(result) {
                 || result.NetPayable != null || result.netPayable != null
                 || result.Name != null || result.name != null);
         if (billish || payLine || ddlBillNoListRow) return [result];
+    }
+    // Same idea as UserMaster.normalizeSubProjectMasterListResponse: API may wrap rows in an arbitrary key
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+        const keys = Object.keys(result);
+        for (let i = 0; i < keys.length; i++) {
+            const arr = result[keys[i]];
+            if (!Array.isArray(arr) || !arr.length) continue;
+            const first = arr[0];
+            if (!first || typeof first !== 'object') continue;
+            if (first.BillNo != null || first.billNo != null || first.BillAmount != null || first.billAmount != null) continue;
+            if (
+                ('Code' in first) || ('code' in first)
+                || ('ProjectMaster_Code' in first) || ('projectMaster_Code' in first)
+                || ('SubProjectMaster_Code' in first) || ('subProjectMaster_Code' in first)
+                || ('SubProjectDesp' in first) || ('subProjectDesp' in first)
+                || ('ProjectDesp' in first) || ('projectDesp' in first)
+                || ('VendorMaster_Code' in first) || ('vendorMaster_Code' in first)
+            ) {
+                return arr;
+            }
+        }
     }
     return [];
 }
@@ -661,6 +986,45 @@ async function loadBankPaymentList() {
     syncRefNoRequiredUI();
 }
 
+/** GetBankList — same row shape as GRNService.normalizeGrnBankListRows. */
+function normalizeGpaBankListRows(result) {
+    if (!result) return [];
+    if (Array.isArray(result)) return result;
+    if (Array.isArray(result.Data)) return result.Data;
+    if (Array.isArray(result.data)) return result.data;
+    return [];
+}
+
+async function loadGpaBankMasterList() {
+    const ddl = document.getElementById('ddlBankName');
+    if (!ddl) return;
+    const prev = ddl.value;
+    try {
+        const result = await GRNPaymentApprovalService.GetBankList();
+        const rows = normalizeGpaBankListRows(result);
+        ddl.innerHTML = '<option value="">-- Select Bank --</option>';
+        rows.forEach(b => {
+            const opt = document.createElement('option');
+            const code = b.Code ?? b.BankMaster_Code ?? b.code ?? b.bankMaster_Code ?? '';
+            opt.value = code !== '' && code !== null && code !== undefined ? String(code) : '';
+            opt.text = String((b.BankName ?? b.bankName ?? b.Name ?? '').trim() || opt.value || '');
+            ddl.appendChild(opt);
+        });
+        if (prev && [...ddl.options].some(o => o.value === prev)) ddl.value = prev;
+    } catch (e) {
+        console.error('loadGpaBankMasterList', e);
+    }
+}
+
+function gpaGetSelectedBankNameForSave() {
+    const ddl = document.getElementById('ddlBankName');
+    if (!ddl || ddl.selectedIndex < 0) return '';
+    const opt = ddl.options[ddl.selectedIndex];
+    const v = (ddl.value || '').trim();
+    if (!v) return '';
+    return ((opt && opt.text) ? opt.text : '').trim();
+}
+
 async function loadVendorList() {
     const ddl = document.getElementById('ddlPartyName');
     if (!ddl) return;
@@ -709,7 +1073,7 @@ async function loadEmployeeList() {
 
 async function loadGpaProjectListForGrid() {
     try {
-        const result = await GRNService.GetProjectList();
+        const result = await GRNPaymentApprovalService.GetProjectMasterList();
         gpaProjectListCache = Array.isArray(result) ? result : normalizeApiRows(result);
     } catch (e) {
         console.error('loadGpaProjectListForGrid', e);
@@ -807,6 +1171,29 @@ function updateFloatBarEntryNo() {
     flo.textContent = v ? v : 'New';
 }
 
+/** Float bar mode pill — mirrors GRNService `floatModeBadge` (NEW / EDIT / SAVED / UPDATED). */
+function updateGpaFloatModeBadge(mode) {
+    const el = document.getElementById('gpaFloatModeBadge');
+    if (!el) return;
+    if (mode === 'edit') {
+        el.textContent = 'EDIT';
+        el.className = 'po-mode-badge badge bg-warning text-dark';
+        return;
+    }
+    if (mode === 'saved') {
+        el.textContent = 'SAVED';
+        el.className = 'po-mode-badge badge bg-primary';
+        return;
+    }
+    if (mode === 'updated') {
+        el.textContent = 'UPDATED';
+        el.className = 'po-mode-badge badge bg-primary';
+        return;
+    }
+    el.textContent = 'NEW';
+    el.className = 'po-mode-badge badge bg-success';
+}
+
 function applyMasterCodeFromResponse(data) {
     if (!data) return;
     let code = data.Code ?? data.code;
@@ -873,11 +1260,11 @@ function billRowTemplate() {
     <td><select class="form-control form-control-sm inp-project-ddl" style="min-width:140px;"><option value="">-- Project --</option></select></td>
     <td><select class="form-control form-control-sm inp-subproject-ddl" style="min-width:140px;"><option value="">-- Sub project --</option></select></td>
     <td><input type="date" class="form-control form-control-sm inp-bill-date" autocomplete="off"></td>
-    <td><input type="number" class="form-control form-control-sm inp-bill-amt" min="0" step="0.01" placeholder="0" onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this)"></td>
+    <td><input type="number" class="form-control form-control-sm inp-bill-amt" min="0" step="0.01" placeholder="0" onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this)"></td>
     <td><input type="number" class="form-control form-control-sm inp-payable" min="0" step="0.01" placeholder="0" readonly style="background:#ede9fe;border-color:#c4b5fd;"></td>
-    <td><input type="number" class="form-control form-control-sm inp-payment" min="0" step="0.01" placeholder="0" onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this)"></td>
+    <td><input type="number" class="form-control form-control-sm inp-payment" min="0" step="0.01" placeholder="0" onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this)"></td>
     <td style="text-align:center;vertical-align:middle;">
-        <button type="button" class="del-row-btn" onclick="removeGpaBillRow(this)" title="Remove row"><i class="fa fa-trash"></i></button>
+        <button type="button" class="del-row-btn" onclick="window.removeGpaBillRow(this)" title="Remove row"><i class="fa fa-trash"></i></button>
     </td>
 </tr>`;
 }
@@ -913,7 +1300,8 @@ function initBillRowProjectSelects(tr) {
     pj.innerHTML = '<option value="">-- Project --</option>';
     (gpaProjectListCache || []).forEach(p => {
         const opt = document.createElement('option');
-        const code = p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? p.code ?? '';
+        const code = p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? p.code
+            ?? p.Project_Code ?? p.project_Code ?? p.F_ProjectMaster_Code ?? p.f_ProjectMaster_Code ?? '';
         opt.value = code !== undefined && code !== null ? String(code) : '';
         opt.text = p.ProjectName ?? p.projectName ?? p.Name ?? p.ProjectDesp ?? p.projectDesp ?? opt.value;
         pj.appendChild(opt);
@@ -926,15 +1314,17 @@ async function fillSubProjectOptionsForRow(tr, projectCode) {
     if (!sp) return;
     const prev = sp.value;
     sp.innerHTML = '<option value="">-- Sub project --</option>';
-    if (!projectCode) return;
+    const pc = projectCode !== undefined && projectCode !== null ? String(projectCode).trim() : '';
+    if (!pc) return;
     try {
-        const subResult = await GRNService.GetSubProjectList(projectCode);
+        const subResult = await GRNPaymentApprovalService.GetSubProjectMasterList(pc);
         const subs = Array.isArray(subResult) ? subResult : normalizeApiRows(subResult);
         subs.forEach(s => {
             const opt = document.createElement('option');
-            const code = s.SubProjectMaster_Code ?? s.subProjectMaster_Code ?? s.Code ?? s.code ?? '';
+            const code = s.SubProjectMaster_Code ?? s.subProjectMaster_Code ?? s.Code ?? s.code
+                ?? s.SubProject_Code ?? s.subProject_Code ?? s.F_SubProjectMaster_Code ?? s.f_SubProjectMaster_Code ?? '';
             opt.value = code !== undefined && code !== null ? String(code) : '';
-            opt.text = s.SubProjectName ?? s.subProjectName ?? s.Name ?? s.SubProjectDesp ?? opt.value;
+            opt.text = s.SubProjectName ?? s.subProjectName ?? s.SubProjectDesp ?? s.subProjectDesp ?? s.Name ?? s.name ?? opt.value;
             sp.appendChild(opt);
         });
         if (prev && [...sp.options].some(o => o.value === prev)) sp.value = prev;
@@ -1246,6 +1636,15 @@ function gpaSelectedOptionText(selectEl) {
     const t = String(opt.textContent ?? opt.text ?? '').trim();
     if (!t || /^--\s/.test(t)) return '';
     return t;
+}
+
+/** Dropdown option value → int for API (TY_GRNPaymentDetails.ProjectMaster_Code / SubProjectMaster_Code). */
+function gpaDdlIntCode(selectEl) {
+    if (!selectEl) return 0;
+    const raw = String(selectEl.value ?? '').trim();
+    if (!raw) return 0;
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) ? n : 0;
 }
 
 function formatMoney(n) {
@@ -1568,7 +1967,8 @@ async function populateGpaAddBillModalProjectSubDropdowns() {
     pSel.innerHTML = '<option value="">-- Project --</option>';
     (gpaProjectListCache || []).forEach(p => {
         const opt = document.createElement('option');
-        const code = p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? p.code ?? '';
+        const code = p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? p.code
+            ?? p.Project_Code ?? p.project_Code ?? p.F_ProjectMaster_Code ?? p.f_ProjectMaster_Code ?? '';
         opt.value = code !== undefined && code !== null ? String(code) : '';
         opt.text = p.ProjectName ?? p.projectName ?? p.Name ?? p.ProjectDesp ?? p.projectDesp ?? opt.value;
         pSel.appendChild(opt);
@@ -1581,15 +1981,17 @@ async function fillGpaAddBillModalSubProjects(projectCode) {
     if (!sSel) return;
     const prev = sSel.value;
     sSel.innerHTML = '<option value="">-- Sub project --</option>';
-    if (!projectCode) return;
+    const pc = projectCode !== undefined && projectCode !== null ? String(projectCode).trim() : '';
+    if (!pc) return;
     try {
-        const subResult = await GRNService.GetSubProjectList(projectCode);
+        const subResult = await GRNPaymentApprovalService.GetSubProjectMasterList(pc);
         const subs = Array.isArray(subResult) ? subResult : normalizeApiRows(subResult);
         subs.forEach(s => {
             const opt = document.createElement('option');
-            const code = s.SubProjectMaster_Code ?? s.subProjectMaster_Code ?? s.Code ?? s.code ?? '';
+            const code = s.SubProjectMaster_Code ?? s.subProjectMaster_Code ?? s.Code ?? s.code
+                ?? s.SubProject_Code ?? s.subProject_Code ?? s.F_SubProjectMaster_Code ?? s.f_SubProjectMaster_Code ?? '';
             opt.value = code !== undefined && code !== null ? String(code) : '';
-            opt.text = s.SubProjectName ?? s.subProjectName ?? s.Name ?? s.SubProjectDesp ?? opt.value;
+            opt.text = s.SubProjectName ?? s.subProjectName ?? s.SubProjectDesp ?? s.subProjectDesp ?? s.Name ?? s.name ?? opt.value;
             sSel.appendChild(opt);
         });
         if (prev && [...sSel.options].some(o => o.value === prev)) sSel.value = prev;
@@ -2113,6 +2515,7 @@ function collectPayload() {
     const entryDateStr = document.getElementById('dtPaymentDate')?.value ?? '';
     const bankType = parseInt(document.getElementById('ddlPaymentMode')?.value ?? '0', 10) || 0;
 
+    const bankMasterCode = parseInt(document.getElementById('ddlBankName')?.value ?? '0', 10) || 0;
     /* TY_GRNPaymentMaster — must match API (no VendorMaster / F_Marketing / string MarketingMan / master Project). */
     const GRNPaymentMaster = [{
         Code: masterCode,
@@ -2121,6 +2524,8 @@ function collectPayload() {
         EntryDate: entryDateStr ? entryDateStr : null,
         AccountMaster_Code: gpaNumOrZero(gpaTyGrnPaymentMasterAccountMasterCode()),
         F_BankPaymentTypeMaster_Code: gpaNumOrZero(bankType),
+        BankMaster_Code: gpaNumOrZero(bankMasterCode),
+        BankName: gpaGetSelectedBankNameForSave(),
         Amount: gpaNumOrZero(parseNum(document.getElementById('txtHeaderAmount'))),
         AdvanceAmount: gpaNumOrZero(parseNum(document.getElementById('txtFooterAdvance'))),
         Narration: document.getElementById('txtNarration')?.value?.trim() ?? '',
@@ -2132,8 +2537,8 @@ function collectPayload() {
     document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
         const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
         const dCode = parseInt(tr.querySelector('.inp-detail-code')?.value ?? '0', 10) || 0;
-        const projText = gpaSelectedOptionText(tr.querySelector('.inp-project-ddl'));
-        const subText = gpaSelectedOptionText(tr.querySelector('.inp-subproject-ddl'));
+        const projCode = gpaDdlIntCode(tr.querySelector('.inp-project-ddl'));
+        const subCode = gpaDdlIntCode(tr.querySelector('.inp-subproject-ddl'));
         const eff = gpaLineEffectivePayment(tr);
         const pushDetail = (mrnCode, amt) => {
             GRNPaymentDetails.push({
@@ -2141,8 +2546,8 @@ function collectPayload() {
                 GRNPaymentMaster_Code: masterCode,
                 MRNMaster_Code: mrnCode,
                 PaymentAmount: gpaNumOrZero(amt),
-                ProjectMaster: projText,
-                SubProjectMaster: subText,
+                ProjectMaster_Code: projCode,
+                SubProjectMaster_Code: subCode,
             });
         };
         if (mrn > 0) {
@@ -2198,6 +2603,7 @@ async function loadGRNPaymentApprovalByCode(Code) {
         await loadVendorList();
         await loadEmployeeList();
         await loadBankPaymentList();
+        await loadGpaBankMasterList();
         await loadGpaProjectListForGrid();
         const res = await GRNPaymentApprovalService.GetGRNPaymentApprovalByCode(codeNum);
         const root = peelGrnPaymentApiRoot(res);
@@ -2292,6 +2698,21 @@ async function loadGRNPaymentApprovalByCode(Code) {
         if (ddlBank && bank !== undefined && bank !== null) ddlBank.value = String(bank);
         syncRefNoRequiredUI();
 
+        const ddlBankName = document.getElementById('ddlBankName');
+        if (ddlBankName) {
+            const bcRaw = master.BankMaster_Code ?? master.bankMaster_Code ?? master.Bank_Code ?? master.bank_Code ?? '';
+            const bcStr = bcRaw !== '' && bcRaw !== null && bcRaw !== undefined ? String(bcRaw).trim() : '';
+            const bName = String(master.BankName ?? master.bankName ?? '').trim();
+            if (bcStr) {
+                let hasOpt = false;
+                for (let i = 0; i < ddlBankName.options.length; i++) {
+                    if (ddlBankName.options[i].value === bcStr) { hasOpt = true; break; }
+                }
+                if (!hasOpt) ddlBankName.add(new Option(bName || ('Bank #' + bcStr), bcStr));
+            }
+            ddlBankName.value = bcStr || '';
+        }
+
         const ref = document.getElementById('txtRefNo');
         if (ref) ref.value = master?.RefNo ?? master?.refNo ?? '';
 
@@ -2338,6 +2759,7 @@ async function loadGRNPaymentApprovalByCode(Code) {
         gpaShowFillGridCheckbox(false);
         syncGpaPartyEmployeeUI();
         await gpaSyncFooterAttachmentFromApis(master, codeNum);
+        updateGpaFloatModeBadge('edit');
     } catch (e) {
         showToast('Failed to load Payment Entry.', 'error');
     }
@@ -2546,11 +2968,28 @@ function saveGRNPaymentApproval() {
                     }
                 }
                 showToast(editMode ? 'Payment entry updated successfully.' : 'Payment entry saved successfully.', 'success');
+                const savedWasEdit = editMode;
+                updateGpaFloatModeBadge(savedWasEdit ? 'updated' : 'saved');
                 editMode = false;
-                setTimeout(async () => {
-                    await loadGRNPaymentApprovalList();
-                    showListView();
-                }, 1200);
+                const bsEmbCode = gpaGetEmbedBankStatementCode();
+                if (bsEmbCode > 0 && gpaIsBankStatementEmbed()) {
+                    try {
+                        window.parent.postMessage({
+                            type: 'bizsol:bankStmtGrnSaved',
+                            bankStatementCode: bsEmbCode,
+                            grnPaymentMasterCode: newMasterCode
+                        }, window.location.origin);
+                    } catch (pmErr) { /* ignore */ }
+                    setTimeout(async () => {
+                        await loadGRNPaymentApprovalList();
+                        showFormView();
+                    }, 500);
+                } else {
+                    setTimeout(async () => {
+                        await loadGRNPaymentApprovalList();
+                        showListView();
+                    }, 1200);
+                }
             } else {
                 showToast(data?.Msg ?? data?.msg ?? data?.message ?? 'Save failed.', 'error');
             }
@@ -2585,6 +3024,8 @@ function resetGRNPaymentApprovalForm() {
     } else {
         syncRefNoRequiredUI();
     }
+    const ddlBankName = document.getElementById('ddlBankName');
+    if (ddlBankName) ddlBankName.value = '';
     const fg = document.getElementById('chkGpaFillGrid');
     if (fg) fg.checked = true;
     const ref = document.getElementById('txtRefNo');
@@ -2610,6 +3051,7 @@ function resetGRNPaymentApprovalForm() {
     }
     gpaFormHasAttachmentYes = false;
     syncGpaFooterAttachmentButtonState(0);
+    updateGpaFloatModeBadge();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2720,6 +3162,109 @@ function gpaSessionCompanyInfo() {
     return { companyName, companyAddr, companyGST, companyTag };
 }
 
+/** Header block for print: {@link GRNPaymentApprovalService.GetCompany} (fallback session). */
+function gpaCompanyFromGetCompanyApi(resp) {
+    if (resp == null) {
+        return { companyName: '', companyAddr: '', companyGST: '', companyTag: '' };
+    }
+    let row = null;
+    const rows = normalizeApiRows(resp);
+    if (rows.length && rows[0]) row = rows[0];
+    if (!row) {
+        const o = resp.Data ?? resp.data ?? resp;
+        if (o && typeof o === 'object' && !Array.isArray(o)) {
+            if (o.CompanyName != null || o.companyName != null
+                || o.CompanyInfo != null || o.Name != null || o.name != null
+                || o.OfficeAddress1 != null || o.officeAddress1 != null
+                || o.GSTNo != null || o.gSTNo != null) {
+                row = o;
+            }
+        }
+    }
+    row = row || {};
+    const phone = String(row.OfficePhones1 ?? row.officePhones1 ?? '').trim();
+    const web = String(row.WebSite ?? row.webSite ?? row.Website ?? row.website ?? '').trim();
+    let tagFromApi = '';
+    if (phone && web) tagFromApi = phone + ' · ' + web;
+    else tagFromApi = phone || web;
+    const branchTag = String(row.BranchName ?? row.branchName ?? row.CompanyTagLine ?? row.TagLine ?? row.tagLine ?? '').trim();
+    return {
+        companyName: String(row.CompanyName ?? row.companyName ?? row.CompanyInfo ?? row.Name ?? row.name ?? '').trim(),
+        companyAddr: String(
+            row.OfficeAddress1 ?? row.officeAddress1
+            ?? row.CompanyAddress ?? row.companyAddress ?? row.Address ?? row.address ?? ''
+        ).trim(),
+        companyGST: String(
+            row.GSTNo ?? row.gstNo
+            ?? row.GSTIN ?? row.gstin ?? row.CompanyGSTIN ?? row.companyGSTIN ?? ''
+        ).trim(),
+        companyTag: (tagFromApi && branchTag) ? (tagFromApi + ' · ' + branchTag) : (tagFromApi || branchTag),
+    };
+}
+
+function gpaMergePrintCompanyInfo(sessionCo, apiCo) {
+    const a = apiCo || {};
+    const s = sessionCo || {};
+    return {
+        companyName: (a.companyName || s.companyName || '').trim(),
+        companyAddr: (a.companyAddr || s.companyAddr || '').trim(),
+        companyGST: (a.companyGST || s.companyGST || '').trim(),
+        companyTag: (a.companyTag || s.companyTag || '').trim(),
+    };
+}
+
+/** Match DDL_LIST row: Code / GRNPaymentMaster_Code, else EntryNo (backend list may omit Code). */
+function gpaFindListRowForPrint(listResp, codeNum, master) {
+    const rows = normalizeApiRows(listResp);
+    if (!rows.length) return null;
+    function rowPk(r) {
+        const c = r.Code ?? r.code ?? r.GRNPaymentMaster_Code ?? r.gRNPaymentMaster_Code
+            ?? r.grnPaymentMaster_Code;
+        if (c === undefined || c === null || String(c).trim() === '') return NaN;
+        return parseInt(String(c), 10);
+    }
+    for (let i = 0; i < rows.length; i++) {
+        if (rowPk(rows[i]) === codeNum) return rows[i];
+    }
+    const enMaster = master && (master.EntryNo ?? master.entryNo);
+    if (enMaster !== undefined && enMaster !== null && String(enMaster).trim() !== '') {
+        const enStr = String(enMaster).trim();
+        for (let j = 0; j < rows.length; j++) {
+            const r = rows[j];
+            const en = r.EntryNo ?? r.entryNo;
+            if (en !== undefined && en !== null && String(en).trim() === enStr) return r;
+        }
+    }
+    return null;
+}
+
+/** Prefer non-empty scalar fields from {@link GRNPaymentApprovalService.GetList} row over GetByCode master. */
+function gpaOverlayMasterFromListRow(master, listRow) {
+    if (!master || !listRow) return master;
+    const m = Object.assign({}, master);
+    function setIf(targetKey, altKeys) {
+        for (let i = 0; i < altKeys.length; i++) {
+            const v = listRow[altKeys[i]];
+            if (v !== undefined && v !== null && String(v).trim() !== '') {
+                m[targetKey] = v;
+                return;
+            }
+        }
+    }
+    setIf('VendorName', ['PartyName', 'VendorName', 'partyName', 'AccountName', 'party', 'Party']);
+    setIf('RefNo', ['RefNo', 'refNo']);
+    setIf('EntryNo', ['EntryNo', 'entryNo']);
+    setIf('EntryDate', ['EntryDate', 'entryDate', 'PaymentDate', 'paymentDate']);
+    setIf('Amount', ['Amount', 'amount', 'HeaderAmount', 'headerAmount']);
+    setIf('BankName', ['BankName', 'bankName']);
+    setIf('Narration', ['Narration', 'narration']);
+    setIf('AdvanceAmount', ['AdvanceAmount', 'advanceAmount']);
+    setIf('F_BankPaymentTypeMaster_Code', ['F_BankPaymentTypeMaster_Code', 'f_BankPaymentTypeMaster_Code']);
+    setIf('AccountMaster_Code', ['AccountMaster_Code', 'accountMaster_Code']);
+    setIf('VendorMaster_Code', ['VendorMaster_Code', 'vendorMaster_Code']);
+    return m;
+}
+
 function gpaNumberToWords(amount) {
     const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
         'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
@@ -2817,8 +3362,23 @@ function gpaPickSiteBundleFromRow(r) {
         project: r.ProjectDesp ?? r.projectDesp ?? r.ProjectName ?? r.projectName ?? r.Project ?? '',
         site: r.SiteName ?? r.siteName ?? r.SiteDesp ?? r.SubProjectDesp ?? r.subProjectDesp ?? r.SubProject ?? '',
         siteType: r.SiteType ?? r.siteType ?? r.SiteTypeName ?? '',
-        vendorType: r.VendorType ?? r.vendorType ?? r.PartyType ?? '',
-        contact: r.ContactNo ?? r.contactNo ?? r.Mobile ?? r.mobile ?? r.Phone ?? r.phone ?? '',
+        vendorType: r.VendorType ?? r.vendorType ?? r.PartyType
+            ?? r.IndustryType ?? r.industryType ?? '',
+        contact: r.ContactNo ?? r.contactNo ?? r.Mobile ?? r.mobile ?? r.Phone ?? r.phone
+            ?? r.PhoneNo ?? r.phoneNo ?? '',
+    };
+}
+
+/** Prefer detail-row site fields; fill blanks from DDL_LIST row (ProjectDesp, SubProjectDesp, etc.). */
+function gpaMergeSiteBundlesForPrint(fromDetails, fromList) {
+    const a = fromDetails || { project: '', site: '', siteType: '', vendorType: '', contact: '' };
+    const b = fromList || { project: '', site: '', siteType: '', vendorType: '', contact: '' };
+    return {
+        project: a.project || b.project || '',
+        site: a.site || b.site || '',
+        siteType: a.siteType || b.siteType || '',
+        vendorType: a.vendorType || b.vendorType || '',
+        contact: a.contact || b.contact || '',
     };
 }
 
@@ -2828,13 +3388,25 @@ function PrintGRNPaymentVoucher(code, mode) {
         if (typeof toastr !== 'undefined') toastr.warning('Invalid payment entry.');
         return;
     }
-    GRNPaymentApprovalService.GetGRNPaymentApprovalByCode(codeNum).then(async function (res) {
+    Promise.all([
+        GRNPaymentApprovalService.GetGRNPaymentApprovalByCode(codeNum),
+        GRNPaymentApprovalService.GetCompany().catch(function () { return null; }),
+        GRNPaymentApprovalService.GetList().catch(function () { return null; }),
+    ]).then(async function (results) {
+        const res = results[0];
+        const companyApi = results[1];
+        const listApi = results[2];
         const root = peelGrnPaymentApiRoot(res);
-        const master = firstMasterFromApi(root);
+        let master = firstMasterFromApi(root);
         let details = extractGRNPaymentDetailsArray(root, master);
         if (!master) {
             if (typeof toastr !== 'undefined') toastr.error('Payment entry not found.');
             return;
+        }
+
+        const listRow = listApi ? gpaFindListRowForPrint(listApi, codeNum, master) : null;
+        if (listRow) {
+            master = gpaOverlayMasterFromListRow(master, listRow);
         }
 
         const partyKey = master.AccountMaster_Code ?? master.accountMaster_Code
@@ -2853,20 +3425,31 @@ function PrintGRNPaymentVoucher(code, mode) {
             return mergeEditDetailWithBillLookup(d, billLookup);
         });
 
-        const { companyName, companyAddr, companyGST, companyTag } = gpaSessionCompanyInfo();
-        let creditTo = gpaLookupVendorName(master);
+        const sessionCo = gpaSessionCompanyInfo();
+        const apiCo = companyApi ? gpaCompanyFromGetCompanyApi(companyApi) : null;
+        const { companyName, companyAddr, companyTag } = gpaMergePrintCompanyInfo(sessionCo, apiCo);
+
+        let creditTo = String(master.VendorName ?? master.vendorName ?? '').trim();
+        if (!creditTo) creditTo = gpaLookupVendorName(master);
+        if (!creditTo && listRow) {
+            const p = listRow.PartyName ?? listRow.VendorName ?? listRow.AccountName
+                ?? listRow.partyName ?? listRow.Party ?? '';
+            if (p) creditTo = String(p);
+        }
         if (!creditTo && Array.isArray(gpaListFullRows)) {
             const hit = gpaListFullRows.find(function (r) { return r.Code == codeNum; });
             if (hit && hit['Party Name']) creditTo = String(hit['Party Name']);
         }
         creditTo = creditTo || '';
 
-        const refNo = master.RefNo ?? master.refNo ?? '';
+        const voucherNo = String(master.EntryNo ?? master.entryNo ?? '').trim();
+        const refNo = String(master.RefNo ?? master.refNo ?? '').trim();
         const entryDateRaw = master.EntryDate ?? master.entryDate ?? master.PaymentDate ?? master.paymentDate;
         const voucherDate = formatGpaListDate(entryDateRaw);
 
         const bankCode = master.F_BankPaymentTypeMaster_Code ?? master.f_BankPaymentTypeMaster_Code;
         const payModeLabel = gpaLookupBankPaymentLabel(bankCode) || '—';
+        const bankNameDisp = String(master.BankName ?? master.bankName ?? '').trim();
 
         const amt = parseFloat(master.Amount ?? master.amount ?? 0) || 0;
         const narration = master.Narration ?? master.narration ?? '';
@@ -2874,7 +3457,10 @@ function PrintGRNPaymentVoucher(code, mode) {
 
         const poPair = gpaPickPoFromMergedRows(mergedDetails);
         const poDateDisp = poPair.poDate ? formatGpaListDate(poPair.poDate) : '';
-        const site0 = mergedDetails.length ? gpaPickSiteBundleFromRow(mergedDetails[0]) : gpaPickSiteBundleFromRow({});
+        const site0 = gpaMergeSiteBundlesForPrint(
+            mergedDetails.length ? gpaPickSiteBundleFromRow(mergedDetails[0]) : null,
+            listRow ? gpaPickSiteBundleFromRow(listRow) : null,
+        );
 
         let detailsLines = '';
         mergedDetails.forEach(function (row, idx) {
@@ -2904,8 +3490,7 @@ function PrintGRNPaymentVoucher(code, mode) {
             + '.pv-wrap{max-width:780px;margin:0 auto;border:2px solid #000;padding:12px 14px;}'
             + '.pv-co{text-align:center;font-size:14pt;font-weight:800;margin-bottom:2px;}'
             + '.pv-tag{text-align:center;font-size:8.5pt;margin-bottom:4px;color:#222;}'
-            + '.pv-addr{text-align:center;font-size:9pt;margin-bottom:3px;line-height:1.35;}'
-            + '.pv-gst{text-align:center;font-size:9pt;margin-bottom:10px;}'
+            + '.pv-addr{text-align:center;font-size:9pt;margin-bottom:10px;line-height:1.35;}'
             + '.pv-title{text-align:center;font-weight:800;font-size:11pt;border:1px solid #000;padding:5px;margin:10px 0 12px;letter-spacing:0.04em;}'
             + 'table.pv-t{width:100%;border-collapse:collapse;margin-bottom:0;}'
             + 'table.pv-t td{border:1px solid #000;padding:6px 8px;font-size:9.5pt;vertical-align:top;}'
@@ -2923,14 +3508,15 @@ function PrintGRNPaymentVoucher(code, mode) {
             + '<div class="pv-co">' + gpaEscapeHtml(companyName || 'Company Name') + '</div>'
             + (companyTag ? '<div class="pv-tag">' + gpaEscapeHtml(companyTag) + '</div>' : '')
             + (companyAddr ? '<div class="pv-addr">Address: ' + gpaEscapeHtml(companyAddr) + '</div>' : '')
-            + '<div class="pv-gst">GSTIN: ' + gpaEscapeHtml(companyGST || '') + '</div>'
             + '<div class="pv-title">Payment Voucher</div>'
             + '<table class="pv-t" role="presentation">'
-            + '<tr><td class="lbl">Reference No</td><td>' + gpaEscapeHtml(String(refNo || '')) + '</td>'
+            + '<tr><td class="lbl">Voucher No</td><td>' + gpaEscapeHtml(voucherNo) + '</td>'
             + '<td class="lbl" style="width:18%;">Voucher Date</td><td style="width:22%;">' + gpaEscapeHtml(voucherDate) + '</td></tr>'
+            + '<tr><td class="lbl">Reference No</td><td colspan="3">' + gpaEscapeHtml(refNo) + '</td></tr>'
             + '<tr><td class="lbl">PO No</td><td>' + gpaEscapeHtml(poPair.poNo) + '</td>'
             + '<td class="lbl">PO Date</td><td>' + gpaEscapeHtml(poDateDisp) + '</td></tr>'
             + '<tr><td class="lbl">NEFT / Cheque / RTGS</td><td colspan="3">' + gpaEscapeHtml(payModeLabel) + '</td></tr>'
+            + (bankNameDisp ? '<tr><td class="lbl">Bank name</td><td colspan="3">' + gpaEscapeHtml(bankNameDisp) + '</td></tr>' : '')
             + '<tr><td class="lbl">Credit to</td><td colspan="3">' + gpaEscapeHtml(creditTo) + '</td></tr>'
             + '<tr><td class="lbl">Project Name</td><td colspan="3">' + gpaEscapeHtml(String(site0.project || '')) + '</td></tr>'
             + '<tr><td class="lbl">Site Name</td><td colspan="3">' + gpaEscapeHtml(String(site0.site || '')) + '</td></tr>'
@@ -2987,6 +3573,8 @@ window.cancelGRNPaymentApproval = cancelGRNPaymentApproval;
 window.editGRNPaymentApproval = editGRNPaymentApproval;
 window.confirmDeleteGRNPaymentApproval = confirmDeleteGRNPaymentApproval;
 window.onGpaListStatusTabClick = onGpaListStatusTabClick;
+window.toggleGpaListPendingOnMeFilter = toggleGpaListPendingOnMeFilter;
+window.applyGpaListPendingOnMeFilter = applyGpaListPendingOnMeFilter;
 window.PrintGRNPaymentVoucher = PrintGRNPaymentVoucher;
 window.syncGpaFooterAttachmentButtonState = syncGpaFooterAttachmentButtonState;
 window.gpaSyncFooterAttachmentFromApis = gpaSyncFooterAttachmentFromApis;

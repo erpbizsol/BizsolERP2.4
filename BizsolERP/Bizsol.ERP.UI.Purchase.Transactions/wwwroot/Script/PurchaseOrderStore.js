@@ -1,4 +1,4 @@
-import { PurchaseOrderStoreService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseOrderStoreServices.js';
+﻿import { PurchaseOrderStoreService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseOrderStoreServices.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 
@@ -546,6 +546,8 @@ let G_SiteRepList = [];
 let G_ItemWithoutProjectList = [];
 let G_CompanyInfoList = [];
 
+const DEFAULT_SERVICE_SCOPE_OF_WORK = '';
+
 BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
 // ─── FLOAT BAR MARGIN — tracks sidebar collapsed state ───────────────────────
@@ -584,6 +586,10 @@ $(document).ready(function () {
     LoadPOStatCounts();
     window.ShowPOListGrid();
 
+    // Initialise generic email modal
+    var _emailControlUrl = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/') + 'CustomControl/EmailControl';
+    $('#PurchaseOrderStore_EmailControlContainer').load(_emailControlUrl);
+
     // Attachment badge: update count when files are queued in the shared control
     window.AttachmentControl_onQueueChange = function (count) {
         const badge = document.getElementById('poTempAttachBadge');
@@ -599,6 +605,21 @@ $(document).ready(function () {
             .observe(sidebarEl, { attributes: true, attributeFilter: ['class'] });
     }
     window.addEventListener('resize', SyncFloatBarMargin);
+
+    // Auto-fill Scope of Work default when Work Type is Service on a New PO
+    $('#frmDdlWorkType').on('change', function () {
+        if (G_POStoreEditMode !== 'New') return;
+        const selectedText = $(this).find('option:selected').text().trim().toLowerCase();
+        if (selectedText.includes('service')) {
+            if (!$('#frmTxtScopeOfWork').val()) {
+                $('#frmTxtScopeOfWork').val(DEFAULT_SERVICE_SCOPE_OF_WORK);
+            }
+        } else {
+            if ($('#frmTxtScopeOfWork').val() === DEFAULT_SERVICE_SCOPE_OF_WORK) {
+                $('#frmTxtScopeOfWork').val('');
+            }
+        }
+    });
 });
 
 function FormatDateInput(d) {
@@ -1101,7 +1122,8 @@ window.ShowPOListGrid = function () {
                        <button class="btn btn-secondary icon-height mb-1 ms-1" title="Print Preview" onclick="PrintPO('${item.Code}','preview')"><i class="fa fa-search-plus"></i></button>
                        <button class="btn btn-dark icon-height mb-1 ms-1" title="Print" onclick="PrintPO('${item.Code}','print')"><i class="fa fa-print"></i></button>
                        <button class="btn icon-height mb-1 ms-1" title="Attachments" style="background:${(item.HasAttach || '').toUpperCase() === 'Y' ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#0ea5e9,#0284c7)'};color:#fff;border:none;" onclick="openPOListAttachmentControl('${item.Code}','${item.PONo || item.PO_No || ''}','${(item.PODate || item.PO_Date || '').substring(0, 10)}')"><i class="fa fa-paperclip"></i></button>
-                       ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;" title="Cancel PO" onclick="InitCancelPO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-ban"></i></button>` : ''}`
+                       ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;" title="Cancel PO" onclick="InitCancelPO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-ban"></i></button>` : ''}
+                       ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;border:none;" title="Send Email" onclick="SendMailPO('${item.Code}')"><i class="fa fa-envelope"></i></button>` : ''}`
         }));
         BizsolCustomFilterGrid.CreateDataTable('tblPOListHeader', 'tblPOListBody', displayData, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, [], hiddenColumns, columnAlignment, true, TotalColumns, null, commaColumns);
     }).catch(err => {
@@ -2219,12 +2241,20 @@ function ConfirmPrintPO() {
     _DoPrintPO(_printCode, _printMode, includeTerms);
 }
 
-function _DoPrintPO(code, mode, includeGeneralTerms) {
-    PurchaseOrderStoreService.GetPurchaseOrderStoreById(code).then(function (res) {
-        if (!res) { toastr.error('PO not found.'); return; }
+// ─── BUILD PO PRINT HTML (shared by Print and Send Mail) ────────────────────
+// pdfOpts: { forPdfExport, mainOnly, termsOnly } — used by email PDF (html2canvas + jsPDF)
+
+function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
+        pdfOpts = pdfOpts || {};
+        const forPdfExport = !!pdfOpts.forPdfExport;
+        const mainOnly = !!pdfOpts.mainOnly;
+        const termsOnly = !!pdfOpts.termsOnly;
 
         const header  = res[0][0];
         const details = res[1] || [];
+
+        // ── PO is fully approved when header.Status === 'Approved' ───────────────
+        const isPoApproved = (header.Status || '').trim().toLowerCase() === 'approved';
 
         // ── Resolve related data ──────────────────────────────────────────────────
         const vendorObj    = G_VendorList.find(v => v.Code == header.VendorMaster_Code) || {};
@@ -2236,12 +2266,13 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
         const docTitle     = workTypeName.toLowerCase().includes('goods') ? 'PURCHASE ORDER' : 'WORK ORDER';
 
         // ── Company info from session ──────────────────────────────────────────
-        let companyName = '', companyAddr = '', companyPhone = '', companyEmail = '', companyWeb = '', companyGST = '';
+        let companyName = '', companyAliasName='', companyAddr = '', companyPhone = '', companyEmail = '', companyWeb = '', companyGST = '';
         try {
             //const ud = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
             const ud = res[3]||[];
             if (ud && ud[0]) {
                 companyName  = ud[0].CompanyName    || ud[0].CompanyNameForShow || '';
+                companyAliasName = ud[0].CompanyAliasName || '';
                 companyAddr  = ud[0].CompanyAddress || '';
                 companyPhone = ud[0].PhoneNo        || ud[0].CompanyPhone       || '';
                 companyEmail = ud[0].Email          || ud[0].CompanyEmail       || '';
@@ -2364,30 +2395,112 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
         // ── General Terms & Conditions (controlled by checkbox) ──────────────
         const isGoods = workTypeName.toLowerCase().includes('goods');
         const generalTermsText = isGoods ? PURCHASE_CONDITION : WORK_ORDER_CONDITION;
-        //const generalTermsTitle = isGoods ? 'Purchase Terms &amp; Conditions :-' : 'Work Order Terms &amp; Conditions :-';
-        const generalTermsTitle = isGoods ? 'General Terms &amp; Conditions :-' : 'General Terms &amp; Conditions :-';
-        const generalTermsHtml = includeGeneralTerms
-            ? '<div class="pt-box"><b>' + generalTermsTitle + '</b><br>'
-              + generalTermsText.split('\n').map(function (line) { return line.trim(); }).filter(Boolean).join('<br>')
-              + '</div>'
-            : '';
+
+        function BuildGeneralTermsHTML(rawText) {
+            // Patterns
+            const headingRe  = /^(\d+[a-z]?\.\s+[A-Z].{2,}[:/]?\s*)$/;   // "1. Scope:"
+            const listRe     = /^(\s*((\d+st|\d+nd|\d+rd|\d+th|[a-z]\.|[ivxlcdm]+\.|[A-Z]\.|[-\u2013\u2014\u2022*]|\(\w+\))\s+).{1,})/; // 1st / a. / i. / – / (a)
+            const annexureRe = /^(Annexure\s+\d+)/i;
+
+            const lines = rawText.split('\n');
+            let out = '<div class="gtc-section">'
+                    + '<div class="gtc-main-title">GENERAL TERMS &amp; CONDITIONS</div>';
+
+            lines.forEach(function (raw) {
+                const line = raw.trim();
+                if (!line) return; // skip blank lines
+
+                // ── Annexure title line ───────────────────────────────────────
+                if (annexureRe.test(line)) {
+                    out += '<div class="gtc-annexure-title">' + _esc(line) + '</div>';
+                    return;
+                }
+
+                // ── Numbered section headings (e.g. "1. Scope:") ─────────────
+                if (/^\d+[a-z]?\.\s+[A-Z]/.test(line) && line.length < 80) {
+                    out += '<div class="gtc-heading">' + _esc(line) + '</div>';
+                    return;
+                }
+
+                // ── Sub-list items deeply indented (raw leading spaces ≥ 8) ──
+                if (raw.length > raw.trimStart().length + 7) {
+                    out += '<div class="gtc-sublist">' + _esc(line) + '</div>';
+                    return;
+                }
+
+                // ── List-style items (moderate indent or list marker) ─────────
+                if ((raw.length > raw.trimStart().length + 3) || listRe.test(line)) {
+                    out += '<div class="gtc-list">' + _esc(line) + '</div>';
+                    return;
+                }
+
+                // ── Normal paragraph ──────────────────────────────────────────
+                out += '<div class="gtc-para">' + _esc(line) + '</div>';
+            });
+
+            out += '</div>';
+            return out;
+        }
+
+        function _esc(s) {
+            return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        let generalTermsHtml = '';
+        if (termsOnly) {
+            if (includeGeneralTerms) {
+                generalTermsHtml = BuildGeneralTermsHTML(generalTermsText);
+            }
+        } else if (includeGeneralTerms && !mainOnly) {
+            generalTermsHtml = BuildGeneralTermsHTML(generalTermsText);
+        }
 
         let nowParts = [];
         if (againstProj && header.ProjectName)    nowParts.push(header.ProjectName);
         if (againstProj && header.SubProjectName) nowParts.push(header.SubProjectName);
+        //const sectionBand = againstProj
+        //    ? 'ASSIGNMENT DETAILS' + (nowParts.length ? ' &bull; '+ 'Nature of Work : ' + nowParts.join(' &mdash; ') : '')
+        //    : 'ITEM DETAILS';
+
+        const NatureOfWorkText = isGoods ? ' supply of material' : ' I & C'
         const sectionBand = againstProj
-            ? 'ASSIGNMENT DETAILS' + (nowParts.length ? ' &bull; Nature of Work : ' + nowParts.join(' &mdash; ') : '')
+            ? '' + (nowParts.length ? ' &bull; Nature of Work :' + NatureOfWorkText + ' : ' + nowParts.join(' &mdash; ') : '')
             : 'ITEM DETAILS';
 
         // ── Compose full print document ──────────────────────────────────────────
         //const logoUrl = ((sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/')) + 'assets/images/logo-full.jpeg';
-        const logoUrl = ((sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/')) + 'assets/images/pppllog.jpeg';
+        const logoUrl  = ((sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/')) + 'assets/images/pppllog.jpeg';
+        const _base = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/');
+        const stampUrlHOD     = _base + 'assets/images/PPPL_Stamp_HOD.jpeg';
+        const stampUrlCEO     = _base + 'assets/images/PPPL_Stamp_CEO.jpeg';
+        const stampUrlFinance = _base + 'assets/images/PPPL_Stamp_Finance.jpeg';
+
+        // ── Build one signature box — stamp shown when PO status is Approved ────
+        function BuildSigBox(labelTitle, stampImgUrl) {
+            const stampHtml = isPoApproved
+                ? '<div class="sig-stamp-wrap">'
+                  + '<img class="sig-stamp" src="' + stampImgUrl + '" alt="Approved">'
+                  + '</div>'
+                : '<div class="sig-stamp-wrap"></div>';
+            return stampHtml + '<div class="sig-title">' + labelTitle + '</div>';
+        }
         const showLogo = companyName.trim().toUpperCase() === 'PURSHOTAM PROFILES PVT.LTD.';
+        const gtcCssOverride = termsOnly ? '.gtc-section{page-break-before:auto!important;}' : '';
         const css = '@page{size:A4 portrait;margin:8mm 10mm 10mm 10mm;}'
             + '*{box-sizing:border-box;margin:0;padding:0;}'
             + 'body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;color:#000;background:#fff;}'
             + '.no-print{margin-bottom:5mm;}'
             + '@media print{.no-print{display:none!important;}}'
+            + '.gtc-section{page-break-before:always;padding:6px 2px;font-size:8.5pt;color:#000;}'
+            + '.gtc-main-title{text-align:center;font-size:11pt;font-weight:800;text-decoration:underline;letter-spacing:1.5px;margin-bottom:10px;margin-top:4px;}'
+            + '.gtc-heading{font-weight:800;font-size:9pt;text-decoration:underline;margin:9px 0 3px;}'
+            + '.gtc-para{text-align:justify;line-height:1.6;margin-bottom:4px;font-weight:600;}'
+            + '.gtc-list{text-align:justify;line-height:1.6;margin-left:32px;margin-bottom:2px;font-weight:600;}'
+            + '.gtc-sublist{text-align:justify;line-height:1.6;margin-left:56px;margin-bottom:2px;font-weight:600;}'
+            + '.gtc-annexure-title{font-weight:800;font-size:9pt;margin:8px 0 3px;}'
+            + '.gtc-table{width:100%;border-collapse:collapse;margin:4px 0 6px;}'
+            + '.gtc-table th,.gtc-table td{border:1px solid #555;padding:3px 6px;font-size:8.5pt;font-weight:600;}'
+            + '.gtc-table th{background:#f0f0f0;font-weight:800;text-align:center;}'
             + '.po-hdr{display:flex;align-items:flex-start;padding-bottom:5px;border-bottom:2.5px solid #000;margin-bottom:5px;}'
             + '.hdr-co{flex:1;}'
             + '.hdr-name{font-size:15pt;font-weight:800;color:#000;letter-spacing:0.3px;line-height:1.2;}'
@@ -2416,10 +2529,14 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
             + '.words-box{border:1.5px solid #555;padding:5px 9px;margin:5px 0;font-size:9pt;font-weight:600;color:#000;}'
             + '.pt-box{border:1.5px solid #555;padding:5px 9px;margin:5px 0;font-size:9pt;font-weight:600;color:#000;}'
             + '.sig-row{display:flex;gap:0;margin-top:12px;border:1.5px solid #000;}'
-            + '.sig-box{flex:1;border-right:1.5px solid #000;display:flex;flex-direction:column;justify-content:flex-end;min-height:90px;min-width:0;}'
+            + '.sig-box{flex:1;border-right:1.5px solid #000;display:flex;flex-direction:column;justify-content:flex-end;min-height:160px;min-width:0;}'
             + '.sig-box:last-child{border-right:none;}'
             + '.sig-title{font-weight:800;font-size:8.5pt;color:#000;text-align:center;padding:5px 4px;border-top:1.5px solid #000;letter-spacing:0.02em;}'
             + '.sig-name{font-size:7.5pt;color:#000;font-weight:600;}'
+            + '.sig-stamp-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px 2px;}'
+            + '.sig-stamp{width:100px;height:100px;object-fit:contain;display:block;margin:0 auto 4px;opacity:0.88;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+            + '.sig-approved-name{font-size:7pt;font-weight:700;color:#1a7a45;text-align:center;padding:0 4px 1px;}'
+            + '.sig-approved-date{font-size:6.5pt;color:#555;text-align:center;padding:0 4px 3px;font-weight:600;}'
             + '.page-wrap{width:100%;border-collapse:collapse;border-spacing:0;}'
             + '.page-footer-cell{padding:0;}'
             + '.page-body-cell{padding:0;vertical-align:top;}'
@@ -2429,33 +2546,15 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
             + '.hdr-logo{width:65px;height:65px;object-fit:contain;margin-right:14px;flex-shrink:0;}'
             + '.hdr-left{display:flex;align-items:center;flex:1;}'
             + (showLogo ? '.wm-logo{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:320px;background:url(' + logoUrl + ') no-repeat center;background-size:contain;opacity:0.07;pointer-events:none;z-index:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' : '')
+            + (forPdfExport ? '.pdf-export-body{background:#fff;margin:0;padding:4px 8px;}.po-pdf-root{max-width:794px;margin:0 auto;}' : '')
+            + gtcCssOverride
 
-        const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + docTitle + ' - '
-            + (header.PONo || '') + '</title><style>' + css + '</style></head><body>'
-            // Toolbar (hidden on print)
-            + '<div class="no-print" style="display:flex;gap:8px;padding:3px 0 6px;">'
-            + '<button onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:5px 16px;border-radius:5px;font-size:9pt;cursor:pointer;">&#128438;&nbsp;Print</button>'
-            + '<button onclick="window.close()" style="background:#666;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:9pt;cursor:pointer;">&#10005;&nbsp;Close</button>'
-            + '</div>'
-            // Watermark logo (only for PURSHOTAM PROFILES PVT.LTD.)
-            + (showLogo ? '<div class="wm-logo"></div>' : '')
-            // Page-wrap table: <tfoot> is declared first so the browser repeats it
-            // at the bottom of every printed page; <tbody> holds all document content.
-            + '<table class="page-wrap">'
-            + '<tfoot><tr><td class="page-footer-cell">'
-            + (companyAddr
-                ? '<div class="print-footer"><div class="print-footer-addr">&#9679;&nbsp;' + companyAddr + '</div><div class="print-footer-strip"></div></div>'
-                : '<div class="print-footer"><div class="print-footer-strip"></div></div>')
-            + '</td></tr></tfoot>'
-            + '<tbody><tr><td class="page-body-cell">'
-            // Header
+        const mainBlock = ''
             + '<div class="po-hdr">'
-            + '<div class="hdr-left">' + (showLogo ? '<img class="hdr-logo" src="' + logoUrl + '" alt="Logo">' : '') + '<div class="hdr-co"><div class="hdr-name">' + (companyName || 'COMPANY NAME') + '</div><div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div></div>'
+            + '<div class="hdr-left">' + (showLogo ? '<img class="hdr-logo" src="' + logoUrl + '" alt="Logo">' : '') + '<div class="hdr-co"><div class="hdr-name">' + (companyAliasName || 'COMPANY NAME') + '</div><div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div></div>'
             + '<div class="hdr-contact">' + hdrContact + '</div>'
             + '</div>'
-            // PO title bar
             + '<div class="po-title">' + docTitle + '</div>'
-            // Date | PO No
             + '<div class="info-row">'
             + '<div class="info-cell">'
             + '<div class="info-field"><b>Date : </b>' + poDateStr + '</div>'
@@ -2467,18 +2566,13 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
             + (againstProj && header.ProjectName    ? '<div class="info-field"><b>Project : </b>' + header.ProjectName    + '</div>' : '')
             + (againstProj && header.SubProjectName ? '<div class="info-field"><b>Sub Project : </b>' + header.SubProjectName + '</div>' : '')
             + '</div></div>'
-            // Supplier | Bill To
             + '<div class="info-row">'
             + '<div class="info-cell"><div class="info-label">Supplier Details :</div>' + supplierHtml + '</div>'
             + '<div class="info-cell"><div class="info-label">Bill To :</div>' + billToHtml + '</div>'
             + '</div>'
-            // Ship To
             + shipToSection
-            // Site Representative
             + siteRepSection
-            // Section band
             + '<div class="sec-band">' + sectionBand + '</div>'
-            // Items table
             + '<table class="items"><thead><tr>'
             + '<th style="width:28px;">S.No</th>'
             + '<th>Description</th>'
@@ -2488,28 +2582,52 @@ function _DoPrintPO(code, mode, includeGeneralTerms) {
             + '<th style="width:72px;">Rate</th>'
             + '<th style="width:80px;">Amount</th>'
             + '</tr></thead><tbody>' + itemRows + '</tbody></table>'
-            // Totals
             + '<div class="tot-wrap"><table class="totals"><tbody>' + totalsHtml + '</tbody></table></div>'
-            // Amount in words
             + '<div class="words-box"><b>Amount in Word : </b>' + amtWords + '</div>'
-            // Payment Terms
             + ptHtml
-            // Terms & Condition and Scope of Work
             + (termsHtml || scopeHtml
-                ? '<div style="display:flex;gap:6px;margin:5px 0;">' + (termsHtml ? '<div style="flex:1;">' + termsHtml + '</div>' : '') + (scopeHtml ? '<div style="flex:1;">' + scopeHtml + '</div>' : '') + '</div>'
+                ? '<div style="margin:5px 0;">' + (termsHtml ? '<div>' + termsHtml + '</div>' : '') + (scopeHtml ? '<div>' + scopeHtml + '</div>' : '') + '</div>'
                 : '')
-            
-            // Signatures
             + '<div class="sig-row">'
-            + '<div class="sig-box"><div class="sig-title">Approved By P.M</div></div>'
-            + '<div class="sig-box"><div class="sig-title">Approved By Finance</div></div>'
-            + '<div class="sig-box"><div class="sig-title">Approved By Management</div></div>'
-            + '</div>'
-            // General Terms & Conditions (included only when checkbox is checked)
-            + generalTermsHtml
-            // Close page-wrap tbody cell and table
-            + '</td></tr></tbody></table>'
-            + '</body></html>';
+            + '<div class="sig-box">' + BuildSigBox('Approved By HOD',     stampUrlHOD)     + '</div>'
+            + '<div class="sig-box">' + BuildSigBox('Approved By COO',     stampUrlCEO)     + '</div>'
+            + '<div class="sig-box">' + BuildSigBox('Approved By Finance', stampUrlFinance) + '</div>'
+            + '</div>';
+
+        const coreInner = termsOnly ? generalTermsHtml : (mainBlock + generalTermsHtml);
+        const docPageTitle = termsOnly ? (docTitle + ' - General T&amp;C - ' + (header.PONo || '')) : (docTitle + ' - ' + (header.PONo || ''));
+
+        let html;
+        if (forPdfExport) {
+            html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + docPageTitle + '</title><style>' + css + '</style></head><body class="pdf-export-body">'
+                + (showLogo && !termsOnly ? '<div class="wm-logo"></div>' : '')
+                + '<div class="po-pdf-root' + (termsOnly ? ' po-pdf-root-gtc' : '') + '">' + coreInner + '</div>'
+                + '</body></html>';
+        } else {
+            html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + docPageTitle + '</title><style>' + css + '</style></head><body>'
+                + '<div class="no-print" style="display:flex;gap:8px;padding:3px 0 6px;">'
+                + '<button onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:5px 16px;border-radius:5px;font-size:9pt;cursor:pointer;">&#128438;&nbsp;Print</button>'
+                + '<button onclick="window.close()" style="background:#666;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:9pt;cursor:pointer;">&#10005;&nbsp;Close</button>'
+                + '</div>'
+                + (showLogo ? '<div class="wm-logo"></div>' : '')
+                + '<table class="page-wrap">'
+                + '<tfoot><tr><td class="page-footer-cell">'
+                + (companyAddr
+                    ? '<div class="print-footer"><div class="print-footer-addr">&#9679;&nbsp;' + companyAddr + '</div><div class="print-footer-strip"></div></div>'
+                    : '<div class="print-footer"><div class="print-footer-strip"></div></div>')
+                + '</td></tr></tfoot>'
+                + '<tbody><tr><td class="page-body-cell">' + coreInner + '</td></tr></tbody></table>'
+                + '</body></html>';
+        }
+
+        return html;
+}
+
+function _DoPrintPO(code, mode, includeGeneralTerms) {
+    PurchaseOrderStoreService.GetPurchaseOrderStoreById(code).then(function (res) {
+        if (!res) { toastr.error('PO not found.'); return; }
+
+        const html = _BuildPOPrintHTML(res, includeGeneralTerms);
 
         const win = window.open('', '_blank', 'width=920,height=760,scrollbars=yes,resizable=yes');
         if (!win) { toastr.warning('Please allow popups for this site to use the print feature.'); return; }
@@ -2587,6 +2705,178 @@ function openPOListAttachmentControl(code, poNo, poDate) {
     InitAttachmentControl('PurchaseOrderMaster', masterCode, '', 0, parseInt(poNo, 10) || 0, poDate || '', 'all', '');
 }
 
+// --- SEND MAIL (Approved PO) — PDF via html2canvas + jsPDF (paged + footer) ---
+
+function _poCompanyFooterText(res) {
+    try {
+        const ud = res[3] || [];
+        if (ud && ud[0]) {
+            return String(ud[0].CompanyAddress || '').trim();
+        }
+    } catch (e) {}
+    return '';
+}
+
+function _waitForImagesInDoc(doc) {
+    const imgs = Array.from(doc.getElementsByTagName('img'));
+    const pending = imgs.filter(function (img) { return !img.complete; });
+    return Promise.all(pending.map(function (img) {
+        return new Promise(function (resolve) {
+            img.onload = img.onerror = function () { resolve(); };
+        });
+    }));
+}
+
+function _drawPOPdfFooter(pdf, footerText) {
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const stripH = 5.5;
+    const yStrip = pageH - stripH;
+    if (footerText) {
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(80, 95, 110);
+        const lines = pdf.splitTextToSize('\u2022 ' + footerText, pageW - 20);
+        const lh = 3.6;
+        let ty = yStrip - 4 - (lines.length * lh);
+        if (ty < 6) {
+            ty = 6;
+        }
+        lines.forEach(function (line, i) {
+            pdf.text(line, pageW / 2, ty + i * lh, { align: 'center' });
+        });
+    }
+    pdf.setFillColor(212, 198, 230);
+    pdf.rect(0, yStrip, pageW * 0.445, stripH, 'F');
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(pageW * 0.445, yStrip, pageW * 0.027, stripH, 'F');
+    pdf.setFillColor(216, 220, 226);
+    pdf.rect(pageW * 0.472, yStrip, pageW * 0.528, stripH, 'F');
+}
+
+/**
+ * Renders one HTML document into the pdf as one or more A4 pages, drawing the footer on each page.
+ * @param addPageBefore - if true, starts this chunk on a new page (used for General T&amp;C after PO body)
+ */
+async function _appendPoHtmlToPdf(pdf, htmlString, footerText, addPageBefore) {
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:806px;height:1200px;border:none;visibility:hidden;pointer-events:none;';
+    document.body.appendChild(iframe);
+    try {
+        const idoc = iframe.contentDocument;
+        idoc.open();
+        idoc.write(htmlString);
+        idoc.close();
+        await _waitForImagesInDoc(idoc);
+        await new Promise(function (r) { setTimeout(r, 280); });
+        const body = idoc.body;
+        const scale = 2;
+        const canvas = await html2canvas(body, {
+            scale: scale,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            windowWidth: 794
+        });
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const margin = 8;
+        const footerBand = 20;
+        const usableH = pageH - margin * 2 - footerBand;
+        const usableW = pageW - margin * 2;
+        const imgWidthMm = usableW;
+        const imgHeightMm = (canvas.height * imgWidthMm) / canvas.width;
+
+        if (addPageBefore && pdf.internal.getNumberOfPages() > 0) {
+            pdf.addPage();
+        }
+
+        let offsetMm = 0;
+        let isFirstSlice = true;
+        while (offsetMm < imgHeightMm - 0.15) {
+            if (!isFirstSlice) {
+                pdf.addPage();
+            }
+            isFirstSlice = false;
+            const sliceHeightMm = Math.min(usableH, imgHeightMm - offsetMm);
+            const sliceHeightPx = (sliceHeightMm * canvas.width) / imgWidthMm;
+            const offsetPx = (offsetMm * canvas.width) / imgWidthMm;
+
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = canvas.width;
+            sliceCanvas.height = Math.max(1, Math.ceil(sliceHeightPx));
+            const ctx = sliceCanvas.getContext('2d');
+            ctx.drawImage(canvas, 0, offsetPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+
+            const imgData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+            pdf.addImage(imgData, 'JPEG', margin, margin, imgWidthMm, sliceHeightMm, undefined, 'FAST');
+            _drawPOPdfFooter(pdf, footerText);
+
+            offsetMm += sliceHeightMm;
+        }
+    } finally {
+        iframe.parentNode.removeChild(iframe);
+    }
+}
+
+async function _BuildPOPdfBase64Async(res, includeGeneralTerms) {
+    const JsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (!JsPDF || typeof html2canvas !== 'function') {
+        throw new Error('jsPDF or html2canvas is not loaded');
+    }
+    const footerText = _poCompanyFooterText(res);
+    const pdf = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const htmlMain = _BuildPOPrintHTML(res, includeGeneralTerms, { forPdfExport: true, mainOnly: true });
+    await _appendPoHtmlToPdf(pdf, htmlMain, footerText, false);
+    if (includeGeneralTerms) {
+        const htmlGtc = _BuildPOPrintHTML(res, true, { forPdfExport: true, termsOnly: true });
+        await _appendPoHtmlToPdf(pdf, htmlGtc, footerText, true);
+    }
+    const dataUri = pdf.output('datauristring');
+    const c = dataUri.indexOf(',');
+    return c >= 0 ? dataUri.substring(c + 1) : dataUri;
+}
+
+var _pendingMailCode = null;
+
+window.SendMailPO = function (code) {
+    _pendingMailCode = code;
+    var chk = document.getElementById('chkMailIncludeGeneralTerms');
+    if (chk) {
+        chk.checked = false;
+    }
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalSendEmailOptions')).show();
+};
+
+window.ConfirmSendMailPO = async function () {
+    var code       = _pendingMailCode;
+    var includeGTC = !!(document.getElementById('chkMailIncludeGeneralTerms') || {}).checked;
+    var modalEl = document.getElementById('modalSendEmailOptions');
+    var inst = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+    if (inst) {
+        inst.hide();
+    }
+    var poItem     = G_POStoreList.find(function (i) { return String(i.Code) === String(code); });
+    var vendor     = G_VendorList.find(function (v) { return poItem && v.Code == poItem.VendorMaster_Code; }) || {};
+    var vendorEmail = vendor.Email || '';
+    var poNo       = poItem ? (poItem.PONo || poItem.PO_No || '') : '';
+    var poDateStr  = poItem ? FormatDateDisplay(poItem.PODate || poItem.PO_Date) : '';
+    var fileName   = 'PO_' + (poNo || code).toString().replace(/\//g, '_') + '.pdf';
+    toastr.info('Preparing PO PDF...', '', { timeOut: 0, extendedTimeOut: 0 });
+    var $loadingToast = $('.toast-info:last');
+    try {
+        var res = await PurchaseOrderStoreService.GetPurchaseOrderStoreById(code);
+        if (!res) { toastr.clear($loadingToast); toastr.error('PO not found.'); return; }
+        var base64 = await _BuildPOPdfBase64Async(res, includeGTC);
+        toastr.clear($loadingToast);
+        EmailControl_Open({ to: vendorEmail, subject: 'Purchase Order #' + poNo + (poDateStr ? ' dated ' + poDateStr : ''), body: 'Dear Sir/Madam,\n\nPlease find attached the Purchase Order #' + poNo + (poDateStr ? ' dated ' + poDateStr : '') + '.\n\nKindly acknowledge receipt and confirm acceptance.\n\nRegards,', callBack: '', defaultAttachments: [{ FileName: fileName, FileBase64: base64, ContentType: 'application/pdf' }] });
+    } catch (err) {
+        toastr.clear($loadingToast);
+        toastr.error('Error preparing PO PDF for email.');
+        console.error(err);
+    }
+};
+
 window.InitAttachmentControl = InitAttachmentControl;
 window.openPOAttachmentControl = openPOAttachmentControl;
 window.openPOListAttachmentControl = openPOListAttachmentControl;
@@ -2612,4 +2902,5 @@ document.getElementById('modalAddVendor').addEventListener('hidden.bs.modal', fu
 });
 
 window.OpenVendorModal = OpenVendorModal;
+window.SendMailPO = SendMailPO;
 

@@ -4,6 +4,8 @@
 
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/PurchaseOrderStore.js"></script>
 
 <style>
@@ -854,7 +856,7 @@
                         <div class="po-field-row">
                             <span class="po-field-lbl">Scope of Work</span>
                             <div class="po-field-ctrl">
-                                <textarea id="frmTxtScopeOfWork" class="form-control form-control-sm" rows="3" maxlength="1000" style="height:auto;resize:vertical;" placeholder="Enter scope of work…"></textarea>
+                                <textarea id="frmTxtScopeOfWork" class="form-control form-control-sm" rows="3" maxlength="5000" style="height:auto;resize:vertical;" placeholder="Enter scope of work…"></textarea>
                             </div>
                         </div>
                     </div>
@@ -952,6 +954,7 @@
 </div>
 
 <div id="PurchaseOrderStore_AttachmentControlmodal"></div>
+<div id="PurchaseOrderStore_EmailControlContainer"></div>
 
 <!-- ══════════════════════════════════════════════════
      DELETE MODAL
@@ -1240,6 +1243,60 @@
                         title="Vendor Master">
                 </iframe>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SEND EMAIL OPTIONS MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalSendEmailOptions" tabindex="-1" aria-labelledby="modalSendEmailOptionsLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;width:calc(100% - 24px);margin:auto;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+
+            <div class="modal-header" style="background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;border:none;padding:14px 20px;">
+                <h5 class="modal-title mb-0" id="modalSendEmailOptionsLabel" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-envelope me-2"></i>Send Email Options
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body" style="padding:20px 22px;">
+
+                <p class="mb-3" style="font-size:0.86rem;font-weight:600;color:#0f172a;line-height:1.45;margin:0;">
+                    Do you want to attach <span style="text-decoration:underline;text-underline-offset:2px;">General Terms &amp; Conditions</span> in the PDF sent to the vendor?
+                </p>
+
+                <!-- Checkbox: General Terms & Conditions -->
+                <div class="form-check" style="margin-bottom:10px;">
+                    <input class="form-check-input" type="checkbox" id="chkMailIncludeGeneralTerms"
+                           style="width:1.1em;height:1.1em;margin-top:3px;cursor:pointer;" />
+                    <label class="form-check-label" for="chkMailIncludeGeneralTerms"
+                           style="font-size:0.85rem;font-weight:600;color:#1e293b;cursor:pointer;padding-left:4px;">
+                        Yes — include General Terms &amp; Conditions in the PDF
+                    </label>
+                    <div style="font-size:0.75rem;color:#64748b;margin-top:3px;padding-left:26px;">
+                        <i class="fa fa-info-circle me-1 text-primary"></i>
+                        If checked, T&amp;C are added from a <b>new page</b> after the PO (Goods &rarr; Purchase Conditions; Work &rarr; Work Order Conditions). Each PDF page includes the company footer.
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer" style="border:none;padding:10px 20px 16px;background:#fafafa;gap:8px;justify-content:center;">
+                <a class="btn btn-secondary btn-sm" data-bs-dismiss="modal"
+                   style="border-radius:8px;padding:7px 18px;font-size:0.82rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;">
+                    <i class="fa fa-times me-1"></i>Cancel
+                </a>
+                <a onclick="ConfirmSendMailPO()"
+                   style="background:linear-gradient(135deg,#0ea5e9,#2563eb);border:none;color:#fff;
+                          border-radius:8px;padding:7px 22px;font-size:0.82rem;font-weight:700;
+                          box-shadow:0 3px 10px rgba(14,165,233,0.35);cursor:pointer;display:inline-flex;align-items:center;">
+                    <i class="fa fa-paper-plane me-1"></i>Proceed to Compose
+                </a>
+            </div>
+
         </div>
     </div>
 </div>

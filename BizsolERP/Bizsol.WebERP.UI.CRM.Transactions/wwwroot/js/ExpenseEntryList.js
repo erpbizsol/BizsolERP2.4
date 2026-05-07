@@ -106,10 +106,6 @@ $(document).ready(function () {
 
     });
 
-    $('#btnExpenseEntryApprovalConfig').click(function () {
-        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseEntryApprovalConfiguration";
-    });
-
     $('#eeStatCardPendingOnMe').on('click', function () {
         navigateToExpenseLevelsApproval();
     });
@@ -149,13 +145,6 @@ function applyEEListConfigVisibility() {
         $('#btnExpenseEntryConfig').prop('hidden', false);
     } else {
         $('#btnExpenseEntryConfig').prop('hidden', true);
-    }
-
-    // Approval-config icon: only for admins AND when level-verify is enabled
-    if (isAdmin && G_EEL_LevelVerifyApplicable === 'Y') {
-        $('#btnExpenseEntryApprovalConfig').prop('hidden', false);
-    } else {
-        $('#btnExpenseEntryApprovalConfig').prop('hidden', true);
     }
 
     // "Pending on Me" chip: only when level-verify is enabled

@@ -1,9 +1,7 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <link href="~/_content/Bizsol.WebERP.UI.Finance.Transactions/css/BankStatement.css" rel="stylesheet" />
-<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Finance.Transactions/js/BankStatementImport.js"></script>
 
@@ -146,6 +144,7 @@
                         <th>Narration</th>
                         <th>Chq / Ref No</th>
                         <th>Value Date</th>
+                        <th class="text-end">Opening Balance</th>
                         <th class="text-end">Withdrawal (Dr)</th>
                         <th class="text-end">Deposit (Cr)</th>
                         <th class="text-end">Closing Balance</th>
@@ -156,7 +155,7 @@
                 <tbody id="tblPreviewBody"></tbody>
                 <tfoot>
                     <tr class="bs-tfoot-totals">
-                        <td colspan="6" class="text-end fw-semibold">Totals:</td>
+                        <td colspan="7" class="text-end fw-semibold">Totals:</td>
                         <td class="text-end fw-semibold" id="tdTotalWithdrawal">0.00</td>
                         <td class="text-end fw-semibold" id="tdTotalDeposit">0.00</td>
                         <td colspan="3"></td>
@@ -211,8 +210,52 @@
 
 </div><!-- /.bs-page -->
 
-<!-- ── Delete Batch Confirmation Modal ─────────────────────────────────── -->
-<div id="bsDeleteBackdrop" class="bs-backdrop">
+<!-- Import batch history (eye icon on Recent Import History) -->
+<div id="bsHistoryDetailBackdrop" class="bs-backdrop" aria-hidden="true">
+    <div class="bs-history-detail-modal" role="dialog" aria-modal="true" aria-labelledby="bsHistDetailTitle">
+        <button type="button" class="bs-history-detail-close" id="btnCloseHistoryDetail" title="Close" aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+        <h2 id="bsHistDetailTitle" class="bs-history-detail-title">
+            <i class="fas fa-history me-2" aria-hidden="true"></i>Import batch history
+        </h2>
+        <div class="bs-history-detail-summary" id="bsHistDetailSummary" aria-live="polite"></div>
+        <div class="bs-table-wrapper bs-history-detail-scroll">
+            <table class="table table-sm bs-preview-table" id="tblHistDetailLines">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Account</th>
+                        <th>Narration</th>
+                        <th>Chq / Ref</th>
+                        <th class="text-end">Withdrawal (Dr)</th>
+                        <th class="text-end">Deposit (Cr)</th>
+                        <th class="text-end">Closing</th>
+                    </tr>
+                </thead>
+                <tbody id="tblHistDetailBody">
+                    <tr>
+                        <td colspan="8" class="text-center py-3 text-muted">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Loading…
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="bs-history-detail-footer">
+            <button type="button" class="bs-btn-secondary bs-btn-sm" id="btnHistDetailOpenList" title="Open statement list filtered by this batch">
+                <i class="fas fa-external-link-alt me-1"></i>Open full list
+            </button>
+            <button type="button" class="bs-btn-primary" id="btnHistDetailOk">
+                <i class="fas fa-check me-1"></i>Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Delete Batch Confirmation Modal (hidden — delete disabled per policy) ── -->
+<div id="bsDeleteBackdrop" class="bs-backdrop" style="display:none !important; visibility:hidden;" aria-hidden="true">
     <div class="bs-confirm-modal">
         <div class="bs-confirm-icon bs-confirm-icon--danger">
             <i class="fas fa-trash-alt"></i>

@@ -784,29 +784,18 @@
         box-shadow: 0 2px 8px rgba(37,99,235,0.3);
     }
 
-    /* HasAttachment = Yes: green row + green attachment button (list grid) */
-    #grnListTable tbody tr.grn-grid-row-has-attachment,
-    #grnListTable tbody tr.grn-grid-row-has-attachment td {
-        background-color: #d1fae5 !important;
-    }
-    #grnListTable tbody tr.grn-grid-row-has-attachment:nth-child(even),
-    #grnListTable tbody tr.grn-grid-row-has-attachment:nth-child(even) td {
-        background-color: #bbf7d0 !important;
-    }
-    #grnListTable tbody tr.grn-grid-row-has-attachment:hover,
-    #grnListTable tbody tr.grn-grid-row-has-attachment:hover td {
-        background-color: #a7f3d0 !important;
-    }
+    /* HasAttachment = Yes: vibrant emerald attachment (same green system as Verify) */
     #grnListTable .im-btn-attach.im-btn-attach--has-attachment {
-        background: #bbf7d0;
-        color: #047857;
-        border-color: #6ee7b7;
+        background: linear-gradient(180deg, #00a870 0%, #00895d 100%);
+        color: #fff;
+        border-color: #006b48;
+        box-shadow: 0 2px 7px rgba(0, 105, 72, 0.32);
     }
     #grnListTable .im-btn-attach.im-btn-attach--has-attachment:hover {
-        background: #059669;
+        background: linear-gradient(180deg, #00895d 0%, #006b48 100%);
         color: #fff;
-        border-color: #059669;
-        box-shadow: 0 2px 8px rgba(5,150,105,0.35);
+        border-color: #005a3c;
+        box-shadow: 0 3px 12px rgba(0, 105, 72, 0.42);
     }
 
     .im-btn-delete {
@@ -964,7 +953,7 @@
             transform: translateY(-1px);
         }
 
-    /* GRN list — pending verify: icon-only (after Yes → swaps to .grn-verify-status--done “Verify”) */
+    /* GRN list — pending verify: same vibrant emerald as has-attachment paperclip */
     .grn-btn-verify {
         display: inline-flex;
         align-items: center;
@@ -973,20 +962,22 @@
         height: 30px;
         margin-left: 4px;
         border-radius: 8px;
-        border: none;
+        border: 1.5px solid #006b48;
         cursor: pointer;
         transition: all 0.13s;
         margin-right: 0;
         vertical-align: middle;
-        background: #ecfdf5;
-        color: #059669;
+        background: linear-gradient(180deg, #00a870 0%, #00895d 100%);
+        color: #fff;
         font-size: 14px;
+        box-shadow: 0 2px 7px rgba(0, 105, 72, 0.32);
     }
     .grn-btn-verify:hover {
-        background: #059669;
+        background: linear-gradient(180deg, #00895d 0%, #006b48 100%);
+        border-color: #005a3c;
         color: #fff;
         transform: scale(1.10);
-        box-shadow: 0 3px 10px rgba(5, 150, 105, 0.35);
+        box-shadow: 0 3px 12px rgba(0, 105, 72, 0.42);
     }
     .grn-verify-status--done {
         display: inline-flex;
@@ -1390,8 +1381,8 @@
                     Select <strong style="color:#0891b2;">Party Name</strong>,
                     turn <strong style="color:#0891b2;">Against Project</strong> toggle
                     <strong style="color:#0891b2;">ON</strong>,
-                    then select <strong style="color:#0891b2;">Project Name</strong> and
-                    <strong style="color:#0891b2;">Sub Project</strong>.
+                    then choose <strong style="color:#0891b2;">Sub Project</strong>
+                    (assigned to your login; shown after Project Name); <strong style="color:#0891b2;">Project Name</strong> fills automatically.
                     Items will auto-fill from the selected project.
                 </span>
             </div>
@@ -1400,16 +1391,16 @@
         <div class="po-step-body" id="divProjectFields" style="display:none;">
             <div class="row g-2">
                 <div class="col-md-6">
-                    <label class="po-field-lbl d-block mb-1">Project Name <span class="req">*</span></label>
-                    <select id="frmDdlProject" class="form-control form-control-sm" onchange="loadSubProjects()" onfocus="onProjectFieldFocus(this)" autocomplete="off">
-                        <option value="">-- Select Project --</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
                     <label class="po-field-lbl d-block mb-1">Sub Project <span class="req">*</span></label>
                     <select id="frmDdlSubProject" class="form-control form-control-sm"
                             onchange="onSubProjectChange()" onfocus="onProjectFieldFocus(this)" autocomplete="off">
                         <option value="">-- Select Sub Project --</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="po-field-lbl d-block mb-1">Project Name <span class="req">*</span></label>
+                    <select id="frmDdlProject" class="form-control form-control-sm" onchange="onProjectChange()" onfocus="onProjectFieldFocus(this)" autocomplete="off">
+                        <option value="">-- Select Project --</option>
                     </select>
                 </div>
             </div>
