@@ -1,16 +1,18 @@
 //import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 
+var _menuAllItems = [];
+var _menuUserID = '';
+var _favouriteMenuCodes = [];
+
 $(document).ready(function () {
         bindMenu();
 });
 
 function bindMenu() {
-   // var baseUrl = `${window.location.protocol}//${window.location.host}`;
     var baseUrl = sessionStorage.getItem('AppBaseURL');
     let LoginGodownName = JSON.parse(sessionStorage.getItem('authKey')).WebERPLoginGodownName;
         LoginGodownName = LoginGodownName ? `(${LoginGodownName})` : '';
-    //var baseUrl = window.AppBaseURL;
     MenuService.GetUserDetails()
         .then(function (res) {
             sessionStorage.setItem('UserDetails', JSON.stringify(res));
@@ -21,138 +23,249 @@ function bindMenu() {
             $('#mobileERPUserName')[0].innerHTML = UserDetailsobj[0].UserID;
             $('#mobileERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})${LoginGodownName}`;
 
-            MenuService.GetMenuList(UserDetailsobj[0].UserID).then(function (value) {
-                var menuHtml = '';
-                var mobileMenuHtml = '';
-                var mobileMenuCount = 0;
-                var maxMobileItems = 5; // Limit mobile nav to 5 items
+            _menuUserID = UserDetailsobj[0].UserID;
 
-                $.each(value, function (index, item) {
-                    if (item.MasterCode === 0) {
-                        var childMenuHtml = getChildMenu(value, item.Code, baseUrl);
-                        var hasArrow = childMenuHtml ? 'has-arrow' : '';
+            MenuService.GetMenuList(_menuUserID).then(function (value) {
+                _menuAllItems = value;
 
-                        // Desktop sidebar menu with data attribute
-                        menuHtml += '<a href="javascript:void(0);" class="sidebar-menu-item menu-toggle ' + hasArrow + '" data-menu-code="' + item.Code + '" data-menu-name="' + item.ModuleDesp + '">';
-                        menuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
-                        menuHtml += '<span>' + item.ModuleDesp + '</span>';
-                        menuHtml += '</a>';
-
-                        if (childMenuHtml) {
-                            menuHtml += '<div class="sub-menu" style="display: none;">' + childMenuHtml + '</div>';
-                        }
-
-                        // Mobile bottom navigation (only top-level items, limited to maxMobileItems)
-                        if (mobileMenuCount < maxMobileItems) {
-                            var firstChildUrl = getFirstChildUrl(value, item.Code, baseUrl);
-                            var mobileHref = childMenuHtml ? 'javascript:void(0);' : (firstChildUrl || 'javascript:void(0);');
-                            var mobileClass = childMenuHtml ? 'mobile-nav-item mobile-menu-toggle' : 'mobile-nav-item';
-
-                            mobileMenuHtml += '<a href="' + mobileHref + '" class="' + mobileClass + '" data-menu-code="' + item.Code + '" data-menu-name="' + item.ModuleDesp + '">';
-                            mobileMenuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
-                            mobileMenuHtml += '<span>' + truncateText(item.ModuleDesp, 10) + '</span>';
-                            mobileMenuHtml += '</a>';
-
-                            mobileMenuCount++;
-                        }
-                    }
-                });
-
-                $('#sidebar-menu').html(menuHtml);
-                $('.mobile-nav-items').html(mobileMenuHtml);
-
-                setActiveMenu();
-
-                // Handle menu toggle for desktop sidebar
-                $('.sidebar-menu-item.menu-toggle').click(function (e) {
-                    var menuItem = $(this);
-                    var subMenu = menuItem.next('.sub-menu');
-
-                    if (!menuItem.hasClass('has-arrow')) {
-                        return; // If it's not a parent with a submenu, do nothing
-                    }
-
-                    e.preventDefault();
-                    e.stopPropagation(); // Prevent event from bubbling to parent menus
-
-                    // Check if sidebar is collapsed
-                    if ($('#modern-sidebar').hasClass('collapsed')) {
-                        return; // Don't handle click when collapsed, let hover handle it
-                    }
-
-                    if (subMenu.is(":visible")) {
-                        subMenu.slideUp();
-                        menuItem.removeClass('active');
-                    } else {
-                        // Only close sibling submenus at the same level, not parent menus
-                        menuItem.siblings('.menu-toggle').next('.sub-menu').slideUp();
-                        menuItem.siblings('.menu-toggle').removeClass('active');
-
-                        subMenu.slideDown();
-                        menuItem.addClass('active'); 
-                    }
-                });
-
-                // Handle hover for collapsed sidebar
-                initCollapsedSidebarHover();
-
-                // Handle mobile menu items with submenus - open sidebar on mobile
-                $('.mobile-menu-toggle').click(function (e) {
-                    e.preventDefault();
-
-                    // Get the menu code from clicked mobile nav item
-                    var menuCode = $(this).data('menu-code');
-                    var menuName = $(this).data('menu-name');
-
-                    // Open the sidebar on mobile
-                    $('#modern-sidebar').addClass('show');
-                    $('#sidebar-overlay').addClass('show');
-
-                    // Find the corresponding menu item in sidebar by menu code
-                    var correspondingMenuItem = $('#sidebar-menu .sidebar-menu-item[data-menu-code="' + menuCode + '"]');
-
-                    if (correspondingMenuItem.length) {
-                        // Close all submenus first
-                        $('#sidebar-menu .sub-menu').slideUp();
-                        $('#sidebar-menu .sidebar-menu-item').removeClass('active');
-
-                        // Open the selected submenu
-                        var subMenu = correspondingMenuItem.next('.sub-menu');
-                        if (subMenu.length) {
-                            subMenu.slideDown();
-                            correspondingMenuItem.addClass('active');
-                        }
-                    }
-                });
+                //// Load favourites first, then render menu
+                //MenuService.GetFavouriteMenus(_menuUserID).then(function (favs) {
+                //    _favouriteMenuCodes = (favs || []).map(function (f) { return f.MenuCode; });
+                //    renderFullMenu(value, baseUrl);
+                //}).catch(function () {
+                //    _favouriteMenuCodes = [];
+                    renderFullMenu(value, baseUrl);
+                //});
             });
-        })
-        
-   
+        });
+}
+
+function renderFullMenu(value, baseUrl) {
+    var menuHtml = '';
+    var mobileMenuHtml = '';
+    var mobileMenuCount = 0;
+    var maxMobileItems = 5;
+
+    // --- Favourites section ---
+    var favMenuHtml = buildFavouritesSection(value, baseUrl);
+    if (favMenuHtml) {
+        menuHtml += '<div class="sidebar-section-label">Favourites</div>';
+        menuHtml += '<div id="fav-menu-section">' + favMenuHtml + '</div>';
+        menuHtml += '<div class="sidebar-section-label">All Menus</div>';
+    } else {
+        menuHtml += '<div id="fav-menu-section"></div>';
+    }
+
+    $.each(value, function (index, item) {
+        if (item.MasterCode === 0) {
+            var childMenuHtml = getChildMenu(value, item.Code, baseUrl);
+            var hasArrow = childMenuHtml ? 'has-arrow' : '';
+
+            menuHtml += '<a href="javascript:void(0);" class="sidebar-menu-item menu-toggle ' + hasArrow + '" data-menu-code="' + item.Code + '" data-menu-name="' + item.ModuleDesp + '">';
+            menuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
+            menuHtml += '<span>' + item.ModuleDesp + '</span>';
+            menuHtml += '</a>';
+
+            if (childMenuHtml) {
+                menuHtml += '<div class="sub-menu" style="display: none;">' + childMenuHtml + '</div>';
+            }
+
+            if (mobileMenuCount < maxMobileItems) {
+                var firstChildUrl = getFirstChildUrl(value, item.Code, baseUrl);
+                var mobileHref = childMenuHtml ? 'javascript:void(0);' : (firstChildUrl || 'javascript:void(0);');
+                var mobileClass = childMenuHtml ? 'mobile-nav-item mobile-menu-toggle' : 'mobile-nav-item';
+
+                mobileMenuHtml += '<a href="' + mobileHref + '" class="' + mobileClass + '" data-menu-code="' + item.Code + '" data-menu-name="' + item.ModuleDesp + '">';
+                mobileMenuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
+                mobileMenuHtml += '<span>' + truncateText(item.ModuleDesp, 10) + '</span>';
+                mobileMenuHtml += '</a>';
+
+                mobileMenuCount++;
+            }
+        }
+    });
+
+    $('#sidebar-menu').html(menuHtml);
+    $('.mobile-nav-items').html(mobileMenuHtml);
+
+    setActiveMenu();
+    bindMenuToggleEvents();
+    initCollapsedSidebarHover();
+    bindMobileMenuEvents();
+    bindStarEvents();
+}
+
+function buildFavouritesSection(value, baseUrl) {
+    if (!_favouriteMenuCodes || _favouriteMenuCodes.length === 0) return '';
+    var html = '';
+    $.each(_favouriteMenuCodes, function (i, menuCode) {
+        var item = getMenuItemByCode(value, menuCode);
+        if (!item || !item.FormToOpen) return;
+        var separator = item.FormToOpen.indexOf('?') !== -1 ? '&' : '?';
+        var href = sessionStorage.getItem('AppBaseURL') + '/' + item.FormToOpen + separator + 'ModuleDesp=' + item.ModuleDesp;
+        html += '<a href="' + href + '" class="sidebar-menu-item fav-menu-link" data-menu-code="' + item.Code + '">';
+        html += '<i class="fas fa-star fav-star-icon" style="color:#f6c90e;font-size:0.75rem;margin-right:2px;"></i>';
+        html += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
+        html += '<span>' + item.ModuleDesp + '</span>';
+        html += '</a>';
+    });
+    return html;
+}
+
+function getMenuItemByCode(value, code) {
+    var found = null;
+    $.each(value, function (i, item) {
+        if (item.Code === code) { found = item; return false; }
+    });
+    return found;
 }
 
 function getChildMenu(value, masterCode, baseUrl) {
-   
     var baseUrl = sessionStorage.getItem('AppBaseURL');
     var childMenuHtml = '';
     $.each(value, function (index, item) {
-        if (item.MasterCode === masterCode && item.NotificationApplicable==='N') {
+        if (item.MasterCode === masterCode && item.NotificationApplicable === 'N') {
             var subChildMenuHtml = getChildMenu(value, item.Code);
             var hasArrow = subChildMenuHtml ? 'has-arrow' : '';
-            
-            // Check if FormToOpen already contains a query parameter
+
             var separator = item.FormToOpen.indexOf('?') !== -1 ? '&' : '?';
-            
-            childMenuHtml += '<a href="' + baseUrl + '/' + item.FormToOpen + separator + 'ModuleDesp=' + item.ModuleDesp +'" class="sidebar-menu-item menu-toggle ' + hasArrow + '">';
+
+            var isLeaf = !subChildMenuHtml;
+            var isFav = _favouriteMenuCodes.indexOf(item.Code) !== -1;
+            var starClass = isFav ? 'fas fa-star menu-fav-star active-fav' : 'far fa-star menu-fav-star';
+            var starColor = isFav ? 'color:#f6c90e;' : 'color:rgba(150,150,180,0.55);';
+
+            childMenuHtml += '<a href="' + baseUrl + '/' + item.FormToOpen + separator + 'ModuleDesp=' + item.ModuleDesp + '" class="sidebar-menu-item menu-toggle ' + hasArrow + '" data-menu-code="' + item.Code + '">';
+            if (isLeaf) {
+                childMenuHtml += '<i class="' + starClass + ' menu-star-btn" data-menu-code="' + item.Code + '" data-module-desp="' + item.ModuleDesp + '" title="Add to Favourites" style="font-size:0.8rem;margin-right:4px;cursor:pointer;transition:color 0.2s;' + starColor + '"></i>';
+            }
             childMenuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
             childMenuHtml += '<span>' + item.ModuleDesp + '</span>';
             childMenuHtml += '</a>';
-            
+
             if (subChildMenuHtml) {
                 childMenuHtml += '<div class="sub-menu" style="display: none;">' + subChildMenuHtml + '</div>';
             }
         }
     });
     return childMenuHtml;
+}
+
+function bindStarEvents() {
+    $(document).off('click.favstar').on('click.favstar', '.menu-star-btn', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var $star = $(this);
+        var menuCode = parseInt($star.data('menu-code'));
+        var moduleDesp = $star.data('module-desp');
+        var isNowFav = $star.hasClass('active-fav');
+        var newIsFav = !isNowFav;
+
+        // Optimistically update UI
+        if (newIsFav) {
+            $star.removeClass('far').addClass('fas active-fav').css('color', '#f6c90e');
+            if (_favouriteMenuCodes.indexOf(menuCode) === -1) {
+                _favouriteMenuCodes.push(menuCode);
+            }
+        } else {
+            $star.removeClass('fas active-fav').addClass('far').css('color', 'rgba(150,150,180,0.55)');
+            _favouriteMenuCodes = _favouriteMenuCodes.filter(function (c) { return c !== menuCode; });
+        }
+
+        // Refresh favourites section
+        refreshFavouritesSection();
+
+        //// Save to backend
+        //MenuService.SaveFavouriteMenu(_menuUserID, menuCode, moduleDesp, newIsFav).then(function () {
+        //    // success — already updated
+        //}).catch(function () {
+        //    // Revert on failure
+        //    if (newIsFav) {
+        //        $star.removeClass('fas active-fav').addClass('far').css('color', 'rgba(150,150,180,0.55)');
+        //        _favouriteMenuCodes = _favouriteMenuCodes.filter(function (c) { return c !== menuCode; });
+        //    } else {
+        //        $star.removeClass('far').addClass('fas active-fav').css('color', '#f6c90e');
+        //        if (_favouriteMenuCodes.indexOf(menuCode) === -1) _favouriteMenuCodes.push(menuCode);
+        //    }
+        //    refreshFavouritesSection();
+        //    toastr.error('Failed to update favourites.');
+        //});
+    });
+}
+
+function refreshFavouritesSection() {
+    var favHtml = buildFavouritesSection(_menuAllItems, sessionStorage.getItem('AppBaseURL'));
+    var $favSection = $('#fav-menu-section');
+    var $sectionLabel = $favSection.prev('.sidebar-section-label');
+    var $allMenusLabel = $favSection.next('.sidebar-section-label');
+
+    $favSection.html(favHtml);
+
+    if (favHtml) {
+        if ($sectionLabel.length === 0) {
+            $favSection.before('<div class="sidebar-section-label">Favourites</div>');
+        }
+        if ($allMenusLabel.length === 0) {
+            $favSection.after('<div class="sidebar-section-label">All Menus</div>');
+        }
+    } else {
+        $sectionLabel.remove();
+        $allMenusLabel.remove();
+    }
+}
+
+function bindMenuToggleEvents() {
+    $('.sidebar-menu-item.menu-toggle').click(function (e) {
+        var menuItem = $(this);
+        var subMenu = menuItem.next('.sub-menu');
+
+        if (!menuItem.hasClass('has-arrow')) {
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if ($('#modern-sidebar').hasClass('collapsed')) {
+            return;
+        }
+
+        if (subMenu.is(":visible")) {
+            subMenu.slideUp();
+            menuItem.removeClass('active');
+        } else {
+            menuItem.siblings('.menu-toggle').next('.sub-menu').slideUp();
+            menuItem.siblings('.menu-toggle').removeClass('active');
+
+            subMenu.slideDown();
+            menuItem.addClass('active');
+        }
+    });
+}
+
+function bindMobileMenuEvents() {
+    $('.mobile-menu-toggle').click(function (e) {
+        e.preventDefault();
+
+        var menuCode = $(this).data('menu-code');
+
+        $('#modern-sidebar').addClass('show');
+        $('#sidebar-overlay').addClass('show');
+
+        var correspondingMenuItem = $('#sidebar-menu .sidebar-menu-item[data-menu-code="' + menuCode + '"]');
+
+        if (correspondingMenuItem.length) {
+            $('#sidebar-menu .sub-menu').slideUp();
+            $('#sidebar-menu .sidebar-menu-item').removeClass('active');
+
+            var subMenu = correspondingMenuItem.next('.sub-menu');
+            if (subMenu.length) {
+                subMenu.slideDown();
+                correspondingMenuItem.addClass('active');
+            }
+        }
+    });
 }
 
 function normalizeModuleDesp(value) {
