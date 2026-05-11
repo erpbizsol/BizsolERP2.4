@@ -28,14 +28,14 @@ function bindMenu() {
             MenuService.GetMenuList(_menuUserID).then(function (value) {
                 _menuAllItems = value;
 
-                //// Load favourites first, then render menu
-                //MenuService.GetFavouriteMenus(_menuUserID).then(function (favs) {
-                //    _favouriteMenuCodes = (favs || []).map(function (f) { return f.MenuCode; });
-                //    renderFullMenu(value, baseUrl);
-                //}).catch(function () {
-                //    _favouriteMenuCodes = [];
+                // Load favourites first, then render menu
+                MenuService.GetFavouriteMenus(_menuUserID).then(function (favs) {
+                    _favouriteMenuCodes = (favs || []).map(function (f) { return f.MenuCode; });
                     renderFullMenu(value, baseUrl);
-                //});
+                }).catch(function () {
+                    _favouriteMenuCodes = [];
+                    renderFullMenu(value, baseUrl);
+                });
             });
         });
 }
@@ -176,21 +176,34 @@ function bindStarEvents() {
         // Refresh favourites section
         refreshFavouritesSection();
 
-        //// Save to backend
-        //MenuService.SaveFavouriteMenu(_menuUserID, menuCode, moduleDesp, newIsFav).then(function () {
-        //    // success — already updated
-        //}).catch(function () {
-        //    // Revert on failure
-        //    if (newIsFav) {
-        //        $star.removeClass('fas active-fav').addClass('far').css('color', 'rgba(150,150,180,0.55)');
-        //        _favouriteMenuCodes = _favouriteMenuCodes.filter(function (c) { return c !== menuCode; });
-        //    } else {
-        //        $star.removeClass('far').addClass('fas active-fav').css('color', '#f6c90e');
-        //        if (_favouriteMenuCodes.indexOf(menuCode) === -1) _favouriteMenuCodes.push(menuCode);
-        //    }
-        //    refreshFavouritesSection();
-        //    toastr.error('Failed to update favourites.');
-        //});
+        // Save to backend
+        MenuService.SaveFavouriteMenu(_menuUserID, menuCode, moduleDesp, newIsFav).then(function (res) {
+            if (res && res.Code === 1) {
+                toastr.success(res.Msg || 'Favourites updated.');
+            } else {
+                // Revert on API-level failure
+                if (newIsFav) {
+                    $star.removeClass('fas active-fav').addClass('far').css('color', 'rgba(150,150,180,0.55)');
+                    _favouriteMenuCodes = _favouriteMenuCodes.filter(function (c) { return c !== menuCode; });
+                } else {
+                    $star.removeClass('far').addClass('fas active-fav').css('color', '#f6c90e');
+                    if (_favouriteMenuCodes.indexOf(menuCode) === -1) _favouriteMenuCodes.push(menuCode);
+                }
+                refreshFavouritesSection();
+                toastr.error(res && res.Msg ? res.Msg : 'Failed to update favourites.');
+            }
+        }).catch(function () {
+            // Revert on failure
+            if (newIsFav) {
+                $star.removeClass('fas active-fav').addClass('far').css('color', 'rgba(150,150,180,0.55)');
+                _favouriteMenuCodes = _favouriteMenuCodes.filter(function (c) { return c !== menuCode; });
+            } else {
+                $star.removeClass('far').addClass('fas active-fav').css('color', '#f6c90e');
+                if (_favouriteMenuCodes.indexOf(menuCode) === -1) _favouriteMenuCodes.push(menuCode);
+            }
+            refreshFavouritesSection();
+            toastr.error('Failed to update favourites.');
+        });
     });
 }
 

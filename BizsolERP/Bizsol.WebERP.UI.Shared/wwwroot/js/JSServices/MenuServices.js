@@ -44,10 +44,9 @@ const MenuService = {
         );
     },
     SaveFavouriteMenu: function SaveFavouriteMenu(UserID, MenuCode, ModuleDesp, IsFavourite) {
-        let CompanyCode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
-        let url = UrlService.ERP_SIDE_MENU + `/SaveFavouriteMenu`;
-        let data = JSON.stringify({ UserID: UserID, MenuCode: MenuCode, ModuleDesp: ModuleDesp, CompanyCode: CompanyCode, IsFavourite: IsFavourite });
-        return promiseAjaxCallApi.CallAPI('POST', url, data).then(
+        let isFavYN = IsFavourite ? 'Y' : 'N';
+        let url = UrlService.ERP_SIDE_MENU + `/SaveFavouriteMenu?MenuCode=${MenuCode}&IsFavourite=${isFavYN}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
             function (value) {
                 return value;
             }
