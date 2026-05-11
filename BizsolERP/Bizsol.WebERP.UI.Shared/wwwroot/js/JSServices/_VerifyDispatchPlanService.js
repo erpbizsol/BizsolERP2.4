@@ -118,8 +118,12 @@ const VerifyDispatchPlanService = {
             }
         );
     },
-    GetTransporterReport: function GetTransporterReport() {
-        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetTransporterReport";
+    GetTransporterReport: function GetTransporterReport(fromDate, toDate) {
+        var q = '';
+        if (fromDate && toDate) {
+            q = '?FromDate=' + encodeURIComponent(fromDate) + '&ToDate=' + encodeURIComponent(toDate);
+        }
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetTransporterReport" + q;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
