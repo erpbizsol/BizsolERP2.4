@@ -33,8 +33,24 @@ const MenuService = {
                 return value;
             }
         );
-
-
+    },
+    GetFavouriteMenus: function GetFavouriteMenus(UserID) {
+        let CompanyCode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
+        let url = UrlService.ERP_SIDE_MENU + `/GetFavouriteMenus?UserID=${UserID}&CompanyCode=${CompanyCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SaveFavouriteMenu: function SaveFavouriteMenu(UserID, MenuCode, ModuleDesp, IsFavourite) {
+        let isFavYN = IsFavourite ? 'Y' : 'N';
+        let url = UrlService.ERP_SIDE_MENU + `/SaveFavouriteMenu?MenuCode=${MenuCode}&IsFavourite=${isFavYN}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
     },
 }
 

@@ -31,9 +31,15 @@ let IndxtbScrapAndRejectedItem_RejectedWarehouse = 4;
 
 let DdlReceiveGodown = [];
 
-let maxDate = new Date().toISOString().slice(0, 10);
-let MinDate = new Date();
+let maxDate = '';
+let MinDate = '';
 let AllowNewEntriesForPreviousNoOfDays = 0;
+
+function getDateStringAfterAddDays(dateStr, days) {
+    let d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 function Bind_ddlGodown() {
     RollingProductionService.Getddl('GetDdlGodown',0).then(function (resObj) {
 
@@ -108,12 +114,10 @@ function Bind_ReceivedGodown() {
 }
 function CurrentProductionDate() {
     RollingProductionService.Getddl('GetEntryDate',0).then(function (resEntryDate) {
-
-        $('#txtIssueProductionDate').val(new Date(resEntryDate[0].EntryDate).toISOString().slice(0, 10) );
-        $('#txtReceiveProductionDate').val(new Date(resEntryDate[0].EntryDate).toISOString().slice(0, 10) );
-
+        let serverDate = resEntryDate[0].EntryDate.slice(0, 10);
+        $('#txtIssueProductionDate').val(serverDate);
+        $('#txtReceiveProductionDate').val(serverDate);
     });
-
 }
 
 function BindSelectList(element, list) {
@@ -315,8 +319,9 @@ function RollingProductionEnty_SaveIssueID(CallBy) {
     let MachineMaster_Code = $('#ddlMachineNo').val();
     let ShiftMaster_Code = $('#ddlIssueShift').val();
     let EntryDate = $('#txtIssueProductionDate').val();
+    let IssuePlanDate = $('#txtIssuePlanDate').val();
 
-    
+
 
     if (typeof EntryDate === 'undefined' || EntryDate === '' || EntryDate === null) {
         toastr.error('Production Date should not be blank');
@@ -339,7 +344,7 @@ function RollingProductionEnty_SaveIssueID(CallBy) {
         return;
 
     }
-    if (IsValidProductionDate(EntryDate) == false) {
+    if (IsValidProductionDate(EntryDate, IssuePlanDate) == false) {
         return;
     }
 
@@ -669,6 +674,7 @@ function GetReceviedDetails() {
 
 async function RollingProductionEnty_AddReceveBundel(ele) {
     let EntryDate = $('#txtReceiveProductionDate').val();
+    let ReceivePlanDate = $('#txtReceivePlanDate').val();
     let GodownMaster_Code = $('#ddlGodownReceive').val();
     let ddlMachineNo = document.getElementById("ddlMachineNoReceive");
     let MachineName = ddlMachineNo.options[ddlMachineNo.selectedIndex].text;
@@ -692,7 +698,7 @@ async function RollingProductionEnty_AddReceveBundel(ele) {
         return;
     }
 
-    if (IsValidProductionDate(EntryDate) == false) {
+    if (IsValidProductionDate(EntryDate, ReceivePlanDate) == false) {
         return;
     }
 
@@ -1194,47 +1200,41 @@ function LoadNavPlan() {
 
 }
 async function AllowProduectionEntriesForPreviousNoOfDays() {
-    
-    
-
-    $('#txtIssuePlanDate').attr('max', maxDate);
-    $('#txtIssueProductionDate').attr('max', maxDate);
-    $('#txtReceivePlanDate').attr('max', maxDate);
-    $('#txtReceiveProductionDate').attr('max', maxDate);
+    let entryDateResopne = await RollingProductionService.Getddl('GetEntryDate', 0);
+    if (entryDateResopne.length > 0) {
+        // maxDate = server's today; user cannot select any future date
+        maxDate = entryDateResopne[0].EntryDate.slice(0, 10);
+    }
 
     let AllowNewEntriesForPreviousNoOfDaysResopne = await RollingProductionService.Getddl('GetAllowNewEntriesForPreviousNoOfDays', 0);
 
     if (AllowNewEntriesForPreviousNoOfDaysResopne.length > 0) {
-        AllowNewEntriesForPreviousNoOfDays = AllowNewEntriesForPreviousNoOfDaysResopne[0].AllowNewEntriesForPreviousNoOfDays
-        let allowMinDate = AllowNewEntriesForPreviousNoOfDays > 0 ? (AllowNewEntriesForPreviousNoOfDays - 1) : AllowNewEntriesForPreviousNoOfDays;
-
-        MinDate.setDate(MinDate.getDate() - allowMinDate);
-        MinDate = MinDate.toISOString().slice(0, 10);
-
-        $('#txtIssueProductionDate').attr('min', MinDate);
-        $('#txtReceiveProductionDate').attr('min', MinDate);
-        
+        AllowNewEntriesForPreviousNoOfDays = AllowNewEntriesForPreviousNoOfDaysResopne[0].AllowNewEntriesForPreviousNoOfDays;
+      
+        // e.g. allow=2 → MinDate = today-2, so user can pick today, today-1, today-2
+        MinDate = getDateStringAfterAddDays(maxDate, -AllowNewEntriesForPreviousNoOfDays);
+    } else {
+        // no config → only today is allowed
+        MinDate = maxDate;
     }
 
-    
-
-
-
-
+    $('#txtIssuePlanDate').attr('max', maxDate);
+    $('#txtIssueProductionDate').attr('max', maxDate).attr('min', MinDate);
+    $('#txtReceivePlanDate').attr('max', maxDate);
+    $('#txtReceiveProductionDate').attr('max', maxDate).attr('min', MinDate);
 }
-function IsValidProductionDate(ProducationDate) {
-   // ProducationDate = '2025-08-31'
+function IsValidProductionDate(ProducationDate, PlanDate) {
     let valid = true;
 
-    let d1 = new Date(ProducationDate);
-    let d2 = new Date();
+    if (maxDate === '' || MinDate === '') {
+        return true;
+    }
 
-
-
-    let daydiff = (d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24);
-
-    if (parseInt(daydiff) < 0 || parseInt(daydiff) > AllowNewEntriesForPreviousNoOfDays) {
+    if (ProducationDate < MinDate || ProducationDate > maxDate) {
         toastr.error('A production date lies within a range ' + MinDate + ' and ' + maxDate);
+        valid = false;
+    } else if (PlanDate && ProducationDate < PlanDate) {
+        toastr.error('Production date (' + ProducationDate + ') cannot be before Plan date (' + PlanDate + ')');
         valid = false;
     }
     return valid;
