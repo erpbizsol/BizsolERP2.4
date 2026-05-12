@@ -390,6 +390,11 @@
             <i class="fas fa-chart-bar"></i>GP Wise Summary
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="highGPLostClient-tab" data-bs-toggle="tab" data-bs-target="#highGPLostClient" type="button" role="tab" aria-controls="highGPLostClient" aria-selected="false">
+            <i class="fas fa-user-times"></i>High GP Lost Client
+        </button>
+    </li>
 </ul>
 
 <!-- Report Date Range Display - MOVED HERE TO BE VISIBLE FOR ALL TABS -->
@@ -909,9 +914,27 @@
             </div>
         </div>
     </div>
+
+    <div class="tab-pane fade" id="highGPLostClient" role="tabpanel" aria-labelledby="highGPLostClient-tab">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">High GP Lost Client</h5>
+                <div class="table-responsive mt-2">
+                    <table id="highGPLostClientTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="highGPLostClientTableHeader">
+                        </thead>
+                        <tbody id="highGPLostClientTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-highGPLostClientTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/FilterSidePanelControl/FilterSidePanelControl.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/SalesanalysisAST.js"></script><script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/SalesanalysisAST.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/SalesanalysisAST.js"></script>

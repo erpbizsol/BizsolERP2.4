@@ -317,13 +317,13 @@
 
     #dvTransporterReportTwinGrids {
         flex: 1 1 auto;
-        min-height: 380px;
+        min-height: 742px;
         overflow: visible;
         gap: 10px;
     }
 
     .transporter-rpt-block {
-        min-height: 180px;
+        min-height: 240px;
     }
 
     #tableWrapperTransporterR1,
@@ -332,8 +332,16 @@
         overflow-x: auto;
         overflow-y: auto;
         flex: 1 1 auto;
-        min-height: 0;
+        min-height: 350px;
         -webkit-overflow-scrolling: touch;
+    }
+
+    /* Column filter dropdowns: higher stacking (thead stays sticky via #tblTransporterReport rules below) */
+    #tableWrapperTransporterR1 .filter-dropdown,
+    #tableWrapperTransporterR1 .filter-dropdown-double,
+    #tableWrapperTransporterR2 .filter-dropdown,
+    #tableWrapperTransporterR2 .filter-dropdown-double {
+        z-index: 10050;
     }
 
     #tblTransporterReport1 thead th,
@@ -344,13 +352,6 @@
         background-color: #558bc0 !important;
         color: #fff !important;
         border: 1px solid #fff;
-    }
-    
-    /* Ensure flex layout when element is shown (override inline display:none) */
-    #dvTableDispatch[style*="display: flex"],
-    #dvTableDispatch[style*="display:block"],
-    #dvTableDispatch:not([style*="display: none"]) {
-        display: flex !important;
     }
 
     /* Update Qty modal width */
@@ -426,34 +427,46 @@
         }
     }
 
-    /* Approved Transporter Dashboard — slate / indigo, compact height */
-    #dvApprovedTransporterDashboard .modal-dialog.atd-modal-dialog {
-        max-width: min(1100px, 100vw - 1rem);
-        max-height: calc(100vh - 1rem);
-        margin: 0.5rem auto;
-    }
-    #dvApprovedTransporterDashboard .modal-content.atd-dashboard {
+    /* Approved Transporter Dashboard — inline div version with slate / indigo theme */
+    #dvApprovedTransporterDashboard {
+        display: none;
         background: linear-gradient(160deg, #1e293b 0%, #0f172a 42%, #172554 100%);
         color: #e2e8f0;
         border: 1px solid rgba(129, 140, 248, 0.22);
         border-radius: 14px;
         box-shadow: 0 20px 50px rgba(15, 23, 42, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-        overflow: hidden;
-        max-height: calc(100vh - 1rem);
-        display: flex;
-        flex-direction: column;
+        margin-top: 10px;
+        padding: 0;
     }
-    #dvApprovedTransporterDashboard .atd-modal-header {
+    
+    #dvApprovedTransporterDashboard.show {
+        display: block !important;
+    }
+    
+    #dvApprovedTransporterDashboard .atd-header {
         position: relative;
-        flex-shrink: 0;
         border-bottom: 1px solid rgba(129, 140, 248, 0.2);
-        padding: 0.5rem 0.9rem;
-        min-height: 2.5rem;
+        padding: 0.75rem 1rem;
+        min-height: 3rem;
         background: linear-gradient(180deg, #334155 0%, #1e293b 55%, #0f172a 100%);
+        border-radius: 14px 14px 0 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
+    
+    #dvApprovedTransporterDashboard .atd-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        color: #a5b4fc;
+        text-shadow: 0 1px 2px rgba(15, 23, 42, 0.5);
+        margin: 0;
+    }
+    
     #dvApprovedTransporterDashboard .atd-close-btn {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         padding: 0;
         display: inline-flex;
         align-items: center;
@@ -462,105 +475,96 @@
         border-radius: 8px;
         background: rgba(30, 41, 59, 0.8);
         color: #cbd5e1;
-        font-size: 1.2rem;
+        font-size: 1.3rem;
         line-height: 1;
         transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+        cursor: pointer;
     }
+    
     #dvApprovedTransporterDashboard .atd-close-btn:hover {
         background: rgba(99, 102, 241, 0.2);
         border-color: rgba(129, 140, 248, 0.45);
         color: #fff;
     }
-    #dvApprovedTransporterDashboard .atd-title {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        margin: 0;
-        font-size: 0.98rem;
-        font-weight: 600;
-        letter-spacing: 0.03em;
-        color: #a5b4fc;
-        text-shadow: 0 1px 2px rgba(15, 23, 42, 0.5);
-        pointer-events: none;
-        white-space: nowrap;
+    
+    #dvApprovedTransporterDashboard .atd-body {
+        padding: 0.75rem 1rem 1rem;
+        overflow-y: auto;
+        max-height: calc(100vh - 200px);
     }
+    
     @@media (max-width: 576px) {
         #dvApprovedTransporterDashboard .atd-title {
             font-size: 0.95rem;
-            white-space: normal;
-            text-align: center;
-            max-width: 70%;
         }
     }
-    #dvApprovedTransporterDashboard .atd-header-spacer {
-        width: 30px;
-        flex-shrink: 0;
-    }
-    #dvApprovedTransporterDashboard .modal-body {
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 0.5rem 0.9rem 0.75rem;
-    }
+    
     #dvApprovedTransporterDashboard .atd-toolbar {
-        margin-bottom: 0.45rem;
+        margin-bottom: 0.6rem;
     }
+    
     #dvApprovedTransporterDashboard .atd-toolbar-inner {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 8px 12px;
-        row-gap: 8px;
+        gap: 10px 14px;
+        row-gap: 10px;
     }
+    
     #dvApprovedTransporterDashboard .atd-kpi-card {
         flex: 0 0 auto;
-        width: 104px;
+        width: 110px;
         background: rgba(99, 102, 241, 0.1);
         border-radius: 8px;
-        padding: 5px 9px 7px;
+        padding: 6px 10px 8px;
         border: 1px solid rgba(129, 140, 248, 0.2);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
+    
     #dvApprovedTransporterDashboard .atd-kpi-label {
-        font-size: 0.58rem;
+        font-size: 0.6rem;
         text-transform: uppercase;
         letter-spacing: 0.06em;
         color: #94a3b8;
-        margin-bottom: 2px;
+        margin-bottom: 3px;
         line-height: 1.2;
     }
+    
     #dvApprovedTransporterDashboard .atd-kpi-value {
-        font-size: 1.1rem;
+        font-size: 1.15rem;
         font-weight: 700;
         font-variant-numeric: tabular-nums;
         color: #f1f5f9;
         line-height: 1.15;
     }
+    
     #dvApprovedTransporterDashboard .atd-field {
         flex: 0 1 auto;
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 3px;
     }
+    
     #dvApprovedTransporterDashboard .atd-field-indent {
-        min-width: 120px;
-        max-width: 160px;
+        min-width: 130px;
+        max-width: 170px;
     }
+    
     #dvApprovedTransporterDashboard .atd-field-transporter {
-        flex: 1 1 180px;
-        min-width: 160px;
+        flex: 1 1 200px;
+        min-width: 180px;
     }
+    
     #dvApprovedTransporterDashboard .atd-field label {
         display: block;
-        font-size: 0.58rem;
+        font-size: 0.6rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         color: #94a3b8;
         margin-bottom: 0;
         line-height: 1.2;
     }
+    
     #dvApprovedTransporterDashboard .atd-select {
         width: 100%;
         min-width: 0;
@@ -569,11 +573,12 @@
         color: #f1f5f9;
         border: 1px solid rgba(148, 163, 184, 0.18);
         border-radius: 6px;
-        font-size: 0.78rem;
-        padding: 0.25rem 0.45rem;
+        font-size: 0.8rem;
+        padding: 0.3rem 0.5rem;
         height: auto;
-        line-height: 1.35;
+        line-height: 1.4;
     }
+    
     #dvApprovedTransporterDashboard .atd-select:focus {
         border-color: rgba(129, 140, 248, 0.55);
         box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
@@ -581,6 +586,7 @@
         background: rgba(30, 41, 59, 0.95);
         color: #fff;
     }
+    
     @@media (max-width: 576px) {
         #dvApprovedTransporterDashboard .atd-toolbar-inner {
             align-items: stretch;
@@ -590,38 +596,44 @@
             min-width: 100%;
         }
         #dvApprovedTransporterDashboard .atd-kpi-card {
-            width: calc(50% - 6px);
+            width: calc(50% - 7px);
         }
     }
+    
     #dvApprovedTransporterDashboard .atd-main-row {
         margin-top: 0;
     }
+    
     #dvApprovedTransporterDashboard .atd-panel {
         background: rgba(15, 23, 42, 0.55);
         border: 1px solid rgba(148, 163, 184, 0.1);
         border-radius: 10px;
-        padding: 8px 10px 10px;
+        padding: 10px 12px;
         height: 100%;
     }
+    
     #dvApprovedTransporterDashboard .atd-panel-title {
-        font-size: 0.65rem;
+        font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         color: #94a3b8;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
     }
+    
     #dvApprovedTransporterDashboard .atd-table-wrap {
-        max-height: 260px;
+        max-height: 280px;
         overflow: auto;
         border-radius: 8px;
         border: 1px solid rgba(148, 163, 184, 0.12);
         background: rgba(15, 23, 42, 0.4);
     }
+    
     #dvApprovedTransporterDashboard table.atd-matrix-table {
         margin-bottom: 0;
-        font-size: 0.8rem;
+        font-size: 0.82rem;
         color: #e2e8f0;
     }
+    
     #dvApprovedTransporterDashboard table.atd-matrix-table thead th {
         position: sticky;
         top: 0;
@@ -629,108 +641,106 @@
         background: #334155 !important;
         color: #f8fafc !important;
         border-color: rgba(148, 163, 184, 0.15) !important;
-        padding: 7px 8px;
+        padding: 8px 10px;
         font-weight: 600;
-        font-size: 0.72rem;
+        font-size: 0.75rem;
     }
+    
     #dvApprovedTransporterDashboard table.atd-matrix-table thead th.atd-th-name {
-        min-width: 150px;
-        max-width: 220px;
+        min-width: 160px;
+        max-width: 240px;
         white-space: normal;
-        line-height: 1.25;
+        line-height: 1.3;
         text-align: left;
     }
+    
     #dvApprovedTransporterDashboard table.atd-matrix-table thead th.atd-th-num {
         white-space: nowrap;
         text-align: right;
     }
+    
     #dvApprovedTransporterDashboard table.atd-matrix-table tbody td {
         border-color: rgba(148, 163, 184, 0.08);
-        padding: 6px 8px;
+        padding: 7px 10px;
         vertical-align: middle;
     }
+    
     #dvApprovedTransporterDashboard table.atd-matrix-table tbody tr:nth-child(odd) {
         background: rgba(30, 41, 59, 0.35);
     }
+    
     #dvApprovedTransporterDashboard table.atd-matrix-table tbody tr:nth-child(even) {
         background: rgba(15, 23, 42, 0.5);
     }
+    
     #dvApprovedTransporterDashboard table.atd-matrix-table tbody tr.atd-grand-row {
         font-weight: 700;
         background: rgba(99, 102, 241, 0.14) !important;
         border-top: 2px solid rgba(129, 140, 248, 0.35);
         color: #f8fafc;
     }
+    
     #dvApprovedTransporterDashboard table.atd-matrix-table td.atd-num {
         text-align: right;
         font-variant-numeric: tabular-nums;
     }
+    
     #dvApprovedTransporterDashboard table.atd-matrix-table td.atd-text {
         text-align: left;
-        min-width: 150px;
-        max-width: 260px;
+        min-width: 160px;
+        max-width: 280px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+    
     #dvApprovedTransporterDashboard table.atd-matrix-table td.atd-col-total {
         font-weight: 600;
     }
+    
     #dvApprovedTransporterDashboard .atd-chart-wrap {
-        min-height: 200px;
-        max-height: 240px;
+        min-height: 220px;
+        max-height: 260px;
         position: relative;
-        padding: 4px 2px;
+        padding: 5px 3px;
     }
+    
     #dvApprovedTransporterDashboard .atd-donut-legend-hint {
         color: #94a3b8;
         min-height: 0;
     }
+    
     #dvApprovedTransporterDashboard .atd-legend-grid {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px 12px;
-        margin-top: 8px;
-        padding-top: 8px;
+        gap: 10px 14px;
+        margin-top: 10px;
+        padding-top: 10px;
         border-top: 1px solid rgba(148, 163, 184, 0.1);
-        font-size: 0.72rem;
+        font-size: 0.75rem;
         color: #cbd5e1;
     }
+    
     #dvApprovedTransporterDashboard .atd-legend-item {
         display: inline-flex;
         align-items: center;
         gap: 8px;
     }
+    
     #dvApprovedTransporterDashboard .atd-legend-swatch {
-        width: 11px;
-        height: 11px;
+        width: 12px;
+        height: 12px;
         border-radius: 3px;
         flex-shrink: 0;
         box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
     }
+    
     #dvApprovedTransporterDashboard .atd-decline-title {
         color: #94a3b8;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         font-weight: 600;
-        margin-top: 10px;
-        margin-bottom: 6px;
-    }
-    #dvApprovedTransporterDashboard .atd-footer {
-        flex-shrink: 0;
-        border-top: 1px solid rgba(148, 163, 184, 0.12);
-        background: rgba(15, 23, 42, 0.55);
-        padding: 0.45rem 0.9rem;
-    }
-    #dvApprovedTransporterDashboard .atd-footer .btn-secondary {
-        background: rgba(99, 102, 241, 0.2);
-        border: 1px solid rgba(129, 140, 248, 0.35);
-        color: #e2e8f0;
-        border-radius: 8px;
-        padding: 0.28rem 1rem;
-    }
-    #dvApprovedTransporterDashboard .atd-footer .btn-secondary:hover {
-        background: rgba(99, 102, 241, 0.32);
-        color: #fff;
+        margin-top: 12px;
+        margin-bottom: 8px;
     }
 </style>
 <div class="row vdp-page">
@@ -743,12 +753,13 @@
                 <div class="col-md-3">
                     <label for="ddlStatus" class="form-label filter-label">Status</label><span class="text-danger">*</span>
                     <select id="ddlStatus" class="form-control form-control-sm box_border">
+                        <option value="AR" selected>Dashboard</option>
                         <option value="M">Pending For Approval (Marketing Man)</option>
                         <option value="P">Pending For Approval (PPC)</option>
                         <option value="D">Pending For Approval (Dispatch)</option>
                         <option value="C">Approved Dispatch Plan</option>
                         <option value="T">Approved Quotation</option>
-                        <option value="R">Dispatch Activity Report</option>
+                        <option value="R">Dispatch Activity Report</option> 
                         <option value="TR">Transporter Report</option>
                     </select>
                 </div>
@@ -767,9 +778,6 @@
                     <button type="button" id="btnExportExcel" class="btn btn-primary btn-height" onclick="ExportExcel();">
                         <i class="fas fa-download"></i> Download
                     </button>
-                    <button type="button" id="btnApprovedTransporterDashboard" class="btn btn-primary btn-height ms-1" onclick="openApprovedTransporterDashboard();" title="Approved Transporter Dashboard">
-                        <i class="fas fa-chart-pie"></i> Approved Transporter
-                    </button>
                 </div>
             </div>
         </div>
@@ -782,7 +790,7 @@
                     </tbody>
                 </table>
             </div>
-            <div id="dvTransporterReportTwinGrids" class="d-none flex-column flex-grow-1" style="min-height:0;overflow:hidden;">
+            <div id="dvTransporterReportTwinGrids" class="d-none flex-column flex-grow-1" style="min-height:0;overflow:visible;">
                 <div class="transporter-rpt-block d-flex flex-column" style="min-height:0;">
                     <div class="transporter-rpt-label small fw-semibold text-secondary px-1 pb-1">Transporter approved details</div>
                     <div id="transporterR1NoData" class="d-none small text-muted px-2 py-2">No data</div>
@@ -800,6 +808,70 @@
                         <table id="tblTransporterReport2" class="fixed-width-table table table-bordered">
                             <thead id="table-head-transporter-r2"></thead>
                             <tbody id="table-body-transporter-r2"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Approved Transporter Dashboard - Inline Div -->
+        <div id="dvApprovedTransporterDashboard">
+            <div class="atd-header">
+                <h5 class="atd-title">Approved Transporter Dashboard</h5>
+                <button type="button" class="atd-close-btn" onclick="closeApprovedTransporterDashboard();">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="atd-body">
+                <div class="atd-toolbar">
+                    <div class="atd-toolbar-inner">
+                        <div class="atd-kpi-card">
+                            <div class="atd-kpi-label">Quote Status</div>
+                            <div class="atd-kpi-value" id="atdKpiQuote">—</div>
+                        </div>
+                        <div id="atdWrapIndent" class="atd-field atd-field-indent d-none">
+                            <label for="atdFilterIndent">Indent ID</label>
+                            <select id="atdFilterIndent" class="form-control form-control-sm atd-select">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                        <div class="atd-field atd-field-transporter">
+                            <label for="atdFilterTransporter">Transporter</label>
+                            <select id="atdFilterTransporter" class="form-control form-control-sm atd-select">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-2 atd-main-row">
+                    <div class="col-lg-5">
+                        <div class="atd-panel">
+                            <div class="atd-panel-title">Share by transporter</div>
+                            <div class="atd-chart-wrap">
+                                <canvas id="atdDonutCanvas" aria-label="Transporter distribution"></canvas>
+                            </div>
+                            <div id="atdDonutLegend" class="small mt-1 atd-donut-legend-hint"></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="atd-panel">
+                            <div class="atd-panel-title">Quote status / record count</div>
+                            <div class="atd-table-wrap">
+                                <table class="table table-bordered atd-matrix-table mb-0" id="atdMatrixTable">
+                                    <thead id="atdMatrixHead"></thead>
+                                    <tbody id="atdMatrixBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="atd-legend-grid" id="atdCategoryLegend"></div>
+                <div id="atdDeclineBlock" class="d-none">
+                    <div class="atd-decline-title">Decline Transporter's Stats</div>
+                    <div class="atd-table-wrap" style="max-height:180px;">
+                        <table class="table table-bordered atd-matrix-table mb-0" id="atdDeclineTable">
+                            <thead id="atdDeclineHead"></thead>
+                            <tbody id="atdDeclineBody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -1020,7 +1092,7 @@
                 <div class="atd-legend-grid" id="atdCategoryLegend"></div>
                 <div id="atdDeclineBlock" class="d-none">
                     <div class="atd-decline-title">Decline Transporter's Stats</div>
-                    <div class="atd-table-wrap" style="max-height:160px;">
+                    <div class="atd-table-wrap" style="max-height:180px;">
                         <table class="table table-bordered atd-matrix-table mb-0" id="atdDeclineTable">
                             <thead id="atdDeclineHead"></thead>
                             <tbody id="atdDeclineBody"></tbody>

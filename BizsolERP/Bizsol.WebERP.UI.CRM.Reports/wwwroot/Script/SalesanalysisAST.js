@@ -37,6 +37,7 @@ function initFilterSidePanelControl() {
     // Initialize with empty filters first
     const filters = [
         { id: 'dateRange', type: 'daterange', label: 'Date Range' },
+        { id: 'chkShowRecursive', type: 'checkbox', label: 'Show Recursive Marketing Man', checkboxLabel: 'Show Recursive Marketing Man', defaultChecked: true },
         { id: 'ddlSalesPersonlist', type: 'multiselect', label: 'Sales Person', data: [] },
         { id: 'ddlDealerNamelist', type: 'multiselect', label: 'Dealer Name', data: [] },
         { id: 'ddlCitiesNamelist', type: 'multiselect', label: 'Location', data: [] },
@@ -136,6 +137,14 @@ function loadFilterDropdowns(filterPanel) {
                         });
                     });
                 }
+
+                // Re-load dealer list when Show Recursive checkbox changes
+                const recursiveChk = filterPanel.shadowRoot.getElementById('chkShowRecursive');
+                if (recursiveChk) {
+                    recursiveChk.addEventListener('change', () => {
+                        updateDealerListBasedOnSalesPerson(filterPanel);
+                    });
+                }
             }, 500);
         }
     }).catch(function (error) {
@@ -226,9 +235,11 @@ function updateDealerListBasedOnSalesPerson(filterPanel) {
         return;
     }
 
+    const isNested = filterValues.chkShowRecursive !== false ? 'Y' : 'N';
+
     const promises = salesPersonFilter.values.map(function (code) {
         try {
-            return CRMReportsServices.GetDealerList(code);
+            return CRMReportsServices.GetDealerList(code, isNested);
         } catch (e) {
             return Promise.resolve([]);
         }
@@ -311,8 +322,9 @@ function GetAllFilters() {
         const filterValues = filterPanel.getFilterValues();
         console.log('Filter values from control:', filterValues);
 
+        const rawDealerCodes = filterValues.ddlDealerNamelist?.joined || '0';
         const filters = {
-            dealerCodes: filterValues.ddlDealerNamelist?.joined || '0',
+            dealerCodes: rawDealerCodes === '0' || rawDealerCodes === '' ? '-1' : rawDealerCodes,
             salesPersons: filterValues.ddlSalesPersonlist?.joined || '0',
             cities: filterValues.ddlCitiesNamelist?.joined || '0',
             status: filterValues.ddlStatusNamelist?.joined || '0',
@@ -385,6 +397,11 @@ function renderSummaryReport() {
             document.getElementById('kpi-manifested-sales').textContent = '0';
             document.getElementById('kpi-actual-sale').textContent = '0';
             document.getElementById('kpi-total-manifested').textContent = '0';
+            // Clear grid
+            const hdr = document.getElementById('summaryReportTableHeader');
+            const bdy = document.getElementById('summaryReportTableBody');
+            if (hdr) hdr.innerHTML = '';
+            if (bdy) bdy.innerHTML = '<tr><td class="text-center">No data available</td></tr>';
             updateReportDateRangeDisplay();
             return;
         }
@@ -1992,6 +2009,50 @@ function renderGPWiseSummaryCustomTable(data) {
     tbody.appendChild(grandTotalRow);
 }
 
+function renderHighGPLostClient() {
+    const filters = GetAllFilters();
+
+    if (filters.dealerCodes == '') {
+        return;
+    }
+
+    updateReportDateRangeDisplay();
+
+    Showloader();
+
+    SalesanalysisASTService.GetSalesAnalysisData('HIGH_GP_LOST_CLIENT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
+        HideLoader();
+
+        if (!response || response.length === 0) {
+            console.warn('No High GP Lost Client data received');
+            document.getElementById('highGPLostClientTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+            document.getElementById('highGPLostClientTableHeader').innerHTML = '';
+            return;
+        }
+
+        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location", "GP", "Status"];
+        const NumericFilterColumn = [];
+        const DateFilterColumn = [];
+        const Button = false;
+        const showButtons = [];
+        const StringdoubleFilterColumn = [];
+        const hiddenColumns = [];
+        const ColumnAlignment = {
+            'Weight': 'right',
+            'Manifestation': 'right',
+            'Total Sales': 'right',
+            'Growth (%)': 'right'
+        };
+
+        if (typeof BizsolCustomFilterGrid !== 'undefined') {
+            BizsolCustomFilterGrid.CreateDataTable("highGPLostClientTableHeader", "highGPLostClientTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        }
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching High GP Lost Client data:', err);
+    });
+}
+
 // Show report function
 function SalesanalysisAST_ShowReport() {
     const filters = GetAllFilters();
@@ -2023,6 +2084,9 @@ function SalesanalysisAST_ShowReport() {
     }
     if (document.querySelector('#gpWiseSummary')?.classList.contains('show') || document.querySelector('#gpWiseSummary')?.classList.contains('active')) {
         renderGPWiseSummary();
+    }
+    if (document.querySelector('#highGPLostClient')?.classList.contains('show') || document.querySelector('#highGPLostClient')?.classList.contains('active')) {
+        renderHighGPLostClient();
     }
 }
 
@@ -2077,6 +2141,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    const highGPLostClientTabBtn = document.getElementById('highGPLostClient-tab');
+    if (highGPLostClientTabBtn) {
+        highGPLostClientTabBtn.addEventListener('shown.bs.tab', function () {
+            renderHighGPLostClient();
+        });
+    }
+
     // Initial render if tab is already active
     setTimeout(function () {
         if (document.querySelector('#summaryReport') && document.querySelector('#summaryReport').classList.contains('show')) {
@@ -2099,6 +2170,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (document.querySelector('#gpWiseSummary') && document.querySelector('#gpWiseSummary').classList.contains('show')) {
             renderGPWiseSummary();
+        }
+        if (document.querySelector('#highGPLostClient') && document.querySelector('#highGPLostClient').classList.contains('show')) {
+            renderHighGPLostClient();
         }
     }, 300);
 });

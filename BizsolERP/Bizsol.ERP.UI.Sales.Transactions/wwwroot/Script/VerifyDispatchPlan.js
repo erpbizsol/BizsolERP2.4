@@ -34,28 +34,42 @@ function adjustVerifyDispatchPlanTableHeight() {
     if (twin && !twin.classList.contains('d-none') && twin.offsetParent !== null) {
         const dv = document.getElementById('dvTableDispatch');
         if (!dv || dv.offsetParent === null) return;
-        const viewportHeight = getViewportHeight();
+        const layoutBottom = window.innerHeight || document.documentElement.clientHeight || getViewportHeight();
         const footerHeight = getFooterViewportOverlapHeight();
-        const bottomGap = 8;
-        const minHalf = 220;
-        const rect = dv.getBoundingClientRect();
-        let availableHeight = viewportHeight - rect.top - footerHeight - bottomGap;
+        const bottomGap = 0;
+        const twinRect = twin.getBoundingClientRect();
+        const topInset = Math.max(0, twinRect.top);
+        let availableHeight = layoutBottom - topInset - footerHeight - bottomGap;
         if (!isFinite(availableHeight)) return;
-        availableHeight = Math.max(minHalf * 2 + 48, Math.floor(availableHeight));
+        const gap = 6;
+        const labelReserve = 18;
+        const minWrapperPx = 350;
+        const minTwinOuter = minWrapperPx * 2 + gap + labelReserve * 2;
+        availableHeight = Math.max(minTwinOuter, Math.floor(availableHeight));
         twin.style.height = availableHeight + 'px';
-        twin.style.maxHeight = availableHeight + 'px';
-        const gap = 8;
-        const labelReserve = 28;
-        const half = Math.max(minHalf, Math.floor((availableHeight - gap - labelReserve * 2) / 2));
+        twin.style.maxHeight = 'none';
+        let contentHeight = availableHeight - gap - labelReserve * 2;
+        let hDetail;
+        let hSummary;
+        if (contentHeight <= 0) {
+            return;
+        }
+        if (contentHeight < minWrapperPx * 2) {
+            contentHeight = minWrapperPx * 2;
+            availableHeight = contentHeight + gap + labelReserve * 2;
+            twin.style.height = availableHeight + 'px';
+        }
+        hDetail = Math.floor(contentHeight / 2);
+        hSummary = contentHeight - hDetail;
         const w1 = document.getElementById('tableWrapperTransporterR1');
         const w2 = document.getElementById('tableWrapperTransporterR2');
         if (w1) {
-            w1.style.height = half + 'px';
-            w1.style.maxHeight = half + 'px';
+            w1.style.height = hDetail + 'px';
+            w1.style.maxHeight = hDetail + 'px';
         }
         if (w2) {
-            w2.style.height = half + 'px';
-            w2.style.maxHeight = half + 'px';
+            w2.style.height = hSummary + 'px';
+            w2.style.maxHeight = hSummary + 'px';
         }
         return;
     }
@@ -114,8 +128,10 @@ $(document).ready(function () {
         $("#ddlStatus").val('P');
     } else if (decodeURI(urlParams['FrmAction']) == 'Verify') {
         $("#ddlStatus").val('D');
-    } else {
+    } else if (decodeURI(urlParams['FrmAction']) == 'Verify Marketing') {
         $("#ddlStatus").val('M');
+    } else {
+        $("#ddlStatus").val('AR');
     }
 
     bindVerifyDispatchPlanTableHeightHandlers();
@@ -127,36 +143,50 @@ $(document).ready(function () {
     //     GetDispatchAdvicePlanList($(this).val());
     // })
     var initialStatus = $("#ddlStatus").val();
-    if (initialStatus === 'R' || initialStatus === 'T') {
+    if (initialStatus === 'R' || initialStatus === 'T' || initialStatus === 'TR') {
         $(".despatch-activity-filter").removeClass('d-none');
         $("#dvTableDispatch").hide();
-    } else if (initialStatus === 'TR') {
-        $(".despatch-activity-filter").addClass('d-none');
-        ShowTransporterReportList();
+        $("#dvApprovedTransporterDashboard").removeClass('show').hide();
+        if (initialStatus === 'TR') {
+            ShowTransporterReportList();
+        }
+    } else if (initialStatus === 'AR') {
+        $(".despatch-activity-filter").removeClass('d-none');
+        $("#dvTableDispatch").hide();
+        openApprovedTransporterDashboard();
     } else {
         $(".despatch-activity-filter").addClass('d-none');
+        $("#dvApprovedTransporterDashboard").removeClass('show').hide();
         GetDispatchAdvicePlanList(initialStatus);
     }
     $("#ddlStatus").change(function () {
         var status = $(this).val();
-        if (status === 'R' || status === 'T') {
+        if (status === 'R' || status === 'T' || status === 'TR') {
             $(".despatch-activity-filter").removeClass('d-none');
             $("#dvTableDispatch").hide();
-        } else if (status === 'TR') {
-            $(".despatch-activity-filter").addClass('d-none');
-            ShowTransporterReportList();
+            $("#dvApprovedTransporterDashboard").removeClass('show').hide();
+            if (status === 'TR') {
+                ShowTransporterReportList();
+            }
+        } else if (status === 'AR') {
+            $(".despatch-activity-filter").removeClass('d-none');
+            $("#dvTableDispatch").hide();
+            openApprovedTransporterDashboard();
         } else {
             $(".despatch-activity-filter").addClass('d-none');
+            $("#dvApprovedTransporterDashboard").removeClass('show').hide();
             GetDispatchAdvicePlanList(status);
         }
     });
     $("#txtFromDate").change(function () {
-        if ($("#ddlStatus").val() === 'R') {
+        var s = $("#ddlStatus").val();
+        if (s === 'R' || s === 'TR' || s === 'AR') {
             ShowFilteredList();
         }
     });
     $("#txtToDate").change(function () {
-        if ($("#ddlStatus").val() === 'R') {
+        var s = $("#ddlStatus").val();
+        if (s === 'R' || s === 'TR' || s === 'AR') {
             ShowFilteredList();
         }
     });
@@ -176,6 +206,9 @@ function GetDispatchAdvicePlanList(Status, fromdate, todate) {
         ShowTransporterReportList();
         return;
     }
+    // Hide Approved Transporter Dashboard when showing table
+    $("#dvApprovedTransporterDashboard").removeClass('show').hide();
+    
     ensureStandardGridLayout();
     if (fromdate == undefined) {
         fromdate = '';
@@ -1031,9 +1064,50 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
 });
 function ExportExcel() {
     var status = $("#ddlStatus").val();
-    if (status === 'TR') {
+    if (status === 'AR') {
+        var arFrom = $('#txtFromDate').val();
+        var arTo = $('#txtToDate').val();
+        if (!arFrom || !arTo) {
+            toastr.warning('Please select From Date and To Date before export.');
+            return;
+        }
+        if (new Date(arTo) < new Date(arFrom)) {
+            toastr.warning('To Date must be greater than or equal to From Date.');
+            return;
+        }
         Showloader();
-        VerifyDispatchPlanService.GetTransporterReport().then(function (response) {
+        VerifyDispatchPlanService.GetApprovedTransporterReport(arFrom, arTo).then(function (response) {
+            HideLoader();
+            var norm = normalizeApprovedTransporterReport(response);
+            var rows = (norm.dataRows || []).slice();
+            if (norm.grandRow) {
+                rows.push(norm.grandRow);
+            }
+            if (!rows.length) {
+                toastr.info('No data to export.');
+                return;
+            }
+            ExportToExcelControl.ExportToExcel(rows, [], 'ApprovedTransporterDashboard');
+            toastr.success('Export completed successfully.');
+        }).catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || error.message || 'Error during export.');
+        });
+        return;
+    }
+    if (status === 'TR') {
+        var fromDate = $('#txtFromDate').val();
+        var toDate = $('#txtToDate').val();
+        if (!fromDate || !toDate) {
+            toastr.warning('Please select From Date and To Date before export.');
+            return;
+        }
+        if (new Date(toDate) < new Date(fromDate)) {
+            toastr.warning('To Date must be greater than or equal to From Date.');
+            return;
+        }
+        Showloader();
+        VerifyDispatchPlanService.GetTransporterReport(fromDate, toDate).then(function (response) {
             HideLoader();
             const parsed = parseTransporterReportResults(response);
             const has1 = parsed.result1 && parsed.result1.length > 0;
@@ -1490,7 +1564,7 @@ function OpenUpdateQtyModal(Code) {
                 const balQtyMTRSDisplay = Number(balQtyMTRS).toFixed(0);
 
                 const rowHtml = `
-                    <tr data-master-code="${masterCode}" data-tran-code="${tranCode}" data-bal-qty-pc="${balQtyPc}" data-bal-qty-mt="${balQtyMT}" data-bal-qty-mtrs="${balQtyMTRS}">
+                    <tr data-master-code="${masterCode}" data-tran-code="${tranCode}" data-bal-qty-pc="${balQtyPc}" data-bal-qty-mt="${balQtyMT}" data-bal-qty-mtrs="${balQtyMTRRS}">
                         <td style="text-align:center;">${index + 1}</td>
                         <td style="text-align:left;">${itemName}</td>
                         <td style="text-align:left;">${sizeDesp}</td>
@@ -2083,6 +2157,10 @@ function ShowFilteredList() {
         ShowTransporterReportList();
         return;
     }
+    if ($("#ddlStatus").val() === 'AR') {
+        openApprovedTransporterDashboard();
+        return;
+    }
     var fromDate = $('#txtFromDate').val();
     var toDate = $('#txtToDate').val();
     if (!fromDate || !toDate) {
@@ -2243,8 +2321,18 @@ function bindTransporterResultGrid(headId, bodyId, rows, noDataElId) {
 }
 
 function ShowTransporterReportList() {
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate) {
+        toastr.warning('Please select From Date and To Date.');
+        return;
+    }
+    if (new Date(toDate) < new Date(fromDate)) {
+        toastr.warning('To Date must be greater than or equal to From Date.');
+        return;
+    }
     Showloader();
-    VerifyDispatchPlanService.GetTransporterReport().then(function (response) {
+    VerifyDispatchPlanService.GetTransporterReport(fromDate, toDate).then(function (response) {
         HideLoader();
         ensureTransporterTwinLayout();
         const parsed = parseTransporterReportResults(response);
@@ -2284,7 +2372,9 @@ function closeApprovedTransporterDashboard() {
         } catch (e) { /* ignore */ }
         ATD_CHART = null;
     }
-    $('#dvApprovedTransporterDashboard').modal('hide');
+    $('#dvApprovedTransporterDashboard').removeClass('show').hide();
+    // Optionally, show the default view (adjust based on your needs)
+    // You can add logic here to return to a specific view if needed
 }
 
 function atdPick(obj, keys) {
@@ -2436,9 +2526,9 @@ function atdRowTotal(row, valueKeys) {
     var t = 0;
     for (var i = 0; i < keys.length; i++) {
         var v = row[keys[i]];
-        if (v === null || v === undefined || v === '') continue;
         var n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, ''));
-        if (!isNaN(n) && isFinite(n)) t += n;
+        if (isNaN(n)) continue;
+        t += n;
     }
     return t;
 }
@@ -2483,7 +2573,8 @@ function atdBuildComputedGrandRow(filteredRows, nameKey, vkeys) {
         vkeys.forEach(function (k) {
             var v = r[k];
             var n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, ''));
-            if (!isNaN(n) && isFinite(n)) agg[k] += n;
+            if (isNaN(n) || !isFinite(n)) return;
+            agg[k] += n;
         });
     });
     var row = {};
@@ -2735,7 +2826,7 @@ function atdRenderDonut(norm) {
                     }
                 }
             }
-        }
+        },
     });
     if (leg) leg.textContent = '';
 }
@@ -2751,9 +2842,23 @@ function atdRenderAll() {
 }
 
 function openApprovedTransporterDashboard() {
-    $('#dvApprovedTransporterDashboard').modal('show');
+    // Hide table dispatch before showing dashboard
+    $('#dvTableDispatch').hide();
+    $('#dvApprovedTransporterDashboard').addClass('show').show();
+
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate) {
+        toastr.warning('Please select From Date and To Date.');
+        return;
+    }
+    if (new Date(toDate) < new Date(fromDate)) {
+        toastr.warning('To Date must be greater than or equal to From Date.');
+        return;
+    }
+
     Showloader();
-    VerifyDispatchPlanService.GetApprovedTransporterReport().then(function (response) {
+    VerifyDispatchPlanService.GetApprovedTransporterReport(fromDate, toDate).then(function (response) {
         HideLoader();
         ATD_RAW_RESPONSE = response;
         ATD_NORMALIZED = normalizeApprovedTransporterReport(response);
@@ -2779,6 +2884,3 @@ $(document).on('hidden.bs.modal', '#dvApprovedTransporterDashboard', function ()
         ATD_CHART = null;
     }
 });
-
-window.openApprovedTransporterDashboard = openApprovedTransporterDashboard;
-window.closeApprovedTransporterDashboard = closeApprovedTransporterDashboard;

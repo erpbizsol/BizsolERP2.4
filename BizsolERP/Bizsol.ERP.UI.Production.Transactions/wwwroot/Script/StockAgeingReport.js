@@ -1002,8 +1002,14 @@ function LoadStockWithChart() {
     } else if (ItemTypeName === 'All') { ItemTypeName = ''; }
 
     if (Array.isArray(WarehouseName)) {
-        WarehouseName = WarehouseName.includes('All') ? '' : WarehouseName.join(',');
-    } else if (WarehouseName === 'All') { WarehouseName = ''; }
+        if (WarehouseName.includes('All')) {
+            WarehouseName = $('#ddlWarehouse option').not('[value="All"]').map(function () { return $(this).val(); }).get().join(',');
+        } else {
+            WarehouseName = WarehouseName.join(',');
+        }
+    } else if (WarehouseName === 'All') {
+        WarehouseName = $('#ddlWarehouse option').not('[value="All"]').map(function () { return $(this).val(); }).get().join(',');
+    }
 
     // ── 4. Build & store payload (same shape as GetStockAgeingReportList) ────
     SWC_CurrentPayload = {
@@ -1097,11 +1103,12 @@ function SWC_RenderCategoryPieChart(data) {
     var labels = data.map(function (r) { return r.Desp || ''; });
     var values = data.map(function (r) { return parseFloat(r.StockQtyMt) || 0; });
     var codes  = data.map(function (r) { return parseInt(r.Code, 10); });
+    var categoryGrandTotal = values.reduce(function (sum, v) { return sum + v; }, 0);
     SWC_CategoryChartInstance = new ApexCharts(el, {
         series: values,
         chart: {
             type: 'pie',
-            height: 300,
+            height: 460,
             dropShadow: { enabled: true, blur: 6, opacity: 0.12 },
             events: {
                 dataPointSelection: function (event, chartContext, config) {
@@ -1115,6 +1122,8 @@ function SWC_RenderCategoryPieChart(data) {
                 }
             }
         },
+        title: { text: 'Category-wise Stock', align: 'center', offsetY: 5, style: { fontSize: '13px', fontWeight: '700', color: '#334155' } },
+        subtitle: { text: 'Grand Total: ' + categoryGrandTotal.toFixed(3) + ' MT', align: 'center', offsetY: 25, style: { fontSize: '11px', fontWeight: '600', color: '#64748b' } },
         labels:  labels,
         colors:  SWC_GenerateColors(labels.length),
         stroke:  { width: 2, colors: ['#ffffff'] },
@@ -1127,7 +1136,7 @@ function SWC_RenderCategoryPieChart(data) {
             dropShadow: { enabled: true, blur: 2, opacity: 0.2 }
         },
         tooltip: { y: { formatter: function (val) { return val.toFixed(3) + ' MT'; } } },
-        plotOptions: { pie: { expandOnClick: true } }
+        plotOptions: { pie: { expandOnClick: true, offsetY: 20, customScale: 0.88 } }
     });
     SWC_CategoryChartInstance.render();
 }
@@ -1147,6 +1156,7 @@ function SWC_RenderGodownBarChart(data, seriesLabel) {
     var labels = data.map(function (r) { return r.Desp || ''; });
     var values = data.map(function (r) { return parseFloat(r.StockQtyMt) || 0; });
     var codes  = data.map(function (r) { return parseInt(r.Code, 10); });
+    var godownGrandTotal = values.reduce(function (sum, v) { return sum + v; }, 0);
     SWC_GodownChartInstance = new ApexCharts(el, {
         series: [{ name: seriesLabel || 'Stock MT', data: values }],
         chart: {
@@ -1166,6 +1176,8 @@ function SWC_RenderGodownBarChart(data, seriesLabel) {
                 }
             }
         },
+        title: { text: 'Godown-wise Stock', align: 'center', style: { fontSize: '13px', fontWeight: '700', color: '#334155' } },
+        subtitle: { text: 'Grand Total: ' + godownGrandTotal.toFixed(3) + ' MT', align: 'center', style: { fontSize: '11px', fontWeight: '600', color: '#64748b' } },
         colors: SWC_GenerateColors(values.length),
         fill: {
             type: 'gradient',
@@ -1204,12 +1216,15 @@ function SWC_RenderItemsBarChart(data) {
     el.innerHTML = '';
     var labels = data.map(function (r) { return r.Desp || ''; });
     var values = data.map(function (r) { return parseFloat(r.StockQtyMt) || 0; });
+    var itemsGrandTotal = values.reduce(function (sum, v) { return sum + v; }, 0);
     SWC_ItemsChartInstance = new ApexCharts(el, {
         series: [{ name: SWC_SelectedCategoryName || 'Stock MT', data: values }],
         chart: {
             type: 'bar', height: 300, toolbar: { show: false },
             dropShadow: { enabled: true, blur: 4, opacity: 0.1 }
         },
+        title: { text: (SWC_SelectedCategoryName || 'Item') + '-wise Stock', align: 'center', style: { fontSize: '13px', fontWeight: '700', color: '#334155' } },
+        subtitle: { text: 'Grand Total: ' + itemsGrandTotal.toFixed(3) + ' MT', align: 'center', style: { fontSize: '11px', fontWeight: '600', color: '#64748b' } },
         colors: SWC_GenerateColors(values.length),
         fill: {
             type: 'gradient',
@@ -1247,10 +1262,16 @@ function SWC_RenderGrid(data) {
         tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3" style="font-size:.85rem;">No data found</td></tr>';
         return;
     }
+    var grandTotalMt = 0;
+    var grandTotalPc = 0;
     data.forEach(function (row) {
         var itemCode = row.Code;
-        var qtyMt = parseFloat(row.StockQtyMt || 0).toFixed(3);
-        var qtyPc = Math.round(parseFloat(row.StockQtyPC || 0));
+        var qtyMtVal = parseFloat(row.StockQtyMt || 0);
+        var qtyPcVal = Math.round(parseFloat(row.StockQtyPC || 0));
+        grandTotalMt += qtyMtVal;
+        grandTotalPc += qtyPcVal;
+        var qtyMt = qtyMtVal.toFixed(3);
+        var qtyPc = qtyPcVal;
         var tr = document.createElement('tr');
         tr.setAttribute('data-swc-level', '1');
         tr.setAttribute('data-swc-item-code', itemCode);
@@ -1261,6 +1282,14 @@ function SWC_RenderGrid(data) {
             '<td class="text-end">' + qtyPc + '</td>';
         tbody.appendChild(tr);
     });
+    var grandTotalTr = document.createElement('tr');
+    grandTotalTr.className = 'grand-total-row';
+    grandTotalTr.style.cssText = 'font-weight:700;background:#f1f5f9;border-top:2px solid #cbd5e1;';
+    grandTotalTr.innerHTML =
+        '<td>Grand Total</td>' +
+        '<td class="text-end">' + grandTotalMt.toFixed(3) + '</td>' +
+        '<td class="text-end">' + grandTotalPc + '</td>';
+    tbody.appendChild(grandTotalTr);
     $(tbody).off('click.swc')
         .on('click.swc', '.swc-item-link', function () {
             SWC_ToggleItemRows(parseInt($(this).data('swc-item-code'), 10));
