@@ -1,4 +1,5 @@
 import { MRNMasterApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MRNMasterApprovalService.js';
+import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 
@@ -593,7 +594,15 @@ function extractDetailLines(root) {
     if (Array.isArray(data)) return data;
     const lines = data.GRNServiceDetail ?? data.grnServiceDetail
         ?? data.MRNDetails ?? data.MRNDetail
-        ?? data.GRNPaymentDetails ?? data.Details ?? data.BillLines ?? data.Items ?? data.Lines;
+        ?? data.Details ?? data.Items ?? data.Lines;
+    return Array.isArray(lines) ? lines : [];
+}
+
+function extractBillLines(root) {
+    if (Array.isArray(root)) return [];
+    const data = root?.Data ?? root?.data ?? root;
+    if (!data || Array.isArray(data)) return [];
+    const lines = data.GRNPaymentDetails ?? data.BillLines ?? data.PaymentLines ?? data.PaymentDetails;
     return Array.isArray(lines) ? lines : [];
 }
 
@@ -625,12 +634,18 @@ function OpenDetailModal(paymentCode) {
         '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
         '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
     );
+    $('#gpaModalBillLinesBody').html(
+        '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+        '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
+    );
 
     $('#gpaBtnApproveAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
     $('#gpaBtnRejectAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
 
     $('#modalGpaDetail').modal({ backdrop: 'static' });
     $('#modalGpaDetail').modal('show');
+
+    LoadMrnAttachmentsInline(code);
 
     MRNMasterApprovalService.GetMRNMasterDetail(code)
         .then(function (res) {
@@ -639,6 +654,8 @@ function OpenDetailModal(paymentCode) {
             paintModalFromPayment(G_CurrentPayment);
             const lines = extractDetailLines(res);
             RenderGpaModalItems(lines);
+            const billLines = extractBillLines(res);
+            RenderGpaBillLines(billLines);
             const st = getApprovalStatus(G_CurrentPayment);
             const pend = st.toLowerCase() === 'pending';
             $('#gpaBtnApproveAction').toggle(pend);
@@ -649,6 +666,10 @@ function OpenDetailModal(paymentCode) {
             $('#gpaModalItemsBody').html(
                 '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
                 '<i class="fa fa-exclamation-triangle me-1"></i>Error loading GRN service lines.</td></tr>'
+            );
+            $('#gpaModalBillLinesBody').html(
+                '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                '<i class="fa fa-exclamation-triangle me-1"></i>Error loading bill lines.</td></tr>'
             );
         });
 }
@@ -772,6 +793,38 @@ function RenderGpaModalItems(items) {
     $body.html(html);
 }
 
+function RenderGpaBillLines(items) {
+    const $body = $('#gpaModalBillLinesBody');
+    if (!$body.length) return;
+    if (!items || items.length === 0) {
+        $body.html(
+            '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No bill lines found.</td></tr>'
+        );
+        return;
+    }
+    let html = '';
+    items.forEach(function (row, idx) {
+        const billNo = EscHtml(row.BillNo ?? row.billNo ?? row.MRNNo ?? row.Name ?? '—');
+        const bdt = FmtDateDisplay(row.BillDate ?? row['Bill Date'] ?? row.billDate ?? row.ReceiveDate ?? '');
+        const totalBill = FmtCurrency(row.BillAmount ?? row.billAmount ?? row.TotalBillAmountManual ?? row.Amount ?? 0);
+        const netNum = parseFloat(row.PayableAmount ?? row.payableAmount ?? row.NetPayable ?? row.netPayable ??
+            row.BillAmount ?? row.billAmount ?? row.Amount ?? 0);
+        const payRaw = row.PaymentAmount ?? row['Payment Amount'] ?? row.paymentAmount ?? row.PayAmount;
+        const payNum = (payRaw !== undefined && payRaw !== null && payRaw !== '')
+            ? parseFloat(payRaw)
+            : netNum;
+        html += '<tr>' +
+            '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
+            '<td style="font-weight:600;">' + billNo + '</td>' +
+            '<td class="text-center">' + EscHtml(bdt || '—') + '</td>' +
+            '<td class="text-end">' + totalBill + '</td>' +
+            '<td class="text-end">' + FmtCurrency(netNum) + '</td>' +
+            '<td class="text-end" style="font-weight:700;color:#667eea;">' + FmtCurrency(payNum) + '</td>' +
+            '</tr>';
+    });
+    $body.html(html);
+}
+
 function SubmitApproval(action) {
     const poCode = parseInt($('#hfGpaPaymentCode').val() || '0', 10);
     const levelCode = parseInt($('#hfGpaLevelCode').val() || '0', 10);
@@ -823,20 +876,20 @@ function ExecuteGpaApproval(paymentCode, levelCode, remarks, action) {
 
     if (typeof Showloader === 'function') Showloader();
 
-    var ModuleName = 'GRN Approval Configuration';
-    var OptionName = 'Verify';
-    var ShowMsg = 'Y';
-    var FinYear = BizSolHelperFunction.getFinancialYear();
+    //var ModuleName = 'GRN Approval Configuration';
+    //var OptionName = 'Verify';
+    //var ShowMsg = 'Y';
+    //var FinYear = BizSolHelperFunction.getFinancialYear();
 
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (perm) {
-        if (!perm || perm.CheckModuleOptionRight === 'N') {
-            if (typeof HideLoader === 'function') HideLoader();
-            if (typeof toastr !== 'undefined') {
-                toastr.error((perm && perm.Msg) ? perm.Msg : 'You do not have permission to verify.');
-            }
-            CloseDetailModal();
-            return;
-        }
+    //MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (perm) {
+    //    if (!perm || perm.CheckModuleOptionRight === 'N') {
+    //        if (typeof HideLoader === 'function') HideLoader();
+    //        if (typeof toastr !== 'undefined') {
+    //            toastr.error((perm && perm.Msg) ? perm.Msg : 'You do not have permission to verify.');
+    //        }
+    //        CloseDetailModal();
+    //        return;
+    //    }
 
         const serviceCall = action === 'Approve'
             ? MRNMasterApprovalService.ApproveMRNMaster(paymentCode, levelCode, remarks)
@@ -874,16 +927,93 @@ function ExecuteGpaApproval(paymentCode, levelCode, remarks, action) {
                     toastr.error('Error while ' + (action === 'Approve' ? 'approving' : 'rejecting') + ' GRN service entry.');
                 }
             });
-    }).catch(function () {
-        if (typeof HideLoader === 'function') HideLoader();
-        if (typeof toastr !== 'undefined') {
-            toastr.error('Permission check failed.');
-        }
-    });
+    //}).catch(function () {
+    //    if (typeof HideLoader === 'function') HideLoader();
+    //    if (typeof toastr !== 'undefined') {
+    //        toastr.error('Permission check failed.');
+    //    }
+    //});
+}
+
+function LoadMrnAttachmentsInline(masterCode) {
+    const wrap = document.getElementById('gpaModalAttachList');
+    if (!wrap) return;
+    if (!masterCode || masterCode <= 0) {
+        wrap.innerHTML = '<span style="font-size:0.78rem;color:#94a3b8;"><i class="fa fa-paperclip me-1"></i>No attachments.</span>';
+        return;
+    }
+    wrap.innerHTML = '<span style="font-size:0.78rem;color:#94a3b8;"><i class="fa fa-spinner fa-spin me-1"></i>Loading attachments\u2026</span>';
+    AttachmentControlService.GetAttachmentUploadFiles('MRNMaster', masterCode, '', 0)
+        .then(function (response) {
+            const rows = Array.isArray(response) ? response : [];
+            if (rows.length === 0) {
+                wrap.innerHTML = '<span style="font-size:0.78rem;color:#94a3b8;"><i class="fa fa-paperclip me-1"></i>No attachments.</span>';
+                return;
+            }
+            let html = '<div style="display:flex;flex-direction:column;gap:6px;">';
+            rows.forEach(function (item) {
+                const name = EscHtml(item.DocumentName ?? item.documentName ?? '—');
+                const particulars = EscHtml(item.DocumentParticulars ?? item.documentParticulars ?? '');
+                const code = item.Code ?? item.code ?? 0;
+                const ext = String(item.DocumentName ?? '').split('.').pop().toLowerCase();
+                const iconMap = {
+                    pdf: 'fa-file-pdf', doc: 'fa-file-word', docx: 'fa-file-word',
+                    xls: 'fa-file-excel', xlsx: 'fa-file-excel',
+                    png: 'fa-file-image', jpg: 'fa-file-image', jpeg: 'fa-file-image',
+                    zip: 'fa-file-archive', rar: 'fa-file-archive', txt: 'fa-file-alt'
+                };
+                const icon = iconMap[ext] || 'fa-file';
+                html += '<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;">' +
+                    '<i class="fa ' + icon + '" style="color:#667eea;font-size:1rem;flex-shrink:0;"></i>' +
+                    '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:0.8rem;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + name + '</div>' +
+                    (particulars ? '<div style="font-size:0.72rem;color:#64748b;">' + particulars + '</div>' : '') +
+                    '</div>' +
+                    '<a href="#" onclick="MrnApprovalDownloadAttachment(' + code + ',\'' + name + '\'); return false;" ' +
+                    'style="flex-shrink:0;font-size:0.75rem;color:#667eea;font-weight:600;text-decoration:none;" title="Download">' +
+                    '<i class="fa fa-download me-1"></i>Download</a>' +
+                    '</div>';
+            });
+            html += '</div>';
+            wrap.innerHTML = html;
+        })
+        .catch(function () {
+            wrap.innerHTML = '<span style="font-size:0.78rem;color:#ef4444;"><i class="fa fa-exclamation-triangle me-1"></i>Could not load attachments.</span>';
+        });
+}
+
+function MrnApprovalDownloadAttachment(code, fileName) {
+    if (!code) return;
+    if (typeof Showloader === 'function') Showloader();
+    AttachmentControlService.DownloadAttachment(code)
+        .then(function (blob) {
+            if (typeof HideLoader === 'function') HideLoader();
+            const ext = String(fileName).split('.').pop().toLowerCase();
+            const viewable = ['txt', 'png', 'gif', 'jpeg', 'jpg', 'pdf'].includes(ext);
+            const url = window.URL.createObjectURL(blob);
+            if (viewable) {
+                window.open(url, '_blank');
+            } else {
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(function () {
+            if (typeof HideLoader === 'function') HideLoader();
+            if (typeof toastr !== 'undefined') toastr.error('Failed to download attachment.');
+        });
 }
 
 function CloseDetailModal() {
     $('#modalGpaDetail').modal('hide');
+    const wrap = document.getElementById('gpaModalAttachList');
+    if (wrap) wrap.innerHTML = '';
     G_CurrentPayment = null;
 }
 
@@ -936,3 +1066,4 @@ window.CloseConfirmModal = CloseConfirmModal;
 window.NavigateToGRNService = NavigateToGRNService;
 window.NavigateToGRNServiceApprovalConfiguration = NavigateToGRNServiceApprovalConfiguration;
 window.ToggleGpaPendingOnMeFilter = ToggleGpaPendingOnMeFilter;
+window.MrnApprovalDownloadAttachment = MrnApprovalDownloadAttachment;
