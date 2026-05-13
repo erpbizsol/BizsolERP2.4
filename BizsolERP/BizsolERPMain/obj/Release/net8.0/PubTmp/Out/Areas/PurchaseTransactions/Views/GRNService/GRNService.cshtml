@@ -448,6 +448,27 @@
         color: #fff;
     }
 
+    /* Float bar Attachment: blue default; HasAttachment Yes or pending uploads → green */
+    #floatBar .btn-grn-footer-attach {
+        background: linear-gradient(135deg,#0ea5e9,#0284c7) !important;
+        box-shadow: 0 4px 14px rgba(14,165,233,0.35);
+        color: #fff !important;
+    }
+    #floatBar .btn-grn-footer-attach:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(14,165,233,0.45);
+        color: #fff !important;
+        filter: brightness(1.03);
+    }
+    #floatBar .btn-grn-footer-attach.btn-grn-footer-attach--yes {
+        background: linear-gradient(135deg,#10b981,#059669) !important;
+        box-shadow: 0 4px 14px rgba(16,185,129,0.4);
+    }
+    #floatBar .btn-grn-footer-attach.btn-grn-footer-attach--yes:hover {
+        box-shadow: 0 6px 20px rgba(5,150,105,0.45);
+        filter: brightness(1.03);
+    }
+
     /* ── MISC ─────────────────────────────────────── */
     #divPOForm {
         display: none;
@@ -763,6 +784,20 @@
         box-shadow: 0 2px 8px rgba(37,99,235,0.3);
     }
 
+    /* HasAttachment = Yes: vibrant emerald attachment (same green system as Verify) */
+    #grnListTable .im-btn-attach.im-btn-attach--has-attachment {
+        background: linear-gradient(180deg, #00a870 0%, #00895d 100%);
+        color: #fff;
+        border-color: #006b48;
+        box-shadow: 0 2px 7px rgba(0, 105, 72, 0.32);
+    }
+    #grnListTable .im-btn-attach.im-btn-attach--has-attachment:hover {
+        background: linear-gradient(180deg, #00895d 0%, #006b48 100%);
+        color: #fff;
+        border-color: #005a3c;
+        box-shadow: 0 3px 12px rgba(0, 105, 72, 0.42);
+    }
+
     .im-btn-delete {
         display: inline-flex;
         align-items: center;
@@ -782,6 +817,36 @@
         color: #fff;
         border-color: #dc2626;
         box-shadow: 0 2px 8px rgba(220,38,38,0.3);
+    }
+    .im-btn-attach {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 12px;
+        background: #e0f2fe;
+        color: #0284c7;
+        border: 1.5px solid #7dd3fc;
+        border-radius: 7px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.18s;
+        margin-right: 4px;
+    }
+    .im-btn-attach:hover {
+        background: #0284c7;
+        color: #fff;
+        border-color: #0284c7;
+        box-shadow: 0 2px 8px rgba(2,132,199,0.3);
+    }
+    .gpa-attach-btn-wrap { position: relative; display: inline-flex; }
+    .gpa-temp-badge {
+        position: absolute; top: -7px; right: -7px;
+        min-width: 18px; height: 18px; border-radius: 9px;
+        background: #ef4444; color: #fff;
+        font-size: 0.68rem; font-weight: 800;
+        display: none; align-items: center; justify-content: center;
+        padding: 0 4px; border: 2px solid #fff; z-index: 1;
     }
 
     th {
@@ -887,20 +952,322 @@
             border-color: rgba(255,255,255,0.80);
             transform: translateY(-1px);
         }
+
+    /* GRN list — pending verify: same vibrant emerald as has-attachment paperclip */
+    .grn-btn-verify {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        margin-left: 4px;
+        border-radius: 8px;
+        border: 1.5px solid #006b48;
+        cursor: pointer;
+        transition: all 0.13s;
+        margin-right: 0;
+        vertical-align: middle;
+        background: linear-gradient(180deg, #00a870 0%, #00895d 100%);
+        color: #fff;
+        font-size: 14px;
+        box-shadow: 0 2px 7px rgba(0, 105, 72, 0.32);
+    }
+    .grn-btn-verify:hover {
+        background: linear-gradient(180deg, #00895d 0%, #006b48 100%);
+        border-color: #005a3c;
+        color: #fff;
+        transform: scale(1.10);
+        box-shadow: 0 3px 12px rgba(0, 105, 72, 0.42);
+    }
+    .grn-verify-status--done {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 4px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: #047857;
+        background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+        border: 1px solid #34d399;
+        white-space: nowrap;
+        box-shadow: 0 1px 3px rgba(5, 80, 60, 0.12);
+    }
+    .grn-verify-status--with-detail {
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(5, 150, 105, 0.18);
+        user-select: none;
+    }
+    .vm-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(8,12,36,0.54);
+        backdrop-filter: blur(5px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1050;
+        padding: 20px 12px;
+        overflow: hidden;
+    }
+    .vm-backdrop.show {
+        display: flex;
+    }
+    body:has(.vm-backdrop.show) {
+        overflow: hidden;
+    }
+    .vm-verify-modal {
+        width: 370px;
+        max-width: calc(100vw - 20px);
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 20px 56px rgba(8,12,36,0.24);
+        text-align: center;
+        padding: 32px 24px 24px;
+    }
+    .vm-verify-icon-wrap {
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        color: #059669;
+        margin: 0 auto 14px;
+        box-shadow: 0 5px 16px rgba(5, 150, 105, 0.18);
+    }
+    .vm-verify-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 7px;
+    }
+    .vm-verify-text {
+        font-size: 13px;
+        color: #6b7280;
+        line-height: 1.5;
+        margin-bottom: 22px;
+    }
+    .vm-delete-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+    .vm-btn-cancel {
+        padding: 9px 22px;
+        border-radius: 999px;
+        border: 1.5px solid #cbd5e1;
+        background: #fff;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .vm-btn-confirm-verify {
+        padding: 9px 22px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(135deg, #059669, #047857);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 5px 16px rgba(5, 150, 105, 0.28);
+    }
+
+    /* Verified badge — teal info popover (click “Verify” after MRN verified) */
+    .grn-verify-popover {
+        position: fixed;
+        z-index: 1060;
+        display: none;
+        max-width: min(340px, calc(100vw - 24px));
+    }
+    .grn-verify-popover-inner {
+        position: relative;
+        background: linear-gradient(165deg, #2dd4bf 0%, #0d9488 48%, #0f766e 100%);
+        color: #fff;
+        border-radius: 12px;
+        padding: 14px 16px 14px;
+        box-shadow: 0 12px 36px rgba(15, 118, 110, 0.45);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    .grn-verify-popover-dot {
+        position: absolute;
+        top: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #2563eb;
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
+    }
+    .grn-verify-popover-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        margin-bottom: 8px;
+        padding-right: 4px;
+    }
+    .grn-verify-popover-head .fa-info-circle {
+        font-size: 18px;
+        opacity: 0.95;
+    }
+    .grn-verify-popover-body {
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1.45;
+        opacity: 0.98;
+    }
+
+    /* GRN list: Pending / Verified filter — same idea as Payment Entry status tabs */
+    #divGRNList .po-list-header {
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px 16px;
+        padding: 16px 20px;
+    }
+    #divGRNList .po-list-header-left {
+        flex: 0 1 auto;
+        min-width: 160px;
+    }
+    #divGRNList .po-list-header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+    #divGRNList .po-list-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        flex: 0 0 auto;
+    }
+    #divGRNList .grn-verify-filter-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        gap: 8px;
+        flex: 0 0 auto;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        border: none;
+        min-width: 0;
+    }
+    #divGRNList .grn-verify-filter-tab {
+        flex: 0 0 auto;
+        box-sizing: border-box;
+        width: 118px;
+        min-width: 118px;
+        max-width: 118px;
+        padding: 8px 6px 10px;
+        border: 1.5px solid rgba(255, 255, 255, 0.5);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.12);
+        cursor: pointer;
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: rgba(255, 255, 255, 0.98);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-height: 52px;
+        transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    #divGRNList .grn-verify-filter-tab:hover {
+        background: rgba(255,255,255,0.22);
+        border-color: rgba(255,255,255,0.72);
+        color: #fff;
+    }
+    #divGRNList .grn-verify-filter-tab.is-active {
+        background: rgba(255, 255, 255, 0.34);
+        border-color: rgba(255, 255, 255, 0.95);
+        color: #fff;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
+    }
+    #divGRNList .grn-verify-filter-tab:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+    }
+    #divGRNList .grn-verify-filter-tab-lbl {
+        color: inherit;
+        font-size: 0.6rem;
+        line-height: 1.2;
+        text-align: center;
+    }
+    #divGRNList .grn-verify-filter-tab--n .grn-verify-filter-tab-count { color: #fde047; }
+    #divGRNList .grn-verify-filter-tab--y .grn-verify-filter-tab-count { color: #6ee7b7; }
+    #divGRNList .grn-verify-filter-tab-count {
+        font-size: 1rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+    @@media (max-width: 992px) {
+        #divGRNList .po-list-header-left {
+            order: 1;
+            flex-basis: 100%;
+        }
+        #divGRNList .po-list-header-right {
+            order: 2;
+            width: 100%;
+            justify-content: center;
+        }
+        #divGRNList .grn-verify-filter-tabs {
+            justify-content: center;
+            flex: 1 1 auto;
+        }
+        #divGRNList .po-list-header-actions {
+            width: auto;
+            justify-content: center;
+            margin-left: 0;
+        }
+    }
 </style>
 
 <div id="divGRNList" class="container-fluid mt-3">
 
     <!-- Header -->
     <div class="po-list-header">
-        <div>
+        <div class="po-list-header-left">
             <h5><i class="fa fa-receipt me-2"></i>GRN Service List</h5>
-            <small>Goods Receipt Note – All Records</small>
+            <small>Goods Receipt Note — filter by Pending or Verified</small>
         </div>
-        <div class="d-flex align-items-center gap-3 flex-wrap">
-            <button type="button" class="btn-po-save vm-btn-new" onclick="newGRN()">
-                <i class="fa fa-plus me-1"></i> New GRN
-            </button>
+        <div class="po-list-header-right">
+            <div class="grn-verify-filter-tabs" id="grnVerifyFilterTabs" role="tablist" aria-label="GRN verify status">
+                <button type="button" id="grnVerifyFilterTabPending" class="grn-verify-filter-tab grn-verify-filter-tab--n" role="tab"
+                        aria-pressed="false" onclick="onGrnListVerifyFilterClick('N')">
+                    <span class="grn-verify-filter-tab-count" id="grnVerifyFilterCountPending">0</span>
+                    <span class="grn-verify-filter-tab-lbl">Pending</span>
+                </button>
+                <button type="button" id="grnVerifyFilterTabVerified" class="grn-verify-filter-tab grn-verify-filter-tab--y" role="tab"
+                        aria-pressed="false" onclick="onGrnListVerifyFilterClick('Y')">
+                    <span class="grn-verify-filter-tab-count" id="grnVerifyFilterCountVerified">0</span>
+                    <span class="grn-verify-filter-tab-lbl">Verified</span>
+                </button>
+            </div>
+            <div class="po-list-header-actions">
+                <button type="button" class="btn-po-save vm-btn-new" onclick="newGRN()">
+                    <i class="fa fa-plus me-1"></i> New GRN
+                </button>
+            </div>
         </div>
     </div>
 
@@ -916,9 +1283,42 @@
         </div>
         <div class="paginator" id="paginator-grnListTable"></div>
     </div>
-   
+
 </div>
+
+<div id="grnVerifyConfirmBackdrop" class="vm-backdrop">
+    <div class="vm-verify-modal">
+        <div class="vm-verify-icon-wrap">
+            <i class="fas fa-circle-check"></i>
+        </div>
+        <div class="vm-verify-title" id="grnVerifyConfirmTitle">Verify this GRN?</div>
+        <div class="vm-verify-text" id="grnVerifyConfirmText">
+            This will mark the GRN as verified.
+        </div>
+        <div class="vm-delete-actions">
+            <button type="button" class="vm-btn-cancel" id="grnBtnCancelVerify" onclick="CloseGRNVerifyModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="vm-btn-confirm-verify" onclick="DoGRNVerify()">
+                <i class="fas fa-check"></i> Yes, Verify
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="grnVerifyDetailPopover" class="grn-verify-popover" role="dialog" aria-modal="true" aria-labelledby="grnVerifyDetailPopoverTitle">
+    <div class="grn-verify-popover-inner">
+        <div class="grn-verify-popover-dot" aria-hidden="true"></div>
+        <div class="grn-verify-popover-head">
+            <i class="fas fa-info-circle" aria-hidden="true"></i>
+            <span id="grnVerifyDetailPopoverTitle">Verify</span>
+        </div>
+        <div class="grn-verify-popover-body" id="grnVerifyDetailPopoverBody"></div>
+    </div>
+</div>
+
 <div id="divGRNForm" class="container-fluid mt-3 po-form-wrap">
+    <input type="hidden" id="hdnMRNMasterCode" value="0" />
 
     <!-- ── SECTION 1 : GRN INFORMATION ─────────────── -->
     <div class="po-step-card section-entry-animation" style="--step-clr:#667eea;">
@@ -1081,26 +1481,15 @@
         </div>
         <div class="po-step-body">
             <div class="row g-2">
-                <div class="col-md-4">
-                    <label class="po-field-lbl d-block mb-1">Attachment</label>
-                    <div class="d-flex gap-2 align-items-center">
-                        <input type="file" id="fileAttachment" class="form-control form-control-sm"
-                               onchange="fileUploadChange(event)" accept="image/*,.pdf">
-                        <button type="button" id="viewImageBtn"
-                                onclick="viewAttachment()"
-                                style="display:none!important;white-space:nowrap;height:30px;padding:7px 12px;
-                                       background:#ede9fe;color:#4f46e5;border:1px solid #c4b5fd;border-radius:8px;
-                                       font-size:0.78rem;font-weight:600;cursor:pointer;  margin-top: -10px;">
-                            <i class="fa fa-eye me-1"></i> View
-                        </button>
-                    </div>
-                </div>
-                <div class="col-md-8">
+                <div class="col-md-12">
                     <label class="po-field-lbl d-block mb-1">Remark</label>
                     <textarea id="txtRemark" class="form-control form-control-sm" rows="1"
                               placeholder="Enter remark..." maxlength="500"></textarea>
                 </div>
             </div>
+            <p class="text-muted small mb-0 mt-1" style="font-size:0.78rem;">
+                <i class="fa fa-paperclip me-1"></i>Use <strong>Attachment</strong> on the bar below to add files (same as Payment Entry).
+            </p>
             <div class="row g-2 mt-1">
 
                 <div class="col-md-3">
@@ -1120,6 +1509,13 @@
 
                 </div>
             </div>
+            <div class="row g-2 mt-1">
+                <div class="col-md-12">
+                    <label class="po-field-lbl d-block mb-1">Dedution Remark</label>
+                    <textarea id="txtDedutionRemark" class="form-control form-control-sm" rows="2"
+                              placeholder="Enter Dedution Remark..." maxlength="500"></textarea>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1137,11 +1533,20 @@
         <button type="button" class="btn-po-cancel" onclick="cancelGRN()">
             <i class="fa fa-arrow-left me-1"></i> Back to List
         </button>
+        <div class="gpa-attach-btn-wrap">
+            <button type="button" id="btnGrnFooterAttach" class="btn-po-cancel btn-grn-footer-attach"
+                    onclick="openGrnServiceAttachmentControl()" title="Attachments">
+                <i class="fa fa-paperclip me-1"></i> Attachment
+            </button>
+            <span id="grnTempAttachBadge" class="gpa-temp-badge">0</span>
+        </div>
         <button type="button" class="btn-po-save" onclick="saveGRN()">
             <i class="fa fa-save me-1"></i> Save GRN
         </button>
     </div>
 </div>
+
+<div id="GRNService_AttachmentControlmodal"></div>
 
 <!-- ── ADD ITEM MODAL (fields same as main grid) ─────── -->
 <div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">

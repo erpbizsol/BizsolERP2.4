@@ -15,5 +15,21 @@ namespace Bizsol.WebERP.UI.Purchase.Transactions.Areas.PurchaseTransactions.Cont
         {
             return View();
         }
+
+        public IActionResult MRNMasterApproval()
+        {
+            return View();
+        }
+
+        /** Alias for older links / menu URLs using GRNServiceApprovalConfiguration. */
+        public IActionResult GRNServiceApprovalConfiguration()
+        {
+            return View("~/Areas/PurchaseTransactions/Views/GRNService/MRNServiceApprovalConfiguration.cshtml");
+        }
+
+        public IActionResult MRNServiceApprovalConfiguration()
+        {
+            return View("~/Areas/PurchaseTransactions/Views/GRNService/MRNServiceApprovalConfiguration.cshtml");
+        }
     }
 }
