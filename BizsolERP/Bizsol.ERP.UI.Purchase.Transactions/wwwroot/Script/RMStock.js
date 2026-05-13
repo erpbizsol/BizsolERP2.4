@@ -1801,18 +1801,26 @@ function calculateTotalFooterJobWork(rows) {
     try {
         let totalWeight = 0;
         let totalActualWt = 0;
+        let totalOutputWeight = 0;
+        let totalScrap = 0;
+        let totalYieldPct = 0;
+        let totalWidthLossPct = 0;
         if (rows && rows.length) {
             rows.forEach(function (r) {
-                totalWeight += parseFloat(r['Weight']) || 0;
-                totalActualWt += parseFloat(r['ACT WT']) || 0;
+                totalWeight       += parseFloat(r['Weight'])        || 0;
+                totalActualWt     += parseFloat(r['ACT WT'])        || 0;
+                totalOutputWeight += parseFloat(r['Output Weight']) || 0;
+                totalScrap        += parseFloat(r['Scrap'])         || 0;
+                totalYieldPct     += parseFloat(r['Yield %'])       || 0;
+                totalWidthLossPct += parseFloat(r['Width Loss %'])  || 0;
             });
         }
-        if ($('#totalWeight').length) {
-            $('#totalWeight').text(totalWeight.toFixed(3));
-        }
-        if ($('#totalActualWt').length) {
-            $('#totalActualWt').text(totalActualWt.toFixed(3));
-        }
+        if ($('#totalWeight').length)        $('#totalWeight').text(totalWeight.toFixed(3));
+        if ($('#totalActualWt').length)      $('#totalActualWt').text(totalActualWt.toFixed(3));
+        if ($('#totalOutputWeight').length)  $('#totalOutputWeight').text(totalOutputWeight.toFixed(3));
+        if ($('#totalScrap').length)         $('#totalScrap').text(totalScrap.toFixed(3));
+        if ($('#totalYieldPct').length)      $('#totalYieldPct').text(totalYieldPct.toFixed(2));
+        if ($('#totalWidthLossPct').length)  $('#totalWidthLossPct').text(totalWidthLossPct.toFixed(2));
     } catch (e) {
     }
 }
