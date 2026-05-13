@@ -10,45 +10,73 @@ var historyDetailBatchNo = '';
 /** Full grid from the last successful parse (incl. header/metadata) — used to re-check bank / account on import. */
 var lastParsedFullRows = null;
 
-var LOCK_STORAGE_KEY = 'BizSol_BankStmt_DayLocks';
+/** Stale preview fetch guard (column map / bank changes while API in flight). */
+var previewOccupiedFetchSeq = 0;
 
-/** One-time: old BankStatementList merged every list date into locks → preview showed 0 importable. */
-(function migrateStaleDayLocksOnce() {
+/** One-time: remove obsolete client-side "day locks" (they stayed after DB delete). */
+(function migrateRemoveObsoleteDayLocks() {
     try {
-        if (!localStorage.getItem('BizSol_BankStmt_LockMig_v1')) {
-            localStorage.removeItem(LOCK_STORAGE_KEY);
-            localStorage.setItem('BizSol_BankStmt_LockMig_v1', '1');
+        if (!localStorage.getItem('BizSol_BankStmt_LockMig_v2')) {
+            localStorage.removeItem('BizSol_BankStmt_DayLocks');
+            localStorage.setItem('BizSol_BankStmt_LockMig_v2', '1');
         }
     } catch (e) { /* ignore */ }
 })();
 
-function lockStorageKey(bankCode, accountNo) {
-    return String(bankCode || 0) + '|' + String(accountNo || '').replace(/\s/g, '');
+/** yyyy-mm-dd → dd/mm/yyyy for GetBankStatementList (same as BankStatementList). */
+function isoYmdToApiDate(isoYmd) {
+    if (!isoYmd || !String(isoYmd).trim()) return '';
+    var parts = String(isoYmd).trim().split('-');
+    if (parts.length !== 3) return '';
+    return parts[2] + '/' + parts[1] + '/' + parts[0];
 }
 
-function getDayLocks() {
-    try {
-        return JSON.parse(localStorage.getItem(LOCK_STORAGE_KEY) || '{}');
-    } catch (e) {
-        return {};
+/** LOCATE returns TxnDate style 105 (dd-mm-yyyy); normalize to yyyy-mm-dd for comparison. */
+function apiTxnDateToIsoYmd(apiVal) {
+    if (apiVal == null || apiVal === '') return null;
+    var s = String(apiVal).trim();
+    var m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (m) {
+        var d = parseInt(m[1], 10), mo = parseInt(m[2], 10), y = parseInt(m[3], 10);
+        if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12)
+            return y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0');
     }
+    var m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m2) return s.substring(0, 10);
+    var iso = ConvertToIsoDate(s);
+    return iso ? iso.substring(0, 10) : null;
 }
 
-function mergeImportedDays(bankCode, accountNo, isoDateKeys) {
-    if (!isoDateKeys || !isoDateKeys.length) return;
-    var k = lockStorageKey(bankCode, accountNo);
-    var all = getDayLocks();
-    all[k] = all[k] || {};
-    isoDateKeys.forEach(function (key) {
-        if (key) all[k][key] = true;
+function minMaxTxnIsoYmdFromParsedRows() {
+    var keys = [];
+    parsedRows.forEach(function (row) {
+        var m = MapRow(row);
+        var iso = resolveStatementTxnIso(m);
+        if (iso) keys.push(iso.substring(0, 10));
     });
-    localStorage.setItem(LOCK_STORAGE_KEY, JSON.stringify(all));
+    if (!keys.length) return { min: null, max: null };
+    keys.sort();
+    return { min: keys[0], max: keys[keys.length - 1] };
 }
 
-function isDayLocked(bankCode, accountNo, isoDateKey) {
-    if (!isoDateKey) return false;
-    var all = getDayLocks();
-    return !!(all[lockStorageKey(bankCode, accountNo)] || {})[isoDateKey];
+/** Dates (yyyy-mm-dd) that already have BankStatement rows for this bank + account. */
+function fetchOccupiedStatementDateSet(bankCode, accountNo, minIsoYmd, maxIsoYmd) {
+    if (!bankCode || !accountNo || !minIsoYmd || !maxIsoYmd) {
+        return Promise.resolve(new Set());
+    }
+    var fromD = isoYmdToApiDate(minIsoYmd);
+    var toD = isoYmdToApiDate(maxIsoYmd);
+    return BankStatementService.GetBankStatementList(bankCode, accountNo, fromD, toD, '')
+        .then(function (data) {
+            var list = normalizeStatementListForModal(data);
+            var set = new Set();
+            list.forEach(function (r) {
+                var raw = r.TxnDate != null ? r.TxnDate : (r.txnDate != null ? r.txnDate : '');
+                var k = apiTxnDateToIsoYmd(raw);
+                if (k) set.add(k);
+            });
+            return set;
+        });
 }
 
 var FIELD_DEFS = [
@@ -236,7 +264,7 @@ function renderHistoryDetailSummary(s) {
 }
 
 function fmtAmtCell(v) {
-    var n = parseFloat(String(v == null ? '' : v).replace(/,/g, '').trim());
+    var n = roundMoney(v);
     if (isNaN(n) || n === 0) return '—';
     return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -851,17 +879,20 @@ function AutoMapColumns(headers) {
 }
 
 // ── Render preview table ──────────────────────────────────────────────────────
-function RenderPreviewTable() {
+/** occupiedIsoYmdSet: yyyy-mm-dd calendar days that already exist in BankStatement (API). */
+function renderPreviewTableBody(occupiedIsoYmdSet) {
     var $body = $('#tblPreviewBody');
     $body.empty();
 
     var bankCode  = parseInt($('#ddlBankMaster').val() || '0', 10) || 0;
     var accountNo = ($('#txtAccountNumber').val() || '').trim();
 
-    var totalWithdrawal = 0, totalDeposit = 0;
+    var totalWithdrawalPaisa = 0;
+    var totalDepositPaisa = 0;
     var validCount = 0;
     var invalidDateRows = 0;
     var lockedRows = 0;
+    var occ = occupiedIsoYmdSet instanceof Set ? occupiedIsoYmdSet : new Set();
 
     parsedRows.forEach(function (row, idx) {
         var mapped  = MapRow(row);
@@ -877,7 +908,7 @@ function RenderPreviewTable() {
 
         var isValid  = !!txnIso;
         var isoKey   = txnIso ? txnIso.substring(0, 10) : '';
-        var locked   = isValid && isDayLocked(bankCode, accountNo, isoKey);
+        var locked   = isValid && occ.has(isoKey);
 
         if (!txnIso) invalidDateRows++;
         else if (locked) lockedRows++;
@@ -885,7 +916,7 @@ function RenderPreviewTable() {
         var rowClass = isValid ? (locked ? 'bs-row-error' : 'bs-row-ok') : 'bs-row-error';
         var badge;
         if (locked) {
-            badge = '<span class="bs-badge bs-badge-dup">Day locked</span>';
+            badge = '<span class="bs-badge bs-badge-dup">Already imported</span>';
         } else if (isValid) {
             badge = '<span class="bs-badge bs-badge--ok">OK</span>';
         } else {
@@ -896,8 +927,10 @@ function RenderPreviewTable() {
 
         var canSelect = isValid && !locked;
         if (canSelect) {
-            totalWithdrawal += parseFloat(mapped.WithdrawalAmt) || 0;
-            totalDeposit    += parseFloat(mapped.DepositAmt)    || 0;
+            var wP = roundMoney(parseFloat(mapped.WithdrawalAmt) || 0);
+            var dP = roundMoney(parseFloat(mapped.DepositAmt) || 0);
+            totalWithdrawalPaisa += Math.round(wP * 100);
+            totalDepositPaisa += Math.round(dP * 100);
             validCount++;
         }
 
@@ -920,6 +953,8 @@ function RenderPreviewTable() {
             </tr>`);
     });
 
+    var totalWithdrawal = Math.round(totalWithdrawalPaisa) / 100;
+    var totalDeposit = Math.round(totalDepositPaisa) / 100;
     $('#tdImportTotalWithdrawal').text(FormatAmount(totalWithdrawal));
     $('#tdImportTotalDeposit').text(FormatAmount(totalDeposit));
     $('#lblPreviewCount').text('(' + validCount + ' importable / ' + parsedRows.length + ' total rows)');
@@ -940,6 +975,37 @@ function RenderPreviewTable() {
     syncPreviewSelectAllHeader();
     UpdateSelectedCount();
     UpdateImportButton();
+}
+
+function RenderPreviewTable() {
+    previewOccupiedFetchSeq++;
+    var seq = previewOccupiedFetchSeq;
+    var $body = $('#tblPreviewBody');
+    $body.html('<tr><td colspan="12" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Checking existing statements for this bank and account…</td></tr>');
+
+    var bankCode  = parseInt($('#ddlBankMaster').val() || '0', 10) || 0;
+    var accountNo = ($('#txtAccountNumber').val() || '').trim();
+    var mm = minMaxTxnIsoYmdFromParsedRows();
+
+    if (!bankCode || !accountNo || !mm.min || !mm.max) {
+        if (seq !== previewOccupiedFetchSeq) return;
+        renderPreviewTableBody(new Set());
+        if (!bankCode) {
+            toastr && toastr.info('Select a bank to check which dates already exist in the database.');
+        }
+        return;
+    }
+
+    fetchOccupiedStatementDateSet(bankCode, accountNo, mm.min, mm.max)
+        .then(function (set) {
+            if (seq !== previewOccupiedFetchSeq) return;
+            renderPreviewTableBody(set);
+        })
+        .catch(function () {
+            if (seq !== previewOccupiedFetchSeq) return;
+            toastr && toastr.warning('Could not load existing statement lines; preview does not show "already imported" days. Try again or check your connection.');
+            renderPreviewTableBody(new Set());
+        });
 }
 
 /** Align #chkSelectAll with all preview row checkboxes. */
@@ -1008,6 +1074,8 @@ function MapRow(row) {
         OpeningBalance:  CleanAmount(get('OpeningBalance', false)),
         WithdrawalAmt:   CleanAmount(get('WithdrawalAmt', false)),
         DepositAmt:      CleanAmount(get('DepositAmt', false)),
+        /* Raw cell text: used at import to keep bank-reported closing (e.g. .97) instead of recomputed .00 */
+        ClosingBalanceCellRaw: get('ClosingBalance', false),
         ClosingBalance:  CleanAmount(get('ClosingBalance', false)),
         BalanceType:     get('BalanceType', false),
         Remarks:         ''
@@ -1115,18 +1183,8 @@ function DoImport() {
         return ia.localeCompare(ib) || (a - b);
     });
 
-    for (var z = 0; z < indices.length; z++) {
-        var mz = MapRow(parsedRows[indices[z]]);
-        var iz = resolveStatementTxnIso(mz);
-        if (iz && isDayLocked(bankCode, accountNo, iz.substring(0, 10))) {
-            toastr.warning('A selected row falls on a date that is already locked for this bank and account. Deselect those rows.');
-            return;
-        }
-    }
-
     var rows = [];
     var lastClosing = null;
-    var dateKeysForLock = {};
 
     for (var i = 0; i < indices.length; i++) {
         var idx = indices[i];
@@ -1135,31 +1193,45 @@ function DoImport() {
         if (!txnDateIso) continue;
 
         var valueDateIso = mapped.ValueDate ? ConvertToIsoDate(mapped.ValueDate) : null;
-        var dep = parseFloat(mapped.DepositAmt) || 0;
-        var w = parseFloat(mapped.WithdrawalAmt) || 0;
+        var txnSql = bankStatementSqlDateOnly(txnDateIso);
+        if (!txnSql) continue;
+        var valueSql = bankStatementSqlDateOnly(valueDateIso);
+        if (!valueSql) valueSql = txnSql;
+        var dep = roundMoney(parseFloat(mapped.DepositAmt) || 0);
+        var w = roundMoney(parseFloat(mapped.WithdrawalAmt) || 0);
 
         var lineOp;
         if (lastClosing === null) {
-            lineOp = parseFloat(mapped.OpeningBalance);
+            var opRaw = parseFloat(mapped.OpeningBalance);
+            if (!isNaN(opRaw) && isFinite(opRaw)) {
+                lineOp = roundMoney(opRaw);
+            } else {
+                lineOp = NaN;
+            }
             if (isNaN(lineOp)) {
                 var cl0 = parseFloat(mapped.ClosingBalance);
-                lineOp = !isNaN(cl0) ? cl0 - dep + w : 0;
+                lineOp = !isNaN(cl0) && isFinite(cl0) ? roundMoney(cl0 - dep + w) : 0;
             }
         } else {
-            lineOp = lastClosing;
+            lineOp = roundMoney(lastClosing);
         }
 
-        var closing = lineOp + dep - w;
+        var closingComputed = roundMoney(lineOp + dep - w);
+        var rawClosingCell = mapped.ClosingBalanceCellRaw != null
+            ? String(mapped.ClosingBalanceCellRaw).replace(/\u00A0/g, ' ').trim() : '';
+        var closingCellHasDigit = /\d/.test(rawClosingCell);
+        var closingFromFile = roundMoney(parseFloat(CleanAmount(rawClosingCell)));
+        var useFileClosing = rawClosingCell !== '' && closingCellHasDigit
+            && isFinite(closingFromFile)
+            && !isNaN(closingFromFile);
+        var closing = useFileClosing ? closingFromFile : closingComputed;
         lastClosing = closing;
-
-        var isoDay = txnDateIso.substring(0, 10);
-        dateKeysForLock[isoDay] = true;
 
         rows.push({
             BankMaster_Code: bankCode,
             AccountNo:       accountNo,
-            TxnDate:         txnDateIso,
-            ValueDate:       valueDateIso,
+            TxnDate:         txnSql,
+            ValueDate:       valueSql,
             Narration:       mapped.Narration  || '',
             ChequeRefNo:     mapped.ChequeRefNo || '',
             WithdrawalAmt:   w,
@@ -1170,7 +1242,7 @@ function DoImport() {
             UserID:          0,
             Remarks:         '',
             GRNPaymentMaster_Code: 0,
-            ServiceTaxNo:    String(lineOp),
+            ServiceTaxNo:    String(roundMoney(lineOp)),
             IsReconciled:    dep > 0 ? 'Y' : 'N'
         });
     }
@@ -1180,26 +1252,51 @@ function DoImport() {
         return;
     }
 
-    var payload = {
-        BankMaster_Code: bankCode,
-        AccountNo:       accountNo,
-        ImportBatchNo:   batchNo,
-        FileName:        fileName,
-        BankStatements:  rows
-    };
+    function minMaxIsoFromKeys(keys) {
+        if (!keys.length) return { min: null, max: null };
+        var s = keys.slice().sort();
+        return { min: s[0], max: s[s.length - 1] };
+    }
+
+    var selectedIsoKeys = [];
+    for (var si = 0; si < indices.length; si++) {
+        var sm = MapRow(parsedRows[indices[si]]);
+        var siso = resolveStatementTxnIso(sm);
+        if (siso) selectedIsoKeys.push(siso.substring(0, 10));
+    }
+    var mmSel = minMaxIsoFromKeys(selectedIsoKeys);
 
     Showloader && Showloader();
     $('#btnImport').prop('disabled', true);
 
-    BankStatementService.ImportBankStatement(payload)
+    fetchOccupiedStatementDateSet(bankCode, accountNo, mmSel.min, mmSel.max)
+        .then(function (occupied) {
+            for (var zi = 0; zi < indices.length; zi++) {
+                var zm = MapRow(parsedRows[indices[zi]]);
+                var ziso = resolveStatementTxnIso(zm);
+                if (ziso && occupied.has(ziso.substring(0, 10))) {
+                    toastr.warning('One or more selected rows use a date that already has statement data for this bank and account. Remove those rows from the file or delete the existing lines first.');
+                    return Promise.reject({ silent: true });
+                }
+            }
+
+            var payload = {
+                BankMaster_Code: bankCode,
+                AccountNo:       accountNo,
+                ImportBatchNo:   batchNo,
+                FileName:        fileName,
+                BankStatements:  rows
+            };
+
+            return BankStatementService.ImportBankStatement(payload);
+        })
         .then(function (result) {
             HideLoader && HideLoader();
+            $('#btnImport').prop('disabled', false);
 
             if (result && result.Status === 'Y') {
                 var successCount = result.Code || 0;
                 var skippedCount = Math.max(0, rows.length - successCount);
-
-                mergeImportedDays(bankCode, accountNo, Object.keys(dateKeysForLock));
 
                 ShowResultModal({
                     TotalRecords:   rows.length,
@@ -1225,9 +1322,11 @@ function DoImport() {
                 $('#btnImport').prop('disabled', false);
             }
         })
-        .catch(function () {
+        .catch(function (err) {
             HideLoader && HideLoader();
             $('#btnImport').prop('disabled', false);
+            if (err && err.silent) return;
+            toastr && toastr.error((err && err.message) || 'Import request failed. Please try again.');
         });
 }
 
@@ -1394,6 +1493,26 @@ function IsoToDMY(iso) {
     return pad(dt.getDate()) + '-' + pad(dt.getMonth() + 1) + '-' + dt.getFullYear();
 }
 
+/**
+ * TVP / SqlDateTime: use calendar "yyyy-MM-dd" only (no time zone suffix).
+ * Full ISO strings (…T…Z) can deserialize badly and become DateTime.MinValue → SQL datetime error 242.
+ */
+function bankStatementSqlDateOnly(isoOrNull) {
+    if (isoOrNull == null || isoOrNull === '') return null;
+    var s = String(isoOrNull).trim();
+    var head = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (head) {
+        var y = parseInt(head[1], 10);
+        if (y < 1753 || y > 9999) return null;
+        return head[1] + '-' + head[2] + '-' + head[3];
+    }
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    var yu = d.getUTCFullYear();
+    if (yu < 1753 || yu > 9999) return null;
+    return yu + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+}
+
 /** Calendar Y/M/D → UTC midnight ISO so substring(0,10) is stable (avoids TZ shift from local Date). */
 function calendarYmdToUtcIso(y, mo, d) {
     if (y == null || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
@@ -1485,8 +1604,15 @@ function CleanAmount(str) {
     return cleaned === '' ? '0' : cleaned;
 }
 
+/** Rupee / paise: stable 2-decimal value (avoids float drift and JSON .9699999). */
+function roundMoney(n) {
+    var x = typeof n === 'number' ? n : parseFloat(String(n == null ? '' : n).replace(/,/g, '').trim(), 10);
+    if (!isFinite(x) || isNaN(x)) return 0;
+    return Math.round(x * 100) / 100;
+}
+
 function FormatAmount(val) {
-    var n = parseFloat(val);
+    var n = roundMoney(val);
     if (isNaN(n) || n === 0) return '—';
     return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
