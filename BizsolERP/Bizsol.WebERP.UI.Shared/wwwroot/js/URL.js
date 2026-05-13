@@ -133,10 +133,12 @@ let UrlService = {
     API_ENDPOINT_PurchaseOrderMaster: `${environment.BASE_URL}/PurchaseOrderMaster`,
     API_ENDPOINT_POApprovalConfig: `${environment.BASE_URL}/POApprovalConfig`,
     API_ENDPOINT_GRNPaymentApprovalConfig: `${environment.BASE_URL}/GRNPaymentApprovalConfiguration`,
+    API_ENDPOINT_MRNMasterApprovalConfig: `${environment.BASE_URL}/MRNMasterApprovalConfiguration`,//
     API_ENDPOINT_GRNService: `${environment.BASE_URL}/GRNService`,
     API_ENDPOINT_GRNPaymentEntry: `${environment.BASE_URL}/GRNPaymentEntry`,
     API_ENDPOINT_POLevelsApprove: `${environment.BASE_URL}/POLevelsApproval`,
     API_ENDPOINT_GRNPaymentLevelsApproval: `${environment.BASE_URL}/GRNPaymentLevelsApproval`,
+    API_ENDPOINT_MRNMasterLevelsApproval: `${environment.BASE_URL}/MRNMasterLevelsApproval`,//
     API_ENDPOINT_CompanyInformation: `${environment.BASE_URL}/CompanyInformation`,
     API_ENDPOINT_EXPENSE_ENTRY_APPROVAL_CONFIG: `${environment.BASE_URL}/ExpenseEntryApprovalConfiguration`,
     API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL: `${environment.BASE_URL}/ExpenseEntryLevelsApproval`,

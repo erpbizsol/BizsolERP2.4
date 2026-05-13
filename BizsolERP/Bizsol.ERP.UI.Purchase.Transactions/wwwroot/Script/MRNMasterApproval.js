@@ -1,0 +1,938 @@
+import { MRNMasterApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MRNMasterApprovalService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+
+/** Set by GRNService.navigateToMRNMasterApprovalPendingOnMe before redirect */
+const MRN_LANDING_PENDING_ON_ME_KEY = 'bizsol_mrnLandingPendingOnMe';
+
+let G_PaymentList = [];
+let G_CurrentPayment = null;
+let G_OnlyPendingOnMe = false;
+
+BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
+
+function InitDates() {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const fromEl = document.getElementById('gpaFromDate');
+    const toEl = document.getElementById('gpaToDate');
+    if (fromEl && !fromEl.value) fromEl.value = FmtDateInput(firstDay);
+    if (toEl && !toEl.value) toEl.value = FmtDateInput(today);
+}
+
+function FmtDateInput(d) {
+    return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+}
+
+function FmtDateDisplay(d) {
+    if (!d) return '';
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return String(d);
+    return String(dt.getDate()).padStart(2, '0') + '/' +
+        String(dt.getMonth() + 1).padStart(2, '0') + '/' +
+        dt.getFullYear();
+}
+
+function FmtCurrency(val) {
+    const n = parseFloat(val);
+    if (isNaN(n)) return '—';
+    return '\u20B9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function EscHtml(str) {
+    if (!str && str !== 0) return '';
+    return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function normalizeListResponse(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.Data)) return data.Data;
+    if (data && Array.isArray(data.data)) return data.data;
+    return [];
+}
+
+function getPaymentMasterCode(p) {
+    const c = p.MRNMaster_Code ?? p.mRNMaster_Code ?? p.Code ?? p.code;
+    const n = parseInt(c, 10);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function getEntryNo(p) {
+    return p.EntryNo ?? p['PO No'] ?? p.PONo ?? p['Entry No'] ?? p.Entry_No ?? p.DocNo ?? p.MRNNo ?? '—';
+}
+
+function getPartyName(p) {
+    return p.AccountDesp ?? p['Party Name'] ?? p.PartyName ?? p.VendorName ?? p.AccountName ?? p.Vendor ?? '—';
+}
+
+function getEntryDate(p) {
+    return p.ReceiveDate ?? p.BillDate ?? p.EntryDate ?? p['Entry Date'] ?? p.DocDate ?? '';
+}
+
+function getTotalAmount(p) {
+    const v = p.TotalBillAmountManual ?? p.NetPayable ?? p.Amount ?? p['Total Bill Amount'] ?? p['Total Amount'] ?? p.TotalAmount ?? 0;
+    return v;
+}
+
+function levelRowIsApproved(lvl) {
+    if (!lvl || typeof lvl !== 'object') return false;
+    const on = lvl.ApprovedOn ?? lvl.Approved_Date ?? lvl.ApprovedDate ?? lvl.ApprovedOnDate;
+    if (on != null && String(on).trim() !== '') return true;
+    const st = (lvl.Status ?? lvl.ApprovalStatus ?? lvl.IsApproved ?? '').toString().trim().toLowerCase();
+    return st === 'y' || st === 'approved' || st === '1' || st === 'true';
+}
+
+function allLevelsApprovedFromDetails(p) {
+    const total = parseInt(p.TotalLevels ?? p.MaxLevel ?? 0, 10) || 0;
+    if (total < 1) return false;
+    const levels = parseLevelDetailsToArray(p.LevelDetails);
+    if (!levels.length) return false;
+    for (let i = 1; i <= total; i++) {
+        const lvl = levels.find(function (l) {
+            const n = parseInt(l.LevelNo ?? l.Level ?? l.LevelOrder ?? 0, 10);
+            return n === i;
+        });
+        if (!levelRowIsApproved(lvl)) return false;
+    }
+    return true;
+}
+
+function getApprovalStatus(p) {
+    const raw = (p.ApprovalStatus ?? p.Status ?? p.Approval_Status ?? '').toString().trim();
+    const upper = raw.toUpperCase();
+    const lower = raw.toLowerCase();
+    // MRN master: backend stores rejected as Status 'N' (not approved); 'R' / text also supported
+    if (upper === 'R' || upper === 'N' || lower === 'rejected') return 'Rejected';
+    if (upper === 'P' || raw === 'Y' || lower === 'approved') return 'Approved';
+    if (allLevelsApprovedFromDetails(p)) return 'Approved';
+    const cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 0, 10) || 0;
+    const tot = parseInt(p.TotalLevels ?? p.MaxLevel ?? 0, 10) || 0;
+    if (tot > 0 && cur > tot) return 'Approved';
+    if (raw === '' || upper === 'U' || lower === 'pending') return 'Pending';
+    if (
+        lower === 'complete' || lower === 'completed' ||
+        lower.indexOf('fully approved') >= 0 ||
+        lower.indexOf('final approved') >= 0 ||
+        lower.indexOf('all approved') >= 0 ||
+        (lower.indexOf('all levels') >= 0 && lower.indexOf('approved') >= 0)
+    ) {
+        return 'Approved';
+    }
+    return raw || 'Pending';
+}
+
+function getGpaCardLevelChipLabel(p) {
+    const status = getApprovalStatus(p);
+    const st = status.toLowerCase();
+    if (st === 'approved') return 'Approved';
+    if (st === 'rejected') return 'Rejected';
+    const totalLvl = parseInt(p.TotalLevels ?? p.MaxLevel ?? 1, 10) || 1;
+    let cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
+    if (cur < 1) cur = 1;
+    if (totalLvl > 0 && cur > totalLvl) return 'Approved';
+    const masterDesc = String(p.CurrentLevelDesc ?? '').trim();
+    if (masterDesc) return masterDesc;
+    const row = getCurrentLevelRowForGpa(p);
+    const rowDesc = row ? pickLevelRowTitleText(row) : '';
+    if (rowDesc) return rowDesc;
+    return 'L' + cur;
+}
+
+function getLevelCode(p) {
+    const c = p.LevelCode ?? p.Level_Code ?? p.ApprovalLevel_Code ?? p.MRNMasterLevel_Code ?? p.GRNPaymentLevel_Code ?? 0;
+    let n = parseInt(c, 10);
+    if (Number.isFinite(n) && n > 0) return n;
+    const lvl = getCurrentLevelRowForGpa(p);
+    if (lvl && typeof lvl === 'object') {
+        const fromRow = pickFirstPositiveInt(lvl, [
+            'Code', 'MRNMasterLevel_Code', 'MRNMaster_Level_Code', 'LevelCode', 'Level_Code',
+            'ApprovalLevel_Code', 'ConfigLevel_Code', 'GRNPaymentLevel_Code',
+            'MRNMasterApprovalLevel_Code', 'LevelMaster_Code'
+        ]);
+        if (fromRow > 0) return fromRow;
+    }
+    return Number.isFinite(n) ? n : 0;
+}
+function getSessionUserMasterCodeGpa() {
+    try {
+        const a = JSON.parse(sessionStorage.getItem('authKey'));
+        return parseInt(a && a.UserMaster_Code, 10) || 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function getSessionGroupMasterCodeGpa() {
+    try {
+        const d = JSON.parse(sessionStorage.getItem('UserDetails'));
+        if (Array.isArray(d) && d[0] != null) {
+            return parseInt(d[0].GroupMaster_Code, 10) || 0;
+        }
+    } catch (e) { /* ignore */ }
+    return 0;
+}
+
+function pickFirstPositiveInt(obj, keys) {
+    if (!obj || typeof obj !== 'object') return 0;
+    for (let i = 0; i < keys.length; i++) {
+        const v = obj[keys[i]];
+        if (v == null || v === '') continue;
+        const n = parseInt(v, 10);
+        if (Number.isFinite(n) && n > 0) return n;
+    }
+    return 0;
+}
+
+function getCurrentLevelRowForGpa(p) {
+    const cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
+    const levels = parseLevelDetailsToArray(p.LevelDetails);
+    const row = levels.find(function (l) {
+        return levelNoFromRow(l) === cur;
+    });
+    if (row) return row;
+    if (levels.length && cur >= 1 && cur <= levels.length) return levels[cur - 1];
+    return null;
+}
+
+function truthyFlagGpa(v) {
+    if (v === true || v === 1) return true;
+    const s = (v != null ? String(v) : '').trim().toLowerCase();
+    return s === 'y' || s === '1' || s === 'true';
+}
+
+function paymentIsPendingOnMe(p) {
+    if (getApprovalStatus(p).toLowerCase() !== 'pending') return false;
+    if (truthyFlagGpa(p.IsPendingForMe) || truthyFlagGpa(p.PendingForMe) || truthyFlagGpa(p.CanApproveNow)
+        || truthyFlagGpa(p.IsMyApproval) || truthyFlagGpa(p.PendingOnMe)) {
+        return true;
+    }
+    const me = getSessionUserMasterCodeGpa();
+    const myG = getSessionGroupMasterCodeGpa();
+    const lvl = getCurrentLevelRowForGpa(p);
+    const ru = pickFirstPositiveInt(lvl, [
+        'UserMaster_Code', 'userMaster_Code', 'ApproverUserMaster_Code', 'ApproverUser_Code',
+        'AssignedUserMaster_Code', 'ApprovalUserMaster_Code', 'Approver_Code'
+    ]);
+    const rg = pickFirstPositiveInt(lvl, [
+        'GroupMaster_Code', 'groupMaster_Code', 'ApproverGroupMaster_Code',
+        'AssignedGroupMaster_Code', 'ApprovalGroupMaster_Code'
+    ]);
+    if (me > 0 && ru > 0 && ru === me) return true;
+    if (myG > 0 && rg > 0 && rg === myG) return true;
+    const mu = pickFirstPositiveInt(p, [
+        'CurrentApproverUserMaster_Code', 'ApproverUserMaster_Code', 'NextApproverUserMaster_Code',
+        'PendingApproverUserMaster_Code'
+    ]);
+    const mg = pickFirstPositiveInt(p, [
+        'CurrentApproverGroupMaster_Code', 'ApproverGroupMaster_Code', 'NextApproverGroupMaster_Code',
+        'PendingApproverGroupMaster_Code'
+    ]);
+    if (me > 0 && mu > 0 && mu === me) return true;
+    if (myG > 0 && mg > 0 && mg === myG) return true;
+    const hasAssignee = (ru + rg + mu + mg) > 0;
+    if (!hasAssignee) {
+        return true;
+    }
+    return false;
+}
+
+function getFilteredPaymentListForRender() {
+    if (!G_OnlyPendingOnMe) return G_PaymentList;
+    return G_PaymentList.filter(paymentIsPendingOnMe);
+}
+
+function syncGpaPendingOnMeChipActive() {
+    const chip = document.getElementById('gpaStatChipPendingOnMe');
+    if (chip) {
+        chip.classList.toggle('gpa-stat-chip--onme-active', !!G_OnlyPendingOnMe);
+    }
+}
+
+function getLevelRowRemarks(lvlInfo) {
+    if (!lvlInfo || typeof lvlInfo !== 'object') return '';
+    const r = lvlInfo.Remarks ?? lvlInfo.Remark ?? lvlInfo.ApprovalRemarks ?? lvlInfo.LevelRemarks
+        ?? lvlInfo.Comments ?? lvlInfo.RejectionRemarks;
+    const s = r != null ? String(r).trim() : '';
+    return s;
+}
+
+function pickLevelRowTitleText(lvlInfo) {
+    if (!lvlInfo || typeof lvlInfo !== 'object') return '';
+    const c = lvlInfo.Description ?? lvlInfo.description
+        ?? lvlInfo.LevelDesc ?? lvlInfo.LevelDesp
+        ?? lvlInfo.LevelName ?? lvlInfo.levelName;
+    const s = c != null ? String(c).trim() : '';
+    return s;
+}
+
+function getLevelRowDisplayTitle(lvlInfo, levelNo) {
+    const t = pickLevelRowTitleText(lvlInfo);
+    if (t) return t;
+    return 'Level ' + levelNo;
+}
+
+function parseLevelDetailsToArray(v) {
+    if (Array.isArray(v)) return v;
+    if (v == null) return [];
+    if (typeof v === 'string') {
+        const t = v.trim();
+        if (!t) return [];
+        try {
+            const j = JSON.parse(t);
+            return Array.isArray(j) ? j : [];
+        } catch (e) {
+            return [];
+        }
+    }
+    return [];
+}
+
+function levelNoFromRow(r) {
+    const n = parseInt(r.LevelNo ?? r.Level ?? r.LevelOrder ?? 0, 10);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function mergeLevelDetailsLists(fromList, fromApi) {
+    const a = Array.isArray(fromList) ? fromList : [];
+    const b = Array.isArray(fromApi) ? fromApi : [];
+    if (!b.length) return a.slice();
+    if (!a.length) return b.slice();
+
+    const map = new Map();
+    a.forEach(function (row) {
+        const n = levelNoFromRow(row);
+        if (n > 0) map.set(n, { ...row });
+    });
+    b.forEach(function (row) {
+        const n = levelNoFromRow(row);
+        if (n < 1) return;
+        const prev = map.get(n) || {};
+        const next = { ...prev, ...row };
+        next.LevelDesc = pickLevelRowTitleText(row) || pickLevelRowTitleText(prev)
+            || row.LevelDesc || prev.LevelDesc || row.LevelName || prev.LevelName || '';
+        next.Remarks = getLevelRowRemarks(row) || getLevelRowRemarks(prev) || '';
+
+        const hasApprover = (x) => x && String(x.ApproverName ?? x.UserName ?? '').trim() !== '';
+        if (!hasApprover(row) && hasApprover(prev)) {
+            next.ApproverName = prev.ApproverName;
+            next.UserName = prev.UserName;
+        }
+        const hasDate = (x) => x && String(x.ApprovedOn ?? '').trim() !== '';
+        if (!hasDate(row) && hasDate(prev)) {
+            next.ApprovedOn = prev.ApprovedOn;
+        }
+
+        map.set(n, next);
+    });
+    return [...map.keys()].sort(function (x, y) { return x - y; }).map(function (k) { return map.get(k); });
+}
+
+function NormalizePaymentList(list) {
+    return (list || []).map(function (row) {
+        const p = { ...row };
+        p.LevelDetails = parseLevelDetailsToArray(p.LevelDetails);
+        if (!p.TotalLevels && p.LevelDetails.length > 0) {
+            p.TotalLevels = p.LevelDetails.length;
+        }
+        return p;
+    });
+}
+function LoadPaymentList() {
+    const fromDate = document.getElementById('gpaFromDate')?.value || '';
+    const toDate = document.getElementById('gpaToDate')?.value || '';
+    const status = document.getElementById('gpaDdlStatus')?.value || 'A';
+
+    G_OnlyPendingOnMe = false;
+    syncGpaPendingOnMeChipActive();
+
+    ShowGpaLoading(true);
+    ShowGpaEmpty(false);
+    const container = document.getElementById('gpaPendingList');
+    if (container) container.innerHTML = '';
+
+    MRNMasterApprovalService.GetPendingMRNMasterList(status, fromDate, toDate)
+        .then(function (data) {
+            ShowGpaLoading(false);
+            G_PaymentList = NormalizePaymentList(normalizeListResponse(data));
+            UpdateGpaStatChips();
+            RenderPaymentCards();
+            const searchEl = document.getElementById('gpaLstSearch');
+            FilterGpaCards(searchEl ? searchEl.value : '');
+            applyLandingPendingOnMeFilterIfNeeded();
+        })
+        .catch(function (err) {
+            console.error('LoadPaymentList MRN', err);
+            ShowGpaLoading(false);
+            G_PaymentList = [];
+            if (container) container.innerHTML = '';
+            ShowGpaEmpty(true);
+            if (typeof toastr !== 'undefined') {
+                toastr.error('Error loading GRN Service (MRN) approval list.');
+            }
+        });
+}
+
+function UpdateGpaStatChips() {
+    const pending = G_PaymentList.filter(function (p) {
+        return getApprovalStatus(p).toLowerCase() !== 'approved';
+    }).length;
+    const other = G_PaymentList.length - pending;
+    const elP = document.getElementById('gpaStatPending');
+    const elO = document.getElementById('gpaStatProcessed');
+    if (elP) elP.textContent = pending > 0 ? String(pending) : (G_PaymentList.length ? '0' : '—');
+    if (elO) elO.textContent = other > 0 ? String(other) : '—';
+
+    const onMe = G_PaymentList.filter(paymentIsPendingOnMe).length;
+    const elOnMe = document.getElementById('gpaStatPendingOnMe');
+    if (elOnMe) {
+        elOnMe.textContent = G_PaymentList.length === 0 ? '—' : String(onMe);
+    }
+}
+
+function RenderPaymentCards() {
+    const list = getFilteredPaymentListForRender();
+    const container = document.getElementById('gpaPendingList');
+    if (!container) return;
+    if (!list || list.length === 0) {
+        container.innerHTML = '';
+        ShowGpaEmpty(true);
+        return;
+    }
+    ShowGpaEmpty(false);
+    container.innerHTML = list.map(function (p) { return BuildPaymentCard(p); }).join('');
+}
+
+function ToggleGpaPendingOnMeFilter() {
+    G_OnlyPendingOnMe = !G_OnlyPendingOnMe;
+    syncGpaPendingOnMeChipActive();
+    RenderPaymentCards();
+    const searchEl = document.getElementById('gpaLstSearch');
+    FilterGpaCards(searchEl ? searchEl.value : '');
+}
+
+function applyLandingPendingOnMeFilterIfNeeded() {
+    try {
+        const v = sessionStorage.getItem(MRN_LANDING_PENDING_ON_ME_KEY);
+        if (v !== 'Y' && v !== '1') return;
+        sessionStorage.removeItem(MRN_LANDING_PENDING_ON_ME_KEY);
+        G_OnlyPendingOnMe = true;
+        syncGpaPendingOnMeChipActive();
+        RenderPaymentCards();
+        const searchEl = document.getElementById('gpaLstSearch');
+        FilterGpaCards(searchEl ? searchEl.value : '');
+    } catch (e) {
+        /* ignore */
+    }
+}
+
+function BuildPaymentCard(p) {
+    const code = getPaymentMasterCode(p);
+    const entryPlain = String(getEntryNo(p));
+    const vendorPlain = String(getPartyName(p));
+    const entryNo = EscHtml(entryPlain);
+    const vendor = EscHtml(vendorPlain);
+    const entryDate = FmtDateDisplay(getEntryDate(p));
+    const amount = FmtCurrency(getTotalAmount(p));
+    const totalLvl = parseInt(p.TotalLevels ?? p.MaxLevel ?? 3, 10) || 1;
+    const curLvlNo = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
+    const levelChip = EscHtml(getGpaCardLevelChipLabel(p));
+    const status = getApprovalStatus(p);
+
+    let statusClr, statusBg;
+    if (status.toLowerCase() === 'approved') { statusClr = '#059669'; statusBg = '#d1fae5'; }
+    else if (status.toLowerCase() === 'rejected') { statusClr = '#dc2626'; statusBg = '#fee2e2'; }
+    else { statusClr = '#d97706'; statusBg = '#fef3c7'; }
+
+    const stepperHtml = BuildGpaCardStepper(curLvlNo, totalLvl, status);
+    const isPending = status.toLowerCase() === 'pending';
+    const actionBtn = isPending
+        ? `<button type="button" class="btn-gpa-card-approve" onclick="OpenDetailModal(${code})">
+               <i class="fa fa-check me-1"></i>Review &amp; Approve
+           </button>`
+        : `<button type="button" class="btn-gpa-card-view" onclick="OpenDetailModal(${code})">
+               <i class="fa fa-eye me-1"></i>View Details
+           </button>`;
+
+    const searchKey = (vendorPlain + ' ' + entryPlain).toLowerCase();
+
+    return `
+    <div class="gpa-pay-card section-entry-animation" data-code="${code}" data-search="${EscHtml(searchKey)}">
+        <div class="gpa-pay-card-header">
+            <div class="gpa-entry-badge">
+                <span style="font-size:0.6rem;font-weight:600;opacity:0.82;line-height:1;">MRN</span>
+                <span style="font-weight:800;font-size:0.82rem;line-height:1.2;">${entryNo}</span>
+            </div>
+            <div class="gpa-pay-card-vendor">
+                <div class="gpa-pay-vendor-name">
+                    <i class="fa fa-building me-1" style="color:#667eea;font-size:0.72rem;"></i>${vendor}
+                </div>
+                <div class="gpa-pay-card-meta">
+                    <span><i class="fa fa-calendar-alt me-1"></i>${entryDate || '—'}</span>
+                    <span class="gpa-pay-level-chip">
+                        <i class="fa fa-layer-group me-1"></i>${levelChip}
+                    </span>
+                </div>
+            </div>
+            <div class="gpa-pay-card-right">
+                <div class="gpa-pay-amount">${amount}</div>
+                <div class="gpa-pay-status-badge" style="color:${statusClr};background:${statusBg};">${EscHtml(status)}</div>
+            </div>
+        </div>
+        <div class="gpa-pay-card-levels">
+            <div class="gpa-pay-level-label">
+                <i class="fa fa-code-branch me-1" style="color:#667eea;"></i>
+                Approval Progress
+            </div>
+            ${stepperHtml}
+        </div>
+        <div class="gpa-pay-card-footer">
+            ${actionBtn}
+        </div>
+    </div>`;
+}
+
+function BuildGpaCardStepper(currentLevel, totalLevels, status) {
+    if (!totalLevels || totalLevels < 1) totalLevels = 1;
+    const st = status.toLowerCase();
+    let html = '<div class="gpa-stepper">';
+    for (let i = 1; i <= totalLevels; i++) {
+        let stepClass;
+        if (st === 'approved') stepClass = 'gpa-step-done';
+        else if (i < currentLevel) stepClass = 'gpa-step-done';
+        else if (i === currentLevel) stepClass = st === 'rejected' ? 'gpa-step-rejected' : 'gpa-step-active';
+        else stepClass = 'gpa-step-pending';
+
+        const lineClass = (i < currentLevel || st === 'approved')
+            ? 'gpa-step-line-done' : 'gpa-step-line-pending';
+
+        const iconHtml = stepClass === 'gpa-step-done'
+            ? '<i class="fa fa-check" style="font-size:0.6rem;"></i>'
+            : stepClass === 'gpa-step-rejected'
+                ? '<i class="fa fa-times" style="font-size:0.6rem;"></i>'
+                : i;
+
+        html += `<div class="gpa-step-item">
+                    <div class="gpa-step-circle ${stepClass}">${iconHtml}</div>
+                    <div class="gpa-step-lbl">L${i}</div>
+                 </div>`;
+        if (i < totalLevels) {
+            html += `<div class="gpa-step-connector ${lineClass}"></div>`;
+        }
+    }
+    html += '</div>';
+    return html;
+}
+
+function FilterGpaCards(query) {
+    const q = (query || '').toLowerCase().trim();
+    const cards = document.querySelectorAll('.gpa-pay-card');
+    let visible = 0;
+    cards.forEach(function (card) {
+        const match = !q || (card.dataset.search || '').includes(q);
+        card.style.display = match ? '' : 'none';
+        if (match) visible++;
+    });
+    ShowGpaEmpty(visible === 0 && G_PaymentList.length > 0);
+}
+
+function mergeDetailIntoPayment(root, basePayment) {
+    const p = { ...basePayment };
+    const fromList = parseLevelDetailsToArray(basePayment.LevelDetails);
+
+    if (Array.isArray(root)) {
+        p._detailLines = root;
+        p.LevelDetails = fromList.length ? fromList.slice() : [];
+        return p;
+    }
+    const data = root?.Data ?? root?.data ?? root;
+    if (!data || typeof data !== 'object') {
+        p.LevelDetails = fromList.length ? fromList.slice() : parseLevelDetailsToArray(p.LevelDetails);
+        return p;
+    }
+    if (Array.isArray(data)) {
+        p._detailLines = data;
+        p.LevelDetails = fromList.length ? fromList.slice() : parseLevelDetailsToArray(p.LevelDetails);
+        return p;
+    }
+
+    const masterMrn = data.VW_MRNMaster?.MRNMaster?.[0]
+        ?? data.MRNMaster?.[0]
+        ?? data.MRNMaster
+        ?? data.GRNServiceList?.[0]
+        ?? data.grnServiceList?.[0];
+    const masterPay = data.VW_GRNPaymentMaster?.GRNPaymentMaster?.[0]
+        ?? data.GRNPaymentMaster?.[0]
+        ?? data.GRNPaymentMaster;
+    const resolvedMaster = masterMrn ?? masterPay ?? data.Master ?? data;
+
+    if (resolvedMaster && typeof resolvedMaster === 'object' && !Array.isArray(resolvedMaster)) {
+        Object.assign(p, resolvedMaster);
+    }
+
+    const fromApi = parseLevelDetailsToArray(
+        (data && data.LevelDetails != null) ? data.LevelDetails : p.LevelDetails
+    );
+    p.LevelDetails = mergeLevelDetailsLists(fromList, fromApi);
+
+    const lines = data.GRNServiceDetail ?? data.grnServiceDetail
+        ?? data.MRNDetails ?? data.MRNDetail
+        ?? data.GRNPaymentDetails ?? data.Details ?? data.BillLines ?? data.Items ?? data.Lines;
+    if (Array.isArray(lines)) p._detailLines = lines;
+
+    return p;
+}
+
+function extractDetailLines(root) {
+    if (Array.isArray(root)) return root;
+    const data = root?.Data ?? root?.data ?? root;
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    const lines = data.GRNServiceDetail ?? data.grnServiceDetail
+        ?? data.MRNDetails ?? data.MRNDetail
+        ?? data.GRNPaymentDetails ?? data.Details ?? data.BillLines ?? data.Items ?? data.Lines;
+    return Array.isArray(lines) ? lines : [];
+}
+
+function unwrapGpaActionResponse(res) {
+    if (!res || typeof res !== 'object') return res;
+    return res.Data ?? res.data ?? res.Result ?? res.result ?? res;
+}
+function OpenDetailModal(paymentCode) {
+    const code = parseInt(paymentCode, 10);
+    if (!Number.isFinite(code) || code <= 0) return;
+
+    G_CurrentPayment = G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === code; }) || null;
+    if (!G_CurrentPayment) {
+        G_CurrentPayment = { Code: code, MRNMaster_Code: code };
+    }
+
+    const entryNo = getEntryNo(G_CurrentPayment);
+    const vendor = getPartyName(G_CurrentPayment);
+
+    $('#gpaModalEntryTitle').text('Entry# ' + entryNo);
+    $('#gpaModalParty').text(vendor);
+    $('#hfGpaPaymentCode').val(String(code));
+    $('#hfGpaLevelCode').val(String(getLevelCode(G_CurrentPayment)));
+    $('#gpaFrmRemarks').val('');
+
+    paintModalFromPayment(G_CurrentPayment);
+
+    $('#gpaModalItemsBody').html(
+        '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+        '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
+    );
+
+    $('#gpaBtnApproveAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
+    $('#gpaBtnRejectAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
+
+    $('#modalGpaDetail').modal({ backdrop: 'static' });
+    $('#modalGpaDetail').modal('show');
+
+    MRNMasterApprovalService.GetMRNMasterDetail(code)
+        .then(function (res) {
+            G_CurrentPayment = mergeDetailIntoPayment(res, G_CurrentPayment);
+            $('#hfGpaLevelCode').val(String(getLevelCode(G_CurrentPayment)));
+            paintModalFromPayment(G_CurrentPayment);
+            const lines = extractDetailLines(res);
+            RenderGpaModalItems(lines);
+            const st = getApprovalStatus(G_CurrentPayment);
+            const pend = st.toLowerCase() === 'pending';
+            $('#gpaBtnApproveAction').toggle(pend);
+            $('#gpaBtnRejectAction').toggle(pend);
+        })
+        .catch(function (err) {
+            console.error('GetMRNMasterDetail', err);
+            $('#gpaModalItemsBody').html(
+                '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                '<i class="fa fa-exclamation-triangle me-1"></i>Error loading GRN service lines.</td></tr>'
+            );
+        });
+}
+
+function paintModalFromPayment(po) {
+    const entryNo = EscHtml(getEntryNo(po));
+    const vendor = EscHtml(getPartyName(po));
+    const entryDate = EscHtml(FmtDateDisplay(getEntryDate(po)) || '—');
+    const amount = FmtCurrency(getTotalAmount(po));
+    const curLvlNo = parseInt(po.CurrentLevelNo ?? po.CurrentLevel ?? 1, 10) || 1;
+    const totalLvl = parseInt(po.TotalLevels ?? po.MaxLevel ?? 3, 10) || 1;
+    const status = EscHtml(getApprovalStatus(po));
+
+    $('#gpaModalHeader').html(
+        '<div class="gpa-info-grid">' +
+            BuildGpaInfoItem('Entry Number', entryNo, 'fa-file-invoice') +
+            BuildGpaInfoItem('Party', vendor, 'fa-building') +
+            BuildGpaInfoItem('Entry Date', entryDate, 'fa-calendar-alt') +
+            BuildGpaInfoItem('Amount', amount, 'fa-rupee-sign', '#667eea') +
+            BuildGpaInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +
+            BuildGpaInfoItem('Status', status, 'fa-info-circle') +
+        '</div>'
+    );
+
+    $('#gpaModalApprovalStepper').html(BuildGpaDetailStepper(po));
+}
+
+function BuildGpaInfoItem(label, value, icon, valueColor) {
+    const clr = valueColor ? 'style="color:' + valueColor + ';font-weight:800;"' : '';
+    return '<div class="gpa-info-item">' +
+        '<span class="gpa-info-lbl"><i class="fa ' + icon + ' me-1"></i>' + label + '</span>' +
+        '<span class="gpa-info-val" ' + clr + '>' + value + '</span>' +
+        '</div>';
+}
+
+function BuildGpaDetailStepper(po) {
+    const curLvlNo = parseInt(po.CurrentLevelNo ?? po.CurrentLevel ?? 1, 10) || 1;
+    const totalLvl = parseInt(po.TotalLevels ?? po.MaxLevel ?? 3, 10) || 1;
+    const status = getApprovalStatus(po);
+    const st = status.toLowerCase();
+    const levels = parseLevelDetailsToArray(po.LevelDetails);
+
+    let html = '<div class="gpa-detail-stepper">';
+    for (let i = 1; i <= totalLvl; i++) {
+        const lvlInfo = levels.find(function (l) {
+            return (l.LevelNo ?? l.Level ?? l.LevelOrder) == i;
+        }) || {};
+        const lvlName = EscHtml(getLevelRowDisplayTitle(lvlInfo, i));
+        const approver = EscHtml(lvlInfo.ApproverName ?? lvlInfo.UserName ?? '');
+        const approvedOn = lvlInfo.ApprovedOn ? FmtDateDisplay(lvlInfo.ApprovedOn) : '';
+        const lvlRemarksRaw = getLevelRowRemarks(lvlInfo);
+        const remarksHtml = lvlRemarksRaw
+            ? '<div class="gpa-dstep-remarks"><i class="fa fa-comment me-1"></i>' + EscHtml(lvlRemarksRaw) + '</div>'
+            : '';
+
+        let stepState;
+        if (st === 'approved' || i < curLvlNo) stepState = 'done';
+        else if (i === curLvlNo) stepState = st === 'rejected' ? 'rejected' : 'active';
+        else stepState = 'pending';
+
+        const iconHtml = stepState === 'done' ? '<i class="fa fa-check"></i>'
+            : stepState === 'rejected' ? '<i class="fa fa-times"></i>'
+                : stepState === 'active' ? '<i class="fa fa-hourglass-half"></i>'
+                    : i;
+
+        const badgeLabel = stepState === 'done' ? 'Approved'
+            : stepState === 'rejected' ? 'Rejected'
+                : stepState === 'active' ? 'Pending'
+                    : 'Waiting';
+
+        const approverHtml = approver
+            ? '<div class="gpa-dstep-sub"><i class="fa fa-user me-1"></i>' + approver +
+            (approvedOn ? ' &mdash; ' + approvedOn : '') + '</div>'
+            : '';
+
+        const lineClass = (stepState === 'done') ? 'gpa-dstep-line-done' : 'gpa-dstep-line-pending';
+
+        html += '<div class="gpa-dstep-item gpa-dstep-' + stepState + '">' +
+            '<div class="gpa-dstep-circle">' + iconHtml + '</div>' +
+            '<div class="gpa-dstep-body">' +
+            '<div class="gpa-dstep-title">' + lvlName + '</div>' +
+            approverHtml +
+            remarksHtml +
+            '<div class="gpa-dstep-badge gpa-dstep-badge-' + stepState + '">' + badgeLabel + '</div>' +
+            '</div>' +
+            '</div>';
+
+        if (i < totalLvl) {
+            html += '<div class="gpa-dstep-line ' + lineClass + '"></div>';
+        }
+    }
+    html += '</div>';
+    return html;
+}
+
+function RenderGpaModalItems(items) {
+    const $body = $('#gpaModalItemsBody');
+    if (!items || items.length === 0) {
+        $body.html(
+            '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No line items found.</td></tr>'
+        );
+        return;
+    }
+    let html = '';
+    items.forEach(function (row, idx) {
+        const desc = EscHtml(row.ItemName ?? row.itemName ?? row.BillNo ?? row.MRNNo ?? '—');
+        const po = EscHtml(row.PONo ?? row.PoNO ?? row.PurchaseOrderNo ?? '—');
+        const qtyRaw = row.QtyBill ?? row.Qty ?? row.Quantity ?? '';
+        const qty = qtyRaw !== '' && qtyRaw != null ? EscHtml(String(qtyRaw)) : '—';
+        const rate = FmtCurrency(row.Rate ?? row.rate ?? 0);
+        const amt = FmtCurrency(row.Amount ?? row.amount ?? 0);
+        html += '<tr>' +
+            '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
+            '<td style="font-weight:600;">' + desc + '</td>' +
+            '<td class="text-center">' + po + '</td>' +
+            '<td class="text-end">' + qty + '</td>' +
+            '<td class="text-end">' + rate + '</td>' +
+            '<td class="text-end" style="font-weight:700;color:#667eea;">' + amt + '</td>' +
+            '</tr>';
+    });
+    $body.html(html);
+}
+
+function SubmitApproval(action) {
+    const poCode = parseInt($('#hfGpaPaymentCode').val() || '0', 10);
+    const levelCode = parseInt($('#hfGpaLevelCode').val() || '0', 10);
+    const remarks = ($('#gpaFrmRemarks').val() || '').trim();
+
+    if (!poCode) {
+        if (typeof toastr !== 'undefined') toastr.warning('No GRN service entry selected.');
+        return;
+    }
+    if (!levelCode) {
+        if (typeof toastr !== 'undefined') {
+            toastr.warning('Could not determine approval level. Refresh the list or reopen the entry, then try again.');
+        }
+        return;
+    }
+    if (action === 'Reject' && !remarks) {
+        if (typeof toastr !== 'undefined') toastr.warning('Please enter remarks before rejecting.');
+        $('#gpaFrmRemarks').trigger('focus');
+        return;
+    }
+
+    const entryLabel = G_CurrentPayment ? String(getEntryNo(G_CurrentPayment)) : '';
+    const isAppr = action === 'Approve';
+    const hdrBg = isAppr
+        ? 'background:linear-gradient(135deg,#059669,#10b981);color:#fff;'
+        : 'background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;';
+    const btnCls = isAppr ? 'btn-gpa-confirm-approve' : 'btn-gpa-confirm-reject';
+    const btnTxt = isAppr
+        ? '<i class="fa fa-check me-1"></i>Yes, Approve'
+        : '<i class="fa fa-times me-1"></i>Yes, Reject';
+    const msg = isAppr
+        ? 'Are you sure you want to <strong>approve</strong> entry# <strong>' + EscHtml(entryLabel) + '</strong>?'
+        : 'Are you sure you want to <strong>reject</strong> entry# <strong>' + EscHtml(entryLabel) + '</strong>?';
+
+    $('#gpaConfirmTitle').text(isAppr ? 'Confirm Approval' : 'Confirm Rejection');
+    $('#gpaConfirmModalHeader').attr('style', 'padding:12px 16px;border:none;' + hdrBg);
+    $('#gpaConfirmMessage').html(msg);
+    $('#gpaBtnConfirmAction')
+        .attr('class', btnCls)
+        .html(btnTxt)
+        .off('click')
+        .on('click', function () { ExecuteGpaApproval(poCode, levelCode, remarks, action); });
+
+    $('#modalGpaConfirm').modal('show');
+}
+
+function ExecuteGpaApproval(paymentCode, levelCode, remarks, action) {
+    CloseConfirmModal();
+
+    if (typeof Showloader === 'function') Showloader();
+
+    var ModuleName = 'GRN Approval Configuration';
+    var OptionName = 'Verify';
+    var ShowMsg = 'Y';
+    var FinYear = BizSolHelperFunction.getFinancialYear();
+
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (perm) {
+        if (!perm || perm.CheckModuleOptionRight === 'N') {
+            if (typeof HideLoader === 'function') HideLoader();
+            if (typeof toastr !== 'undefined') {
+                toastr.error((perm && perm.Msg) ? perm.Msg : 'You do not have permission to verify.');
+            }
+            CloseDetailModal();
+            return;
+        }
+
+        const serviceCall = action === 'Approve'
+            ? MRNMasterApprovalService.ApproveMRNMaster(paymentCode, levelCode, remarks)
+            : MRNMasterApprovalService.RejectMRNMaster(paymentCode, levelCode, remarks);
+
+        serviceCall
+            .then(function (response) {
+                if (typeof HideLoader === 'function') HideLoader();
+                const payload = unwrapGpaActionResponse(response) || response;
+                const st = payload && (payload.Status ?? payload.status);
+                const stU = st != null ? String(st).toUpperCase() : '';
+                const okReject = action === 'Reject' && (stU === 'N' || stU === 'R' || stU === 'SUCCESS');
+                const ok = payload && (
+                    st === 'Y' || st === 'Success' || st === 'success' ||
+                    okReject ||
+                    payload.Success === true || payload.success === true || response === true
+                );
+                if (ok) {
+                    const serverMsg = (payload.Msg || payload.Message || payload.message || '').trim();
+                    const done = action === 'Approve' ? 'approved' : 'rejected';
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success(serverMsg || ('GRN Service entry ' + done + ' successfully.'));
+                    }
+                    CloseDetailModal();
+                    LoadPaymentList();
+                } else {
+                    const msg = (payload && (payload.Msg || payload.Message || payload.message)) ||
+                        ('Failed to ' + action.toLowerCase() + ' GRN service entry.');
+                    if (typeof toastr !== 'undefined') toastr.error(msg);
+                }
+            })
+            .catch(function () {
+                if (typeof HideLoader === 'function') HideLoader();
+                if (typeof toastr !== 'undefined') {
+                    toastr.error('Error while ' + (action === 'Approve' ? 'approving' : 'rejecting') + ' GRN service entry.');
+                }
+            });
+    }).catch(function () {
+        if (typeof HideLoader === 'function') HideLoader();
+        if (typeof toastr !== 'undefined') {
+            toastr.error('Permission check failed.');
+        }
+    });
+}
+
+function CloseDetailModal() {
+    $('#modalGpaDetail').modal('hide');
+    G_CurrentPayment = null;
+}
+
+function CloseConfirmModal() {
+    $('#modalGpaConfirm').modal('hide');
+}
+
+function ShowGpaLoading(show) {
+    const loadEl = document.getElementById('gpaPendingLoading');
+    const listEl = document.getElementById('gpaPendingList');
+    if (loadEl) loadEl.style.display = show ? '' : 'none';
+    if (listEl) listEl.style.display = show ? 'none' : '';
+}
+
+function ShowGpaEmpty(show) {
+    const el = document.getElementById('gpaPendingEmpty');
+    if (el) el.style.display = show ? '' : 'none';
+}
+
+function NavigateToGRNService() {
+    const appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/'))
+        .replace(/\/?$/, '/');
+    window.location.href = appBase + 'PurchaseTransactions/GRNService/GRNService?ModuleDesp=GRN%20Services';
+}
+
+function NavigateToGRNServiceApprovalConfiguration() {
+    const appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/'))
+        .replace(/\/?$/, '/');
+    window.location.href =
+        appBase + 'PurchaseTransactions/GRNService/GRNServiceApprovalConfiguration?ModuleDesp=GRN%20Services';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    InitDates();
+    LoadPaymentList();
+
+    const searchEl = document.getElementById('gpaLstSearch');
+    if (searchEl) {
+        searchEl.addEventListener('input', function () {
+            FilterGpaCards(this.value);
+        });
+    }
+});
+
+window.LoadPaymentList = LoadPaymentList;
+window.OpenDetailModal = OpenDetailModal;
+window.SubmitApproval = SubmitApproval;
+window.CloseDetailModal = CloseDetailModal;
+window.CloseConfirmModal = CloseConfirmModal;
+window.NavigateToGRNService = NavigateToGRNService;
+window.NavigateToGRNServiceApprovalConfiguration = NavigateToGRNServiceApprovalConfiguration;
+window.ToggleGpaPendingOnMeFilter = ToggleGpaPendingOnMeFilter;

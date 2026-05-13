@@ -2,10 +2,10 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentApproval.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/MRNMasterApproval.js"></script>
 
 <style>
-    /* ── PAGE HEADER (aligned with PO Level Approval) ─────────── */
+    /* Same UI pattern as GRN Payment Approval (.gpa-*) */
     .gpa-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 14px;
@@ -20,17 +20,8 @@
     }
     .gpa-header h5  { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
     .gpa-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; margin-top: 3px; }
-
-    /* Stat chips — same card language as Expense Entry / PO (count + uppercase label, tinted border) */
-    .gpa-header .gpa-stat-chips {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-    }
-    .gpa-header .gpa-stat-chips .btn-gpa-back {
-        margin-left: 4px;
-    }
+    .gpa-header .gpa-stat-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .gpa-header .gpa-stat-chips .btn-gpa-back { margin-left: 4px; }
     .gpa-header .gpa-stat-chip {
         box-sizing: border-box;
         display: flex;
@@ -48,34 +39,15 @@
         border: 1.5px solid rgba(255, 255, 255, 0.32);
         transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
     }
-    .gpa-header .gpa-stat-chip .val {
-        font-size: 1.15rem;
-        font-weight: 800;
-        line-height: 1.1;
-        color: #fff;
-    }
+    .gpa-header .gpa-stat-chip .val { font-size: 1.15rem; font-weight: 800; line-height: 1.1; color: #fff; }
     .gpa-header .gpa-stat-chip .lbl {
-        font-size: 0.62rem;
-        font-weight: 700;
-        color: rgba(255, 255, 255, 0.95);
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        line-height: 1.2;
+        font-size: 0.62rem; font-weight: 700; color: rgba(255, 255, 255, 0.95);
+        text-transform: uppercase; letter-spacing: 0.07em; line-height: 1.2;
     }
-    .gpa-header .gpa-stat-chip--pending {
-        border-color: rgba(251, 191, 36, 0.75);
-    }
-    .gpa-header .gpa-stat-chip--pending .val {
-        color: #fde047;
-    }
-    /* Approved — green accent */
-    .gpa-header .gpa-stat-chip--approved {
-        border-color: rgba(52, 211, 153, 0.75);
-    }
-    .gpa-header .gpa-stat-chip--approved .val {
-        color: #6ee7b7;
-    }
-
+    .gpa-header .gpa-stat-chip--pending { border-color: rgba(251, 191, 36, 0.75); }
+    .gpa-header .gpa-stat-chip--pending .val { color: #fde047; }
+    .gpa-header .gpa-stat-chip--approved { border-color: rgba(52, 211, 153, 0.75); }
+    .gpa-header .gpa-stat-chip--approved .val { color: #6ee7b7; }
     .gpa-filter-bar {
         background: #fff;
         border: 1px solid #e2e8f0;
@@ -84,13 +56,7 @@
         margin-bottom: 14px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
-    .gpa-filter-bar .form-label {
-        font-size: 0.77rem;
-        font-weight: 600;
-        color: #475569;
-        margin-bottom: 4px;
-        display: block;
-    }
+    .gpa-filter-bar .form-label { font-size: 0.77rem; font-weight: 600; color: #475569; margin-bottom: 4px; display: block; }
     .gpa-filter-bar .form-control, .gpa-filter-bar .form-select {
         border: 1.5px solid #ddd6fe;
         border-radius: 8px;
@@ -116,7 +82,6 @@
         display: inline-flex; align-items: center; gap: 5px;
     }
     .btn-gpa-search:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(102,126,234,0.45); color: #fff; }
-
     .gpa-pay-card {
         background: #fff;
         border: 1px solid #e2e8f0;
@@ -128,12 +93,7 @@
         border-left: 4px solid #667eea;
     }
     .gpa-pay-card:hover { box-shadow: 0 6px 22px rgba(102,126,234,0.16); transform: translateY(-1px); }
-    .gpa-pay-card-header {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 14px 16px 10px;
-    }
+    .gpa-pay-card-header { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px 10px; }
     .gpa-entry-badge {
         flex-shrink: 0;
         background: linear-gradient(135deg, #667eea, #764ba2);
@@ -149,21 +109,10 @@
     }
     .gpa-pay-card-vendor { flex: 1; min-width: 0; }
     .gpa-pay-vendor-name {
-        font-size: 0.88rem;
-        font-weight: 700;
-        color: #1e293b;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-bottom: 4px;
+        font-size: 0.88rem; font-weight: 700; color: #1e293b;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px;
     }
-    .gpa-pay-card-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px 10px;
-        font-size: 0.74rem;
-        color: #64748b;
-    }
+    .gpa-pay-card-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 0.74rem; color: #64748b; }
     .gpa-pay-level-chip {
         background: rgba(102,126,234,0.08);
         border: 1px solid rgba(102,126,234,0.18);
@@ -182,42 +131,16 @@
     }
     .gpa-pay-amount { font-size: 0.92rem; font-weight: 800; color: #667eea; }
     .gpa-pay-status-badge {
-        font-size: 0.68rem;
-        font-weight: 700;
-        padding: 3px 10px;
-        border-radius: 20px;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        display: inline-block;
+        font-size: 0.68rem; font-weight: 700;
+        padding: 3px 10px; border-radius: 20px;
+        letter-spacing: 0.04em; text-transform: uppercase; display: inline-block;
     }
-
-    .gpa-pay-card-levels {
-        padding: 8px 16px 10px;
-        border-top: 1px solid #f0f4ff;
-        background: #fafbff;
-    }
-    .gpa-pay-level-label {
-        font-size: 0.73rem;
-        color: #64748b;
-        margin-bottom: 8px;
-    }
-    .gpa-stepper {
-        display: flex;
-        align-items: center;
-        overflow-x: auto;
-        gap: 0;
-        padding-bottom: 2px;
-    }
-    .gpa-step-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 3px;
-        flex-shrink: 0;
-    }
+    .gpa-pay-card-levels { padding: 8px 16px 10px; border-top: 1px solid #f0f4ff; background: #fafbff; }
+    .gpa-pay-level-label { font-size: 0.73rem; color: #64748b; margin-bottom: 8px; }
+    .gpa-stepper { display: flex; align-items: center; overflow-x: auto; gap: 0; padding-bottom: 2px; }
+    .gpa-step-item { display: flex; flex-direction: column; align-items: center; gap: 3px; flex-shrink: 0; }
     .gpa-step-circle {
-        width: 28px; height: 28px;
-        border-radius: 50%;
+        width: 28px; height: 28px; border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
         font-size: 0.72rem; font-weight: 800;
         border: 2px solid transparent;
@@ -232,13 +155,9 @@
         50%     { box-shadow: 0 2px 18px rgba(102,126,234,0.75); }
     }
     .gpa-step-lbl { font-size: 0.63rem; color: #94a3b8; font-weight: 600; }
-    .gpa-step-connector {
-        flex: 1; height: 3px; min-width: 18px; max-width: 56px;
-        border-radius: 2px; margin-bottom: 12px;
-    }
+    .gpa-step-connector { flex: 1; height: 3px; min-width: 18px; max-width: 56px; border-radius: 2px; margin-bottom: 12px; }
     .gpa-step-line-done    { background: linear-gradient(90deg,#10b981,#059669); }
     .gpa-step-line-pending { background: #e2e8f0; }
-
     .gpa-pay-card-footer {
         padding: 8px 16px 12px;
         display: flex;
@@ -264,7 +183,6 @@
         transition: all 0.2s; cursor: pointer;
     }
     .btn-gpa-card-view:hover { background: #2563eb; color: #fff; border-color: #2563eb; transform: translateY(-1px); }
-
     .gpa-empty-state {
         text-align: center; padding: 52px 16px; color: #94a3b8;
         background: #fff; border-radius: 14px; border: 1px dashed #e2e8f0;
@@ -273,31 +191,16 @@
     .gpa-empty-state i { font-size: 2.8rem; margin-bottom: 12px; display: block; color: #c4b5fd; }
     .gpa-empty-state div { font-size: 0.88rem; font-weight: 600; margin-bottom: 4px; }
     .gpa-empty-state small { font-size: 0.78rem; }
-    .gpa-loading-state {
-        text-align: center; padding: 52px 16px; color: #667eea;
-        margin-bottom: 14px;
-    }
+    .gpa-loading-state { text-align: center; padding: 52px 16px; color: #667eea; margin-bottom: 14px; }
     .gpa-loading-state div { font-size: 0.85rem; margin-top: 10px; font-weight: 600; }
-
-    .gpa-info-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-        margin-bottom: 14px;
-    }
-    .gpa-info-item {
-        background: #fafbff;
-        border: 1px solid #eef0f8;
-        border-radius: 10px;
-        padding: 8px 12px;
-    }
+    .gpa-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .gpa-info-item { background: #fafbff; border: 1px solid #eef0f8; border-radius: 10px; padding: 8px 12px; }
     .gpa-info-lbl {
         font-size: 0.7rem; font-weight: 600; color: #64748b;
         text-transform: uppercase; letter-spacing: 0.04em;
         display: block; margin-bottom: 3px;
     }
     .gpa-info-val { font-size: 0.84rem; font-weight: 700; color: #1e293b; }
-
     .gpa-level-stepper-wrap {
         background: #fafbff;
         border: 1px solid #eef0f8;
@@ -309,20 +212,10 @@
         font-size: 0.78rem; font-weight: 700; color: #475569;
         margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.04em;
     }
-    .gpa-detail-stepper {
-        display: flex;
-        align-items: flex-start;
-        overflow-x: auto;
-        gap: 0;
-        padding-bottom: 4px;
-    }
+    .gpa-detail-stepper { display: flex; align-items: flex-start; overflow-x: auto; gap: 0; padding-bottom: 4px; }
     .gpa-dstep-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        flex-shrink: 0;
-        min-width: 100px;
+        display: flex; flex-direction: column; align-items: center; text-align: center;
+        flex-shrink: 0; min-width: 100px;
     }
     .gpa-dstep-circle {
         width: 38px; height: 38px; border-radius: 50%;
@@ -338,24 +231,14 @@
     .gpa-dstep-body { display:flex; flex-direction:column; align-items:center; gap:2px; }
     .gpa-dstep-title { font-size:0.75rem; font-weight:700; color:#1e293b; margin-bottom:2px; }
     .gpa-dstep-sub   { font-size:0.68rem; color:#64748b; }
-    .gpa-dstep-badge {
-        font-size: 0.64rem; font-weight: 700; padding: 2px 9px;
-        border-radius: 20px; margin-top: 5px; display: inline-block;
-    }
+    .gpa-dstep-badge { font-size: 0.64rem; font-weight: 700; padding: 2px 9px; border-radius: 20px; margin-top: 5px; display: inline-block; }
     .gpa-dstep-badge-done     { background:#d1fae5; color:#059669; }
     .gpa-dstep-badge-active   { background:#ede9fe; color:#667eea; }
     .gpa-dstep-badge-rejected { background:#fee2e2; color:#dc2626; }
     .gpa-dstep-badge-pending  { background:#f1f5f9; color:#94a3b8; }
-    .gpa-dstep-line {
-        flex-shrink: 0;
-        width: 28px; height: 3px;
-        align-self: flex-start;
-        margin-top: 17px;
-        border-radius: 2px;
-    }
+    .gpa-dstep-line { flex-shrink: 0; width: 28px; height: 3px; align-self: flex-start; margin-top: 17px; border-radius: 2px; }
     .gpa-dstep-line-done    { background:linear-gradient(90deg,#10b981,#059669); }
     .gpa-dstep-line-pending { background:#e2e8f0; }
-
     .gpa-items-wrap  { margin-bottom: 14px; }
     .gpa-items-title {
         font-size: 0.78rem; font-weight: 700; color: #475569;
@@ -376,11 +259,9 @@
         padding: 7px 10px; vertical-align: middle;
         border: 1px solid #ede9fe; font-size: 0.8rem; color: #374151;
     }
-
     .gpa-remarks-wrap  { margin-bottom: 14px; }
     .gpa-remarks-lbl { font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 5px; display: block; }
     .gpa-remarks-wrap textarea { font-size: 0.82rem; resize: vertical; }
-
     .btn-gpa-approve {
         display:inline-flex; align-items:center; gap:5px;
         background:linear-gradient(135deg,#10b981,#059669);
@@ -408,7 +289,6 @@
         transition:all 0.2s; cursor:pointer;
     }
     .btn-gpa-close:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(245,158,11,0.5); color:#fff; }
-
     .btn-gpa-confirm-approve {
         display:inline-flex; align-items:center; gap:4px;
         background:linear-gradient(135deg,#10b981,#059669);
@@ -429,7 +309,6 @@
         cursor:pointer; transition:all 0.2s;
     }
     .btn-gpa-reject-sm:hover { background:#e2e8f0; }
-
     .btn-gpa-back {
         display: inline-flex; align-items: center; gap: 6px;
         background: #fff; border: 2px solid rgba(255,255,255,0.6); color: #667eea;
@@ -440,13 +319,11 @@
     }
     .btn-gpa-back:hover { background: #f0f4ff; border-color: #667eea; color: #667eea; }
     @@media (max-width: 480px) { .gpa-back-label { display: none; } .btn-gpa-back { padding: 7px 10px; } }
-
     .section-entry-animation { animation: fadeSlideIn 0.3s ease both; }
     @@keyframes fadeSlideIn {
         from { opacity: 0; transform: translateY(10px); }
         to   { opacity: 1; transform: translateY(0); }
     }
-
     @@media (max-width: 768px) {
         .gpa-header { border-radius: 10px; padding: 14px 16px; }
         .gpa-pay-card-header { flex-wrap: wrap; }
@@ -472,8 +349,8 @@
 
 <div class="gpa-header section-entry-animation">
     <div>
-        <h5><i class="fa fa-money-check-alt me-2"></i>GRN Payment Approval</h5>
-        <small>Review and approve GRN payment entries by approval level</small>
+        <h5><i class="fa fa-dolly me-2"></i>GRN Service (MRN) Approval</h5>
+        <small>Review and approve GRN Service / MRN entries by approval level</small>
     </div>
     <div class="gpa-stat-chips flex-shrink-0">
         <div class="gpa-stat-chip gpa-stat-chip--pending" title="Entries not fully approved">
@@ -484,7 +361,7 @@
             <div class="val" id="gpaStatProcessed">—</div>
             <div class="lbl">Approved</div>
         </div>
-        <a onclick="NavigateToGRNService()" class="btn-gpa-back" title="Back to GRN Payment Entry">
+        <a onclick="NavigateToGRNService()" class="btn-gpa-back" title="Back to GRN Service list">
             <i class="fa fa-arrow-left"></i>
             <span class="gpa-back-label">Back</span>
         </a>
@@ -502,9 +379,9 @@
             <input type="date" id="gpaToDate" class="form-control form-control-sm" />
         </div>
         <div class="col-12 col-md-3">
-            <label class="form-label">Search entry / party</label>
+            <label class="form-label">Search MRN / party</label>
             <input type="text" id="gpaLstSearch" class="form-control form-control-sm"
-                   placeholder="Entry no. or party name…" autocomplete="off" />
+                   placeholder="MRN no. or party…" autocomplete="off" />
         </div>
         <div class="col-6 col-md-2">
             <label class="form-label">Status</label>
@@ -527,13 +404,13 @@
 
 <div id="gpaPendingEmpty" style="display:none;" class="gpa-empty-state section-entry-animation">
     <i class="fa fa-inbox"></i>
-    <div>No GRN payment records match your filters</div>
-    <small>Change dates or status, or try again later.</small>
+    <div>No GRN Service (MRN) records match your filters</div>
+    <small>Change dates or status and search again.</small>
 </div>
 
 <div id="gpaPendingLoading" style="display:none;" class="gpa-loading-state">
     <i class="fa fa-spinner fa-spin fa-2x" style="color:#667eea;"></i>
-    <div>Loading GRN payments…</div>
+    <div>Loading GRN Service approvals…</div>
 </div>
 
 <div class="modal fade" id="modalGpaDetail" tabindex="-1" role="dialog" aria-hidden="true">
@@ -544,7 +421,7 @@
                  style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 20px;border:none;">
                 <div>
                     <h5 class="modal-title mb-0" style="font-size:0.95rem;font-weight:700;">
-                        <i class="fa fa-file-invoice-dollar me-2"></i><span id="gpaModalEntryTitle"></span>
+                        <i class="fa fa-dolly me-2"></i><span id="gpaModalEntryTitle"></span>
                     </h5>
                     <small id="gpaModalParty" style="font-size:0.75rem;opacity:0.82;display:block;margin-top:2px;"></small>
                 </div>
@@ -565,18 +442,18 @@
 
                 <div class="gpa-items-wrap">
                     <div class="gpa-items-title">
-                        <i class="fa fa-receipt me-1"></i>Bill / payment lines (MRN)
+                        <i class="fa fa-list me-1"></i>Service line items
                     </div>
                     <div class="table-responsive">
                         <table class="gpa-items-table">
                             <thead>
                                 <tr>
                                     <th style="width:40px;">#</th>
-                                    <th>Bill No</th>
-                                    <th style="width:100px;">Bill Date</th>
-                                    <th style="width:120px;">Total bill</th>
-                                    <th style="width:120px;">Net payable</th>
-                                    <th style="width:120px;">Payment amount</th>
+                                    <th>Item / bill</th>
+                                    <th style="width:100px;">PO no.</th>
+                                    <th style="width:100px;">Qty</th>
+                                    <th style="width:120px;">Rate</th>
+                                    <th style="width:120px;">Amount</th>
                                 </tr>
                             </thead>
                             <tbody id="gpaModalItemsBody">
