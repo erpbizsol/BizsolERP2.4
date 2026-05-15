@@ -578,6 +578,11 @@ function NavigateToPOApproval() {
 }
 
 $(document).ready(function () {
+    if (!document.getElementById('tblPOListBody')) {
+        window._poPrintMastersReady = InitPOPrintMasterDataOnly();
+        return;
+    }
+
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     $('#lstTxtFromDate').val(FormatDateInput(firstDay));
@@ -663,6 +668,18 @@ function InitDropdowns() {
     LoadPaymentTermsDropdown();
     LoadBillToShipToDropdown();
     LoadSiteRepDropdown();
+}
+
+/** Master lists required for PO print / preview (used on pages that load this script without the PO Store grid). */
+function InitPOPrintMasterDataOnly() {
+    return Promise.all([
+        PurchaseOrderStoreService.GetVendorList().then(function (data) { G_VendorList = data || []; }).catch(function () { G_VendorList = []; }),
+        PurchaseOrderStoreService.GetItemList().then(function (data) { G_ItemMasterList = data || []; }).catch(function () { G_ItemMasterList = []; }),
+        PurchaseOrderStoreService.GetUOMList().then(function (data) { G_UOMMasterList = data || []; }).catch(function () { G_UOMMasterList = []; }),
+        PurchaseOrderStoreService.GetPaymentTermsList().then(function (data) { G_PaymentTermsList = data || []; }).catch(function () { G_PaymentTermsList = []; }),
+        PurchaseOrderStoreService.GetBillToShipToList().then(function (data) { G_BillToShipToList = data || []; }).catch(function () { G_BillToShipToList = []; }),
+        PurchaseOrderStoreService.GetSiteRepresentativeList().then(function (data) { G_SiteRepList = data || []; }).catch(function () { G_SiteRepList = []; }),
+    ]);
 }
 
 function LoadStatusDropdown() {
@@ -1123,7 +1140,7 @@ window.ShowPOListGrid = function () {
                        <button class="btn btn-dark icon-height mb-1 ms-1" title="Print" onclick="PrintPO('${item.Code}','print')"><i class="fa fa-print"></i></button>
                        <button class="btn icon-height mb-1 ms-1" title="Attachments" style="background:${(item.HasAttach || '').toUpperCase() === 'Y' ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#0ea5e9,#0284c7)'};color:#fff;border:none;" onclick="openPOListAttachmentControl('${item.Code}','${item.PONo || item.PO_No || ''}','${(item.PODate || item.PO_Date || '').substring(0, 10)}')"><i class="fa fa-paperclip"></i></button>
                        ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;" title="Cancel PO" onclick="InitCancelPO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-ban"></i></button>` : ''}
-                       ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;border:none;" title="Send Email" onclick="SendMailPO('${item.Code}')"><i class="fa fa-envelope"></i></button>` : ''}`
+                       ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:${((item.MailSendAfterAutoGenerate || item.mailSendAfterAutoGenerate || '').toUpperCase() === 'Y') ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#0ea5e9,#2563eb)'};color:#fff;border:none;" title="Send Email" onclick="SendMailPO('${item.Code}')"><i class="fa fa-envelope"></i></button>` : ''}`
         }));
         BizsolCustomFilterGrid.CreateDataTable('tblPOListHeader', 'tblPOListBody', displayData, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, [], hiddenColumns, columnAlignment, true, TotalColumns, null, commaColumns);
     }).catch(err => {
@@ -2624,22 +2641,30 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
 }
 
 function _DoPrintPO(code, mode, includeGeneralTerms) {
-    PurchaseOrderStoreService.GetPurchaseOrderStoreById(code).then(function (res) {
-        if (!res) { toastr.error('PO not found.'); return; }
+    const executePrint = function () {
+        PurchaseOrderStoreService.GetPurchaseOrderStoreById(code).then(function (res) {
+            if (!res) { toastr.error('PO not found.'); return; }
 
-        const html = _BuildPOPrintHTML(res, includeGeneralTerms);
+            const html = _BuildPOPrintHTML(res, includeGeneralTerms);
 
-        const win = window.open('', '_blank', 'width=920,height=760,scrollbars=yes,resizable=yes');
-        if (!win) { toastr.warning('Please allow popups for this site to use the print feature.'); return; }
-        win.document.write(html);
-        win.document.close();
-        if (mode === 'print') {
-            setTimeout(function () { win.focus(); win.print(); }, 600);
-        }
-    }).catch(function (err) {
-        toastr.error('Error loading PO for print.');
-        console.error(err);
-    });
+            const win = window.open('', '_blank', 'width=920,height=760,scrollbars=yes,resizable=yes');
+            if (!win) { toastr.warning('Please allow popups for this site to use the print feature.'); return; }
+            win.document.write(html);
+            win.document.close();
+            if (mode === 'print') {
+                setTimeout(function () { win.focus(); win.print(); }, 600);
+            }
+        }).catch(function (err) {
+            toastr.error('Error loading PO for print.');
+            console.error(err);
+        });
+    };
+
+    if (window._poPrintMastersReady && typeof window._poPrintMastersReady.then === 'function') {
+        window._poPrintMastersReady.then(executePrint).catch(function () { executePrint(); });
+    } else {
+        executePrint();
+    }
 }
 
 // ─── EXPOSE GLOBALS ─────────────────────────────────────────────────────────
@@ -2839,6 +2864,32 @@ async function _BuildPOPdfBase64Async(res, includeGeneralTerms) {
 
 var _pendingMailCode = null;
 
+/** Called by EmailControl after SMTP send succeeds (`callBack` name). Updates PO mail-sent flag on server. */
+window.PurchaseOrderStore_AfterMailSent = function () {
+    var code = _pendingMailCode;
+    if (!code) return;
+    PurchaseOrderStoreService.UpdateMailSend(code).then(function (apiRes) {
+        if (apiRes && apiRes.Status === 'Y') {
+            var row = G_POStoreList.find(function (i) { return String(i.Code) === String(code); });
+            if (row) {
+                row.MailSendAfterAutoGenerate = 'Y';
+                row.mailSendAfterAutoGenerate = 'Y';
+            }
+            if ($('#divPOList').length && $('#divPOList').is(':visible')) {
+                ShowPOListGrid();
+            }
+            if (typeof LoadPOStatCounts === 'function') {
+                LoadPOStatCounts();
+            }
+        } else {
+            toastr.warning((apiRes && apiRes.Msg) ? apiRes.Msg : 'Email was sent, but updating the mail flag failed.');
+        }
+    }).catch(function (err) {
+        toastr.warning('Email was sent, but updating the mail flag failed. Refresh the list or try again.');
+        console.error(err);
+    });
+};
+
 window.SendMailPO = function (code) {
     _pendingMailCode = code;
     var chk = document.getElementById('chkMailIncludeGeneralTerms');
@@ -2869,7 +2920,7 @@ window.ConfirmSendMailPO = async function () {
         if (!res) { toastr.clear($loadingToast); toastr.error('PO not found.'); return; }
         var base64 = await _BuildPOPdfBase64Async(res, includeGTC);
         toastr.clear($loadingToast);
-        EmailControl_Open({ to: vendorEmail, subject: 'Purchase Order #' + poNo + (poDateStr ? ' dated ' + poDateStr : ''), body: 'Dear Sir/Madam,\n\nPlease find attached the Purchase Order #' + poNo + (poDateStr ? ' dated ' + poDateStr : '') + '.\n\nKindly acknowledge receipt and confirm acceptance.\n\nRegards,', callBack: '', defaultAttachments: [{ FileName: fileName, FileBase64: base64, ContentType: 'application/pdf' }] });
+        EmailControl_Open({ to: vendorEmail, subject: 'Purchase Order #' + poNo + (poDateStr ? ' dated ' + poDateStr : ''), body: 'Dear Sir/Madam,\n\nPlease find attached the Purchase Order #' + poNo + (poDateStr ? ' dated ' + poDateStr : '') + '.\n\nKindly acknowledge receipt and confirm acceptance.\n\nRegards,', callBack: 'PurchaseOrderStore_AfterMailSent', defaultAttachments: [{ FileName: fileName, FileBase64: base64, ContentType: 'application/pdf' }] });
     } catch (err) {
         toastr.clear($loadingToast);
         toastr.error('Error preparing PO PDF for email.');
