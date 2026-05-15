@@ -77,6 +77,14 @@ function getTotalAmount(p) {
     return v;
 }
 
+function getProject(p) {
+    return p.Project ?? p.ProjectDesp ?? p.projectDesp ?? p.ProjectName ?? p.projectName ?? '';
+}
+
+function getSubProject(p) {
+    return p.SubProject ?? p.SubProjectDesp ?? p.subProjectDesp ?? p.SubProjectName ?? p.subProjectName ?? '';
+}
+
 function levelRowIsApproved(lvl) {
     if (!lvl || typeof lvl !== 'object') return false;
     const on = lvl.ApprovedOn ?? lvl.Approved_Date ?? lvl.ApprovedDate ?? lvl.ApprovedOnDate;
@@ -639,7 +647,7 @@ function OpenDetailModal(paymentCode) {
             paintModalFromPayment(G_CurrentPayment);
 
             $('#gpaModalItemsBody').html(
-                '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+                '<tr><td colspan="8" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
                 '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
             );
 
@@ -648,6 +656,8 @@ function OpenDetailModal(paymentCode) {
 
             $('#modalGpaDetail').modal({ backdrop: 'static' });
             $('#modalGpaDetail').modal('show');
+
+            LoadGpaAttachmentsInline(code);
 
             GRNPaymentApprovalService.GetGRNPaymentDetail(code)
                 .then(function (res) {
@@ -665,7 +675,7 @@ function OpenDetailModal(paymentCode) {
                 .catch(function (err) {
                     console.error('GetGRNPaymentDetail', err);
                     $('#gpaModalItemsBody').html(
-                        '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                        '<tr><td colspan="8" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
                         '<i class="fa fa-exclamation-triangle me-1"></i>Error loading bill lines.</td></tr>'
                     );
                 });
@@ -683,12 +693,17 @@ function paintModalFromPayment(po) {
     const totalLvl = parseInt(po.TotalLevels ?? po.MaxLevel ?? 3, 10) || 1;
     const status = EscHtml(getApprovalStatus(po));
 
+    const project = EscHtml(getProject(po) || '—');
+    const subProject = EscHtml(getSubProject(po) || '—');
+
     $('#gpaModalHeader').html(
         '<div class="gpa-info-grid">' +
             BuildGpaInfoItem('Entry Number', entryNo, 'fa-file-invoice') +
             BuildGpaInfoItem('Party', vendor, 'fa-building') +
             BuildGpaInfoItem('Entry Date', entryDate, 'fa-calendar-alt') +
             BuildGpaInfoItem('Amount', amount, 'fa-rupee-sign', '#667eea') +
+            BuildGpaInfoItem('Project', project, 'fa-project-diagram') +
+            BuildGpaInfoItem('Sub Project', subProject, 'fa-sitemap') +
             BuildGpaInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +
             BuildGpaInfoItem('Status', status, 'fa-info-circle') +
         '</div>'
@@ -769,7 +784,7 @@ function RenderGpaModalItems(items) {
     const $body = $('#gpaModalItemsBody');
     if (!items || items.length === 0) {
         $body.html(
-            '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No bill lines found.</td></tr>'
+            '<tr><td colspan="8" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No bill lines found.</td></tr>'
         );
         return;
     }
@@ -786,6 +801,8 @@ function RenderGpaModalItems(items) {
             : netNum;
         const netPay = FmtCurrency(netNum);
         const payAmt = FmtCurrency(payNum);
+        const proj = EscHtml(row.Project ?? row.ProjectDesp ?? row.projectDesp ?? row.ProjectName ?? '—');
+        const subProj = EscHtml(row.SubProject ?? row.SubProjectDesp ?? row.subProjectDesp ?? row.SubProjectName ?? '—');
         html += '<tr>' +
             '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
             '<td style="font-weight:600;">' + billNo + '</td>' +
@@ -793,6 +810,8 @@ function RenderGpaModalItems(items) {
             '<td class="text-end">' + totalBill + '</td>' +
             '<td class="text-end">' + netPay + '</td>' +
             '<td class="text-end" style="font-weight:700;color:#667eea;">' + payAmt + '</td>' +
+            '<td>' + proj + '</td>' +
+            '<td>' + subProj + '</td>' +
             '</tr>';
     });
     $body.html(html);
@@ -877,8 +896,85 @@ function ExecuteGpaApproval(paymentCode, levelCode, remarks, action) {
         });
 }
 
+function LoadGpaAttachmentsInline(masterCode) {
+    const wrap = document.getElementById('gpaModalAttachList');
+    if (!wrap) return;
+    if (!masterCode || masterCode <= 0) {
+        wrap.innerHTML = '<span style="font-size:0.78rem;color:#94a3b8;"><i class="fa fa-paperclip me-1"></i>No attachments.</span>';
+        return;
+    }
+    wrap.innerHTML = '<span style="font-size:0.78rem;color:#94a3b8;"><i class="fa fa-spinner fa-spin me-1"></i>Loading attachments\u2026</span>';
+    AttachmentControlService.GetAttachmentUploadFiles('GRNPaymentMaster', masterCode, '', 0)
+        .then(function (response) {
+            const rows = Array.isArray(response) ? response : [];
+            if (rows.length === 0) {
+                wrap.innerHTML = '<span style="font-size:0.78rem;color:#94a3b8;"><i class="fa fa-paperclip me-1"></i>No attachments.</span>';
+                return;
+            }
+            let html = '<div style="display:flex;flex-direction:column;gap:6px;">';
+            rows.forEach(function (item) {
+                const name = EscHtml(item.DocumentName ?? item.documentName ?? '—');
+                const particulars = EscHtml(item.DocumentParticulars ?? item.documentParticulars ?? '');
+                const code = item.Code ?? item.code ?? 0;
+                const ext = String(item.DocumentName ?? '').split('.').pop().toLowerCase();
+                const iconMap = {
+                    pdf: 'fa-file-pdf', doc: 'fa-file-word', docx: 'fa-file-word',
+                    xls: 'fa-file-excel', xlsx: 'fa-file-excel',
+                    png: 'fa-file-image', jpg: 'fa-file-image', jpeg: 'fa-file-image',
+                    zip: 'fa-file-archive', rar: 'fa-file-archive', txt: 'fa-file-alt'
+                };
+                const icon = iconMap[ext] || 'fa-file';
+                html += '<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;">' +
+                    '<i class="fa ' + icon + '" style="color:#667eea;font-size:1rem;flex-shrink:0;"></i>' +
+                    '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:0.8rem;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + name + '</div>' +
+                    (particulars ? '<div style="font-size:0.72rem;color:#64748b;">' + particulars + '</div>' : '') +
+                    '</div>' +
+                    '<a href="#" onclick="GpaDownloadAttachment(' + code + ',\'' + name + '\'); return false;" ' +
+                    'style="flex-shrink:0;font-size:0.75rem;color:#667eea;font-weight:600;text-decoration:none;" title="Download">' +
+                    '<i class="fa fa-download me-1"></i>Download</a>' +
+                    '</div>';
+            });
+            html += '</div>';
+            wrap.innerHTML = html;
+        })
+        .catch(function () {
+            wrap.innerHTML = '<span style="font-size:0.78rem;color:#ef4444;"><i class="fa fa-exclamation-triangle me-1"></i>Could not load attachments.</span>';
+        });
+}
+
+function GpaDownloadAttachment(code, fileName) {
+    if (!code) return;
+    if (typeof Showloader === 'function') Showloader();
+    AttachmentControlService.DownloadAttachment(code)
+        .then(function (blob) {
+            if (typeof HideLoader === 'function') HideLoader();
+            const ext = String(fileName).split('.').pop().toLowerCase();
+            const viewable = ['txt', 'png', 'gif', 'jpeg', 'jpg', 'pdf'].includes(ext);
+            const url = window.URL.createObjectURL(blob);
+            if (viewable) {
+                window.open(url, '_blank');
+            } else {
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(function () {
+            if (typeof HideLoader === 'function') HideLoader();
+            if (typeof toastr !== 'undefined') toastr.error('Failed to download attachment.');
+        });
+}
+
 function CloseDetailModal() {
     $('#modalGpaDetail').modal('hide');
+    const wrap = document.getElementById('gpaModalAttachList');
+    if (wrap) wrap.innerHTML = '';
     G_CurrentPayment = null;
 }
 
@@ -923,3 +1019,4 @@ window.CloseDetailModal = CloseDetailModal;
 window.CloseConfirmModal = CloseConfirmModal;
 window.NavigateToGRNService = NavigateToGRNService;
 window.ToggleGpaPendingOnMeFilter = ToggleGpaPendingOnMeFilter;
+window.GpaDownloadAttachment = GpaDownloadAttachment;
