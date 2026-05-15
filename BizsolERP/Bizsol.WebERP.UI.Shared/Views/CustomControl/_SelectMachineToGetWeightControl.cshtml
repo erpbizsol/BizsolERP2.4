@@ -6,14 +6,29 @@
                 <h5 class="modal-title">Weighment:</h5>
             </div>
             <div class="modal-body">
-                <div class="row">
-                    
-                    <div class="col-md-12 ">
+                <div class="row mb-2">
+                    <div class="col-md-12">
                         <label for="ddlMachines" class="col-form-label-sm fw-bold">Machine:</label>
                         <select id="ddlMachines" class="form-control form-control-sm box_border"></select>
                     </div>
                 </div>
-
+                <div class="row mb-2">
+                    <div class="col-md-12">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="chkClientSideWeight" checked />
+                            <label class="form-check-label fw-bold" for="chkClientSideWeight">
+                                Get Weight &mdash; Client Side
+                                <small class="text-muted fw-normal">(uses machine local API)</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div id="DivWeightScaleAPIResponse" class="row mb-2 d-none">
+                    <div class="col-md-12">
+                        <div class="alert alert-info py-1 mb-1" id="alertWeightScaleResult"></div>
+                        <div id="DivWeightScaleVehicleImages" class="d-flex gap-2 flex-wrap"></div>
+                    </div>
+                </div>
                 <div class="text-end mt-1">
                     <a class="btn btn-primary btn-height" onclick="SelectMachineToGetWeightControl_onGetWeight();">
                         Get Weight
@@ -29,90 +44,181 @@
 
 <script type="module">
 
-       import { WeighmentService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/WeighmentService.js';
+    import { WeighmentService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/WeighmentService.js';
 
-     function getddlMachines() {
-          WeighmentService.GetMachinesList().then(function (respone) {
-               if(respone.length > 0){
-                         BindSelectList($('#ddlMachines')[0], respone.map((item) => ({ Code: item.MachineNo, Desp: item.MachineNo})));
+    function getddlMachines() {
+        WeighmentService.GetMachinesList().then(function (respone) {
+            if (respone.length > 0) {
+                BindSelectList($('#ddlMachines')[0], respone.map((item) => ({
+                    Code: item.MachineNo,
+                    Desp: item.MachineNo,
+                    WeightScaleIP: item.WeightScaleIP || ''
+                })));
 
-                       if(respone.length==1){
-                               $('#ddlMachines').val(respone[0].MachineNo);
-                       }
+                if (respone.length == 1) {
+                    $('#ddlMachines').val(respone[0].MachineNo);
+                }
 
-                     $('#ddlMachines').select2({
-                        dropdownParent: $('#SelectMachineToGetWeightControlModal'),
-                         width: '-webkit-fill-available'
+                $('#ddlMachines').select2({
+                    dropdownParent: $('#SelectMachineToGetWeightControlModal'),
+                    width: '-webkit-fill-available'
+                });
+
+                $(document).ready(function () {
+                    $("#SelectMachineToGetWeightControlModal").modal({
+                        backdrop: 'static',
                     });
-
-                  $(document).ready(function () {
-                          $("#SelectMachineToGetWeightControlModal").modal({
-                              backdrop: 'static',
-                          });
-                          $("#SelectMachineToGetWeightControlModal").modal('show');
-                  });
-              }else{
-                   toastr.error('No Printer Found');
-                   return;
-              }
-           
-
-           
-       })
-
+                    $("#SelectMachineToGetWeightControlModal").modal('show');
+                });
+            } else {
+                toastr.error('No Machine Found');
+                return;
+            }
+        });
     }
 
-   function BindSelectList(element,list) {
-         let option = '<option value="0"></option>';
+    function BindSelectList(element, list) {
+        let option = '<option value="0"></option>';
         $.each(list, function (key, val) {
-            option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+            option += '<option value="' + val.Code + '" data-weightscaleip="' + (val.WeightScaleIP || '') + '">' + val.Desp + '</option>';
         });
         element.innerHTML = option;
     }
-    
-    function SelectMachineToGetWeightControl_onGetWeight() {
-            
-            let MachineName = $('#ddlMachines').val();
 
-          if (MachineName === '0' || MachineName === '') {
-             toastr.error('Please select a machine');
-             return;
+    function SelectMachineToGetWeightControl_onGetWeight() {
+        let MachineName = $('#ddlMachines').val();
+
+        if (MachineName === '0' || MachineName === '') {
+            toastr.error('Please select a machine');
+            return;
+        }
+
+        let isClientSide = $('#chkClientSideWeight').is(':checked');
+        let outputTextElementID = $('#hfOutputTextElementID').val();
+
+        $('#DivWeightScaleAPIResponse').addClass('d-none');
+        $('#alertWeightScaleResult').html('');
+        $('#DivWeightScaleVehicleImages').html('');
+
+        if (isClientSide) {
+            let weightScaleIP = $('#ddlMachines option:selected').data('weightscaleip') || '';
+
+            if (!weightScaleIP) {
+                toastr.error('Weight Scale IP / URL is not configured for this machine. Please uncheck Client Side mode.');
+                return;
             }
-          
+
+            Showloader();
+
+            fetch(weightScaleIP, { method: 'GET' })
+                .then(function (resp) {
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                    return resp.json();
+                })
+                .then(function (data) {
+                    HideLoader();
+
+                    if (data.API_STATUS === 'Ok') {
+                        let weight = data.Weight || '0';
+                        toastr.success('GET Weight (Client Side): ' + weight);
+
+                        if (outputTextElementID) {
+                            $('#' + outputTextElementID).val(weight);
+                        }
+
+                        let vehicleNo = '';
+                        let frontImage = '';
+                        let backImage = '';
+
+                        if (data.CAMERA && Array.isArray(data.CAMERA)) {
+                            let frontCam = data.CAMERA.find(function (c) { return c.CAMERA_TYPE === 'FRONT'; });
+                            let backCam = data.CAMERA.find(function (c) { return c.CAMERA_TYPE === 'BACK'; });
+
+                            if (frontCam) {
+                                if (frontCam.ANPRNO && frontCam.ANPRNO.toLowerCase() !== 'unknown') {
+                                    vehicleNo = frontCam.ANPRNO;
+                                }
+                                frontImage = frontCam.IMAGE || '';
+                            }
+                            if (backCam) {
+                                backImage = backCam.IMAGE || '';
+                                if (!vehicleNo && backCam.ANPRNO && backCam.ANPRNO.toLowerCase() !== 'unknown') {
+                                    vehicleNo = backCam.ANPRNO;
+                                }
+                            }
+                        }
+
+                        let resultHtml = '<strong>Weight:</strong> ' + weight;
+                        if (vehicleNo) resultHtml += '&nbsp;&nbsp;<strong>Vehicle No:</strong> ' + vehicleNo;
+                        $('#alertWeightScaleResult').html(resultHtml);
+                        $('#DivWeightScaleAPIResponse').removeClass('d-none');
+
+                        let imagesHtml = '';
+                        if (frontImage) {
+                            imagesHtml += '<div><p class="mb-0 small fw-bold">Front</p><img src="data:image/jpeg;base64,' + frontImage + '" style="max-height:120px;border:1px solid #ccc;" /></div>';
+                        }
+                        if (backImage) {
+                            imagesHtml += '<div><p class="mb-0 small fw-bold">Back</p><img src="data:image/jpeg;base64,' + backImage + '" style="max-height:120px;border:1px solid #ccc;" /></div>';
+                        }
+                        $('#DivWeightScaleVehicleImages').html(imagesHtml);
+
+                        document.dispatchEvent(new CustomEvent('weightScaleDataReceived', {
+                            detail: {
+                                outputTextElementID: outputTextElementID,
+                                weight: weight,
+                                vehicleNo: vehicleNo,
+                                frontImage: frontImage,
+                                backImage: backImage,
+                                fullResponse: data,
+                                mode: 'client'
+                            }
+                        }));
+
+                        $("#SelectMachineToGetWeightControlModal").modal('hide');
+                    } else {
+                        toastr.error('Weight scale returned error: ' + (data.API_STATUS || 'Unknown'));
+                    }
+                })
+                .catch(function (err) {
+                    HideLoader();
+                    toastr.error('Failed to connect to weight scale: ' + err.message);
+                });
+        } else {
             Showloader();
 
             WeighmentService.GetMachineWeight(MachineName).then(function (respone) {
-               HideLoader();
+                HideLoader();
 
-               if(respone.Status=='Y')
-               {
-                   toastr.success('GET Weight: '+ respone.Msg);
-                      let outputTextElementID = $('#hfOutputTextElementID').val();
-                      if (outputTextElementID) {
-                            $('#' + outputTextElementID).val(respone.Msg);
-                      }
+                if (respone.Status == 'Y') {
+                    toastr.success('GET Weight: ' + respone.Msg);
 
-               }
-               else
-               {
-                   toastr.error(respone.Msg);
+                    if (outputTextElementID) {
+                        $('#' + outputTextElementID).val(respone.Msg);
+                    }
 
-               }
+                    document.dispatchEvent(new CustomEvent('weightScaleDataReceived', {
+                        detail: {
+                            outputTextElementID: outputTextElementID,
+                            weight: respone.Msg,
+                            vehicleNo: '',
+                            frontImage: '',
+                            backImage: '',
+                            fullResponse: respone,
+                            mode: 'server'
+                        }
+                    }));
+                } else {
+                    toastr.error(respone.Msg);
+                }
+
                 $("#SelectMachineToGetWeightControlModal").modal('hide');
-                
-         })
-
-
-           
-
+            });
+        }
     }
+
     window.SelectMachineToGetWeightControl_onGetWeight = SelectMachineToGetWeightControl_onGetWeight;
 
-     getddlMachines()
-        
-
-         
-        
+    getddlMachines();
 
 </script>
 

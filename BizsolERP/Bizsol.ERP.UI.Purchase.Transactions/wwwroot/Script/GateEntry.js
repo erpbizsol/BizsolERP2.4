@@ -27,6 +27,7 @@ let GateEntryImageDetail = [{
     ImgOther: []
 
 }];
+let G_ScaleVehiclePhotoProvided = false;
 //let G_GateEntryLinkedERPDocuments = [{ TableName: "kumar", TableCode:5 }];
 let G_GateEntryLinkedERPDocuments = [{ TableName: "kumar", TableCode:5 }];
 
@@ -1147,6 +1148,7 @@ function GateEntry_SaveData(Mode) {
         TransporterName = $('#frmEmptyIn_ddlTransporterName').val();
         Remark = $('#frmEmptyIn_txtRemarks').val();
         PhotoLenth = $('#frmEmptyIn_fileVehiclePhoto')[0].files.length;
+        if (PhotoLenth === 0 && (G_ScaleVehiclePhotoProvided || (GateEntryImageDetail && GateEntryImageDetail[0] && GateEntryImageDetail[0].imgVehicle && GateEntryImageDetail[0].imgVehicle.length > 0))) { PhotoLenth = 1; }
 
         
         if (!relaxHandCourierEmptyIn && (typeof VehicleNo === 'undefined' || VehicleNo === '' || VehicleNo === null)) {
@@ -1315,6 +1317,7 @@ function GateEntry_SaveData(Mode) {
         let isOthersDocument = Documenttype && Documenttype.toLowerCase() === 'others';
 
         let VehiclePhotoLenth = $('#frmLoadedOut_fileVehiclePhoto')[0].files.length;
+        if (VehiclePhotoLenth === 0 && (G_ScaleVehiclePhotoProvided || (GateEntryImageDetail && GateEntryImageDetail[0] && GateEntryImageDetail[0].imgVehicle && GateEntryImageDetail[0].imgVehicle.length > 0))) { VehiclePhotoLenth = 1; }
         let GoodsPhotoLenth = $('#frmLoadedOut_fileGoodsPhoto')[0].files.length;
         let InvoicePhotoLenth = $('#frmLoadedOut_fileInvoicePhoto')[0].files.length;
         //let OtherPhotoLenth = $('#frmLoadedOut_fileOtherPhoto')[0].files.length;
@@ -1474,6 +1477,7 @@ function GateEntry_SaveData(Mode) {
 
 
         let VehiclePhotoLenth = $('#frmLoadedIn_fileVehiclePhoto')[0].files.length;
+        if (VehiclePhotoLenth === 0 && (G_ScaleVehiclePhotoProvided || (GateEntryImageDetail && GateEntryImageDetail[0] && GateEntryImageDetail[0].imgVehicle && GateEntryImageDetail[0].imgVehicle.length > 0))) { VehiclePhotoLenth = 1; }
         let GoodsPhotoLenth = $('#frmLoadedIn_fileGoodsPhoto')[0].files.length;
         let InvoicePhotoLenth = $('#frmLoadedIn_fileInvoicePhoto')[0].files.length;
 
@@ -1760,6 +1764,7 @@ function GateEntry_SaveData(Mode) {
             // Skip all other field validations
         } else {
             let VehiclePhotoLenth = $('#frmEmptyOut_fileVehiclePhoto')[0].files.length;
+            if (VehiclePhotoLenth === 0 && (G_ScaleVehiclePhotoProvided || (GateEntryImageDetail && GateEntryImageDetail[0] && GateEntryImageDetail[0].imgVehicle && GateEntryImageDetail[0].imgVehicle.length > 0))) { VehiclePhotoLenth = 1; }
             if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
                 ChassisNo = $('#frmLoadedIn_txtChassisNo').val();
                 RCNo = $('#frmLoadedIn_txtRCNo').val();
@@ -2311,6 +2316,7 @@ function frmLoadedOut_ddlDocumentType(callby) {
 
 function ClearAllFrm() {
     $('#GateEntryFormEntryNoBanner').remove();
+    G_ScaleVehiclePhotoProvided = false;
     GateEntryImageDetail = [{
         imgVehicle: [],
         imgMaterial: [],
@@ -2492,9 +2498,10 @@ function ClearAllFrm() {
     $('#frmLoadedIn_txtModeOfTransportation').removeAttr('disabled');
     GateEntry_ApplyModeOfTransportVisibility();
     GateEntry_ApplyEntryWithoutExistingItemRadioVisibility();
-
+    ClearWeightScalePreviews();
 }
 function ClearEmptyOutOrLoadedOutFrm() {
+    G_ScaleVehiclePhotoProvided = false;
     GateEntryImageDetail = [{
         imgVehicle: [],
         imgMaterial: [],
@@ -2535,6 +2542,7 @@ function ClearEmptyOutOrLoadedOutFrm() {
     $('#frmEmptyOut_txtVehicleEmptyWeight').val('');
     $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val('');
     $('#frmEmptyOut_txtRemarks').val('');
+    ClearWeightScalePreviews();
 }
 function ViewGateEntry(gateEntryData, EntryType) {
     
@@ -3557,6 +3565,102 @@ function GateEntry_ShowEntryNoBanner(entryNo, operation) {
         <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>`;
     $('#DivGateEntryForm').prepend(bannerHtml);
+}
+
+document.addEventListener('weightScaleDataReceived', function (e) {
+    const d = e.detail;
+    if (!d) return;
+    // Clear any existing weight-scale previews before handling new data
+    ClearWeightScalePreviews();
+
+    const outputID = d.outputTextElementID || '';
+
+    if (d.weight) {
+        if (outputID) {
+            $('#' + outputID).val(d.weight);
+        }
+    }
+
+    if (d.vehicleNo) {
+        const vehicleFieldMap = {
+            'frmEmptyIn_txtVehicleEmptyWeight': 'frmEmptyIn_txtVehicleNo',
+            'frmLoadedIn_txtVehicleLoadedWeight': 'frmLoadedIn_txtVehicleNo',
+            'frmLoadedOut_txtVehicleLoadedWeight': 'frmEmptyIn_txtVehicleNo',
+            'frmEmptyOut_txtVehicleEmptyWeight': 'frmLoadedIn_txtVehicleNo'
+        };
+        const vehicleFieldID = vehicleFieldMap[outputID];
+        if (vehicleFieldID) {
+            let $vf = $('#' + vehicleFieldID);
+            if ($vf.length && !$vf.prop('readonly') && !$vf.prop('disabled')) {
+                $vf.val(d.vehicleNo);
+            }
+        }
+    }
+
+    const imageFieldMap = {
+        'frmEmptyIn_txtVehicleEmptyWeight': 'frmEmptyIn_fileVehiclePhoto',
+        'frmLoadedIn_txtVehicleLoadedWeight': 'frmLoadedIn_fileVehiclePhoto',
+        'frmLoadedOut_txtVehicleLoadedWeight': 'frmLoadedOut_fileVehiclePhoto',
+        'frmEmptyOut_txtVehicleEmptyWeight': 'frmEmptyOut_fileVehiclePhoto'
+    };
+    const previewContainerMap = {
+        'frmEmptyIn_txtVehicleEmptyWeight': 'DivfrmEmptyIn_fileVehiclePhoto',
+        'frmLoadedIn_txtVehicleLoadedWeight': 'DivfrmLoadedIn_fileVehiclePhoto',
+        'frmLoadedOut_txtVehicleLoadedWeight': 'RowLoadedOut_fileVehiclePhoto',
+        'frmEmptyOut_txtVehicleEmptyWeight': 'RowfrmEmptyOut_fileVehiclePhoto'
+    };
+
+    if (outputID && imageFieldMap[outputID]) {
+        G_ScaleVehiclePhotoProvided = true;
+
+        const imgSrc = d.frontImage || d.backImage || '';
+        const previewDivID = previewContainerMap[outputID];
+
+        if (previewDivID) {
+            const previewID = previewDivID + '_WeightScalePreview';
+            $('#' + previewID).remove();
+            if (d.frontImage || d.backImage) {
+                const previewHtml = '<div id="' + previewID + '" class="mt-1">'
+                    + (d.frontImage ? '<img src="data:image/jpeg;base64,' + d.frontImage + '" style="max-height:80px;border:1px solid #ccc;margin-right:4px;" title="Front Camera" />' : '')
+                    + (d.backImage ? '<img src="data:image/jpeg;base64,' + d.backImage + '" style="max-height:80px;border:1px solid #ccc;" title="Back Camera" />' : '')
+                    + '</div>';
+                $('#' + previewDivID).after(previewHtml);
+            }
+        }
+
+        const base64ToByteArray = function (base64) {
+            try {
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                return Array.from(bytes);
+            } catch (ex) { return []; }
+        };
+
+        GateEntryImageDetail = [{
+            imgVehicle: imgSrc ? base64ToByteArray(imgSrc) : [],
+            imgMaterial: [],
+            imgDoc: [],
+            ImgOther: []
+        }];
+    }
+});
+
+function ClearWeightScalePreviews() {
+    try {
+        const previewContainers = [
+            'DivfrmEmptyIn_fileVehiclePhoto',
+            'DivfrmLoadedIn_fileVehiclePhoto',
+            'RowLoadedOut_fileVehiclePhoto',
+            'RowfrmEmptyOut_fileVehiclePhoto'
+        ];
+        previewContainers.forEach(function (id) {
+            const previewID = id + '_WeightScalePreview';
+            $('#' + previewID).remove();
+        });
+    } catch (ex) {
+        // ignore
+    }
 }
 
 window.GateEntyMode_GateEntry = GateEntyMode_GateEntry

@@ -29,8 +29,70 @@ let grnHasVerifyRight = false;
 let grnMasterSourceRows = [];
 /** Edit/New form: master already has attachment(s) — footer Attachment button green with list/API */
 let grnFormHasAttachmentYes = false;
-/** @type {null|string} null = all rows, 'N' = not verified (Pending), 'Y' = verified */
+/** @type {null|string} null = all rows, 'N' = not verified (Pending), 'Y' = verified, 'R' = rejected */
 let grnListVerifiedFilter = null;
+
+/** Codes of GRNs that are rejected in the MRN approval workflow — keyed by integer Code */
+var grnRejectedCodesSet = {};
+
+/**
+ * Grid Verify button: **Y** = show Verify when user has right; **N** = hide Verify button (verified badge unchanged).
+ * Optional: sessionStorage `bizsol_grn_multilevel_verification`, or API wrapper fields MultiLevelVerification / multiLevelVerification.
+ */
+var GRN_MULTILEVEL_VERIFICATION_SESSION_KEY = "bizsol_grn_multilevel_verification";
+
+window.multilevelverification = "Y";
+
+function normalizeGrnMultilevelYn(v) {
+    var s = (v == null ? "" : String(v)).trim().toUpperCase();
+    return s === "Y" || s === "YES" || s === "1" || s === "TRUE" ? "Y" : "N";
+}
+
+function resolveGrnMultilevelVerificationFromStorage() {
+    try {
+        var raw = sessionStorage.getItem(GRN_MULTILEVEL_VERIFICATION_SESSION_KEY);
+        if (raw != null && String(raw).trim() !== "") {
+            window.multilevelverification = normalizeGrnMultilevelYn(raw);
+            return;
+        }
+    } catch (e) {
+        /* ignore */
+    }
+    window.multilevelverification = normalizeGrnMultilevelYn(window.multilevelverification);
+}
+
+/** When false, grid omits the row Verify button (multilevelverification === 'N'). */
+function grnGridVerifyButtonAllowedByMultilevel() {
+    return normalizeGrnMultilevelYn(window.multilevelverification) === "Y";
+}
+
+/** @param {boolean} [persistSession] persist for next visits */
+function setGrnMultilevelVerification(value, persistSession) {
+    window.multilevelverification = normalizeGrnMultilevelYn(value);
+    if (persistSession) {
+        try {
+            sessionStorage.setItem(GRN_MULTILEVEL_VERIFICATION_SESSION_KEY, window.multilevelverification);
+        } catch (e) {
+            /* ignore */
+        }
+    }
+    if ((grnMasterSourceRows || []).length > 0) {
+        refreshGRNListGrid();
+    }
+}
+
+function applyGrnMultilevelVerificationFromApiPayload(payload) {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return false;
+    var v =
+        payload.MultiLevelVerification !== undefined && payload.MultiLevelVerification !== null
+            ? payload.MultiLevelVerification
+            : payload.multiLevelVerification !== undefined && payload.multiLevelVerification !== null
+              ? payload.multiLevelVerification
+              : payload.MultilevelVerification;
+    if (v === undefined || v === null) return false;
+    window.multilevelverification = normalizeGrnMultilevelYn(v);
+    return true;
+}
 
 /** Persist verified row codes (list API often omits Verified) — badge stays after refresh. */
 var GRN_VERIFIED_CODES_STORAGE_KEY = "bizsol_grnService_verified_codes";
@@ -71,7 +133,9 @@ function applyRememberedVerifiedToRows(rows) {
     if (!has) return rows.slice();
     return rows.map(function (row) {
         var rc = parseInt(row.Code ?? row.code ?? 0, 10);
-        if (!isNaN(rc) && set[rc]) {
+        // Don't overwrite rows that already have a definitive status from the API
+        var existing = String(row.Verified ?? row.verified ?? "").trim().toUpperCase();
+        if (!isNaN(rc) && set[rc] && existing !== "REJECTED" && existing !== "R") {
             return Object.assign({}, row, { Verified: "Y" });
         }
         return row;
@@ -106,9 +170,35 @@ function rowIsVerifiedGrn(item) {
     if (v === undefined || v === null) return false;
     if (typeof v === "string") {
         var u = v.trim().toUpperCase();
-        return u === "Y" || u === "YES" || v === "1" || u === "TRUE" || u === "V";
+        return u === "Y" || u === "YES" || v === "1" || u === "TRUE" || u === "V" || u === "APPROVED";
     }
     return v === true || v === 1;
+}
+
+function rowIsRejectedGrn(item) {
+    if (!item || typeof item !== "object") return false;
+    // Primary: same Verified field — API returns "Rejected" as the value
+    var v =
+        item.Verified !== undefined && item.Verified !== null
+            ? item.Verified
+            : item.verified !== undefined && item.verified !== null
+              ? item.verified
+              : item.ApprovalStatus !== undefined && item.ApprovalStatus !== null
+                ? item.ApprovalStatus
+                : item.approvalStatus !== undefined && item.approvalStatus !== null
+                  ? item.approvalStatus
+                  : item.IsRejected !== undefined && item.IsRejected !== null
+                    ? item.IsRejected
+                    : item.Status !== undefined && item.Status !== null
+                      ? item.Status
+                      : item.status;
+    if (v !== undefined && v !== null && typeof v === "string") {
+        var u = v.trim().toUpperCase();
+        if (u === "REJECTED" || u === "R") return true;
+    }
+    // Secondary: check against codes fetched from MRN approval API
+    var c = parseInt(item.Code ?? item.code ?? 0, 10);
+    return !!(c && grnRejectedCodesSet[c]);
 }
 
 function escapeGrnAttr(str) {
@@ -377,9 +467,14 @@ function mapGRNRowsToGrid(rows) {
             '<button class="im-btn-delete" title="Delete" onclick="confirmDeleteGRN(' + code + ', \'' + (item.GRNo ?? item.MRNNo ?? '') + '\')">' +
             '<i class="fas fa-trash-can"></i></button>';
         if (grnHasVerifyRight) {
-            btns += rowIsVerifiedGrn(item)
-                ? buildGrnVerifiedBadgeHtml(item)
-                : '<button type="button" class="grn-btn-verify" title="Verify" aria-label="Verify" onclick="VerifyGRN(' + code + ')"><i class="fas fa-check" aria-hidden="true"></i></button>';
+            if (rowIsVerifiedGrn(item)) {
+                btns += buildGrnVerifiedBadgeHtml(item);
+            } else if (grnGridVerifyButtonAllowedByMultilevel()) {
+                btns +=
+                    '<button type="button" class="grn-btn-verify" title="Verify" aria-label="Verify" onclick="VerifyGRN(' +
+                    code +
+                    ')"><i class="fas fa-check" aria-hidden="true"></i></button>';
+            }
         }
         var patch = { Action: btns };
         return Object.assign({}, item, patch);
@@ -417,7 +512,11 @@ function applyGrnVerifiedListFilter(rows) {
     if (!grnListVerifiedFilter) return rows.slice();
     return rows.filter(function (row) {
         var isV = rowIsVerifiedGrn(row);
-        return grnListVerifiedFilter === "Y" ? isV : !isV;
+        var isR = rowIsRejectedGrn(row);
+        if (grnListVerifiedFilter === "Y") return isV;
+        if (grnListVerifiedFilter === "R") return isR;
+        // 'N' = Pending: not verified and not rejected
+        return !isV && !isR;
     });
 }
 
@@ -425,19 +524,24 @@ function updateGrnVerifyFilterTabCounts() {
     var rows = grnMasterSourceRows || [];
     var pending = 0;
     var verified = 0;
+    var rejected = 0;
     for (var i = 0; i < rows.length; i++) {
         if (rowIsVerifiedGrn(rows[i])) verified++;
+        else if (rowIsRejectedGrn(rows[i])) rejected++;
         else pending++;
     }
     var elP = document.getElementById("grnVerifyFilterCountPending");
     var elV = document.getElementById("grnVerifyFilterCountVerified");
+    var elR = document.getElementById("grnVerifyFilterCountReject");
     if (elP) elP.textContent = String(pending);
     if (elV) elV.textContent = String(verified);
+    if (elR) elR.textContent = String(rejected);
 }
 
 function syncGrnVerifyFilterTabButtons() {
     var btnN = document.getElementById("grnVerifyFilterTabPending");
     var btnY = document.getElementById("grnVerifyFilterTabVerified");
+    var btnR = document.getElementById("grnVerifyFilterTabReject");
     if (btnN) {
         btnN.classList.toggle("is-active", grnListVerifiedFilter === "N");
         btnN.setAttribute("aria-pressed", grnListVerifiedFilter === "N" ? "true" : "false");
@@ -446,9 +550,41 @@ function syncGrnVerifyFilterTabButtons() {
         btnY.classList.toggle("is-active", grnListVerifiedFilter === "Y");
         btnY.setAttribute("aria-pressed", grnListVerifiedFilter === "Y" ? "true" : "false");
     }
+    if (btnR) {
+        btnR.classList.toggle("is-active", grnListVerifiedFilter === "R");
+        btnR.setAttribute("aria-pressed", grnListVerifiedFilter === "R" ? "true" : "false");
+    }
+}
+
+/** Opens GRN Service / MRN multi-level approval (same pattern as MRNMasterApproval.js back-link). */
+function navigateToMRNMasterApproval() {
+    var base = sessionStorage.getItem("AppBaseURL") || (window.location.origin + "/");
+    base = base.replace(/\/?$/, "/");
+    window.location.href =
+        base + "PurchaseTransactions/GRNService/MRNMasterApproval?ModuleDesp=GRN%20Services";
+}
+
+/** Same session key as MRNMasterApproval.js — after redirect, approval list applies “Pending on me” filter */
+var GRN_MRN_APPROVAL_LANDING_PENDING_ON_ME_KEY = "bizsol_mrnLandingPendingOnMe";
+
+function navigateToMRNMasterApprovalPendingOnMe() {
+    try {
+        sessionStorage.setItem(GRN_MRN_APPROVAL_LANDING_PENDING_ON_ME_KEY, "Y");
+    } catch (e) {
+        /* ignore */
+    }
+    navigateToMRNMasterApproval();
+}
+
+function navigateToGRNServiceApprovalConfiguration() {
+    var base = sessionStorage.getItem("AppBaseURL") || (window.location.origin + "/");
+    base = base.replace(/\/?$/, "/");
+    window.location.href =
+        base + "PurchaseTransactions/GRNService/GRNServiceApprovalConfiguration?ModuleDesp=GRN%20Services";
 }
 
 function onGrnListVerifyFilterClick(which) {
+    if (which !== "N" && which !== "Y" && which !== "R") return;
     if (grnListVerifiedFilter === which) {
         grnListVerifiedFilter = null;
     } else {
@@ -516,6 +652,8 @@ $(document).ready(async function () {
 }); 
 // ── DOM ready ────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+    resolveGrnMultilevelVerificationFromStorage();
+
     window.AttachmentControl_onQueueChange = function (count) {
         const badge = document.getElementById('grnTempAttachBadge');
         if (!badge) return;
@@ -1763,9 +1901,11 @@ function calcNetPayable() {
 // ══════════════════════════════════════════════════════════════════════════════
 // GRN LIST VIEW
 // ══════════════════════════════════════════════════════════════════════════════
+
 /** @param {number|string} [lastVerifiedGrnCode] Remember this code + merge (list API may omit Verified). */
 function loadGRNList(lastVerifiedGrnCode) {
     return GRNService.GetGRNList().then(function (response) {
+        applyGrnMultilevelVerificationFromApiPayload(response);
         var rows = [];
         if (Array.isArray(response)) rows = response;
         else if (Array.isArray(response.data)) rows = response.data;
@@ -1796,6 +1936,10 @@ function loadGRNList(lastVerifiedGrnCode) {
 function VerifyGRN(code) {
     if (!grnHasVerifyRight) {
         toastr.warning("You do not have Verify permission.");
+        return;
+    }
+    if (!grnGridVerifyButtonAllowedByMultilevel()) {
+        toastr.warning("Verify button is disabled for this setup (multilevelverification is N).");
         return;
     }
     grnVerifyPendingCode = code;
@@ -2585,6 +2729,11 @@ window.onSubProjectChange     = onSubProjectChange;
 window.onProjectFieldFocus    = onProjectFieldFocus;
 window.loadGRNList          = loadGRNList;
 window.onGrnListVerifyFilterClick = onGrnListVerifyFilterClick;
+window.navigateToMRNMasterApproval = navigateToMRNMasterApproval;
+window.navigateToMRNMasterApprovalPendingOnMe = navigateToMRNMasterApprovalPendingOnMe;
+window.navigateToGRNServiceApprovalConfiguration = navigateToGRNServiceApprovalConfiguration;
+window.resolveGrnMultilevelVerificationFromStorage = resolveGrnMultilevelVerificationFromStorage;
+window.setGrnMultilevelVerification = setGrnMultilevelVerification;
 window.VerifyGRN            = VerifyGRN;
 window.CloseGRNVerifyModal  = CloseGRNVerifyModal;
 window.DoGRNVerify          = DoGRNVerify;

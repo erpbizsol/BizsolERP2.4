@@ -1,11 +1,13 @@
-import { GRNPaymentApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GRNPaymentApprovalService.js';
+import { MRNMasterApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MRNMasterApprovalService.js';
+import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
-import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
+
+/** Set by GRNService.navigateToMRNMasterApprovalPendingOnMe before redirect */
+const MRN_LANDING_PENDING_ON_ME_KEY = 'bizsol_mrnLandingPendingOnMe';
 
 let G_PaymentList = [];
 let G_CurrentPayment = null;
-/** When true, card list shows only entries pending approval on the current user (see paymentIsPendingOnMe). */
 let G_OnlyPendingOnMe = false;
 
 BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
@@ -55,7 +57,7 @@ function normalizeListResponse(data) {
 }
 
 function getPaymentMasterCode(p) {
-    const c = p.GRNPaymentMaster_Code ?? p.Code ?? p.code ?? p.PaymentMaster_Code;
+    const c = p.MRNMaster_Code ?? p.mRNMaster_Code ?? p.Code ?? p.code;
     const n = parseInt(c, 10);
     return Number.isFinite(n) ? n : 0;
 }
@@ -65,24 +67,16 @@ function getEntryNo(p) {
 }
 
 function getPartyName(p) {
-    return p['Party Name'] ?? p.PartyName ?? p.VendorName ?? p.AccountName ?? p.Vendor ?? '—';
+    return p.AccountDesp ?? p['Party Name'] ?? p.PartyName ?? p.VendorName ?? p.AccountName ?? p.Vendor ?? '—';
 }
 
 function getEntryDate(p) {
-    return p.EntryDate ?? p['PO Date'] ?? p['Entry Date'] ?? p.PaymentDate ?? p.DocDate ?? '';
+    return p.ReceiveDate ?? p.BillDate ?? p.EntryDate ?? p['Entry Date'] ?? p.DocDate ?? '';
 }
 
 function getTotalAmount(p) {
-    const v = p.Amount ?? p['Total Amount'] ?? p.TotalAmount ?? p.NetPayable ?? p.PaymentAmount ?? p['Total Bill Amount'] ?? 0;
+    const v = p.TotalBillAmountManual ?? p.NetPayable ?? p.Amount ?? p['Total Bill Amount'] ?? p['Total Amount'] ?? p.TotalAmount ?? 0;
     return v;
-}
-
-function getProject(p) {
-    return p.Project ?? p.ProjectDesp ?? p.projectDesp ?? p.ProjectName ?? p.projectName ?? '';
-}
-
-function getSubProject(p) {
-    return p.SubProject ?? p.SubProjectDesp ?? p.subProjectDesp ?? p.SubProjectName ?? p.subProjectName ?? '';
 }
 
 function levelRowIsApproved(lvl) {
@@ -93,7 +87,6 @@ function levelRowIsApproved(lvl) {
     return st === 'y' || st === 'approved' || st === '1' || st === 'true';
 }
 
-/** When master Status lags the API, infer from per-level rows (all levels 1..TotalLevels approved). */
 function allLevelsApprovedFromDetails(p) {
     const total = parseInt(p.TotalLevels ?? p.MaxLevel ?? 0, 10) || 0;
     if (total < 1) return false;
@@ -113,18 +106,14 @@ function getApprovalStatus(p) {
     const raw = (p.ApprovalStatus ?? p.Status ?? p.Approval_Status ?? '').toString().trim();
     const upper = raw.toUpperCase();
     const lower = raw.toLowerCase();
-
-    // Matches SQL: CASE WHEN pom.Status = 'P' THEN 'Approved' WHEN pom.Status = 'R' THEN 'Rejected' ELSE 'Pending'
-    if (upper === 'R' || lower === 'rejected') return 'Rejected';
+    // MRN master: backend stores rejected as Status 'N' (not approved); 'R' / text also supported
+    if (upper === 'R' || upper === 'N' || lower === 'rejected') return 'Rejected';
     if (upper === 'P' || raw === 'Y' || lower === 'approved') return 'Approved';
-
     if (allLevelsApprovedFromDetails(p)) return 'Approved';
-
     const cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 0, 10) || 0;
     const tot = parseInt(p.TotalLevels ?? p.MaxLevel ?? 0, 10) || 0;
     if (tot > 0 && cur > tot) return 'Approved';
-
-    if (raw === '' || raw === 'N' || upper === 'U' || lower === 'pending') return 'Pending';
+    if (raw === '' || upper === 'U' || lower === 'pending') return 'Pending';
     if (
         lower === 'complete' || lower === 'completed' ||
         lower.indexOf('fully approved') >= 0 ||
@@ -134,14 +123,9 @@ function getApprovalStatus(p) {
     ) {
         return 'Approved';
     }
-
     return raw || 'Pending';
 }
 
-/**
- * Pill next to the date on list cards — CurrentLevelDesc / matching LevelDetails.LevelDesc while pending,
- * else Approved / Rejected. Falls back to Ln only if no description is present.
- */
 function getGpaCardLevelChipLabel(p) {
     const status = getApprovalStatus(p);
     const st = status.toLowerCase();
@@ -151,23 +135,29 @@ function getGpaCardLevelChipLabel(p) {
     let cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
     if (cur < 1) cur = 1;
     if (totalLvl > 0 && cur > totalLvl) return 'Approved';
-
     const masterDesc = String(p.CurrentLevelDesc ?? '').trim();
     if (masterDesc) return masterDesc;
-
     const row = getCurrentLevelRowForGpa(p);
     const rowDesc = row ? pickLevelRowTitleText(row) : '';
     if (rowDesc) return rowDesc;
-
     return 'L' + cur;
 }
 
 function getLevelCode(p) {
-    const c = p.LevelCode ?? p.Level_Code ?? p.ApprovalLevel_Code ?? p.GRNPaymentLevel_Code ?? 0;
-    const n = parseInt(c, 10);
+    const c = p.LevelCode ?? p.Level_Code ?? p.ApprovalLevel_Code ?? p.MRNMasterLevel_Code ?? p.GRNPaymentLevel_Code ?? 0;
+    let n = parseInt(c, 10);
+    if (Number.isFinite(n) && n > 0) return n;
+    const lvl = getCurrentLevelRowForGpa(p);
+    if (lvl && typeof lvl === 'object') {
+        const fromRow = pickFirstPositiveInt(lvl, [
+            'Code', 'MRNMasterLevel_Code', 'MRNMaster_Level_Code', 'LevelCode', 'Level_Code',
+            'ApprovalLevel_Code', 'ConfigLevel_Code', 'GRNPaymentLevel_Code',
+            'MRNMasterApprovalLevel_Code', 'LevelMaster_Code'
+        ]);
+        if (fromRow > 0) return fromRow;
+    }
     return Number.isFinite(n) ? n : 0;
 }
-
 function getSessionUserMasterCodeGpa() {
     try {
         const a = JSON.parse(sessionStorage.getItem('authKey'));
@@ -198,7 +188,6 @@ function pickFirstPositiveInt(obj, keys) {
     return 0;
 }
 
-/** Level row matching the payment's current approval step (for approver user/group). */
 function getCurrentLevelRowForGpa(p) {
     const cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
     const levels = parseLevelDetailsToArray(p.LevelDetails);
@@ -216,23 +205,14 @@ function truthyFlagGpa(v) {
     return s === 'y' || s === '1' || s === 'true';
 }
 
-/**
- * True when this entry is in Pending workflow and the current user/group is assigned to act
- * at the current level (or API explicitly flags the row). If assignee fields are absent, treats
- * as pending-on-me when the list is not explicitly assigned to someone else (common when API
- * already scopes the list to the user).
- */
 function paymentIsPendingOnMe(p) {
     if (getApprovalStatus(p).toLowerCase() !== 'pending') return false;
-
     if (truthyFlagGpa(p.IsPendingForMe) || truthyFlagGpa(p.PendingForMe) || truthyFlagGpa(p.CanApproveNow)
         || truthyFlagGpa(p.IsMyApproval) || truthyFlagGpa(p.PendingOnMe)) {
         return true;
     }
-
     const me = getSessionUserMasterCodeGpa();
     const myG = getSessionGroupMasterCodeGpa();
-
     const lvl = getCurrentLevelRowForGpa(p);
     const ru = pickFirstPositiveInt(lvl, [
         'UserMaster_Code', 'userMaster_Code', 'ApproverUserMaster_Code', 'ApproverUser_Code',
@@ -242,10 +222,8 @@ function paymentIsPendingOnMe(p) {
         'GroupMaster_Code', 'groupMaster_Code', 'ApproverGroupMaster_Code',
         'AssignedGroupMaster_Code', 'ApprovalGroupMaster_Code'
     ]);
-
     if (me > 0 && ru > 0 && ru === me) return true;
     if (myG > 0 && rg > 0 && rg === myG) return true;
-
     const mu = pickFirstPositiveInt(p, [
         'CurrentApproverUserMaster_Code', 'ApproverUserMaster_Code', 'NextApproverUserMaster_Code',
         'PendingApproverUserMaster_Code'
@@ -256,7 +234,6 @@ function paymentIsPendingOnMe(p) {
     ]);
     if (me > 0 && mu > 0 && mu === me) return true;
     if (myG > 0 && mg > 0 && mg === myG) return true;
-
     const hasAssignee = (ru + rg + mu + mg) > 0;
     if (!hasAssignee) {
         return true;
@@ -284,7 +261,6 @@ function getLevelRowRemarks(lvlInfo) {
     return s;
 }
 
-/** API / config may use Description, LevelDesc, LevelDesp, or LevelName for the same label. */
 function pickLevelRowTitleText(lvlInfo) {
     if (!lvlInfo || typeof lvlInfo !== 'object') return '';
     const c = lvlInfo.Description ?? lvlInfo.description
@@ -300,7 +276,6 @@ function getLevelRowDisplayTitle(lvlInfo, levelNo) {
     return 'Level ' + levelNo;
 }
 
-/** Same idea as PO list: API may send LevelDetails as JSON string or array. */
 function parseLevelDetailsToArray(v) {
     if (Array.isArray(v)) return v;
     if (v == null) return [];
@@ -317,10 +292,6 @@ function parseLevelDetailsToArray(v) {
     return [];
 }
 
-/**
- * After GetGRNPaymentDetail, master often overwrites list LevelDetails with [] or empty strings
- * and remarks from the pending list are lost. Merge API row with list row by LevelNo (PO pattern).
- */
 function levelNoFromRow(r) {
     const n = parseInt(r.LevelNo ?? r.Level ?? r.LevelOrder ?? 0, 10);
     return Number.isFinite(n) ? n : 0;
@@ -371,7 +342,6 @@ function NormalizePaymentList(list) {
         return p;
     });
 }
-
 function LoadPaymentList() {
     const fromDate = document.getElementById('gpaFromDate')?.value || '';
     const toDate = document.getElementById('gpaToDate')?.value || '';
@@ -385,7 +355,7 @@ function LoadPaymentList() {
     const container = document.getElementById('gpaPendingList');
     if (container) container.innerHTML = '';
 
-    GRNPaymentApprovalService.GetPendingGRNPaymentList(fromDate, toDate, status)
+    MRNMasterApprovalService.GetPendingMRNMasterList(status, fromDate, toDate)
         .then(function (data) {
             ShowGpaLoading(false);
             G_PaymentList = NormalizePaymentList(normalizeListResponse(data));
@@ -393,15 +363,16 @@ function LoadPaymentList() {
             RenderPaymentCards();
             const searchEl = document.getElementById('gpaLstSearch');
             FilterGpaCards(searchEl ? searchEl.value : '');
+            applyLandingPendingOnMeFilterIfNeeded();
         })
         .catch(function (err) {
-            console.error('LoadPaymentList', err);
+            console.error('LoadPaymentList MRN', err);
             ShowGpaLoading(false);
             G_PaymentList = [];
             if (container) container.innerHTML = '';
             ShowGpaEmpty(true);
             if (typeof toastr !== 'undefined') {
-                toastr.error('Error loading GRN payment approval list.');
+                toastr.error('Error loading GRN Service (MRN) approval list.');
             }
         });
 }
@@ -444,6 +415,21 @@ function ToggleGpaPendingOnMeFilter() {
     FilterGpaCards(searchEl ? searchEl.value : '');
 }
 
+function applyLandingPendingOnMeFilterIfNeeded() {
+    try {
+        const v = sessionStorage.getItem(MRN_LANDING_PENDING_ON_ME_KEY);
+        if (v !== 'Y' && v !== '1') return;
+        sessionStorage.removeItem(MRN_LANDING_PENDING_ON_ME_KEY);
+        G_OnlyPendingOnMe = true;
+        syncGpaPendingOnMeChipActive();
+        RenderPaymentCards();
+        const searchEl = document.getElementById('gpaLstSearch');
+        FilterGpaCards(searchEl ? searchEl.value : '');
+    } catch (e) {
+        /* ignore */
+    }
+}
+
 function BuildPaymentCard(p) {
     const code = getPaymentMasterCode(p);
     const entryPlain = String(getEntryNo(p));
@@ -478,7 +464,7 @@ function BuildPaymentCard(p) {
     <div class="gpa-pay-card section-entry-animation" data-code="${code}" data-search="${EscHtml(searchKey)}">
         <div class="gpa-pay-card-header">
             <div class="gpa-entry-badge">
-                <span style="font-size:0.6rem;font-weight:600;opacity:0.82;line-height:1;">Entry</span>
+                <span style="font-size:0.6rem;font-weight:600;opacity:0.82;line-height:1;">MRN</span>
                 <span style="font-weight:800;font-size:0.82rem;line-height:1.2;">${entryNo}</span>
             </div>
             <div class="gpa-pay-card-vendor">
@@ -574,14 +560,18 @@ function mergeDetailIntoPayment(root, basePayment) {
         return p;
     }
 
-    const master = data.VW_GRNPaymentMaster?.GRNPaymentMaster?.[0]
+    const masterMrn = data.VW_MRNMaster?.MRNMaster?.[0]
+        ?? data.MRNMaster?.[0]
+        ?? data.MRNMaster
+        ?? data.GRNServiceList?.[0]
+        ?? data.grnServiceList?.[0];
+    const masterPay = data.VW_GRNPaymentMaster?.GRNPaymentMaster?.[0]
         ?? data.GRNPaymentMaster?.[0]
-        ?? data.GRNPaymentMaster
-        ?? data.Master
-        ?? data;
+        ?? data.GRNPaymentMaster;
+    const resolvedMaster = masterMrn ?? masterPay ?? data.Master ?? data;
 
-    if (master && typeof master === 'object') {
-        Object.assign(p, master);
+    if (resolvedMaster && typeof resolvedMaster === 'object' && !Array.isArray(resolvedMaster)) {
+        Object.assign(p, resolvedMaster);
     }
 
     const fromApi = parseLevelDetailsToArray(
@@ -589,7 +579,9 @@ function mergeDetailIntoPayment(root, basePayment) {
     );
     p.LevelDetails = mergeLevelDetailsLists(fromList, fromApi);
 
-    const lines = data.GRNPaymentDetails ?? data.Details ?? data.BillLines ?? data.Items ?? data.Lines;
+    const lines = data.GRNServiceDetail ?? data.grnServiceDetail
+        ?? data.MRNDetails ?? data.MRNDetail
+        ?? data.GRNPaymentDetails ?? data.Details ?? data.BillLines ?? data.Items ?? data.Lines;
     if (Array.isArray(lines)) p._detailLines = lines;
 
     return p;
@@ -600,88 +592,86 @@ function extractDetailLines(root) {
     const data = root?.Data ?? root?.data ?? root;
     if (!data) return [];
     if (Array.isArray(data)) return data;
-    const lines = data.GRNPaymentDetails ?? data.Details ?? data.BillLines ?? data.Items ?? data.Lines;
+    const lines = data.GRNServiceDetail ?? data.grnServiceDetail
+        ?? data.MRNDetails ?? data.MRNDetail
+        ?? data.Details ?? data.Items ?? data.Lines;
     return Array.isArray(lines) ? lines : [];
 }
 
-/** API may return { Status, Msg } or wrap in Data/Result. */
+function extractBillLines(root) {
+    if (Array.isArray(root)) return [];
+    const data = root?.Data ?? root?.data ?? root;
+    if (!data || Array.isArray(data)) return [];
+    const lines = data.GRNPaymentDetails ?? data.BillLines ?? data.PaymentLines ?? data.PaymentDetails;
+    return Array.isArray(lines) ? lines : [];
+}
+
 function unwrapGpaActionResponse(res) {
     if (!res || typeof res !== 'object') return res;
     return res.Data ?? res.data ?? res.Result ?? res.result ?? res;
 }
-function getFinancialYear() {
-    var d = new Date();
-    var month = d.getMonth();
-    var year = d.getFullYear();
-    if (month < 3) year = year - 1;
-    return year + "-" + (year + 1);
-}
 function OpenDetailModal(paymentCode) {
-    //var ModuleName = 'Payment Entry',
-    //    OptionName = 'Verify',
-    //    ShowMsg = 'Y',
-    //    FinYear = getFinancialYear();
+    const code = parseInt(paymentCode, 10);
+    if (!Number.isFinite(code) || code <= 0) return;
 
-    //MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(async function (response) {
-    //    if (response.CheckModuleOptionRight === 'N') {
-    //        toastr.error(response.Msg);
-    //        return;
-    //    } else {
-            const code = parseInt(paymentCode, 10);
-            if (!Number.isFinite(code) || code <= 0) return;
+    G_CurrentPayment = G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === code; }) || null;
+    if (!G_CurrentPayment) {
+        G_CurrentPayment = { Code: code, MRNMaster_Code: code };
+    }
 
-            G_CurrentPayment = G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === code; }) || null;
-            if (!G_CurrentPayment) {
-                G_CurrentPayment = { Code: code, GRNPaymentMaster_Code: code };
-            }
+    const entryNo = getEntryNo(G_CurrentPayment);
+    const vendor = getPartyName(G_CurrentPayment);
 
-            const entryNo = getEntryNo(G_CurrentPayment);
-            const vendor = getPartyName(G_CurrentPayment);
+    $('#gpaModalEntryTitle').text('Entry# ' + entryNo);
+    $('#gpaModalParty').text(vendor);
+    $('#hfGpaPaymentCode').val(String(code));
+    $('#hfGpaLevelCode').val(String(getLevelCode(G_CurrentPayment)));
+    $('#gpaFrmRemarks').val('');
 
-            $('#gpaModalEntryTitle').text('Entry# ' + entryNo);
-            $('#gpaModalParty').text(vendor);
-            $('#hfGpaPaymentCode').val(String(code));
+    paintModalFromPayment(G_CurrentPayment);
+
+    $('#gpaModalItemsBody').html(
+        '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+        '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
+    );
+    $('#gpaModalBillLinesBody').html(
+        '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+        '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
+    );
+
+    $('#gpaBtnApproveAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
+    $('#gpaBtnRejectAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
+
+    $('#modalGpaDetail').modal({ backdrop: 'static' });
+    $('#modalGpaDetail').modal('show');
+
+    LoadMrnAttachmentsInline(code);
+
+    MRNMasterApprovalService.GetMRNMasterDetail(code)
+        .then(function (res) {
+            G_CurrentPayment = mergeDetailIntoPayment(res, G_CurrentPayment);
             $('#hfGpaLevelCode').val(String(getLevelCode(G_CurrentPayment)));
-            $('#gpaFrmRemarks').val('');
-
             paintModalFromPayment(G_CurrentPayment);
-
+            const lines = extractDetailLines(res);
+            RenderGpaModalItems(lines);
+            const billLines = extractBillLines(res);
+            RenderGpaBillLines(billLines);
+            const st = getApprovalStatus(G_CurrentPayment);
+            const pend = st.toLowerCase() === 'pending';
+            $('#gpaBtnApproveAction').toggle(pend);
+            $('#gpaBtnRejectAction').toggle(pend);
+        })
+        .catch(function (err) {
+            console.error('GetMRNMasterDetail', err);
             $('#gpaModalItemsBody').html(
-                '<tr><td colspan="8" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
-                '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
+                '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                '<i class="fa fa-exclamation-triangle me-1"></i>Error loading GRN service lines.</td></tr>'
             );
-
-            $('#gpaBtnApproveAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
-            $('#gpaBtnRejectAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
-
-            $('#modalGpaDetail').modal({ backdrop: 'static' });
-            $('#modalGpaDetail').modal('show');
-
-            LoadGpaAttachmentsInline(code);
-
-            GRNPaymentApprovalService.GetGRNPaymentDetail(code)
-                .then(function (res) {
-                    const root = res?.Data ?? res?.data ?? res;
-                    G_CurrentPayment = mergeDetailIntoPayment(res, G_CurrentPayment);
-                    $('#hfGpaLevelCode').val(String(getLevelCode(G_CurrentPayment)));
-                    paintModalFromPayment(G_CurrentPayment);
-                    const lines = extractDetailLines(res);
-                    RenderGpaModalItems(lines);
-                    const st = getApprovalStatus(G_CurrentPayment);
-                    const pend = st.toLowerCase() === 'pending';
-                    $('#gpaBtnApproveAction').toggle(pend);
-                    $('#gpaBtnRejectAction').toggle(pend);
-                })
-                .catch(function (err) {
-                    console.error('GetGRNPaymentDetail', err);
-                    $('#gpaModalItemsBody').html(
-                        '<tr><td colspan="8" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
-                        '<i class="fa fa-exclamation-triangle me-1"></i>Error loading bill lines.</td></tr>'
-                    );
-                });
-    //    }
-    //});
-   
+            $('#gpaModalBillLinesBody').html(
+                '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                '<i class="fa fa-exclamation-triangle me-1"></i>Error loading bill lines.</td></tr>'
+            );
+        });
 }
 
 function paintModalFromPayment(po) {
@@ -693,17 +683,12 @@ function paintModalFromPayment(po) {
     const totalLvl = parseInt(po.TotalLevels ?? po.MaxLevel ?? 3, 10) || 1;
     const status = EscHtml(getApprovalStatus(po));
 
-    const project = EscHtml(getProject(po) || '—');
-    const subProject = EscHtml(getSubProject(po) || '—');
-
     $('#gpaModalHeader').html(
         '<div class="gpa-info-grid">' +
             BuildGpaInfoItem('Entry Number', entryNo, 'fa-file-invoice') +
             BuildGpaInfoItem('Party', vendor, 'fa-building') +
             BuildGpaInfoItem('Entry Date', entryDate, 'fa-calendar-alt') +
             BuildGpaInfoItem('Amount', amount, 'fa-rupee-sign', '#667eea') +
-            BuildGpaInfoItem('Project', project, 'fa-project-diagram') +
-            BuildGpaInfoItem('Sub Project', subProject, 'fa-sitemap') +
             BuildGpaInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +
             BuildGpaInfoItem('Status', status, 'fa-info-circle') +
         '</div>'
@@ -784,14 +769,43 @@ function RenderGpaModalItems(items) {
     const $body = $('#gpaModalItemsBody');
     if (!items || items.length === 0) {
         $body.html(
-            '<tr><td colspan="8" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No bill lines found.</td></tr>'
+            '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No line items found.</td></tr>'
+        );
+        return;
+    }
+    let html = '';
+    items.forEach(function (row, idx) {
+        const desc = EscHtml(row.ItemName ?? row.itemName ?? row.BillNo ?? row.MRNNo ?? '—');
+        const po = EscHtml(row.PONo ?? row.PoNO ?? row.PurchaseOrderNo ?? '—');
+        const qtyRaw = row.QtyBill ?? row.Qty ?? row.Quantity ?? '';
+        const qty = qtyRaw !== '' && qtyRaw != null ? EscHtml(String(qtyRaw)) : '—';
+        const rate = FmtCurrency(row.Rate ?? row.rate ?? 0);
+        const amt = FmtCurrency(row.Amount ?? row.amount ?? 0);
+        html += '<tr>' +
+            '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
+            '<td style="font-weight:600;">' + desc + '</td>' +
+            '<td class="text-center">' + po + '</td>' +
+            '<td class="text-end">' + qty + '</td>' +
+            '<td class="text-end">' + rate + '</td>' +
+            '<td class="text-end" style="font-weight:700;color:#667eea;">' + amt + '</td>' +
+            '</tr>';
+    });
+    $body.html(html);
+}
+
+function RenderGpaBillLines(items) {
+    const $body = $('#gpaModalBillLinesBody');
+    if (!$body.length) return;
+    if (!items || items.length === 0) {
+        $body.html(
+            '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No bill lines found.</td></tr>'
         );
         return;
     }
     let html = '';
     items.forEach(function (row, idx) {
         const billNo = EscHtml(row.BillNo ?? row.billNo ?? row.MRNNo ?? row.Name ?? '—');
-        const bdt = FmtDateDisplay(row.BillDate ?? row['Bill Date'] ?? row.billDate ?? row.ReceiveDate ?? row.receiveDate ?? '');
+        const bdt = FmtDateDisplay(row.BillDate ?? row['Bill Date'] ?? row.billDate ?? row.ReceiveDate ?? '');
         const totalBill = FmtCurrency(row.BillAmount ?? row.billAmount ?? row.TotalBillAmountManual ?? row.Amount ?? 0);
         const netNum = parseFloat(row.PayableAmount ?? row.payableAmount ?? row.NetPayable ?? row.netPayable ??
             row.BillAmount ?? row.billAmount ?? row.Amount ?? 0);
@@ -799,19 +813,13 @@ function RenderGpaModalItems(items) {
         const payNum = (payRaw !== undefined && payRaw !== null && payRaw !== '')
             ? parseFloat(payRaw)
             : netNum;
-        const netPay = FmtCurrency(netNum);
-        const payAmt = FmtCurrency(payNum);
-        const proj = EscHtml(row.Project ?? row.ProjectDesp ?? row.projectDesp ?? row.ProjectName ?? '—');
-        const subProj = EscHtml(row.SubProject ?? row.SubProjectDesp ?? row.subProjectDesp ?? row.SubProjectName ?? '—');
         html += '<tr>' +
             '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
             '<td style="font-weight:600;">' + billNo + '</td>' +
             '<td class="text-center">' + EscHtml(bdt || '—') + '</td>' +
             '<td class="text-end">' + totalBill + '</td>' +
-            '<td class="text-end">' + netPay + '</td>' +
-            '<td class="text-end" style="font-weight:700;color:#667eea;">' + payAmt + '</td>' +
-            '<td>' + proj + '</td>' +
-            '<td>' + subProj + '</td>' +
+            '<td class="text-end">' + FmtCurrency(netNum) + '</td>' +
+            '<td class="text-end" style="font-weight:700;color:#667eea;">' + FmtCurrency(payNum) + '</td>' +
             '</tr>';
     });
     $body.html(html);
@@ -823,7 +831,13 @@ function SubmitApproval(action) {
     const remarks = ($('#gpaFrmRemarks').val() || '').trim();
 
     if (!poCode) {
-        if (typeof toastr !== 'undefined') toastr.warning('No payment entry selected.');
+        if (typeof toastr !== 'undefined') toastr.warning('No GRN service entry selected.');
+        return;
+    }
+    if (!levelCode) {
+        if (typeof toastr !== 'undefined') {
+            toastr.warning('Could not determine approval level. Refresh the list or reopen the entry, then try again.');
+        }
         return;
     }
     if (action === 'Reject' && !remarks) {
@@ -862,41 +876,66 @@ function ExecuteGpaApproval(paymentCode, levelCode, remarks, action) {
 
     if (typeof Showloader === 'function') Showloader();
 
-    const serviceCall = action === 'Approve'
-        ? GRNPaymentApprovalService.ApproveGRNPayment(paymentCode, levelCode, remarks)
-        : GRNPaymentApprovalService.RejectGRNPayment(paymentCode, levelCode, remarks);
+    //var ModuleName = 'GRN Approval Configuration';
+    //var OptionName = 'Verify';
+    //var ShowMsg = 'Y';
+    //var FinYear = BizSolHelperFunction.getFinancialYear();
 
-    serviceCall
-        .then(function (response) {
-            if (typeof HideLoader === 'function') HideLoader();
-            const payload = unwrapGpaActionResponse(response) || response;
-            const st = payload && (payload.Status ?? payload.status);
-            const ok = payload && (
-                st === 'Y' || st === 'Success' || st === 'success' ||
-                payload.Success === true || payload.success === true || response === true
-            );
-            if (ok) {
-                const serverMsg = (payload.Msg || payload.Message || payload.message || '').trim();
-                if (typeof toastr !== 'undefined') {
-                    toastr.success(serverMsg || ('Payment entry ' + (action === 'Approve' ? 'approved' : 'rejected') + ' successfully.'));
+    //MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (perm) {
+    //    if (!perm || perm.CheckModuleOptionRight === 'N') {
+    //        if (typeof HideLoader === 'function') HideLoader();
+    //        if (typeof toastr !== 'undefined') {
+    //            toastr.error((perm && perm.Msg) ? perm.Msg : 'You do not have permission to verify.');
+    //        }
+    //        CloseDetailModal();
+    //        return;
+    //    }
+
+        const serviceCall = action === 'Approve'
+            ? MRNMasterApprovalService.ApproveMRNMaster(paymentCode, levelCode, remarks)
+            : MRNMasterApprovalService.RejectMRNMaster(paymentCode, levelCode, remarks);
+
+        serviceCall
+            .then(function (response) {
+                if (typeof HideLoader === 'function') HideLoader();
+                const payload = unwrapGpaActionResponse(response) || response;
+                const st = payload && (payload.Status ?? payload.status);
+                const stU = st != null ? String(st).toUpperCase() : '';
+                const okReject = action === 'Reject' && (stU === 'N' || stU === 'R' || stU === 'SUCCESS');
+                const ok = payload && (
+                    st === 'Y' || st === 'Success' || st === 'success' ||
+                    okReject ||
+                    payload.Success === true || payload.success === true || response === true
+                );
+                if (ok) {
+                    const serverMsg = (payload.Msg || payload.Message || payload.message || '').trim();
+                    const done = action === 'Approve' ? 'approved' : 'rejected';
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success(serverMsg || ('GRN Service entry ' + done + ' successfully.'));
+                    }
+                    CloseDetailModal();
+                    LoadPaymentList();
+                } else {
+                    const msg = (payload && (payload.Msg || payload.Message || payload.message)) ||
+                        ('Failed to ' + action.toLowerCase() + ' GRN service entry.');
+                    if (typeof toastr !== 'undefined') toastr.error(msg);
                 }
-                CloseDetailModal();
-                LoadPaymentList();
-            } else {
-                const msg = (payload && (payload.Msg || payload.Message || payload.message)) ||
-                    ('Failed to ' + action.toLowerCase() + ' payment entry.');
-                if (typeof toastr !== 'undefined') toastr.error(msg);
-            }
-        })
-        .catch(function () {
-            if (typeof HideLoader === 'function') HideLoader();
-            if (typeof toastr !== 'undefined') {
-                toastr.error('Error while ' + (action === 'Approve' ? 'approving' : 'rejecting') + ' payment entry.');
-            }
-        });
+            })
+            .catch(function () {
+                if (typeof HideLoader === 'function') HideLoader();
+                if (typeof toastr !== 'undefined') {
+                    toastr.error('Error while ' + (action === 'Approve' ? 'approving' : 'rejecting') + ' GRN service entry.');
+                }
+            });
+    //}).catch(function () {
+    //    if (typeof HideLoader === 'function') HideLoader();
+    //    if (typeof toastr !== 'undefined') {
+    //        toastr.error('Permission check failed.');
+    //    }
+    //});
 }
 
-function LoadGpaAttachmentsInline(masterCode) {
+function LoadMrnAttachmentsInline(masterCode) {
     const wrap = document.getElementById('gpaModalAttachList');
     if (!wrap) return;
     if (!masterCode || masterCode <= 0) {
@@ -904,7 +943,7 @@ function LoadGpaAttachmentsInline(masterCode) {
         return;
     }
     wrap.innerHTML = '<span style="font-size:0.78rem;color:#94a3b8;"><i class="fa fa-spinner fa-spin me-1"></i>Loading attachments\u2026</span>';
-    AttachmentControlService.GetAttachmentUploadFiles('GRNPaymentMaster', masterCode, '', 0)
+    AttachmentControlService.GetAttachmentUploadFiles('MRNMaster', masterCode, '', 0)
         .then(function (response) {
             const rows = Array.isArray(response) ? response : [];
             if (rows.length === 0) {
@@ -930,7 +969,7 @@ function LoadGpaAttachmentsInline(masterCode) {
                     '<div style="font-size:0.8rem;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + name + '</div>' +
                     (particulars ? '<div style="font-size:0.72rem;color:#64748b;">' + particulars + '</div>' : '') +
                     '</div>' +
-                    '<a href="#" onclick="GpaDownloadAttachment(' + code + ',\'' + name + '\'); return false;" ' +
+                    '<a href="#" onclick="MrnApprovalDownloadAttachment(' + code + ',\'' + name + '\'); return false;" ' +
                     'style="flex-shrink:0;font-size:0.75rem;color:#667eea;font-weight:600;text-decoration:none;" title="Download">' +
                     '<i class="fa fa-download me-1"></i>Download</a>' +
                     '</div>';
@@ -943,7 +982,7 @@ function LoadGpaAttachmentsInline(masterCode) {
         });
 }
 
-function GpaDownloadAttachment(code, fileName) {
+function MrnApprovalDownloadAttachment(code, fileName) {
     if (!code) return;
     if (typeof Showloader === 'function') Showloader();
     AttachmentControlService.DownloadAttachment(code)
@@ -997,7 +1036,14 @@ function ShowGpaEmpty(show) {
 function NavigateToGRNService() {
     const appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/'))
         .replace(/\/?$/, '/');
-    window.location.href = appBase + 'PurchaseTransactions/GRNPaymentApproval/GRNPaymentApproval?ModuleDesp=Payment%20Entry';
+    window.location.href = appBase + 'PurchaseTransactions/GRNService/GRNService?ModuleDesp=GRN%20Services';
+}
+
+function NavigateToGRNServiceApprovalConfiguration() {
+    const appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/'))
+        .replace(/\/?$/, '/');
+    window.location.href =
+        appBase + 'PurchaseTransactions/GRNService/GRNServiceApprovalConfiguration?ModuleDesp=GRN%20Services';
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -1018,5 +1064,6 @@ window.SubmitApproval = SubmitApproval;
 window.CloseDetailModal = CloseDetailModal;
 window.CloseConfirmModal = CloseConfirmModal;
 window.NavigateToGRNService = NavigateToGRNService;
+window.NavigateToGRNServiceApprovalConfiguration = NavigateToGRNServiceApprovalConfiguration;
 window.ToggleGpaPendingOnMeFilter = ToggleGpaPendingOnMeFilter;
-window.GpaDownloadAttachment = GpaDownloadAttachment;
+window.MrnApprovalDownloadAttachment = MrnApprovalDownloadAttachment;

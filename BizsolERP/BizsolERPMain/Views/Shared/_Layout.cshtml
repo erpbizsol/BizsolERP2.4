@@ -312,6 +312,37 @@
                         min-width: 20px;
                     }
 
+        /* Favourites - star button */
+        .menu-fav-star {
+            cursor: pointer;
+            transition: color 0.2s, transform 0.15s;
+            flex-shrink: 0;
+        }
+
+        .menu-fav-star:hover {
+            transform: scale(1.25);
+            color: #f6c90e !important;
+        }
+
+        .menu-fav-star.active-fav {
+            color: #f6c90e !important;
+        }
+
+        /* Sidebar section label */
+        .sidebar-section-label {
+            font-size: 0.6rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(199,210,254,0.45);
+            padding: 0.5rem 0.5rem 0.15rem 0.5rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Fav menu link star icon */
+        .fav-menu-link .fav-star-icon {
+            flex-shrink: 0;
+        }
+
         .modern-content {
             margin-left: 280px;
             margin-top: 70px;

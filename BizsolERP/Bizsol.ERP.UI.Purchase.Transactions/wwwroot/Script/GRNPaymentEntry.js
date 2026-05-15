@@ -322,23 +322,98 @@ async function tryApplyBankStatementEmbedPrefill(openedNewForm) {
 // ══════════════════════════════════════════════════════════════════════════════
 // LIST VIEW (GetGRNPaymentApprovalList → BizsolCustomFilterGrid, same as GRNService)
 // ══════════════════════════════════════════════════════════════════════════════
-/** Map API row to status code U / P / R (same semantics as status DDL from SQL). */
+/** Per-level row approved — same rules as GRNPaymentApproval.js levelRowIsApproved. */
+function gpaListLevelRowIsApproved(lvl) {
+    if (!lvl || typeof lvl !== 'object') return false;
+    const on = lvl.ApprovedOn ?? lvl.Approved_Date ?? lvl.ApprovedDate ?? lvl.ApprovedOnDate;
+    if (on != null && String(on).trim() !== '') return true;
+    const st = (lvl.Status ?? lvl.ApprovalStatus ?? lvl.IsApproved ?? '').toString().trim().toLowerCase();
+    return st === 'y' || st === 'approved' || st === '1' || st === 'true' || st === 'p';
+}
+
+/** Per-level row rejected — list API often leaves master Status as U but sets level row. */
+function gpaListLevelRowIsRejected(lvl) {
+    if (!lvl || typeof lvl !== 'object') return false;
+    const rej = lvl.IsRejected ?? lvl.isRejected ?? lvl.Rejected ?? lvl.rejected;
+    if (rej === true || rej === 1 || rej === 'Y' || rej === 'y' || String(rej).toLowerCase() === 'true') return true;
+    const raw = (lvl.Status ?? lvl.ApprovalStatus ?? lvl.LevelStatus ?? lvl.IsApproved ?? '').toString().trim();
+    const u = raw.toUpperCase();
+    const low = raw.toLowerCase();
+    if (u === 'R' || u === 'REJECT' || u === 'REJECTED' || low === 'rejected' || low === 'reject') return true;
+    const rejOn = lvl.RejectedOn ?? lvl.Rejected_Date ?? lvl.RejectionDate ?? lvl.RejectDate;
+    if (rejOn != null && String(rejOn).trim() !== '') return true;
+    return false;
+}
+
+function gpaListAnyLevelRejected(p) {
+    const levels = gpaListParseLevelDetailsToArray(p.LevelDetails);
+    for (let i = 0; i < levels.length; i++) {
+        if (gpaListLevelRowIsRejected(levels[i])) return true;
+    }
+    return false;
+}
+
+/** When master Status lags API, infer approved from levels (GRNPaymentApproval allLevelsApprovedFromDetails). */
+function gpaListAllLevelsApprovedFromDetails(p) {
+    const total = parseInt(p.TotalLevels ?? p.MaxLevel ?? 0, 10) || 0;
+    if (total < 1) return false;
+    const levels = gpaListParseLevelDetailsToArray(p.LevelDetails);
+    if (!levels.length) return false;
+    for (let i = 1; i <= total; i++) {
+        const lvl = levels.find(function (l) {
+            return gpaListLevelNoFromRow(l) === i;
+        });
+        if (!gpaListLevelRowIsApproved(lvl)) return false;
+    }
+    return true;
+}
+
+/** Map API row to status code U / P / R — aligned with GRNPaymentApproval getApprovalStatus + list quirks. */
 function normalizeGpaListStatusCode(item) {
     if (!item || typeof item !== 'object') return 'U';
-    const rej = item.IsRejected ?? item.isRejected ?? item.Rejected ?? item.rejected;
-    if (rej === true || rej === 1 || rej === 'Y' || rej === 'y' || String(rej).toLowerCase() === 'true') return 'R';
+
+    const rejMaster = item.IsRejected ?? item.isRejected ?? item.Rejected ?? item.rejected
+        ?? item.Reject_IND ?? item.RejectInd ?? item.RejectedYN;
+    if (rejMaster === true || rejMaster === 1 || rejMaster === 'Y' || rejMaster === 'y' || String(rejMaster).toLowerCase() === 'true') {
+        return 'R';
+    }
+    if (gpaListAnyLevelRejected(item)) return 'R';
+
     const v =
-        item.Status ?? item.status ?? item.ApprovalStatus ?? item.approvalStatus
+        item.Status ?? item.status ?? item.ApprovalStatus ?? item.approvalStatus ?? item.Approval_Status
         ?? item.EntryStatus ?? item.entryStatus ?? item.RecordStatus ?? item.recordStatus
         ?? item.PaymentStatus ?? item.paymentStatus ?? item.Flag ?? item.flag
-        ?? item.CodeStatus ?? item.codeStatus;
-    if (v === undefined || v === null || v === '') return 'U';
-    const s = String(v).trim().toUpperCase();
-    if (s === 'P' || s === 'APPROVED' || s === 'APPROVE') return 'P';
-    if (s === 'R' || s === 'REJECTED' || s === 'REJECT') return 'R';
-    if (s === 'U' || s === 'PENDING' || s === 'UNAPPROVED' || s === 'N' || s === 'NO') return 'U';
+        ?? item.CodeStatus ?? item.codeStatus ?? item.MasterStatus ?? item.masterStatus;
+    const rawStr = v !== undefined && v !== null ? String(v).trim() : '';
+    const s = rawStr.toUpperCase();
+    const slow = rawStr.toLowerCase();
+
+    if (s === 'R' || s === 'REJECTED' || s === 'REJECT' || slow === 'rejected'
+        || s === 'RECT' || s.indexOf('RECTIF') === 0) {
+        return 'R';
+    }
+    if (s === 'P' || s === 'APPROVED' || s === 'APPROVE' || rawStr === 'Y' || slow === 'approved') return 'P';
+
+    if (gpaListAllLevelsApprovedFromDetails(item)) return 'P';
+
+    const cur = parseInt(item.CurrentLevelNo ?? item.CurrentLevel ?? 0, 10) || 0;
+    const tot = parseInt(item.TotalLevels ?? item.MaxLevel ?? 0, 10) || 0;
+    if (tot > 0 && cur > tot) return 'P';
+
     const boolOk = item.IsApproved ?? item.isApproved ?? item.Approved ?? item.approved;
     if (boolOk === true || boolOk === 1 || boolOk === 'Y' || boolOk === 'y') return 'P';
+
+    if (rawStr === '' || rawStr === 'N' || s === 'U' || slow === 'pending' || s === 'UNAPPROVED' || s === 'NO') return 'U';
+
+    if (
+        slow === 'complete' || slow === 'completed'
+        || slow.indexOf('fully approved') >= 0 || slow.indexOf('final approved') >= 0
+        || slow.indexOf('all approved') >= 0
+        || (slow.indexOf('all levels') >= 0 && slow.indexOf('approved') >= 0)
+    ) {
+        return 'P';
+    }
+
     return 'U';
 }
 

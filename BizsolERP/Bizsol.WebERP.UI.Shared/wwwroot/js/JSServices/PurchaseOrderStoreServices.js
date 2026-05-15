@@ -134,6 +134,11 @@ const PurchaseOrderStoreService = {
                 return value;
             }
         );
+    },
+
+    UpdateMailSend: function UpdateMailSend(code) {
+        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/UpdateMailSend?Code=${encodeURIComponent(code)}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
     }
 
 }

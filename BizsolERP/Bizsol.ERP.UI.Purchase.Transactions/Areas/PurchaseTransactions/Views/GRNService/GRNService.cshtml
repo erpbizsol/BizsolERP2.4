@@ -1215,6 +1215,24 @@
     }
     #divGRNList .grn-verify-filter-tab--n .grn-verify-filter-tab-count { color: #fde047; }
     #divGRNList .grn-verify-filter-tab--y .grn-verify-filter-tab-count { color: #6ee7b7; }
+    #divGRNList .grn-verify-filter-tab--r .grn-verify-filter-tab-count { color: #fca5a5; }
+    #divGRNList .grn-verify-filter-tab--r {
+        border-color: rgba(239, 68, 68, 0.75);
+    }
+    #divGRNList .grn-verify-filter-tab--r.is-active {
+        background: rgba(239, 68, 68, 0.28);
+        border-color: rgba(239, 68, 68, 0.95);
+    }
+    #divGRNList .grn-verify-filter-tab--r:hover {
+        background: rgba(239, 68, 68, 0.18);
+        border-color: rgba(239, 68, 68, 0.85);
+    }
+    #divGRNList .grn-verify-filter-tab--onme {
+        min-width: 124px;
+        max-width: 138px;
+        border-color: rgba(244, 114, 182, 0.85);
+    }
+    #divGRNList .grn-verify-filter-tab--onme .grn-verify-filter-tab-count { color: #fbcfe8; font-size: 0.92rem; }
     #divGRNList .grn-verify-filter-tab-count {
         font-size: 1rem;
         font-weight: 800;
@@ -1248,19 +1266,32 @@
     <div class="po-list-header">
         <div class="po-list-header-left">
             <h5><i class="fa fa-receipt me-2"></i>GRN Service List</h5>
-            <small>Goods Receipt Note — filter by Pending or Verified</small>
+            <small id="grnListHeaderHint">Goods Receipt Note — <strong>Pending</strong> / <strong>Verified</strong> / <strong>Reject</strong> filter this list (same page); <strong>Pending on me</strong> opens MRN approval queue for items awaiting you</small>
         </div>
         <div class="po-list-header-right">
             <div class="grn-verify-filter-tabs" id="grnVerifyFilterTabs" role="tablist" aria-label="GRN verify status">
                 <button type="button" id="grnVerifyFilterTabPending" class="grn-verify-filter-tab grn-verify-filter-tab--n" role="tab"
-                        aria-pressed="false" onclick="onGrnListVerifyFilterClick('N')">
+                        aria-pressed="false" title="Show unverified GRNs in this list"
+                        onclick="onGrnListVerifyFilterClick('N')">
                     <span class="grn-verify-filter-tab-count" id="grnVerifyFilterCountPending">0</span>
                     <span class="grn-verify-filter-tab-lbl">Pending</span>
+                </button>
+                <button type="button" id="grnVerifyFilterTabPendingOnMe" class="grn-verify-filter-tab grn-verify-filter-tab--onme" role="button"
+                        title="Open MRN approval queue — items pending on you"
+                        onclick="navigateToMRNMasterApprovalPendingOnMe()">
+                    <span class="grn-verify-filter-tab-count" aria-hidden="true"><i class="fa fa-user-check"></i></span>
+                    <span class="grn-verify-filter-tab-lbl">Pending on me</span>
                 </button>
                 <button type="button" id="grnVerifyFilterTabVerified" class="grn-verify-filter-tab grn-verify-filter-tab--y" role="tab"
                         aria-pressed="false" onclick="onGrnListVerifyFilterClick('Y')">
                     <span class="grn-verify-filter-tab-count" id="grnVerifyFilterCountVerified">0</span>
                     <span class="grn-verify-filter-tab-lbl">Verified</span>
+                </button>
+                <button type="button" id="grnVerifyFilterTabReject" class="grn-verify-filter-tab grn-verify-filter-tab--r" role="tab"
+                        aria-pressed="false" title="Show rejected GRNs in this list"
+                        onclick="onGrnListVerifyFilterClick('R')">
+                    <span class="grn-verify-filter-tab-count" id="grnVerifyFilterCountReject">0</span>
+                    <span class="grn-verify-filter-tab-lbl">Reject</span>
                 </button>
             </div>
             <div class="po-list-header-actions">
