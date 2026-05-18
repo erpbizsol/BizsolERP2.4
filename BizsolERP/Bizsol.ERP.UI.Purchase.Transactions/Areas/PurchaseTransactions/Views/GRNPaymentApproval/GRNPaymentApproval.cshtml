@@ -7,6 +7,15 @@
 
 
 <style>
+    /* Bank-statement embed: bank + amount locked from parent row */
+    select.gpa-bs-embed-locked,
+    input.gpa-bs-embed-locked,
+    input.gpa-bs-embed-locked:disabled {
+        background-color: #f1f5f9 !important;
+        cursor: not-allowed;
+        opacity: 1;
+    }
+
     /* ── Payment Entry — same visual system as GRN Service ── */
     .po-step-card {
         background: #fff;
