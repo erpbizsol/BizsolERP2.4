@@ -1,5 +1,6 @@
 //import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
+import { BizSolHelperFunction } from '../../_content/Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 var _menuAllItems = [];
 var _menuUserID = '';
@@ -8,6 +9,7 @@ var _favouriteMenuCodes = [];
 $(document).ready(function () {
         bindMenu();
 });
+
 
 function bindMenu() {
     var baseUrl = sessionStorage.getItem('AppBaseURL');
@@ -24,6 +26,42 @@ function bindMenu() {
             $('#mobileERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})${LoginGodownName}`;
 
             _menuUserID = UserDetailsobj[0].UserID;
+
+            // ── Solar Home Button & Logo setup ───────────────────────────────
+            var baseUrlForHome = sessionStorage.getItem('AppBaseURL') || '';
+            var companyNameForBtn = (UserDetailsobj[0].CompanyNameForShow || '').toLowerCase();
+            var isSolar = companyNameForBtn.includes('solar');
+            var targetUrl = isSolar
+                ? baseUrlForHome + '/CRMTransactions/ProjectDetail/ProjectDetailDashboard'
+                : baseUrlForHome + '/';
+            var targetTitle = isSolar ? 'Project Dashboard' : 'Home';
+
+            var solarHomeBtn = document.getElementById('solarHomeBtn');
+            if (solarHomeBtn) {
+                solarHomeBtn.title = targetTitle;
+                solarHomeBtn.setAttribute('aria-label', targetTitle);
+                solarHomeBtn.href = targetUrl;
+            }
+
+            var appLogoBtn = document.getElementById('appLogoBtn');
+            if (appLogoBtn) {
+                appLogoBtn.title = targetTitle;
+                appLogoBtn.setAttribute('aria-label', targetTitle);
+                appLogoBtn.href = targetUrl;
+            }
+
+            // Auto-redirect to dashboard on login for Solar company
+            if (isSolar) {
+                var currentPath = window.location.pathname;
+                var isHomePage = currentPath === '/' || currentPath === '' ||
+                    currentPath.toLowerCase() === '/home' ||
+                    currentPath.toLowerCase() === '/home/index';
+                if (isHomePage) {
+                    window.location.href = targetUrl;
+                    return;
+                }
+            }
+            // ─────────────────────────────────────────────────────────────────
 
             MenuService.GetMenuList(_menuUserID).then(function (value) {
                 _menuAllItems = value;

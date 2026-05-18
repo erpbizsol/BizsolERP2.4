@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+
     <meta charset="utf-8" />
     <title>BizSol ERP2.4</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1501,15 +1502,21 @@
                     <button type="button" class="header-icon-btn me-3" id="vertical-menu-btn">
                         <i class="fa fa-bars"></i>
                     </button>
-                    <div class="app-logo">
-                        <img src="~/assets/images/logo-full.jpeg" alt="BizSol">
-                        <span class="d-none d-md-inline">BizSol ERP</span>
-                    </div>
+                    <a id="appLogoBtn" href="#" title="Home" aria-label="Home" style="text-decoration:none;color:inherit;">
+                        <div class="app-logo">
+                            <img src="~/assets/images/logo-full.jpeg" alt="BizSol">
+                            <span class="d-none d-md-inline">BizSol ERP</span>
+                        </div>
+                    </a>
                 </div>
                 <div class="erp-heading-wrapper">
                     <h4 class="mb-0 erpHedTextSize" id="ERPHeading">Dashboard</h4>
                 </div>
                 <div class="header-actions">
+                    <a id="solarHomeBtn" href="#" title="Home"
+                       class="header-icon-btn" aria-label="Home">
+                        <i class="fas fa-home"></i>
+                    </a>
                     <button type="button" class="header-icon-btn position-relative" id="bell-icon" data-bs-toggle="dropdown" aria-label="Notifications">
                         <i class="fa-regular fa-bell"></i>
                         <span class="notification-badge notification-bell-badge position-absolute" id="notificationCount" aria-hidden="true"></span>
