@@ -182,6 +182,61 @@
     </div>
 </div>
 
+<!-- Reconciled = No: pick existing payment list vs new payment entry -->
+<div id="bsReconcileChoiceBackdrop" class="bs-backdrop" aria-hidden="true">
+    <div id="bsReconcileChoiceInner" class="bs-confirm-modal bs-reconcile-choice-modal" role="dialog" aria-modal="true" aria-labelledby="bsReconcileChoiceTitle" style="max-width: 26rem;">
+        <div id="bsReconcileChoiceStepPick">
+            <div class="bs-confirm-icon" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5;">
+                <i class="fas fa-link"></i>
+            </div>
+            <div class="bs-confirm-title" id="bsReconcileChoiceTitle">Reconcile this line</div>
+            <div class="bs-confirm-text text-start">
+                Link this bank withdrawal to a payment entry. Choose <strong>Existing Reconciled</strong> to pick from the pending list, or <strong>New Reconciled</strong> to open a new payment with this line’s date, amount, reference, and narration filled in.
+            </div>
+            <div class="d-flex flex-column gap-2 my-3 px-1">
+                <button type="button" class="bs-btn-primary w-100" id="btnBsReconcileChoiceExisting">
+                    <i class="fas fa-list-ul me-2"></i>Reconcile with existing payment entry
+                </button>
+                <button type="button" class="bs-btn-secondary w-100" id="btnBsReconcileChoiceNew">
+                    <i class="fas fa-file-circle-plus me-2"></i>New Reconciled
+                </button>
+            </div>
+            <div class="bs-confirm-actions">
+                <button type="button" class="bs-btn-ghost w-100" id="btnBsReconcileChoiceCancel">
+                    <i class="fas fa-ban me-1"></i>Cancel
+                </button>
+            </div>
+        </div>
+        <div id="bsReconcileChoiceStepList" style="display: none;">
+            <div class="bs-confirm-title mb-2 text-start">Pick pending payment</div>
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                <button type="button" class="bs-btn-ghost" id="btnBsReconcileExistingBack">
+                    <i class="fas fa-arrow-left me-1"></i>Back
+                </button>
+            </div>
+            <p class="small text-muted text-start mb-2">
+                Pending GRN payment entries (<strong>Status P</strong>) from the bank statement list API. Choose a row and click <strong>Reconcile</strong> to link it to this bank line.
+            </p>
+            <div id="tblBsPendingGrnLoad" class="text-center py-4 text-muted" style="display: none;">
+                <i class="fas fa-spinner fa-spin me-2" aria-hidden="true"></i>Loading…
+            </div>
+            <div id="tblBsPendingGrnEmpty" class="text-center py-4 text-muted" style="display: none;">No pending payment entries found.</div>
+            <div id="tblBsPendingGrnScroll" class="bs-table-wrapper table-wrapper" style="display: none; max-height: 55vh; overflow: auto;">
+                <table class="table table-sm table-bordered align-middle mb-0 items-table w-100" id="tblBsPendingGrnList">
+                    <thead id="tblBsPendingGrnTable-hader"></thead>
+                    <tbody id="tblBsPendingGrnTbody-body"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-tblBsPendingGrnList" style="display: none;"></div>
+            <div class="bs-confirm-actions mt-3 mb-0">
+                <button type="button" class="bs-btn-ghost w-100" id="btnBsReconcileChoiceCancelFromList">
+                    <i class="fas fa-ban me-1"></i>Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- GRN Payment Entry — embedded in modal when user clicks Reconciled = No (vendor / + flows stay inside iframe) -->
 <div id="bsGrnPaymentEmbedBackdrop" class="bs-backdrop bs-grn-embed-backdrop" aria-hidden="true">
     <div class="bs-grn-embed-panel" role="dialog" aria-modal="true" aria-labelledby="bsGrnEmbedTitle">

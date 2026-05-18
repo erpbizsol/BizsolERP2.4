@@ -538,6 +538,24 @@
     color: var(--accent-warning);
 }
 
+/* ── Footer actions (Save / Back / master Attachment) ───────────────── */
+.expense-entry-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.expense-entry-actions .ee-btn-master-attach {
+    margin-left: auto;
+}
+
+#ExpenseEntryDetails .ee-btn-detail-attach.ee-attach-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: auto;
+}
+
 /* ── Buttons (matches pm-btn-new, Layout gradients) ───────────────────── */
 .expense-entry-actions .btn,
 .expense-entry-card .btn {
@@ -601,6 +619,11 @@
     background: var(--info-gradient);
     border: none;
     color: #fff;
+}
+
+.expense-entry-actions .btn-info:hover,
+.expense-entry-card .btn.btn-info:hover {
+    transform: translateY(-2px);
 }
 
 /* Icon-only: approval configuration (outline was invisible — global .btn often forces white text) */

@@ -88,6 +88,27 @@ const BankStatementService = {
     },
 
     /**
+     * USP_WebAPI_BankStatement @Mode = ExistingReconciled — pending GRN payments (Status P) for bank reconcile pick list.
+     * Web API: GET …/GetExistingReconciledPendingGrnList — execute SP with Mode ExistingReconciled and return rowset as JSON array.
+     */
+    /**
+     * @param {number} [bankStatementCode] When set, Web API should pass @Code so the SP can filter pending GRN rows by bank + amount for this line.
+     */
+    GetExistingReconciledPendingGrnList: function GetExistingReconciledPendingGrnList(bankStatementCode) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var bc = parseInt(String(bankStatementCode == null ? 0 : bankStatementCode), 10) || 0;
+        var URL = UrlService.API_ENDPOINT_BANK_STATEMENT
+            + `/GetExistingReconciled?UserMaster_Code=${encodeURIComponent(userMasterCode)}`;
+        if (bc > 0) {
+            URL += `&Code=${encodeURIComponent(bc)}`;
+        }
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
+    /**
      * RECONCILE — optional grnPaymentMasterCode on query string maps to @GRNPaymentMaster_Code on SP RECONCILE.
      */
     ReconcileBankStatement: function ReconcileBankStatement(code, grnPaymentMasterCode) {

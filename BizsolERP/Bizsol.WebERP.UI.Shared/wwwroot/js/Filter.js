@@ -26,6 +26,29 @@ window.formatIndianNumber = function formatIndianNumber(value, decimals) {
     return sign + grouped + (decPart !== undefined ? '.' + decPart : '');
 };
 
+/**
+ * Parse a grid cell for totalColumns / grand totals: plain numbers work; HTML (e.g. &lt;input value="100"&gt;) reads value="...".
+ */
+window.parseNumericCellForTotal = function parseNumericCellForTotal(raw) {
+    if (raw === null || raw === undefined) return NaN;
+    if (typeof raw === 'number' && isFinite(raw)) return raw;
+    var str = String(raw).trim();
+    if (str === '') return NaN;
+    var n = parseFloat(str.replace(/,/g, ''));
+    if (!isNaN(n) && isFinite(n)) return n;
+    var m = str.match(/value\s*=\s*"([^"]*)"/i);
+    if (m && m[1] !== undefined && m[1] !== '') {
+        n = parseFloat(String(m[1]).replace(/,/g, ''));
+        if (!isNaN(n) && isFinite(n)) return n;
+    }
+    m = str.match(/value\s*=\s*'([^']*)'/i);
+    if (m && m[1] !== undefined && m[1] !== '') {
+        n = parseFloat(String(m[1]).replace(/,/g, ''));
+        if (!isNaN(n) && isFinite(n)) return n;
+    }
+    return NaN;
+};
+
 const BizsolCustomFilterGrid = {
     CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null, FixedDecimalvalue = null, CommaColumns = null) {
         const columns = Object.keys(data[0]);
@@ -767,7 +790,7 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
 
         items.forEach(item => {
             totalColumns.forEach(colName => {
-                const value = parseFloat(item[colName]);
+                const value = window.parseNumericCellForTotal(item[colName]);
                 if (!isNaN(value) && isFinite(value)) {
                     columnTotals[colName] += value;
                 }
@@ -925,7 +948,7 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
 
     filteredData.forEach(item => {
         totalColumns.forEach(colName => {
-            const value = parseFloat(item[colName]);
+            const value = window.parseNumericCellForTotal(item[colName]);
             if (!isNaN(value) && isFinite(value)) {
                 grandTotals[colName] += value;
             }
