@@ -154,6 +154,7 @@ let UrlService = {
     API_ENDPOINT_SendMail: `${environment.BASE_URL}/SendMail`,
     API_ENDPOINT_ExpensesLedgerReport: `${environment.BASE_URL}/ExpensesLedgerReport`,
     API_ENDPOINT_AREA_ExpensesLedgerReport: `${environment.BASE_URL}/ExpensesLedgerReport`,
+    API_ENDPOINT_ProjectDetailDashboard: `${environment.BASE_URL}/ProjectDetail`,
 }
 
 export { UrlService  }
