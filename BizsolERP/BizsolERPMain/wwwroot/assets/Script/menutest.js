@@ -10,6 +10,7 @@ $(document).ready(function () {
         bindMenu();
 });
 
+
 function bindMenu() {
     var baseUrl = sessionStorage.getItem('AppBaseURL');
     let LoginGodownName = JSON.parse(sessionStorage.getItem('authKey')).WebERPLoginGodownName;

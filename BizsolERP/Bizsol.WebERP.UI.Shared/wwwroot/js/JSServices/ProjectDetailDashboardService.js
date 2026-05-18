@@ -3,6 +3,7 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const BASE = () => UrlService.API_ENDPOINT_ProjectDetailDashboard;
 
+
 const ProjectDetailDashboardService = {
 
     // GET api/ProjectDetailDashboard/GetProjectList

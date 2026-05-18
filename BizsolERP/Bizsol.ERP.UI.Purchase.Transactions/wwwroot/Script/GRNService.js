@@ -9,6 +9,7 @@ function blockNonNumeric(e) {
     if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
 }
 // Strip any remaining non-numeric characters (paste, autofill, etc.)
+
 function stripNonNumeric(el) {
     const val = el.value;
     const cleaned = val.replace(/[^0-9.]/g, '')   // keep digits and one dot
