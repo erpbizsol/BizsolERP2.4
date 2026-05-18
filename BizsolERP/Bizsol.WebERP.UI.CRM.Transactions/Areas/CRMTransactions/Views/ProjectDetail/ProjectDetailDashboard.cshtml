@@ -1,0 +1,740 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/ProjectDetailDashboard.js"></script>
+
+<style>
+    /* ── GLOBAL ─────────────────────────────────────────────────── */
+    .pdd-wrap {
+        background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 50%, #f0fdf4 100%);
+        min-height: 100vh;
+        padding: 4px;
+    }
+
+    /* ── PAGE HEADER BANNER ─────────────────────────────────────── */
+    .pdd-page-header {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6366f1 100%);
+        border-radius: 18px;
+        padding: 20px 28px 18px;
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(99,102,241,0.3);
+    }
+    .pdd-page-header::before {
+        content: '';
+        position: absolute;
+        top: -40px; right: -40px;
+        width: 200px; height: 200px;
+        background: rgba(255,255,255,0.07);
+        border-radius: 50%;
+    }
+    .pdd-page-header::after {
+        content: '';
+        position: absolute;
+        bottom: -60px; left: 30%;
+        width: 280px; height: 280px;
+        background: rgba(255,255,255,0.04);
+        border-radius: 50%;
+    }
+    .pdd-header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+        z-index: 1;
+    }
+    .pdd-header-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .pdd-header-icon {
+        width: 48px; height: 48px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; color: #fff;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.25);
+    }
+    .pdd-header-title {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+    }
+    .pdd-header-subtitle {
+        font-size: 0.75rem;
+        color: rgba(255,255,255,0.7);
+        margin-top: 2px;
+        font-weight: 500;
+    }
+    .pdd-header-badge {
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 5px 14px;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        letter-spacing: 0.04em;
+    }
+
+    /* ── FILTER BAR ─────────────────────────────────────────────── */
+    .pdd-filter-bar {
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.9);
+        border-radius: 18px;
+        padding: 18px 24px 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 24px rgba(99,102,241,0.08), 0 1px 4px rgba(0,0,0,0.04);
+        position: relative;
+        overflow: hidden;
+    }
+    .pdd-filter-bar::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa);
+        border-radius: 18px 18px 0 0;
+    }
+    .pdd-filter-bar .form-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #6366f1;
+        margin-bottom: 5px;
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    .pdd-filter-bar .form-control,
+    .pdd-filter-bar .form-select {
+        border: 1.5px solid #e0e7ff;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        background: #fafaff;
+        color: #1e1b4b;
+        transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+        padding: 7px 12px;
+    }
+    .pdd-filter-bar .form-control:focus,
+    .pdd-filter-bar .form-select:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        background: #fff;
+        outline: none;
+    }
+    .pdd-btn-show {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 0 16px;
+        font-size: 0.83rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        width: 100%;
+        box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+        letter-spacing: 0.02em;
+        height: 33px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+    }
+    .pdd-btn-show:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99,102,241,0.45);
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    }
+    .pdd-btn-show:active { transform: translateY(0); }
+    .pdd-btn-reset {
+        background: #fff;
+        color: #6366f1;
+        border: 1.5px solid #e0e7ff;
+        border-radius: 10px;
+        padding: 0 16px;
+        font-size: 0.83rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        width: 100%;
+        height: 33px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+    }
+    .pdd-btn-reset:hover {
+        background: #f5f3ff;
+        border-color: #a78bfa;
+        color: #7c3aed;
+    }
+
+    /* ── KPI CARDS ──────────────────────────────────────────────── */
+    .pdd-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    @@media (max-width: 1100px) { .pdd-kpi-grid { grid-template-columns: repeat(2,1fr); } }
+    @@media (max-width: 600px)  { .pdd-kpi-grid { grid-template-columns: 1fr; } }
+
+    .pdd-kpi-card {
+        border-radius: 18px;
+        padding: 20px 20px 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        position: relative;
+        overflow: hidden;
+        cursor: default;
+    }
+    .pdd-kpi-card::after {
+        content: '';
+        position: absolute;
+        bottom: -30px; right: -20px;
+        width: 100px; height: 100px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.12);
+    }
+    .pdd-kpi-card:hover { transform: translateY(-4px); }
+
+    .pdd-kpi-card.kpi-red {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        box-shadow: 0 8px 24px rgba(238,90,36,0.3);
+    }
+    .pdd-kpi-card.kpi-amber {
+        background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+        box-shadow: 0 8px 24px rgba(225,112,85,0.3);
+    }
+    .pdd-kpi-card.kpi-purple {
+        background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+        box-shadow: 0 8px 24px rgba(108,92,231,0.35);
+    }
+    .pdd-kpi-card.kpi-green {
+        background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);
+        box-shadow: 0 8px 24px rgba(0,184,148,0.3);
+    }
+
+    .pdd-kpi-icon {
+        width: 50px; height: 50px; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem; flex-shrink: 0;
+        background: rgba(255,255,255,0.22);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.3);
+        backdrop-filter: blur(8px);
+    }
+    .pdd-kpi-body { flex: 1; position: relative; z-index: 1; }
+    .pdd-kpi-value {
+        font-size: 1.75rem;
+        font-weight: 900;
+        color: #fff;
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .pdd-kpi-label {
+        font-size: 0.73rem;
+        color: rgba(255,255,255,0.85);
+        font-weight: 600;
+        margin-top: 3px;
+        line-height: 1.3;
+    }
+    .pdd-kpi-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 8px;
+        font-size: 0.66rem;
+        font-weight: 700;
+        border-radius: 20px;
+        padding: 3px 10px;
+        letter-spacing: 0.05em;
+        background: rgba(255,255,255,0.25);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.35);
+    }
+
+    /* ── CHART CARDS ────────────────────────────────────────────── */
+    .pdd-chart-row {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+    .pdd-chart-row-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+    @@media (max-width: 900px) {
+        .pdd-chart-row, .pdd-chart-row-3 { grid-template-columns: 1fr; }
+    }
+
+    .pdd-chart-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 18px;
+        padding: 20px 22px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.03);
+        border: 1px solid rgba(255,255,255,0.9);
+        position: relative;
+        overflow: hidden;
+        transition: box-shadow 0.2s;
+    }
+    .pdd-chart-card:hover {
+        box-shadow: 0 8px 32px rgba(99,102,241,0.12), 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .pdd-chart-card.accent-indigo::before  { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#6366f1,#8b5cf6); border-radius:18px 18px 0 0; }
+    .pdd-chart-card.accent-emerald::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#10b981,#34d399); border-radius:18px 18px 0 0; }
+    .pdd-chart-card.accent-amber::before   { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#f59e0b,#fbbf24); border-radius:18px 18px 0 0; }
+    .pdd-chart-card.accent-violet::before  { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#8b5cf6,#c084fc); border-radius:18px 18px 0 0; }
+    .pdd-chart-card.accent-rose::before    { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#ef4444,#f97316); border-radius:18px 18px 0 0; }
+
+    .pdd-chart-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 14px;
+    }
+    .pdd-chart-title-wrap { display: flex; align-items: center; gap: 8px; }
+    .pdd-chart-title-icon {
+        width: 32px; height: 32px; border-radius: 9px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.85rem;
+    }
+    .pdd-chart-title-icon.ti-indigo  { background: #eef2ff; color: #6366f1; }
+    .pdd-chart-title-icon.ti-emerald { background: #ecfdf5; color: #10b981; }
+    .pdd-chart-title-icon.ti-amber   { background: #fffbeb; color: #f59e0b; }
+    .pdd-chart-title-icon.ti-violet  { background: #f5f3ff; color: #8b5cf6; }
+    .pdd-chart-title-icon.ti-rose    { background: #fff1f2; color: #ef4444; }
+
+    .pdd-chart-title {
+        font-size: 0.87rem; font-weight: 800; color: #1e293b; line-height: 1.2;
+    }
+    .pdd-chart-title span { font-size: 0.7rem; font-weight: 500; color: #94a3b8; display:block; }
+    .pdd-chart-action {
+        font-size: 0.68rem; font-weight: 700; border-radius: 8px;
+        padding: 4px 12px;
+        background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+        color: #6366f1;
+        border: 1px solid #e0e7ff;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+    }
+    .pdd-chart-action:hover { background: linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; border-color:transparent; }
+
+    /* ── DONUT LEGEND ───────────────────────────────────────────── */
+    .pdd-legend { margin-top: 14px; }
+    .pdd-legend-row {
+        display: flex; align-items: center; justify-content: space-between;
+        font-size: 0.78rem; color: #475569; padding: 5px 0;
+        border-bottom: 1px dashed #f1f5f9;
+    }
+    .pdd-legend-row:last-child { border-bottom: none; }
+    .pdd-legend-dot-wrap { display: flex; align-items: center; gap: 7px; }
+    .pdd-legend-row .dot {
+        width: 10px; height: 10px; border-radius: 3px; display: inline-block;
+    }
+    .pdd-legend-row .lbl { flex: 1; font-weight: 500; }
+    .pdd-legend-row .val { font-weight: 800; color: #1e293b; }
+    .pdd-legend-divider { border-top: 2px solid #f1f5f9; margin: 8px 0; }
+    .pdd-legend-total {
+        font-size: 0.82rem; font-weight: 800; color: #1e293b;
+        background: #f8faff; border-radius: 8px; padding: 6px 8px;
+        border: none !important;
+    }
+
+    /* ── BUDGET VS ACTUAL ───────────────────────────────────────── */
+    .pdd-bva-stats-row {
+        display: grid; grid-template-columns: 1fr 1px 1fr;
+        gap: 0; background: linear-gradient(135deg,#f8faff,#f5f3ff);
+        border-radius: 14px; padding: 14px 10px; margin-bottom: 14px;
+        border: 1px solid #e0e7ff;
+    }
+    .pdd-bva-stat { text-align: center; padding: 0 12px; }
+    .bva-lbl { font-size: 0.68rem; color: #6366f1; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .bva-val { font-size: 1.15rem; font-weight: 900; color: #1e293b; }
+    .pdd-bva-divider { background: #e0e7ff; align-self: stretch; width: 1px; }
+
+    .pdd-utilization-wrap { margin-bottom: 14px; }
+    .pdd-utilization-label {
+        font-size: 0.7rem; color: #64748b; font-weight: 700;
+        margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .pdd-progress-outer {
+        background: #f1f5f9; border-radius: 20px; height: 16px;
+        overflow: hidden; position: relative;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    }
+    .pdd-progress-inner {
+        height: 100%; border-radius: 20px;
+        background: linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa);
+        transition: width 1.2s cubic-bezier(.4,0,.2,1);
+        min-width: 4px;
+        position: relative;
+        overflow: hidden;
+    }
+    .pdd-progress-inner::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: pdd-shimmer 2s infinite;
+    }
+    @@keyframes pdd-shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    .pdd-utilization-pct {
+        font-size: 1.5rem; font-weight: 900;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-align: center; margin-top: 10px;
+    }
+
+    /* ── SECTION LABEL ──────────────────────────────────────────── */
+    .pdd-section-label {
+        font-size: 0.68rem; color: #8b5cf6; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .pdd-section-label::after {
+        content: ''; flex: 1; height: 1px;
+        background: linear-gradient(90deg, #e0e7ff, transparent);
+    }
+
+    /* ── LOADING OVERLAY ────────────────────────────────────────── */
+    #pddLoadingOverlay {
+        position: fixed; inset: 0;
+        background: rgba(15,23,42,0.45);
+        backdrop-filter: blur(4px);
+        z-index: 9999; display: none; align-items: center; justify-content: center;
+    }
+    #pddLoadingOverlay.active { display: flex; }
+    .pdd-loader-card {
+        background: #fff; border-radius: 20px;
+        padding: 32px 40px; text-align: center;
+        box-shadow: 0 24px 60px rgba(0,0,0,0.2);
+        border: 1px solid rgba(99,102,241,0.15);
+    }
+    .pdd-spinner {
+        width: 48px; height: 48px; border-radius: 50%;
+        border: 4px solid #e0e7ff;
+        border-top-color: #6366f1;
+        animation: pdd-spin 0.75s linear infinite;
+        margin: 0 auto 12px;
+    }
+    .pdd-loader-text {
+        font-size: 0.82rem; font-weight: 700; color: #6366f1; letter-spacing: 0.04em;
+    }
+    @@keyframes pdd-spin { to { transform: rotate(360deg); } }
+
+    /* ── FOOTER NOTE ────────────────────────────────────────────── */
+    .pdd-footer-note {
+        font-size: 0.7rem; color: #94a3b8; text-align: right; margin-top: 8px;
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.6);
+        border-radius: 8px;
+        border: 1px solid #f1f5f9;
+        display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+    }
+    .pdd-footer-note::before {
+        content: '\f017';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        color: #c4b5fd;
+        font-size: 0.72rem;
+    }
+
+    /* ── TOTAL EXPENSE DISPLAY ──────────────────────────────────── */
+    .pdd-exp-total-box {
+        background: linear-gradient(135deg, #faf5ff, #f5f3ff);
+        border: 1px solid #e9d5ff;
+        border-radius: 12px;
+        padding: 10px 14px;
+        margin-bottom: 10px;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .pdd-exp-total-label { font-size: 0.68rem; font-weight: 700; color: #8b5cf6; text-transform: uppercase; letter-spacing: 0.06em; }
+    .pdd-exp-total-val { font-size: 1.1rem; font-weight: 900; color: #1e293b; }
+</style>
+
+<!-- Loading overlay -->
+<div id="pddLoadingOverlay">
+    <div class="pdd-loader-card">
+        <div class="pdd-spinner"></div>
+        <div class="pdd-loader-text">Loading Dashboard...</div>
+    </div>
+</div>
+
+<div class="pdd-wrap">
+    <div class="card1 card-section">
+        <div class="card-body" style="padding:0;">
+
+            <!-- ── PAGE HEADER ────────────────────────────────────── -->
+            <div class="pdd-page-header">
+                <div class="pdd-header-content">
+                    <div class="pdd-header-left">
+                        <div class="pdd-header-icon">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <div>
+                            <div class="pdd-header-title">Project Detail Dashboard</div>
+                            <div class="pdd-header-subtitle">Real-time project analytics &amp; financial insights</div>
+                        </div>
+                    </div>
+                    <div class="pdd-header-badge">
+                        <i class="fa-solid fa-circle-dot fa-fade" style="color:#86efac;"></i> &nbsp;Live Data
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── FILTER BAR ──────────────────────────────────────── -->
+            <div class="pdd-filter-bar">
+                <div class="row g-3 align-items-end">
+                    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+                        <label class="form-label" for="ddlProject"><i class="fa-solid fa-folder-open me-1"></i>Project</label>
+                        <select id="ddlProject" class="form-select form-select-sm">
+                            <option value="0">-- Select Project --</option>
+                        </select>
+                    </div>
+                    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+                        <label class="form-label" for="ddlSubProject"><i class="fa-solid fa-diagram-project me-1"></i>Sub Project</label>
+                        <select id="ddlSubProject" class="form-select form-select-sm" disabled>
+                            <option value="0">-- All Sub Projects --</option>
+                        </select>
+                    </div>
+                    <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6">
+                        <label class="form-label" for="pddFromDate"><i class="fa-solid fa-calendar-days me-1"></i>From Date</label>
+                        <input type="date" id="pddFromDate" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6">
+                        <label class="form-label" for="pddToDate"><i class="fa-solid fa-calendar-check me-1"></i>To Date</label>
+                        <input type="date" id="pddToDate" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-xl-1 col-lg-1 col-md-2 col-sm-6">
+                        <button class="pdd-btn-show" id="btnPddShow" onclick="LoadDashboard()">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i>Show
+                        </button>
+                    </div>
+                    <div class="col-xl-1 col-lg-1 col-md-2 col-sm-6">
+                        <button class="pdd-btn-reset" id="btnPddReset" onclick="ResetDashboard()">
+                            <i class="fa-solid fa-rotate-left me-1"></i>Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── KPI CARDS ────────────────────────────────────────── -->
+            <div class="pdd-kpi-grid" id="pddKpiGrid">
+                <div class="pdd-kpi-card kpi-red">
+                    <div class="pdd-kpi-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+                    <div class="pdd-kpi-body">
+                        <div class="pdd-kpi-value" id="kpiPOCount">—</div>
+                        <div class="pdd-kpi-label">Pending PO Approvals</div>
+                        <span class="pdd-kpi-badge"><i class="fa-solid fa-triangle-exclamation fa-xs"></i> High Priority</span>
+                    </div>
+                </div>
+                <div class="pdd-kpi-card kpi-amber">
+                    <div class="pdd-kpi-icon"><i class="fa-solid fa-credit-card"></i></div>
+                    <div class="pdd-kpi-body">
+                        <div class="pdd-kpi-value" id="kpiPaymentAmt">—</div>
+                        <div class="pdd-kpi-label">Pending Payment Approvals</div>
+                        <span class="pdd-kpi-badge"><i class="fa-solid fa-bell fa-xs"></i> Attention</span>
+                    </div>
+                </div>
+                <div class="pdd-kpi-card kpi-purple">
+                    <div class="pdd-kpi-icon"><i class="fa-solid fa-file-invoice"></i></div>
+                    <div class="pdd-kpi-body">
+                        <div class="pdd-kpi-value" id="kpiExpenseAmt">—</div>
+                        <div class="pdd-kpi-label">Pending Expense Approvals</div>
+                        <span class="pdd-kpi-badge"><i class="fa-solid fa-triangle-exclamation fa-xs"></i> High Priority</span>
+                    </div>
+                </div>
+                <div class="pdd-kpi-card kpi-green">
+                    <div class="pdd-kpi-icon"><i class="fa-solid fa-briefcase"></i></div>
+                    <div class="pdd-kpi-body">
+                        <div class="pdd-kpi-value" id="kpiTotalProjects">—</div>
+                        <div class="pdd-kpi-label">Total Projects</div>
+                        <span class="pdd-kpi-badge"><i class="fa-solid fa-circle-check fa-xs"></i> Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── ROW 2: PO STATUS + PAYMENT TREND ────────────────── -->
+            <div class="pdd-chart-row">
+                <!-- PO Status Donut -->
+                <div class="pdd-chart-card accent-emerald">
+                    <div class="pdd-chart-header">
+                        <div class="pdd-chart-title-wrap">
+                            <div class="pdd-chart-title-icon ti-emerald"><i class="fa-solid fa-circle-dot"></i></div>
+                            <div class="pdd-chart-title">PO Status <span>This Period</span></div>
+                        </div>
+                    </div>
+                    <div style="position:relative;height:190px;display:flex;align-items:center;justify-content:center;">
+                        <canvas id="chartPOStatus"></canvas>
+                    </div>
+                    <div class="pdd-legend" id="legendPOStatus">
+                        <div class="pdd-legend-row">
+                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#22c55e"></span><span class="lbl">Approved</span></div>
+                            <span class="val" id="legPOApproved">—</span>
+                        </div>
+                        <div class="pdd-legend-row">
+                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#f59e0b"></span><span class="lbl">Pending</span></div>
+                            <span class="val" id="legPOPending">—</span>
+                        </div>
+                        <div class="pdd-legend-row">
+                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#ef4444"></span><span class="lbl">Rejected</span></div>
+                            <span class="val" id="legPORejected">—</span>
+                        </div>
+                        <div class="pdd-legend-divider"></div>
+                        <div class="pdd-legend-row pdd-legend-total">
+                            <span>Total PO</span>
+                            <span id="legPOTotal">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Trend Bar -->
+                <div class="pdd-chart-card accent-indigo">
+                    <div class="pdd-chart-header">
+                        <div class="pdd-chart-title-wrap">
+                            <div class="pdd-chart-title-icon ti-indigo"><i class="fa-solid fa-chart-bar"></i></div>
+                            <div class="pdd-chart-title">Payment Trend <span>Monthly This Year</span></div>
+                        </div>
+                        <span class="pdd-chart-action" id="trendYear">—</span>
+                    </div>
+                    <div style="position:relative;height:270px;">
+                        <canvas id="chartPaymentTrend"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── ROW 3: PROJECT SUMMARY + BUDGET VS ACTUAL + EXPENSE SUMMARY ── -->
+            <div class="pdd-chart-row-3">
+                <!-- Project Summary -->
+                <div class="pdd-chart-card accent-violet">
+                    <div class="pdd-chart-header">
+                        <div class="pdd-chart-title-wrap">
+                            <div class="pdd-chart-title-icon ti-violet"><i class="fa-solid fa-layer-group"></i></div>
+                            <div class="pdd-chart-title">Project Summary</div>
+                        </div>
+                        <a class="pdd-chart-action">View All</a>
+                    </div>
+                    <div style="position:relative;height:165px;display:flex;align-items:center;justify-content:center;">
+                        <canvas id="chartProjectSummary"></canvas>
+                        <div style="position:absolute;text-align:center;pointer-events:none;">
+                            <div style="font-size:1.6rem;font-weight:900;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;" id="projSummaryTotal">—</div>
+                            <div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Total<br>Projects</div>
+                        </div>
+                    </div>
+                    <div class="pdd-legend" id="legendProjectSummary">
+                        <div class="pdd-legend-row">
+                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#6366f1"></span><span class="lbl">Active</span></div>
+                            <span class="val" id="legProjActive">—</span>
+                        </div>
+                        <div class="pdd-legend-row">
+                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#f59e0b"></span><span class="lbl">Pending</span></div>
+                            <span class="val" id="legProjPending">—</span>
+                        </div>
+                        <div class="pdd-legend-row">
+                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#22c55e"></span><span class="lbl">Completed</span></div>
+                            <span class="val" id="legProjCompleted">—</span>
+                        </div>
+                        <div class="pdd-legend-row">
+                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#94a3b8"></span><span class="lbl">On Hold</span></div>
+                            <span class="val" id="legProjOnHold">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Budget vs Actual -->
+                <div class="pdd-chart-card accent-indigo">
+                    <div class="pdd-chart-header">
+                        <div class="pdd-chart-title-wrap">
+                            <div class="pdd-chart-title-icon ti-indigo"><i class="fa-solid fa-scale-balanced"></i></div>
+                            <div class="pdd-chart-title">Project Budget vs Actual</div>
+                        </div>
+                    </div>
+                    <div class="pdd-bva-stats-row">
+                        <div class="pdd-bva-stat">
+                            <div class="bva-lbl"><i class="fa-solid fa-wallet me-1"></i>Total Budget</div>
+                            <div class="bva-val" id="bvaBudget">—</div>
+                        </div>
+                        <div class="pdd-bva-divider"></div>
+                        <div class="pdd-bva-stat">
+                            <div class="bva-lbl"><i class="fa-solid fa-receipt me-1"></i>Total Spent</div>
+                            <div class="bva-val" id="bvaSpent">—</div>
+                        </div>
+                    </div>
+                    <div class="pdd-utilization-wrap">
+                        <div class="pdd-utilization-label">
+                            <span>Utilization</span>
+                            <span id="bvaPct" style="font-size:0.82rem;font-weight:900;color:#6366f1;">0%</span>
+                        </div>
+                        <div class="pdd-progress-outer">
+                            <div class="pdd-progress-inner" id="bvaProgressBar" style="width:0%"></div>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px;">
+                        <div class="pdd-section-label">Monthly Spend Breakdown</div>
+                        <div style="position:relative;height:120px;">
+                            <canvas id="chartBudgetLine"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expense Summary -->
+                <div class="pdd-chart-card accent-rose">
+                    <div class="pdd-chart-header">
+                        <div class="pdd-chart-title-wrap">
+                            <div class="pdd-chart-title-icon ti-rose"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                            <div class="pdd-chart-title">Expense Summary <span>This Period</span></div>
+                        </div>
+                        <a class="pdd-chart-action">View All</a>
+                    </div>
+                    <div style="position:relative;height:148px;display:flex;align-items:center;justify-content:center;">
+                        <canvas id="chartExpenseSummary"></canvas>
+                    </div>
+                    <div class="pdd-exp-total-box">
+                        <div class="pdd-exp-total-label"><i class="fa-solid fa-sigma me-1"></i>Total Expenses</div>
+                        <div class="pdd-exp-total-val" id="expTotalAmount">—</div>
+                    </div>
+                    <div class="pdd-legend">
+                        <div class="pdd-legend-row">
+                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#22c55e"></span><span class="lbl">Approved</span></div>
+                            <span class="val" id="legExpApproved">—</span>
+                        </div>
+                        <div class="pdd-legend-row">
+                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#f59e0b"></span><span class="lbl">Pending Approval</span></div>
+                            <span class="val" id="legExpPending">—</span>
+                        </div>
+                        <div class="pdd-legend-row">
+                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#ef4444"></span><span class="lbl">Rejected</span></div>
+                            <span class="val" id="legExpRejected">—</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pdd-footer-note" id="pddDataNote"></div>
+
+        </div>
+    </div>
+</div>

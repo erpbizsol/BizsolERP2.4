@@ -520,22 +520,78 @@ function applyGrnVerifiedListFilter(rows) {
     });
 }
 
+function grnGetSessionUserCode() {
+    try { var a = JSON.parse(sessionStorage.getItem("authKey")); return parseInt(a && a.UserMaster_Code, 10) || 0; } catch (e) { return 0; }
+}
+function grnGetSessionGroupCode() {
+    try {
+        var d = JSON.parse(sessionStorage.getItem("UserDetails"));
+        if (Array.isArray(d) && d[0] != null) return parseInt(d[0].GroupMaster_Code, 10) || 0;
+    } catch (e) { /* ignore */ }
+    return 0;
+}
+function grnTruthyFlag(v) {
+    if (v === true || v === 1) return true;
+    var s = (v != null ? String(v) : "").trim().toLowerCase();
+    return s === "y" || s === "1" || s === "true";
+}
+function grnPickFirstPositiveInt(obj, keys) {
+    if (!obj || typeof obj !== "object") return 0;
+    for (var i = 0; i < keys.length; i++) {
+        var v = obj[keys[i]];
+        if (v == null || v === "") continue;
+        var n = parseInt(v, 10);
+        if (isFinite(n) && n > 0) return n;
+    }
+    return 0;
+}
+function rowIsPendingOnMeGrn(item) {
+    if (!item || typeof item !== "object") return false;
+    // If backend explicitly flags the row
+    if (grnTruthyFlag(item.IsPendingForMe) || grnTruthyFlag(item.PendingForMe) ||
+        grnTruthyFlag(item.CanApproveNow) || grnTruthyFlag(item.IsMyApproval) ||
+        grnTruthyFlag(item.PendingOnMe)) {
+        return true;
+    }
+    var me = grnGetSessionUserCode();
+    var myG = grnGetSessionGroupCode();
+    var approverU = grnPickFirstPositiveInt(item, [
+        "CurrentApproverUserMaster_Code", "ApproverUserMaster_Code",
+        "NextApproverUserMaster_Code", "PendingApproverUserMaster_Code"
+    ]);
+    var approverG = grnPickFirstPositiveInt(item, [
+        "CurrentApproverGroupMaster_Code", "ApproverGroupMaster_Code",
+        "NextApproverGroupMaster_Code", "PendingApproverGroupMaster_Code"
+    ]);
+    if (me > 0 && approverU > 0 && approverU === me) return true;
+    if (myG > 0 && approverG > 0 && approverG === myG) return true;
+    // No assignee info in list data — count as pending on me
+    if ((approverU + approverG) === 0) return true;
+    return false;
+}
+
 function updateGrnVerifyFilterTabCounts() {
     var rows = grnMasterSourceRows || [];
     var pending = 0;
     var verified = 0;
     var rejected = 0;
+    var pendingOnMe = 0;
     for (var i = 0; i < rows.length; i++) {
         if (rowIsVerifiedGrn(rows[i])) verified++;
         else if (rowIsRejectedGrn(rows[i])) rejected++;
-        else pending++;
+        else {
+            pending++;
+            if (rowIsPendingOnMeGrn(rows[i])) pendingOnMe++;
+        }
     }
     var elP = document.getElementById("grnVerifyFilterCountPending");
     var elV = document.getElementById("grnVerifyFilterCountVerified");
     var elR = document.getElementById("grnVerifyFilterCountReject");
+    var elOM = document.getElementById("grnVerifyFilterCountPendingOnMe");
     if (elP) elP.textContent = String(pending);
     if (elV) elV.textContent = String(verified);
     if (elR) elR.textContent = String(rejected);
+    if (elOM) elOM.textContent = rows.length === 0 ? "—" : String(pendingOnMe);
 }
 
 function syncGrnVerifyFilterTabButtons() {

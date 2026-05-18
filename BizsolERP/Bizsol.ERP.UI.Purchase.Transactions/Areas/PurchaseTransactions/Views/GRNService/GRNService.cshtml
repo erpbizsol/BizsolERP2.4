@@ -1230,9 +1230,13 @@
     #divGRNList .grn-verify-filter-tab--onme {
         min-width: 124px;
         max-width: 138px;
-        border-color: rgba(244, 114, 182, 0.85);
+        border-color: rgba(239, 68, 68, 0.75);
     }
-    #divGRNList .grn-verify-filter-tab--onme .grn-verify-filter-tab-count { color: #fbcfe8; font-size: 0.92rem; }
+    #divGRNList .grn-verify-filter-tab--onme .grn-verify-filter-tab-count { color: #fca5a5; font-size: 0.92rem; }
+    #divGRNList .grn-verify-filter-tab--onme:hover {
+        background: rgba(239, 68, 68, 0.18);
+        border-color: rgba(239, 68, 68, 0.85);
+    }
     #divGRNList .grn-verify-filter-tab-count {
         font-size: 1rem;
         font-weight: 800;
@@ -1279,7 +1283,7 @@
                 <button type="button" id="grnVerifyFilterTabPendingOnMe" class="grn-verify-filter-tab grn-verify-filter-tab--onme" role="button"
                         title="Open MRN approval queue — items pending on you"
                         onclick="navigateToMRNMasterApprovalPendingOnMe()">
-                    <span class="grn-verify-filter-tab-count" aria-hidden="true"><i class="fa fa-user-check"></i></span>
+                    <span class="grn-verify-filter-tab-count" id="grnVerifyFilterCountPendingOnMe">—</span>
                     <span class="grn-verify-filter-tab-lbl">Pending on me</span>
                 </button>
                 <button type="button" id="grnVerifyFilterTabVerified" class="grn-verify-filter-tab grn-verify-filter-tab--y" role="tab"

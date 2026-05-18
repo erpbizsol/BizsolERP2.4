@@ -48,6 +48,11 @@
     .gpa-header .gpa-stat-chip--pending .val { color: #fde047; }
     .gpa-header .gpa-stat-chip--approved { border-color: rgba(52, 211, 153, 0.75); }
     .gpa-header .gpa-stat-chip--approved .val { color: #6ee7b7; }
+    .gpa-header .gpa-stat-chip--onme { border-color: rgba(167, 139, 250, 0.7); cursor: pointer; }
+    .gpa-header .gpa-stat-chip--onme .val { color: #c4b5fd; }
+    .gpa-header .gpa-stat-chip--onme-active { background: rgba(167,139,250,0.22); border-color: #a78bfa; box-shadow: 0 0 0 2px rgba(167,139,250,0.45); }
+    .gpa-header .gpa-stat-chip--onme-active .val { color: #fff; }
+    .gpa-header .gpa-stat-chip--onme-active .lbl { color: #fff; }
     .gpa-filter-bar {
         background: #fff;
         border: 1px solid #e2e8f0;
@@ -349,13 +354,18 @@
 
 <div class="gpa-header section-entry-animation">
     <div>
-        <h5><i class="fa fa-dolly me-2"></i>GRN Service (MRN) Approval</h5>
-        <small>Review and approve GRN Service / MRN entries by approval level</small>
+        <h5><i class="fa fa-dolly me-2"></i>GRN Approval</h5>
+        <small>Review and approve GRN Service entries by approval level</small>
     </div>
     <div class="gpa-stat-chips flex-shrink-0">
         <div class="gpa-stat-chip gpa-stat-chip--pending" title="Entries not fully approved">
             <div class="val" id="gpaStatPending">—</div>
             <div class="lbl">Pending</div>
+        </div>
+        <div class="gpa-stat-chip gpa-stat-chip--onme" id="gpaStatChipPendingOnMe"
+             onclick="ToggleGpaPendingOnMeFilter()" title="Items pending on me — click to filter">
+            <div class="val" id="gpaStatPendingOnMe">—</div>
+            <div class="lbl">Pending on Me</div>
         </div>
         <div class="gpa-stat-chip gpa-stat-chip--approved" title="Approved or otherwise completed in this list">
             <div class="val" id="gpaStatProcessed">—</div>
