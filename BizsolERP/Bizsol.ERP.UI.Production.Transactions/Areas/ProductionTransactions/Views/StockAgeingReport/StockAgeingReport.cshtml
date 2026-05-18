@@ -82,6 +82,74 @@
         box-shadow: 0 4px 12px rgba(249,115,22,.4);
         transform: translateY(-1px);
     }
+    #btnAgeingParameter {
+        background: linear-gradient(135deg, #4a90d9 0%, #1a5fa8 100%);
+        border: none;
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: .4px;
+        transition: all .2s;
+    }
+    #btnAgeingParameter:hover, #btnAgeingParameter:focus {
+        background: linear-gradient(135deg, #357abd 0%, #154f90 100%);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(74,144,217,.45);
+        transform: translateY(-1px);
+    }
+    #spanAgeingParamLabel {
+        display: inline-block;
+        background: #1a5fa8;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 10px;
+        padding: 1px 8px;
+        margin-left: 5px;
+        vertical-align: middle;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* ── Stock Ageing report grid: scrollable body, sticky header ── */
+    #StockAgeingReportTableCard .sar-table-scroll {
+        max-height: calc(100vh - 280px);
+        min-height: 220px;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        background: #fff;
+    }
+    #StockAgeingReportTableCard .sar-table-scroll.table-wrapper.filtered {
+        min-height: 220px;
+    }
+    #StockAgeingReport thead th {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        background: linear-gradient(180deg, #5c95ce 0%, #4e86bf 100%) !important;
+        color: #fff !important;
+        font-weight: 600;
+        vertical-align: middle;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        border-color: #4a7caf !important;
+    }
+    #StockAgeingReport thead th .filter-table-heading {
+        color: #fff !important;
+    }
+    #StockAgeingReport thead th .table-filter-arrow .fa-angle-down {
+        color: #fff !important;
+        opacity: 0.95;
+    }
+    #StockAgeingReport thead th .filter-dropdown,
+    #StockAgeingReport thead th .filter-dropdown-double {
+        z-index: 40;
+    }
+    #StockAgeingReport thead th .dropdown-content {
+        z-index: 45;
+    }
 </style>
 <div class="card">
     <div class="card-body">
@@ -118,6 +186,10 @@
                 <button type="button" id="btnStockAgeingReportShow" class="btn btn-primary btn-height">Show</button>
             </div>
             <div class="col-md-12" style="text-align:right">
+                @* <button id="btnAgeingParameter" class="btn btn-height" onclick="ShowAgeingParameterModal();">
+                    Ageing Parameter
+                    <span id="spanAgeingParamLabel" style="display:none;"></span>
+                </button> *@
                 <button id="btnSizeControl" class="btn btn-height" onclick="ShowSizeControlModal();">Size Parameter Filter</button>
                 <button type="button" id="btn" class="btn btn-primary btn-height" onclick="ExportExcel();">Download</button>
             </div>
@@ -127,8 +199,8 @@
 <div class="row">
     <div class="col-sm-12">
         <div class="card" id="StockAgeingReportTableCard">
-            <div class="table-wrapper" style="min-height:400px;">
-                <table id="StockAgeingReport" class="fixed-width-table table">
+            <div class="table-wrapper sar-table-scroll">
+                <table id="StockAgeingReport" class="fixed-width-table table table-bordered table-sm mb-0">
                     <thead id="table-head-StockAgeingReport">
                     </thead>
                     <tbody id="table-body-StockAgeingReport">
@@ -137,7 +209,7 @@
                     </tfoot>
                 </table>
             </div>
-            <div class="paginator" id="paginator-StockAgeingReport">
+            <div class="paginator px-2 py-2 border-top bg-light" id="paginator-StockAgeingReport">
             </div>
         </div>
     </div>

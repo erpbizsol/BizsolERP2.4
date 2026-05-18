@@ -2,9 +2,11 @@ import { StockAgeingReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSSer
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { createSizeFilterControlModal, initializeSizeFilterControl } from '../../Bizsol.WebERP.UI.Shared/js/Pages/CommonSizeFilterControl.js';
+import { initializeAgeingParameterControl } from '../../Bizsol.WebERP.UI.Shared/js/Pages/CommonAgeingParameterControl.js';
 
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 let G_ItemSizeMaster_Codes = '';
+let G_AgeingParameter = null;   // { Desp, Rows, AgeingParameters, … }
 
 // Stock With Chart state
 let SWC_USE_DUMMY_DATA = false; // set false to use real API
@@ -178,6 +180,99 @@ function mapLogicalStockRowForGrid(raw) {
     return out;
 }
 
+/** FIFO Stock Ageing: bucket headers come from Ageing Parameter (DaysDesp); must match API property names. */
+const FIFO_GRID_NON_NUMERIC_KEYS = new Set(['Item Name', 'SizeDesp', 'Code', 'ItemMaster_Code']);
+
+const FIFO_FALLBACK_BUCKET_KEYS = ['0-90 D', '91-120 D', '121-180 D', '> 180 D'];
+
+function getFifoBucketKeysFromAgeingParameter() {
+    const rows = G_AgeingParameter && Array.isArray(G_AgeingParameter.Rows) ? G_AgeingParameter.Rows : [];
+    const keys = [];
+    for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        const desp = r && r.DaysDesp != null ? String(r.DaysDesp).trim() : '';
+        if (desp) keys.push(desp);
+    }
+    return keys;
+}
+
+function inferFifoBucketKeysFromRow(sampleRow) {
+    if (!sampleRow || typeof sampleRow !== 'object') {
+        return FIFO_FALLBACK_BUCKET_KEYS.slice();
+    }
+    const ordered = [];
+    Object.keys(sampleRow).forEach(function (k) {
+        if (k === 'Total' || FIFO_GRID_NON_NUMERIC_KEYS.has(k)) return;
+        ordered.push(k);
+    });
+    return ordered.length > 0 ? ordered : FIFO_FALLBACK_BUCKET_KEYS.slice();
+}
+
+function fifoRowHasTotalProperty(row) {
+    if (!row || typeof row !== 'object') return false;
+    if (Object.prototype.hasOwnProperty.call(row, 'Total')) return true;
+    const keys = Object.keys(row);
+    for (let i = 0; i < keys.length; i++) {
+        if (String(keys[i]).trim() === 'Total') return true;
+    }
+    return false;
+}
+
+/**
+ * @param {object} [sampleRow] First data row (used to detect Total and fallback order)
+ */
+function buildFifoStockAgeingGridColumnConfig(sampleRow) {
+    let bucketKeys = getFifoBucketKeysFromAgeingParameter();
+    if (bucketKeys.length === 0) {
+        bucketKeys = inferFifoBucketKeysFromRow(sampleRow);
+    }
+    const hasTotal = fifoRowHasTotalProperty(sampleRow);
+    const totalColKeys = bucketKeys.slice();
+    if (hasTotal) totalColKeys.push('Total');
+
+    const columnAlignment = {};
+    bucketKeys.forEach(function (k) { columnAlignment[k] = 'right'; });
+    if (hasTotal) columnAlignment.Total = 'right';
+
+    return {
+        bucketKeys: bucketKeys,
+        numericFilterColumn: bucketKeys,
+        totalColKeys: totalColKeys,
+        columnAlignment: columnAlignment,
+    };
+}
+
+function normalizeFifoRowKeysInPlace(row, bucketKeys, hasTotal) {
+    const trimToKey = Object.create(null);
+    Object.keys(row).forEach(function (k) {
+        trimToKey[String(k).trim()] = k;
+    });
+    bucketKeys.forEach(function (canon) {
+        const src = trimToKey[canon];
+        if (!src || src === canon) return;
+        row[canon] = row[src];
+        delete row[src];
+        trimToKey[canon] = canon;
+    });
+    if (hasTotal) {
+        const src = trimToKey['Total'];
+        if (src && src !== 'Total') {
+            row.Total = row[src];
+            delete row[src];
+        }
+    }
+}
+
+function formatFifoStockAgeingNumericCells(row, bucketKeys, hasTotal) {
+    bucketKeys.forEach(function (key) {
+        if (row[key] === undefined || row[key] === null || isNaN(row[key])) return;
+        row[key] = parseFloat(row[key]).toFixed(3);
+    });
+    if (hasTotal && row.Total !== undefined && row.Total !== null && !isNaN(row.Total)) {
+        row.Total = parseFloat(row.Total).toFixed(3);
+    }
+}
+
 const STOCK_AGEING_THEAD_ID = 'table-head-StockAgeingReport';
 const STOCK_AGEING_TBODY_ID = 'table-body-StockAgeingReport';
 const BALANCE_QTY_NEGATIVE_ROW_BG = '#ffe8e8';
@@ -257,7 +352,11 @@ $(document).ready(function () {
     });
 
     $("#btnStockAgeingReportShow").click(function () {
-        GetStockAgeingReportList();
+        if ($('#ddlReportOption').val() == "Stock Ageing (FIFO)") {
+            ShowAgeingParameterModal();
+        } else {
+            GetStockAgeingReportList();
+        }
     });
 
     startStockAgeingBalanceQtyRowHighlightTimer();
@@ -642,7 +741,7 @@ export function GetStockAgeingReportList() {
             sizeParameterDesps = $sizeParam.find('option:selected').map(function () { return $(this).text(); }).get().join(',');
         }
     }
-
+    let AgeingParameter = G_AgeingParameter?.AgeingParameters ?? "";
     const Payload = {
         category: CategoryName,
         itemType: ItemTypeName,
@@ -651,6 +750,7 @@ export function GetStockAgeingReportList() {
         asOnDate: AsOnDate,
         itemSizeMaster_Codes: G_ItemSizeMaster_Codes || 0,
         itemParameterMaster_Desps: sizeParameterDesps,
+        AgeingParameters: AgeingParameter,
         ReportType: ReportOption
     }
     
@@ -666,34 +766,17 @@ export function GetStockAgeingReportList() {
             let columnAlignment;
             let TotalColumns;
             if (ReportOption == 'Stock Ageing (FIFO)') {
+                const fifoCols = buildFifoStockAgeingGridColumnConfig(response[0]);
+                const hasTotal = fifoRowHasTotalProperty(response[0]);
                 response = response.map(function (item) {
-                    if (item["0-90 D"] !== undefined && item["0-90 D"] !== null && !isNaN(item["0-90 D"])) {
-                        item["0-90 D"] = parseFloat(item["0-90 D"]).toFixed(3);
-                    }
-                    if (item["91-120 D "] !== undefined && item["91-120 D "] !== null && !isNaN(item["91-120 D "])) {
-                        item["91-120 D "] = parseFloat(item["91-120 D "]).toFixed(3);
-                    }
-                    if (item["121-180 D "] !== undefined && item["121-180 D "] !== null && !isNaN(item["121-180 D "])) {
-                        item["121-180 D "] = parseFloat(item["121-180 D "]).toFixed(3);
-                    }
-                    if (item["> 180 D"] !== undefined && item["> 180 D"] !== null && !isNaN(item["> 180 D"])) {
-                        item["> 180 D"] = parseFloat(item["> 180 D"]).toFixed(3);
-                    }
-                    if (item["Total"] !== undefined && item["Total"] !== null && !isNaN(item["Total"])) {
-                        item["Total"] = parseFloat(item["Total"]).toFixed(3);
-                    }
+                    normalizeFifoRowKeysInPlace(item, fifoCols.bucketKeys, hasTotal);
+                    formatFifoStockAgeingNumericCells(item, fifoCols.bucketKeys, hasTotal);
                     return item;
                 });
                 stringFilterColumn = ["Item Name", "SizeDesp"];
-                numericFilterColumn = ["0-90 D", "91-120 D ", "121-180 D ", "> 180 D"];
-                columnAlignment = {
-                    "0-90 D": 'right',
-                    "91-120 D ": 'right',
-                    "121-180 D ": 'right',
-                    "> 180 D": 'right',
-                    "Total": 'right'
-                };
-                TotalColumns = ["0-90 D", "91-120 D ", "121-180 D ", "> 180 D", "Total"];
+                numericFilterColumn = fifoCols.numericFilterColumn;
+                columnAlignment = fifoCols.columnAlignment;
+                TotalColumns = fifoCols.totalColKeys;
             } else {
                 response = filterLogicalStockRows(response);
                 if (response.length === 0) {
@@ -851,7 +934,8 @@ function setStockAgeingFooterTotals(data) {
         return;
     }
     
-    const totalColumns = ["0-90 D", "91-120 D ", "121-180 D ", "> 180 D", "Total"];
+    const fifoCols = buildFifoStockAgeingGridColumnConfig(data[0]);
+    const totalColumns = fifoCols.totalColKeys;
     const totals = {};
     
     totalColumns.forEach(function (column) {
@@ -931,17 +1015,29 @@ window.onSizeFilterApplied = function (response) {
         G_ItemSizeMaster_Codes = '';
     }
 };
+function ShowAgeingParameterModal() {
+    initializeAgeingParameterControl({
+        FormName  : 'StockAgeingReport',
+        FormType  : 'S',
+        CallBackFn: onAgeingParameterSelected
+    });
+}
 
+window.onAgeingParameterSelected = function (result) {
+    G_AgeingParameter = result;
+    let AgeingParameter = result?.AgeingParameters ?? "";
+    if (AgeingParameter != "") {
+        GetStockAgeingReportList();
+    } else {
+
+    }
+};
 
 window.ExportExcel = ExportExcel;
 window.Bind_ddlItemMaster = Bind_ddlItemMaster;
 window.GetStockAgeingReportList = GetStockAgeingReportList;
 window.ShowSizeControlModal = ShowSizeControlModal;
-
-// ─────────────────────────────────────────────────────────────
-// STOCK WITH CHART – all SWC_ functions
-// ─────────────────────────────────────────────────────────────
-
+window.ShowAgeingParameterModal = ShowAgeingParameterModal;
 function SWC_DestroyCharts() {
     if (SWC_CategoryChartInstance) {
         try { SWC_CategoryChartInstance.destroy(); } catch (e) { /* ignore */ }
@@ -956,7 +1052,6 @@ function SWC_DestroyCharts() {
         SWC_ItemsChartInstance = null;
     }
 }
-
 function SWC_UpdateFilterBadges() {
     if (SWC_SelectedCategoryName) {
         $('#swcLblCategoryFilter').text(SWC_SelectedCategoryName).show();
@@ -1367,7 +1462,6 @@ function SWC_ToggleSizeRows(sizeCode) {
     });
 }
 
-// ── DUMMY DATA (remove when real API is ready) ────────────────
 function SWC_FetchData(level, code, godownCode) {
     if (SWC_USE_DUMMY_DATA) {
         return SWC_GetDummyData(level, code, godownCode);
@@ -1507,7 +1601,6 @@ function SWC_GetDummyData(level, code, godownCode) {
         }, 300); // simulate a small network delay
     });
 }
-// ─────────────────────────────────────────────────────────────
 
 function SWC_EscHtml(str) {
     if (!str) return '';

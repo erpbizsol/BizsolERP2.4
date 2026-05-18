@@ -8,6 +8,7 @@ const DUMMY_PO_LIST = [
     {
         Code: 1001, 'PO No': 'PO/2025/0112', 'Party Name': 'Tata Steel Limited',
         'PO Date': '2025-07-01', 'Total Bill Amount': 485250.00,
+        IsPOAgainstProject: 'Y', ProjectName: 'Solar Plant Phase I', SubProjectName: 'Site A – Bangalore',
         ApprovalStatus: 'Pending', CurrentLevelNo: 2, TotalLevels: 3,
         CurrentLevelDesc: 'Finance Manager', LevelCode: 202,
         PaymentTerms: '30 Days Net',
@@ -120,20 +121,70 @@ let G_CurrentPO  = null;
 BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
 
 // ─── INIT ──────────────────────────────────────────────────────────────────────
-$(document).ready(function () {
-    InitDates();
-    LoadPOList();
+$(document).ready(async function () {
+    // Ensure dates are initialized before loading the PO list to avoid racing condition
+    try {
+        await InitDates();
+    } catch (e) {
+        // continue even if InitDates failed; LoadPOList will handle empty dates
+        console.error('InitDates failed', e);
+    }
+
+    try {
+        await LoadPOList();
+    } catch (e) {
+        console.error('LoadPOList failed', e);
+    }
 
     $('#lstSearch').on('input', function () {
         FilterCards($(this).val().toLowerCase().trim());
     });
+
+    window.AttachmentControl_onQueueChange = function (count) {
+        const n = parseInt(count, 10) || 0;
+        const $b = $('#btnModalAttachment');
+        if (n > 0) {
+            $b.addClass('pla-attach-has-files');
+        } else if (!PlaHasAttachmentYes(G_CurrentPO)) {
+            $b.removeClass('pla-attach-has-files');
+        }
+    };
 });
 
 function InitDates() {
-    const today    = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    $('#lstFromDate').val(FmtDateInput(firstDay));
+    const today = new Date();
     $('#lstToDate').val(FmtDateInput(today));
+    if (USE_DUMMY) {
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        $('#lstFromDate').val(FmtDateInput(firstDay));
+        return Promise.resolve();
+    }
+
+    // Request default FromDate from API; fallback to first day of month on error
+    return POLevelsApproveService.GetFirstPendingPODate()
+        .then(function (resp) {
+            // API may return an object { FirstPendingPODate: 'yyyy-MM-dd' } or a plain date string
+            let dateStr = '';
+            if (!resp) dateStr = '';
+            else if (typeof resp === 'string') dateStr = resp;
+            else if (resp[0] && resp[0].FirstPendingPODate) dateStr = resp[0].FirstPendingPODate;
+
+            // Try to parse ISO date (yyyy-MM-dd) or other recognized formats
+            let d = null;
+            if (dateStr) {
+                const parsed = new Date(dateStr);
+                if (!isNaN(parsed)) d = parsed;
+            }
+
+            if (!d) {
+                d = new Date(today.getFullYear(), today.getMonth(), 1);
+            }
+            $('#lstFromDate').val(FmtDateInput(d));
+        })
+        .catch(function () {
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            $('#lstFromDate').val(FmtDateInput(firstDay));
+        });
 }
 
 function FmtDateInput(d) {
@@ -155,6 +206,61 @@ function FmtCurrency(val) {
     const n = parseFloat(val);
     if (isNaN(n)) return '—';
     return '\u20B9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Values for shared PO Store attachment control (EntryNo / EntryDate). */
+function PlaRawPONoForAttach(po) {
+    if (!po) return '';
+    const n = po.PONo || po.PO_No || po['PO No'] || po.PONumber || po.DocNo || '';
+    return n;
+}
+
+function PlaRawPODateForAttach(po) {
+    if (!po) return '';
+    const d = po.PODate || po.PO_Date || po['PO Date'] || po.DocDate || '';
+    const s = String(d);
+    return s.length >= 10 ? s.substring(0, 10) : '';
+}
+
+function PlaHasAttachmentYes(po) {
+    if (!po) return false;
+    const v = po.HasAttach != null ? po.HasAttach
+        : po.hasAttach != null ? po.hasAttach
+        : po.HasAttachment != null ? po.HasAttachment
+        : po['Has Attachment'];
+    return String(v || '').trim().toUpperCase() === 'Y';
+}
+
+function PlaIsPOAgainstProject(po) {
+    if (!po) return false;
+    const v = po.IsPOAgainstProject != null ? po.IsPOAgainstProject
+        : po.isPOAgainstProject != null ? po.isPOAgainstProject
+        : po['Is PO Against Project'];
+    return String(v || '').trim().toUpperCase() === 'Y';
+}
+
+function PlaProjectName(po) {
+    if (!po) return '';
+    const n = po.ProjectName != null && String(po.ProjectName).trim() !== '' ? po.ProjectName
+        : po['Project Name'] || po.Project || '';
+    return String(n || '').trim();
+}
+
+function PlaSubProjectName(po) {
+    if (!po) return '';
+    const n = po.SubProjectName != null && String(po.SubProjectName).trim() !== '' ? po.SubProjectName
+        : po['Sub Project Name'] || po.SubProject || '';
+    return String(n || '').trim();
+}
+
+/** Escape for use inside single-quoted JavaScript string in an HTML onclick="..." attribute. */
+function PlaEscapeForSingleQuotedJs(s) {
+    return String(s)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\r\n/g, '\\n')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\n');
 }
 
 function EscHtml(str) {
@@ -187,7 +293,7 @@ function NormalizePOList(list) {
 }
 
 // ─── LOAD PO LIST ─────────────────────────────────────────────────────────────
-function LoadPOList() {
+async function LoadPOList() {
     const fromDate = $('#lstFromDate').val() || '';
     const toDate   = $('#lstToDate').val()   || '';
     const status   = $('#lstDdlStatus').val() || '';
@@ -197,40 +303,39 @@ function LoadPOList() {
     document.getElementById('poPendingList').innerHTML = '';
 
     if (USE_DUMMY) {
-        setTimeout(function () {
-            ShowLoading(false);
-            let list = DUMMY_PO_LIST.slice();
-            if (status) {
-                list = list.filter(function (p) {
-                    return (p.ApprovalStatus || '').toLowerCase() === status.toLowerCase();
-                });
-            }
-            const search = ($('#lstSearch').val() || '').toLowerCase().trim();
-            if (search) {
-                list = list.filter(function (p) {
-                    return (p['PO No'] + ' ' + p['Party Name']).toLowerCase().includes(search);
-                });
-            }
-            G_POList = list;
-            UpdateStatChips();
-            RenderPOCards(G_POList);
-        }, 600);
+        await new Promise(function (res) { setTimeout(res, 600); });
+        ShowLoading(false);
+        let list = DUMMY_PO_LIST.slice();
+        if (status) {
+            list = list.filter(function (p) {
+                return (p.ApprovalStatus || '').toLowerCase() === status.toLowerCase();
+            });
+        }
+        const search = ($('#lstSearch').val() || '').toLowerCase().trim();
+        if (search) {
+            list = list.filter(function (p) {
+                return (p['PO No'] + ' ' + p['Party Name']).toLowerCase().includes(search);
+            });
+        }
+        G_POList = list;
+        UpdateStatChips();
+        RenderPOCards(G_POList);
         return;
     }
 
-    POLevelsApproveService.GetPendingPOList(fromDate, toDate, status)
-        .then(function (data) {
-            ShowLoading(false);
-            G_POList = NormalizePOList(Array.isArray(data) ? data : []);
-            UpdateStatChips();
-            RenderPOCards(G_POList);
-        })
-        .catch(function () {
-            ShowLoading(false);
-            G_POList = [];
-            ShowEmpty(true);
-            toastr.error('Error loading pending purchase orders.');
-        });
+    try {
+        const data = await POLevelsApproveService.GetPendingPOList(fromDate, toDate, status);
+        ShowLoading(false);
+        G_POList = NormalizePOList(Array.isArray(data) ? data : []);
+        UpdateStatChips();
+        RenderPOCards(G_POList);
+    } catch (err) {
+        ShowLoading(false);
+        G_POList = [];
+        ShowEmpty(true);
+        toastr.error('Error loading pending purchase orders.');
+        throw err;
+    }
 }
 
 function UpdateStatChips() {
@@ -278,8 +383,43 @@ function BuildPOCard(po) {
                <i class="fa fa-eye me-1"></i>View Details
            </button>`;
 
+    const rawPoNoAtt = PlaRawPONoForAttach(po);
+    const rawPoDateAtt = PlaRawPODateForAttach(po);
+    const escNo = PlaEscapeForSingleQuotedJs(rawPoNoAtt);
+    const escDt = PlaEscapeForSingleQuotedJs(rawPoDateAtt);
+
+    const printBtns =
+        `<div class="pla-po-card-print-btns">
+            <button type="button" class="btn-pla-print-icon btn-pla-print-prev" title="Print Preview" onclick="PrintPO(${code},'preview')">
+                <i class="fa fa-search-plus"></i>
+            </button>
+            <button type="button" class="btn-pla-print-icon btn-pla-print-go" title="Print" onclick="PrintPO(${code},'print')">
+                <i class="fa fa-print"></i>
+            </button>
+            <button type="button" class="btn-pla-print-icon btn-pla-attach-icon" title="Attachments"
+                    style="background:${PlaHasAttachmentYes(po) ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#0ea5e9,#0284c7)'};color:#fff;box-shadow:0 2px 8px rgba(14,165,233,0.35);"
+                    onclick="OpenPOApprovalAttachment(${code}, '${escNo}', '${escDt}')">
+                <i class="fa fa-paperclip"></i>
+            </button>
+        </div>`;
+
+    let dataSearchKey = ((po['Party Name'] || po.VendorName || po.Vendor || po.PartyName || '') + ' ' +
+        (po['PO No'] || po.PONo || po.PONumber || po.DocNo || '')).toLowerCase();
+    if (PlaIsPOAgainstProject(po)) {
+        dataSearchKey += ' ' + PlaProjectName(po).toLowerCase() + ' ' + PlaSubProjectName(po).toLowerCase();
+    }
+
+    const projLine = PlaIsPOAgainstProject(po)
+        ? ('<div class="pla-po-card-proj" style="font-size:0.7rem;color:#64748b;margin-top:4px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;" title="' +
+            EscHtml((PlaProjectName(po) || '—') + (PlaSubProjectName(po) ? ' / ' + PlaSubProjectName(po) : '')) + '">' +
+            '<i class="fa fa-diagram-project me-1" style="color:#667eea;font-size:0.68rem;"></i>' +
+            EscHtml(PlaProjectName(po) || '—') +
+            (PlaSubProjectName(po) ? ' <span style="color:#94a3b8;">·</span> ' + EscHtml(PlaSubProjectName(po)) : '') +
+            '</div>')
+        : '';
+
     return `
-    <div class="pla-po-card section-entry-animation" data-code="${code}" data-search="${(vendor + ' ' + poNo).toLowerCase()}">
+    <div class="pla-po-card section-entry-animation" data-code="${code}" data-search="${EscHtml(dataSearchKey)}">
         <div class="pla-po-card-header">
             <div class="pla-po-no-badge">
                 <span style="font-size:0.6rem;font-weight:600;opacity:0.82;line-height:1;">PO#</span>
@@ -295,6 +435,7 @@ function BuildPOCard(po) {
                         <i class="fa fa-layer-group me-1"></i>${lvlDesc}
                     </span>
                 </div>
+                ${projLine}
             </div>
             <div class="pla-po-card-right">
                 <div class="pla-po-amount">${amount}</div>
@@ -309,6 +450,7 @@ function BuildPOCard(po) {
             ${stepperHtml}
         </div>
         <div class="pla-po-card-footer">
+            ${printBtns}
             ${actionBtn}
         </div>
     </div>`;
@@ -378,19 +520,27 @@ function OpenDetailModal(poCode) {
             $('#modalVendorName').text(vendor);
             $('#hfPOCode').val(poCode);
             $('#hfLevelCode').val(G_CurrentPO.LevelCode || G_CurrentPO.ApprovalLevel_Code || 0);
+            $('#hfAttachPONo').val(String(PlaRawPONoForAttach(G_CurrentPO) || ''));
+            $('#hfAttachPODate').val(PlaRawPODateForAttach(G_CurrentPO) || '');
+            $('#btnModalAttachment').toggleClass('pla-attach-has-files', PlaHasAttachmentYes(G_CurrentPO));
             $('#frmRemarks').val('');
 
             // PO header info grid
-            $('#modalPOHeader').html(
-                '<div class="pla-info-grid">' +
+            let headerHtml = '<div class="pla-info-grid">' +
                 BuildInfoItem('PO Number', EscHtml(poNo), 'fa-file-invoice') +
                 BuildInfoItem('Vendor', EscHtml(vendor), 'fa-building') +
-                BuildInfoItem('PO Date', EscHtml(poDate || '—'), 'fa-calendar-alt') +
-                BuildInfoItem('Total Amount', amount, 'fa-rupee-sign', '#667eea') +
+                BuildInfoItem('PO Date', EscHtml(poDate || '—'), 'fa-calendar-alt');
+            if (PlaIsPOAgainstProject(G_CurrentPO)) {
+                const proj = PlaProjectName(G_CurrentPO);
+                const subp = PlaSubProjectName(G_CurrentPO);
+                headerHtml += BuildInfoItem('Project', proj ? EscHtml(proj) : '—', 'fa-diagram-project');
+                headerHtml += BuildInfoItem('Sub Project', subp ? EscHtml(subp) : '—', 'fa-map-location-dot');
+            }
+            headerHtml += BuildInfoItem('Total Amount', amount, 'fa-rupee-sign', '#667eea') +
                 BuildInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +
                 BuildInfoItem('Status', EscHtml(status), 'fa-info-circle') +
-                '</div>'
-            );
+                '</div>';
+            $('#modalPOHeader').html(headerHtml);
 
             // Approval level stepper
             $('#modalApprovalStepper').html(BuildDetailStepper(G_CurrentPO));
@@ -626,10 +776,40 @@ function ShowEmpty(show) {
     document.getElementById('poPendingEmpty').style.display = show ? '' : 'none';
 }
 
+/** Same attachment host + API as PO Store grid (`PurchaseOrderStore.js`). */
+function OpenPOApprovalAttachment(code, poNo, poDate) {
+    if (typeof window.openPOListAttachmentControl !== 'function') {
+        toastr.error('Attachments are not available. Please refresh the page.');
+        return;
+    }
+    window.openPOListAttachmentControl(code, poNo, poDate);
+}
+
+function OpenPOApprovalAttachmentFromModal() {
+    const code = parseInt($('#hfPOCode').val() || '0', 10);
+    const poNo = $('#hfAttachPONo').val() || '';
+    const poDate = $('#hfAttachPODate').val() || '';
+    OpenPOApprovalAttachment(code, poNo, poDate);
+}
+
 function NavigateToPOStore() {
     const appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/'))
         .replace(/\/?$/, '/');
     window.location.href = appBase + 'PurchaseTransactions/PurchaseOrder/PurchaseOrderStore?ModuleDesp=Purchase%20Order%20(Store)';
+}
+
+/** Print / preview from detail modal — uses same flow as Purchase Order Store (PrintPO + modalPrintOptions). */
+function PrintPOFromDetail(mode) {
+    const c = parseInt($('#hfPOCode').val() || '0', 10);
+    if (!c) {
+        toastr.warning('No PO selected.');
+        return;
+    }
+    if (typeof window.PrintPO !== 'function') {
+        toastr.error('Print is not available. Please refresh the page.');
+        return;
+    }
+    window.PrintPO(c, mode === 'print' ? 'print' : 'preview');
 }
 
 // ─── EXPOSE GLOBALS (onclick handlers in HTML) ────────────────────────────────
@@ -639,3 +819,6 @@ window.SubmitApproval    = SubmitApproval;
 window.CloseDetailModal  = CloseDetailModal;
 window.CloseConfirmModal = CloseConfirmModal;
 window.NavigateToPOStore = NavigateToPOStore;
+window.PrintPOFromDetail = PrintPOFromDetail;
+window.OpenPOApprovalAttachment = OpenPOApprovalAttachment;
+window.OpenPOApprovalAttachmentFromModal = OpenPOApprovalAttachmentFromModal;
