@@ -1292,7 +1292,7 @@ function RenumberRows() {
     });
 }
 
-// ─── TOLERANCE HELPERS (temporarily disabled) ───────────────────────────────
+// ─── TOLERANCE HELPERS (temporarily disabled — desktop CalcRowValue/SavePO + mobile modal) ─
 
 /* TOLERANCE DISABLED
 function GetRowToleranceInfo(rowId) {
@@ -1363,7 +1363,6 @@ window.OnItemChange = function (rowId) {
 };
 
 window.CalcRowValue = function (rowId) {
-    const againstProject = $('#frmChkAgainstProject').is(':checked');
     let qty  = parseFloat($(`#frmTxtQty_${rowId}`).val())  || 0;
     let rate = parseFloat($(`#frmTxtRate_${rowId}`).val()) || 0;
 
@@ -2036,7 +2035,7 @@ function MobileItemModalConfirm() {
     if (!itemCode) { toastr.warning('Please select an item.'); return; }
     if (qty <= 0) { toastr.warning('Qty must be greater than 0.'); return; }
 
-    // ── Tolerance validation (only applicable when Against Project is checked) ─
+    /* TOLERANCE DISABLED (temporary) — mobile add/edit: qty & rate vs project BOM caps
     if ($('#frmChkAgainstProject').is(':checked')) {
         const mobileItem = G_ItemMasterList.find(i => String(i.Code) === String(itemCode));
         if (mobileItem) {
@@ -2061,6 +2060,7 @@ function MobileItemModalConfirm() {
             }
         }
     }
+    TOLERANCE DISABLED */
 
     const uomCode = $('#mobileItemDdlUOM').val();
     const gst = parseFloat($('#mobileItemTxtGST').val()) || 0;
@@ -2093,8 +2093,9 @@ function MobileItemModalConfirm() {
             </td>
         </tr>`;
         $('#tblPOItemsBody').append(row);
-        const newTolItem = G_ItemMasterList.find(i => String(i.Code) === String(itemCode));
-        ApplyToleranceToRow(rowId, newTolItem || null);
+        // TOLERANCE DISABLED
+        // const newTolItem = G_ItemMasterList.find(i => String(i.Code) === String(itemCode));
+        // ApplyToleranceToRow(rowId, newTolItem || null);
         RenumberRows();
     } else {
         // Update existing row in the hidden table
