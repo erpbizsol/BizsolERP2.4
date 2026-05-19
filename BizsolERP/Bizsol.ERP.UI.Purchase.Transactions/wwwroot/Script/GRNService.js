@@ -720,6 +720,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         syncGrnFooterAttachmentButtonState(count);
     };
 
+    document.addEventListener('bizsol:attachmentcontrol:changed', function (ev) {
+        const d = ev.detail;
+        if (!d || d.tempMode) return;
+        if (d.masterTableName !== 'MRNMaster') return;
+        if (typeof window.loadGRNList === 'function') window.loadGRNList();
+    });
+
     await Promise.all([
         loadVendorList(),
         loadBankList(),
@@ -2342,6 +2349,13 @@ async function doDeleteGRN(code) {
                     bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'))?.hide();
 
                     showToast(result.Msg ?? result.msg ?? 'GRN deleted successfully.', 'success');
+
+                    const delPk = parseInt(String(code), 10) || 0;
+                    if (delPk > 0) {
+                        AttachmentControlService.DeleteAllAttachment('MRNMaster', delPk, '', 0).catch(function (e) {
+                            console.warn('Delete all attachments after GRN delete', e);
+                        });
+                    }
 
                     // Reset state and go back to list
                     editMode = false;

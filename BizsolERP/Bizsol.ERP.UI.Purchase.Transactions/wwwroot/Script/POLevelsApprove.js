@@ -150,6 +150,15 @@ $(document).ready(async function () {
             $b.removeClass('pla-attach-has-files');
         }
     };
+
+    /** PO Approval cards: refresh after attachments change on a saved PO (green clip / HasAttach). */
+    document.addEventListener('bizsol:attachmentcontrol:changed', function (ev) {
+        const d = ev.detail;
+        if (!d || d.tempMode) return;
+        if (d.masterTableName !== 'PurchaseOrderMaster') return;
+        if (!document.getElementById('poPendingList')) return;
+        LoadPOList();
+    });
 });
 
 function InitDates() {
