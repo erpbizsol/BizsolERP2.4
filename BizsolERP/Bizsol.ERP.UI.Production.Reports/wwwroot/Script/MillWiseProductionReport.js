@@ -70,6 +70,7 @@ $(document).ready(function () {
     InitializeFinancialYearDates();
     GetItemSizeParameter();
     GetMachineNo();
+    GetPartyList();
     bindMillWiseProductionTableHeightHandlers();
     scheduleMillWiseProductionTableHeightAdjust();
     $("#btnSearch").on("click", function () {
@@ -143,11 +144,13 @@ function GetMillWiseProduction() {
     if (MachineNo || MachineNo.length > 0) {
         MachineMaster_Codes = MachineNo.map(function (x) { return String(x).trim().toUpperCase(); }).join(',');
     }
+    var partyCode = parseInt($("#ddlParty").val()) || 0;
     var jsonData = {
         FromDate: fromDate,
         ToDate: toDate,
         sizeParameter: sizeParamCsv,
-        MachineMaster_Codes: MachineMaster_Codes
+        MachineMaster_Codes: MachineMaster_Codes,
+        AccountMaster_Code: partyCode
     };
     GetMillWiseProductionReportList(jsonData);
 }
@@ -1019,6 +1022,30 @@ function GetMachineNo() {
     }).catch(function (error) {
         HideLoader();
         toastr.error(error.Msg || 'Error Durante Get Mill Wise Production Report');
+    });
+}
+function GetPartyList() {
+    Showloader();
+    MillWiseProductionReport.GetMillWiseProductionFilters('PARTY', 'Y', 0).then(function (response) {
+        const $select = $('#ddlParty');
+        $select.empty();
+        $select.append(new Option('All', '0'));
+        if (response && response.length > 0) {
+            $.each(response, function (key, val) {
+                $select.append(new Option(val['Desp'] || val['AccountDesp'] || val['Name'] || '', val['Code'] || val['AccountMaster_Code'] || 0));
+            });
+        }
+        if ($.fn && $.fn.select2) {
+            $select.select2({
+                width: '100%',
+                placeholder: 'All',
+                allowClear: true
+            });
+        }
+        HideLoader();
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error loading Party list');
     });
 }
 function ExportExcel() {
